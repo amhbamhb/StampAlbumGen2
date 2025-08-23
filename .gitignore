@@ -1,0 +1,73 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+*.suo
+*.ntvs_analysis.dat
+*.njsproj
+*.sln
+*.swp
+*.user
+*.userosscache
+*.userprefs
+*.vscode/
+
+# Logs
+*.log
+
+# By-products
+*.dSYM/
+*.exe
+*.dll
+*.obj
+*.pdb
+*.idb
+*.class
+*.psd
+*.db
+*.tgz
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z
+
+# Misc
+*.tmp
+*.bak
+*.old
+*.orig
+*.save
+*.pid
+*.seed
+*.pid.lock
+
+# Rust coverage
+/coverage/
+
+# Rust build
+/target/
+Cargo.lock
+
+# VS Code extensions
+.vscode/extensions.json
+
+# VS Code settings
+.vscode/settings.json
+
+# VS Code launch configs
+.vscode/launch.json
+
+# VS Code tasks
+.vscode/tasks.json

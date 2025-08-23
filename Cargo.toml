@@ -1,0 +1,12 @@
+[package]
+name = "stamp_album_gen2"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+csv = "1.2"
+image = "0.24"
+rusttype = "0.9"
+scraper = "0.13"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+lazy_static = "1.5.0"
