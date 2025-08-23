@@ -240,6 +240,7 @@ pub enum OSType {
     MacOS,
     Linux,
     Other,
+    Unknown,
 }
 
 /// Struct representing series information

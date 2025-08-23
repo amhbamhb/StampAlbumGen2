@@ -1,0 +1,28 @@
+################################################################################
+# Great Britain - 4 Kings
+################################################################################
+
+ALBUM_PAGES_SIZE  (215.9 279.4) #Set the page to US Letter (8.5 x 11)
+#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4
+
+ALBUM_PAGES_MARGINS  (15.0 10.0 10.0 10.0 )
+
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border
+#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border
+
+ALBUM_PAGES_TITLE (TB 18 "Great Britain - 4 Kings")
+
+ALBUM_PAGES_SPACING (5.0 3.0)
+
+#ALBUM_PAGES_NUMBER (TN 10 R)
+
+ALBUM_STAMP_IMG_NEW_SETTING (6.0 6.0 true)
+
+ROW_ALIGN_MIDDLE
+
+# The stamp boxes in this album are sized approximately
+# 4mm larger than the actual stamps giving a 2mm border
+# To have the boxes drawn the actual stamp size use
+#STAMP_BOXES_SIZE_ADJUST(-4.0)
+# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)
+STAMP_BOXES_SIZE_ADJUST (0)

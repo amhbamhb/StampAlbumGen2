@@ -1,8 +1,7 @@
 // Main entry point for StampAlbumGen2
 use std::env;
-use std::fs;
-use std::path::Path;
-use stamp_album_gen2::commands_file_generator::{CommandsFileGenerator, OSType};
+use stamp_album_gen2::album_globals::OSType;
+use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
 
 fn get_operating_system_type() -> OSType {
     let os = env::consts::OS;
@@ -42,12 +41,76 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    let mut gen = CommandsFileGenerator::new();
-    gen.detected_os = Some(detected_os);
-    gen.data_source = args[0].clone();
-    gen.album_name = args[1].clone();
+    println!("[DEBUG] Args: {:?}", args);
+    println!("[DEBUG] Detected OS: {:?}", detected_os);
+    // Test image fetch
+    let test_url = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png";
+    let test_name = "test_image";
+    let test_path = "test_image.png";
+    let _ = stamp_album_gen2::commands_file_generator::get_image(test_url, test_name, test_path);
+    println!("[DEBUG] Test image fetch attempted.");
 
-    // ...continue with argument parsing and directory setup as in Java...
+    // Implement Stampworld connection string and flow
+    if args[0].eq_ignore_ascii_case("stampworld") {
+        if args.len() < 3 {
+            println!("Missing site country name");
+            std::process::exit(1);
+        } else if args.len() < 4 {
+            println!("Missing album root directory");
+            std::process::exit(1);
+        }
+        let site_name = &args[2];
+        let album_directory = format!("{}/{}", &args[3], site_name.replace("/", "-"));
+        let images_directory = format!("{}/images", album_directory);
+        let album_file_name = format!("{}/{}.txt", album_directory, args[1].replace(" ", "_"));
+        let extract_file_name = format!("{}/{}_extract.txt", album_directory, site_name.replace("/", "-"));
+        let catalog_name = "Sw";
+        let base_url = format!("https://www.stampworld.com/en/stamps/{}/?page=", site_name);
+        println!("[DEBUG] Stampworld base URL: {}", base_url);
+        println!("[DEBUG] Album directory: {}", album_directory);
+        println!("[DEBUG] Images directory: {}", images_directory);
+        println!("[DEBUG] Album file name: {}", album_file_name);
+        println!("[DEBUG] Extract file name: {}", extract_file_name);
+        // Parse startYear, endYear, overwrite from args
+        let mut start_year = 0;
+        let mut end_year = 9999;
+        let mut overwrite = false;
+        for arg in &args[4..] {
+            if arg.starts_with("startYear:") {
+                if let Ok(val) = arg[10..].parse::<i32>() {
+                    start_year = val;
+                }
+            } else if arg.starts_with("endYear:") {
+                if let Ok(val) = arg[8..].parse::<i32>() {
+                    end_year = val;
+                }
+            } else if arg == "overwrite" {
+                overwrite = true;
+            }
+        }
+        // Ensure directories exist
+        std::fs::create_dir_all(&images_directory).unwrap_or_else(|e| {
+            println!("[DEBUG] Failed to create images directory: {}", e);
+        });
+        // Collect data and save
+        let mut gen = CommandsFileGenerator::new();
+        gen.site_name = site_name.clone();
+        gen.album_directory = album_directory.clone();
+        gen.images_directory = images_directory.clone();
+        gen.album_name = args[1].clone();
+        gen.album_file_name = album_file_name.clone();
+        gen.extract_file_name = extract_file_name.clone();
+        gen.catalog_name = catalog_name.to_string();
+        gen.start_year = start_year;
+        gen.end_year = end_year;
+        let stamp_data = gen.collect_stampworld_data(&base_url, overwrite);
+        println!("[DEBUG] Stampworld data collected: {} entries", stamp_data.len());
+        gen.save_stamp_data(&extract_file_name, &stamp_data, "stampworld");
+        gen.create_album(&album_file_name, &stamp_data);
+        println!("[DEBUG] Album creation complete.");
+        return Ok(());
+    }
+    // ...existing code...
     // Placeholder for the rest of the logic
     // You will need to implement:
     // - get_file_source()
