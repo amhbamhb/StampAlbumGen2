@@ -3,6 +3,7 @@
 **/*.rs.bk
 Cargo.lock
 Albums/
+Alblums/
 
 # Visual Studio Code
 .vscode/
