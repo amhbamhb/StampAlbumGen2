@@ -1,3 +1,71 @@
+// Returns a list of series (name, year, month, day, is_perforated, perforation)
+pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<SeriesStub>> {
+    let mut stmt = conn.prepare("SELECT DISTINCT series, year, month, day, perforation FROM stamps ORDER BY year, series")?;
+    let series_iter = stmt.query_map([], |row| {
+        Ok(SeriesStub {
+            name: row.get(0)?,
+            year: row.get::<_, i32>(1)?,
+            month: row.get(2)?,
+            day: row.get(3)?,
+            is_perforated: false, // TODO: parse from data if available
+            perforation: row.get(4)?,
+        })
+    })?;
+    let mut result = Vec::new();
+    for s in series_iter {
+        result.push(s?);
+    }
+    Ok(result)
+}
+
+#[derive(Debug)]
+pub struct SeriesStub {
+    pub name: String,
+    pub year: i32,
+    pub month: String,
+    pub day: String,
+    pub is_perforated: bool,
+    pub perforation: String,
+}
+
+// Returns a list of stamps for a given series and year
+pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &str) -> rusqlite::Result<Vec<StampStub>> {
+    let mut stmt = conn.prepare("SELECT year, sg_number, type, denomination, color, 0, description, sg_number, '', image_path FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
+    let stamp_iter = stmt.query_map([series, year], |row| {
+            let multi_perf_int: i32 = row.get(5)?;
+            Ok(StampStub {
+                year: row.get::<_, i32>(0)?,
+                field1: row.get(1)?,
+                field2: row.get(2)?,
+                field3: row.get(3)?,
+                color: row.get(4)?,
+                multi_perf: multi_perf_int != 0,
+                desc: row.get(6)?,
+                catalog_num: row.get(7)?,
+                field4: row.get(8)?,
+                image_path: row.get(9)?,
+            })
+    })?;
+    let mut result = Vec::new();
+    for s in stamp_iter {
+        result.push(s?);
+    }
+    Ok(result)
+}
+
+#[derive(Debug)]
+pub struct StampStub {
+    pub year: i32,
+    pub field1: String,
+    pub field2: String,
+    pub field3: String,
+    pub color: String,
+    pub multi_perf: bool,
+    pub desc: String,
+    pub catalog_num: String,
+    pub field4: String,
+    pub image_path: String,
+}
 use rusqlite::{params, Connection, Result};
 
 pub fn init_db(db_path: &str) -> Result<Connection> {

@@ -25,6 +25,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
+    // Output-only mode: cargo run -- output-only <db_path> <album_name>
+    if args.get(0).map(|s| s == "output-only").unwrap_or(false) {
+        if args.len() < 3 {
+            println!("USAGE: cargo run -- output-only <db_path> <album_name>");
+            std::process::exit(1);
+        }
+        let db_path = &args[1];
+        let album_name = &args[2];
+        stamp_album_gen2::album_globals::generate_album_output(db_path, album_name);
+        println!("[DEBUG] AlbumEasy output generated from DB only.");
+        return Ok(());
+    }
+
     if args.len() < 1 {
         println!("USAGE1 : cargo run -- <stampworld|touchstamps> <album name> <source> <directory> [options]");
         println!("EXAMPLE: cargo run -- stampworld \"United Nations New York\" UN-New-York albums");
@@ -32,6 +45,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("EXAMPLE: cargo run -- colnectexport \"United Nations New York\" UN_New_York_export.csv");
         println!("USAGE3 : cargo run -- extractfile <album name> <extract file path> [options]");
         println!("EXAMPLE: cargo run -- extractfile \"United Nations New York\" UN_New_York_export.txt");
+        println!("USAGE4 : cargo run -- output-only <db_path> <album_name>");
+        println!("EXAMPLE: cargo run -- output-only Albums/Great-Britain/Great-Britain.db \"Great Britain - 4 Kings\"");
         std::process::exit(1);
     } else if args.len() < 2 {
         println!("Missing album name");
@@ -56,12 +71,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Implement Stampworld connection string and flow
     if args[0].eq_ignore_ascii_case("stampworld") {
         if args.len() < 3 {
-            println!("Missing site country name");
             std::process::exit(1);
-        } else if args.len() < 4 {
-            println!("Missing album root directory");
-            std::process::exit(1);
-        }
+        } else if args.len() < 4 { /* ...existing code... */ }
         let site_name = &args[2];
         let album_directory = format!("{}/{}", &args[3], site_name.replace("/", "-"));
         let images_directory = format!("{}/images", album_directory);
@@ -78,19 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut start_year = 0;
         let mut end_year = 9999;
         let mut overwrite = false;
-        for arg in &args[4..] {
-            if arg.starts_with("startYear:") {
-                if let Ok(val) = arg[10..].parse::<i32>() {
-                    start_year = val;
-                }
-            } else if arg.starts_with("endYear:") {
-                if let Ok(val) = arg[8..].parse::<i32>() {
-                    end_year = val;
-                }
-            } else if arg == "overwrite" {
-                overwrite = true;
-            }
-        }
+        for arg in &args[4..] { /* ...existing code... */ }
         // Ensure directories exist
         std::fs::create_dir_all(&images_directory).unwrap_or_else(|e| {
             println!("[DEBUG] Failed to create images directory: {}", e);
@@ -111,13 +110,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         gen.save_stamp_data(&extract_file_name, &stamp_data, "stampworld");
         gen.create_album(&album_file_name, &stamp_data);
         println!("[DEBUG] Album creation complete.");
-        // After scraping is complete
+        // After scraping is complete, generate AlbumEasy output from DB
         let db_path = format!("{}/{}.db", album_directory, site_name.replace("/", "-"));
-        let country = site_name.clone();
-        let series = args[1].clone();
-        let album_text = album_text_generator::generate_album_text(&db_path, &country, &series);
-        std::fs::write("album_output.txt", album_text).expect("Failed to write album output");
-        return Ok(());
+        let album_name = args[1].clone();
+        stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name);
+        println!("[DEBUG] AlbumEasy output generated from DB after scraping.");
     }
     // Placeholder for the rest of the logic
     // You will need to implement:

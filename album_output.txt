@@ -1,16 +1,76 @@
 ################################################################################
-# Great-Britain - Great Britain - 4 Kings
+# Great Britain - 4 Kings
 ################################################################################
 
-ALBUM_PAGES_SIZE  (215.9 279.4)
+ALBUM_PAGES_SIZE  (215.9 279.4) #Set the page to US Letter (8.5 x 11)
+#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4
+
 ALBUM_PAGES_MARGINS  (15.0 10.0 10.0 10.0 )
-ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)
-ALBUM_PAGES_TITLE (TB 18 "Great Britain - Victoria")
-ALBUM_PAGES_SPACING (5.0 8.0)
-ALBUM_STAMP_NEW_IMG_SETTING (6.0 6.0 true)
+
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border
+#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border
+
+ALBUM_PAGES_TITLE (TB 18 "Great Britain - 4 Kings")
+
+ALBUM_PAGES_SPACING (5.0 3.0)
+
+#ALBUM_PAGES_NUMBER (TN 10 R)
+
+ALBUM_STAMP_IMG_NEW_SETTING (6.0 6.0 true)
+
 ROW_ALIGN_MIDDLE
+
+# The stamp boxes in this album are sized approximately
+# 4mm larger than the actual stamps giving a 2mm border
+# To have the boxes drawn the actual stamp size use
+#STAMP_BOXES_SIZE_ADJUST(-4.0)
+# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)
 STAMP_BOXES_SIZE_ADJUST (0)
 ################################################################################
 PAGE_START
-# No stamp data found in the database for this country/series.
-# Please check your scraping run for errors or missing data.
+PAGE_TEXT_CENTRE (TN 10 "1902" 3.0)
+PAGE_TEXT_CENTRE_VSPACE (TN 10 "                   
+                      1902  
+                      King Edward VII  
+                  " 0.5)
+PAGE_TEXT_CENTRE_VSPACE (TN 10 "Perforation 14" 2.0)
+ROW_START_FS (TN 6 0.1 5.0)
+STAMP 1902 102 BG ½P bluish green false  200.0 240.0 102 
+STAMP 1902 102‑113    false Set   (* Stamp not included in this set) 200.0 240.0 102‑113 
+STAMP 1902 103 BG1 1P red false  200.0 240.0 103 
+STAMP 1902 103A* BG2 1P red false Perf: 15 x 14 200.0 240.0 103A* 
+STAMP 1902 104 BH 1½P purple/green false  200.0 240.0 104 
+STAMP 1902 105 BI 2P green/red false  200.0 240.0 105 
+STAMP 1902 106 BJ 2½P blue false  200.0 240.0 106 
+STAMP 1902 106A* BJ1 2½P blue false Perf: 15 x 14 200.0 240.0 106A* 
+STAMP 1902 107 BK 3P violet/yellow false  200.0 240.0 107 
+STAMP 1902 107A* BK1 3P violet/yellow false Perf: 15 x 14 200.0 240.0 107A* 
+STAMP 1902 108 BL 4P brown/green false  200.0 240.0 108 
+STAMP 1902 109 BM 5P violet/blue false  200.0 240.0 109 
+STAMP 1902 110 BG3 6P purple false  200.0 240.0 110 
+STAMP 1902 111 BN 9P blue/purple false  200.0 240.0 111 
+STAMP 1902 112 BO 10P red/purple false  200.0 240.0 112 
+STAMP 1902 113 BP 1Sh red/green false  200.0 240.0 113 
+STAMP 1902 114 BQ 2´6Sh´P purple false  200.0 240.0 114 
+STAMP 1902 114‑116    false  200.0 240.0 114‑116 
+STAMP 1902 115 BR 5Sh carmine false  200.0 240.0 115 
+STAMP 1902 116 BS 10Sh blue false  200.0 240.0 116 
+PAGE_TEXT_CENTRE_VSPACE (TN 10 "                   
+                      1904  
+                      King Edward VII  
+                  " 0.5)
+PAGE_TEXT_CENTRE_VSPACE (TN 10 "Perforation 14" 2.0)
+ROW_START_FS (TN 6 0.1 5.0)
+STAMP 1904 117 BT 1£ green false  200.0 240.0 117 
+PAGE_TEXT_CENTRE_VSPACE (TN 10 "                   
+                      1904 -1910 
+                      New Value and New Colours  
+                  " 0.5)
+PAGE_TEXT_CENTRE_VSPACE (TN 10 "Perforation 14" 2.0)
+ROW_START_FS (TN 6 0.1 5.0)
+STAMP 1904 118 BG4 ½P light green false  200.0 240.0 118 
+STAMP 1904 118A* BG5 ½P yellowish green false Perf: 15 x 14 200.0 240.0 118A* 
+STAMP 1904 118‑120    false Set   (* Stamp not included in this set) 200.0 240.0 118‑120 
+STAMP 1904 119 BL1 4P orange false  200.0 240.0 119 
+STAMP 1904 119A* BL2 4P orange false Perf: 15 x 14 200.0 240.0 119A* 
+STAMP 1904 120 BU 7P grey false  200.0 240.0 120 
