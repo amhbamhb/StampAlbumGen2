@@ -3,6 +3,9 @@ use std::env;
 use stamp_album_gen2::album_globals::OSType;
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
 
+mod db_utils;
+mod album_text_generator;
+
 fn get_operating_system_type() -> OSType {
     let os = env::consts::OS;
     match os {
@@ -108,9 +111,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         gen.save_stamp_data(&extract_file_name, &stamp_data, "stampworld");
         gen.create_album(&album_file_name, &stamp_data);
         println!("[DEBUG] Album creation complete.");
+        // After scraping is complete
+        let db_path = format!("{}/{}.db", album_directory, site_name.replace("/", "-"));
+        let country = site_name.clone();
+        let series = args[1].clone();
+        let album_text = album_text_generator::generate_album_text(&db_path, &country, &series);
+        std::fs::write("album_output.txt", album_text).expect("Failed to write album output");
         return Ok(());
     }
-    // ...existing code...
     // Placeholder for the rest of the logic
     // You will need to implement:
     // - get_file_source()

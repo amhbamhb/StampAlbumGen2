@@ -1,0 +1,41 @@
+use crate::db_utils::{init_db, get_stamps_by_country_series};
+
+pub fn generate_album_text(db_path: &str, country: &str, series: &str) -> String {
+    let conn = init_db(db_path).expect("Failed to open database");
+    let stamps = get_stamps_by_country_series(&conn, country, series).expect("Failed to query stamps");
+    let mut output = String::new();
+    output.push_str(&format!("################################################################################\n# {} - {}\n################################################################################\n\n", country, series));
+    // Add album settings (static for now)
+    output.push_str("ALBUM_PAGES_SIZE  (215.9 279.4)\nALBUM_PAGES_MARGINS  (15.0 10.0 10.0 10.0 )\nALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)\nALBUM_PAGES_TITLE (TB 18 \"Great Britain - Victoria\")\nALBUM_PAGES_SPACING (5.0 8.0)\nALBUM_STAMP_NEW_IMG_SETTING (6.0 6.0 true)\nROW_ALIGN_MIDDLE\nSTAMP_BOXES_SIZE_ADJUST (0)\n################################################################################\nPAGE_START\n");
+    if stamps.is_empty() {
+        output.push_str("# No stamp data found in the database for this country/series.\n");
+        output.push_str("# Please check your scraping run for errors or missing data.\n");
+        return output;
+    }
+    for (_id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context) in stamps {
+        output.push_str(&format!("ROW_START_FS (TN 6 0.1 5.0)\n"));
+        if !image_path.is_empty() {
+            output.push_str(&format!("STAMP_ADD_IMG (30.0 30.0 \"{}\" \"\" \"{}\" \"\")\n", image_path, description));
+        } else {
+            output.push_str(&format!("STAMP_ADD (30.0 30.0 \"Image\\nNot\\nAvailable\" \"\" \"{}\" \"\")\n", description));
+        }
+        // Add month, day, and perforation info as PAGE_TEXT_CENTRE_VSPACE
+        if month_num > 0 {
+            output.push_str(&format!("PAGE_TEXT_CENTRE (TN 10 \"Month: {} ({})\" 0.5)\n", month, month_num));
+        } else if !month.is_empty() {
+            output.push_str(&format!("PAGE_TEXT_CENTRE (TN 10 \"Month: {}\" 0.5)\n", month));
+        }
+        if !day.is_empty() {
+            output.push_str(&format!("PAGE_TEXT_CENTRE (TN 10 \"Day: {}\" 0.5)\n", day));
+        }
+        if !perforation.is_empty() {
+            output.push_str(&format!("PAGE_TEXT_CENTRE (TN 10 \"Perforation: {}\" 0.5)\n", perforation));
+        }
+        // Optionally add context info
+        if !context.is_empty() {
+            output.push_str(&format!("PAGE_TEXT_CENTRE (TN 10 \"{}\" 0.5)\n", context));
+        }
+        // Optionally: output.push_str(&format!("# Remote image: {}\n", remote_image_url));
+    }
+    output
+}

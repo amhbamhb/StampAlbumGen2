@@ -1,5 +1,6 @@
 // Stampworld data source handler
 use crate::album_globals::{ImageStatus};
+use crate::db_utils::{init_db, insert_stamp};
 
 pub fn collect_stampworld_data(
     sequencer: &mut i32,
@@ -19,6 +20,12 @@ pub fn collect_stampworld_data(
     let mut page_num = 1;
     let client = reqwest::blocking::Client::new();
     let mut reached_end_year = false;
+
+    // Initialize SQLite database in the album directory for the country
+    let country_db_name = _site_name.replace("/", "-");
+    let db_path = format!("{}/{}.db", _images_directory.replace("/images", ""), country_db_name);
+    let conn = crate::db_utils::init_db(&db_path).expect("Failed to initialize database");
+
     while !done {
         let url = format!("{}{}", base_url, page_num);
         println!("[DEBUG] Fetching Stampworld page: {}", url);
@@ -103,81 +110,177 @@ pub fn collect_stampworld_data(
             }
             // Table of stamps
             let table_selector = scraper::Selector::parse("tr.stamp_tr ").unwrap();
+            // Extract all block-level stamp images
+            let block_img_selector = scraper::Selector::parse("img").unwrap();
+            let block_images: Vec<String> = content_div
+                .select(&block_img_selector)
+                .filter_map(|img_elem| {
+                    if let Some(src) = img_elem.value().attr("src") {
+                        if src.contains("/media/catalogue/") {
+                            Some(if src.starts_with("http") {
+                                src.to_string()
+                            } else {
+                                format!("https://www.stampworld.com{}", src)
+                            })
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let mut img_index = 0;
             for tr in content_div.select(&table_selector) {
+                let th_selector = scraper::Selector::parse("th").unwrap();
+                let ths: Vec<_> = tr.select(&th_selector).collect();
                 let td_selector = scraper::Selector::parse("td").unwrap();
                 let tds: Vec<_> = tr.select(&td_selector).collect();
-                if tds.len() < 6 { continue; }
-                let stamp_id = tds[0].text().collect::<String>().trim().to_string();
-                // Try to extract year from the row, fallback to block year
+                if ths.is_empty() || tds.len() < 12 { continue; }
+                println!("[DEBUG] Raw stamp row HTML: {}", tr.html());
+                // Mapping based on provided example:
+                // th[0] = No. (sg_number)
+                // td[0] = Type
+                // td[1] = Denomination
+                // td[2] = (blank)
+                // td[3] = Color
+                // td[4] = Description
+                // td[5] = Stamps Issued
+                // td[6] = (blank)
+                // td[7] = Mint Condition
+                // td[8] = Unused
+                // td[9] = Used
+                // td[10] = Letter/FDC
+                // td[11] = Currency
+                let sg_number = ths[0].text().collect::<String>().trim().to_string();
+                let type_ = tds[0].text().collect::<String>().trim().to_string();
+                let denomination = tds[1].text().collect::<String>().trim().to_string();
+                let color = tds[3].text().collect::<String>().trim().to_string();
+                let description = tds[5].text().collect::<String>().trim().to_string(); // stamps_issued column is actually description
+                let stamps_issued = String::new(); // not present
+                let mint_condition = tds[7].text().collect::<String>().trim().to_string();
+                let unused = tds[9].text().collect::<String>().trim().to_string(); // used column is actually unused
+                let used = tds[10].text().collect::<String>().trim().to_string(); // letter_fdc column is actually used
+                let letter_fdc = String::new(); // not present
+                let mut currency = String::new();
+                for td in &tds {
+                    let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
+                    if td_text.contains("USD") {
+                        currency = "USD".to_string();
+                        println!("[DEBUG] Found currency cell: '{}', bytes: {:?}", td_text, td_text.as_bytes());
+                        break;
+                    }
+                }
+                println!("[DEBUG] FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
                 let year = block_year.clone();
-                // For filtering, use the start year from block_year (handle ranges)
                 let filter_year = if year.contains('-') {
                     year.split('-').next().unwrap_or("").trim().parse::<i32>().unwrap_or(0)
                 } else {
                     year.trim().parse::<i32>().unwrap_or(0)
                 };
                 if filter_year < start_year || filter_year > end_year { continue; }
-                // Extract image URL from img tag in the row
-                let img_selector = scraper::Selector::parse("img").unwrap();
-                let mut image_url = String::new();
-                for td in &tds {
-                    if let Some(img_elem) = td.select(&img_selector).next() {
-                        if let Some(src) = img_elem.value().attr("src") {
-                            if src.contains("/media/catalogue/") {
-                                image_url = if src.starts_with("http") {
-                                    src.to_string()
-                                } else {
-                                    format!("https://www.stampworld.com{}", src)
-                                };
-                                break;
-                            }
-                        }
-                    }
-                }
+                let image_url = if img_index < block_images.len() {
+                    let url = block_images[img_index].clone();
+                    img_index += 1;
+                    url
+                } else {
+                    String::new()
+                };
                 println!("[DEBUG] STAMP: year={} context_above='{}' context_details='{}' image_url='{}'", year, context_above, context_details, image_url);
                 let image_status = get_stampworld_image(&image_url, overwrite);
-                let value_text = tds[1].text().collect::<String>();
-                let mut split_idx = value_text.len();
-                for (i, c) in value_text.chars().rev().enumerate() {
-                    if !c.is_digit(10) && c != '\u{00bc}' && c != '\u{00bd}' && c != '\u{00be}' {
-                        split_idx = value_text.len() - i - 1;
+
+                // Month/Day extraction: look for patterns like "3. June" in details_vec
+                let mut month = String::new();
+                let mut day = String::new();
+                for detail in &details_vec {
+                    let re = regex::Regex::new(r"(\d{1,2})\.\s*([A-Za-z]+)").unwrap();
+                    if let Some(cap) = re.captures(detail) {
+                        day = cap.get(1).map_or("", |m| m.as_str()).to_string();
+                        month = cap.get(2).map_or("", |m| m.as_str()).to_string();
                         break;
                     }
                 }
-                let value_main = value_text[..split_idx + 1].to_string();
-                let value_rest = value_text[split_idx + 1..].trim().to_string();
-                let field14 = tds[5].text().collect::<String>();
-                let field17 = tds[3].text().collect::<String>();
-                let field18 = "0".to_string();
-                let field19 = "0".to_string();
-                let image_link = image_status.link;
-                let image_exists = image_status.exists;
-                let image_width = image_status.width.to_string();
-                let image_height = image_status.height.to_string();
-                let catalog_code = format!("Sw:{}", stamp_id);
-                *sequencer += 1;
-                let seq_str = format!("{:07}", *sequencer);
-                let stamp_line = format!(
-                    "STAMP{sep}{year}{sep}{desc}{sep}{context_above}{sep}{context_details}{sep}{seq}{sep}{field14}{sep}{value_main}{sep}{value_rest}{sep}{field17}{sep}{field18}{sep}{field19}{sep}{catalog_code}{sep}{image_link}{sep}{image_exists}{sep}{image_width}{sep}{image_height}",
-                    sep=separator,
-                    year=year,
-                    desc=desc,
-                    context_above=context_above,
-                    context_details=context_details,
-                    seq=seq_str,
-                    field14=field14,
-                    value_main=value_main,
-                    value_rest=value_rest,
-                    field17=field17,
-                    field18=field18,
-                    field19=field19,
-                    catalog_code=catalog_code,
-                    image_link=image_link,
-                    image_exists=image_exists,
-                    image_width=image_width,
-                    image_height=image_height,
+                if month.is_empty() {
+                    // fallback: try to find month name in details_vec
+                    for detail in &details_vec {
+                        for m in &["January","February","March","April","May","June","July","August","September","October","November","December"] {
+                            if detail.contains(m) {
+                                month = m.to_string();
+                                break;
+                            }
+                        }
+                        if !month.is_empty() { break; }
+                    }
+                }
+                // Extract watermark, design, engraving from details_vec
+                let mut watermark = String::new();
+                let mut design = String::new();
+                let mut engraving = String::new();
+                for detail in &details_vec {
+                    if detail.contains("Watermark:") {
+                        watermark = detail.split("Watermark:").nth(1).unwrap_or("").trim().to_string();
+                    }
+                    if detail.contains("Design:") {
+                        design = detail.split("Design:").nth(1).unwrap_or("").trim().to_string();
+                    }
+                    if detail.contains("Engraving:") {
+                        engraving = detail.split("Engraving:").nth(1).unwrap_or("").trim().to_string();
+                    }
+                }
+                println!("[DEBUG] EXTRACTED: watermark='{}' design='{}' engraving='{}'", watermark, design, engraving);
+
+                // Perforation extraction
+                let mut perforation = String::new();
+                for p in content_div.select(&p_selector) {
+                    let p_text = p.text().collect::<String>();
+                    if p_text.contains("Perforation:") {
+                        perforation = p_text.split("Perforation:").nth(1).unwrap_or("").trim().to_string();
+                        break;
+                    }
+                }
+
+                let local_image_path = if !image_url.is_empty() {
+                    let image_name = image_url.split('/').last().unwrap_or("");
+                    format!("images/{}", image_name)
+                } else {
+                    String::new()
+                };
+                let cleaned_context_details = context_details
+                    .lines()
+                    .filter(|line| !line.trim().is_empty() && line.trim() != "\u{200b}")
+                    .collect::<Vec<_>>()
+                    .join(" | ");
+
+                let result = crate::db_utils::insert_stamp(
+                    &conn,
+                    _site_name, // country
+                    &desc,      // series
+                    filter_year, // year as i32
+                    &month,     // month
+                    &day,       // day
+                    &sg_number,
+                    &type_,
+                    &denomination,
+                    &color,
+                    &description,
+                    &stamps_issued,
+                    &mint_condition,
+                    &unused,
+                    &used,
+                    &letter_fdc,
+                    &currency,
+                    &local_image_path,
+                    &image_url,
+                    &watermark,
+                    &design,
+                    &engraving,
+                    &perforation,
+                    &cleaned_context_details,
                 );
-                all_stamp_data.push(stamp_line);
+                match result {
+                    Ok(_) => println!("[DEBUG] Inserted stamp into DB: {} {} {}", _site_name, desc, filter_year),
+                    Err(e) => println!("[ERROR] Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, filter_year, e),
+                }
             }
         }
         let top_bar_selector = scraper::Selector::parse("#topBlueBarGroupsCatalogLabel").unwrap();
