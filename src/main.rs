@@ -86,9 +86,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("[DEBUG] Album file name: {}", album_file_name);
         println!("[DEBUG] Extract file name: {}", extract_file_name);
         // Parse startYear, endYear, overwrite from args
-        let mut start_year = 0;
-        let mut end_year = 9999;
-        let mut overwrite = false;
+        let start_year = 0;
+        let end_year = 9999;
+        let overwrite = false;
         for arg in &args[4..] { /* ...existing code... */ }
         // Ensure directories exist
         std::fs::create_dir_all(&images_directory).unwrap_or_else(|e| {

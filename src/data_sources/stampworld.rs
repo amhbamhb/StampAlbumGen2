@@ -1,6 +1,5 @@
 // Stampworld data source handler
 use crate::album_globals::{ImageStatus};
-use crate::db_utils::{init_db, insert_stamp};
 
 pub fn collect_stampworld_data(
     sequencer: &mut i32,
@@ -15,11 +14,11 @@ pub fn collect_stampworld_data(
     overwrite: bool,
 ) -> Vec<String> {
     println!("[DEBUG] collect_stampworld_data called with base_url: {}", base_url);
-    let mut all_stamp_data = Vec::new();
+    let all_stamp_data = Vec::new();
     let mut done = false;
     let mut page_num = 1;
     let client = reqwest::blocking::Client::new();
-    let mut reached_end_year = false;
+    let reached_end_year = false;
 
     // Initialize SQLite database in the album directory for the country
     let country_db_name = _site_name.replace("/", "-");
@@ -49,7 +48,7 @@ pub fn collect_stampworld_data(
         };
         let document = scraper::Html::parse_document(&body);
         let content_selector = scraper::Selector::parse("div.container-fluid.content_table").unwrap();
-        let mut all_block_years_past_end = true;
+        let all_block_years_past_end = true;
         for content_div in document.select(&content_selector) {
             // Improved context extraction: look for preceding header tags or text nodes
             let mut context_above = String::new();
