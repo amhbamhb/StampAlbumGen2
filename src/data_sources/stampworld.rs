@@ -49,7 +49,9 @@ pub fn collect_stampworld_data(
         let document = scraper::Html::parse_document(&body);
         let content_selector = scraper::Selector::parse("div.container-fluid.content_table").unwrap();
         let all_block_years_past_end = true;
-        for content_div in document.select(&content_selector) {
+        'block_loop: for content_div in document.select(&content_selector) {
+            let mut stop_scraping = false;
+            let mut all_stamps_past_end_year = true;
             // Improved context extraction: look for preceding header tags or text nodes
             let mut context_above = String::new();
             let mut context_details = String::new();
@@ -77,20 +79,16 @@ pub fn collect_stampworld_data(
             if !details_vec.is_empty() {
                 context_details = details_vec.join(" | ");
             }
-            // Extract year from block header
-            let year_month_day_elem = content_div.select(&scraper::Selector::parse("a[href]").unwrap()).next();
+            // Extract year from block header using .table_header a
+            let table_header_selector = scraper::Selector::parse(".table_header a").unwrap();
             let mut block_year = String::new();
             let mut desc = String::new();
-            if let Some(a_elem) = year_month_day_elem {
-                let text = a_elem.text().collect::<String>();
+            if let Some(header_a) = content_div.select(&table_header_selector).next() {
+                let text = header_a.text().collect::<String>();
+                println!("[DEBUG][stampworld] Raw block header HTML: {}", header_a.html());
                 desc = text.clone();
-                if text.len() > 4 && text.chars().nth(7).map(|c| !c.is_digit(10)).unwrap_or(false) {
-                    desc = text[5..].to_string();
-                }
-                // Extract year or year range from desc using regex
-                let desc_trimmed = desc.trim();
                 let year_regex = regex::Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap();
-                if let Some(caps) = year_regex.captures(desc_trimmed) {
+                if let Some(caps) = year_regex.captures(&desc) {
                     block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
                     if let Some(end_year_match) = caps.get(2) {
                         block_year = format!("{}-{}", block_year, end_year_match.as_str());
@@ -103,34 +101,23 @@ pub fn collect_stampworld_data(
             } else {
                 block_year.trim().parse::<i32>().unwrap_or(0)
             };
+               println!("[DEBUG][stampworld] Extracted block_year='{}', block_year_int={}", block_year, block_year_int);
             if block_year_int > end_year {
+                println!("[DEBUG][stampworld] Block year {} > endYear {}. Stopping scrape.", block_year_int, end_year);
                 done = true;
-                break;
+                break 'block_loop;
             }
-            // Table of stamps
-            let table_selector = scraper::Selector::parse("tr.stamp_tr ").unwrap();
-            // Extract all block-level stamp images
-            let block_img_selector = scraper::Selector::parse("img").unwrap();
-            let block_images: Vec<String> = content_div
-                .select(&block_img_selector)
-                .filter_map(|img_elem| {
-                    if let Some(src) = img_elem.value().attr("src") {
-                        if src.contains("/media/catalogue/") {
-                            Some(if src.starts_with("http") {
-                                src.to_string()
-                            } else {
-                                format!("https://www.stampworld.com{}", src)
-                            })
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    }
-                })
+            // Extract images from .images_container
+            let images_selector = scraper::Selector::parse(".images_container img").unwrap();
+            let images: Vec<String> = content_div.select(&images_selector)
+                .map(|img| img.value().attr("src").map(|src| if src.starts_with("http") { src.to_string() } else { format!("https://www.stampworld.com{}", src) }).unwrap_or_default())
                 .collect();
-            let mut img_index = 0;
+            // Table of stamps
+            let table_selector = scraper::Selector::parse("tr.stamp_tr").unwrap();
+            let mut stamp_row_count = 0;
+            let mut image_idx = 0;
             for tr in content_div.select(&table_selector) {
+                stamp_row_count += 1;
                 let th_selector = scraper::Selector::parse("th").unwrap();
                 let ths: Vec<_> = tr.select(&th_selector).collect();
                 let td_selector = scraper::Selector::parse("td").unwrap();
@@ -155,8 +142,8 @@ pub fn collect_stampworld_data(
                 let type_ = tds[0].text().collect::<String>().trim().to_string();
                 let denomination = tds[1].text().collect::<String>().trim().to_string();
                 let color = tds[3].text().collect::<String>().trim().to_string();
-                let description = tds[5].text().collect::<String>().trim().to_string(); // stamps_issued column is actually description
-                let stamps_issued = String::new(); // not present
+                let description = tds[5].text().collect::<String>().trim().to_string();
+                let stamps_issued = if tds.len() > 7 { tds[7].text().collect::<String>().trim().to_string() } else { String::new() };
                 let mint_condition = tds[7].text().collect::<String>().trim().to_string();
                 let unused = tds[9].text().collect::<String>().trim().to_string(); // used column is actually unused
                 let used = tds[10].text().collect::<String>().trim().to_string(); // letter_fdc column is actually used
@@ -170,23 +157,56 @@ pub fn collect_stampworld_data(
                         break;
                     }
                 }
-                println!("[DEBUG] FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
-                let year = block_year.clone();
-                let filter_year = if year.contains('-') {
-                    year.split('-').next().unwrap_or("").trim().parse::<i32>().unwrap_or(0)
-                } else {
-                    year.trim().parse::<i32>().unwrap_or(0)
-                };
-                if filter_year < start_year || filter_year > end_year { continue; }
-                let image_url = if img_index < block_images.len() {
-                    let url = block_images[img_index].clone();
-                    img_index += 1;
+                // Assign image from images list by order
+                let image_url = if image_idx < images.len() {
+                    let url = images[image_idx].clone();
+                    image_idx += 1;
                     url
                 } else {
                     String::new()
                 };
-                println!("[DEBUG] STAMP: year={} context_above='{}' context_details='{}' image_url='{}'", year, context_above, context_details, image_url);
-                let image_status = get_stampworld_image(&image_url, overwrite);
+                println!("[DEBUG][stampworld] STAMP_ROW: sg_number='{}' year='{}' image_url='{}'", sg_number, block_year, image_url);
+                println!("[DEBUG] FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
+                // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
+        // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
+        let mut stamp_year = block_year_int;
+        let year_re = regex::Regex::new(r"(19|20)\\d{2}").unwrap();
+        let mut found_stamp_year = false;
+        for idx in 0..tds.len() {
+            let text = tds[idx].text().collect::<String>();
+            if let Some(cap) = year_re.find(&text) {
+                stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
+                found_stamp_year = true;
+                break;
+            }
+        }
+                       if !found_stamp_year {
+            if let Some(cap) = year_re.find(&description) {
+                stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
+            }
+        }
+                        if stamp_year < start_year {
+                            println!("[DEBUG][stampworld] Skipping stamp: sg_number='{}' stamp_year={} (before startYear)", sg_number, stamp_year);
+                            continue;
+                        }
+                        if stamp_year > end_year {
+                            println!("[DEBUG][stampworld] Found stamp_year > endYear ({} > {}). Stopping scrape.", stamp_year, end_year);
+                            stop_scraping = true;
+                            done = true;
+                            break;
+                        }
+                        println!("[DEBUG][stampworld] STAMP: stamp_year={} context_above='{}' context_details='{}' image_url='{}'", stamp_year, context_above, context_details, image_url);
+                        // Only download image if stamp_year is within range
+                        if image_url.is_empty() {
+                            println!("[DEBUG][stampworld] Skipping image download: image_url is empty");
+                        } else if stamp_year >= start_year && stamp_year <= end_year {
+                            println!("[DEBUG][stampworld] Attempting image download: image_url='{}'", image_url);
+                            let image_status = get_stampworld_image(&image_url, overwrite);
+                            println!("[DEBUG][stampworld] Image download result: {:?}", image_status);
+                        } else {
+                            println!("[DEBUG][stampworld] Skipping image download: stamp_year {} not in range {}-{}", stamp_year, start_year, end_year);
+                        }
+
 
                 // Month/Day extraction: look for patterns like "3. June" in details_vec
                 let mut month = String::new();
@@ -219,6 +239,13 @@ pub fn collect_stampworld_data(
                     if detail.contains("Watermark:") {
                         watermark = detail.split("Watermark:").nth(1).unwrap_or("").trim().to_string();
                     }
+                    if detail.contains("WM") {
+                        // Try to extract watermark from 'WM' pattern
+                        let wm_re = regex::Regex::new(r"WM[:\s]+([A-Za-z0-9 ]+)").unwrap();
+                        if let Some(cap) = wm_re.captures(detail) {
+                            watermark = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                        }
+                    }
                     if detail.contains("Design:") {
                         design = detail.split("Design:").nth(1).unwrap_or("").trim().to_string();
                     }
@@ -244,17 +271,19 @@ pub fn collect_stampworld_data(
                 } else {
                     String::new()
                 };
+                let remote_image_url = image_url.clone();
                 let cleaned_context_details = context_details
                     .lines()
                     .filter(|line| !line.trim().is_empty() && line.trim() != "\u{200b}")
                     .collect::<Vec<_>>()
                     .join(" | ");
 
+                println!("[DEBUG][stampworld] PRE-INSERT: sg_number='{}' year='{}' image_path='{}' remote_image_url='{}' watermark='{}' stamps_issued='{}'", sg_number, stamp_year, local_image_path, remote_image_url, watermark, stamps_issued);
                 let result = crate::db_utils::insert_stamp(
                     &conn,
                     _site_name, // country
                     &desc,      // series
-                    filter_year, // year as i32
+                    stamp_year, // year as i32
                     &month,     // month
                     &day,       // day
                     &sg_number,
@@ -269,7 +298,7 @@ pub fn collect_stampworld_data(
                     &letter_fdc,
                     &currency,
                     &local_image_path,
-                    &image_url,
+                    &remote_image_url,
                     &watermark,
                     &design,
                     &engraving,
@@ -277,10 +306,18 @@ pub fn collect_stampworld_data(
                     &cleaned_context_details,
                 );
                 match result {
-                    Ok(_) => println!("[DEBUG] Inserted stamp into DB: {} {} {}", _site_name, desc, filter_year),
-                    Err(e) => println!("[ERROR] Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, filter_year, e),
+                    Ok(_) => println!("[DEBUG] Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year),
+                    Err(e) => println!("[ERROR] Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, stamp_year, e),
                 }
             }
+            println!("[DEBUG][stampworld] Processed {} stamp rows in this block.", stamp_row_count);
+               println!("[DEBUG][stampworld] About to check stop_scraping: stop_scraping={}", stop_scraping);
+               if stop_scraping {
+                   println!("[DEBUG][stampworld] Stopping further page fetches due to stamp_year > endYear.");
+                   break 'block_loop;
+               }
+               println!("[DEBUG][stampworld] Finished stop_scraping check for this block.");
+            // End of for content_div
         }
         let top_bar_selector = scraper::Selector::parse("#topBlueBarGroupsCatalogLabel").unwrap();
         let mut last_page = false;
@@ -300,14 +337,12 @@ pub fn collect_stampworld_data(
             } else {
                 last_page = true;
             }
-        } else {
-            last_page = true;
         }
         if last_page {
             done = true;
         } else {
             page_num += 1;
         }
-    }
+    } // End of while !done
     all_stamp_data
 }

@@ -1,10 +1,13 @@
+use indicatif::{ProgressBar, ProgressStyle};
 // Main entry point for StampAlbumGen2
+
 use std::env;
 use stamp_album_gen2::album_globals::OSType;
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
+use flexi_logger::{Logger, Duplicate, FileSpec};
 
 mod db_utils;
-mod album_text_generator;
+// mod album_text_generator;
 
 fn get_operating_system_type() -> OSType {
     let os = env::consts::OS;
@@ -20,6 +23,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().skip(1).collect();
 
     let detected_os = get_operating_system_type();
+    // If RUST_LOG=debug, log to file and terminal; else, just terminal
+    let log_level = std::env::var("RUST_LOG").unwrap_or_default();
+    if log_level == "debug" {
+        Logger::try_with_str("debug")?
+            .log_to_file(FileSpec::default())
+            .duplicate_to_stderr(Duplicate::Debug)
+            .start()?;
+    } else {
+        Logger::try_with_env_or_str("info")?
+            .log_to_stderr()
+            .start()?;
+    }
     if detected_os != OSType::Windows && detected_os != OSType::MacOS && detected_os != OSType::Linux {
         println!("Unsupported operating system");
         std::process::exit(1);
@@ -33,8 +48,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let db_path = &args[1];
         let album_name = &args[2];
+        let pb = ProgressBar::new_spinner();
+        pb.set_style(ProgressStyle::default_spinner()
+            .template("{spinner} Generating AlbumEasy output... {msg}").unwrap());
+        pb.enable_steady_tick(std::time::Duration::from_millis(100));
+        pb.set_message(format!("for album '{}', please wait...", album_name));
         stamp_album_gen2::album_globals::generate_album_output(db_path, album_name);
-        println!("[DEBUG] AlbumEasy output generated from DB only.");
+        pb.finish_with_message("AlbumEasy output generated from DB.");
         return Ok(());
     }
 

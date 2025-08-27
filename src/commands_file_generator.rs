@@ -1,3 +1,4 @@
+use log::{debug, error, warn};
 use std::io::Write;
 use crate::album_globals;
 use crate::album_globals::{SeriesInfo, ImageStatus};
@@ -13,18 +14,18 @@ pub fn get_colnect_image(images_directory: &str, url: &str, name: &str) -> Image
 /// Stub for get_image, to be implemented
 pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
     // Debug: Show the process of accessing the external website and getting the image
-    println!("[DEBUG] Attempting to fetch image from URL: {}", _url);
-    println!("[DEBUG] Image will be saved as: {}", _file_path);
+    debug!("Attempting to fetch image from URL: {}", _url);
+    debug!("Image will be saved as: {}", _file_path);
     // Example: Use reqwest to fetch the image
     match reqwest::blocking::get(_url) {
         Ok(resp) => {
-            println!("[DEBUG] HTTP status: {}", resp.status());
+            debug!("HTTP status: {}", resp.status());
             if resp.status().is_success() {
                 match resp.bytes() {
                     Ok(bytes) => {
                         match std::fs::write(_file_path, &bytes) {
-                            Ok(_) => println!("[DEBUG] Image saved successfully."),
-                            Err(e) => println!("[DEBUG] Failed to save image: {}", e),
+                            Ok(_) => debug!("Image saved successfully."),
+                            Err(e) => error!("Failed to save image: {}", e),
                         }
                         ImageStatus {
                             link: _url.to_string(),
@@ -34,7 +35,7 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
                         }
                     }
                     Err(e) => {
-                        println!("[DEBUG] Failed to read image bytes: {}", e);
+                        error!("Failed to read image bytes: {}", e);
                         ImageStatus {
                             link: _url.to_string(),
                             exists: false,
@@ -44,7 +45,7 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
                     }
                 }
             } else {
-                println!("[DEBUG] HTTP request failed with status: {}", resp.status());
+                error!("HTTP request failed with status: {}", resp.status());
                 ImageStatus {
                     link: _url.to_string(),
                     exists: false,
@@ -54,7 +55,7 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
             }
         }
         Err(e) => {
-            println!("[DEBUG] HTTP request error: {}", e);
+            error!("HTTP request error: {}", e);
             ImageStatus {
                 link: _url.to_string(),
                 exists: false,
@@ -124,7 +125,7 @@ impl CommandsFileGenerator {
         let image_name = url.split('/').last().unwrap_or("stampworld.jpg");
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
-            println!("[DEBUG] Skipping download, file exists: {}", file_path);
+            debug!("Skipping download, file exists: {}", file_path);
             return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
         }
         self.get_image(url, image_name, &file_path)
@@ -215,7 +216,7 @@ impl CommandsFileGenerator {
         let file = match File::create(path) {
             Ok(f) => f,
             Err(e) => {
-                println!("Unable to open output file: {}", e);
+                error!("Unable to open output file: {}", e);
                 std::process::exit(1);
             }
         };
@@ -419,27 +420,27 @@ impl CommandsFileGenerator {
             Ok(f) => {
                 let mut writer = BufWriter::new(f);
                 if let Err(e) = writeln!(writer, "SOURCE:{}", self.data_source) {
-                    println!("Unable to write source line: {}", e);
+                    error!("Unable to write source line: {}", e);
                 }
                 for line in data {
                     if let Err(e) = writeln!(writer, "{}", line) {
-                        println!("Unable to write stamp data: {}", e);
+                        error!("Unable to write stamp data: {}", e);
                     }
                 }
                 // Set file to read-only
                 if let Err(e) = writer.flush() {
-                    println!("Unable to flush file: {}", e);
+                    error!("Unable to flush file: {}", e);
                 }
                 if let Ok(metadata) = fs::metadata(path) {
                     let mut perms = metadata.permissions();
                     perms.set_mode(0o444); // read-only for all
                     if let Err(e) = fs::set_permissions(path, perms) {
-                        println!("Unable to set file to read-only: {}", e);
+                        error!("Unable to set file to read-only: {}", e);
                     }
                 }
             }
             Err(e) => {
-                println!("Unable to save extract file ... continuing: {}", e);
+                error!("Unable to save extract file ... continuing: {}", e);
                 println!("Would you like to overwrite the file? (y/n)");
                 use std::io::{self, Write};
                 let mut input = String::new();
@@ -449,7 +450,7 @@ impl CommandsFileGenerator {
                     if let Ok(_) = fs::remove_file(path) {
                         self.save_stamp_data(path, data, _source);
                     } else {
-                        println!("Failed to remove file for overwrite.");
+                        error!("Failed to remove file for overwrite.");
                     }
                 }
             }
@@ -475,7 +476,7 @@ impl CommandsFileGenerator {
             .args(&curl_cmd[1..])
             .status();
         if let Err(e) = status {
-            println!("Error executing curl for imageURL: {}", e);
+            error!("Error executing curl for imageURL: {}", e);
             std::process::exit(1);
         }
         // Read image dimensions
@@ -487,12 +488,12 @@ impl CommandsFileGenerator {
                     height = img.height() as i32;
                 }
                 Err(e) => {
-                    println!("Error decoding image: {}", e);
+                    error!("Error decoding image: {}", e);
                     exists = false;
                 }
             },
             Err(e) => {
-                println!("Error opening image file: {}", e);
+                error!("Error opening image file: {}", e);
                 exists = false;
             }
         }

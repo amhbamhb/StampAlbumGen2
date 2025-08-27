@@ -30,7 +30,7 @@ pub struct SeriesStub {
 
 // Returns a list of stamps for a given series and year
 pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &str) -> rusqlite::Result<Vec<StampStub>> {
-    let mut stmt = conn.prepare("SELECT year, sg_number, type, denomination, color, 0, description, sg_number, '', image_path FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
+    let mut stmt = conn.prepare("SELECT year, sg_number, type, denomination, color, 0, description, sg_number, '', image_path, watermark, design, engraving FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
     let stamp_iter = stmt.query_map([series, year], |row| {
             let multi_perf_int: i32 = row.get(5)?;
             Ok(StampStub {
@@ -44,6 +44,9 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
                 catalog_num: row.get(7)?,
                 field4: row.get(8)?,
                 image_path: row.get(9)?,
+                watermark: row.get(10)?,
+                design: row.get(11)?,
+                engraving: row.get(12)?,
             })
     })?;
     let mut result = Vec::new();
@@ -65,12 +68,16 @@ pub struct StampStub {
     pub catalog_num: String,
     pub field4: String,
     pub image_path: String,
+    pub watermark: String,
+    pub design: String,
+    pub engraving: String,
 }
 use rusqlite::{params, Connection, Result};
+use log::{debug, info, error};
 
 pub fn init_db(db_path: &str) -> Result<Connection> {
     let conn = Connection::open(db_path)?;
-    eprintln!("[DEBUG] Opened database at {}", db_path);
+    debug!("Opened database at {}", db_path);
     // Always create the table first
     conn.execute(
         "CREATE TABLE IF NOT EXISTS stamps (
@@ -112,7 +119,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 let name: String = row.get(1)?;
                 col_names.push(name);
             }
-            eprintln!("[DEBUG] Stamps table columns after creation: {:?} (count: {})", col_names, col_names.len());
+            // eprintln!("[DEBUG] Stamps table columns after creation: {:?} (count: {})", col_names, col_names.len());
         }
     }
     // Now check column count and drop/recreate if needed
@@ -128,14 +135,14 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 col_names.push(name.clone());
                 col_count += 1;
             }
-            eprintln!("[DEBUG] Stamps table columns before possible drop: {:?} (count: {})", col_names, col_count);
+            debug!("Stamps table columns before possible drop: {:?} (count: {})", col_names, col_count);
             if col_count > 0 && col_count != 25 {
                 needs_recreate = true;
             }
         }
     }
     if needs_recreate {
-        eprintln!("[DEBUG] Dropping outdated stamps table ({} columns)...", col_count);
+        debug!("Dropping outdated stamps table ({} columns)...", col_count);
         conn.execute("DROP TABLE IF EXISTS stamps", [])?;
         conn.execute(
             "CREATE TABLE IF NOT EXISTS stamps (
@@ -167,7 +174,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             )",
             [],
         )?;
-        eprintln!("[DEBUG] Stamps table recreated.");
+            debug!("Stamps table recreated.");
         // Print column names and count after recreation
         let pragma = conn.prepare("PRAGMA table_info(stamps)");
         if let Ok(mut stmt) = pragma {
@@ -177,15 +184,19 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 let name: String = row.get(1)?;
                 col_names.push(name);
             }
-            eprintln!("[DEBUG] Stamps table columns after recreation: {:?} (count: {})", col_names, col_names.len());
+                debug!("Stamps table columns after recreation: {:?} (count: {})", col_names, col_names.len());
         }
     }
-    eprintln!("[DEBUG] Stamps table ensured.");
+    // Set this to true to enable debug output, false to disable
+    const DEBUG: bool = true;
+    if DEBUG {
+            debug!("Stamps table ensured.");
+    }
     Ok(conn)
 }
 
 pub fn create_stamps_table(conn: &Connection) -> Result<()> {
-    eprintln!("[DEBUG] Ensuring stamps table exists...");
+        debug!("Ensuring stamps table exists...");
     conn.execute(
         "CREATE TABLE IF NOT EXISTS stamps (
             id INTEGER PRIMARY KEY,
@@ -216,7 +227,7 @@ pub fn create_stamps_table(conn: &Connection) -> Result<()> {
         )",
         [],
     )?;
-    eprintln!("[DEBUG] Stamps table ensured.");
+        debug!("Stamps table ensured.");
     Ok(())
 }
 
@@ -246,7 +257,7 @@ pub fn insert_stamp(
     perforation: &str,
     context: &str,
 ) -> Result<()> {
-    eprintln!("[DEBUG][insert_stamp] --- STAMP INSERT ATTEMPT ---");
+        debug!("--- STAMP INSERT ATTEMPT ---");
     eprintln!("[DEBUG][insert_stamp] country='{}'", country);
     eprintln!("[DEBUG][insert_stamp] series='{}'", series);
     eprintln!("[DEBUG][insert_stamp] year={}", year);
@@ -305,25 +316,25 @@ pub fn insert_stamp(
     let params_vec = vec![
         country.to_string(), series.to_string(), year.to_string(), month_clean.to_string(), month_num.to_string(), day.to_string(), sg_number.to_string(), type_.to_string(), denomination.to_string(), color.to_string(), description.to_string(), stamps_issued.to_string(), mint_condition.to_string(), unused.to_string(), used.to_string(), letter_fdc.to_string(), currency.to_string(), image_path.to_string(), remote_image_url.to_string(), watermark.to_string(), design.to_string(), engraving.to_string(), perforation.to_string(), context.to_string()
     ];
-    eprintln!("[DEBUG][insert_stamp] SQL: {}", sql);
-    eprintln!("[DEBUG][insert_stamp] Params: {:?}", params_vec);
+        debug!("SQL: {}", sql);
+        debug!("Params: {:?}", params_vec);
     let mut attempts = 0;
     let mut last_error = None;
     loop {
         attempts += 1;
         match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, watermark, design, engraving, perforation, context]) {
             Ok(_) => {
-                eprintln!("[DEBUG][insert_stamp] Insert succeeded on attempt {}", attempts);
+                    debug!("Insert succeeded on attempt {}", attempts);
                 break;
             }
             Err(e) => {
-                eprintln!("[ERROR][insert_stamp] Insert failed on attempt {}: {}", attempts, e);
+                    error!("Insert failed on attempt {}: {}", attempts, e);
                 last_error = Some(e);
                 if attempts >= 2 {
-                    eprintln!("[ERROR][insert_stamp] Giving up after {} attempts. Params: {:?}", attempts, params_vec);
+                        error!("Giving up after {} attempts. Params: {:?}", attempts, params_vec);
                     break;
                 } else {
-                    eprintln!("[DEBUG][insert_stamp] Retrying insert...");
+                        debug!("Retrying insert...");
                 }
             }
         }
