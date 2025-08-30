@@ -182,7 +182,7 @@ where
         // Group stamps into rows of 5
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
         let mut row: Vec<Stamp> = Vec::new();
-        let mut row_width = 0.0;
+        // let mut row_width = 0.0;
         for stamp in stamp_objs.into_iter() {
             let image_path = stamp.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
@@ -191,17 +191,25 @@ where
             let est_width_mm = raw_width_mm as f64 / 10.0;
             let margin = 2.0f64; // margin between stamps (mm)
             let page_width = 216.0f64; // US Letter width in mm
-            let left_margin = 10.0f64;
-            let right_margin = 10.0f64;
+            let left_margin = 18.0f64;
+            let right_margin = 18.0f64;
             let usable_width = page_width - left_margin - right_margin - (border_outer + border_inner1 + border_inner2 + border_spacing);
-            if row_width + est_width_mm + margin > usable_width || row.len() == 4 {
+            // Accumulate row width as stamps are added
+            let mut row_width: f64 = row.iter().map(|s| {
+                let img_path = s.image_path.trim();
+                let full_img_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), img_path);
+                let (w_mm, _) = estimate_real_dimensions(&full_img_path, mm_per_pixel_w, mm_per_pixel_h)
+                    .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
+                w_mm as f64 / 10.0 + margin
+            }).sum();
+            // If adding this stamp would exceed usable width or row has 5 stamps, start a new row before adding
+            if row.len() == 5 || row_width + est_width_mm + margin > usable_width {
                 if !row.is_empty() {
                     stamp_rows.push(row);
                 }
                 row = Vec::new();
-                row_width = 0.0;
+                // row_width = 0.0;
             }
-            row_width += est_width_mm + margin;
             row.push(stamp);
         }
         if !row.is_empty() {
@@ -461,7 +469,7 @@ where
                 rows_on_page = 0;
                 continue; // re-check header on next loop
             }
-            let _ = writeln!(output, "ROW_START_FS (TN 6 0.1 5.0)");
+            let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
             for stamp in stamps_in_row {
                 let image_path = stamp.image_path.trim();
                 let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
