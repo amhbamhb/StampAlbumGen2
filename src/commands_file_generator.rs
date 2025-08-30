@@ -1,4 +1,5 @@
 use log::{debug, error, warn};
+use log::{info}; // Added info macro for logging
 use std::io::Write;
 use crate::album_globals;
 use crate::album_globals::{SeriesInfo, ImageStatus};
@@ -156,7 +157,7 @@ impl CommandsFileGenerator {
             let image_name = url.split('/').last().unwrap_or("stampworld.jpg");
             let file_path = format!("{}/{}", images_directory, image_name);
             if !overwrite && std::path::Path::new(&file_path).exists() {
-                println!("[DEBUG] Skipping download, file exists: {}", file_path);
+                debug!("Skipping download, file exists: {}", file_path);
                 return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
             }
             get_image(url, image_name, &file_path)
@@ -441,7 +442,7 @@ impl CommandsFileGenerator {
             }
             Err(e) => {
                 error!("Unable to save extract file ... continuing: {}", e);
-                println!("Would you like to overwrite the file? (y/n)");
+                info!("Would you like to overwrite the file? (y/n)");
                 use std::io::{self, Write};
                 let mut input = String::new();
                 io::stdout().flush().unwrap();

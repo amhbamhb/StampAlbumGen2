@@ -1,0 +1,30 @@
+# Stamp Album Generator Configuration File
+#
+# Edit this file to customize the output layout, sizing, and other options for AlbumEasy generation.
+# All values are optional; defaults will be used if not specified.
+#
+# --- Stamp Box Sizing ---
+# Height of each stamp box in millimeters
+stamp_box_height = 24.0
+
+# --- Row Font Spacing ---
+# Vertical spacing between rows of stamps (mm)
+row_font_spacing = 5.0
+
+# --- Header Font Spacing ---
+# Vertical spacing for header text (mm)
+header_font_spacing = 3.0
+
+# --- Reference Page Size ---
+# Reference width of the album page (mm)
+reference_width_mm = 200.0
+# Reference height of the album page (mm)
+reference_height_mm = 240.0
+
+# --- Additional Options ---
+# Add more configuration options below as needed.
+# For example:
+# margin_top_mm = 10.0
+# margin_bottom_mm = 10.0
+# font_family = "Arial"
+# debug_mode = false

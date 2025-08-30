@@ -1,3 +1,4 @@
+mod config;
 pub mod data_sources;
 // Main library file for StampAlbumGen2
 // External crates

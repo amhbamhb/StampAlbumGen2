@@ -1,10 +1,10 @@
 use indicatif::{ProgressBar, ProgressStyle};
 // Main entry point for StampAlbumGen2
 
-use std::env;
+use flexi_logger::{Duplicate, FileSpec, Logger};
 use stamp_album_gen2::album_globals::OSType;
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
-use flexi_logger::{Logger, Duplicate, FileSpec};
+use std::env;
 
 mod db_utils;
 // mod album_text_generator;
@@ -35,7 +35,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .log_to_stderr()
             .start()?;
     }
-    if detected_os != OSType::Windows && detected_os != OSType::MacOS && detected_os != OSType::Linux {
+    if detected_os != OSType::Windows
+        && detected_os != OSType::MacOS
+        && detected_os != OSType::Linux
+    {
         println!("Unsupported operating system");
         std::process::exit(1);
     }
@@ -49,12 +52,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let db_path = &args[1];
         let album_name = &args[2];
         let pb = ProgressBar::new_spinner();
-        pb.set_style(ProgressStyle::default_spinner()
-            .template("{spinner} Generating AlbumEasy output... {msg}").unwrap());
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("{spinner} Generating AlbumEasy output... {msg}")
+                .unwrap(),
+        );
         pb.enable_steady_tick(std::time::Duration::from_millis(100));
         pb.set_message(format!("for album '{}', please wait...", album_name));
-        stamp_album_gen2::album_globals::generate_album_output(db_path, album_name);
-        pb.finish_with_message("AlbumEasy output generated from DB.");
+        let mut last_page = 0;
+        stamp_album_gen2::album_globals::generate_album_output::<Box<dyn FnMut(usize)>>(
+            db_path,
+            album_name,
+            Some(Box::new(|page| {
+                last_page = page;
+                pb.set_message(format!(
+                    "for album '{}', generating page {}",
+                    album_name, page
+                ));
+            })),
+        );
+        pb.finish_with_message(format!(
+            "AlbumEasy output generated from existing data '{}'. Total pages: {}",
+            album_name, last_page
+        ));
+        pb.finish_with_message(format!(
+            "AlbumEasy output generated from existing data {}",
+            album_name
+        ));
         return Ok(());
     }
 
@@ -64,7 +88,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         println!("USAGE2 : cargo run -- colnectexport <album name> <export file path> [options]");
         println!("EXAMPLE: cargo run -- colnectexport \"United Nations New York\" UN_New_York_export.csv");
         println!("USAGE3 : cargo run -- extractfile <album name> <extract file path> [options]");
-        println!("EXAMPLE: cargo run -- extractfile \"United Nations New York\" UN_New_York_export.txt");
+        println!(
+            "EXAMPLE: cargo run -- extractfile \"United Nations New York\" UN_New_York_export.txt"
+        );
         println!("USAGE4 : cargo run -- output-only <db_path> <album_name>");
         println!("EXAMPLE: cargo run -- output-only Albums/Great-Britain/Great-Britain.db \"Great Britain - 4 Kings\"");
         std::process::exit(1);
@@ -74,7 +100,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let valid_sources = ["stampworld", "touchstamps", "extractfile", "colnectexport"];
-    if !valid_sources.iter().any(|s| s.eq_ignore_ascii_case(&args[0])) {
+    if !valid_sources
+        .iter()
+        .any(|s| s.eq_ignore_ascii_case(&args[0]))
+    {
         println!("Valid sources are stampworld, touchstamps, extractfile, and colnectexport");
         std::process::exit(1);
     }
@@ -82,7 +111,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("[DEBUG] Args: {:?}", args);
     println!("[DEBUG] Detected OS: {:?}", detected_os);
     // Test image fetch
-    let test_url = "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png";
+    let test_url =
+        "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png";
     let test_name = "test_image";
     let test_path = "test_image.png";
     let _ = stamp_album_gen2::commands_file_generator::get_image(test_url, test_name, test_path);
@@ -92,12 +122,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args[0].eq_ignore_ascii_case("stampworld") {
         if args.len() < 3 {
             std::process::exit(1);
-        } else if args.len() < 4 { /* ...existing code... */ }
+        } else if args.len() < 4 { /* ...existing code... */
+        }
         let site_name = &args[2];
         let album_directory = format!("{}/{}", &args[3], site_name.replace("/", "-"));
         let images_directory = format!("{}/images", album_directory);
         let album_file_name = format!("{}/{}.txt", album_directory, args[1].replace(" ", "_"));
-        let extract_file_name = format!("{}/{}_extract.txt", album_directory, site_name.replace("/", "-"));
+        let extract_file_name = format!(
+            "{}/{}_extract.txt",
+            album_directory,
+            site_name.replace("/", "-")
+        );
         let catalog_name = "Sw";
         let base_url = format!("https://www.stampworld.com/en/stamps/{}/?page=", site_name);
         println!("[DEBUG] Stampworld base URL: {}", base_url);
@@ -126,14 +161,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         gen.start_year = start_year;
         gen.end_year = end_year;
         let stamp_data = gen.collect_stampworld_data(&base_url, overwrite);
-        println!("[DEBUG] Stampworld data collected: {} entries", stamp_data.len());
+        println!(
+            "[DEBUG] Stampworld data collected: {} entries",
+            stamp_data.len()
+        );
         gen.save_stamp_data(&extract_file_name, &stamp_data, "stampworld");
         gen.create_album(&album_file_name, &stamp_data);
         println!("[DEBUG] Album creation complete.");
         // After scraping is complete, generate AlbumEasy output from DB
         let db_path = format!("{}/{}.db", album_directory, site_name.replace("/", "-"));
         let album_name = args[1].clone();
-        stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name);
+        stamp_album_gen2::album_globals::generate_album_output::<fn(usize)>(&db_path, &album_name, None);
         println!("[DEBUG] AlbumEasy output generated from DB after scraping.");
     }
     // Placeholder for the rest of the logic

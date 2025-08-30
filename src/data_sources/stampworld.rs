@@ -1,4 +1,5 @@
 // Stampworld data source handler
+use log::{debug, info, error};
 use crate::album_globals::{ImageStatus};
 
 pub fn collect_stampworld_data(
@@ -13,7 +14,7 @@ pub fn collect_stampworld_data(
     end_year: i32,
     overwrite: bool,
 ) -> Vec<String> {
-    println!("[DEBUG] collect_stampworld_data called with base_url: {}", base_url);
+    debug!("collect_stampworld_data called with base_url: {}", base_url);
     let all_stamp_data = Vec::new();
     let mut done = false;
     let mut page_num = 1;
@@ -27,14 +28,14 @@ pub fn collect_stampworld_data(
 
     while !done {
         let url = format!("{}{}", base_url, page_num);
-        println!("[DEBUG] Fetching Stampworld page: {}", url);
+    debug!("Fetching Stampworld page: {}", url);
         let resp = match client.get(&url).timeout(std::time::Duration::from_secs(60)).send() {
             Ok(r) => r,
             Err(e) => {
                 if page_num == 1 {
-                    println!("Please check that you have entered the correct site country name");
+                    error!("Please check that you have entered the correct site country name");
                 } else {
-                    println!("Problem retrieving web page: {}", e);
+                    error!("Problem retrieving web page: {}", e);
                 }
                 std::process::exit(1);
             }
@@ -42,7 +43,7 @@ pub fn collect_stampworld_data(
         let body = match resp.text() {
             Ok(b) => b,
             Err(e) => {
-                println!("Problem retrieving web page text: {}", e);
+                error!("Problem retrieving web page text: {}", e);
                 std::process::exit(1);
             }
         };
@@ -85,7 +86,7 @@ pub fn collect_stampworld_data(
             let mut desc = String::new();
             if let Some(header_a) = content_div.select(&table_header_selector).next() {
                 let text = header_a.text().collect::<String>();
-                println!("[DEBUG][stampworld] Raw block header HTML: {}", header_a.html());
+                debug!("[stampworld] Raw block header HTML: {}", header_a.html());
                 desc = text.clone();
                 let year_regex = regex::Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap();
                 if let Some(caps) = year_regex.captures(&desc) {
@@ -101,9 +102,9 @@ pub fn collect_stampworld_data(
             } else {
                 block_year.trim().parse::<i32>().unwrap_or(0)
             };
-               println!("[DEBUG][stampworld] Extracted block_year='{}', block_year_int={}", block_year, block_year_int);
+               debug!("[stampworld] Extracted block_year='{}', block_year_int={}", block_year, block_year_int);
             if block_year_int > end_year {
-                println!("[DEBUG][stampworld] Block year {} > endYear {}. Stopping scrape.", block_year_int, end_year);
+                debug!("[stampworld] Block year {} > endYear {}. Stopping scrape.", block_year_int, end_year);
                 done = true;
                 break 'block_loop;
             }
@@ -123,7 +124,7 @@ pub fn collect_stampworld_data(
                 let td_selector = scraper::Selector::parse("td").unwrap();
                 let tds: Vec<_> = tr.select(&td_selector).collect();
                 if ths.is_empty() || tds.len() < 12 { continue; }
-                println!("[DEBUG] Raw stamp row HTML: {}", tr.html());
+                debug!("Raw stamp row HTML: {}", tr.html());
                 // Mapping based on provided example:
                 // th[0] = No. (sg_number)
                 // td[0] = Type
@@ -153,7 +154,7 @@ pub fn collect_stampworld_data(
                     let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
                     if td_text.contains("USD") {
                         currency = "USD".to_string();
-                        println!("[DEBUG] Found currency cell: '{}', bytes: {:?}", td_text, td_text.as_bytes());
+                        debug!("Found currency cell: '{}', bytes: {:?}", td_text, td_text.as_bytes());
                         break;
                     }
                 }
@@ -165,8 +166,8 @@ pub fn collect_stampworld_data(
                 } else {
                     String::new()
                 };
-                println!("[DEBUG][stampworld] STAMP_ROW: sg_number='{}' year='{}' image_url='{}'", sg_number, block_year, image_url);
-                println!("[DEBUG] FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
+                debug!("[stampworld] STAMP_ROW: sg_number='{}' year='{}' image_url='{}'", sg_number, block_year, image_url);
+                debug!("FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
                 // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
         // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
         let mut stamp_year = block_year_int;
@@ -186,25 +187,25 @@ pub fn collect_stampworld_data(
             }
         }
                         if stamp_year < start_year {
-                            println!("[DEBUG][stampworld] Skipping stamp: sg_number='{}' stamp_year={} (before startYear)", sg_number, stamp_year);
+                            debug!("[stampworld] Skipping stamp: sg_number='{}' stamp_year={} (before startYear)", sg_number, stamp_year);
                             continue;
                         }
                         if stamp_year > end_year {
-                            println!("[DEBUG][stampworld] Found stamp_year > endYear ({} > {}). Stopping scrape.", stamp_year, end_year);
+                            debug!("[stampworld] Found stamp_year > endYear ({} > {}). Stopping scrape.", stamp_year, end_year);
                             stop_scraping = true;
                             done = true;
                             break;
                         }
-                        println!("[DEBUG][stampworld] STAMP: stamp_year={} context_above='{}' context_details='{}' image_url='{}'", stamp_year, context_above, context_details, image_url);
+                        debug!("[stampworld] STAMP: stamp_year={} context_above='{}' context_details='{}' image_url='{}'", stamp_year, context_above, context_details, image_url);
                         // Only download image if stamp_year is within range
                         if image_url.is_empty() {
-                            println!("[DEBUG][stampworld] Skipping image download: image_url is empty");
+                            debug!("[stampworld] Skipping image download: image_url is empty");
                         } else if stamp_year >= start_year && stamp_year <= end_year {
-                            println!("[DEBUG][stampworld] Attempting image download: image_url='{}'", image_url);
+                            debug!("[stampworld] Attempting image download: image_url='{}'", image_url);
                             let image_status = get_stampworld_image(&image_url, overwrite);
-                            println!("[DEBUG][stampworld] Image download result: {:?}", image_status);
+                            debug!("[stampworld] Image download result: {:?}", image_status);
                         } else {
-                            println!("[DEBUG][stampworld] Skipping image download: stamp_year {} not in range {}-{}", stamp_year, start_year, end_year);
+                            debug!("[stampworld] Skipping image download: stamp_year {} not in range {}-{}", stamp_year, start_year, end_year);
                         }
 
 
@@ -253,7 +254,7 @@ pub fn collect_stampworld_data(
                         engraving = detail.split("Engraving:").nth(1).unwrap_or("").trim().to_string();
                     }
                 }
-                println!("[DEBUG] EXTRACTED: watermark='{}' design='{}' engraving='{}'", watermark, design, engraving);
+                debug!("EXTRACTED: watermark='{}' design='{}' engraving='{}'", watermark, design, engraving);
 
                 // Perforation extraction
                 let mut perforation = String::new();
@@ -278,7 +279,7 @@ pub fn collect_stampworld_data(
                     .collect::<Vec<_>>()
                     .join(" | ");
 
-                println!("[DEBUG][stampworld] PRE-INSERT: sg_number='{}' year='{}' image_path='{}' remote_image_url='{}' watermark='{}' stamps_issued='{}'", sg_number, stamp_year, local_image_path, remote_image_url, watermark, stamps_issued);
+                debug!("[stampworld] PRE-INSERT: sg_number='{}' year='{}' image_path='{}' remote_image_url='{}' watermark='{}' stamps_issued='{}'", sg_number, stamp_year, local_image_path, remote_image_url, watermark, stamps_issued);
                 let result = crate::db_utils::insert_stamp(
                     &conn,
                     _site_name, // country
@@ -306,17 +307,17 @@ pub fn collect_stampworld_data(
                     &cleaned_context_details,
                 );
                 match result {
-                    Ok(_) => println!("[DEBUG] Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year),
-                    Err(e) => println!("[ERROR] Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, stamp_year, e),
+                    Ok(_) => debug!("Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year),
+                    Err(e) => error!("Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, stamp_year, e),
                 }
             }
-            println!("[DEBUG][stampworld] Processed {} stamp rows in this block.", stamp_row_count);
-               println!("[DEBUG][stampworld] About to check stop_scraping: stop_scraping={}", stop_scraping);
+            debug!("[stampworld] Processed {} stamp rows in this block.", stamp_row_count);
+               debug!("[stampworld] About to check stop_scraping: stop_scraping={}", stop_scraping);
                if stop_scraping {
-                   println!("[DEBUG][stampworld] Stopping further page fetches due to stamp_year > endYear.");
+                   debug!("[stampworld] Stopping further page fetches due to stamp_year > endYear.");
                    break 'block_loop;
                }
-               println!("[DEBUG][stampworld] Finished stop_scraping check for this block.");
+               debug!("[stampworld] Finished stop_scraping check for this block.");
             // End of for content_div
         }
         let top_bar_selector = scraper::Selector::parse("#topBlueBarGroupsCatalogLabel").unwrap();

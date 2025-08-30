@@ -1,0 +1,6 @@
+stamp_box_height = 24.0
+row_font_spacing = 5.0
+header_font_spacing = 3.0
+reference_width_mm = 240.0
+reference_height_mm = 280.0
+# Add more config values as needed
