@@ -130,8 +130,8 @@ where
     // Total border thickness: outer + inner1 + inner2 + spacing
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
     let usable_height = (page_height - top_margin - bottom_margin - total_border) as f64;
-    debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
-        page_height, top_margin, bottom_margin, total_border, usable_height);
+    // debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
+    //     page_height, top_margin, bottom_margin, total_border, usable_height);
     // Font and spacing from AlbumEasy settings
     let header_font_spacing = 3.0; // PAGE_TEXT_CENTRE (TN 10 ... 3.0)
     let row_font_spacing = 5.0;    // ROW_START_FS (TN 6 0.1 5.0)
@@ -274,8 +274,8 @@ where
                 let total_header_and_row_height = vspace_before_header + header_block_height + vspace_after_header + max_row_height + row_font_spacing as f64;
                 let conservative_buffer = 2.0; // mm buffer to avoid edge cases
                 let conservative_needed = total_header_and_row_height + conservative_buffer;
-                debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, first row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
-                    header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
+                // debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, first row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
+                //     header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
                 // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
                 let mut force_new_page = current_height + conservative_needed > usable_height || rows_on_page > 0;
                 if !force_new_page && stamp_rows.len() == 1 {
@@ -401,7 +401,7 @@ where
                     current_height = 0.0;
                     first_page = false;
                     rows_on_page = 0;
-                    debug!("Forced page break before header and first row");
+                    // debug!("Forced page break before header and first row");
                 }
                 // Output header and first row together
                 let _ = writeln!(output, "PAGE_VSPACE (8)");
@@ -440,8 +440,8 @@ where
                 let text_lines = text_below.lines().count();
                 let text_height = (text_lines as f64) * font_height;
                 let total_height = est_height_mm + image_spacing + text_height;
-                debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
-                    image_path, est_height_mm, text_lines, text_height, total_height);
+                // debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
+                //     image_path, est_height_mm, text_lines, text_height, total_height);
                 if total_height > max_row_height {
                     max_row_height = total_height;
                 }

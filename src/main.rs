@@ -108,15 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    println!("[DEBUG] Args: {:?}", args);
-    println!("[DEBUG] Detected OS: {:?}", detected_os);
-    // Test image fetch
-    let test_url =
-        "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png";
-    let test_name = "test_image";
-    let test_path = "test_image.png";
-    let _ = stamp_album_gen2::commands_file_generator::get_image(test_url, test_name, test_path);
-    println!("[DEBUG] Test image fetch attempted.");
+    // ...existing code...
 
     // Implement Stampworld connection string and flow
     if args[0].eq_ignore_ascii_case("stampworld") {

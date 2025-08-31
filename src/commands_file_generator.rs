@@ -15,17 +15,17 @@ pub fn get_colnect_image(images_directory: &str, url: &str, name: &str) -> Image
 /// Stub for get_image, to be implemented
 pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
     // Debug: Show the process of accessing the external website and getting the image
-    debug!("Attempting to fetch image from URL: {}", _url);
-    debug!("Image will be saved as: {}", _file_path);
+    // debug!("Attempting to fetch image from URL: {}", _url);
+    // debug!("Image will be saved as: {}", _file_path);
     // Example: Use reqwest to fetch the image
     match reqwest::blocking::get(_url) {
         Ok(resp) => {
-            debug!("HTTP status: {}", resp.status());
+            // debug!("HTTP status: {}", resp.status());
             if resp.status().is_success() {
                 match resp.bytes() {
                     Ok(bytes) => {
                         match std::fs::write(_file_path, &bytes) {
-                            Ok(_) => debug!("Image saved successfully."),
+                            Ok(_) => (), // debug!("Image saved successfully."),
                             Err(e) => error!("Failed to save image: {}", e),
                         }
                         ImageStatus {
@@ -126,7 +126,7 @@ impl CommandsFileGenerator {
         let image_name = url.split('/').last().unwrap_or("stampworld.jpg");
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
-            debug!("Skipping download, file exists: {}", file_path);
+            // debug!("Skipping download, file exists: {}", file_path);
             return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
         }
         self.get_image(url, image_name, &file_path)
@@ -157,7 +157,7 @@ impl CommandsFileGenerator {
             let image_name = url.split('/').last().unwrap_or("stampworld.jpg");
             let file_path = format!("{}/{}", images_directory, image_name);
             if !overwrite && std::path::Path::new(&file_path).exists() {
-                debug!("Skipping download, file exists: {}", file_path);
+                // debug!("Skipping download, file exists: {}", file_path);
                 return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
             }
             get_image(url, image_name, &file_path)
