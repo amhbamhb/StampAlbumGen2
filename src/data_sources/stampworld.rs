@@ -123,7 +123,7 @@ pub fn collect_stampworld_data(
                 let ths: Vec<_> = tr.select(&th_selector).collect();
                 let td_selector = scraper::Selector::parse("td").unwrap();
                 let tds: Vec<_> = tr.select(&td_selector).collect();
-                if ths.is_empty() || tds.len() < 12 { continue; }
+                if ths.is_empty() || tds.len() < 13 { continue; }
                 debug!("Raw stamp row HTML: {}", tr.html());
                 // Mapping based on provided example:
                 // th[0] = No. (sg_number)
@@ -144,11 +144,12 @@ pub fn collect_stampworld_data(
                 let denomination = tds[1].text().collect::<String>().trim().to_string();
                 let color = tds[3].text().collect::<String>().trim().to_string();
                 let description = tds[5].text().collect::<String>().trim().to_string();
-                let stamps_issued = if tds.len() > 7 { tds[7].text().collect::<String>().trim().to_string() } else { String::new() };
-                let mint_condition = tds[7].text().collect::<String>().trim().to_string();
-                let unused = tds[9].text().collect::<String>().trim().to_string(); // used column is actually unused
-                let used = tds[10].text().collect::<String>().trim().to_string(); // letter_fdc column is actually used
-                let letter_fdc = String::new(); // not present
+                let stamps_issued = tds[6].text().collect::<String>().trim().to_string();
+                debug!("[stampworld] td[5] (desc): '{}' | td[6] (stamps_issued): '{}'", description, stamps_issued);
+                let mint_condition = tds[8].text().collect::<String>().trim().to_string();
+                let unused = tds[9].text().collect::<String>().trim().to_string();
+                let used = tds[10].text().collect::<String>().trim().to_string();
+                let letter_fdc = tds[11].text().collect::<String>().trim().to_string();
                 let mut currency = String::new();
                 for td in &tds {
                     let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
