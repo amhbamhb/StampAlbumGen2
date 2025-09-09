@@ -257,7 +257,17 @@ pub fn insert_stamp(
     perforation: &str,
     context: &str,
 ) -> Result<()> {
-        debug!("--- STAMP INSERT ATTEMPT ---");
+    // Check if stamp already exists
+    let exists_sql = "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
+    let mut stmt = conn.prepare(exists_sql)?;
+    let count: i64 = stmt.query_row(params![country, series, sg_number], |row| row.get(0))?;
+    
+    if count > 0 {
+        debug!("Stamp already exists (country='{}', series='{}', sg_number='{}'), skipping insert", country, series, sg_number);
+        return Ok(());
+    }
+    
+    debug!("--- STAMP INSERT ATTEMPT ---");
     debug!("[insert_stamp] country='{}'", country);
     debug!("[insert_stamp] series='{}'", series);
     debug!("[insert_stamp] year={}", year);
@@ -318,25 +328,13 @@ pub fn insert_stamp(
     ];
         debug!("SQL: {}", sql);
         debug!("Params: {:?}", params_vec);
-    let mut attempts = 0;
-    let mut last_error = None;
-    loop {
-        attempts += 1;
-        match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, watermark, design, engraving, perforation, context]) {
-            Ok(_) => {
-                    debug!("Insert succeeded on attempt {}", attempts);
-                break;
-            }
-            Err(e) => {
-                    error!("Insert failed on attempt {}: {}", attempts, e);
-                last_error = Some(e);
-                if attempts >= 2 {
-                        error!("Giving up after {} attempts. Params: {:?}", attempts, params_vec);
-                    break;
-                } else {
-                        debug!("Retrying insert...");
-                }
-            }
+    match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, watermark, design, engraving, perforation, context]) {
+        Ok(_) => {
+                debug!("Insert succeeded");
+        }
+        Err(e) => {
+                error!("Insert failed: {}", e);
+                error!("Params: {:?}", params_vec);
         }
     }
     Ok(())

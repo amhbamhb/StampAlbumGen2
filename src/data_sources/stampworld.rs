@@ -3,8 +3,8 @@ use log::{debug, info, error};
 use crate::album_globals::{ImageStatus};
 
 pub fn collect_stampworld_data(
-    sequencer: &mut i32,
-    separator: &str,
+    _sequencer: &mut i32,
+    _separator: &str,
     _site_name: &str,
     _images_directory: &str,
     month_number: &dyn Fn(&str) -> String,
@@ -13,21 +13,31 @@ pub fn collect_stampworld_data(
     start_year: i32,
     end_year: i32,
     overwrite: bool,
+    page_callback: Option<&dyn Fn(usize)>,
 ) -> Vec<String> {
     debug!("collect_stampworld_data called with base_url: {}", base_url);
-    let all_stamp_data = Vec::new();
+    let mut all_stamp_data = Vec::new();
     let mut done = false;
     let mut page_num = 1;
+    const MAX_PAGES: i32 = 10; // Prevent infinite loop
+    let mut previous_body = String::new();
     let client = reqwest::blocking::Client::new();
-    let reached_end_year = false;
 
     // Initialize SQLite database in the album directory for the country
-    let country_db_name = _site_name.replace("/", "-");
-    let db_path = format!("{}/{}.db", _images_directory.replace("/images", ""), country_db_name);
+    // Use the CLI-provided db_path for consistency
+    let db_path = crate::album_globals::get_db_path_from_cli();
     let conn = crate::db_utils::init_db(&db_path).expect("Failed to initialize database");
 
     while !done {
+        if page_num > MAX_PAGES {
+            debug!("Reached maximum pages limit: {}", MAX_PAGES);
+            done = true;
+            break;
+        }
         let url = format!("{}{}", base_url, page_num);
+        if let Some(cb) = page_callback {
+            cb(page_num as usize);
+        }
     debug!("Fetching Stampworld page: {}", url);
         let resp = match client.get(&url).timeout(std::time::Duration::from_secs(60)).send() {
             Ok(r) => r,
@@ -47,12 +57,39 @@ pub fn collect_stampworld_data(
                 std::process::exit(1);
             }
         };
+        if !previous_body.is_empty() && body == previous_body {
+            debug!("Page content is the same as previous page, stopping to prevent infinite loop");
+            done = true;
+            break;
+        }
+        previous_body = body.clone();
         let document = scraper::Html::parse_document(&body);
-        let content_selector = scraper::Selector::parse("div.container-fluid.content_table").unwrap();
-        let all_block_years_past_end = true;
+        debug!("HTML document parsed successfully, length: {}", body.len());
+        // Extract default year from base_url
+        let mut default_year = String::new();
+        if let Some(year_part) = base_url.split("Postage%20stamps/").nth(1) {
+            if let Some(year_str) = year_part.split('?').next() {
+                default_year = year_str.to_string();
+            }
+        }
+        let content_selector = scraper::Selector::parse("table.data_table").unwrap();
+        debug!("Content selector created successfully");
+        let content_count = document.select(&content_selector).count();
+        debug!("Found {} content blocks with selector 'table.data_table'", content_count);
+        
+        if content_count == 0 {
+            debug!("No tables with class 'data_table' found. Available tables:");
+            let table_selector = scraper::Selector::parse("table").unwrap();
+            let all_tables = document.select(&table_selector);
+            for (i, table) in all_tables.enumerate() {
+                let class_attr = table.value().attr("class").unwrap_or("no-class");
+                debug!("Table {}: class='{}'", i, class_attr);
+            }
+        }
+        
         'block_loop: for content_div in document.select(&content_selector) {
+            debug!("Processing table with HTML: {}", content_div.html().chars().take(200).collect::<String>());
             let mut stop_scraping = false;
-            let mut all_stamps_past_end_year = true;
             // Improved context extraction: look for preceding header tags or text nodes
             let mut context_above = String::new();
             let mut context_details = String::new();
@@ -71,7 +108,7 @@ pub fn collect_stampworld_data(
             // Try to get details from the first few <p> tags in the block
             let p_selector = scraper::Selector::parse("p").unwrap();
             let mut details_vec = Vec::new();
-            for p in content_div.select(&p_selector) {
+            for p in document.select(&p_selector) {
                 let p_text = p.text().collect::<String>();
                 if !p_text.is_empty() {
                     details_vec.push(p_text);
@@ -84,7 +121,7 @@ pub fn collect_stampworld_data(
             let table_header_selector = scraper::Selector::parse(".table_header a").unwrap();
             let mut block_year = String::new();
             let mut desc = String::new();
-            if let Some(header_a) = content_div.select(&table_header_selector).next() {
+            if let Some(header_a) = document.select(&table_header_selector).next() {
                 let text = header_a.text().collect::<String>();
                 debug!("[stampworld] Raw block header HTML: {}", header_a.html());
                 desc = text.clone();
@@ -94,6 +131,33 @@ pub fn collect_stampworld_data(
                     if let Some(end_year_match) = caps.get(2) {
                         block_year = format!("{}-{}", block_year, end_year_match.as_str());
                     }
+                }
+            }
+            // Fallback: if block_year is empty, try to extract from details_vec or context_above
+            if block_year.is_empty() {
+                let year_regex = regex::Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap();
+                for detail in &details_vec {
+                    if let Some(caps) = year_regex.captures(detail) {
+                        block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
+                        if let Some(end_year_match) = caps.get(2) {
+                            block_year = format!("{}-{}", block_year, end_year_match.as_str());
+                        }
+                        desc = detail.clone();
+                        break;
+                    }
+                }
+                if block_year.is_empty() {
+                    if let Some(caps) = year_regex.captures(&context_above) {
+                        block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
+                        if let Some(end_year_match) = caps.get(2) {
+                            block_year = format!("{}-{}", block_year, end_year_match.as_str());
+                        }
+                        desc = context_above.clone();
+                    }
+                }
+                if block_year.is_empty() {
+                    block_year = default_year.clone();
+                    desc = default_year.clone();
                 }
             }
             // For filtering, use the start year from block_year (handle ranges)
@@ -110,20 +174,29 @@ pub fn collect_stampworld_data(
             }
             // Extract images from .images_container
             let images_selector = scraper::Selector::parse(".images_container img").unwrap();
-            let images: Vec<String> = content_div.select(&images_selector)
+            let images: Vec<String> = document.select(&images_selector)
                 .map(|img| img.value().attr("src").map(|src| if src.starts_with("http") { src.to_string() } else { format!("https://www.stampworld.com{}", src) }).unwrap_or_default())
                 .collect();
+            debug!("Found {} images", images.len());
             // Table of stamps
             let table_selector = scraper::Selector::parse("tr.stamp_tr").unwrap();
             let mut stamp_row_count = 0;
             let mut image_idx = 0;
-            for tr in content_div.select(&table_selector) {
+            let stamp_rows: Vec<_> = content_div.select(&table_selector).collect();
+            debug!("Found {} stamp rows in table with selector 'tr.stamp_tr'", stamp_rows.len());
+            for (i, tr) in stamp_rows.iter().enumerate() {
+                debug!("Stamp row {}: class='{}', data-stamp-type='{}'", i, tr.value().attr("class").unwrap_or("no-class"), tr.value().attr("data-stamp-type").unwrap_or("no-type"));
+            }
+            for tr in stamp_rows {
                 stamp_row_count += 1;
                 let th_selector = scraper::Selector::parse("th").unwrap();
                 let ths: Vec<_> = tr.select(&th_selector).collect();
                 let td_selector = scraper::Selector::parse("td").unwrap();
                 let tds: Vec<_> = tr.select(&td_selector).collect();
-                if ths.is_empty() || tds.len() < 13 { continue; }
+                if ths.is_empty() || tds.len() < 10 { 
+                    debug!("Skipping row: ths.len()={}, tds.len()={}", ths.len(), tds.len());
+                    continue; 
+                }
                 debug!("Raw stamp row HTML: {}", tr.html());
                 // Mapping based on provided example:
                 // th[0] = No. (sg_number)
@@ -259,7 +332,7 @@ pub fn collect_stampworld_data(
 
                 // Perforation extraction
                 let mut perforation = String::new();
-                for p in content_div.select(&p_selector) {
+                for p in document.select(&p_selector) {
                     let p_text = p.text().collect::<String>();
                     if p_text.contains("Perforation:") {
                         perforation = p_text.split("Perforation:").nth(1).unwrap_or("").trim().to_string();
@@ -311,6 +384,10 @@ pub fn collect_stampworld_data(
                     Ok(_) => debug!("Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year),
                     Err(e) => error!("Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, stamp_year, e),
                 }
+                // Build the stamp data line for the extract file
+                let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                    stamp_year, month, day, desc, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, local_image_path, remote_image_url, watermark, design, engraving, perforation, cleaned_context_details);
+                all_stamp_data.push(stamp_line);
             }
             debug!("[stampworld] Processed {} stamp rows in this block.", stamp_row_count);
                debug!("[stampworld] About to check stop_scraping: stop_scraping={}", stop_scraping);
@@ -321,24 +398,12 @@ pub fn collect_stampworld_data(
                debug!("[stampworld] Finished stop_scraping check for this block.");
             // End of for content_div
         }
-        let top_bar_selector = scraper::Selector::parse("#topBlueBarGroupsCatalogLabel").unwrap();
+        let next_page_selector = scraper::Selector::parse("a[href*='page=']").unwrap();
+        let next_page_count = document.select(&next_page_selector).count();
+        debug!("Found {} next_page links", next_page_count);
         let mut last_page = false;
-        if let Some(top_bar) = document.select(&top_bar_selector).next() {
-            let label_text = top_bar.text().collect::<String>();
-            if !label_text.is_empty() && label_text.chars().any(|c| c.is_digit(10)) {
-                if let Some(idx) = label_text.find("page ") {
-                    let page_info = &label_text[idx + 5..];
-                    if let Some(end_idx) = page_info.find(")") {
-                        let page_info = &page_info[..end_idx];
-                        let parts: Vec<&str> = page_info.split('/').collect();
-                        if parts.len() == 2 && parts[0] == parts[1] {
-                            last_page = true;
-                        }
-                    }
-                }
-            } else {
-                last_page = true;
-            }
+        if next_page_count == 0 {
+            last_page = true;
         }
         if last_page {
             done = true;
@@ -346,5 +411,6 @@ pub fn collect_stampworld_data(
             page_num += 1;
         }
     } // End of while !done
+    debug!("Total stamp data lines collected: {}", all_stamp_data.len());
     all_stamp_data
 }

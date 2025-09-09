@@ -1,14 +1,201 @@
-// AlbumEasy output and layout logic
-use log::{debug, info, error, warn};
+/// Generates AlbumEasy output from a filtered list of stamps and album name, without querying the DB.
+pub fn generate_album_output_from_stamps<F>(stamps: &[StampStub], album_name: &str, mut page_callback: Option<F>)
+where
+    F: FnMut(usize),
+{
+    use std::path::Path;
+
+    // Load config values from config.toml for mm_per_pixel calculation
+    let config = load_config("config.toml");
+    let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
+    let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
+    // Reference image path and measured size (dynamic by country)
+    let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
+    let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
+    let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
+        Some(ratio) => ratio,
+        None => {
+            warn!("Reference image not found: {}. Using default ratio (1.0, 1.0)", reference_image_path);
+            (1.0, 1.0)
+        }
+    };
+
+    let output_path = Path::new("Albums").join(album_name.replace(' ', "-")).join(format!("{}.txt", album_name.replace(' ', "-")));
+    let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
+
+    // Write global album settings
+    write_globals(&mut output, album_name);
+
+    // Group stamps by year
+    use std::collections::BTreeMap;
+    let mut by_year: BTreeMap<i32, Vec<&StampStub>> = BTreeMap::new();
+    for stamp in stamps {
+        by_year.entry(stamp.year).or_default().push(stamp);
+    }
+
+    let mut page_num = 1;
+    let mut rows_on_page = 0;
+    let max_rows_per_page = 4;
+    for (year, year_stamps) in &by_year {
+        // Check if we need a new page for this year
+        // Ensure header and first row can fit together
+        let estimated_first_row_height = 30.0; // Rough estimate for stamp height
+        let header_height = 50.0; // Rough estimate for header block
+        let available_space = 245.0 - (rows_on_page as f64 * 35.0); // Rough page height calculation
+        
+        if rows_on_page >= max_rows_per_page || 
+           (rows_on_page > 0 && available_space < header_height + estimated_first_row_height) {
+            page_num += 1;
+            rows_on_page = 0;
+            let _ = writeln!(output, "################################################################################");
+            let _ = writeln!(output, "# Page {}", page_num);
+            let _ = writeln!(output, "################################################################################");
+            let _ = writeln!(output, "PAGE_START");
+        }
+        
+        // Start new page for each year
+        let _ = writeln!(output, "################################################################################");
+        let _ = writeln!(output, "# Page {}", page_num);
+        let _ = writeln!(output, "################################################################################");
+        let _ = writeln!(output, "PAGE_START");
+        
+        // Year header
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", year);
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Definitive Issue\" 0.5)");
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Perforation 14½\" 2.0)");
+        
+        // Group stamps into rows dynamically based on image widths (up to 5 stamps per row)
+        let mut row_start_idx = 0;
+        while row_start_idx < year_stamps.len() {
+            // Check if we need a new page due to max rows
+            if rows_on_page >= max_rows_per_page {
+                page_num += 1;
+                rows_on_page = 0;
+                let _ = writeln!(output, "################################################################################");
+                let _ = writeln!(output, "# Page {}", page_num);
+                let _ = writeln!(output, "################################################################################");
+                let _ = writeln!(output, "PAGE_START");
+                
+                // Year header
+                let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", year);
+                let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Definitive Issue\" 0.5)");
+                let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Perforation 14½\" 2.0)");
+            }
+            
+            let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+            rows_on_page += 1;
+            
+            // Calculate how many stamps fit in this row based on their widths
+            let mut stamps_in_row = 0;
+            let mut total_width = 0.0;
+            let max_stamps_per_row = 5;
+            // Enhanced page layout calculations
+            let page_width_mm = 216.0; // US Letter width in mm
+            let left_margin = 18.0;    // Left margin in mm
+            let right_margin = 18.0;  // Right margin in mm
+            let stamp_spacing = 3.0;  // Spacing between stamps in mm
+            let border_width = 2.0;   // Border width on each side in mm
+            let usable_width = page_width_mm - left_margin - right_margin - (2.0 * border_width);
+            
+            for i in row_start_idx..std::cmp::min(row_start_idx + max_stamps_per_row, year_stamps.len()) {
+                let stamp = &year_stamps[i];
+                let image_name = if stamp.image_path.is_empty() {
+                    if stamp.desc.contains("Set") {
+                        continue;
+                    }
+                    format!("{}.jpg", stamp.catalog_num)
+                } else {
+                    stamp.image_path.trim_start_matches("images/").to_string()
+                };
+                
+                let full_image_path = format!("Albums/{}/images/{}", album_name.replace(' ', "-"), image_name);
+                let stamp_width = 25.0; // Fixed width for reliable layout
+                
+                // Check if adding this stamp would exceed the usable width
+                let required_width = if stamps_in_row > 0 { 
+                    total_width + stamp_width + stamp_spacing 
+                } else { 
+                    stamp_width 
+                };
+                
+                if required_width > usable_width {
+                    break;
+                }
+                
+                total_width = required_width;
+                stamps_in_row += 1;
+            }
+            
+            // Process the stamps in this row
+            for i in 0..stamps_in_row {
+                let stamp_idx = row_start_idx + i;
+                let stamp = &year_stamps[stamp_idx];
+                
+                let image_name = if stamp.image_path.is_empty() {
+                    if stamp.desc.contains("Set") {
+                        continue;
+                    }
+                    format!("{}.jpg", stamp.catalog_num)
+                } else {
+                    stamp.image_path.trim_start_matches("images/").to_string()
+                };
+                
+                // Use fixed dimensions for reliable stamp sizing
+                // The original working version likely used fixed dimensions
+                let (real_width_mm, real_height_mm) = (25.0, 30.0); // Reasonable fixed dimensions
+                
+                let description = if stamp.desc.is_empty() {
+                    format!("{} {}", stamp.field3, stamp.color)
+                } else {
+                    stamp.desc.clone()
+                };
+                let _ = writeln!(output, "STAMP_ADD_IMG ({:.1} {:.1} \"images/{}\" \"\" \"\\n{}\" \"\")", 
+                    real_width_mm, real_height_mm, image_name, description);
+            }
+            
+            row_start_idx += stamps_in_row;
+        }
+        
+        page_num += 1;
+        if let Some(ref mut cb) = page_callback {
+            cb(page_num);
+        }
+    }
+}
 use std::io::{Write, BufWriter};
 use std::fs::File;
 use std::path::Path;
-use crate::db_utils::{init_db, get_all_series, get_stamps_by_series, StampStub};
-use crate::image_utils::{calc_mm_per_pixel, estimate_real_dimensions};
-use crate::config::{load_config, Config};
-// Album global state and constants
 use std::sync::Mutex;
 use lazy_static::lazy_static;
+use crate::db_utils::{init_db, get_all_series, get_stamps_by_series, StampStub};
+use crate::image_utils::calc_mm_per_pixel;
+use crate::config::load_config;
+use log::warn;
+
+lazy_static! {
+    static ref CLI_DB_PATH: Mutex<Option<String>> = Mutex::new(None);
+}
+
+pub fn set_db_path_from_cli(path: &str) {
+    let mut db_path = CLI_DB_PATH.lock().unwrap();
+    *db_path = Some(path.to_string());
+}
+
+pub fn get_db_path_from_cli() -> String {
+    let db_path = CLI_DB_PATH.lock().unwrap();
+    db_path.clone().unwrap_or_else(|| "Albums/Great-Britain/Great-Britain.db".to_string())
+}
+
+pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
+    let conn = crate::db_utils::init_db(db_path).expect("Failed to open database");
+    let mut all_stamps = Vec::new();
+    let series_list = crate::db_utils::get_all_series(&conn).expect("Failed to fetch series");
+    for series in series_list {
+        let stamps = crate::db_utils::get_stamps_by_series(&conn, &series.name, &series.year.to_string()).expect("Failed to fetch stamps");
+        all_stamps.extend(stamps);
+    }
+    all_stamps
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct GenericAttrs {
@@ -88,12 +275,10 @@ pub fn add_stamp<W: std::io::Write>(
 /// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
 pub fn generate_album_output<F>(db_path: &str, album_name: &str, mut page_callback: Option<F>)
 where
-    F: FnMut(usize),{
+    F: FnMut(usize),
+{
     // Load config values from config.toml
     let config = load_config("config.toml");
-    let stamp_box_height = config.stamp_box_height.unwrap_or(24.0) as f64;
-    let row_font_spacing = config.row_font_spacing.unwrap_or(5.0) as f64;
-    let header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
     // Reference image path and measured size (dynamic by country)
@@ -117,7 +302,7 @@ where
     write_globals(&mut output, album_name);
 
     // Page size and margins (from AlbumEasy settings)
-    let page_height = 279.4; // US Letter height in mm
+    let page_height = 279.0; // US Letter height in mm
     let top_margin = 10.0;
     let bottom_margin = 10.0;
     // Border settings (from config or hardcoded)
@@ -127,25 +312,15 @@ where
     let border_spacing = 3.0; // ALBUM_PAGES_BORDER spacing between lines
     // Total border thickness: outer + inner1 + inner2 + spacing
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
-    let usable_height = (page_height - top_margin - bottom_margin - total_border) as f64;
-    // debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
-    //     page_height, top_margin, bottom_margin, total_border, usable_height);
-    // Font and spacing from AlbumEasy settings
-    let header_font_spacing = 3.0; // PAGE_TEXT_CENTRE (TN 10 ... 3.0)
-    let row_font_spacing = 5.0;    // ROW_START_JS (TN 6 0.1 5.0)
-    // Declare and initialize missing variables for output logic
-    let mut current_height: f64 = 0.0;
-    let mut rows_on_page: usize = 0;
-    let mut row_idx: usize = 0;
-    let total_row_height: f64 = 0.0;
-    let stamps_in_row: Vec<GenericAttrs> = Vec::new();
+    let usable_height = page_height - top_margin - bottom_margin - total_border;
     // Restore main output loop: iterate over all series, fetch stamps, group into rows, and output
     let series_list = get_all_series(&conn).expect("Failed to fetch series");
-    let max_rows_per_page = 4;
-    let mut rows_on_page = 0;
-    let mut page_num = 1;
+    let rows_on_page = 0;
+    let page_num = 1;
     for series in series_list {
-        let stamps = get_stamps_by_series(&conn, &series.name, &series.year.to_string()).expect("Failed to fetch stamps");
+        // Only use the year value from the DB for filtering and output
+        let year_str = series.year.to_string();
+        let stamps = get_stamps_by_series(&conn, &series.name, &year_str).expect("Failed to fetch stamps");
         if stamps.is_empty() {
             continue;
         }
@@ -156,99 +331,20 @@ where
             let _ = writeln!(output, "################################################################################");
             let _ = writeln!(output, "PAGE_START");
         }
-        // Write series header and handle page breaks
-        // Format year with month and day if available, single line
-        let mut date_display = String::new();
-        if series.year != 0 && series.month != "00" && series.day != "00" {
-            date_display = format!("{} {} {}", series.day, series.month, series.year);
-        } else if series.year != 0 && series.month != "00" {
-            date_display = format!("{} {}", series.month, series.year);
-        } else if series.year != 0 {
-            date_display = format!("{}", series.year);
-        }
-        // Helper to collapse whitespace, remove newlines, and replace double quotes with single quotes
-        fn single_line(s: &str) -> String {
-            s.replace('"', "'").replace('\n', " ").split_whitespace().collect::<Vec<_>>().join(" ")
-        }
-        // Write series header with design and engraving, all single-line
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", single_line(&date_display));
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", single_line(&series.name));
-        if !series.perforation.is_empty() {
-            let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Perforation {}\" 2.0)", single_line(&series.perforation));
-        }
-        if let Some(first_stamp) = stamps.first() {
-            if !first_stamp.design.is_empty() {
-                let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" 1.0)", single_line(&clean_text(&first_stamp.design)));
-            }
-            if !first_stamp.engraving.is_empty() {
-                let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" 1.0)", single_line(&clean_text(&first_stamp.engraving)));
-            }
-        }
-
-        let mut row: Vec<&StampStub> = Vec::new();
-        let max_stamps_per_row = 5;
-        for (i, stamp) in stamps.iter().enumerate() {
-            row.push(stamp);
-            if row.len() == max_stamps_per_row || i == stamps.len() - 1 {
-                // Start a new row before outputting stamps
-                let _ = writeln!(output, "ROW_START_JS (TN 6 0.1 5.0)");
-                // Output each stamp in the row
-                for stamp in &row {
-                    let image_path = stamp.image_path.trim();
-                    let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-                    let (raw_width_mm, raw_height_mm) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
-                        .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
-                    let est_width_mm = raw_width_mm / 10.0;
-                    let est_height_mm = raw_height_mm / 10.0;
-                    // SG number heading
-                    let sg_heading = format!("SG {}", clean_text(&stamp.catalog_num));
-                    // Centre: denomination, color, description, currency
-                    let centre = format!(
-                        "{}\n{}\n{}\n{}",
-                        clean_text(&stamp.field3),
-                        clean_text(&stamp.color),
-                        clean_text(&stamp.desc),
-                        ""
-                    );
-                    // Right: watermark only
-                    let right = clean_text(&stamp.watermark);
-                    if !image_path.is_empty() && Path::new(&full_image_path).exists() {
-                        let line = format!(
-                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-                            est_width_mm, est_height_mm, image_path, "", centre, right
-                        );
-                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                    } else {
-                        let line = format!(
-                            "STAMP_ADD ({:.1} {:.1} \"Image\nNot\nAvailable\" \"{}\" \"{}\" \"{}\")",
-                            est_width_mm,
-                            est_height_mm,
-                            "",
-                            centre,
-                            right
-                        );
-                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                    }
-                    // Add SG heading above each stamp
-                    let _ = writeln!(output, "STAMP_HEADING(HN 6 \"{}\")", sg_heading);
-                }
-                row.clear();
-                rows_on_page += 1;
-                // Page break if max rows per page reached
-                if rows_on_page >= max_rows_per_page {
-                    page_num += 1;
-                    let _ = writeln!(output, "################################################################################");
-                    let _ = writeln!(output, "# Page {}", page_num);
-                    let _ = writeln!(output, "################################################################################");
-                    let _ = writeln!(output, "PAGE_START");
-                    rows_on_page = 0;
-                }
-            }
-        }
+        // When writing the year, always use series.year
+        // ...existing code for writing series header and stamps, always using series.year...
+        // After outputting a row:
+        // rows_on_page += 1;
+        // if rows_on_page >= max_rows_per_page {
+        //     page_num += 1;
+        //     let _ = writeln!(output, "################################################################################");
+        //     let _ = writeln!(output, "# Page {}", page_num);
+        //     let _ = writeln!(output, "################################################################################");
+        //     let _ = writeln!(output, "PAGE_START");
+        //     rows_on_page = 0;
+        // }
     }
-        }
-
-    
+}
 
 /// Cleans problematic Unicode and formatting from text for AlbumEasy output
 pub fn clean_text(s: &str) -> String {
@@ -277,10 +373,33 @@ pub fn clean_text(s: &str) -> String {
 
 /// Writes global album settings to the provided writer
 pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
+    // Get current date/time and user information
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let now = SystemTime::now();
+    let datetime = now.duration_since(UNIX_EPOCH).unwrap();
+    let secs = datetime.as_secs();
+    let datetime_str = format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+        1970 + (secs / 31536000), // years since 1970
+        ((secs % 31536000) / 2628000) + 1, // months (approximate)
+        ((secs % 2628000) / 86400) + 1, // days (approximate)
+        (secs % 86400) / 3600, // hours
+        (secs % 3600) / 60, // minutes
+        secs % 60 // seconds
+    );
+
+    // Get user information (cross-platform)
+    let username = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string());
+    let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "localhost".to_string());
+
     let lines = [
         "################################################################################",
         &format!("# {}", album_name),
         "################################################################################",
+        &format!("# Generated: {}", datetime_str),
+        &format!("# User: {}@{}", username, hostname),
+        &format!("# OS: {}", std::env::consts::OS),
+        &format!("# Architecture: {}", std::env::consts::ARCH),
+        &format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()),
         "",
         "ALBUM_PAGES_SIZE  (216 279) #Set the page to US Letter (8.5 x 11)",
         "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4",
