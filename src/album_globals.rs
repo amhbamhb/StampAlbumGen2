@@ -37,6 +37,9 @@ where
     let mut rows_on_page = 0;
     let max_rows_per_page = 4;
     for (year, year_stamps) in &by_year {
+        // Extract header information from stamps in this year
+        let header_info = extract_header_info(year_stamps);
+        
         // Check if we need a new page for this year
         // Ensure header and first row can fit together
         let estimated_first_row_height = 30.0; // Rough estimate for stamp height
@@ -59,10 +62,8 @@ where
         let _ = writeln!(output, "################################################################################");
         let _ = writeln!(output, "PAGE_START");
         
-        // Year header
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", year);
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Definitive Issue\" 0.5)");
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Perforation 14½\" 2.0)");
+        // Write enhanced header with extracted information
+        write_page_header(&mut output, &header_info);
         
         // Group stamps into rows dynamically based on image widths (up to 5 stamps per row)
         let mut row_start_idx = 0;
@@ -76,10 +77,8 @@ where
                 let _ = writeln!(output, "################################################################################");
                 let _ = writeln!(output, "PAGE_START");
                 
-                // Year header
-                let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", year);
-                let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Definitive Issue\" 0.5)");
-                let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Perforation 14½\" 2.0)");
+                // Write enhanced header with extracted information
+                write_page_header(&mut output, &header_info);
             }
             
             let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
@@ -145,9 +144,9 @@ where
                 let (real_width_mm, real_height_mm) = (25.0, 30.0); // Reasonable fixed dimensions
                 
                 let description = if stamp.desc.is_empty() {
-                    format!("{} {}", stamp.field3, stamp.color)
+                    format!("{} {}", clean_text(&stamp.field3), clean_text(&stamp.color))
                 } else {
-                    stamp.desc.clone()
+                    clean_text(&stamp.desc)
                 };
                 let _ = writeln!(output, "STAMP_ADD_IMG ({:.1} {:.1} \"images/{}\" \"\" \"\\n{}\" \"\")", 
                     real_width_mm, real_height_mm, image_name, description);
@@ -166,11 +165,140 @@ use std::io::{Write, BufWriter};
 use std::fs::File;
 use std::path::Path;
 use std::sync::Mutex;
+use std::collections::HashSet;
 use lazy_static::lazy_static;
 use crate::db_utils::{init_db, get_all_series, get_stamps_by_series, StampStub};
 use crate::image_utils::calc_mm_per_pixel;
 use crate::config::load_config;
 use log::warn;
+
+#[derive(Debug, Clone)]
+pub struct PageHeaderInfo {
+    pub year: i32,
+    pub month: String,
+    pub day: String,
+    // pub issue_type: String,
+    pub perforation: String,
+    pub design: String,
+    pub engraving: String,
+    pub watermark: String,
+    pub currency: String,
+}
+
+impl Default for PageHeaderInfo {
+    fn default() -> Self {
+        Self {
+            year: 0,
+            //issue_type: "Definitive Issue".to_string(),
+            month: String::new(),
+            day: String::new(),
+            perforation: "14½".to_string(),
+            design: String::new(),
+            engraving: String::new(),
+            watermark: String::new(),
+            currency: String::new(),
+        }
+    }
+}
+
+pub fn extract_header_info(stamps: &[&StampStub]) -> PageHeaderInfo {
+    let mut info = PageHeaderInfo::default();
+    
+    if let Some(first_stamp) = stamps.first() {
+        info.year = first_stamp.year;
+    }
+    
+    // Extract unique values from all stamps in this group
+    let mut designs = HashSet::new();
+    let mut engravings = HashSet::new();
+    let mut watermarks = HashSet::new();
+    let mut perforations = HashSet::new();
+    
+    for stamp in stamps {
+        // Clean and extract design information
+        if !stamp.design.is_empty() {
+            let clean_design = clean_text(&stamp.design)
+                .lines()
+                .map(|line| line.trim())
+                .filter(|line| !line.is_empty() && !line.starts_with("Engraving:") && !line.starts_with("Perforation:"))
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !clean_design.is_empty() {
+                designs.insert(clean_design);
+            }
+        }
+        
+        // Clean and extract engraving information
+        if !stamp.engraving.is_empty() {
+            let clean_engraving = clean_text(&stamp.engraving)
+                .lines()
+                .map(|line| line.trim())
+                .filter(|line| !line.is_empty() && !line.starts_with("Perforation:"))
+                .collect::<Vec<_>>()
+                .join(" ");
+            if !clean_engraving.is_empty() {
+                engravings.insert(clean_engraving);
+            }
+        }
+        
+        // Extract watermark information
+        if !stamp.watermark.is_empty() {
+            watermarks.insert(clean_text(&stamp.watermark.trim().to_string()));
+        }
+        
+        // Extract perforation from the perforation field (perforation in StampStub)
+        if !stamp.perforation.is_empty() {
+            perforations.insert(clean_text(&stamp.perforation.trim().to_string()));
+        }
+    }
+    
+    // Combine unique values
+    if !designs.is_empty() {
+        info.design = designs.into_iter().collect::<Vec<_>>().join(", ");
+    }
+    if !engravings.is_empty() {
+        info.engraving = engravings.into_iter().collect::<Vec<_>>().join(", ");
+    }
+    if !watermarks.is_empty() {
+        info.watermark = watermarks.into_iter().collect::<Vec<_>>().join(", ");
+    }
+    if !perforations.is_empty() {
+        info.perforation = perforations.into_iter().collect::<Vec<_>>().join(", ");
+    }
+    
+    info
+}
+
+pub fn write_page_header(output: &mut impl Write, header_info: &PageHeaderInfo) {
+    let mut date_parts = vec![header_info.year.to_string()];
+    if !header_info.month.is_empty() {
+        date_parts.push(header_info.month.clone());
+    }
+    if !header_info.day.is_empty() {
+        date_parts.push(header_info.day.clone());
+    }
+    let date_str = date_parts.join(" - ");
+    let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", date_str);
+    // let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 0.5)", header_info.issue_type);
+
+    // if !header_info.perforation.is_empty() {
+    //     let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Perforation {}\" 2.0)", header_info.perforation);
+    // }
+
+    if !header_info.design.is_empty() {
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"Design: {}\" 1.0)", header_info.design);
+    }
+
+    if !header_info.engraving.is_empty() {
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"Engraving: {}\" 1.0)", header_info.engraving);
+    }
+
+    if !header_info.watermark.is_empty() {
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"Watermark: {}\" 1.0)", header_info.watermark);
+    }
+
+    let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"{}\" 1.5)", header_info.currency);
+}
 
 lazy_static! {
     static ref CLI_DB_PATH: Mutex<Option<String>> = Mutex::new(None);
@@ -183,7 +311,13 @@ pub fn set_db_path_from_cli(path: &str) {
 
 pub fn get_db_path_from_cli() -> String {
     let db_path = CLI_DB_PATH.lock().unwrap();
-    db_path.clone().unwrap_or_else(|| "Albums/Great-Britain/Great-Britain.db".to_string())
+    match db_path.as_ref() {
+        Some(path) => path.clone(),
+        None => {
+            // This shouldn't happen in normal operation since we set it in main.rs
+            "Albums/Album-Default/Album-Default.db".to_string()
+        }
+    }
 }
 
 pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
@@ -349,13 +483,22 @@ where
 /// Cleans problematic Unicode and formatting from text for AlbumEasy output
 pub fn clean_text(s: &str) -> String {
     use regex::Regex;
-    // Remove 'Â' before fractions/currency
-    let re = Regex::new(r"Â([½¼¾⅓⅔⅛⅜⅝⅞£€$¥])").unwrap();
+    // Remove 'Â' or 'â' before fractions/currency
+    let re = Regex::new(r"[Ââ]([½¼¾⅓⅔⅛⅜⅝⅞£€$¥])").unwrap();
     let mut s = re.replace_all(s, "$1").to_string();
-    // Replace stray 'Â' with space
-    s = s.replace('Â', " ");
-    // Remove known problematic chars
-    s = s.replace('â', " ");
+    // Replace stray 'Â' or 'â' with nothing
+    s = s.replace('â', "");
+    s = s.replace('Â', "");
+    // Replace common fraction representations
+    s = s.replace("1/2", "½");
+    s = s.replace("1/4", "¼");
+    s = s.replace("3/4", "¾");
+    s = s.replace("1/3", "⅓");
+    s = s.replace("2/3", "⅔");
+    s = s.replace("1/8", "⅛");
+    s = s.replace("3/8", "⅜");
+    s = s.replace("5/8", "⅝");
+    s = s.replace("7/8", "⅞");
     // Replace double quotes
     s = s.replace('"', "'");
     // Replace non-ASCII except allowed symbols with space
@@ -391,41 +534,50 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     let username = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string());
     let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "localhost".to_string());
 
-    let lines = [
-        "################################################################################",
-        &format!("# {}", album_name),
-        "################################################################################",
-        &format!("# Generated: {}", datetime_str),
-        &format!("# User: {}@{}", username, hostname),
-        &format!("# OS: {}", std::env::consts::OS),
-        &format!("# Architecture: {}", std::env::consts::ARCH),
-        &format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()),
-        "",
-        "ALBUM_PAGES_SIZE  (216 279) #Set the page to US Letter (8.5 x 11)",
-        "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4",
-        "",
-        "ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0 )",
-        "",
-        "ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border",
-        "#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border",
-        "",
-        &format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name),
-        "",
-        "ALBUM_PAGES_SPACING (6.0 6.0)",
-        "",
-        "#ALBUM_PAGES_NUMBER (TN 10 R)",
-        "ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")",
-        "",
-        "ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)",
-        "",
-        "ROW_ALIGN_MIDDLE",
-        "",
-        "# The stamp boxes in this album are sized approximately",
-        "# 4mm larger than the actual stamps giving a 2mm border",
-        "# To have the boxes drawn the actual stamp size use",
-        "#STAMP_BOXES_SIZE_ADJUST(-4.0)",
-        "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)",
-        "STAMP_BOXES_SIZE_ADJUST (0)",
+    // Get command line arguments
+    let args: Vec<String> = std::env::args().collect();
+    let command_line = if args.len() > 1 {
+        args[1..].join(" ")
+    } else {
+        "No arguments".to_string()
+    };
+
+    let lines: Vec<String> = vec![
+        "################################################################################".to_string(),
+        format!("# {}", album_name),
+        "################################################################################".to_string(),
+        format!("# Generated: {}", datetime_str),
+        format!("# User: {}@{}", username, hostname),
+        format!("# OS: {}", std::env::consts::OS),
+        format!("# Architecture: {}", std::env::consts::ARCH),
+        format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()),
+        format!("# Command Line: {}", command_line),
+        "".to_string(),
+        "ALBUM_PAGES_SIZE  (216 279) #Set the page to US Letter (8.5 x 11)".to_string(),
+        "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4".to_string(),
+        "".to_string(),
+        "ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0 )".to_string(),
+        "".to_string(),
+        "ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border".to_string(),
+        "#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string(),
+        "".to_string(),
+        format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name),
+        "".to_string(),
+        "ALBUM_PAGES_SPACING (6.0 6.0)".to_string(),
+        "".to_string(),
+        "#ALBUM_PAGES_NUMBER (TN 10 R)".to_string(),
+        "ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string(),
+        "".to_string(),
+        "ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)".to_string(),
+        "".to_string(),
+        "ROW_ALIGN_MIDDLE".to_string(),
+        "".to_string(),
+        "# The stamp boxes in this album are sized approximately".to_string(),
+        "# 4mm larger than the actual stamps giving a 2mm border".to_string(),
+        "# To have the boxes drawn the actual stamp size use".to_string(),
+        "#STAMP_BOXES_SIZE_ADJUST(-4.0)".to_string(),
+        "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)".to_string(),
+        "STAMP_BOXES_SIZE_ADJUST (0)".to_string(),
     ];
     for line in lines.iter() {
         let _ = writeln!(writer, "{}", line);

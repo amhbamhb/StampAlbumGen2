@@ -1,6 +1,6 @@
 // Stampworld data source handler
 use log::{debug, info, error};
-use crate::album_globals::{ImageStatus};
+use crate::album_globals::{ImageStatus, clean_text};
 
 pub fn collect_stampworld_data(
     _sequencer: &mut i32,
@@ -365,7 +365,7 @@ pub fn collect_stampworld_data(
                     &type_,
                     &denomination,
                     &color,
-                    &description,
+                    &clean_text(&description),
                     &stamps_issued,
                     &mint_condition,
                     &unused,
@@ -374,10 +374,10 @@ pub fn collect_stampworld_data(
                     &currency,
                     &local_image_path,
                     &remote_image_url,
-                    &watermark,
-                    &design,
-                    &engraving,
-                    &perforation,
+                    &clean_text(&watermark),
+                    &clean_text(&design),
+                    &clean_text(&engraving),
+                    &clean_text(&perforation),
                     &cleaned_context_details,
                 );
                 match result {
@@ -386,7 +386,7 @@ pub fn collect_stampworld_data(
                 }
                 // Build the stamp data line for the extract file
                 let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
-                    stamp_year, month, day, desc, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, local_image_path, remote_image_url, watermark, design, engraving, perforation, cleaned_context_details);
+                    stamp_year, month, day, desc, sg_number, type_, denomination, color, clean_text(&description), stamps_issued, mint_condition, unused, used, letter_fdc, currency, local_image_path, remote_image_url, clean_text(&watermark), clean_text(&design), clean_text(&engraving), clean_text(&perforation), cleaned_context_details);
                 all_stamp_data.push(stamp_line);
             }
             debug!("[stampworld] Processed {} stamp rows in this block.", stamp_row_count);
