@@ -140,9 +140,8 @@ where
                     stamp.image_path.trim_start_matches("images/").to_string()
                 };
                 
-                // Use fixed dimensions for reliable stamp sizing
-                // The original working version likely used fixed dimensions
-                let (real_width_mm, real_height_mm) = (25.0, 30.0); // Reasonable fixed dimensions
+                // Calculate stamp dimensions based on actual image size
+                let (real_width_mm, real_height_mm) = calculate_stamp_dimensions(&image_name, album_name);
                 
                 let description = if stamp.desc.is_empty() {
                     format!("{} {}", clean_text(&stamp.field3), clean_text(&stamp.color))
@@ -173,6 +172,7 @@ use crate::db_utils::{init_db, get_all_series, get_stamps_by_series, StampStub};
 use crate::image_utils::calc_mm_per_pixel;
 use crate::config::load_config;
 use log::warn;
+use image::io::Reader as ImageReader;
 
 #[derive(Debug, Clone)]
 pub struct PageHeaderInfo {
@@ -521,6 +521,63 @@ pub fn sanitize_filename(filename: &str) -> String {
             _ => '_',    // replace other non-alphanumeric with underscore
         })
         .collect()
+}
+
+/// Gets the dimensions of an image file
+pub fn get_image_dimensions(image_path: &str) -> Option<(u32, u32)> {
+    use std::path::Path;
+    
+    let path = Path::new(image_path);
+    if !path.exists() {
+        return None;
+    }
+    
+    match ImageReader::open(path) {
+        Ok(reader) => match reader.decode() {
+            Ok(img) => Some((img.width(), img.height())),
+            Err(_) => None,
+        },
+        Err(_) => None,
+    }
+}
+
+/// Calculates appropriate stamp box dimensions based on image dimensions
+/// Returns (width_mm, height_mm) for the stamp box
+pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str) -> (f64, f64) {
+    // Default dimensions if image can't be read
+    let default_width = 25.0;
+    let default_height = 30.0;
+    
+    // Try to get actual image dimensions
+    let image_full_path = format!("Albums/{}/images/{}", album_name.replace(' ', "-"), image_path);
+    
+    if let Some((img_width, img_height)) = get_image_dimensions(&image_full_path) {
+        // Assume standard stamp DPI (dots per inch) - typical stamp images are around 300-600 DPI
+        // For calculation, we'll use a reasonable DPI assumption
+        let assumed_dpi = 300.0; // dots per inch
+        let mm_per_inch = 25.4;
+        
+        // Calculate physical dimensions in mm
+        let physical_width_mm = (img_width as f64 / assumed_dpi) * mm_per_inch;
+        let physical_height_mm = (img_height as f64 / assumed_dpi) * mm_per_inch;
+        
+        // Apply some reasonable bounds to prevent extremely large or small stamps
+        let min_size = 15.0; // minimum 15mm
+        let max_size = 50.0; // maximum 50mm
+        
+        let width_mm = physical_width_mm.max(min_size).min(max_size);
+        let height_mm = physical_height_mm.max(min_size).min(max_size);
+        
+        println!("[DEBUG] Image: {} -> {}x{} pixels -> {:.1}mm x {:.1}mm", 
+                image_path, img_width, img_height, width_mm, height_mm);
+        
+        (width_mm, height_mm)
+    } else {
+        // Fall back to default dimensions
+        println!("[DEBUG] Could not read image dimensions for {}, using defaults: {:.1}mm x {:.1}mm", 
+                image_path, default_width, default_height);
+        (default_width, default_height)
+    }
 }
 
 /// Writes global album settings to the provided writer
