@@ -12,11 +12,10 @@ where
     // Reference image path and measured size (dynamic by country)
     let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
     let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
-    let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
-        Some(ratio) => ratio,
+    let _ = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
+        Some(_ratio) => {},
         None => {
             warn!("Reference image not found: {}. Using default ratio (1.0, 1.0)", reference_image_path);
-            (1.0, 1.0)
         }
     };
 
@@ -36,7 +35,10 @@ where
     let mut page_num = 1;
     let mut rows_on_page = 0;
     let max_rows_per_page = 4;
+    let mut total_images = 0;
     for (year, year_stamps) in &by_year {
+        println!("[INFO] Processing year {} with {} stamps", year, year_stamps.len());
+        total_images += year_stamps.len();
         // Extract header information from stamps in this year
         let header_info = extract_header_info(year_stamps);
         
@@ -102,12 +104,11 @@ where
                     if stamp.desc.contains("Set") {
                         continue;
                     }
-                    format!("{}.jpg", stamp.catalog_num)
+                    format!("{}.jpg", sanitize_filename(&stamp.catalog_num))
                 } else {
                     stamp.image_path.trim_start_matches("images/").to_string()
                 };
                 
-                let full_image_path = format!("Albums/{}/images/{}", album_name.replace(' ', "-"), image_name);
                 let stamp_width = 25.0; // Fixed width for reliable layout
                 
                 // Check if adding this stamp would exceed the usable width
@@ -134,7 +135,7 @@ where
                     if stamp.desc.contains("Set") {
                         continue;
                     }
-                    format!("{}.jpg", stamp.catalog_num)
+                    format!("{}.jpg", sanitize_filename(&stamp.catalog_num))
                 } else {
                     stamp.image_path.trim_start_matches("images/").to_string()
                 };
@@ -160,6 +161,7 @@ where
             cb(page_num);
         }
     }
+    println!("[INFO] Total images processed: {}", total_images);
 }
 use std::io::{Write, BufWriter};
 use std::fs::File;
@@ -418,11 +420,10 @@ where
     // Reference image path and measured size (dynamic by country)
     let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
     let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
-    let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
-        Some(ratio) => ratio,
+    let _ = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
+        Some(_ratio) => {},
         None => {
             warn!("Reference image not found: {}. Using default ratio (1.0, 1.0)", reference_image_path);
-            (1.0, 1.0)
         }
     };
     use std::path::Path;
@@ -435,18 +436,6 @@ where
     // Write global album settings
     write_globals(&mut output, album_name);
 
-    // Page size and margins (from AlbumEasy settings)
-    let page_height = 279.0; // US Letter height in mm
-    let top_margin = 10.0;
-    let bottom_margin = 10.0;
-    // Border settings (from config or hardcoded)
-    let border_outer = 0.5; // ALBUM_PAGES_BORDER outer line thickness
-    let border_inner1 = 0.1; // ALBUM_PAGES_BORDER inner1 line thickness
-    let border_inner2 = 0.0; // ALBUM_PAGES_BORDER inner2 line thickness
-    let border_spacing = 3.0; // ALBUM_PAGES_BORDER spacing between lines
-    // Total border thickness: outer + inner1 + inner2 + spacing
-    let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
-    let usable_height = page_height - top_margin - bottom_margin - total_border;
     // Restore main output loop: iterate over all series, fetch stamps, group into rows, and output
     let series_list = get_all_series(&conn).expect("Failed to fetch series");
     let rows_on_page = 0;
@@ -510,6 +499,26 @@ pub fn clean_text(s: &str) -> String {
                 _ if c.is_ascii() => c,
                 _ => ' ',
             }
+        })
+        .collect()
+}
+
+/// Sanitizes a filename by replacing filesystem-incompatible characters
+pub fn sanitize_filename(filename: &str) -> String {
+    filename
+        .chars()
+        .map(|c| match c {
+            '*' => 's',  // star -> s
+            '?' => 'q',  // question -> q
+            '<' => 'l',  // less -> l
+            '>' => 'g',  // greater -> g
+            ':' => 'c',  // colon -> c
+            '"' => 'd',  // double quote -> d
+            '|' => 'p',  // pipe -> p
+            '\\' => 'b', // backslash -> b
+            '/' => 'f',  // forward slash -> f
+            _ if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' => c,
+            _ => '_',    // replace other non-alphanumeric with underscore
         })
         .collect()
 }

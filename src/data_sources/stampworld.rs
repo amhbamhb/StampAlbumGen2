@@ -341,10 +341,12 @@ pub fn collect_stampworld_data(
                 }
 
                 let local_image_path = if !image_url.is_empty() {
-                    let image_name = image_url.split('/').last().unwrap_or("");
-                    format!("images/{}", image_name)
+                    let raw_image_name = image_url.split('/').last().unwrap_or("");
+                    let sanitized_image_name = crate::album_globals::sanitize_filename(raw_image_name);
+                    format!("images/{}", sanitized_image_name)
                 } else {
-                    String::new()
+                    // Generate sanitized filename from catalog number
+                    format!("images/{}.jpg", crate::album_globals::sanitize_filename(&sg_number))
                 };
                 let remote_image_url = image_url.clone();
                 let cleaned_context_details = context_details

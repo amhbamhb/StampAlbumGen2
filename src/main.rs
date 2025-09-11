@@ -22,14 +22,21 @@ fn get_operating_system_type() -> OSType {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     
-    // Construct album name from country if not provided
-    let album_name = cli.album_name.unwrap_or_else(|| cli.country.replace(' ', "-"));
+    // If site_name is provided, use it for country
+    let country = if let Some(ref site) = cli.site_name {
+        site.clone()
+    } else {
+        cli.country.clone()
+    };
+    
+    // Construct album name from country
+    let album_name = cli.album_name.unwrap_or_else(|| country.replace(' ', "-"));
     
     // Construct site name from country if not provided
-    let site_name = cli.site_name.unwrap_or_else(|| cli.country.clone());
+    let site_name = cli.site_name.unwrap_or_else(|| country.clone());
     
-    // Construct DB path if not provided - use country name for database folder/file
-    let db_path = cli.db_path.unwrap_or_else(|| format!("Albums/{}/{}.db", cli.country.replace(' ', "-"), cli.country.replace(' ', "-")));
+    // Construct DB path if not provided - use album_name for database folder/file
+    let db_path = cli.db_path.unwrap_or_else(|| format!("Albums/{}/{}.db", album_name, album_name));
     
     // Set the DB path for all modules to use
     stamp_album_gen2::album_globals::set_db_path_from_cli(&db_path);
@@ -120,13 +127,13 @@ Options:\n\
     let cli = Cli::parse();
     
     // Construct album name from country if not provided
-    let album_name = cli.album_name.unwrap_or_else(|| cli.country.replace(' ', "-"));
+    let album_name = cli.album_name.unwrap_or_else(|| country.replace(' ', "-"));
     
     // Construct site name from country if not provided
-    let site_name = cli.site_name.unwrap_or_else(|| cli.country.clone());
+    let site_name = cli.site_name.unwrap_or_else(|| country.clone());
     
     // Construct DB path if not provided
-    let db_path = cli.db_path.unwrap_or_else(|| format!("Albums/{}/{}.db", cli.country.replace(' ', "-"), cli.country.replace(' ', "-")));
+    let db_path = cli.db_path.unwrap_or_else(|| format!("Albums/{}/{}.db", album_name, album_name));
     
     // Construct other paths based on album name
     let album_directory = cli.album_directory.unwrap_or_else(|| format!("Albums/{}", album_name));
@@ -137,7 +144,7 @@ Options:\n\
     let start_year = cli.start_year;
     let end_year = cli.end_year;
     println!("[INFO] Stamp Album Generator started.");
-    println!("[INFO] Country: {}", cli.country);
+    println!("[INFO] Country: {}", country);
     println!("[INFO] Album name: {}", album_name);
     println!("[INFO] Database path: {}", db_path);
     println!("[INFO] Year filter: {} to {}", start_year, end_year);
@@ -304,32 +311,6 @@ Options:\n\
                 std::process::exit(1);
             }
         }
-        println!("[INFO] Loading stamps from database: {}", db_path);
-        let mut last_page = 0;
-        let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
-        println!("[INFO] Filtering stamps by year: {} to {}", gen.start_year, gen.end_year);
-        let filtered_stamps = all_stamps.into_iter().filter(|stamp| {
-            let year = stamp.year;
-            year >= gen.start_year && year <= gen.end_year
-        }).collect::<Vec<_>>();
-        println!("[INFO] Generating AlbumEasy output for album: {}", gen.album_name);
-        stamp_album_gen2::album_globals::generate_album_output_from_stamps(
-            &filtered_stamps,
-            &gen.album_name,
-            Some(Box::new(|page| {
-                last_page = page;
-                pb.set_message(format!(
-                    "Generating AlbumEasy output for album '{}', page {}...",
-                    gen.album_name, page
-                ));
-            })),
-        );
-        pb.finish_with_message(format!(
-            "AlbumEasy output generated for album '{}'. Total pages: {}",
-            gen.album_name, last_page
-        ));
-        println!("[INFO] AlbumEasy output complete. Output file: {}", gen.album_file_name);
-        return Ok(());
     }
     Ok(())
 }

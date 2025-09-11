@@ -123,13 +123,14 @@ impl CommandsFileGenerator {
 
     pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> ImageStatus {
         use std::path::Path;
-        let image_name = url.split('/').last().unwrap_or("stampworld.jpg");
+        let raw_image_name = url.split('/').last().unwrap_or("stampworld.jpg");
+        let image_name = crate::album_globals::sanitize_filename(raw_image_name);
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
             // debug!("Skipping download, file exists: {}", file_path);
             return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
         }
-        self.get_image(url, image_name, &file_path)
+        self.get_image(url, &image_name, &file_path)
     }
     pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite: bool, page_callback: Option<&dyn Fn(usize)>) -> Vec<String> {
         let separator = self.separator.clone();
