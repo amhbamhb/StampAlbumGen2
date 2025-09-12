@@ -15,4 +15,4 @@ pub mod html_utils;
 pub mod commands_file_generator;
 pub mod album_globals;
 pub mod db_utils;
-// pub mod album_text_generator;
+pub mod sample_images;

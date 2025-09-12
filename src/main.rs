@@ -263,7 +263,8 @@ Options:\n\
                 let data = gen.collect_stampworld_data(&base_url, cli.overwrite, Some(&|page| {
                     pb.set_message(format!("Scraping data for album '{}', page {}...", album_name, page));
                 }));
-                pb.set_message("Scraping complete. Saving extracted data...");
+                pb.set_message("Scraping complete. Processing and saving data...");
+                println!("[INFO] Scraping complete. Found {} stamp records", data.len());
                 println!("[INFO] Saving extracted data to file: {}", extract_file_name);
                 gen.save_stamp_data(&extract_file_name, &data, "stampworld");
                 pb.set_message("Data saved. Creating AlbumEasy file...");
@@ -282,11 +283,15 @@ Options:\n\
                 println!("[INFO] Loading stamps from database: {}", db_path);
                 let mut last_page = 0;
                 let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
+                println!("[INFO] Loaded {} stamps from database", all_stamps.len());
+                
                 println!("[INFO] Filtering stamps by year: {} to {}", gen.start_year, gen.end_year);
                 let filtered_stamps = all_stamps.into_iter().filter(|stamp| {
                     let year = stamp.year;
                     year >= gen.start_year && year <= gen.end_year
                 }).collect::<Vec<_>>();
+                println!("[INFO] Filtered to {} stamps within year range", filtered_stamps.len());
+                
                 println!("[INFO] Generating AlbumEasy output for album: {}", gen.album_name);
                 stamp_album_gen2::album_globals::generate_album_output_from_stamps(
                     &filtered_stamps,

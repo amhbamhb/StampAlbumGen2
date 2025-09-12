@@ -35,6 +35,8 @@ pub fn collect_stampworld_data(
             break;
         }
         let url = format!("{}{}", base_url, page_num);
+        println!("[INFO] Scraping StampWorld page {}: {}", page_num, url);
+        
         if let Some(cb) = page_callback {
             cb(page_num as usize);
         }
@@ -57,6 +59,8 @@ pub fn collect_stampworld_data(
                 std::process::exit(1);
             }
         };
+        println!("[INFO] Page {} downloaded successfully ({} bytes)", page_num, body.len());
+        
         if !previous_body.is_empty() && body == previous_body {
             debug!("Page content is the same as previous page, stopping to prevent infinite loop");
             done = true;
@@ -167,8 +171,10 @@ pub fn collect_stampworld_data(
                 block_year.trim().parse::<i32>().unwrap_or(0)
             };
                debug!("[stampworld] Extracted block_year='{}', block_year_int={}", block_year, block_year_int);
-            if block_year_int > end_year {
-                debug!("[stampworld] Block year {} > endYear {}. Stopping scrape.", block_year_int, end_year);
+            // Only stop if the entire block is way outside the range (more than 10 years past end_year)
+            // This allows scraping of pages that contain some stamps outside the range
+            if block_year_int > end_year + 10 {
+                debug!("[stampworld] Block year {} is significantly > endYear {}. Stopping scrape.", block_year_int, end_year);
                 done = true;
                 break 'block_loop;
             }
@@ -183,6 +189,8 @@ pub fn collect_stampworld_data(
             let mut stamp_row_count = 0;
             let mut image_idx = 0;
             let stamp_rows: Vec<_> = content_div.select(&table_selector).collect();
+            println!("[INFO] Found {} stamp rows on page {}", stamp_rows.len(), page_num);
+            
             debug!("Found {} stamp rows in table with selector 'tr.stamp_tr'", stamp_rows.len());
             for (i, tr) in stamp_rows.iter().enumerate() {
                 debug!("Stamp row {}: class='{}', data-stamp-type='{}'", i, tr.value().attr("class").unwrap_or("no-class"), tr.value().attr("data-stamp-type").unwrap_or("no-type"));
@@ -265,18 +273,24 @@ pub fn collect_stampworld_data(
                             continue;
                         }
                         if stamp_year > end_year {
-                            debug!("[stampworld] Found stamp_year > endYear ({} > {}). Stopping scrape.", stamp_year, end_year);
-                            stop_scraping = true;
-                            done = true;
-                            break;
+                            debug!("[stampworld] Stamp {} has year {} > endYear {}, but continuing to check other stamps on this page", sg_number, stamp_year, end_year);
+                            // Don't stop scraping here - continue to check other stamps on the page
+                            // Only skip this individual stamp
+                            continue;
                         }
                         debug!("[stampworld] STAMP: stamp_year={} context_above='{}' context_details='{}' image_url='{}'", stamp_year, context_above, context_details, image_url);
                         // Only download image if stamp_year is within range
                         if image_url.is_empty() {
                             debug!("[stampworld] Skipping image download: image_url is empty");
                         } else if stamp_year >= start_year && stamp_year <= end_year {
+                            println!("[INFO] Processing image for stamp {} ({})", sg_number, stamp_year);
                             debug!("[stampworld] Attempting image download: image_url='{}'", image_url);
                             let image_status = get_stampworld_image(&image_url, overwrite);
+                            if image_status.exists {
+                                println!("[INFO] Image processed successfully for stamp {}", sg_number);
+                            } else {
+                                println!("[WARN] Failed to process image for stamp {}", sg_number);
+                            }
                             debug!("[stampworld] Image download result: {:?}", image_status);
                         } else {
                             debug!("[stampworld] Skipping image download: stamp_year {} not in range {}-{}", stamp_year, start_year, end_year);
@@ -383,7 +397,10 @@ pub fn collect_stampworld_data(
                     &cleaned_context_details,
                 );
                 match result {
-                    Ok(_) => debug!("Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year),
+                    Ok(_) => {
+                        println!("[INFO] Saved stamp to database: {} ({}) - {}", sg_number, stamp_year, clean_text(&description));
+                        debug!("Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year);
+                    }
                     Err(e) => error!("Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, stamp_year, e),
                 }
                 // Build the stamp data line for the extract file

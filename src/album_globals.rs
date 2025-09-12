@@ -1,4 +1,5 @@
-/// Generates AlbumEasy output from a filtered list of stamps and album name, without querying the DB.
+/// Generates AlbumEasy output from a filtered list of stamps and album name, without querying the database.
+/// This function takes a pre-filtered list of stamps and generates the complete AlbumEasy output file.
 pub fn generate_album_output_from_stamps<F>(stamps: &[StampStub], album_name: &str, mut page_callback: Option<F>)
 where
     F: FnMut(usize),
@@ -9,13 +10,15 @@ where
     let config = load_config("config.toml");
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
-    // Reference image path and measured size (dynamic by country)
-    let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-    let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
-    let _ = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
+    
+    // Get the correct source directory from the database path
+    let _db_path = get_db_path_from_cli();
+    
+    // Calculate mm-per-pixel ratios using embedded reference image
+    let _ = match crate::image_utils::calc_mm_per_pixel_embedded(reference_width_mm as f32, reference_height_mm as f32) {
         Some(_ratio) => {},
         None => {
-            warn!("Reference image not found: {}. Using default ratio (1.0, 1.0)", reference_image_path);
+            warn!("Could not load embedded reference image. Using default ratio (1.0, 1.0)");
         }
     };
 
@@ -91,7 +94,7 @@ where
             let mut total_width = 0.0;
             let max_stamps_per_row = 5;
             // Enhanced page layout calculations
-            let page_width_mm = 216.0; // US Letter width in mm
+            let page_width_mm = 180.0; // User specified page width
             let left_margin = 18.0;    // Left margin in mm
             let right_margin = 18.0;  // Right margin in mm
             let stamp_spacing = 3.0;  // Spacing between stamps in mm
@@ -109,7 +112,7 @@ where
                     stamp.image_path.trim_start_matches("images/").to_string()
                 };
                 
-                let stamp_width = 25.0; // Fixed width for reliable layout
+                let (stamp_width, _) = calculate_stamp_dimensions(&image_name, album_name);
                 
                 // Check if adding this stamp would exceed the usable width
                 let required_width = if stamps_in_row > 0 { 
@@ -164,12 +167,11 @@ where
 }
 use std::io::{Write, BufWriter};
 use std::fs::File;
-use std::path::Path;
 use std::sync::Mutex;
 use std::collections::HashSet;
 use lazy_static::lazy_static;
 use crate::db_utils::{init_db, get_all_series, get_stamps_by_series, StampStub};
-use crate::image_utils::calc_mm_per_pixel;
+
 use crate::config::load_config;
 use log::warn;
 use image::io::Reader as ImageReader;
@@ -409,7 +411,7 @@ pub fn add_stamp<W: std::io::Write>(
 
 /// Main entry point for AlbumEasy output generation.
 /// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
-pub fn generate_album_output<F>(db_path: &str, album_name: &str, mut page_callback: Option<F>)
+pub fn generate_album_output<F>(db_path: &str, album_name: &str, _page_callback: Option<F>)
 where
     F: FnMut(usize),
 {
@@ -417,13 +419,11 @@ where
     let config = load_config("config.toml");
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
-    // Reference image path and measured size (dynamic by country)
-    let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-    let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
-    let _ = match calc_mm_per_pixel(&reference_image_path, reference_width_mm as f32, reference_height_mm as f32) {
+    // Calculate mm-per-pixel ratios using embedded reference image
+    let _ = match crate::image_utils::calc_mm_per_pixel_embedded(reference_width_mm as f32, reference_height_mm as f32) {
         Some(_ratio) => {},
         None => {
-            warn!("Reference image not found: {}. Using default ratio (1.0, 1.0)", reference_image_path);
+            warn!("Could not load embedded reference image. Using default ratio (1.0, 1.0)");
         }
     };
     use std::path::Path;
@@ -547,40 +547,52 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str) -> (f64, f
     // Default dimensions if image can't be read
     let default_width = 25.0;
     let default_height = 30.0;
-    
+
     // Try to get actual image dimensions
     let image_full_path = format!("Albums/{}/images/{}", album_name.replace(' ', "-"), image_path);
-    
+
     if let Some((img_width, img_height)) = get_image_dimensions(&image_full_path) {
-        // Assume standard stamp DPI (dots per inch) - typical stamp images are around 300-600 DPI
-        // For calculation, we'll use a reasonable DPI assumption
-        let assumed_dpi = 300.0; // dots per inch
-        let mm_per_inch = 25.4;
+        // Use reference-based sizing approach from older code
+
+        // Use reference dimensions - these should be configurable
+        let reference_width_mm = 25.0;  // Reduced from 50.0 to decrease mm-per-pixel ratio
+        let reference_height_mm = 15.0; // Reduced from 25.0 to decrease mm-per-pixel ratio
+
+        // Calculate mm-per-pixel ratios using embedded reference image
+        let (mm_per_pixel_w, mm_per_pixel_h) = match crate::image_utils::calc_mm_per_pixel_embedded(reference_width_mm as f32, reference_height_mm as f32) {
+            Some(ratio) => ratio,
+            None => {
+                println!("[DEBUG] Could not load embedded reference image. Using default ratio (1.0, 1.0)");
+                (1.0, 1.0)
+            }
+        };
+
+        // Estimate real dimensions using the mm-per-pixel ratios
+        let (raw_width_mm, raw_height_mm) = crate::image_utils::estimate_real_dimensions(&image_full_path, mm_per_pixel_w, mm_per_pixel_h)
+            .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
+
+        // Apply series-specific scaling factor based on stamp type
+        let (width_scale, height_scale) = crate::sample_images::get_scaling_for_series(image_path);
+        let est_width_mm = raw_width_mm as f64 * width_scale;
+        let est_height_mm = raw_height_mm as f64 * height_scale;
         
-        // Calculate physical dimensions in mm
-        let physical_width_mm = (img_width as f64 / assumed_dpi) * mm_per_inch;
-        let physical_height_mm = (img_height as f64 / assumed_dpi) * mm_per_inch;
-        
-        // Apply some reasonable bounds to prevent extremely large or small stamps
-        let min_size = 15.0; // minimum 15mm
-        let max_size = 50.0; // maximum 50mm
-        
-        let width_mm = physical_width_mm.max(min_size).min(max_size);
-        let height_mm = physical_height_mm.max(min_size).min(max_size);
-        
-        println!("[DEBUG] Image: {} -> {}x{} pixels -> {:.1}mm x {:.1}mm", 
-                image_path, img_width, img_height, width_mm, height_mm);
-        
-        (width_mm, height_mm)
+        // Apply reasonable bounds
+        let min_size = 15.0;
+        let max_width = 50.0;  // Max width for page layout
+        let max_height = 30.0; // Max height for page layout
+
+        let final_width = est_width_mm.max(min_size).min(max_width);
+        let final_height = est_height_mm.max(min_size).min(max_height);
+
+        println!("[INFO] Stamp dimensions: {} -> {:.1}mm x {:.1}mm (pixels: {}x{}, ratio: {:.3}x{:.3})",
+                image_path, final_width, final_height, img_width, img_height, mm_per_pixel_w, mm_per_pixel_h);        (final_width, final_height)
     } else {
         // Fall back to default dimensions
-        println!("[DEBUG] Could not read image dimensions for {}, using defaults: {:.1}mm x {:.1}mm", 
+        println!("[DEBUG] Could not read image dimensions for {}, using defaults: {:.1}mm x {:.1}mm",
                 image_path, default_width, default_height);
         (default_width, default_height)
     }
-}
-
-/// Writes global album settings to the provided writer
+}/// Writes global album settings to the provided writer
 pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     // Get current date/time and user information
     use std::time::{SystemTime, UNIX_EPOCH};
@@ -629,7 +641,9 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         "".to_string(),
         format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name),
         "".to_string(),
-        "ALBUM_PAGES_SPACING (6.0 6.0)".to_string(),
+        "ALBUM_PAGES_SPACING (3.0 10.0)".to_string(),
+        "".to_string(),
+        "ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string(),
         "".to_string(),
         "#ALBUM_PAGES_NUMBER (TN 10 R)".to_string(),
         "ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string(),
@@ -643,7 +657,7 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         "# To have the boxes drawn the actual stamp size use".to_string(),
         "#STAMP_BOXES_SIZE_ADJUST(-4.0)".to_string(),
         "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)".to_string(),
-        "STAMP_BOXES_SIZE_ADJUST (0)".to_string(),
+        "STAMP_BOXES_SIZE_ADJUST (1)".to_string(),
     ];
     for line in lines.iter() {
         let _ = writeln!(writer, "{}", line);

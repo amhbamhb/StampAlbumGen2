@@ -466,6 +466,9 @@ impl CommandsFileGenerator {
         if name.is_empty() {
             return ImageStatus { link: String::new(), exists: false, width: 0, height: 0 };
         }
+        
+        println!("[INFO] Downloading image: {} -> {}", name, file_path);
+        
         let curl_cmd = if self.no_ssl_check {
             vec!["curl", "--ssl-no-revoke", "-L", "-o", file_path, url]
         } else {
@@ -482,6 +485,9 @@ impl CommandsFileGenerator {
             error!("Error executing curl for imageURL: {}", e);
             std::process::exit(1);
         }
+        
+        println!("[INFO] Image downloaded successfully: {}", name);
+        
         // Read image dimensions
         let img_file = std::path::Path::new(file_path);
         match ImageReader::open(img_file) {
@@ -489,6 +495,7 @@ impl CommandsFileGenerator {
                 Ok(img) => {
                     width = img.width() as i32;
                     height = img.height() as i32;
+                    println!("[INFO] Image dimensions: {} x {} pixels", width, height);
                 }
                 Err(e) => {
                     error!("Error decoding image: {}", e);
