@@ -11,7 +11,41 @@ pub struct Config {
     // Add more config fields as needed
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            stamp_box_height: None,
+            row_font_spacing: None,
+            header_font_spacing: None,
+            reference_width_mm: None,
+            reference_height_mm: None,
+        }
+    }
+}
+
 pub fn load_config(path: &str) -> Config {
-    let content = fs::read_to_string(path).expect("Failed to read config.toml");
-    toml::from_str(&content).expect("Failed to parse config.toml")
+    match fs::read_to_string(path) {
+        Ok(content) => {
+            toml::from_str(&content).unwrap_or_else(|_| {
+                println!("[WARN] Failed to parse config.toml, using defaults");
+                Config {
+                    stamp_box_height: None,
+                    row_font_spacing: None,
+                    header_font_spacing: None,
+                    reference_width_mm: None,
+                    reference_height_mm: None,
+                }
+            })
+        }
+        Err(_) => {
+            println!("[INFO] config.toml not found, using default values");
+            Config {
+                stamp_box_height: None,
+                row_font_spacing: None,
+                header_font_spacing: None,
+                reference_width_mm: None,
+                reference_height_mm: None,
+            }
+        }
+    }
 }

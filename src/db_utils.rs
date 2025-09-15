@@ -1,18 +1,43 @@
-// Returns a list of series (name, year, month, day, is_perforated, perforation)
-pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<SeriesStub>> {
-    let mut stmt = conn.prepare("SELECT DISTINCT series, year, month, day, perforation FROM stamps ORDER BY year, series")?;
+// Returns a list of distinct series names (ordered by series name)
+pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<String>> {
+    let mut stmt = conn.prepare("SELECT DISTINCT series FROM stamps ORDER BY series")?;
     let series_iter = stmt.query_map([], |row| {
-        Ok(SeriesStub {
-            name: row.get(0)?,
-            year: row.get::<_, i32>(1)?,
-            month: row.get(2)?,
-            day: row.get(3)?,
-            is_perforated: false, // TODO: parse from data if available
-            perforation: row.get(4)?,
-        })
+        Ok(row.get::<_, String>(0)?)
     })?;
     let mut result = Vec::new();
     for s in series_iter {
+        result.push(s?);
+    }
+    Ok(result)
+}
+
+// Returns a list of stamps for a given series (across all years), sorted by SG number
+pub fn get_stamps_by_series_only(conn: &rusqlite::Connection, series: &str) -> rusqlite::Result<Vec<StampStub>> {
+    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, 0, description, sg_number, '', image_path, watermark, design, engraving, perforation, series FROM stamps WHERE series = ?1 ORDER BY sg_number")?;
+    let stamp_iter = stmt.query_map([series], |row| {
+            let multi_perf_int: i32 = row.get(7)?;
+            Ok(StampStub {
+                year: row.get::<_, i32>(0)?,
+                month: row.get(1)?,
+                day: row.get(2)?,
+                field1: row.get(3)?,
+                field2: row.get(4)?,
+                field3: row.get(5)?,
+                color: row.get(6)?,
+                multi_perf: multi_perf_int != 0,
+                desc: row.get(8)?,
+                catalog_num: row.get(9)?,
+                field4: row.get(10)?,
+                image_path: row.get(11)?,
+                watermark: row.get(12)?,
+                design: row.get(11)?,
+                engraving: row.get(12)?,
+                perforation: row.get(13)?,
+                series: row.get(14)?,
+            })
+    })?;
+    let mut result = Vec::new();
+    for s in stamp_iter {
         result.push(s?);
     }
     Ok(result)
@@ -30,24 +55,27 @@ pub struct SeriesStub {
 
 // Returns a list of stamps for a given series and year
 pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &str) -> rusqlite::Result<Vec<StampStub>> {
-    let mut stmt = conn.prepare("SELECT year, sg_number, type, denomination, color, 0, description, sg_number, '', image_path, watermark, design, engraving, perforation FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
+    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, 0, description, sg_number, '', image_path, watermark, design, engraving, perforation, series FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
     let stamp_iter = stmt.query_map([series, year], |row| {
-            let multi_perf_int: i32 = row.get(5)?;
+            let multi_perf_int: i32 = row.get(7)?;
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
-                field1: row.get(1)?,
-                field2: row.get(2)?,
-                field3: row.get(3)?,
-                color: row.get(4)?,
+                month: row.get(1)?,
+                day: row.get(2)?,
+                field1: row.get(3)?,
+                field2: row.get(4)?,
+                field3: row.get(5)?,
+                color: row.get(6)?,
                 multi_perf: multi_perf_int != 0,
-                desc: row.get(6)?,
-                catalog_num: row.get(7)?,
-                field4: row.get(8)?,
+                desc: row.get(8)?,
+                catalog_num: row.get(9)?,
+                field4: row.get(10)?,
                 image_path: row.get(9)?,
                 watermark: row.get(10)?,
                 design: row.get(11)?,
                 engraving: row.get(12)?,
                 perforation: row.get(13)?,
+                series: row.get(14)?,
             })
     })?;
     let mut result = Vec::new();
@@ -60,6 +88,8 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
 #[derive(Debug)]
 pub struct StampStub {
     pub year: i32,
+    pub month: String,
+    pub day: String,
     pub field1: String,
     pub field2: String,
     pub field3: String,
@@ -73,9 +103,10 @@ pub struct StampStub {
     pub design: String,
     pub engraving: String,
     pub perforation: String,
+    pub series: String,
 }
 use rusqlite::{params, Connection, Result};
-use log::{debug, info, error};
+use log::{debug, error};
 
 pub fn init_db(db_path: &str) -> Result<Connection> {
     let conn = Connection::open(db_path)?;

@@ -1,8 +1,8 @@
-use log::{debug, error, warn};
-use log::{info}; // Added info macro for logging
+use log::{error, info};
 use std::io::Write;
-use crate::album_globals;
-use crate::album_globals::{SeriesInfo, ImageStatus};
+use crate::globals::{SeriesInfo, ImageStatus};
+use crate::text_utils::sanitize_filename;
+use crate::globals::OSType;
 
 
 /// Represents the status of an image operation (stub)
@@ -14,29 +14,36 @@ pub fn get_colnect_image(images_directory: &str, url: &str, name: &str) -> Image
 
 /// Stub for get_image, to be implemented
 pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
-    // Debug: Show the process of accessing the external website and getting the image
-    // debug!("Attempting to fetch image from URL: {}", _url);
-    // debug!("Image will be saved as: {}", _file_path);
-    // Example: Use reqwest to fetch the image
-    match reqwest::blocking::get(_url) {
+    // Use reqwest to fetch the image
+    let client = reqwest::blocking::Client::builder()
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap_or_else(|_| reqwest::blocking::Client::new());
+    match client.get(_url).send() {
         Ok(resp) => {
-            // debug!("HTTP status: {}", resp.status());
             if resp.status().is_success() {
                 match resp.bytes() {
                     Ok(bytes) => {
                         match std::fs::write(_file_path, &bytes) {
-                            Ok(_) => (), // debug!("Image saved successfully."),
-                            Err(e) => error!("Failed to save image: {}", e),
-                        }
-                        ImageStatus {
-                            link: _url.to_string(),
-                            exists: true,
-                            width: 0,
-                            height: 0,
+                            Ok(_) => {
+                                ImageStatus {
+                                    link: _url.to_string(),
+                                    exists: true,
+                                    width: 0,
+                                    height: 0,
+                                }
+                            }
+                            Err(_) => {
+                                ImageStatus {
+                                    link: _url.to_string(),
+                                    exists: false,
+                                    width: 0,
+                                    height: 0,
+                                }
+                            }
                         }
                     }
-                    Err(e) => {
-                        error!("Failed to read image bytes: {}", e);
+                    Err(_) => {
                         ImageStatus {
                             link: _url.to_string(),
                             exists: false,
@@ -46,7 +53,6 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
                     }
                 }
             } else {
-                error!("HTTP request failed with status: {}", resp.status());
                 ImageStatus {
                     link: _url.to_string(),
                     exists: false,
@@ -55,8 +61,7 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
                 }
             }
         }
-        Err(e) => {
-            error!("HTTP request error: {}", e);
+        Err(_) => {
             ImageStatus {
                 link: _url.to_string(),
                 exists: false,
@@ -68,7 +73,7 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
 }
 #[derive(Debug, Default)]
 pub struct CommandsFileGenerator {
-    pub detected_os: Option<crate::album_globals::OSType>,
+    pub detected_os: Option<OSType>,
     pub file_separator: String,
     pub data_source: String,
     pub file_source: String,
@@ -124,15 +129,15 @@ impl CommandsFileGenerator {
     pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> ImageStatus {
         use std::path::Path;
         let raw_image_name = url.split('/').last().unwrap_or("stampworld.jpg");
-        let image_name = crate::album_globals::sanitize_filename(raw_image_name);
+        let image_name = sanitize_filename(raw_image_name);
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
-            // debug!("Skipping download, file exists: {}", file_path);
+            info!("Skipping download, image already exists: {}", file_path);
             return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
         }
         self.get_image(url, &image_name, &file_path)
     }
-    pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite: bool, page_callback: Option<&dyn Fn(usize)>) -> Vec<String> {
+    pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite_images: bool, page_callback: Option<&dyn Fn(usize)>) -> Vec<String> {
         let separator = self.separator.clone();
         let images_directory = self.images_directory.clone();
         let start_year = self.start_year;
@@ -155,15 +160,45 @@ impl CommandsFileGenerator {
             }
         };
         let get_stampworld_image = |url: &str, overwrite: bool| {
-            let image_name = url.split('/').last().unwrap_or("stampworld.jpg");
+            let raw_image_name = url.split('/').last().unwrap_or("stampworld.jpg");
+            let image_name = sanitize_filename(raw_image_name);
             let file_path = format!("{}/{}", images_directory, image_name);
             if !overwrite && std::path::Path::new(&file_path).exists() {
-                // debug!("Skipping download, file exists: {}", file_path);
+                info!("Skipping download, image already exists: {}", file_path);
                 return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
             }
-            get_image(url, image_name, &file_path)
+            
+            info!("Downloading image: {} -> {}", url, file_path);
+            
+            // Use curl to download the image
+            use std::process::Command;
+            let curl_cmd = if url.starts_with("https://") {
+                vec!["curl", "--ssl-no-revoke", "-L", "-o", &file_path, url]
+            } else {
+                vec!["curl", "-L", "-o", &file_path, url]
+            };
+            
+            info!("Running curl command: {:?}", curl_cmd);
+            
+            match Command::new(curl_cmd[0])
+                .args(&curl_cmd[1..])
+                .status() {
+                Ok(status) => {
+                    if status.success() {
+                        info!("Successfully downloaded: {}", file_path);
+                        ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 }
+                    } else {
+                        error!("Failed to download {}: curl exit code {:?}", url, status.code());
+                        ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0 }
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to run curl for {}: {}", url, e);
+                    ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0 }
+                }
+            }
         };
-        crate::data_sources::stampworld::collect_stampworld_data(
+        crate::stampworld::collect_stampworld_data(
             &mut self.sequencer,
             &separator,
             &self.site_name,
@@ -173,14 +208,14 @@ impl CommandsFileGenerator {
             base_url,
             start_year,
             end_year,
-            overwrite,
+            overwrite_images,
             page_callback,
         )
     }
     pub fn new() -> Self {
         Self {
             detected_os: None,
-            file_separator: crate::album_globals::FILE_SEPARATOR.clone(),
+            file_separator: crate::globals::FILE_SEPARATOR.to_string(),
             data_source: String::new(),
             file_source: String::new(),
             album_directory: String::new(),
@@ -212,105 +247,9 @@ impl CommandsFileGenerator {
             touchstamps_data_file: Vec::new(),
         }
     }
-    pub fn create_album<P: AsRef<std::path::Path>>(&mut self, file_path: P, data: &[String]) {
-        use std::fs::File;
-        use std::io::{BufWriter, Write};
-        let path = file_path.as_ref();
-        let file = match File::create(path) {
-            Ok(f) => f,
-            Err(e) => {
-                error!("Unable to open output file: {}", e);
-                std::process::exit(1);
-            }
-        };
-        let mut writer = BufWriter::new(file);
-        self.write_globals(&mut writer);
-        let mut prev_year = String::new();
-        let mut prev_series = String::new();
-        let mut prev_date = String::new();
-        let mut width = "0".to_string();
-        let mut height = "0".to_string();
-        let mut series_info: Option<SeriesInfo> = None;
-    // Add required mutable counters and month_names array
-    let mut rows_written = 0;
-    let mut stamps_written = 0;
-    let mut used_width = 0;
-    let mut used_height = 0;
-    let mut max_row_height = 0;
-    let month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        for (idx, line) in data.iter().enumerate() {
-            if line.starts_with("STAMP") {
-                let fields: Vec<&str> = line.split(&self.separator).collect();
-                if fields.len() < 24 { continue; }
-                let year = fields[1];
-                let month = fields[2];
-                let day = fields[3];
-                let series = fields[4];
-                let date = format!("{}{}{}", year, month, day);
-                let _catalog_num = if self.catalog_name.is_empty() {
-                    fields[5].to_string()
-                } else {
-                    self.get_catalog_num(fields[15], false)
-                };
-                let count;
-                let multi_perf;
-                if year != prev_year {
-            album_globals::new_page(&mut writer, &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
-                    album_globals::new_year(&mut writer, year);
-                        series_info = Some(self.get_series_info(data, idx, &width, &height));
-                        count = series_info.as_ref().map_or(1, |s| s.count);
-                        multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
-                        width = series_info.as_ref().map_or("0".to_string(), |s| s.width.clone());
-                        height = series_info.as_ref().map_or("0".to_string(), |s| s.height.clone());
-            album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height, &month_names);
-                    prev_year = year.to_string();
-                    prev_series = series.to_string();
-                    prev_date = date.clone();
-                } else if series != prev_series || date != prev_date {
-                        series_info = Some(self.get_series_info(data, idx, &width, &height));
-                        count = series_info.as_ref().map_or(1, |s| s.count);
-                        multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
-                        width = series_info.as_ref().map_or("0".to_string(), |s| s.width.clone());
-                        height = series_info.as_ref().map_or("0".to_string(), |s| s.height.clone());
-            album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height, &month_names);
-                    prev_series = series.to_string();
-                    prev_date = date.clone();
-                }
-                let mut stamp_width = fields[10].to_string();
-                let mut stamp_height = fields[11].to_string();
-                if self.fix_sizes && series_info.as_ref().map_or(1, |s| s.count) > 1 && stamp_width == "0" {
-                    stamp_width = width.clone();
-                    stamp_height = height.clone();
-                }
-                let catalog_num = self.get_catalog_num(fields[15], true);
-                if catalog_num != "" && catalog_num != "Unlisted" && self.is_selected_format(fields[13]) && self.is_selected_emission(fields[14]) {
-                    album_globals::add_stamp(
-                        &mut writer,
-                        year,
-                        fields[6],
-                        fields[7],
-                        fields[8],
-                        self.fix_color(fields[9].into()),
-                        series_info.as_ref().map_or(false, |s| s.multi_perf),
-                        fields[12],
-                        &stamp_width,
-                        &stamp_height,
-                        &catalog_num,
-                        fields[17]
-                    );
-                }
-            }
-        }
-        if let Err(e) = writer.flush() {
-            println!("Unable to close output file: {}", e);
-            std::process::exit(1);
-        }
-        self.snooze(500);
-    }
-
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
-    album_globals::write_globals(_writer, &self.album_name);
+    crate::stampworld::write_globals(_writer, &self.album_name);
     }
 
     /// Remove stub for new_page helper
@@ -413,11 +352,26 @@ impl CommandsFileGenerator {
     }
 
     /// SeriesInfo struct for series metadata
-    pub fn save_stamp_data<P: AsRef<std::path::Path>>(&self, file_path: P, data: &[String], _source: &str) {
+    pub fn save_stamp_data<P: AsRef<std::path::Path>>(&self, file_path: P, data: &[String], _source: &str, overwrite_album: bool) {
         use std::fs::{self, File};
         use std::io::{Write, BufWriter};
         use std::os::unix::fs::PermissionsExt;
         let path = file_path.as_ref();
+
+        // If overwrite is false and file exists, skip without prompting
+        if !overwrite_album && path.exists() {
+            info!("File {} already exists and overwrite is disabled. Skipping save.", path.display());
+            return;
+        }
+
+        // If overwrite is true and file exists, remove it first
+        if overwrite_album && path.exists() {
+            if let Err(e) = fs::remove_file(path) {
+                error!("Failed to remove existing file for overwrite: {}", e);
+                return;
+            }
+        }
+
         let file = File::create(path);
         match file {
             Ok(f) => {
@@ -441,21 +395,10 @@ impl CommandsFileGenerator {
                         error!("Unable to set file to read-only: {}", e);
                     }
                 }
+                info!("Successfully saved stamp data to {}", path.display());
             }
             Err(e) => {
-                error!("Unable to save extract file ... continuing: {}", e);
-                info!("Would you like to overwrite the file? (y/n)");
-                use std::io::{self, Write};
-                let mut input = String::new();
-                io::stdout().flush().unwrap();
-                io::stdin().read_line(&mut input).unwrap();
-                if input.trim().eq_ignore_ascii_case("y") {
-                    if let Ok(_) = fs::remove_file(path) {
-                        self.save_stamp_data(path, data, _source);
-                    } else {
-                        error!("Failed to remove file for overwrite.");
-                    }
-                }
+                error!("Unable to save extract file: {}", e);
             }
         }
     }
@@ -463,8 +406,16 @@ impl CommandsFileGenerator {
         use std::process::Command;
         use std::fs;
         use image::io::Reader as ImageReader;
+        use std::path::Path;
+        
         if name.is_empty() {
             return ImageStatus { link: String::new(), exists: false, width: 0, height: 0 };
+        }
+        
+        // Check if file already exists
+        if Path::new(file_path).exists() {
+            info!("Skipping download, image already exists: {}", file_path);
+            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
         }
         
         println!("[INFO] Downloading image: {} -> {}", name, file_path);
@@ -625,7 +576,7 @@ impl CommandsFileGenerator {
         }
         // Save all data once at the end
         let file_path = format!("{}_data.txt", self.album_name);
-        self.save_stamp_data(&file_path, &all_stamp_data, "touchstamps");
+        self.save_stamp_data(&file_path, &all_stamp_data, "touchstamps", false);
         all_stamp_data
     }
     pub fn fix_color(&self, color: &str) -> String {

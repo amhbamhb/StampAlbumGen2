@@ -39,25 +39,7 @@ lazy_static! {
 /// Struct representing a year, month, and day
 // ...existing code...
 
-/// Writes a new series header, handles page breaks, and updates counters
-pub fn new_series<W: Write>(
-	writer: &mut W,
-	series_name: &str,
-	year: &str,
-	month: &str,
-	day: &str,
-	stamps_in_series: i32,
-	is_perforated: bool,
-	perforation: &str,
-	rows_written: &mut i32,
-	stamps_written: &mut i32,
-	used_width: &mut i32,
-	used_height: &mut i32,
-	max_row_height: &mut i32,
-	month_names: &[&str],
-) {
-	// ...function body from old album_globals.rs...
-}
+
 
 /// Writes a line to the output, with error handling
 pub fn write_line<W: Write>(writer: &mut W, line: &str) {
@@ -79,16 +61,43 @@ pub fn new_page<W: std::io::Write>(writer: &mut W, rows_written: &mut i32, stamp
 }
 
 /// Writes a new year header
-pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str) {
-	let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", year);
+pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day: &str) {
+    // Remove leading zero from day
+    let mut day_display = day.to_string();
+    if day_display.starts_with('0') {
+        day_display = day_display.trim_start_matches('0').to_string();
+    }
+
+    // Build date string in Month - Day - Year format
+    let mut date_display = String::new();
+    if year != "0000" && month != "00" && day != "00" {
+        if let Ok(month_idx) = month.parse::<usize>() {
+            if month_idx > 0 && month_idx < MONTH_NAMES.len() {
+                date_display = format!("{} - {} - {}", MONTH_NAMES[month_idx], day_display, year);
+            }
+        }
+    } else if year != "0000" && month != "00" && day == "00" {
+        if let Ok(month_idx) = month.parse::<usize>() {
+            if month_idx > 0 && month_idx < MONTH_NAMES.len() {
+                date_display = format!("{} - {}", MONTH_NAMES[month_idx], year);
+            }
+        }
+    } else if year != "0000" && month == "00" && day == "00" {
+        date_display = year.to_string();
+    }
+
+    // Write date if present
+    if !date_display.is_empty() {
+        let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", date_display);
+    }
 }
 
 /// Writes a new row, handles page breaks, and updates counters
-pub fn new_row<W: std::io::Write>(writer: &mut W, year: &str, rows_written: &mut i32, stamps_written: &mut i32, used_width: &mut i32, used_height: &mut i32, max_row_height: &mut i32) {
+pub fn new_row<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day: &str, rows_written: &mut i32, stamps_written: &mut i32, used_width: &mut i32, used_height: &mut i32, max_row_height: &mut i32) {
 	*used_height += *max_row_height;
 	if *used_height + 43 > 245 {
 		new_page(writer, rows_written, stamps_written, used_width, used_height, max_row_height);
-		new_year(writer, year);
+		new_year(writer, year, month, day);
 	}
 	let _ = writeln!(writer, "ROW_START_FS (TN 6 0.1 5.0)");
 	*rows_written += 1;
@@ -121,22 +130,5 @@ pub fn add_stamp<W: std::io::Write>(
 // This section contains the main entry point and helpers for generating AlbumEasy output.
 
 use std::io::Write;
-use crate::db_utils::{init_db, get_all_series, get_stamps_by_series};
-use crate::image_utils::{calc_mm_per_pixel, estimate_real_dimensions};
-use std::fs::File;
-use std::io::BufWriter;
 
-/// Main entry point for AlbumEasy output generation.
-/// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
-pub fn generate_album_output<F>(db_path: &str, album_name: &str, mut page_callback: Option<F>)
-where
-	F: FnMut(usize),
-{
-	// ...existing code from album_globals.rs...
-}
 
-// ...rest of code from album_globals.rs...
-// Stampworld-specific AlbumEasy output logic
-// Formerly album_globals.rs
-
-// ...existing code from album_globals.rs will be moved here...

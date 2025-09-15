@@ -13,6 +13,18 @@ pub mod csv_utils;
 pub mod image_utils;
 pub mod html_utils;
 pub mod commands_file_generator;
-pub mod album_globals;
+pub mod stampworld;
+pub mod stamp_dimensions;
+pub mod file_utils;
+pub mod text_utils;
+pub mod globals;
+pub mod placeholder_image;
 pub mod db_utils;
 pub mod sample_images;
+
+// Re-export commonly used functions and types
+pub use stampworld::generate_album_output_from_stamps;
+pub use stamp_dimensions::*;
+pub use file_utils::*;
+pub use text_utils::*;
+pub use globals::{ImageStatus, OSType, SeriesInfo, ImageStatus as GlobalImageStatus};

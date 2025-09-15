@@ -2,7 +2,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 // Main entry point for StampAlbumGen2
 
 use flexi_logger::{Duplicate, FileSpec, Logger};
-use stamp_album_gen2::album_globals::OSType;
+use stamp_album_gen2::globals::OSType;
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
 use clap::Parser;
 
@@ -21,99 +21,130 @@ fn get_operating_system_type() -> OSType {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
-    // If site_name is provided, use it for country
+
+    // Validate required parameters
+    if !cli.output_only && cli.site_name.is_none() {
+        eprintln!("Error: --site-name is required when not using --output-only mode");
+        eprintln!();
+        eprintln!("Examples:");
+        eprintln!("  # Generate album by scraping:");
+        eprintln!("  stamp_album_gen2 --site-name Canada --album-name Canada");
+        eprintln!();
+        eprintln!("  # Generate from existing database:");
+        eprintln!("  stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Canada");
+        eprintln!();
+        eprintln!("Use --help for more information.");
+        std::process::exit(1);
+    }
+
+    if cli.output_only && (cli.db_path.is_none() || cli.album_name.is_none()) {
+        eprintln!("Error: --output-only mode requires both --db-path and --album-name");
+        eprintln!();
+        eprintln!("Example:");
+        eprintln!("  stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Canada");
+        eprintln!();
+        std::process::exit(1);
+    }
+
+    // Determine country name from various sources
     let country = if let Some(ref site) = cli.site_name {
         site.clone()
+    } else if let Some(ref album) = cli.album_name {
+        album.clone()
+    } else if let Some(ref country_name) = cli.country {
+        country_name.clone()
     } else {
-        cli.country.clone()
+        eprintln!("Error: Could not determine country name. Please provide --site-name, --album-name, or --country");
+        std::process::exit(1);
     };
-    
-    // Construct album name from country
+
+    // Construct album name from country if not provided
     let album_name = cli.album_name.unwrap_or_else(|| country.replace(' ', "-"));
-    
+
     // Construct site name from country if not provided
-    let site_name = cli.site_name.unwrap_or_else(|| country.clone());
-    
+    let _site_name = cli.site_name.unwrap_or_else(|| country.clone());
+
     // Construct DB path if not provided - use album_name for database folder/file
     let db_path = cli.db_path.unwrap_or_else(|| format!("Albums/{}/{}.db", album_name, album_name));
     
     // Set the DB path for all modules to use
-    stamp_album_gen2::album_globals::set_db_path_from_cli(&db_path);
+    stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
     /// Stamp Album Generator CLI
     #[derive(Parser, Debug)]
     #[command(
+        name = "stamp_album_gen2",
         author,
         version,
         about = "Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs.",
-        long_about = "Examples:\n\
-  1. Output AlbumEasy from an existing DB:\n\
-     cargo run -- --output-only --db-path Albums/{country}/{country}.db --album-name '{country}'\n\
-  2. Scrape and generate AlbumEasy for Great Britain, 1902-1910:\n\
-     cargo run -- --source stampworld --site-name '{country}' --album-name '{country}' --start-year 1902 --end-year 1910\n\
-Options:\n\
-    --output-only           Output AlbumEasy from an existing DB (requires --db-path and --album-name)\n\
-    --db-path <path>        Path to the SQLite database (default: Albums/{country}/{country}.db)\n\
-    --album-name <name>     Album name (used for output and folder) (default: {country})\n\
-    --source <type>         Data source: stampworld, touchstamps, extractfile, colnectexport (default: stampworld)\n\
-    --site-name <name>      Site name for scraping (e.g. 'Great-Britain') (default: {country})\n\
-    --album-directory <dir> Output directory for album files (default: Albums/{country})\n\
-    --images-directory <dir> Output directory for images (default: Albums/{country}/images)\n\
-    --album-file-name <file> Output file name for AlbumEasy (default: Albums/{country}/{country}.txt)\n\
-    --extract-file-name <file> Output file name for extracted data (default: Albums/{country}/{country}_extract.txt)\n\
-    --catalog-name <name>   Catalog name (e.g. 'SG') (default: SG)\n\
-    --overwrite             Overwrite existing files\n\
-    --start-year <year>     Filter: start year (default: 0)\n\
-    --end-year <year>       Filter: end year (default: 9999)\n"
+        long_about = "A powerful tool for generating stamp albums from various data sources.
+
+Examples:
+  1. Output AlbumEasy from an existing DB:
+     stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Canada
+
+  2. Scrape and generate AlbumEasy for Great Britain, 1902-1910:
+     stamp_album_gen2 --source stampworld --site-name Great-Britain --album-name Great-Britain --start-year 1902 --end-year 1910
+
+  3. Generate album for Canada stamps (1875-1876):
+     stamp_album_gen2 --site-name Canada --album-name Canada --start-year 1875 --end-year 1876
+
+Required Parameters:
+  You must provide either --site-name (for scraping) or --album-name + --db-path (for existing DB)
+
+Options:"
     )]
     struct Cli {
-        /// Output-only mode: <db_path> <album_name>
+        /// Output-only mode: Generate AlbumEasy from existing DB (requires --db-path and --album-name)
         #[arg(long, default_value_t = false)]
         output_only: bool,
 
-        /// Country name (required for album generation)
-        #[arg(long, default_value = "Great-Britain")]
-        country: String,
+        /// Country name (used as default for other parameters if not specified)
+        #[arg(long)]
+        country: Option<String>,
 
-        /// Path to the database
+        /// Path to the SQLite database (required for --output-only mode)
         #[arg(long)]
         db_path: Option<String>,
 
-        /// Album name (auto-generated as Album-{country} if not specified)
+        /// Album name (required for album generation)
         #[arg(long)]
         album_name: Option<String>,
 
-        /// Source type (stampworld, touchstamps, extractfile, colnectexport)
+        /// Source type: stampworld, touchstamps, extractfile, colnectexport
         #[arg(long, default_value = "stampworld")]
         source: String,
 
-        /// Site name (for stampworld, defaults to country)
+        /// Site name for scraping (required for scraping mode, e.g. 'Great-Britain', 'Canada')
         #[arg(long)]
         site_name: Option<String>,
 
-        /// Album directory
+        /// Album directory (default: Albums/{album_name})
         #[arg(long)]
         album_directory: Option<String>,
 
-        /// Images directory
+        /// Images directory (default: Albums/{album_name}/images)
         #[arg(long)]
         images_directory: Option<String>,
 
-        /// Album file name
+        /// Album file name (default: Albums/{album_name}/{album_name}.txt)
         #[arg(long)]
         album_file_name: Option<String>,
 
-        /// Extract file name
+        /// Extract file name (default: Albums/{album_name}/{album_name}_extract.txt)
         #[arg(long)]
         extract_file_name: Option<String>,
 
-        /// Catalog name
+        /// Catalog name (e.g. 'SG', 'Michel')
         #[arg(long, default_value = "SG")]
         catalog_name: String,
 
-        /// Overwrite existing files
+        /// Overwrite existing album text files
         #[arg(long, default_value_t = false)]
-        overwrite: bool,
+        overwrite_album: bool,
+
+        /// Overwrite existing image files
+        #[arg(long, default_value_t = false)]
+        overwrite_images: bool,
 
         /// Start year for filtering stamps
         #[arg(long, default_value_t = 0)]
@@ -135,14 +166,27 @@ Options:\n\
     // Construct DB path if not provided
     let db_path = cli.db_path.unwrap_or_else(|| format!("Albums/{}/{}.db", album_name, album_name));
     
+    // Set the database path in the global variable
+    stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
+    
     // Construct other paths based on album name
     let album_directory = cli.album_directory.unwrap_or_else(|| format!("Albums/{}", album_name));
     let images_directory = cli.images_directory.unwrap_or_else(|| format!("Albums/{}/images", album_name));
-    let album_file_name = cli.album_file_name.unwrap_or_else(|| format!("Albums/{}/{}.txt", album_name, album_name));
-    let extract_file_name = cli.extract_file_name.unwrap_or_else(|| format!("Albums/{}/{}_extract.txt", album_name, album_name));
-    
+
     let start_year = cli.start_year;
     let end_year = cli.end_year;
+
+    // Construct album file name with year range if year filters are specified
+    let album_file_name = cli.album_file_name.unwrap_or_else(|| {
+        // Include year range in filename if year filters are used (not default values)
+        if start_year != 0 || end_year != 9999 {
+            format!("Albums/{}/{}-{}-{}.txt", album_name, album_name, start_year, end_year)
+        } else {
+            format!("Albums/{}/{}.txt", album_name, album_name)
+        }
+    });
+
+    let extract_file_name = cli.extract_file_name.unwrap_or_else(|| format!("Albums/{}/{}_extract.txt", album_name, album_name));
     println!("[INFO] Stamp Album Generator started.");
     println!("[INFO] Country: {}", country);
     println!("[INFO] Album name: {}", album_name);
@@ -183,14 +227,27 @@ Options:\n\
         pb.set_message(format!("Scraping data for album '{}', please wait...", album_name));
         let mut last_page = 0;
         println!("[INFO] Loading stamps from database: {}", db_path);
-        let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
+        let all_stamps = stamp_album_gen2::stampworld::load_stamps_from_db(&db_path);
         println!("[INFO] Filtering stamps by year: {} to {}", start_year, end_year);
         let filtered_stamps = all_stamps.into_iter().filter(|stamp| {
             let year = stamp.year;
             year >= start_year && year <= end_year
         }).collect::<Vec<_>>();
+        
+        // Update filename if only end-year was specified
+        let mut final_album_file_name = album_file_name.clone();
+        if start_year == 0 && end_year < 9999 && !filtered_stamps.is_empty() {
+            // Find the minimum year from filtered stamps
+            let min_year = filtered_stamps.iter().map(|stamp| stamp.year).min().unwrap_or(end_year);
+            final_album_file_name = format!("Albums/{}/{}-{}-{}.txt", album_name, album_name, min_year, end_year);
+            println!("[INFO] Corrected output filename to: {}", final_album_file_name);
+        }
+        
+        // Set the global album file name
+        *stamp_album_gen2::globals::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
+        
         println!("[INFO] Generating AlbumEasy output for album: {}", album_name);
-        stamp_album_gen2::album_globals::generate_album_output_from_stamps(
+        stamp_album_gen2::stampworld::generate_album_output_from_stamps(
             &filtered_stamps,
             &album_name,
             Some(Box::new(|page| {
@@ -205,7 +262,7 @@ Options:\n\
             "AlbumEasy output generated for album '{}'. Total pages: {}",
             album_name, last_page
         ));
-        println!("[INFO] AlbumEasy output complete. Output file: {}", album_file_name);
+        println!("[INFO] AlbumEasy output complete. Output file: {}", final_album_file_name);
         return Ok(());
     }
 
@@ -227,6 +284,7 @@ Options:\n\
         gen.images_directory = images_directory.clone();
         gen.album_file_name = album_file_name.clone();
         gen.extract_file_name = extract_file_name.clone();
+        gen.site_name = site_name.clone();
         gen.catalog_name = cli.catalog_name.clone();
         gen.start_year = cli.start_year;
         gen.end_year = cli.end_year;
@@ -237,16 +295,16 @@ Options:\n\
         // Scrape and save data
         println!("[INFO] Scraping data for site: {} (source: {})", site_name, cli.source);
         // Determine output file name based on year filters
-        let mut output_file_name = album_name.clone();
-        if cli.start_year > 0 && cli.end_year < 9999 {
-            output_file_name = format!("{}-{}-{}.txt", album_name, cli.start_year, cli.end_year);
+        let output_file_name = if cli.start_year > 0 && cli.end_year < 9999 {
+            format!("{}-{}-{}.txt", album_name, cli.start_year, cli.end_year)
         } else if cli.start_year > 0 {
-            output_file_name = format!("{}-{}-current.txt", album_name, cli.start_year);
+            format!("{}-{}-current.txt", album_name, cli.start_year)
         } else if cli.end_year < 9999 {
-            output_file_name = format!("{}-XXXX-{}.txt", album_name, cli.end_year);
+            // We'll determine the actual first year after loading stamps
+            format!("{}-XXXX-{}.txt", album_name, cli.end_year)
         } else {
-            output_file_name = format!("{}.txt", album_name);
-        }
+            format!("{}.txt", album_name)
+        };
         let album_file_path = format!("{}/{}", album_directory, output_file_name);
         let images_dir = format!("{}/images", album_directory);
         std::fs::create_dir_all(&images_dir).unwrap_or_else(|e| {
@@ -260,16 +318,13 @@ Options:\n\
                     site_name, cli.start_year, cli.end_year
                 );
                 println!("[DEBUG] Using base URL: {}", base_url);
-                let data = gen.collect_stampworld_data(&base_url, cli.overwrite, Some(&|page| {
+                let data = gen.collect_stampworld_data(&base_url, cli.overwrite_images, Some(&|page| {
                     pb.set_message(format!("Scraping data for album '{}', page {}...", album_name, page));
                 }));
                 pb.set_message("Scraping complete. Processing and saving data...");
                 println!("[INFO] Scraping complete. Found {} stamp records", data.len());
                 println!("[INFO] Saving extracted data to file: {}", extract_file_name);
-                gen.save_stamp_data(&extract_file_name, &data, "stampworld");
-                pb.set_message("Data saved. Creating AlbumEasy file...");
-                println!("[INFO] Creating AlbumEasy file: {}", album_file_path);
-                gen.create_album(&album_file_path, &data);
+                gen.save_stamp_data(&extract_file_name, &data, "stampworld", cli.overwrite_album);
                 pb.finish_with_message("Scraping and data save complete.");
 
                 // Start new spinner for AlbumEasy output generation
@@ -282,7 +337,7 @@ Options:\n\
 
                 println!("[INFO] Loading stamps from database: {}", db_path);
                 let mut last_page = 0;
-                let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
+                let all_stamps = stamp_album_gen2::stampworld::load_stamps_from_db(&db_path);
                 println!("[INFO] Loaded {} stamps from database", all_stamps.len());
                 
                 println!("[INFO] Filtering stamps by year: {} to {}", gen.start_year, gen.end_year);
@@ -292,8 +347,18 @@ Options:\n\
                 }).collect::<Vec<_>>();
                 println!("[INFO] Filtered to {} stamps within year range", filtered_stamps.len());
                 
+                // Update filename if only end-year was specified
+                let _final_album_file_path = album_file_path.clone();
+                if cli.start_year == 0 && cli.end_year < 9999 && !filtered_stamps.is_empty() {
+                    // Find the minimum year from filtered stamps
+                    let min_year = filtered_stamps.iter().map(|stamp| stamp.year).min().unwrap_or(cli.end_year);
+                    let corrected_filename = format!("{}-{}-{}.txt", album_name, min_year, cli.end_year);
+                    let _corrected_path = format!("{}/{}", album_directory, corrected_filename);
+                    println!("[INFO] Corrected output filename to: {}", corrected_filename);
+                }
+                
                 println!("[INFO] Generating AlbumEasy output for album: {}", gen.album_name);
-                stamp_album_gen2::album_globals::generate_album_output_from_stamps(
+                stamp_album_gen2::stampworld::generate_album_output_from_stamps(
                     &filtered_stamps,
                     &gen.album_name,
                     Some(Box::new(|page| {

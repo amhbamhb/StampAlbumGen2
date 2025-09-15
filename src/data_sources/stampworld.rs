@@ -1,18 +1,55 @@
 // Stampworld data source handler
-use log::{debug, info, error};
-use crate::album_globals::{ImageStatus, clean_text};
+use log::{debug, error};
+use crate::globals::ImageStatus;
+use crate::text_utils::{clean_text, sanitize_filename};
+use crate::file_utils::get_db_path_from_cli;
+
+/// Determine the proper series name based on stamp type
+fn determine_series_from_type(stamp_type: &str, block_desc: &str) -> String {
+    if stamp_type.is_empty() {
+        return block_desc.to_string();
+    }
+    
+    // Extract series letter from stamp type
+    let series_letter = stamp_type.chars().next().unwrap_or(' ').to_ascii_uppercase();
+    
+    match series_letter {
+        'L' => format!("{}-series Registration Stamps", series_letter),
+        'M' => format!("{}-series Definitive Stamps", series_letter),
+        'N' => format!("{}-series Definitive Stamps", series_letter),
+        'O' => format!("{}-series Registration Stamps", series_letter),
+        'P' => format!("{}-series Registration Stamps", series_letter),
+        'Q' => format!("{}-series Registration Stamps", series_letter),
+        'R' => format!("{}-series Special Delivery Stamps", series_letter),
+        'S' => format!("{}-series Special Delivery Stamps", series_letter),
+        'T' => format!("{}-series Tax Stamps", series_letter),
+        'U' => format!("{}-series Utility Stamps", series_letter),
+        _ => {
+            // For unknown series, try to extract from block description
+            if block_desc.contains("Registration") {
+                format!("{}-series Registration Stamps", series_letter)
+            } else if block_desc.contains("Special Delivery") {
+                format!("{}-series Special Delivery Stamps", series_letter)
+            } else if block_desc.contains("Definitive") {
+                format!("{}-series Definitive Stamps", series_letter)
+            } else {
+                block_desc.to_string()
+            }
+        }
+    }
+}
 
 pub fn collect_stampworld_data(
     _sequencer: &mut i32,
     _separator: &str,
     _site_name: &str,
     _images_directory: &str,
-    month_number: &dyn Fn(&str) -> String,
+    _month_number: &dyn Fn(&str) -> String,
     get_stampworld_image: &dyn Fn(&str, bool) -> ImageStatus,
     base_url: &str,
     start_year: i32,
     end_year: i32,
-    overwrite: bool,
+    overwrite_images: bool,
     page_callback: Option<&dyn Fn(usize)>,
 ) -> Vec<String> {
     debug!("collect_stampworld_data called with base_url: {}", base_url);
@@ -25,13 +62,18 @@ pub fn collect_stampworld_data(
 
     // Initialize SQLite database in the album directory for the country
     // Use the CLI-provided db_path for consistency
-    let db_path = crate::album_globals::get_db_path_from_cli();
+    let db_path = get_db_path_from_cli();
     let conn = crate::db_utils::init_db(&db_path).expect("Failed to initialize database");
+    
+    // If overwrite is true, clear existing data
+    if overwrite_images {
+        debug!("Overwrite flag is true, clearing existing stamp data");
+        conn.execute("DELETE FROM stamps", []).expect("Failed to clear existing data");
+    }
 
     while !done {
         if page_num > MAX_PAGES {
             debug!("Reached maximum pages limit: {}", MAX_PAGES);
-            done = true;
             break;
         }
         let url = format!("{}{}", base_url, page_num);
@@ -63,7 +105,6 @@ pub fn collect_stampworld_data(
         
         if !previous_body.is_empty() && body == previous_body {
             debug!("Page content is the same as previous page, stopping to prevent infinite loop");
-            done = true;
             break;
         }
         previous_body = body.clone();
@@ -91,41 +132,94 @@ pub fn collect_stampworld_data(
             }
         }
         
-        'block_loop: for content_div in document.select(&content_selector) {
-            debug!("Processing table with HTML: {}", content_div.html().chars().take(200).collect::<String>());
-            let mut stop_scraping = false;
-            // Improved context extraction: look for preceding header tags or text nodes
-            let mut context_above = String::new();
-            let mut context_details = String::new();
-            if let Some(parent) = content_div.parent() {
-                let mut prev = parent.prev_sibling();
-                while let Some(node) = prev {
-                    if let Some(text_node) = node.value().as_text() {
-                        if !text_node.trim().is_empty() {
-                            context_above = text_node.trim().to_string();
-                            break;
+        // Extract metadata fields from the entire document (these persist across all tables)
+        let mut watermark = String::new();
+        let mut design = String::new();
+        let mut engraving = String::new();
+        let mut perforation = String::new();
+        
+        // Try to get details from p tags containing metadata in the broader document
+        let p_selector = scraper::Selector::parse("p").unwrap();
+        let mut details_vec = Vec::new();
+        for p in document.select(&p_selector) {
+            let p_text = p.text().collect::<String>();
+            if !p_text.is_empty() && (p_text.contains("Design:") || p_text.contains("Engraving:") || p_text.contains("Watermark:") || p_text.contains("WM:") || p_text.contains("Perforation:")) {
+                // Split the text by newlines and add each metadata line
+                for line in p_text.lines() {
+                    let trimmed = line.trim();
+                    if !trimmed.is_empty() && (trimmed.contains("Design:") || trimmed.contains("Engraving:") || trimmed.contains("Watermark:") || trimmed.contains("WM:") || trimmed.contains("Perforation:")) {
+                        details_vec.push(trimmed.to_string());
+                    }
+                }
+            }
+        }
+        
+        // Extract fields from details_vec
+        for detail in &details_vec {
+            let detail_lower = detail.to_lowercase();
+
+                    // Extract watermark - handle both "WM:" and "Watermark:" patterns
+                    if detail_lower.contains("watermark:") {
+                        let parts: Vec<&str> = detail.splitn(2, ':').collect();
+                        if parts.len() > 1 {
+                            watermark = parts[1].trim().to_string();
+                        }
+                    } else if detail_lower.starts_with("wm") && detail.contains(":") {
+                        let parts: Vec<&str> = detail.splitn(2, ':').collect();
+                        if parts.len() > 1 {
+                            watermark = parts[1].trim().to_string();
                         }
                     }
-                    prev = node.prev_sibling();
+            if detail_lower.contains("design:") {
+                let parts: Vec<&str> = detail.splitn(2, ':').collect();
+                if parts.len() > 1 {
+                    // Take only the first line to avoid picking up extra content
+                    let design_content = parts[1].trim();
+                    let first_line = design_content.lines().next().unwrap_or(design_content);
+                    design = first_line.trim().to_string();
                 }
             }
-            // Try to get details from the first few <p> tags in the block
-            let p_selector = scraper::Selector::parse("p").unwrap();
-            let mut details_vec = Vec::new();
-            for p in document.select(&p_selector) {
-                let p_text = p.text().collect::<String>();
-                if !p_text.is_empty() {
-                    details_vec.push(p_text);
+
+            // Extract engraving - take only the first line after "Engraving:"
+            if detail_lower.contains("engraving:") {
+                let parts: Vec<&str> = detail.splitn(2, ':').collect();
+                if parts.len() > 1 {
+                    // Take only the first line to avoid picking up extra content
+                    let engraving_content = parts[1].trim();
+                    let first_line = engraving_content.lines().next().unwrap_or(engraving_content);
+                    engraving = first_line.trim().to_string();
                 }
             }
-            if !details_vec.is_empty() {
-                context_details = details_vec.join(" | ");
+
+            // Extract perforation - look for the last perforation value
+            if detail_lower.contains("perforation:") {
+                let parts: Vec<&str> = detail.splitn(2, ':').collect();
+                if parts.len() > 1 {
+                    let perf_content = parts[1].trim();
+                    // Extract just the perforation value (usually a number)
+                    let perf_re = regex::Regex::new(r"(\d+(?:\.\d+)?(?:\s*x\s*\d+(?:\.\d+)?)?)").unwrap();
+                    if let Some(cap) = perf_re.find(perf_content) {
+                        perforation = cap.as_str().to_string();
+                    } else {
+                        perforation = perf_content.to_string();
+                    }
+                }
             }
-            // Extract year from block header using .table_header a
+        }
+        
+
+        
+        'block_loop: for content_div in document.select(&content_selector) {
+            debug!("Processing table with HTML: {}", content_div.html().chars().take(200).collect::<String>());
+            let stop_scraping = false;
+            // Improved context extraction: look for preceding header tags or text nodes
+            let context_above = String::new();
+            let context_details = details_vec.join(" | ");
+            // Extract year from block header using .table_header a within this table
             let table_header_selector = scraper::Selector::parse(".table_header a").unwrap();
             let mut block_year = String::new();
             let mut desc = String::new();
-            if let Some(header_a) = document.select(&table_header_selector).next() {
+            if let Some(header_a) = content_div.select(&table_header_selector).next() {
                 let text = header_a.text().collect::<String>();
                 debug!("[stampworld] Raw block header HTML: {}", header_a.html());
                 desc = text.clone();
@@ -178,12 +272,104 @@ pub fn collect_stampworld_data(
                 done = true;
                 break 'block_loop;
             }
-            // Extract images from .images_container
-            let images_selector = scraper::Selector::parse(".images_container img").unwrap();
-            let images: Vec<String> = document.select(&images_selector)
-                .map(|img| img.value().attr("src").map(|src| if src.starts_with("http") { src.to_string() } else { format!("https://www.stampworld.com{}", src) }).unwrap_or_default())
-                .collect();
-            debug!("Found {} images", images.len());
+            // Extract images from various possible selectors
+            let mut images: Vec<String> = Vec::new();
+
+            // Try multiple selectors for images, avoiding generic icons
+            let image_selectors = vec![
+                ".images_container img",
+                "img[src*='stamps']",
+                "img[src*='Stamps']",
+                ".stamp-image img",
+                "td img",
+                "img",  // Try all images as a fallback
+            ];
+
+            for selector_str in &image_selectors {
+                if let Ok(selector) = scraper::Selector::parse(selector_str) {
+                    let all_imgs: Vec<_> = content_div.select(&selector).collect();
+                    debug!("Selector '{}' found {} total img elements", selector_str, all_imgs.len());
+
+                    let found_images: Vec<String> = all_imgs
+                        .into_iter()
+                        .filter_map(|img| {
+                            let src = img.value().attr("src")?;
+                            let full_url = if src.starts_with("http") {
+                                src.to_string()
+                            } else if src.starts_with("//") {
+                                format!("https:{}", src)
+                            } else if src.starts_with("/") {
+                                format!("https://www.stampworld.com{}", src)
+                            } else {
+                                format!("https://www.stampworld.com/{}", src)
+                            };
+
+                            // Log each image URL found
+                            debug!("Found image URL: {}", full_url);
+
+                            Some(full_url)
+                        })
+                        .filter(|url| !url.is_empty()
+                            && (url.contains("stamps") || url.contains("Stamps") || url.contains(".jpg") || url.contains(".png"))
+                            && !url.contains("stamp.gif")  // Exclude generic stamp icon
+                            && !url.contains("layout")     // Exclude layout images
+                            && !url.contains("static")     // Exclude static assets
+                            && !url.contains(".gif")       // Exclude GIF files
+                            && (url.contains(".jpg") || url.contains(".jpeg") || url.contains(".png")) // Only valid formats
+                        )
+                        .collect();
+
+                    debug!("Selector '{}' found {} valid stamp images: {:?}", selector_str, found_images.len(), found_images);
+
+                    if !found_images.is_empty() {
+                        debug!("Using selector '{}' with {} images", selector_str, found_images.len());
+                        images.extend(found_images);
+                        break; // Use the first selector that finds images
+                    }
+                } else {
+                    debug!("Failed to parse selector: {}", selector_str);
+                }
+            }
+
+            debug!("Total images found: {}", images.len());
+
+            // Debug: Show a sample of the HTML content to understand structure
+            if images.is_empty() {
+                let html_sample = content_div.html();
+                let sample_len = html_sample.len().min(2000);
+                debug!("HTML content sample (first {} chars): {}", sample_len, &html_sample[..sample_len]);
+
+                // Also try to find any img tags at all
+                if let Ok(all_img_selector) = scraper::Selector::parse("img") {
+                    let all_imgs: Vec<_> = content_div.select(&all_img_selector)
+                        .filter_map(|img| img.value().attr("src"))
+                        .collect();
+                    debug!("Found {} total img tags with src attributes: {:?}", all_imgs.len(), all_imgs);
+                }
+                
+                // Look for any elements that might contain stamp images
+                let stamp_img_selectors = vec![
+                    ".stamp_img",
+                    ".stamp-image", 
+                    "[class*='stamp']",
+                    "[alt*='stamp']",
+                    "[alt*='Stamp']",
+                    "span[class*='img']",
+                    ".img-fluid"
+                ];
+                
+                for selector_str in &stamp_img_selectors {
+                    if let Ok(selector) = scraper::Selector::parse(selector_str) {
+                        let elements: Vec<_> = content_div.select(&selector).collect();
+                        if !elements.is_empty() {
+                            debug!("Found {} elements with selector '{}'", elements.len(), selector_str);
+                            for (i, elem) in elements.iter().enumerate().take(3) {
+                                debug!("Element {}: {}", i, elem.html());
+                            }
+                        }
+                    }
+                }
+            }
             // Table of stamps
             let table_selector = scraper::Selector::parse("tr.stamp_tr").unwrap();
             let mut stamp_row_count = 0;
@@ -221,7 +407,14 @@ pub fn collect_stampworld_data(
                 // td[10] = Letter/FDC
                 // td[11] = Currency
                 let sg_number = ths[0].text().collect::<String>().trim().to_string();
-                let type_ = tds[0].text().collect::<String>().trim().to_string();
+                // Extract stamp type from data-stamp-type attribute
+                let stamp_type_attr = tr.value().attr("data-stamp-type").unwrap_or("");
+                let type_ = if !stamp_type_attr.is_empty() {
+                    stamp_type_attr.to_string()
+                } else {
+                    // Fallback to td[0] text if attribute is missing
+                    tds[0].text().collect::<String>().trim().to_string()
+                };
                 let denomination = tds[1].text().collect::<String>().trim().to_string();
                 let color = tds[3].text().collect::<String>().trim().to_string();
                 let description = tds[5].text().collect::<String>().trim().to_string();
@@ -231,13 +424,37 @@ pub fn collect_stampworld_data(
                 let unused = tds[9].text().collect::<String>().trim().to_string();
                 let used = tds[10].text().collect::<String>().trim().to_string();
                 let letter_fdc = tds[11].text().collect::<String>().trim().to_string();
+                // Extract currency from denomination field (often contains currency symbols)
                 let mut currency = String::new();
-                for td in &tds {
-                    let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
-                    if td_text.contains("USD") {
-                        currency = "USD".to_string();
-                        debug!("Found currency cell: '{}', bytes: {:?}", td_text, td_text.as_bytes());
-                        break;
+                let denomination_upper = denomination.to_uppercase();
+                if denomination_upper.contains("$") || denomination_upper.contains("USD") || denomination_upper.contains("DOLLAR") {
+                    currency = "USD".to_string();
+                } else if denomination_upper.contains("£") || denomination_upper.contains("GBP") || denomination_upper.contains("POUND") {
+                    currency = "GBP".to_string();
+                } else if denomination_upper.contains("€") || denomination_upper.contains("EUR") || denomination_upper.contains("EURO") {
+                    currency = "EUR".to_string();
+                } else if denomination_upper.contains("C") && !denomination_upper.contains("C.") && !denomination_upper.contains("CT") {
+                    // Canadian cents (C) - common in Canadian stamps
+                    currency = "CAD".to_string();
+                } else if denomination_upper.contains("¢") || denomination_upper.contains("CENT") {
+                    // Generic cents - could be USD or CAD
+                    currency = "USD".to_string();
+                }
+
+                // Fallback: look for currency in any table cell
+                if currency.is_empty() {
+                    for td in &tds {
+                        let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
+                        if td_text.contains("USD") || td_text.contains("$") {
+                            currency = "USD".to_string();
+                            break;
+                        } else if td_text.contains("GBP") || td_text.contains("£") {
+                            currency = "GBP".to_string();
+                            break;
+                        } else if td_text.contains("EUR") || td_text.contains("€") {
+                            currency = "EUR".to_string();
+                            break;
+                        }
                     }
                 }
                 // Assign image from images list by order
@@ -268,11 +485,11 @@ pub fn collect_stampworld_data(
                 stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
             }
         }
-                        if stamp_year < start_year {
+                        if stamp_year < start_year && stamp_year > 0 {
                             debug!("[stampworld] Skipping stamp: sg_number='{}' stamp_year={} (before startYear)", sg_number, stamp_year);
                             continue;
                         }
-                        if stamp_year > end_year {
+                        if stamp_year > end_year && stamp_year > 0 {
                             debug!("[stampworld] Stamp {} has year {} > endYear {}, but continuing to check other stamps on this page", sg_number, stamp_year, end_year);
                             // Don't stop scraping here - continue to check other stamps on the page
                             // Only skip this individual stamp
@@ -285,7 +502,7 @@ pub fn collect_stampworld_data(
                         } else if stamp_year >= start_year && stamp_year <= end_year {
                             println!("[INFO] Processing image for stamp {} ({})", sg_number, stamp_year);
                             debug!("[stampworld] Attempting image download: image_url='{}'", image_url);
-                            let image_status = get_stampworld_image(&image_url, overwrite);
+                            let image_status = get_stampworld_image(&image_url, overwrite_images);
                             if image_status.exists {
                                 println!("[INFO] Image processed successfully for stamp {}", sg_number);
                             } else {
@@ -297,17 +514,60 @@ pub fn collect_stampworld_data(
                         }
 
 
-                // Month/Day extraction: look for patterns like "3. June" in details_vec
+                // Month/Day extraction: look for various date patterns
                 let mut month = String::new();
                 let mut day = String::new();
+
+                // Try different date patterns
+                let date_patterns = vec![
+                    r"(\d{1,2})\.\s*([A-Za-z]+)",  // "3. June"
+                    r"([A-Za-z]+)\s+(\d{1,2})",    // "June 3"
+                    r"(\d{1,2})\s+([A-Za-z]+)",   // "3 June"
+                    r"([A-Za-z]+)\s+(\d{1,2})",   // "June 3"
+                ];
+
                 for detail in &details_vec {
-                    let re = regex::Regex::new(r"(\d{1,2})\.\s*([A-Za-z]+)").unwrap();
-                    if let Some(cap) = re.captures(detail) {
-                        day = cap.get(1).map_or("", |m| m.as_str()).to_string();
-                        month = cap.get(2).map_or("", |m| m.as_str()).to_string();
-                        break;
+                    for pattern in &date_patterns {
+                        let re = regex::Regex::new(pattern).unwrap();
+                        if let Some(cap) = re.captures(detail) {
+                            let part1 = cap.get(1).map_or("", |m| m.as_str());
+                            let part2 = cap.get(2).map_or("", |m| m.as_str());
+
+                            // Determine which is day and which is month
+                            if part1.chars().all(char::is_numeric) {
+                                day = part1.to_string();
+                                month = part2.to_string();
+                            } else {
+                                month = part1.to_string();
+                                day = part2.to_string();
+                            }
+                            break;
+                        }
+                    }
+                    if !month.is_empty() { break; }
+                }
+
+                // Also check description and other fields for dates
+                if month.is_empty() {
+                    let all_text = format!("{} {} {}", description, stamps_issued, denomination);
+                    for pattern in &date_patterns {
+                        let re = regex::Regex::new(pattern).unwrap();
+                        if let Some(cap) = re.captures(&all_text) {
+                            let part1 = cap.get(1).map_or("", |m| m.as_str());
+                            let part2 = cap.get(2).map_or("", |m| m.as_str());
+
+                            if part1.chars().all(char::is_numeric) {
+                                day = part1.to_string();
+                                month = part2.to_string();
+                            } else {
+                                month = part1.to_string();
+                                day = part2.to_string();
+                            }
+                            break;
+                        }
                     }
                 }
+
                 if month.is_empty() {
                     // fallback: try to find month name in details_vec
                     for detail in &details_vec {
@@ -320,60 +580,54 @@ pub fn collect_stampworld_data(
                         if !month.is_empty() { break; }
                     }
                 }
-                // Extract watermark, design, engraving from details_vec
-                let mut watermark = String::new();
-                let mut design = String::new();
-                let mut engraving = String::new();
-                for detail in &details_vec {
-                    if detail.contains("Watermark:") {
-                        watermark = detail.split("Watermark:").nth(1).unwrap_or("").trim().to_string();
-                    }
-                    if detail.contains("WM") {
-                        // Try to extract watermark from 'WM' pattern
-                        let wm_re = regex::Regex::new(r"WM[:\s]+([A-Za-z0-9 ]+)").unwrap();
-                        if let Some(cap) = wm_re.captures(detail) {
-                            watermark = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
-                        }
-                    }
-                    if detail.contains("Design:") {
-                        design = detail.split("Design:").nth(1).unwrap_or("").trim().to_string();
-                    }
-                    if detail.contains("Engraving:") {
-                        engraving = detail.split("Engraving:").nth(1).unwrap_or("").trim().to_string();
-                    }
-                }
-                debug!("EXTRACTED: watermark='{}' design='{}' engraving='{}'", watermark, design, engraving);
-
-                // Perforation extraction
-                let mut perforation = String::new();
-                for p in document.select(&p_selector) {
-                    let p_text = p.text().collect::<String>();
-                    if p_text.contains("Perforation:") {
-                        perforation = p_text.split("Perforation:").nth(1).unwrap_or("").trim().to_string();
-                        break;
-                    }
-                }
+                debug!("EXTRACTED: watermark='{}' design='{}' engraving='{}' perforation='{}'",
+                       watermark, design, engraving, perforation);
 
                 let local_image_path = if !image_url.is_empty() {
                     let raw_image_name = image_url.split('/').last().unwrap_or("");
-                    let sanitized_image_name = crate::album_globals::sanitize_filename(raw_image_name);
-                    format!("images/{}", sanitized_image_name)
+                    let sanitized_image_name = sanitize_filename(raw_image_name);
+                    let image_path = format!("images/{}", sanitized_image_name);
+
+                    // Check if this is a valid image format
+                    let path_lower = image_path.to_lowercase();
+                    if path_lower.ends_with(".jpg") || path_lower.ends_with(".jpeg") || path_lower.ends_with(".png") {
+                        image_path
+                    } else {
+                        // Invalid format, use fallback based on stamp type
+                        let type_fallback = if type_.is_empty() { "unknown" } else { &type_ };
+                        format!("images/{}-s.jpg", sanitize_filename(type_fallback))
+                    }
                 } else {
-                    // Generate sanitized filename from catalog number
-                    format!("images/{}.jpg", crate::album_globals::sanitize_filename(&sg_number))
+                    // Generate predictable filename from stamp type (A, A1, A2, etc.)
+                    let type_fallback = if type_.is_empty() { "unknown" } else { &type_ };
+                    format!("images/{}-s.jpg", sanitize_filename(type_fallback))
                 };
-                let remote_image_url = image_url.clone();
+
+                // Generate remote image URL based on StampWorld's pattern
+                let remote_image_url = if !image_url.is_empty() {
+                    image_url
+                } else {
+                    // Try to construct a plausible remote URL based on StampWorld's pattern
+                    let type_fallback = if type_.is_empty() { "unknown" } else { &type_ };
+                    format!("https://www.stampworld.com/media/catalogue/{}/Postage-stamps/{}-s.jpg", _site_name, sanitize_filename(type_fallback))
+                };
                 let cleaned_context_details = context_details
                     .lines()
                     .filter(|line| !line.trim().is_empty() && line.trim() != "\u{200b}")
                     .collect::<Vec<_>>()
                     .join(" | ");
 
-                debug!("[stampworld] PRE-INSERT: sg_number='{}' year='{}' image_path='{}' remote_image_url='{}' watermark='{}' stamps_issued='{}'", sg_number, stamp_year, local_image_path, remote_image_url, watermark, stamps_issued);
+                debug!("[stampworld] PRE-INSERT: sg_number='{}' year='{}' watermark='{}' design='{}' engraving='{}' perforation='{}'", sg_number, stamp_year, watermark, design, engraving, perforation);
+                
+                // Determine proper series based on stamp type
+                let proper_series = determine_series_from_type(&type_, &desc);
+                
+                debug!("INSERTING: sg_number='{}' type='{}' local_image_path='{}' remote_image_url='{}'", sg_number, type_, local_image_path, remote_image_url);
+                
                 let result = crate::db_utils::insert_stamp(
                     &conn,
                     _site_name, // country
-                    &desc,      // series
+                    &proper_series,      // series (fixed)
                     stamp_year, // year as i32
                     &month,     // month
                     &day,       // day

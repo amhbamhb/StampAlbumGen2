@@ -1,4 +1,4 @@
-use crate::album_globals::ImageStatus;
+use crate::globals::ImageStatus;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
 
@@ -12,7 +12,7 @@ pub fn get_touchstamps_stamps(
     get_touchstamps_image: &dyn Fn(&str, &str) -> ImageStatus,
     get_image: &dyn Fn(&str, &str, &str) -> ImageStatus,
     album_name: &str,
-    save_stamp_data: &dyn Fn(&str, &[String], &str),
+    save_stamp_data: &dyn Fn(&str, &[String], &str, bool),
 ) -> Vec<String> {
     let client = Client::new();
     let url = format!("https://touchstamps.com{}", link);
@@ -95,7 +95,7 @@ pub fn get_touchstamps_stamps(
     }
     // Save all data once at the end
     let file_path = format!("{}_data.txt", album_name);
-    save_stamp_data(&file_path, &all_stamp_data, "touchstamps");
+    save_stamp_data(&file_path, &all_stamp_data, "touchstamps", false);
     all_stamp_data
 }
 // Touchstamps data source handler
