@@ -3,9 +3,7 @@
 //! This module provides file system utilities for the StampAlbumGen2 application,
 //! including path management, file operations, and configuration loading.
 
-use std::path::Path;
-use log::warn;
-use crate::globals::ALBUM_DB_PATH;
+use crate::types::ALBUM_DB_PATH;
 
 /// Sets the database path from CLI arguments
 pub fn set_db_path_from_cli(path: &str) {
@@ -42,46 +40,4 @@ pub fn find_config_path() -> String {
 
     // Default fallback
     "config.toml".to_string()
-}
-
-/// Loads configuration from file
-pub fn load_config(config_path: &str) -> crate::config::Config {
-    use std::fs;
-
-    match fs::read_to_string(config_path) {
-        Ok(content) => {
-            match toml::from_str(&content) {
-                Ok(config) => config,
-                Err(e) => {
-                    warn!("Failed to parse config file {}: {}. Using defaults.", config_path, e);
-                    crate::config::Config::default()
-                }
-            }
-        }
-        Err(e) => {
-            warn!("Failed to read config file {}: {}. Using defaults.", config_path, e);
-            crate::config::Config::default()
-        }
-    }
-}
-
-/// Gets image dimensions from file
-pub fn get_image_dimensions(image_path: &str) -> Option<(u32, u32)> {
-    use std::fs::File;
-    use std::io::BufReader;
-
-    if !Path::new(image_path).exists() {
-        return None;
-    }
-
-    match File::open(image_path) {
-        Ok(file) => {
-            let reader = BufReader::new(file);
-            match image::load(reader, image::ImageFormat::Jpeg) {
-                Ok(img) => Some((img.width(), img.height())),
-                Err(_) => None,
-            }
-        }
-        Err(_) => None,
-    }
 }

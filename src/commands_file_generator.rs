@@ -1,8 +1,8 @@
 use log::{error, info};
 use std::io::Write;
-use crate::globals::{SeriesInfo, ImageStatus};
-use crate::text_utils::sanitize_filename;
-use crate::globals::OSType;
+use crate::types::{SeriesInfo, ImageStatus};
+use crate::album_globals::sanitize_filename;
+use crate::types::OSType;
 
 
 /// Represents the status of an image operation (stub)
@@ -107,25 +107,6 @@ pub struct CommandsFileGenerator {
 }
 
 impl CommandsFileGenerator {
-    pub fn month_number(&self, month: &str) -> String {
-        // Stub: convert month name to number as string
-        match month.to_lowercase().as_str() {
-            "january" => "1".to_string(),
-            "february" => "2".to_string(),
-            "march" => "3".to_string(),
-            "april" => "4".to_string(),
-            "may" => "5".to_string(),
-            "june" => "6".to_string(),
-            "july" => "7".to_string(),
-            "august" => "8".to_string(),
-            "september" => "9".to_string(),
-            "october" => "10".to_string(),
-            "november" => "11".to_string(),
-            "december" => "12".to_string(),
-            _ => "0".to_string(),
-        }
-    }
-
     pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> ImageStatus {
         use std::path::Path;
         let raw_image_name = url.split('/').last().unwrap_or("stampworld.jpg");
@@ -168,7 +149,7 @@ impl CommandsFileGenerator {
                 return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
             }
             
-            info!("Downloading image: {} -> {}", url, file_path);
+            // info!("Downloading image: {} -> {}", url, file_path);
             
             // Use curl to download the image
             use std::process::Command;
@@ -178,7 +159,7 @@ impl CommandsFileGenerator {
                 vec!["curl", "-L", "-o", &file_path, url]
             };
             
-            info!("Running curl command: {:?}", curl_cmd);
+            // info!("Running curl command: {:?}", curl_cmd);
             
             match Command::new(curl_cmd[0])
                 .args(&curl_cmd[1..])
@@ -215,7 +196,7 @@ impl CommandsFileGenerator {
     pub fn new() -> Self {
         Self {
             detected_os: None,
-            file_separator: crate::globals::FILE_SEPARATOR.to_string(),
+            file_separator: crate::types::FILE_SEPARATOR.to_string(),
             data_source: String::new(),
             file_source: String::new(),
             album_directory: String::new(),
@@ -249,7 +230,7 @@ impl CommandsFileGenerator {
     }
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
-    crate::stampworld::write_globals(_writer, &self.album_name);
+    crate::album_globals::write_globals(_writer, &self.album_name);
     }
 
     /// Remove stub for new_page helper
@@ -418,7 +399,7 @@ impl CommandsFileGenerator {
             return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
         }
         
-        println!("[INFO] Downloading image: {} -> {}", name, file_path);
+        // println!("[INFO] Downloading image: {} -> {}", name, file_path);
         
         let curl_cmd = if self.no_ssl_check {
             vec!["curl", "--ssl-no-revoke", "-L", "-o", file_path, url]

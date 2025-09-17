@@ -2,11 +2,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 // Main entry point for StampAlbumGen2
 
 use flexi_logger::{Duplicate, FileSpec, Logger};
-use stamp_album_gen2::globals::OSType;
+use stamp_album_gen2::types::OSType;
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
 use clap::Parser;
 
 mod db_utils;
+mod placeholder_image;
 // mod album_text_generator;
 
 fn get_operating_system_type() -> OSType {
@@ -227,7 +228,7 @@ Options:"
         pb.set_message(format!("Scraping data for album '{}', please wait...", album_name));
         let mut last_page = 0;
         println!("[INFO] Loading stamps from database: {}", db_path);
-        let all_stamps = stamp_album_gen2::stampworld::load_stamps_from_db(&db_path);
+        let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
         println!("[INFO] Filtering stamps by year: {} to {}", start_year, end_year);
         let filtered_stamps = all_stamps.into_iter().filter(|stamp| {
             let year = stamp.year;
@@ -244,8 +245,15 @@ Options:"
         }
         
         // Set the global album file name
-        *stamp_album_gen2::globals::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
-        
+        *stamp_album_gen2::types::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
+
+        // Create placeholder image for output-only mode
+        println!("[INFO] Creating placeholder image for unknown/blank stamps...");
+        match placeholder_image::ensure_placeholder_image_for_album(&album_name) {
+            Ok(path) => println!("[INFO] Placeholder image ready: {}", path),
+            Err(e) => println!("[WARN] Failed to create placeholder image: {}", e),
+        }
+
         println!("[INFO] Generating AlbumEasy output for album: {}", album_name);
         stamp_album_gen2::stampworld::generate_album_output_from_stamps(
             &filtered_stamps,
@@ -278,20 +286,13 @@ Options:"
         );
         pb.enable_steady_tick(std::time::Duration::from_millis(100));
         pb.set_message(format!("for album '{}', please wait...", album_name));
-        let mut gen = CommandsFileGenerator::new();
-        gen.album_name = album_name.clone();
-        gen.album_directory = album_directory.clone();
-        gen.images_directory = images_directory.clone();
-        gen.album_file_name = album_file_name.clone();
-        gen.extract_file_name = extract_file_name.clone();
-        gen.site_name = site_name.clone();
-        gen.catalog_name = cli.catalog_name.clone();
-        gen.start_year = cli.start_year;
-        gen.end_year = cli.end_year;
-        println!("[INFO] Ensuring album and images directories exist: {}", gen.images_directory);
-        std::fs::create_dir_all(&gen.images_directory).unwrap_or_else(|e| {
-            println!("[ERROR] Failed to create images directory: {}", e);
-        });
+
+        // Create placeholder image early in the process
+        println!("[INFO] Creating placeholder image for unknown/blank stamps...");
+        match placeholder_image::ensure_placeholder_image_for_album(&album_name) {
+            Ok(path) => println!("[INFO] Placeholder image ready: {}", path),
+            Err(e) => println!("[WARN] Failed to create placeholder image: {}", e),
+        }
         // Scrape and save data
         println!("[INFO] Scraping data for site: {} (source: {})", site_name, cli.source);
         // Determine output file name based on year filters
@@ -306,6 +307,26 @@ Options:"
             format!("{}.txt", album_name)
         };
         let album_file_path = format!("{}/{}", album_directory, output_file_name);
+        
+        // Update the global album file name for consistency
+        *stamp_album_gen2::types::ALBUM_FILE_NAME.lock().unwrap() = album_file_path.clone();
+        
+        let mut gen = CommandsFileGenerator::new();
+        gen.album_name = album_name.clone();
+        gen.album_directory = album_directory.clone();
+        gen.images_directory = images_directory.clone();
+        gen.album_file_name = album_file_path.clone();  // Use the corrected path with year range
+        gen.extract_file_name = extract_file_name.clone();
+        gen.site_name = site_name.clone();
+        gen.catalog_name = cli.catalog_name.clone();
+        gen.start_year = cli.start_year;
+        gen.end_year = cli.end_year;
+        
+        println!("[INFO] Ensuring album and images directories exist: {}", gen.images_directory);
+        std::fs::create_dir_all(&gen.images_directory).unwrap_or_else(|e| {
+            println!("[ERROR] Failed to create images directory: {}", e);
+        });
+        
         let images_dir = format!("{}/images", album_directory);
         std::fs::create_dir_all(&images_dir).unwrap_or_else(|e| {
             println!("[ERROR] Failed to create images directory: {}", e);
@@ -337,7 +358,7 @@ Options:"
 
                 println!("[INFO] Loading stamps from database: {}", db_path);
                 let mut last_page = 0;
-                let all_stamps = stamp_album_gen2::stampworld::load_stamps_from_db(&db_path);
+                let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
                 println!("[INFO] Loaded {} stamps from database", all_stamps.len());
                 
                 println!("[INFO] Filtering stamps by year: {} to {}", gen.start_year, gen.end_year);

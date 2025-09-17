@@ -29,12 +29,12 @@ pub fn generate_album_output_from_stamps<F>(
 
     // Load config values
     let config_path = crate::file_utils::find_config_path();
-    let config = crate::file_utils::load_config(&config_path);
+    let config = crate::config::load_config(&config_path);
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
 
     // Calculate mm-per-pixel ratios
-    let _ = crate::stamp_dimensions::calc_mm_per_pixel_embedded(
+    let _ = crate::image_utils::calc_mm_per_pixel_embedded(
         reference_width_mm as f32,
         reference_height_mm as f32
     );
@@ -142,6 +142,8 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
             engraving: row.get(22)?,
             perforation: row.get(23)?,
             series: row.get(2)?, // series
+            currency: row.get(17)?,
+            context: row.get(24)?,
         })
     }).expect("Failed to query stamps");
 
@@ -173,7 +175,7 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     writeln!(writer).unwrap();
     writeln!(writer, "ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name).unwrap();
     writeln!(writer).unwrap();
-    writeln!(writer, "ALBUM_PAGES_SPACING (5.0 3.0)").unwrap();
+    writeln!(writer, "ALBUM_PAGES_SPACING (3.0 14.0)").unwrap();
     writeln!(writer).unwrap();
     writeln!(writer, "#ALBUM_PAGES_NUMBER (TN 10 R)").unwrap();
     writeln!(writer).unwrap();
@@ -226,27 +228,27 @@ pub fn process_year<W: Write>(writer: &mut W, year: i32, stamps: &[&crate::db_ut
     writeln!(writer, "PAGE_START").unwrap();
 
     // Add year header
-    writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", year).unwrap();
+    writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"{}\" 3.0)", year).unwrap();
 
     // Try to extract date information from the first stamp
     let first_stamp = stamps[0];
     if !first_stamp.month.is_empty() && first_stamp.month != "0" {
         let month_name = get_month_name(&first_stamp.month);
         if !first_stamp.day.is_empty() && first_stamp.day != "0" {
-            writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{} {}, {}\" 0.5)", month_name, first_stamp.day, year).unwrap();
+            writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"{} {}, {}\" 0.5)", month_name, first_stamp.day, year).unwrap();
         } else {
-            writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}, {}\" 0.5)", month_name, year).unwrap();
+            writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"{}, {}\" 0.5)", month_name, year).unwrap();
         }
     }
 
     // Add description if available
     if !first_stamp.desc.is_empty() && first_stamp.desc != " " {
-        writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 0.5)", first_stamp.desc).unwrap();
+        writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"{}\" 0.5)", first_stamp.desc).unwrap();
     }
 
     // Add perforation info if available
     if !first_stamp.perforation.is_empty() {
-        writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"Perforation {}\" 2.0)", first_stamp.perforation).unwrap();
+        writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"Perforation {}\" 2.0)", first_stamp.perforation).unwrap();
     }
 
     writeln!(writer, "ROW_START_FS (TN 6 0.1 5.0)").unwrap();
@@ -263,7 +265,7 @@ pub fn process_year<W: Write>(writer: &mut W, year: i32, stamps: &[&crate::db_ut
             // Start a new page
             writeln!(writer, "################################################################################").unwrap();
             writeln!(writer, "PAGE_START").unwrap();
-            writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{} (continued)\" 3.0)", year).unwrap();
+            writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"{} (continued)\" 3.0)", year).unwrap();
 
             // Reset counters for new page
             row_count = 0;
@@ -293,7 +295,7 @@ pub fn process_year<W: Write>(writer: &mut W, year: i32, stamps: &[&crate::db_ut
 
         // Calculate actual stamp dimensions instead of using hardcoded values
         let (stamp_width, stamp_height) = if image_path != crate::placeholder_image::get_placeholder_image_path() {
-            crate::stamp_dimensions::calculate_stamp_dimensions(&image_path, album_name)
+            crate::album_globals::calculate_stamp_dimensions(&image_path, album_name)
         } else {
             (30.0, 30.0) // Fallback for placeholder
         };

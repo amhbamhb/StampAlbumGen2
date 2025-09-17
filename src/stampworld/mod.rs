@@ -12,9 +12,9 @@
 
 pub mod album_generator;
 pub mod data_collector;
-pub mod globals;
+pub mod state;
 
 // Re-export the main functions for easy access
 pub use album_generator::{generate_album_output_from_stamps, write_globals, load_stamps_from_db};
 pub use data_collector::collect_stampworld_data;
-pub use globals::*;
+pub use state::*;

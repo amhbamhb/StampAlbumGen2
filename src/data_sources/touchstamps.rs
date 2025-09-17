@@ -1,4 +1,4 @@
-use crate::globals::ImageStatus;
+use crate::types::ImageStatus;
 use reqwest::blocking::Client;
 use scraper::{Html, Selector};
 
