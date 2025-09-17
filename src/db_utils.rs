@@ -13,65 +13,20 @@ pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<Strin
 
 // Returns a list of stamps for a given series (across all years), sorted by SG number
 pub fn get_stamps_by_series_only(conn: &rusqlite::Connection, series: &str) -> rusqlite::Result<Vec<StampStub>> {
-    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, 0, description, sg_number, '', image_path, watermark, design, engraving, perforation, series, currency, context FROM stamps WHERE series = ?1 ORDER BY sg_number")?;
+    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, month_num, description, sg_number, stamps_issued, image_path, watermark, design, engraving, perforation, series, currency, context FROM stamps WHERE series = ?1 ORDER BY sg_number")?;
     let stamp_iter = stmt.query_map([series], |row| {
-            let multi_perf_int: i32 = row.get(7)?;
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
                 month: row.get(1)?,
                 day: row.get(2)?,
-                field1: row.get(3)?,
-                field2: row.get(4)?,
-                field3: row.get(5)?,
+                sg_number: row.get(3)?,
+                stamp_type: row.get(4)?,
+                denomination: row.get(5)?,
                 color: row.get(6)?,
-                multi_perf: multi_perf_int != 0,
+                multi_perf: false,
                 desc: row.get(8)?,
                 catalog_num: row.get(9)?,
-                field4: row.get(10)?,
-                image_path: row.get(11)?,
-                watermark: row.get(12)?,
-                design: row.get(13)?,
-                engraving: row.get(14)?,
-                perforation: row.get(15)?,
-                series: row.get(16)?,
-                currency: row.get(17)?,
-                context: row.get(18)?,
-            })
-    })?;
-    let mut result = Vec::new();
-    for s in stamp_iter {
-        result.push(s?);
-    }
-    Ok(result)
-}
-
-#[derive(Debug)]
-pub struct SeriesStub {
-    pub name: String,
-    pub year: i32,
-    pub month: String,
-    pub day: String,
-    pub is_perforated: bool,
-    pub perforation: String,
-}
-
-// Returns a list of stamps for a given series and year
-pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &str) -> rusqlite::Result<Vec<StampStub>> {
-    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, 0, description, sg_number, '', image_path, watermark, design, engraving, perforation, series, currency, context FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
-    let stamp_iter = stmt.query_map([series, year], |row| {
-            let multi_perf_int: i32 = row.get(7)?;
-            Ok(StampStub {
-                year: row.get::<_, i32>(0)?,
-                month: row.get(1)?,
-                day: row.get(2)?,
-                field1: row.get(3)?,
-                field2: row.get(4)?,
-                field3: row.get(5)?,
-                color: row.get(6)?,
-                multi_perf: multi_perf_int != 0,
-                desc: row.get(8)?,
-                catalog_num: row.get(9)?,
-                field4: row.get(10)?,
+                stamps_issued: row.get(10)?,
                 image_path: row.get(11)?,
                 watermark: row.get(12)?,
                 design: row.get(13)?,
@@ -94,14 +49,14 @@ pub struct StampStub {
     pub year: i32,
     pub month: String,
     pub day: String,
-    pub field1: String,
-    pub field2: String,
-    pub field3: String,
+    pub sg_number: String,
+    pub stamp_type: String,
+    pub denomination: String,
     pub color: String,
     pub multi_perf: bool,
     pub desc: String,
     pub catalog_num: String,
-    pub field4: String,
+    pub stamps_issued: String,
     pub image_path: String,
     pub watermark: String,
     pub design: String,
@@ -234,42 +189,6 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     Ok(conn)
 }
 
-pub fn create_stamps_table(conn: &Connection) -> Result<()> {
-        debug!("Ensuring stamps table exists...");
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS stamps (
-            id INTEGER PRIMARY KEY,
-            country TEXT,
-            series TEXT,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT,
-            currency TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            context TEXT
-        )",
-        [],
-    )?;
-        debug!("Stamps table ensured.");
-    Ok(())
-}
-
 pub fn insert_stamp(
     conn: &Connection,
     country: &str,
@@ -377,31 +296,4 @@ pub fn insert_stamp(
         }
     }
     Ok(())
-}
-
-pub fn get_stamps_by_country_series(conn: &Connection, country: &str, series: &str) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
-    )?;
-    let stamp_iter = stmt.query_map(params![country, series], |row| {
-        Ok((
-            row.get(0)?, // id
-            row.get(1)?, // country
-            row.get(2)?, // series
-            row.get(3)?, // year
-            row.get(4)?, // month
-            row.get(5)?, // month_num
-            row.get(6)?, // day
-            row.get(7)?, // description
-            row.get(8)?, // image_path
-            row.get(9)?, // remote_image_url
-            row.get(10)?, // perforation
-            row.get(11)? // context
-        ))
-    })?;
-    let mut results = Vec::new();
-    for stamp in stamp_iter {
-        results.push(stamp?);
-    }
-    Ok(results)
 }

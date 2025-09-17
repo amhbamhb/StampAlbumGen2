@@ -30,7 +30,7 @@ pub fn generate_album_text(db_path: &str, country: &str, series: &str) -> String
         } else {
             output.push_str(&format!("STAMP_ADD (30.0 30.0 \"Image\\nNot\\nAvailable\" \"\" \"{}\" \"\")\n", description));
         }
-        // Add month, day, and perforation info as PAGE_TEXT_CENTRE_VSPACE
+        // Add month, day, and perforation info as PAGE_TEXT_CENTRE
         if month_num > 0 {
             output.push_str(&format!("PAGE_TEXT_CENTRE (TN 10 \"Month: {} ({})\" 0.5)\n", month, month_num));
         } else if !month.is_empty() {

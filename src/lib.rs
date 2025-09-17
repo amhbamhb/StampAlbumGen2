@@ -1,5 +1,4 @@
 mod config;
-pub mod data_sources;
 // Main library file for StampAlbumGen2
 // External crates
 
@@ -9,9 +8,7 @@ pub mod data_sources;
 
 // Add more modules as needed
 
-pub mod csv_utils;
 pub mod image_utils;
-pub mod album_easy;
 // pub mod html_utils;
 pub mod commands_file_generator;
 pub mod stampworld;

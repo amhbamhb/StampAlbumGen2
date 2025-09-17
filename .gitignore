@@ -4,6 +4,11 @@
 Cargo.lock
 Albums/
 Alblums/
+/Archive/
+Archive/
+Archive/*
+
+
 
 # Visual Studio Code
 .vscode/

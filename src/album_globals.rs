@@ -68,13 +68,13 @@ where
     use std::path::Path;
 
     // Load config values from config.toml for mm_per_pixel calculation
-    let config_path = find_config_path();
-    let config = load_config(&config_path);
+    let config_path = crate::file_utils::find_config_path();
+    let config = crate::config::load_config(&config_path);
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
     
     // Get the correct source directory from the database path
-    let _db_path = get_db_path_from_cli();
+    let _db_path = crate::file_utils::get_db_path_from_cli();
     
     // Calculate mm-per-pixel ratios using embedded reference image
     let _ = match crate::image_utils::calc_mm_per_pixel_embedded(reference_width_mm as f32, reference_height_mm as f32) {
@@ -226,7 +226,7 @@ where
                 let (real_width_mm, real_height_mm) = calculate_stamp_dimensions(&image_name, album_name);
                 
                 let description = if stamp.desc.is_empty() {
-                    format!("{} {}", clean_text(&stamp.field3), clean_text(&stamp.color))
+                    format!("{} {}", clean_text(&stamp.denomination), clean_text(&stamp.color))
                 } else {
                     clean_text(&stamp.desc)
                 };
@@ -253,7 +253,6 @@ use std::collections::HashSet;
 use lazy_static::lazy_static;
 use crate::db_utils::{init_db, get_all_series, get_stamps_by_series_only, StampStub};
 
-use crate::config::load_config;
 use log::warn;
 use image::io::Reader as ImageReader;
 
@@ -286,32 +285,6 @@ impl Default for PageHeaderInfo {
             currency: String::new(),
         }
     }
-}
-
-fn find_config_path() -> String {
-    use std::env;
-    use std::path::Path;
-
-    // First try current directory
-    if Path::new("config.toml").exists() {
-        return "config.toml".to_string();
-    }
-
-    // Try to find it relative to the executable
-    if let Ok(exe_path) = env::current_exe() {
-        if let Some(parent) = exe_path.parent() {
-            // Go up two levels from target/release to the workspace root
-            if let Some(workspace_root) = parent.parent().and_then(|p| p.parent()) {
-                let config_path = workspace_root.join("config.toml");
-                if config_path.exists() {
-                    return config_path.to_string_lossy().to_string();
-                }
-            }
-        }
-    }
-
-    // Fallback to current directory
-    "config.toml".to_string()
 }
 
 pub fn extract_header_info(stamps: &[&StampStub]) -> PageHeaderInfo {
@@ -550,26 +523,6 @@ pub fn write_page_header(output: &mut impl Write, header_info: &PageHeaderInfo) 
     let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"{}\" 1.5)", currency_clean);
 }
 
-lazy_static! {
-    static ref CLI_DB_PATH: Mutex<Option<String>> = Mutex::new(None);
-}
-
-pub fn set_db_path_from_cli(path: &str) {
-    let mut db_path = CLI_DB_PATH.lock().unwrap();
-    *db_path = Some(path.to_string());
-}
-
-pub fn get_db_path_from_cli() -> String {
-    let db_path = CLI_DB_PATH.lock().unwrap();
-    match db_path.as_ref() {
-        Some(path) => path.clone(),
-        None => {
-            // This shouldn't happen in normal operation since we set it in main.rs
-            "Albums/Album-Default/Album-Default.db".to_string()
-        }
-    }
-}
-
 pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
     let conn = crate::db_utils::init_db(db_path).expect("Failed to open database");
     let mut all_stamps = Vec::new();
@@ -662,18 +615,18 @@ pub fn new_row<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day: 
 pub fn add_stamp<W: std::io::Write>(
     writer: &mut W,
     year: &str,
-    field1: &str,
-    field2: &str,
-    field3: &str,
+    sg_number: &str,
+    stamp_type: &str,
+    denomination: &str,
     color: String,
     multi_perf: bool,
     desc: &str,
     width: &str,
     height: &str,
     catalog_num: &str,
-    field4: &str,
+    stamps_issued: &str,
 ) {
-    let _ = writeln!(writer, "STAMP {} {} {} {} {} {} {} {} {} {} {}", year, field1, field2, field3, color, multi_perf, desc, width, height, catalog_num, field4);
+    let _ = writeln!(writer, "STAMP {} {} {} {} {} {} {} {} {} {} {}", year, sg_number, stamp_type, denomination, color, multi_perf, desc, width, height, catalog_num, stamps_issued);
 }
 
 // AlbumEasy Output Generation
@@ -689,8 +642,8 @@ where
     F: FnMut(usize),
 {
     // Load config values from config.toml
-    let config_path = find_config_path();
-    let config = load_config(&config_path);
+    let config_path = crate::file_utils::find_config_path();
+    let config = crate::config::load_config(&config_path);
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
     // Calculate mm-per-pixel ratios using embedded reference image
