@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.7.0 Release Notes
+# Stamp Album Generator v0.8.0 Release Notes
 
 ## Overview
 This release fixes critical page numbering issues and eliminates blank pages in album generation. The embedded reference stamp sizing system from v0.5.0 is maintained with improved reliability.
@@ -116,7 +116,7 @@ For issues or questions, please check the embedded documentation in the source c
 
 ---
 
-**Release Date**: 2025-09-19
-**Version**: 0.7.0
+**Release Date**: 2025-09-20
+**Version**: 0.8.0
 **Build**: Release (optimized)</content>
 <parameter name="filePath">RELEASE_NOTES.md

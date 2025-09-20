@@ -1,6 +1,6 @@
 # Stamp Album Generator - Instructions
-# Version: 0.7.0
-# Last Updated: 2025-09-19
+# Version: 0.8.0
+# Last Updated: 2025-09-20
 # Previous Versions: docs/versions/instructions_2025-09-18_v1.md
 
 # Best Practices

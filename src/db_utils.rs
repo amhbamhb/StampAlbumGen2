@@ -229,7 +229,8 @@ pub fn insert_stamp(
     
     if count > 0 {
         // Check if we should update this existing stamp
-        let has_placeholder = existing_image_path == "images/no_image_placeholder.png" || existing_image_path.is_empty();
+    // Consider any placeholder that starts with images/no_image_ (including per-stamp placeholders)
+    let has_placeholder = existing_image_path.is_empty() || existing_image_path.starts_with("images/no_image");
         let has_new_remote_url = !remote_image_url.is_empty() && remote_image_url != existing_remote_url;
         
         if has_placeholder && has_new_remote_url {

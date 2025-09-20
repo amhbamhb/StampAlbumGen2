@@ -218,8 +218,31 @@ where
                     stamp.image_path.clone()
                 };
 
-                // Check if image exists and use placeholder if not
-                let final_image_path = crate::file_utils::get_image_path_or_placeholder(album_name, &image_name);
+                // Determine final image path. If the image is missing, prefer a per-stamp
+                // placeholder (includes SG and year) so AlbumEasy output is more informative.
+                let final_image_path = if image_name.is_empty() {
+                    // No image path recorded - generate per-stamp placeholder
+                    crate::placeholder_image::ensure_placeholder_image_for_stamp(
+                        album_name,
+                        &stamp.sg_number,
+                        &stamp.year.to_string(),
+                    ).unwrap_or_else(|_| "images/no_image_placeholder.png".to_string())
+                } else if crate::file_utils::image_exists(album_name, &image_name) {
+                    image_name.clone()
+                } else {
+                    // Image path provided but file not found on disk - fall back to per-stamp placeholder
+                    match crate::placeholder_image::ensure_placeholder_image_for_stamp(
+                        album_name,
+                        &stamp.sg_number,
+                        &stamp.year.to_string(),
+                    ) {
+                        Ok(p) => p,
+                        Err(_) => {
+                            println!("[DEBUG] Image {} not found, using generic placeholder", image_name);
+                            "images/no_image_placeholder.png".to_string()
+                        }
+                    }
+                };
 
                 // Calculate stamp dimensions based on actual image size
                 let (real_width_mm, real_height_mm) = calculate_stamp_dimensions(&final_image_path, album_name);
@@ -343,11 +366,14 @@ pub fn extract_header_info(stamps: &[&StampStub]) -> PageHeaderInfo {
                 .filter(|line| !line.is_empty() && !line.starts_with("Engraving:") && !line.starts_with("Design:"))
                 .collect::<Vec<_>>()
                 .join(" ");
-            // Extract only perforation values (numbers, x, ½, etc.)
+            // Extract only perforation values (numbers, x, fractions, etc.)
             let perf_parts: Vec<String> = clean_perf
                 .split_whitespace()
                 .filter(|word| {
-                    word.chars().all(|c| c.is_numeric() || c == 'x' || c == '½' || c == '¼' || c == '¾' || c == '.' || c == '-')
+                    // Allow numbers, x, dots, dashes, and fraction patterns like 1/2, 3/4, etc.
+                    word.chars().all(|c| {
+                        c.is_numeric() || c == 'x' || c == '/' || c == '.' || c == '-'
+                    }) || word.contains('/')
                 })
                 .map(|s| s.to_string())
                 .collect();

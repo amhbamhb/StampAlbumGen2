@@ -105,7 +105,7 @@ impl Default for PageHeaderInfo {
             month: String::new(),
             day: String::new(),
             series: String::new(),
-            perforation: "14½".to_string(),
+            perforation: String.to_string(),
             design: String::new(),
             engraving: String::new(),
             watermark: String::new(),

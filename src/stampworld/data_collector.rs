@@ -886,12 +886,18 @@ pub fn collect_stampworld_data(
                     if path_lower.ends_with(".jpg") || path_lower.ends_with(".jpeg") || path_lower.ends_with(".png") {
                         image_path
                     } else {
-                        // Invalid format, use placeholder image
-                        placeholder_image::get_placeholder_image_path()
+                        // Invalid format, generate per-stamp placeholder including SG/year
+                        match placeholder_image::ensure_placeholder_image_for_stamp(_site_name, &sg_number, &stamp_year.to_string()) {
+                            Ok(p) => p,
+                            Err(_) => placeholder_image::get_placeholder_image_path(),
+                        }
                     }
                 } else {
-                    // No image URL available, use placeholder image
-                    placeholder_image::get_placeholder_image_path()
+                    // No image URL available, generate per-stamp placeholder including SG/year
+                    match placeholder_image::ensure_placeholder_image_for_stamp(_site_name, &sg_number, &stamp_year.to_string()) {
+                        Ok(p) => p,
+                        Err(_) => placeholder_image::get_placeholder_image_path(),
+                    }
                 };
 
                 // Generate remote image URL based on StampWorld's pattern
