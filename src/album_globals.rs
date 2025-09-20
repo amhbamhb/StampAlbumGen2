@@ -131,40 +131,33 @@ where
             let estimated_first_row_height = 30.0; // Rough estimate for stamp height
             let header_height = 50.0; // Rough estimate for header block
             let available_space = 245.0 - (rows_on_page as f64 * 35.0); // Rough page height calculation
-            
-            if rows_on_page >= max_rows_per_page || 
+
+            let page_started = if rows_on_page >= max_rows_per_page ||
                (rows_on_page > 0 && available_space < header_height + estimated_first_row_height) {
-                page_num += 1;
-                rows_on_page = 0;
-                let _ = writeln!(output, "################################################################################");
-                let _ = writeln!(output, "# Page {}", page_num);
-                let _ = writeln!(output, "################################################################################");
-                let _ = writeln!(output, "PAGE_START");
+                new_page_main(&mut output, &mut page_num, &mut rows_on_page);
+                write_page_header(&mut output, &header_info);
+                true
             } else if page_num == 1 && rows_on_page == 0 {
                 // First page - write PAGE_START without incrementing page_num
-                let _ = writeln!(output, "################################################################################");
-                let _ = writeln!(output, "# Page {}", page_num);
-                let _ = writeln!(output, "################################################################################");
-                let _ = writeln!(output, "PAGE_START");
+                write_page_header_consistent(&mut output, page_num);
+                write_page_header(&mut output, &header_info);
+                true
+            } else {
+                false
+            };
+
+            // Write enhanced header with extracted information (only if we started a new page)
+            if page_started {
+                write_page_header(&mut output, &header_info);
             }
-            
-            // Write enhanced header with extracted information
-            write_page_header(&mut output, &header_info);
         
         // Group stamps into rows dynamically based on image widths (up to 5 stamps per row)
         let mut row_start_idx = 0;
         while row_start_idx < year_stamps.len() {
             // Check if we need a new page due to max rows
             if rows_on_page >= max_rows_per_page {
-                page_num += 1;
-                rows_on_page = 0;
-                let _ = writeln!(output, "################################################################################");
-                let _ = writeln!(output, "# Page {}", page_num);
-                let _ = writeln!(output, "################################################################################");
-                let _ = writeln!(output, "PAGE_START");
-                
-                // Write enhanced header with extracted information
-                write_page_header(&mut output, &header_info);
+                new_page_main(&mut output, &mut page_num, &mut rows_on_page);
+                // Page header is already written by new_page_main, no need to write it again
             }
             
             let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
@@ -240,7 +233,7 @@ where
         }
         
         rows_on_page += 1;
-        page_num += 1;
+        new_page_main(&mut output, &mut page_num, &mut rows_on_page);
         if let Some(ref mut cb) = page_callback {
             cb(page_num);
         }
@@ -715,15 +708,40 @@ impl GenericAttrs {
 
 
 
-/// Writes a new page header and resets counters
-pub fn new_page<W: std::io::Write>(writer: &mut W, rows_written: &mut i32, stamps_written: &mut i32, used_width: &mut i32, used_height: &mut i32, max_row_height: &mut i32) {
-    let _ = writeln!(writer, "################################################################################");
-    let _ = writeln!(writer, "PAGE_START");
+/// Helper function to write a consistent page header
+fn write_page_header_consistent<W: Write>(output: &mut W, page_num: usize) {
+    let _ = writeln!(output, "################################################################################");
+    let _ = writeln!(output, "# Page {}", page_num);
+    let _ = writeln!(output, "################################################################################");
+    let _ = writeln!(output, "PAGE_START");
+}
+
+/// Helper function to start a new page and reset counters
+fn new_page<W: Write>(
+    writer: &mut W,
+    page_num: &mut usize,
+    rows_written: &mut i32,
+    stamps_written: &mut i32,
+    used_width: &mut i32,
+    used_height: &mut i32,
+    max_row_height: &mut i32,
+) {
+    *page_num += 1;
     *rows_written = 0;
     *stamps_written = 0;
     *used_width = 0;
-    *used_height = 14;
+    *used_height = 0;
     *max_row_height = 0;
+
+    write_page_header_consistent(writer, *page_num);
+    let _ = writeln!(writer, "PAGE_START");
+}
+
+/// Helper function to start a new page in the main album generation function
+fn new_page_main<W: Write>(writer: &mut W, page_num: &mut usize, rows_on_page: &mut usize) {
+    *page_num += 1;
+    *rows_on_page = 0;
+    write_page_header_consistent(writer, *page_num);
 }
 
 /// Writes a new year header
@@ -759,10 +777,10 @@ pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day:
 }
 
 /// Writes a new row, handles page breaks, and updates counters
-pub fn new_row<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day: &str, rows_written: &mut i32, stamps_written: &mut i32, used_width: &mut i32, used_height: &mut i32, max_row_height: &mut i32) {
+pub fn new_row<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day: &str, page_num: &mut usize, rows_written: &mut i32, stamps_written: &mut i32, used_width: &mut i32, used_height: &mut i32, max_row_height: &mut i32) {
     *used_height += *max_row_height;
     if *used_height + 43 > 245 {
-        new_page(writer, rows_written, stamps_written, used_width, used_height, max_row_height);
+        new_page(writer, page_num, rows_written, stamps_written, used_width, used_height, max_row_height);
         new_year(writer, year, month, day);
     }
     let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
@@ -903,6 +921,7 @@ pub fn new_series<W: Write>(
     stamps_in_series: i32,
     is_perforated: bool,
     perforation: &str,
+    page_num: &mut usize,
     rows_written: &mut i32,
     stamps_written: &mut i32,
     used_width: &mut i32,
@@ -912,15 +931,15 @@ pub fn new_series<W: Write>(
 ) {
     // Page break logic
     if *rows_written == 4 {
-        new_page(writer, rows_written, stamps_written, used_width, used_height, max_row_height);
+        new_page(writer, page_num, rows_written, stamps_written, used_width, used_height, max_row_height);
         new_year(writer, year, month, day);
     } else if *used_height + *max_row_height + 43 > 245 {
-        new_page(writer, rows_written, stamps_written, used_width, used_height, max_row_height);
+        new_page(writer, page_num, rows_written, stamps_written, used_width, used_height, max_row_height);
         new_year(writer, year, month, day);
     } else {
         let rows_needed = (stamps_in_series + 3) / 4;
         if *rows_written + rows_needed > 4 {
-            new_page(writer, rows_written, stamps_written, used_width, used_height, max_row_height);
+            new_page(writer, page_num, rows_written, stamps_written, used_width, used_height, max_row_height);
             new_year(writer, year, month, day);
         }
     }
@@ -982,7 +1001,7 @@ pub fn new_series<W: Write>(
     let _ = writeln!(writer, "PAGE_VSPACE (4)");
 
     // Start new row
-    new_row(writer, year, month, day, rows_written, stamps_written, used_width, used_height, max_row_height);
+    new_row(writer, year, month, day, page_num, rows_written, stamps_written, used_width, used_height, max_row_height);
 
     *used_height += 13;
     *max_row_height = 0;
