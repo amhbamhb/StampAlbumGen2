@@ -1,5 +1,7 @@
 # Stamp Album Generator v0.5.0
 
+<!-- Version: 1.2 | Last Updated: September 18, 2025 | Previous: docs/versions/README_2025-09-18_v1.md -->
+
 A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
 
 ## 🚀 Features
@@ -12,14 +14,14 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 
 ### Advanced Sizing System
 - **Embedded Reference Images**: No external file dependencies
-- **Series-Specific Scaling**: Precise control for L/M/N stamp series
+- **Series-Specific Scaling**: Precise control stamp sizes
 - **Dynamic Layout**: Optimizes stamp arrangement within page constraints
 - **Aspect Ratio Control**: Configurable dimension calculation modes
 
 ### Performance & Portability
 - **Release Build**: Optimized 12MB binary for production use
-- **Cross-Platform**: Linux x86-64 compatible
-- **Minimal Dependencies**: Only requires standard system libraries
+- **Cross-Platform**: Linux x86-64 compatible, windows
+
 
 ## 📦 Installation
 
@@ -55,17 +57,45 @@ stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Ca
 
 ### Command Line Options
 ```
-USAGE:
-    stamp_album_gen2 [OPTIONS] --db-path <DB_PATH> --album-name <ALBUM_NAME>
+Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs.
 
-OPTIONS:
-    --db-path <DB_PATH>          Path to SQLite database file
-    --album-name <ALBUM_NAME>    Name of the album to generate
-    --start-year <START_YEAR>    Starting year for stamp selection [default: 1840]
-    --end-year <END_YEAR>        Ending year for stamp selection [default: 2025]
-    --output-only                Generate output without database queries (for testing)
-    --help                       Print help information
-    --version                    Print version information
+Usage: stamp_album_gen2 [OPTIONS]
+
+Options:
+      --output-only
+          Output-only mode: Generate AlbumEasy from existing DB (requires --db-path and --album-name)
+      --country <COUNTRY>
+          Country name (used as default for other parameters if not specified)
+      --db-path <DB_PATH>
+          Path to the SQLite database (required for --output-only mode)
+      --album-name <ALBUM_NAME>
+          Album name (required for album generation)
+      --source <SOURCE>
+          Source type: stampworld, touchstamps, extractfile, colnectexport [default: stampworld]
+      --site-name <SITE_NAME>
+          Site name for scraping (required for scraping mode, e.g. 'Great-Britain', 'Canada')
+      --album-directory <ALBUM_DIRECTORY>
+          Album directory (default: Albums/{album_name})
+      --images-directory <IMAGES_DIRECTORY>
+          Images directory (default: Albums/{album_name}/images)
+      --album-file-name <ALBUM_FILE_NAME>
+          Album file name (default: Albums/{album_name}/{album_name}.txt)
+      --extract-file-name <EXTRACT_FILE_NAME>
+          Extract file name (default: Albums/{album_name}/{album_name}_extract.txt)
+      --catalog-name <CATALOG_NAME>
+          Catalog name (e.g. 'SG', 'Michel') [default: SG]
+      --overwrite-album
+          Overwrite existing album text files
+      --overwrite-images
+          Overwrite existing image files
+      --start-year <START_YEAR>
+          Start year for filtering stamps [default: 0]
+      --end-year <END_YEAR>
+          End year for filtering stamps [default: 9999]
+  -h, --help
+          Print help (see more with '--help')
+  -V, --version
+          Print version
 ```
 
 ### Configuration
@@ -83,18 +113,9 @@ header_font_spacing = 3.0
 
 ## 📊 Stamp Dimension System
 
-### Series-Specific Scaling
-The application automatically applies precise scaling factors based on stamp series:
-
-| Series | Target Dimensions | Scaling Factors | Use Case |
-|--------|------------------|-----------------|----------|
-| **L-series** | 49.0mm x 21.0mm | (1.25, 2.45) | Large registration stamps |
-| **M-series** | 31.1mm x 24.1mm | (1.15, 1.45) | Medium definitive stamps |
-| **N-series** | 26.1mm x 21.0mm | (1.10, 1.40) | Small definitive stamps |
 
 ### Embedded Reference System
 - Uses compiled-in B4-s.jpg reference image
-- Consistent `0.208x0.107` mm-per-pixel ratio across all installations
 - Eliminates external file dependencies
 - Automatic fallback to default ratios if embedded image fails
 
@@ -103,21 +124,39 @@ The application automatically applies precise scaling factors based on stamp ser
 ```
 stamp-album-gen2/
 ├── src/
-│   ├── main.rs              # Application entry point
-│   ├── lib.rs               # Library exports
-│   ├── album_globals.rs     # Core album generation logic
-│   ├── image_utils.rs       # Image processing utilities
-│   ├── sample_images/       # Series-specific scaling system
-│   │   ├── mod.rs          # Scaling factor definitions
-│   │   ├── large_stamps/   # L-series reference images
-│   │   ├── medium_stamps/  # M-series reference images
-│   │   └── small_stamps/   # N-series reference images
-│   ├── B4-s.jpg           # Embedded reference image
-│   └── [other modules...]
-├── Albums/                 # Album databases and images
-├── config.toml            # Configuration file
-├── Cargo.toml             # Rust dependencies
-└── target/release/        # Built binaries
+│   ├── main.rs                    # Application entry point
+│   ├── lib.rs                     # Library exports
+│   ├── album_globals.rs           # Core album generation logic
+│   ├── image_utils.rs             # Image processing utilities
+│   ├── image_downloader.rs        # Image downloading functionality
+│   ├── db_utils.rs                # Database utilities
+│   ├── file_utils.rs              # File handling utilities
+│   ├── config.rs                  # Configuration management
+│   ├── types.rs                   # Type definitions
+│   ├── commands_file_generator.rs # Command file generation
+│   ├── placeholder_image.rs       # Placeholder image handling
+│   ├── B4-s.jpg                  # Embedded reference image
+│   ├── data_sources/
+│   │   └── mod.rs                # Data source modules
+│   └── stampworld/
+├── Albums/                        # Album databases and images
+│   ├── Canada/                    # Canada stamp collection
+│   ├── Great Britain/             # Great Britain stamp collection
+│   └── Great-Britain/             # Alternative Great Britain collection
+├── Archive/                       # Archived source files
+├── docs/                          # Documentation files
+├── examples/                      # Example stamp collections
+├── images/                        # Image assets
+├── tests/                         # Test files
+├── target/                        # Build artifacts
+├── API_DOCUMENTATION.md           # API documentation
+├── CONTRIBUTING.md                # Contributing guidelines
+├── RELEASE_NOTES.md               # Release notes
+├── Cargo.toml                     # Rust dependencies
+├── Cargo.lock                     # Dependency lock file
+├── config.toml                    # Configuration file
+├── config_template.toml           # Configuration template
+└── *.log                          # Log files
 ```
 
 ## 🔧 Development
@@ -136,10 +175,20 @@ cargo test
 
 ### Dependencies
 - **rusqlite**: SQLite database access
-- **image**: Image processing and format support
-- **reqwest**: HTTP client for data scraping
+- **image**: Image processing and format support (jpg features)
+- **reqwest**: HTTP client for data scraping (blocking + JSON features)
 - **serde**: Serialization/deserialization
-- **clap**: Command-line argument parsing
+- **clap**: Command-line argument parsing (derive features)
+- **csv**: CSV file handling
+- **rusttype**: Font rendering for text processing
+- **scraper**: HTML scraping and parsing
+- **lazy_static**: Lazy static initialization
+- **regex**: Regular expression matching
+- **log**: Logging framework
+- **env_logger**: Environment-based logging
+- **flexi_logger**: Flexible logging configuration
+- **indicatif**: Progress bars and indicators
+- **toml**: TOML configuration file parsing
 
 ## 📋 System Requirements
 
@@ -181,14 +230,23 @@ RUST_LOG=debug stamp_album_gen2 [options]
 
 ### Core Functions
 
-#### `calculate_stamp_dimensions()`
-Calculates precise stamp dimensions using embedded reference and series-specific scaling.
+#### `generate_album_output_from_stamps(stamps, album_name, page_callback)`
+Generates complete AlbumEasy output from a filtered list of stamps. Takes pre-filtered stamp data and creates optimized album page layouts with proper spacing and year-based organization.
 
-#### `generate_album_output_from_stamps()`
-Generates complete AlbumEasy output from a filtered stamp collection.
+#### `calc_mm_per_pixel_embedded(real_width_mm, real_height_mm)`
+Calculates precise mm-per-pixel ratios using the embedded B4-s.jpg reference image. Eliminates external file dependencies and ensures consistent dimension calculations across all installations.
 
-#### `get_scaling_for_series()`
-Returns appropriate scaling factors based on stamp series identifier.
+#### `get_scaling_for_series(series)`
+Returns appropriate scaling factors based on stamp series identifier (L/M/N/R/S/T/U series). Each series has optimized scaling factors for precise stamp dimension control in album layouts.
+
+#### `load_stamps_from_db(db_path)`
+Loads and filters stamp data from SQLite databases with support for year-based filtering and series-specific processing. Handles database connections and stamp data extraction.
+
+#### `download_stamp_image_if_missing(album_name, image_path, base_url)`
+Downloads missing stamp images automatically from configured sources. Supports multiple image formats and handles network errors gracefully with retry logic.
+
+#### `extract_header_info(stamps)`
+Extracts page header information from stamp collections including year ranges, series information, and layout metadata for AlbumEasy format generation.
 
 ## 🤝 Contributing
 

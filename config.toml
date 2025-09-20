@@ -1,6 +1,25 @@
-stamp_box_height = 24.0
-row_font_spacing = 5.0
-header_font_spacing = 3.0
+# Stamp dimension settings
 reference_width_mm = 240.0
 reference_height_mm = 275.0
-# Add more config values as needed
+
+# Global album settings
+stamp_box_height = 20.0
+row_font_spacing = 5.0
+header_font_spacing = 3.0
+
+# Header formatting options
+[header_formatting]
+# Date format: "dashes" (Month - Day - Year) or "commas" (Month Day, Year)
+date_format = "dashes"
+
+# Label style: "abbreviated" (WM, Perf.) or "full" (Watermark, Perforation)
+label_style = "abbreviated"
+
+# Series formatting: "title" (TN 12), "subtitle" (TB 8), or "none"
+series_style = "title"
+
+# Include currency field in headers: true/false
+include_currency = true
+
+# Vertical spacing between header elements
+header_spacing = 1.0

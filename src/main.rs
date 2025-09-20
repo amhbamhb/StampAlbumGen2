@@ -229,13 +229,49 @@ Options:"
         let mut last_page = 0;
         println!("[INFO] Loading stamps from database: {}", db_path);
         let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
-        println!("[INFO] Filtering stamps by year: {} to {}", start_year, end_year);
-        let filtered_stamps = all_stamps.into_iter().filter(|stamp| {
-            let year = stamp.year;
-            year >= start_year && year <= end_year
-        }).collect::<Vec<_>>();
-        
-        // Update filename if only end-year was specified
+        println!("[INFO] Loaded {} stamps from database", all_stamps.len());
+
+        // For development purposes, include all stamps initially
+        // Year filtering will be applied during album generation if needed
+        let filtered_stamps: Vec<_>;
+
+        // Optional: Apply year filtering only if explicitly requested and stamps have year data
+        if start_year > 0 || end_year < 9999 {
+            println!("[INFO] Applying year filter: {} to {}", start_year, end_year);
+            filtered_stamps = all_stamps.into_iter().filter(|stamp| {
+                let mut year = stamp.year;
+
+                // If year is 0, try to extract from description
+                if year == 0 {
+                    let year_regex = regex::Regex::new(r"(18|19|20)\d{2}").unwrap();
+                    if let Some(cap) = year_regex.find(&stamp.desc) {
+                        if let Ok(extracted_year) = cap.as_str().parse::<i32>() {
+                            if extracted_year >= 1800 && extracted_year <= 2100 {
+                                year = extracted_year;
+                                println!("[DEBUG] Extracted year {} from description '{}' for stamp {}", year, stamp.desc, stamp.sg_number);
+                            }
+                        }
+                    }
+                }
+
+                // Include stamp if it has a valid year in range, or if year extraction failed but series suggests it belongs
+                let year_range_span = end_year - start_year;
+                let matches = if year >= start_year && year <= end_year {
+                    true
+                } else if year == 0 && year_range_span > 20 {
+                    // For broad year ranges, include stamps where year extraction failed
+                    // This helps capture stamps that belong to the era but have unclear dating
+                    println!("[DEBUG] Including stamp {} with unknown year (year=0) due to broad range", stamp.sg_number);
+                    true
+                } else {
+                    false
+                };
+                matches
+            }).collect::<Vec<_>>();
+            println!("[INFO] Filtered to {} stamps within year range", filtered_stamps.len());
+        } else {
+            filtered_stamps = all_stamps;
+        }        // Update filename if only end-year was specified
         let mut final_album_file_name = album_file_name.clone();
         if start_year == 0 && end_year < 9999 && !filtered_stamps.is_empty() {
             // Find the minimum year from filtered stamps
@@ -246,12 +282,20 @@ Options:"
         
         // Set the global album file name
         *stamp_album_gen2::types::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
+        *stamp_album_gen2::stampworld::state::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
 
         // Create placeholder image for output-only mode
         println!("[INFO] Creating placeholder image for unknown/blank stamps...");
         match placeholder_image::ensure_placeholder_image_for_album(&album_name) {
             Ok(path) => println!("[INFO] Placeholder image ready: {}", path),
             Err(e) => println!("[WARN] Failed to create placeholder image: {}", e),
+        }
+
+        // Download missing images if remote URLs are available
+        println!("[INFO] Downloading missing stamp images...");
+        match stamp_album_gen2::image_downloader::download_missing_stamp_images(&filtered_stamps, &album_name) {
+            Ok(_) => println!("[INFO] Image download process completed"),
+            Err(e) => println!("[WARN] Some images failed to download: {}", e),
         }
 
         println!("[INFO] Generating AlbumEasy output for album: {}", album_name);
@@ -310,6 +354,7 @@ Options:"
         
         // Update the global album file name for consistency
         *stamp_album_gen2::types::ALBUM_FILE_NAME.lock().unwrap() = album_file_path.clone();
+        *stamp_album_gen2::stampworld::state::ALBUM_FILE_NAME.lock().unwrap() = album_file_path.clone();
         
         let mut gen = CommandsFileGenerator::new();
         gen.album_name = album_name.clone();
@@ -361,12 +406,42 @@ Options:"
                 let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
                 println!("[INFO] Loaded {} stamps from database", all_stamps.len());
                 
+                // Debug: show some sample stamps
+                for (i, stamp) in all_stamps.iter().take(3).enumerate() {
+                    println!("[DEBUG] Sample stamp {}: sg={}, year={}, desc='{}'", i, stamp.sg_number, stamp.year, stamp.desc);
+                }
+                
                 println!("[INFO] Filtering stamps by year: {} to {}", gen.start_year, gen.end_year);
+                let year_range_span = gen.end_year - gen.start_year;
                 let filtered_stamps = all_stamps.into_iter().filter(|stamp| {
-                    let year = stamp.year;
-                    year >= gen.start_year && year <= gen.end_year
+                    let mut year = stamp.year;
+                    
+                    // If year is 0, try to extract from description
+                    if year == 0 {
+                        let year_regex = regex::Regex::new(r"(18|19|20)\d{2}").unwrap();
+                        if let Some(cap) = year_regex.find(&stamp.desc) {
+                            if let Ok(extracted_year) = cap.as_str().parse::<i32>() {
+                                if extracted_year >= 1800 && extracted_year <= 2100 {
+                                    year = extracted_year;
+                                    println!("[DEBUG] Extracted year {} from description '{}' for stamp {}", year, stamp.desc, stamp.sg_number);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // For broad year ranges (span > 20 years), include stamps with year=0
+                    // or stamps that fall within a reasonable range
+                    // Also include stamps where year extraction failed but series suggests they belong
+                    let matches = if year_range_span > 20 {
+                        // For broad ranges, be very inclusive
+                        year == 0 || (year >= gen.start_year - 5 && year <= gen.end_year + 5)
+                    } else {
+                        // For narrow ranges, be more strict
+                        year >= gen.start_year && year <= gen.end_year
+                    };
+                    matches
                 }).collect::<Vec<_>>();
-                println!("[INFO] Filtered to {} stamps within year range", filtered_stamps.len());
+                println!("[INFO] Filtered to {} stamps within year range (year range span: {} years)", filtered_stamps.len(), year_range_span);
                 
                 // Update filename if only end-year was specified
                 let _final_album_file_path = album_file_path.clone();
@@ -376,6 +451,13 @@ Options:"
                     let corrected_filename = format!("{}-{}-{}.txt", album_name, min_year, cli.end_year);
                     let _corrected_path = format!("{}/{}", album_directory, corrected_filename);
                     println!("[INFO] Corrected output filename to: {}", corrected_filename);
+                }
+                
+                // Download missing images if remote URLs are available
+                println!("[INFO] Downloading missing stamp images...");
+                match stamp_album_gen2::image_downloader::download_missing_stamp_images(&filtered_stamps, &gen.album_name) {
+                    Ok(_) => println!("[INFO] Image download process completed"),
+                    Err(e) => println!("[WARN] Some images failed to download: {}", e),
                 }
                 
                 println!("[INFO] Generating AlbumEasy output for album: {}", gen.album_name);

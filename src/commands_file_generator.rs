@@ -47,10 +47,24 @@ impl CommandsFileGenerator {
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
             info!("Skipping download, image already exists: {}", file_path);
-            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
+            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
         }
         self.get_image(url, &image_name, &file_path)
     }
+    
+    pub fn get_stampworld_image_with_filename(&self, url: &str, filename: &str, overwrite: bool) -> ImageStatus {
+        use std::path::Path;
+        let file_path = format!("{}/{}", self.images_directory, filename);
+        
+        // If overwrite is disabled and file exists, skip download
+        if !overwrite && Path::new(&file_path).exists() {
+            info!("Skipping download, image already exists: {}", file_path);
+            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: filename.to_string() };
+        }
+        
+        self.get_image(url, filename, &file_path)
+    }
+    
     pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite_images: bool, page_callback: Option<&dyn Fn(usize)>) -> Vec<String> {
         let separator = self.separator.clone();
         let images_directory = self.images_directory.clone();
@@ -79,7 +93,7 @@ impl CommandsFileGenerator {
             let file_path = format!("{}/{}", images_directory, image_name);
             if !overwrite && std::path::Path::new(&file_path).exists() {
                 info!("Skipping download, image already exists: {}", file_path);
-                return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
+                return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
             }
             
             // info!("Downloading image: {} -> {}", url, file_path);
@@ -100,15 +114,15 @@ impl CommandsFileGenerator {
                 Ok(status) => {
                     if status.success() {
                         info!("Successfully downloaded: {}", file_path);
-                        ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 }
+                        ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name }
                     } else {
                         error!("Failed to download {}: curl exit code {:?}", url, status.code());
-                        ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0 }
+                        ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0, filename: image_name }
                     }
                 }
                 Err(e) => {
                     error!("Failed to run curl for {}: {}", url, e);
-                    ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0 }
+                    ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0, filename: image_name }
                 }
             }
         };
@@ -259,13 +273,13 @@ impl CommandsFileGenerator {
         use std::path::Path;
         
         if name.is_empty() {
-            return ImageStatus { link: String::new(), exists: false, width: 0, height: 0 };
+            return ImageStatus { link: String::new(), exists: false, width: 0, height: 0, filename: String::new() };
         }
         
         // Check if file already exists
         if Path::new(file_path).exists() {
             info!("Skipping download, image already exists: {}", file_path);
-            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };
+            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: name.to_string() };
         }
         
         // println!("[INFO] Downloading image: {} -> {}", name, file_path);
@@ -314,7 +328,7 @@ impl CommandsFileGenerator {
         if !exists && img_file.exists() {
             let _ = fs::remove_file(img_file);
         }
-    ImageStatus { link: url.to_string(), exists, width, height }
+    ImageStatus { link: url.to_string(), exists, width, height, filename: name.to_string() }
     }
 
     /// Stub for is_valid_jpeg helper

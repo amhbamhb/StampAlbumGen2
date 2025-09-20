@@ -44,15 +44,17 @@ pub struct ImageStatus {
     pub exists: bool,
     pub width: i32,
     pub height: i32,
+    pub filename: String,
 }
 
 impl ImageStatus {
-    pub fn new(link: &str, exists: bool, width: i32, height: i32) -> Self {
+    pub fn new(link: &str, exists: bool, width: i32, height: i32, filename: &str) -> Self {
         Self {
             link: link.to_string(),
             exists,
             width,
             height,
+            filename: filename.to_string(),
         }
     }
 }
@@ -79,5 +81,35 @@ pub fn get_os_type() -> OSType {
         "macos" => OSType::MacOS,
         "linux" => OSType::Linux,
         _ => OSType::Unknown,
+    }
+}
+
+/// Struct representing page header information for AlbumEasy output
+#[derive(Debug, Clone, PartialEq)]
+pub struct PageHeaderInfo {
+    pub year: i32,
+    pub month: String,
+    pub day: String,
+    pub series: String,
+    pub perforation: String,
+    pub design: String,
+    pub engraving: String,
+    pub watermark: String,
+    pub currency: String,
+}
+
+impl Default for PageHeaderInfo {
+    fn default() -> Self {
+        Self {
+            year: 0,
+            month: String::new(),
+            day: String::new(),
+            series: String::new(),
+            perforation: "14½".to_string(),
+            design: String::new(),
+            engraving: String::new(),
+            watermark: String::new(),
+            currency: String::new(),
+        }
     }
 }

@@ -18,12 +18,15 @@ pub mod file_utils;
 pub mod types;
 pub mod placeholder_image;
 pub mod db_utils;
+pub mod image_downloader;
 pub mod sample_images;
 pub mod album_globals;
+pub mod album_utils;
 
 // Re-export commonly used functions and types
 pub use album_globals::generate_album_output_from_stamps;
 // pub use stamp_dimensions::*;
 pub use file_utils::*;
 // pub use text_utils::*;
+pub use album_utils::*;
 pub use types::{ImageStatus, OSType, SeriesInfo, ImageStatus as GlobalImageStatus};

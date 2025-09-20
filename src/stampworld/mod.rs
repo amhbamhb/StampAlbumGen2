@@ -5,16 +5,19 @@
 //!
 //! ## Organization
 //!
-//! - `album_generator.rs`: Core album generation logic with proper page layout
 //! - `data_collector.rs`: StampWorld data collection and processing
-//! - `globals.rs`: Global state and constants for StampWorld operations
+//! - `state.rs`: Global state and constants for StampWorld operations
 //! - `mod.rs`: Module declarations and public exports
+//!
+//! Note: Album generation functionality has been consolidated into album_globals.rs
+//! for unified processing across all data sources.
 
-pub mod album_generator;
 pub mod data_collector;
 pub mod state;
 
 // Re-export the main functions for easy access
-pub use album_generator::{generate_album_output_from_stamps, write_globals, load_stamps_from_db};
 pub use data_collector::collect_stampworld_data;
 pub use state::*;
+
+// Album generation functions are now available from album_globals
+pub use crate::album_globals::{generate_album_output_from_stamps, write_globals, load_stamps_from_db};

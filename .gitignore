@@ -7,7 +7,9 @@ Alblums/
 /Archive/
 Archive/
 Archive/*
-
+examples/
+/examples/
+examples/*
 
 
 # Visual Studio Code

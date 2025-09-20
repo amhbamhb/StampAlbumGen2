@@ -87,7 +87,7 @@ where
     let output_path = if !ALBUM_FILE_NAME.lock().unwrap().is_empty() {
         Path::new(&*ALBUM_FILE_NAME.lock().unwrap()).to_path_buf()
     } else {
-        Path::new("Albums").join(album_name.replace(' ', "-")).join(format!("{}.txt", album_name.replace(' ', "-")))
+        Path::new("Albums").join(album_name.replace(' ', "-")).join(format!("{}-{}-{}.txt", album_name.replace(' ', "-"), *START_YEAR.lock().unwrap(), *END_YEAR.lock().unwrap()))
     };
     let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
 
@@ -101,7 +101,9 @@ where
         let series_key = if stamp.series.is_empty() {
             "Unknown Series".to_string()
         } else {
-            stamp.series.clone()
+            // Clean the series name for consistent grouping
+            let series_temp = stamp.series.replace('"', "'").replace('\n', " ").replace('\r', " ").replace('\t', " ");
+            series_temp.split_whitespace().collect::<Vec<&str>>().join(" ")
         };
         by_series.entry(series_key)
             .or_default()
@@ -138,13 +140,13 @@ where
                 let _ = writeln!(output, "# Page {}", page_num);
                 let _ = writeln!(output, "################################################################################");
                 let _ = writeln!(output, "PAGE_START");
+            } else if page_num == 1 && rows_on_page == 0 {
+                // First page - write PAGE_START without incrementing page_num
+                let _ = writeln!(output, "################################################################################");
+                let _ = writeln!(output, "# Page {}", page_num);
+                let _ = writeln!(output, "################################################################################");
+                let _ = writeln!(output, "PAGE_START");
             }
-            
-            // Start new page for each year
-            let _ = writeln!(output, "################################################################################");
-            let _ = writeln!(output, "# Page {}", page_num);
-            let _ = writeln!(output, "################################################################################");
-            let _ = writeln!(output, "PAGE_START");
             
             // Write enhanced header with extracted information
             write_page_header(&mut output, &header_info);
@@ -186,7 +188,7 @@ where
                     if stamp.desc.contains("Set") {
                         continue;
                     }
-                    format!("{}.jpg", sanitize_filename(&stamp.catalog_num))
+                    format!("{}.jpg", stamp.catalog_num)
                 } else {
                     stamp.image_path.trim_start_matches("images/").to_string()
                 };
@@ -217,21 +219,21 @@ where
                     if stamp.desc.contains("Set") {
                         continue;
                     }
-                    format!("{}.jpg", sanitize_filename(&stamp.catalog_num))
+                    format!("{}.jpg", stamp.catalog_num)
                 } else {
-                    stamp.image_path.trim_start_matches("images/").to_string()
+                    // Use the original image path from the database
+                    stamp.image_path.clone()
                 };
-                
+
+                // Check if image exists and use placeholder if not
+                let final_image_path = crate::file_utils::get_image_path_or_placeholder(album_name, &image_name);
+
                 // Calculate stamp dimensions based on actual image size
-                let (real_width_mm, real_height_mm) = calculate_stamp_dimensions(&image_name, album_name);
-                
-                let description = if stamp.desc.is_empty() {
-                    format!("{} {}", clean_text(&stamp.denomination), clean_text(&stamp.color))
-                } else {
-                    clean_text(&stamp.desc)
-                };
-                let _ = writeln!(output, "STAMP_ADD_IMG ({:.1} {:.1} \"images/{}\" \"\" \"\\n{}\" \"\")", 
-                    real_width_mm, real_height_mm, image_name, description);
+                let (real_width_mm, real_height_mm) = calculate_stamp_dimensions(&final_image_path, album_name);
+
+                let _ = writeln!(output, "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\")",
+                    real_width_mm, real_height_mm, final_image_path);
+                let _ = writeln!(output, "STAMP_HEADING (TN 8 \"SG : {}\" 1.0)", stamp.sg_number);
             }
             
             row_start_idx += stamps_in_row;
@@ -256,36 +258,7 @@ use crate::db_utils::{init_db, get_all_series, get_stamps_by_series_only, StampS
 use log::warn;
 use image::io::Reader as ImageReader;
 
-#[derive(Debug, Clone)]
-pub struct PageHeaderInfo {
-    pub year: i32,
-    pub month: String,
-    pub day: String,
-    pub series: String,
-    // pub issue_type: String,
-    pub perforation: String,
-    pub design: String,
-    pub engraving: String,
-    pub watermark: String,
-    pub currency: String,
-}
-
-impl Default for PageHeaderInfo {
-    fn default() -> Self {
-        Self {
-            year: 0,
-            //issue_type: "Definitive Issue".to_string(),
-            month: String::new(),
-            day: String::new(),
-            series: String::new(),
-            perforation: "14½".to_string(),
-            design: String::new(),
-            engraving: String::new(),
-            watermark: String::new(),
-            currency: String::new(),
-        }
-    }
-}
+use crate::types::PageHeaderInfo;
 
 pub fn extract_header_info(stamps: &[&StampStub]) -> PageHeaderInfo {
     let mut info = PageHeaderInfo::default();
@@ -389,6 +362,45 @@ pub fn extract_header_info(stamps: &[&StampStub]) -> PageHeaderInfo {
                 perforations.insert(perf_parts.join(" "));
             }
         }
+        
+        // Enhanced parsing: extract design and engraving from context field if database fields are empty
+        if stamp.design.is_empty() || stamp.engraving.is_empty() {
+            if !stamp.context.is_empty() {
+                let context_lower = stamp.context.to_lowercase();
+                
+                // Parse design information from context
+                if stamp.design.is_empty() {
+                    if context_lower.contains("design:") {
+                        let design_start = context_lower.find("design:").unwrap();
+                        let design_part = &stamp.context[design_start + 7..];
+                        let design_value = design_part
+                            .split(|c: char| !c.is_alphanumeric() && c != ' ' && c != ',' && c != '-' && c != '.')
+                            .next()
+                            .unwrap_or("")
+                            .trim();
+                        if !design_value.is_empty() {
+                            designs.insert(design_value.to_string());
+                        }
+                    }
+                }
+                
+                // Parse engraving information from context
+                if stamp.engraving.is_empty() {
+                    if context_lower.contains("engraving:") {
+                        let engraving_start = context_lower.find("engraving:").unwrap();
+                        let engraving_part = &stamp.context[engraving_start + 10..];
+                        let engraving_value = engraving_part
+                            .split(|c: char| !c.is_alphanumeric() && c != ' ' && c != ',' && c != '-' && c != '.')
+                            .next()
+                            .unwrap_or("")
+                            .trim();
+                        if !engraving_value.is_empty() {
+                            engravings.insert(engraving_value.to_string());
+                        }
+                    }
+                }
+            }
+        }
     }
     
     // Combine unique values
@@ -473,12 +485,12 @@ fn clean_and_format_series(series: &str) -> String {
 pub fn write_page_header(output: &mut impl Write, header_info: &PageHeaderInfo) {
     // Write series information first
     if !header_info.series.is_empty() {
-        let series_clean = header_info.series.replace('"', "'");
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 12 \"{}\" 2.0)", series_clean);
+        let series_clean = header_info.series.replace('"', "'").replace('\n', " ").replace('\r', " ");
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 12 \"{}\" 2.0)", series_clean);
     }
-    
+
     let mut date_parts = vec![];
-    
+
     // Build date string in Month - Day - Year format
     if header_info.year > 0 {
         if !header_info.month.is_empty() && !header_info.day.is_empty() {
@@ -492,46 +504,196 @@ pub fn write_page_header(output: &mut impl Write, header_info: &PageHeaderInfo) 
             date_parts.push(header_info.year.to_string());
         }
     }
-    
+
     let date_str = date_parts.join(" - ");
     let date_clean = date_str.replace('"', "'");
-    let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", date_clean);
-    // let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 0.5)", header_info.issue_type);
+    let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 10 \"{}\" 3.0)", date_clean);
+    // let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 10 \"{}\" 0.5)", header_info.issue_type);
 
     // Write watermark and perforation on separate lines
     if !header_info.watermark.is_empty() {
         let watermark_clean = header_info.watermark.replace('"', "'");
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"WM: {}\" 1.0)", watermark_clean);
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"WM: {}\" 1.0)", watermark_clean);
     }
-    
+
     if !header_info.perforation.is_empty() {
         let perforation_clean = header_info.perforation.replace('"', "'");
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"Perforation: {}\" 1.0)", perforation_clean);
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Perforation: {}\" 1.0)", perforation_clean);
     }
 
     if !header_info.design.is_empty() {
         let design_clean = header_info.design.replace('"', "'");
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"Design: {}\" 1.0)", design_clean);
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" 1.0)", design_clean);
     }
 
     if !header_info.engraving.is_empty() {
         let engraving_clean = header_info.engraving.replace('"', "'");
-        let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"Engraving: {}\" 1.0)", engraving_clean);
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" 1.0)", engraving_clean);
     }
 
     let currency_clean = header_info.currency.replace('"', "'");
-    let _ = writeln!(output, "PAGE_TEXT_CENTRE_VSPACE (TN 8 \"{}\" 1.5)", currency_clean);
+    let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.5)", currency_clean);
 }
 
-pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
-    let conn = crate::db_utils::init_db(db_path).expect("Failed to open database");
-    let mut all_stamps = Vec::new();
-    let series_list = crate::db_utils::get_all_series(&conn).expect("Failed to fetch series");
-    for series_name in series_list {
-        let stamps = crate::db_utils::get_stamps_by_series_only(&conn, &series_name).expect("Failed to fetch stamps");
-        all_stamps.extend(stamps);
+/// Configurable version of write_page_header that reads formatting preferences from config
+pub fn write_page_header_configurable(output: &mut impl Write, header_info: &PageHeaderInfo) {
+    // Load config for formatting preferences
+    let config_path = crate::file_utils::find_config_path();
+    let config = crate::config::load_config(&config_path);
+
+    // Default formatting preferences
+    let date_format = config.header_formatting.as_ref()
+        .and_then(|h| h.date_format.as_ref())
+        .map(|s| s.as_str())
+        .unwrap_or("dashes");
+
+    let label_style = config.header_formatting.as_ref()
+        .and_then(|h| h.label_style.as_ref())
+        .map(|s| s.as_str())
+        .unwrap_or("abbreviated");
+
+    let series_style = config.header_formatting.as_ref()
+        .and_then(|h| h.series_style.as_ref())
+        .map(|s| s.as_str())
+        .unwrap_or("title");
+
+    let include_currency = config.header_formatting.as_ref()
+        .and_then(|h| h.include_currency)
+        .unwrap_or(true);
+
+    let header_spacing = config.header_formatting.as_ref()
+        .and_then(|h| h.header_spacing)
+        .unwrap_or(1.0);
+
+    // Write series information based on style preference
+    if !header_info.series.is_empty() {
+        let series_clean = header_info.series.replace('"', "'").replace('\n', " ").replace('\r', " ");
+        match series_style {
+            "title" => {
+                let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 12 \"{}\" {:.1})", series_clean, header_spacing * 2.0);
+            },
+            "subtitle" => {
+                let _ = writeln!(output, "PAGE_TEXT_CENTRE (TB 8 \"{}\" {:.1})", series_clean, header_spacing * 1.5);
+            },
+            _ => {} // "none" - skip series
+        }
     }
-    all_stamps
+
+    // Build date string based on format preference
+    let mut date_parts = vec![];
+    if header_info.year > 0 {
+        if !header_info.month.is_empty() && !header_info.day.is_empty() {
+            match date_format {
+                "commas" => {
+                    // Full date: Month Day, Year
+                    date_parts.push(format!("{} {}, {}", header_info.month, header_info.day, header_info.year));
+                },
+                _ => { // "dashes" (default)
+                    // Full date: Month - Day - Year
+                    date_parts.push(format!("{} - {} - {}", header_info.month, header_info.day, header_info.year));
+                }
+            }
+        } else if !header_info.month.is_empty() {
+            // Month and Year only
+            date_parts.push(format!("{} - {}", header_info.month, header_info.year));
+        } else {
+            // Year only
+            date_parts.push(header_info.year.to_string());
+        }
+    }
+
+    if !date_parts.is_empty() {
+        let date_str = date_parts.join(" - ");
+        let date_clean = date_str.replace('"', "'");
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 10 \" {}\" {:.1})", date_clean, header_spacing * 3.0);
+    }
+
+    // Write watermark with configurable label style
+    if !header_info.watermark.is_empty() {
+        let watermark_clean = header_info.watermark.replace('"', "'");
+        let label = match label_style {
+            "full" => "Watermark:",
+            _ => "WM:", // "abbreviated" (default)
+        };
+        if watermark_clean.contains('\n') {
+            // Multiple watermark values - output each as separate command
+            for watermark_value in watermark_clean.split('\n') {
+                let trimmed = watermark_value.trim();
+                if !trimmed.is_empty() {
+                    let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{} {}\" {:.1})", label, trimmed, header_spacing);
+                }
+            }
+        } else {
+            // Single watermark value
+            let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{} {}\" {:.1})", label, watermark_clean, header_spacing);
+        }
+    }
+
+    // Write perforation
+    if !header_info.perforation.is_empty() {
+        let perforation_clean = header_info.perforation.replace('"', "'");
+        let label = match label_style {
+            "full" => "Perforation:",
+            _ => "Perf.:", // "abbreviated" style
+        };
+        if perforation_clean.contains('\n') {
+            // Multiple perforation values - output each as separate command
+            for perforation_value in perforation_clean.split('\n') {
+                let trimmed = perforation_value.trim();
+                if !trimmed.is_empty() {
+                    let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{} {}\" {:.1})", label, trimmed, header_spacing);
+                }
+            }
+        } else {
+            // Single perforation value
+            let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{} {}\" {:.1})", label, perforation_clean, header_spacing);
+        }
+    }
+
+    // Write design - handle multiple values
+    if !header_info.design.is_empty() {
+        let design_clean = header_info.design.replace('"', "'");
+        if design_clean.contains('\n') {
+            // Multiple design values - output each as separate command
+            for design_value in design_clean.split('\n') {
+                let trimmed = design_value.trim();
+                if !trimmed.is_empty() {
+                    let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" {:.1})", trimmed, header_spacing);
+                }
+            }
+        } else {
+            // Single design value
+            let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" {:.1})", design_clean, header_spacing);
+        }
+    }
+
+    // Write engraving - handle multiple values
+    if !header_info.engraving.is_empty() {
+        let engraving_clean = header_info.engraving.replace('"', "'");
+        if engraving_clean.contains('\n') {
+            // Multiple engraving values - output each as separate command
+            for engraving_value in engraving_clean.split('\n') {
+                let trimmed = engraving_value.trim();
+                if !trimmed.is_empty() {
+                    let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" {:.1})", trimmed, header_spacing);
+                }
+            }
+        } else {
+            // Single engraving value
+            let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" {:.1})", engraving_clean, header_spacing);
+        }
+    }
+
+    // Write currency if enabled
+    if include_currency && !header_info.currency.is_empty() {
+        let currency_clean = header_info.currency.replace('"', "'");
+        let _ = writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{}\" {:.1})", currency_clean, header_spacing * 1.5);
+    }
+}
+
+/// Loads stamp data from SQLite database
+pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
+    crate::album_utils::load_stamps_from_db(db_path)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -591,9 +753,9 @@ pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str, month: &str, day:
         date_display = "Unknown Date".to_string();
     }
 
-    // Write the PAGE_TEXT_CENTRE_VSPACE command
+    // Write the PAGE_TEXT_CENTRE command
     let date_clean = date_display.replace('"', "'");
-    writeln!(writer, "PAGE_TEXT_CENTRE_VSPACE (TN 10 \"{}\" 3.0)", date_clean).unwrap();
+    writeln!(writer, "PAGE_TEXT_CENTRE (TN 10 \"{}\" 3.0)", date_clean).unwrap();
 }
 
 /// Writes a new row, handles page breaks, and updates counters
@@ -697,65 +859,12 @@ where
 
 /// Cleans problematic Unicode and formatting from text for AlbumEasy output
 pub fn clean_text(s: &str) -> String {
-    use regex::Regex;
-    // Remove 'Â' or 'â' before fractions/currency
-    let re = Regex::new(r"[Ââ]([½¼¾⅓⅔⅛⅜⅝⅞£€$¥])").unwrap();
-    let mut s = re.replace_all(s, "$1").to_string();
-    // Replace stray 'Â' or 'â' with nothing
-    s = s.replace('â', "");
-    s = s.replace('Â', "");
-    // Replace common fraction representations
-    s = s.replace("1/2", "½");
-    s = s.replace("1/4", "¼");
-    s = s.replace("3/4", "¾");
-    s = s.replace("1/3", "⅓");
-    s = s.replace("2/3", "⅔");
-    s = s.replace("1/8", "⅛");
-    s = s.replace("3/8", "⅜");
-    s = s.replace("5/8", "⅝");
-    s = s.replace("7/8", "⅞");
-    // Replace double quotes
-    s = s.replace('"', "'");
-    // Replace newlines and tabs with spaces
-    s = s.replace('\n', " ");
-    s = s.replace('\r', " ");
-    s = s.replace('\t', " ");
-    // Replace multiple spaces with single space
-    let re_spaces = Regex::new(r"\s+").unwrap();
-    s = re_spaces.replace_all(&s, " ").to_string();
-    // Trim whitespace
-    s = s.trim().to_string();
-    // Replace non-ASCII except allowed symbols with space
-    s.chars()
-        .map(|c| {
-            match c {
-                '£' | '€' | '$' | '¥' |
-                '½' | '¼' | '¾' | '⅓' | '⅔' | '⅛' | '⅜' | '⅝' | '⅞' => c,
-                _ if c.is_ascii() => c,
-                _ => ' ',
-            }
-        })
-        .collect()
+    crate::album_utils::clean_text(s)
 }
 
 /// Sanitizes a filename by replacing filesystem-incompatible characters
 pub fn sanitize_filename(filename: &str) -> String {
-    filename
-        .chars()
-        .map(|c| match c {
-            '*' => 's',  // star -> s
-            '?' => 'q',  // question -> q
-            '<' => 'l',  // less -> l
-            '>' => 'g',  // greater -> g
-            ':' => 'c',  // colon -> c
-            '"' => 'd',  // double quote -> d
-            '|' => 'p',  // pipe -> p
-            '\\' => 'b', // backslash -> b
-            '/' => 'f',  // forward slash -> f
-            _ if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' => c,
-            _ => '_',    // replace other non-alphanumeric with underscore
-        })
-        .collect()
+    crate::album_utils::sanitize_filename(filename)
 }
 
 /// Gets the dimensions of an image file
@@ -777,162 +886,11 @@ pub fn get_image_dimensions(image_path: &str) -> Option<(u32, u32)> {
 }
 
 /// Calculates appropriate stamp box dimensions based on image dimensions
-///
-/// This function implements a sophisticated stamp sizing algorithm that:
-/// 1. Loads the actual image dimensions from disk
-/// 2. Uses embedded reference image for consistent mm-per-pixel ratios
-/// 3. Applies series-specific scaling factors for precise control
-/// 4. Applies reasonable bounds to ensure proper album layout
-///
-/// # Arguments
-///
-/// * `image_path` - Relative path to the stamp image (e.g., "L-s.jpg")
-/// * `album_name` - Name of the album for path construction
-///
-/// # Returns
-///
-/// Tuple of (width_mm, height_mm) representing the calculated stamp dimensions
-///
-/// # Algorithm
-///
-/// 1. **Image Loading**: Attempts to load actual pixel dimensions from the image file
-/// 2. **Reference Calculation**: Uses embedded B4-s.jpg reference for consistent mm/px ratios
-/// 3. **Series Scaling**: Applies series-specific scaling factors (L/M/N series)
-/// 4. **Bounds Checking**: Ensures dimensions fit within album layout constraints
-/// 5. **Fallback**: Uses default dimensions if image loading fails
-///
-/// # Examples
-///
-/// ```rust
-/// // Calculate dimensions for L-series stamp
-/// let (width, height) = calculate_stamp_dimensions("L-s.jpg", "Canada");
-/// // Result: (49.0, 21.0) for L-series with ALBUM_STAMP_IMG_ASPECT_RATIO = false
-/// ```
-///
-/// # Scaling Factors Applied
-///
-/// - **L-series**: (1.25, 2.45) → 49.0mm x 21.0mm target
-/// - **M-series**: (1.15, 1.45) → 31.1mm x 24.1mm target
-/// - **N-series**: (1.10, 1.40) → 26.1mm x 21.0mm target
 pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str) -> (f64, f64) {
-    // Default dimensions if image can't be read
-    let default_width = 25.0;
-    let default_height = 30.0;
-
-    // Try to get actual image dimensions
-    let image_full_path = format!("Albums/{}/images/{}", album_name.replace(' ', "-"), image_path);
-
-    if let Some((img_width, img_height)) = get_image_dimensions(&image_full_path) {
-        // Use reference-based sizing approach from older code
-
-        // Use reference dimensions - these should be configurable
-        let reference_width_mm = 25.0;  // Reduced from 50.0 to decrease mm-per-pixel ratio
-        let reference_height_mm = 15.0; // Reduced from 25.0 to decrease mm-per-pixel ratio
-
-        // Calculate mm-per-pixel ratios using embedded reference image
-        let (mm_per_pixel_w, mm_per_pixel_h) = match crate::image_utils::calc_mm_per_pixel_embedded(reference_width_mm as f32, reference_height_mm as f32) {
-            Some(ratio) => ratio,
-            None => {
-                println!("[DEBUG] Could not load embedded reference image. Using default ratio (1.0, 1.0)");
-                (1.0, 1.0)
-            }
-        };
-
-        // Estimate real dimensions using the mm-per-pixel ratios
-        let (raw_width_mm, raw_height_mm) = crate::image_utils::estimate_real_dimensions(&image_full_path, mm_per_pixel_w, mm_per_pixel_h)
-            .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
-
-        // Apply series-specific scaling factor based on stamp type
-        let (width_scale, height_scale) = crate::sample_images::get_scaling_for_series(image_path);
-        let est_width_mm = raw_width_mm as f64 * width_scale;
-        let est_height_mm = raw_height_mm as f64 * height_scale;
-
-        // Apply reasonable bounds
-        let min_size = 15.0;
-        let max_width = 50.0;  // Max width for page layout
-        let max_height = 30.0; // Max height for page layout
-
-        let final_width = est_width_mm.max(min_size).min(max_width);
-        let final_height = est_height_mm.max(min_size).min(max_height);
-
-        println!("[INFO] Stamp dimensions: {} -> {:.1}mm x {:.1}mm (pixels: {}x{}, ratio: {:.3}x{:.3})",
-                image_path, final_width, final_height, img_width, img_height, mm_per_pixel_w, mm_per_pixel_h);        (final_width, final_height)
-    } else {
-        // Fall back to default dimensions
-        println!("[DEBUG] Could not read image dimensions for {}, using defaults: {:.1}mm x {:.1}mm",
-                image_path, default_width, default_height);
-        (default_width, default_height)
-    }
+    crate::album_utils::calculate_stamp_dimensions(image_path, album_name)
 }/// Writes global album settings to the provided writer
 pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
-    // Get current date/time and user information
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let now = SystemTime::now();
-    let datetime = now.duration_since(UNIX_EPOCH).unwrap();
-    let secs = datetime.as_secs();
-    let datetime_str = format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-        1970 + (secs / 31536000), // years since 1970
-        ((secs % 31536000) / 2628000) + 1, // months (approximate)
-        ((secs % 2628000) / 86400) + 1, // days (approximate)
-        (secs % 86400) / 3600, // hours
-        (secs % 3600) / 60, // minutes
-        secs % 60 // seconds
-    );
-
-    // Get user information (cross-platform)
-    let username = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string());
-    let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "localhost".to_string());
-
-    // Get command line arguments
-    let args: Vec<String> = std::env::args().collect();
-    let command_line = if args.len() > 1 {
-        args[1..].join(" ")
-    } else {
-        "No arguments".to_string()
-    };
-
-    let lines: Vec<String> = vec![
-        "################################################################################".to_string(),
-        format!("# {}", album_name),
-        "################################################################################".to_string(),
-        format!("# Generated: {}", datetime_str),
-        format!("# User: {}@{}", username, hostname),
-        format!("# OS: {}", std::env::consts::OS),
-        format!("# Architecture: {}", std::env::consts::ARCH),
-        format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()),
-        format!("# Command Line: {}", command_line),
-        "".to_string(),
-        "ALBUM_PAGES_SIZE  (216 270) #Set the page to US Letter (8.5 x 11)".to_string(),
-        "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4".to_string(),
-        "".to_string(),
-        "ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0 )".to_string(),
-        "".to_string(),
-        "ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border".to_string(),
-        "#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string(),
-        "".to_string(),
-        format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name),
-        "".to_string(),
-        "ALBUM_PAGES_SPACING (3.0 10.0)".to_string(),
-        "".to_string(),
-        "ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string(),
-        "".to_string(),
-        "#ALBUM_PAGES_NUMBER (TN 10 R)".to_string(),
-        "ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string(),
-        "".to_string(),
-        "ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)".to_string(),
-        "".to_string(),
-        "ROW_ALIGN_MIDDLE".to_string(),
-        "".to_string(),
-        "# The stamp boxes in this album are sized approximately".to_string(),
-        "# 4mm larger than the actual stamps giving a 2mm border".to_string(),
-        "# To have the boxes drawn the actual stamp size use".to_string(),
-        "#STAMP_BOXES_SIZE_ADJUST(-4.0)".to_string(),
-        "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)".to_string(),
-        "STAMP_BOXES_SIZE_ADJUST (3)".to_string(),
-    ];
-    for line in lines.iter() {
-        let _ = writeln!(writer, "{}", line);
-    }
+    crate::album_utils::write_globals(writer, album_name)
 }
 
 /// Writes a new series header, handles page breaks, and updates counters
@@ -1021,6 +979,7 @@ pub fn new_series<W: Write>(
     } else {
     let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TN 8 \"\" 1.5)");
     }
+    let _ = writeln!(writer, "PAGE_VSPACE (4)");
 
     // Start new row
     new_row(writer, year, month, day, rows_written, stamps_written, used_width, used_height, max_row_height);

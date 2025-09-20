@@ -13,7 +13,7 @@ pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<Strin
 
 // Returns a list of stamps for a given series (across all years), sorted by SG number
 pub fn get_stamps_by_series_only(conn: &rusqlite::Connection, series: &str) -> rusqlite::Result<Vec<StampStub>> {
-    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, month_num, description, sg_number, stamps_issued, image_path, watermark, design, engraving, perforation, series, currency, context FROM stamps WHERE series = ?1 ORDER BY sg_number")?;
+    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context FROM stamps WHERE series = ?1 ORDER BY sg_number")?;
     let stamp_iter = stmt.query_map([series], |row| {
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
@@ -24,10 +24,11 @@ pub fn get_stamps_by_series_only(conn: &rusqlite::Connection, series: &str) -> r
                 denomination: row.get(5)?,
                 color: row.get(6)?,
                 multi_perf: false,
-                desc: row.get(8)?,
-                catalog_num: row.get(9)?,
-                stamps_issued: row.get(10)?,
-                image_path: row.get(11)?,
+                desc: row.get(8)?,  // description is at index 8
+                catalog_num: row.get(3)?,  // Use sg_number for catalog_num
+                stamps_issued: row.get(9)?,
+                image_path: row.get(10)?,
+                remote_image_url: row.get(11)?,
                 watermark: row.get(12)?,
                 design: row.get(13)?,
                 engraving: row.get(14)?,
@@ -58,6 +59,7 @@ pub struct StampStub {
     pub catalog_num: String,
     pub stamps_issued: String,
     pub image_path: String,
+    pub remote_image_url: String,
     pub watermark: String,
     pub design: String,
     pub engraving: String,
@@ -95,6 +97,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             currency TEXT,
             image_path TEXT,
             remote_image_url TEXT,
+            original_image_url TEXT,
             watermark TEXT,
             design TEXT,
             engraving TEXT,
@@ -130,7 +133,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 col_count += 1;
             }
             debug!("Stamps table columns before possible drop: {:?} (count: {})", col_names, col_count);
-            if col_count > 0 && col_count != 25 {
+            if col_count > 0 && col_count != 26 {
                 needs_recreate = true;
             }
         }
@@ -160,6 +163,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 currency TEXT,
                 image_path TEXT,
                 remote_image_url TEXT,
+                original_image_url TEXT,
                 watermark TEXT,
                 design TEXT,
                 engraving TEXT,
@@ -209,6 +213,7 @@ pub fn insert_stamp(
     currency: &str,
     image_path: &str,
     remote_image_url: &str,
+    original_image_url: &str,
     watermark: &str,
     design: &str,
     engraving: &str,
@@ -216,13 +221,83 @@ pub fn insert_stamp(
     context: &str,
 ) -> Result<()> {
     // Check if stamp already exists
-    let exists_sql = "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
+    let exists_sql = "SELECT COUNT(*), image_path, remote_image_url FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
-    let count: i64 = stmt.query_row(params![country, series, sg_number], |row| row.get(0))?;
+    let (count, existing_image_path, existing_remote_url): (i64, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
+        Ok((row.get(0)?, row.get(1).unwrap_or(String::new()), row.get(2).unwrap_or(String::new())))
+    })?;
     
     if count > 0 {
-        debug!("Stamp already exists (country='{}', series='{}', sg_number='{}'), skipping insert", country, series, sg_number);
-        return Ok(());
+        // Check if we should update this existing stamp
+        let has_placeholder = existing_image_path == "images/no_image_placeholder.png" || existing_image_path.is_empty();
+        let has_new_remote_url = !remote_image_url.is_empty() && remote_image_url != existing_remote_url;
+        
+        if has_placeholder && has_new_remote_url {
+            debug!("Stamp exists but has placeholder image (country='{}', series='{}', sg_number='{}'), updating with new image data", country, series, sg_number);
+            
+            // Update the existing record with new image information
+            let update_sql = "UPDATE stamps SET 
+                image_path = ?1, 
+                remote_image_url = ?2, 
+                original_image_url = ?3,
+                year = ?4,
+                month = ?5,
+                month_num = ?6,
+                day = ?7,
+                type = ?8,
+                denomination = ?9,
+                color = ?10,
+                description = ?11,
+                stamps_issued = ?12,
+                mint_condition = ?13,
+                unused = ?14,
+                used = ?15,
+                letter_fdc = ?16,
+                currency = ?17,
+                watermark = ?18,
+                design = ?19,
+                engraving = ?20,
+                perforation = ?21,
+                context = ?22
+                WHERE country = ?23 AND series = ?24 AND sg_number = ?25";
+            
+            let month_num = match month.trim().to_lowercase().as_str() {
+                "wm" | "" => 0,
+                "january" | "jan" => 1,
+                "february" | "feb" => 2,
+                "march" | "mar" => 3,
+                "april" | "apr" => 4,
+                "may" => 5,
+                "june" | "jun" => 6,
+                "july" | "jul" => 7,
+                "august" | "aug" => 8,
+                "september" | "sep" | "sept" => 9,
+                "october" | "oct" => 10,
+                "november" | "nov" => 11,
+                "december" | "dec" => 12,
+                _ => 0,
+            };
+            
+            match conn.execute(update_sql, params![
+                image_path, remote_image_url, original_image_url,
+                year, month, month_num, day, type_, denomination, color, description,
+                stamps_issued, mint_condition, unused, used, letter_fdc, currency,
+                watermark, design, engraving, perforation, context,
+                country, series, sg_number
+            ]) {
+                Ok(_) => {
+                    debug!("Successfully updated existing stamp: {} {} {}", country, series, sg_number);
+                    return Ok(());
+                }
+                Err(e) => {
+                    error!("Failed to update existing stamp: {} {} {} | Error: {}", country, series, sg_number, e);
+                    return Err(e.into());
+                }
+            }
+        } else {
+            debug!("Stamp already exists with valid data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
+            return Ok(());
+        }
     }
     
     debug!("--- STAMP INSERT ATTEMPT ---");
@@ -280,13 +355,13 @@ pub fn insert_stamp(
         "December" => 12,
         _ => 0,
     };
-    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, watermark, design, engraving, perforation, context) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)";
+    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)";
     let params_vec = vec![
-        country.to_string(), series.to_string(), year.to_string(), month_clean.to_string(), month_num.to_string(), day.to_string(), sg_number.to_string(), type_.to_string(), denomination.to_string(), color.to_string(), description.to_string(), stamps_issued.to_string(), mint_condition.to_string(), unused.to_string(), used.to_string(), letter_fdc.to_string(), currency.to_string(), image_path.to_string(), remote_image_url.to_string(), watermark.to_string(), design.to_string(), engraving.to_string(), perforation.to_string(), context.to_string()
+        country.to_string(), series.to_string(), year.to_string(), month_clean.to_string(), month_num.to_string(), day.to_string(), sg_number.to_string(), type_.to_string(), denomination.to_string(), color.to_string(), description.to_string(), stamps_issued.to_string(), mint_condition.to_string(), unused.to_string(), used.to_string(), letter_fdc.to_string(), currency.to_string(), image_path.to_string(), remote_image_url.to_string(), original_image_url.to_string(), watermark.to_string(), design.to_string(), engraving.to_string(), perforation.to_string(), context.to_string()
     ];
         debug!("SQL: {}", sql);
         debug!("Params: {:?}", params_vec);
-    match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, watermark, design, engraving, perforation, context]) {
+    match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context]) {
         Ok(_) => {
                 debug!("Insert succeeded");
         }

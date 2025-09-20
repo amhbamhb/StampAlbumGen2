@@ -41,3 +41,37 @@ pub fn find_config_path() -> String {
     // Default fallback
     "config.toml".to_string()
 }
+
+/// Checks if an image file exists for the given album and image path
+pub fn image_exists(album_name: &str, image_path: &str) -> bool {
+    use std::path::Path;
+
+    // Strip "images/" prefix if present
+    let clean_image_path = if image_path.starts_with("images/") {
+        &image_path[7..] // Remove "images/" prefix
+    } else {
+        image_path
+    };
+
+    // Construct the full path to the image
+    let image_full_path = Path::new("Albums")
+        .join(album_name.replace(' ', "-"))
+        .join("images")
+        .join(clean_image_path);
+
+    image_full_path.exists()
+}
+
+/// Gets the appropriate image path, using placeholder if the original doesn't exist
+pub fn get_image_path_or_placeholder(album_name: &str, image_path: &str) -> String {
+    if image_path.is_empty() {
+        return "images/no_image_placeholder.png".to_string();
+    }
+
+    if image_exists(album_name, image_path) {
+        image_path.to_string()
+    } else {
+        println!("[DEBUG] Image {} not found, using placeholder", image_path);
+        "images/no_image_placeholder.png".to_string()
+    }
+}

@@ -1,9 +1,10 @@
 // StampWorld data collection module
-use log::{debug, error};
+use log::{debug, error, info};
 use crate::types::ImageStatus;
-use crate::album_globals::{clean_text, sanitize_filename};
+use crate::album_globals::clean_text;
 use crate::file_utils::get_db_path_from_cli;
 use crate::placeholder_image;
+use rusqlite::params;
 
 /// Extract series information from alt attribute format: [Queen Victoria - Size: ..., type A] or [Series Name, type TYPE]
 fn extract_series_from_alt(alt_text: &str) -> String {
@@ -40,40 +41,40 @@ fn extract_series_from_alt(alt_text: &str) -> String {
     clean_alt.to_string()
 }
 
-/// Determine the proper series name based on stamp type (fallback method)
-fn determine_series_from_type(stamp_type: &str, block_desc: &str) -> String {
-    if stamp_type.is_empty() {
-        return block_desc.to_string();
-    }
+// /// Determine the proper series name based on stamp type (fallback method)
+// fn determine_series_from_type(stamp_type: &str, block_desc: &str) -> String {
+//     if stamp_type.is_empty() {
+//         return block_desc.to_string();
+//     }
     
-    // Extract series letter from stamp type
-    let series_letter = stamp_type.chars().next().unwrap_or(' ').to_ascii_uppercase();
+//     // Extract series letter from stamp type
+//     let series_letter = stamp_type.chars().next().unwrap_or(' ').to_ascii_uppercase();
     
-    match series_letter {
-        'L' => format!("{}-series Registration Stamps", series_letter),
-        'M' => format!("{}-series Definitive Stamps", series_letter),
-        'N' => format!("{}-series Definitive Stamps", series_letter),
-        'O' => format!("{}-series Registration Stamps", series_letter),
-        'P' => format!("{}-series Registration Stamps", series_letter),
-        'Q' => format!("{}-series Registration Stamps", series_letter),
-        'R' => format!("{}-series Special Delivery Stamps", series_letter),
-        'S' => format!("{}-series Special Delivery Stamps", series_letter),
-        'T' => format!("{}-series Tax Stamps", series_letter),
-        'U' => format!("{}-series Utility Stamps", series_letter),
-        _ => {
-            // For unknown series, try to extract from block description
-            if block_desc.contains("Registration") {
-                format!("{}-series Registration Stamps", series_letter)
-            } else if block_desc.contains("Special Delivery") {
-                format!("{}-series Special Delivery Stamps", series_letter)
-            } else if block_desc.contains("Definitive") {
-                format!("{}-series Definitive Stamps", series_letter)
-            } else {
-                block_desc.to_string()
-            }
-        }
-    }
-}
+//     match series_letter {
+//         'L' => format!("{}-series Registration Stamps", series_letter),
+//         'M' => format!("{}-series Definitive Stamps", series_letter),
+//         'N' => format!("{}-series Definitive Stamps", series_letter),
+//         'O' => format!("{}-series Registration Stamps", series_letter),
+//         'P' => format!("{}-series Registration Stamps", series_letter),
+//         'Q' => format!("{}-series Registration Stamps", series_letter),
+//         'R' => format!("{}-series Special Delivery Stamps", series_letter),
+//         'S' => format!("{}-series Special Delivery Stamps", series_letter),
+//         'T' => format!("{}-series Tax Stamps", series_letter),
+//         'U' => format!("{}-series Utility Stamps", series_letter),
+//         _ => {
+//             // For unknown series, try to extract from block description
+//             if block_desc.contains("Registration") {
+//                 format!("{}-series Registration Stamps", series_letter)
+//             } else if block_desc.contains("Special Delivery") {
+//                 format!("{}-series Special Delivery Stamps", series_letter)
+//             } else if block_desc.contains("Definitive") {
+//                 format!("{}-series Definitive Stamps", series_letter)
+//             } else {
+//                 block_desc.to_string()
+//             }
+//         }
+//     }
+// }
 
 pub fn collect_stampworld_data(
     _sequencer: &mut i32,
@@ -261,58 +262,148 @@ pub fn collect_stampworld_data(
                 }
             }
         }
+        // Extract series information from standalone series links that appear before tables
+        let mut series_links = Vec::new();
+        // Try multiple selectors for series links - be more specific to exclude navigation
+        let series_selectors = vec![
+            "a[href*='/stamps/'][href*='/g']",  // Links with /g in href (series links)
+            ".series-title",                    // Series title class
+        ];
+
+        for selector_str in &series_selectors {
+            if let Ok(selector) = scraper::Selector::parse(selector_str) {
+                for link in document.select(&selector) {
+                    if let Some(href) = link.value().attr("href") {
+                        let series_text = link.text().collect::<String>().trim().to_string();
+                        // Exclude common navigation terms regardless of href pattern
+                        if series_text == "Next" || series_text == "Previous" || 
+                           series_text == "First" || series_text == "Last" ||
+                           series_text.is_empty() {
+                            continue;
+                        }
+                        // For series links, require the /g pattern and exclude page parameters
+                        if href.contains("/stamps/") &&
+                           href.contains("/g") &&
+                           !href.contains("?page=") &&
+                           !href.contains("&page=") &&
+                           !href.contains("page=") &&
+                           !series_text.chars().all(|c| c.is_numeric() || c == '-') &&
+                           !series_links.contains(&series_text) {
+                            series_links.push(series_text.clone());
+                            debug!("[stampworld] Found series link with selector '{}': '{}'", selector_str, series_text);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Also try to find series in paragraph text that might contain series names
+        let p_selector = scraper::Selector::parse("p").unwrap();
+        for p in document.select(&p_selector) {
+            let p_text = p.text().collect::<String>();
+            // Look for patterns that indicate series names, exclude navigation terms
+            if p_text.contains(" - ") &&
+               (p_text.contains("Stamps") || p_text.contains("Victoria") || p_text.contains("Queen") ||
+                p_text.contains("King") || p_text.contains("Anniversary") || p_text.contains("Registration")) &&
+               p_text != "Next" && p_text != "Previous" && p_text != "First" && p_text != "Last" {
+                let trimmed = p_text.trim();
+                if !trimmed.is_empty() && !series_links.contains(&trimmed.to_string()) {
+                    series_links.push(trimmed.to_string());
+                    debug!("[stampworld] Found series in paragraph: '{}'", trimmed);
+                }
+            }
+        }
+        
+        // Try to extract series from image alt text
+        let img_selector = scraper::Selector::parse("img").unwrap();
+        for img in document.select(&img_selector) {
+            if let Some(alt) = img.value().attr("alt") {
+                let alt_text = alt.trim();
+                if alt_text.contains(" - ") &&
+                   (alt_text.contains("Stamps") || alt_text.contains("Victoria") || alt_text.contains("Queen") ||
+                    alt_text.contains("King") || alt_text.contains("Anniversary") || alt_text.contains("Registration")) &&
+                   alt_text != "Next" && alt_text != "Previous" && alt_text != "First" && alt_text != "Last" {
+                    if !series_links.contains(&alt_text.to_string()) {
+                        series_links.push(alt_text.to_string());
+                        debug!("[stampworld] Found series in image alt: '{}'", alt_text);
+                    }
+                }
+            }
+        }
+        
+        debug!("[stampworld] Total series links found: {}", series_links.len());
+        for (i, link) in series_links.iter().enumerate() {
+            debug!("[stampworld] Series link {}: '{}'", i, link);
+        }
         
 
         
-        'block_loop: for content_div in document.select(&content_selector) {
-            debug!("Processing table with HTML: {}", content_div.html().chars().take(200).collect::<String>());
+        'block_loop: for (table_index, content_div) in document.select(&content_selector).enumerate() {
+            debug!("Processing table {} with HTML: {}", table_index, content_div.html().chars().take(200).collect::<String>());
             let stop_scraping = false;
             // Improved context extraction: look for preceding header tags or text nodes
             let context_above = String::new();
             let context_details = details_vec.join(" | ");
+            
             // Extract year from block header using .table_header a within this table
             let table_header_selector = scraper::Selector::parse(".table_header a").unwrap();
             let mut block_year = String::new();
             let mut desc = String::new();
-            if let Some(header_a) = content_div.select(&table_header_selector).next() {
-                let text = header_a.text().collect::<String>();
-                debug!("[stampworld] Raw block header HTML: {}", header_a.html());
-                desc = text.clone();
-                let year_regex = regex::Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap();
-                if let Some(caps) = year_regex.captures(&desc) {
-                    block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
-                    if let Some(end_year_match) = caps.get(2) {
-                        block_year = format!("{}-{}", block_year, end_year_match.as_str());
-                    }
-                }
-            }
-            // Fallback: if block_year is empty, try to extract from details_vec or context_above
-            if block_year.is_empty() {
-                let year_regex = regex::Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap();
-                for detail in &details_vec {
-                    if let Some(caps) = year_regex.captures(detail) {
+            
+            // Try to get series from our extracted series links based on table index
+            let proper_series = if table_index < series_links.len() {
+                debug!("[stampworld] Table index {}: Using series from link '{}' (total series links: {})", table_index, series_links[table_index], series_links.len());
+                series_links[table_index].clone()
+            } else {
+                debug!("[stampworld] Table index {} is out of bounds for series_links (length: {}), using fallback", table_index, series_links.len());
+                // Fallback to extracting from table header
+                if let Some(header_a) = content_div.select(&table_header_selector).next() {
+                    let text = header_a.text().collect::<String>();
+                    debug!("[stampworld] Raw block header HTML: {}", header_a.html());
+                    desc = text.clone();
+                    // More flexible regex to handle newlines and various whitespace
+                    let year_regex = regex::Regex::new(r"(\d{4})\s*(?:-\s*(\d{4}))?").unwrap();
+                    if let Some(caps) = year_regex.captures(&desc) {
                         block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
                         if let Some(end_year_match) = caps.get(2) {
                             block_year = format!("{}-{}", block_year, end_year_match.as_str());
                         }
-                        desc = detail.clone();
-                        break;
+                        debug!("[stampworld] Extracted block_year '{}' from header: '{}'", block_year, desc);
+                    } else {
+                        debug!("[stampworld] No year found in header: '{}'", desc);
                     }
                 }
+                // Fallback: if block_year is empty, try to extract from details_vec or context_above
                 if block_year.is_empty() {
-                    if let Some(caps) = year_regex.captures(&context_above) {
-                        block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
-                        if let Some(end_year_match) = caps.get(2) {
-                            block_year = format!("{}-{}", block_year, end_year_match.as_str());
+                    let year_regex = regex::Regex::new(r"(\d{4})\s*(?:-\s*(\d{4}))?").unwrap();
+                    for detail in &details_vec {
+                        if let Some(caps) = year_regex.captures(detail) {
+                            block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
+                            if let Some(end_year_match) = caps.get(2) {
+                                block_year = format!("{}-{}", block_year, end_year_match.as_str());
+                            }
+                            desc = detail.clone();
+                            debug!("[stampworld] Extracted block_year '{}' from detail: '{}'", block_year, detail);
+                            break;
                         }
-                        desc = context_above.clone();
+                    }
+                    if block_year.is_empty() {
+                        if let Some(caps) = year_regex.captures(&context_above) {
+                            block_year = caps.get(1).map_or("", |m| m.as_str()).to_string();
+                            if let Some(end_year_match) = caps.get(2) {
+                                block_year = format!("{}-{}", block_year, end_year_match.as_str());
+                            }
+                            desc = context_above.clone();
+                            debug!("[stampworld] Extracted block_year '{}' from context_above: '{}'", block_year, context_above);
+                        }
+                    }
+                    if block_year.is_empty() {
+                        block_year = default_year.clone();
+                        desc = default_year.clone();
                     }
                 }
-                if block_year.is_empty() {
-                    block_year = default_year.clone();
-                    desc = default_year.clone();
-                }
-            }
+                desc.clone()
+            };
             // For filtering, use the start year from block_year (handle ranges)
             let block_year_int = if block_year.contains('-') {
                 block_year.split('-').next().unwrap_or("").trim().parse::<i32>().unwrap_or(0)
@@ -398,9 +489,53 @@ pub fn collect_stampworld_data(
 
             debug!("Total images found for this block: {}", images.len());
 
-            if images.is_empty() {
-                // No images found - skip debug output to reduce noise
+            // Create a mapping of images to stamp rows by looking for images within each row
+            let mut stamp_images: std::collections::HashMap<usize, (String, String)> = std::collections::HashMap::new();
+
+            // Try to associate images with specific stamp rows
+            let stamp_rows: Vec<_> = content_div.select(&scraper::Selector::parse("tr.stamp_tr").unwrap()).collect();
+            for (row_idx, tr) in stamp_rows.iter().enumerate() {
+                // Look for images within this specific stamp row
+                let mut row_images = Vec::new();
+                for selector_str in &["img", ".stamp_img img", ".stamp_img_js img"] {
+                    if let Ok(selector) = scraper::Selector::parse(selector_str) {
+                        let imgs_in_row: Vec<_> = tr.select(&selector).collect();
+                        for img in imgs_in_row {
+                            if let Some(src) = img.value().attr("src") {
+                                let alt = img.value().attr("alt").unwrap_or("");
+                                let full_url = if src.starts_with("http") {
+                                    src.to_string()
+                                } else if src.starts_with("//") {
+                                    format!("https:{}", src)
+                                } else if src.starts_with("/") {
+                                    format!("https://www.stampworld.com{}", src)
+                                } else {
+                                    format!("https://www.stampworld.com/{}", src)
+                                };
+
+                                // Filter for valid stamp images
+                                if !full_url.is_empty()
+                                    && (full_url.contains("stamps") || full_url.contains("Stamps"))
+                                    && !full_url.contains("stamp.gif")
+                                    && !full_url.contains("layout")
+                                    && !full_url.contains("static")
+                                    && !full_url.contains(".gif")
+                                    && (full_url.contains(".jpg") || full_url.contains(".jpeg") || full_url.contains(".png")) {
+                                    row_images.push((full_url, alt.to_string()));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // If we found images in this row, associate the first one with this stamp
+                if !row_images.is_empty() {
+                    stamp_images.insert(row_idx, row_images[0].clone());
+                    debug!("[stampworld] Associated image {} with stamp row {}: {}", row_images[0].0, row_idx, row_images[0].1);
+                }
             }
+
+            debug!("Associated {} images with specific stamp rows", stamp_images.len());
             // Table of stamps
             let table_selector = scraper::Selector::parse("tr.stamp_tr").unwrap();
             let mut stamp_row_count = 0;
@@ -493,37 +628,51 @@ pub fn collect_stampworld_data(
                         }
                     }
                 }
-                // Assign image from images list by order
-                let (image_url, alt_text) = if image_idx < images.len() {
+                // Assign image from stamp_images mapping or fallback to global images list
+                let (image_url, alt_text) = if let Some((url, alt)) = stamp_images.get(&(stamp_row_count - 1)) {
+                    debug!("[stampworld] Assigned associated image to stamp {}: {} (alt: {})", sg_number, url, alt);
+                    (url.clone(), alt.clone())
+                } else if image_idx < images.len() {
                     let url = images[image_idx].clone();
                     let alt = image_alt_texts.get(image_idx).unwrap_or(&String::new()).clone();
                     image_idx += 1;
-                    debug!("[stampworld] Assigned image {} to stamp {}: {} (alt: {})", image_idx-1, sg_number, url, alt);
+                    debug!("[stampworld] Assigned fallback image {} to stamp {}: {} (alt: {})", image_idx-1, sg_number, url, alt);
                     (url, alt)
                 } else {
-                    debug!("[stampworld] No image available for stamp {} (image_idx={}, images.len()={})", sg_number, image_idx, images.len());
+                    debug!("[stampworld] No image available for stamp {} (row={}, image_idx={}, images.len()={})", sg_number, stamp_row_count, image_idx, images.len());
                     (String::new(), String::new())
                 };
-                debug!("[stampworld] STAMP_ROW: sg_number='{}' year='{}' image_url='{}' alt_text='{}'", sg_number, block_year, image_url, alt_text);
+                debug!("[stampworld] STAMP_ROW: table_index={} sg_number='{}' year='{}' image_url='{}' alt_text='{}'", table_index, sg_number, block_year, image_url, alt_text);
                 debug!("FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
-                // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
-        // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
-        let mut stamp_year = block_year_int;
-        let year_re = regex::Regex::new(r"(19|20)\\d{2}").unwrap();
-        let mut found_stamp_year = false;
-        for idx in 0..tds.len() {
-            let text = tds[idx].text().collect::<String>();
-            if let Some(cap) = year_re.find(&text) {
-                stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
-                found_stamp_year = true;
-                break;
-            }
-        }
-                       if !found_stamp_year {
-            if let Some(cap) = year_re.find(&description) {
-                stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
-            }
-        }
+                // Extract per-stamp year from the series (prefer series year over individual stamp data)
+                let mut stamp_year = block_year_int;
+                let year_re = regex::Regex::new(r"(18|19|20)\d{2}").unwrap();
+                
+                // First try to extract year from the series name
+                if let Some(cap) = year_re.find(&proper_series) {
+                    stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
+                    debug!("[stampworld] Extracted year {} from series: '{}'", stamp_year, proper_series);
+                } else {
+                    // Fallback: try to extract from individual stamp row
+                    let mut found_stamp_year = false;
+                    for idx in 0..tds.len() {
+                        let text = tds[idx].text().collect::<String>();
+                        if let Some(cap) = year_re.find(&text) {
+                            stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
+                            found_stamp_year = true;
+                            debug!("[stampworld] Extracted year {} from stamp row: '{}'", stamp_year, text);
+                            break;
+                        }
+                    }
+                    
+                    // Final fallback: try description
+                    if !found_stamp_year {
+                        if let Some(cap) = year_re.find(&description) {
+                            stamp_year = cap.as_str().parse::<i32>().unwrap_or(block_year_int);
+                            debug!("[stampworld] Extracted year {} from description: '{}'", stamp_year, description);
+                        }
+                    }
+                }
                         if stamp_year < start_year && stamp_year > 0 {
                             debug!("[stampworld] Skipping stamp: sg_number='{}' stamp_year={} (before startYear)", sg_number, stamp_year);
                             continue;
@@ -536,32 +685,128 @@ pub fn collect_stampworld_data(
                         }
                         debug!("[stampworld] STAMP: stamp_year={} context_above='{}' context_details='{}' image_url='{}'", stamp_year, context_above, context_details, image_url);
                         // Only download image if stamp_year is within range
+                        let mut final_image_name = String::new();
+                        let original_image_url; // Declare here, assign later
                         if image_url.is_empty() {
                             debug!("[stampworld] Skipping image download: image_url is empty for stamp {}", sg_number);
                         } else if stamp_year >= start_year && stamp_year <= end_year {
                             if !image_url.is_empty() {
                                 // Check if image already exists and we're not overwriting
                                 let raw_image_name = image_url.split('/').last().unwrap_or("stampworld.jpg");
-                                let sanitized_image_name = sanitize_filename(raw_image_name);
-                                let image_path = format!("{}/{}", _images_directory, sanitized_image_name);
-                                let image_already_exists = !overwrite_images && std::path::Path::new(&image_path).exists();
-
-                                if image_already_exists {
-                                    debug!("[stampworld] Skipping stamp {} - image already exists: {}", sg_number, image_path);
-                                    continue; // Skip this entire stamp processing
+                                let image_path = format!("{}/{}", _images_directory, raw_image_name);
+                                let original_image_exists = std::path::Path::new(&image_path).exists();
+                                
+                                // Check if any versioned files exist for this base filename
+                                let base_filename = raw_image_name.to_string();
+                                let path = std::path::Path::new(&base_filename);
+                                let stem = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
+                                let extension = path.extension().unwrap_or_default().to_string_lossy().to_string();
+                                
+                                let mut existing_versioned_file = None;
+                                let mut highest_version = 0;
+                                
+                                // Look for existing versioned files
+                                for entry in std::fs::read_dir(_images_directory).unwrap_or_else(|_| std::fs::read_dir(".").unwrap()) {
+                                    if let Ok(entry) = entry {
+                                        let filename = entry.file_name().to_string_lossy().to_string();
+                                        if filename.starts_with(&stem) && filename.ends_with(&extension) {
+                                            if filename == base_filename {
+                                                existing_versioned_file = Some(filename);
+                                                break; // Original file exists, use it
+                                            } else if let Some(version_part) = filename.strip_prefix(&format!("{}_", stem)) {
+                                                if let Some(version_str) = version_part.strip_suffix(&format!(".{}", extension)) {
+                                                    if let Ok(version) = version_str.parse::<i32>() {
+                                                        if version > highest_version {
+                                                            highest_version = version;
+                                                            existing_versioned_file = Some(filename);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
+                                
+                                let image_already_exists = !overwrite_images && (original_image_exists || existing_versioned_file.is_some());
 
-                                // println!("Attempting download: {} -> {}", sg_number, image_url);
-                                let image_status = get_stampworld_image(&image_url, overwrite_images);
-                                if image_status.exists {
-                                    // println!("✓ Downloaded: {}", sg_number);
+                                // Check if any stamp in database already uses this base filename
+                                let existing_count_sql = "SELECT COUNT(*) FROM stamps WHERE original_image_url LIKE ?1";
+                                let mut stmt = conn.prepare(existing_count_sql).unwrap();
+                                let existing_count: i64 = stmt.query_row(params![format!("{}%", base_filename)], |row| row.get(0)).unwrap_or(0);
+                                
+                                // Generate unique filename if this base filename is already used by another stamp
+                                let unique_filename = if existing_count > 0 {
+                                    let mut counter = 1;
+                                    loop {
+                                        let candidate_name = if extension.is_empty() {
+                                            format!("{}_{}", stem, counter)
+                                        } else {
+                                            format!("{}_{}.{}", stem, counter, extension)
+                                        };
+                                        
+                                        // Check if this versioned name is already used
+                                        let versioned_count_sql = "SELECT COUNT(*) FROM stamps WHERE original_image_url = ?1";
+                                        let mut version_stmt = conn.prepare(versioned_count_sql).unwrap();
+                                        let versioned_count: i64 = version_stmt.query_row(params![candidate_name.clone()], |row| row.get(0)).unwrap_or(0);
+                                        
+                                        if versioned_count == 0 {
+                                            break candidate_name;
+                                        }
+                                        counter += 1;
+                                        
+                                        // Prevent infinite loop
+                                        if counter > 1000 {
+                                            break format!("{}_{}", base_filename, counter);
+                                        }
+                                    }
                                 } else {
-                                    // println!("✗ Failed: {}", sg_number);
+                                    base_filename.clone()
+                                };
+
+                                if image_already_exists && !overwrite_images {
+                                    debug!("[stampworld] Skipping image download for stamp {} - image already exists: {}", sg_number, image_path);
+                                    // Use existing versioned file if available, otherwise use the generated unique filename
+                                    final_image_name = existing_versioned_file.unwrap_or(unique_filename);
+                                } else {
+                                    // Download with the original filename first
+                                    let image_status = get_stampworld_image(&image_url, overwrite_images);
+                                    
+                                    // If download was successful and we have a unique filename, rename the file
+                                    if image_status.exists && unique_filename != image_status.filename {
+                                        use std::fs;
+                                        let original_path = format!("{}/{}", _images_directory, image_status.filename);
+                                        let unique_path = format!("{}/{}", _images_directory, unique_filename);
+                                        
+                                        if let Err(e) = fs::rename(&original_path, &unique_path) {
+                                            error!("Failed to rename image from {} to {}: {}", original_path, unique_path, e);
+                                            final_image_name = image_status.filename; // Fall back to original
+                                        } else {
+                                            info!("Renamed image from {} to {}", image_status.filename, unique_filename);
+                                            final_image_name = unique_filename;
+                                        }
+                                    } else {
+                                        final_image_name = image_status.filename;
+                                    }
+                                    
+                                    if image_status.exists {
+                                        // println!("✓ Downloaded: {}", sg_number);
+                                    } else {
+                                        // println!("✗ Failed: {}", sg_number);
+                                    }
                                 }
                             }
                         } else {
                             debug!("[stampworld] Skipping image download: stamp_year {} not in range {}-{} for stamp {}", stamp_year, start_year, end_year, sg_number);
                         }
+
+                        // Update original_image_url to use only the filename
+                        original_image_url = if !final_image_name.is_empty() {
+                            final_image_name.clone()
+                        } else if !image_url.is_empty() {
+                            image_url.split('/').last().unwrap_or("").to_string()
+                        } else {
+                            String::new()
+                        };
 
 
                 // Month/Day extraction: look for various date patterns
@@ -633,10 +878,8 @@ pub fn collect_stampworld_data(
                 debug!("EXTRACTED: watermark='{}' design='{}' engraving='{}' perforation='{}'",
                        watermark, design, engraving, perforation);
 
-                let local_image_path = if !image_url.is_empty() {
-                    let raw_image_name = image_url.split('/').last().unwrap_or("");
-                    let sanitized_image_name = sanitize_filename(raw_image_name);
-                    let image_path = format!("images/{}", sanitized_image_name);
+                let local_image_path = if !image_url.is_empty() && !final_image_name.is_empty() {
+                    let image_path = format!("images/{}", final_image_name);
 
                     // Check if this is a valid image format
                     let path_lower = image_path.to_lowercase();
@@ -657,7 +900,7 @@ pub fn collect_stampworld_data(
                 } else {
                     // Try to construct a plausible remote URL based on StampWorld's pattern
                     let type_fallback = if type_.is_empty() { "unknown" } else { &type_ };
-                    format!("https://www.stampworld.com/media/catalogue/{}/Postage-stamps/{}-s.jpg", _site_name, sanitize_filename(type_fallback))
+                    format!("https://www.stampworld.com/media/catalogue/{}/Postage-stamps/{}-s.jpg", _site_name, type_fallback)
                 };
                 let cleaned_context_details = context_details
                     .lines()
@@ -666,63 +909,9 @@ pub fn collect_stampworld_data(
                     .join(" | ");
 
                 debug!("[stampworld] PRE-INSERT: sg_number='{}' year='{}' watermark='{}' design='{}' engraving='{}' perforation='{}'", sg_number, stamp_year, watermark, design, engraving, perforation);
-                
-                // Determine proper series based on block description
-                // Use the block header text as the series name, cleaning up any extra formatting
-                let mut proper_series = if !desc.is_empty() {
-                    // Clean up the series name by removing year prefix if present
-                    let series_name = desc.trim();
-                    // Remove year pattern like "1955 " from the beginning
-                    let year_pattern = regex::Regex::new(r"^\d{4}\s+").unwrap();
-                    let mut cleaned_series = year_pattern.replace(series_name, "").to_string();
-                    
-                    // If the cleaned series is just a year range or contains unwanted text, try to get series from URL
-                    if cleaned_series.chars().all(|c| c.is_numeric() || c == '-') || cleaned_series.contains("Postage stamps") {
-                        // For Canadian 1955-1956 stamps with animal descriptions, use "National Wild Life Week"
-                        if _site_name == "Canada" && block_year == "1955-1956" {
-                            // For now, assume this is the wildlife series based on the year and country
-                            "National Wild Life Week".to_string()
-                        } else {
-                            // Try to extract series from URL path
-                            if let Some(path_part) = base_url.split("Postage%20stamps/").nth(1) {
-                                if let Some(series_part) = path_part.split('?').next() {
-                                    // If it's a year range, try to find a more meaningful series name
-                                    if series_part.contains('-') && series_part.chars().all(|c| c.is_numeric() || c == '-') {
-                                        // For year ranges, look for series name in the page content or use a default
-                                        // For now, let's try to extract from any h1, h2, or other header elements
-                                        let header_selectors = vec!["h1", "h2", ".page-title", ".series-title"];
-                                        for selector_str in &header_selectors {
-                                            if let Ok(selector) = scraper::Selector::parse(selector_str) {
-                                                if let Some(header_elem) = content_div.select(&selector).next() {
-                                                    let header_text = header_elem.text().collect::<String>().trim().to_string();
-                                                    if !header_text.is_empty() && !header_text.chars().all(|c| c.is_numeric() || c == '-') {
-                                                        debug!("[stampworld] Found series in header: '{}'", header_text);
-                                                        cleaned_series = header_text;
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        cleaned_series
-                                    } else {
-                                        series_part.replace("%20", " ")
-                                    }
-                                } else {
-                                    cleaned_series
-                                }
-                            } else {
-                                cleaned_series
-                            }
-                        }
-                    } else {
-                        cleaned_series
-                    }
-                } else {
-                    "Unknown Series".to_string()
-                };
-                
+
                 debug!("INSERTING: sg_number='{}' type='{}' series='{}' (from desc: '{}') local_image_path='{}' remote_image_url='{}'", sg_number, type_, proper_series, desc, local_image_path, remote_image_url);
-                
+
                 let result = crate::db_utils::insert_stamp(
                     &conn,
                     _site_name, // country
@@ -743,6 +932,7 @@ pub fn collect_stampworld_data(
                     &currency,
                     &local_image_path,
                     &remote_image_url,
+                    &original_image_url, // original_image_url
                     &clean_text(&watermark),
                     &clean_text(&design),
                     &clean_text(&engraving),
