@@ -315,7 +315,7 @@ pub fn collect_stampworld_data(
             }
         }
         
-        // Try to extract series from image alt text
+        // Try to extract series from image alt text (only as fallback, and only if we don't already have a good series name)
         let img_selector = scraper::Selector::parse("img").unwrap();
         for img in document.select(&img_selector) {
             if let Some(alt) = img.value().attr("alt") {
@@ -324,9 +324,14 @@ pub fn collect_stampworld_data(
                    (alt_text.contains("Stamps") || alt_text.contains("Victoria") || alt_text.contains("Queen") ||
                     alt_text.contains("King") || alt_text.contains("Anniversary") || alt_text.contains("Registration")) &&
                    alt_text != "Next" && alt_text != "Previous" && alt_text != "First" && alt_text != "Last" {
-                    if !series_links.contains(&alt_text.to_string()) {
-                        series_links.push(alt_text.to_string());
-                        debug!("[stampworld] Found series in image alt: '{}'", alt_text);
+                    // Only use image alt text if we don't already have series links from better sources
+                    // and only if the alt text looks like it contains a complete series name
+                    if series_links.is_empty() || series_links.len() < 2 {
+                        let cleaned_series = extract_series_from_alt(alt_text);
+                        if !cleaned_series.is_empty() && !series_links.contains(&cleaned_series) {
+                            series_links.push(cleaned_series.clone());
+                            debug!("[stampworld] Found series in image alt (fallback): '{}' -> cleaned: '{}'", alt_text, cleaned_series);
+                        }
                     }
                 }
             }

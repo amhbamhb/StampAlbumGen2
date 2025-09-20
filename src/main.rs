@@ -226,14 +226,14 @@ Options:"
         );
         pb.enable_steady_tick(std::time::Duration::from_millis(100));
         pb.set_message(format!("Scraping data for album '{}', please wait...", album_name));
-        let mut last_page = 0;
+        let last_page = 0;
         println!("[INFO] Loading stamps from database: {}", db_path);
-        let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
+        let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path, &album_name)?;
         println!("[INFO] Loaded {} stamps from database", all_stamps.len());
 
         // For development purposes, include all stamps initially
         // Year filtering will be applied during album generation if needed
-        let filtered_stamps: Vec<_>;
+        let filtered_stamps: Vec<stamp_album_gen2::db_utils::StampStub>;
 
         // Optional: Apply year filtering only if explicitly requested and stamps have year data
         if start_year > 0 || end_year < 9999 {
@@ -301,15 +301,8 @@ Options:"
         println!("[INFO] Generating AlbumEasy output for album: {}", album_name);
         stamp_album_gen2::stampworld::generate_album_output_from_stamps(
             &filtered_stamps,
-            &album_name,
-            Some(Box::new(|page| {
-                last_page = page;
-                pb.set_message(format!(
-                    "Generating AlbumEasy output for album '{}', page {}...",
-                    album_name, page
-                ));
-            })),
-        );
+            &album_name
+        )?;
         pb.finish_with_message(format!(
             "AlbumEasy output generated for album '{}'. Total pages: {}",
             album_name, last_page
@@ -402,8 +395,8 @@ Options:"
                 pb2.set_message(format!("Generating AlbumEasy output for album '{}', please wait...", gen.album_name));
 
                 println!("[INFO] Loading stamps from database: {}", db_path);
-                let mut last_page = 0;
-                let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path);
+                let last_page = 0;
+                let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path, &gen.album_name)?;
                 println!("[INFO] Loaded {} stamps from database", all_stamps.len());
                 
                 // Debug: show some sample stamps
@@ -463,15 +456,8 @@ Options:"
                 println!("[INFO] Generating AlbumEasy output for album: {}", gen.album_name);
                 stamp_album_gen2::stampworld::generate_album_output_from_stamps(
                     &filtered_stamps,
-                    &gen.album_name,
-                    Some(Box::new(|page| {
-                        last_page = page;
-                        pb2.set_message(format!(
-                            "Generating AlbumEasy output for album '{}', page {}...",
-                            gen.album_name, page
-                        ));
-                    })),
-                );
+                    &gen.album_name
+                )?;
                 pb2.finish_with_message(format!(
                     "AlbumEasy output generated for album '{}'. Total pages: {}",
                     gen.album_name, last_page
