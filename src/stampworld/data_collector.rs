@@ -2,6 +2,7 @@
 use log::{debug, error, info};
 use crate::types::ImageStatus;
 use crate::album_globals::clean_text;
+use crate::album_utils::sanitize_filename;
 use crate::file_utils::get_db_path_from_cli;
 use crate::placeholder_image;
 use rusqlite::params;
@@ -693,11 +694,12 @@ pub fn collect_stampworld_data(
                             if !image_url.is_empty() {
                                 // Check if image already exists and we're not overwriting
                                 let raw_image_name = image_url.split('/').last().unwrap_or("stampworld.jpg");
-                                let image_path = format!("{}/{}", _images_directory, raw_image_name);
+                                let sanitized_image_name = sanitize_filename(raw_image_name);
+                                let image_path = format!("{}/{}", _images_directory, sanitized_image_name);
                                 let original_image_exists = std::path::Path::new(&image_path).exists();
                                 
                                 // Check if any versioned files exist for this base filename
-                                let base_filename = raw_image_name.to_string();
+                                let base_filename = sanitized_image_name.to_string();
                                 let path = std::path::Path::new(&base_filename);
                                 let stem = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
                                 let extension = path.extension().unwrap_or_default().to_string_lossy().to_string();
@@ -803,7 +805,7 @@ pub fn collect_stampworld_data(
                         original_image_url = if !final_image_name.is_empty() {
                             final_image_name.clone()
                         } else if !image_url.is_empty() {
-                            image_url.split('/').last().unwrap_or("").to_string()
+                            sanitize_filename(image_url.split('/').last().unwrap_or(""))
                         } else {
                             String::new()
                         };

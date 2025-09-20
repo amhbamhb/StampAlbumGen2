@@ -132,24 +132,19 @@ where
             let header_height = 50.0; // Rough estimate for header block
             let available_space = 245.0 - (rows_on_page as f64 * 35.0); // Rough page height calculation
 
-            let page_started = if rows_on_page >= max_rows_per_page ||
-               (rows_on_page > 0 && available_space < header_height + estimated_first_row_height) {
+            // Always write header for new series/year, but handle page breaks
+            let needs_new_page = rows_on_page >= max_rows_per_page ||
+               (rows_on_page > 0 && available_space < header_height + estimated_first_row_height);
+
+            if needs_new_page {
                 new_page_main(&mut output, &mut page_num, &mut rows_on_page);
-                write_page_header(&mut output, &header_info);
-                true
             } else if page_num == 1 && rows_on_page == 0 {
                 // First page - write PAGE_START without incrementing page_num
                 write_page_header_consistent(&mut output, page_num);
-                write_page_header(&mut output, &header_info);
-                true
-            } else {
-                false
-            };
-
-            // Write enhanced header with extracted information (only if we started a new page)
-            if page_started {
-                write_page_header(&mut output, &header_info);
             }
+
+            // Always write the detailed header for this series/year
+            write_page_header(&mut output, &header_info);
         
         // Group stamps into rows dynamically based on image widths (up to 5 stamps per row)
         let mut row_start_idx = 0;
@@ -157,7 +152,8 @@ where
             // Check if we need a new page due to max rows
             if rows_on_page >= max_rows_per_page {
                 new_page_main(&mut output, &mut page_num, &mut rows_on_page);
-                // Page header is already written by new_page_main, no need to write it again
+                // Write the detailed header information for the new page
+                write_page_header(&mut output, &header_info);
             }
             
             let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");

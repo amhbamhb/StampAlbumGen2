@@ -40,7 +40,7 @@
 # Postage Stamps
 - Store stamp images in `Albums/{country name}/images/`.
 - Follow the naming convention: `country_year_{image Name}.jpg`.
-- Placeholder images are available in `/images/no_image_placeholder.png`.
+
 
 # StampEasy Output
 - Output files are generated in `/Albums/{country name}`.
