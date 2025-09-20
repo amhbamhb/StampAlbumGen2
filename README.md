@@ -1,6 +1,6 @@
-# Stamp Album Generator v0.5.0
+# Stamp Album Generator v0.7.0
 
-<!-- Version: 1.2 | Last Updated: September 18, 2025 | Previous: docs/versions/README_2025-09-18_v1.md -->
+<!-- Version: 0.7.0 | Last Updated: 2025-09-19 | Previous: docs/versions/README_2025-09-18_v1.md -->
 
 A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
 
@@ -173,6 +173,70 @@ cargo build --release
 cargo test
 ```
 
+### Automated Version Management
+
+This project uses automated version management with conventional commits and GitHub Actions for seamless releases.
+
+#### Conventional Commits
+Use conventional commit format for automatic version bumping:
+```bash
+# Feature commits (minor version bump)
+git commit -m "feat: add new stamp filtering options"
+
+# Bug fixes (patch version bump)
+git commit -m "fix: resolve image download timeout issue"
+
+# Breaking changes (major version bump)
+git commit -m "feat!: redesign album layout system"
+
+# Other types: docs, style, refactor, perf, test, chore, ci, build, revert
+```
+
+#### Quick Commit Helper
+Use the interactive commit helper for easy conventional commits:
+```bash
+./conventional-commit.sh
+```
+
+#### Git Hooks
+Automatic git hooks provide guidance for conventional commits:
+- **prepare-commit-msg**: Suggests version bump types based on your changes
+- **post-commit**: Detects conventional commits and recommends next steps
+
+#### GitHub Actions Workflow
+The `.github/workflows/release.yml` provides:
+- **Automatic Releases**: Conventional commits trigger version bumps and releases
+- **Version Consistency**: Updates all version references across the project
+- **File Updates**: Automatically updates README.md, Cargo.toml, and other files
+- **Release Notes**: Generates comprehensive release notes
+
+#### GitLab CI/CD Pipeline (Alternative)
+For GitLab repositories, use `.gitlab-ci.yml` instead:
+- **Same Automation**: Conventional commits trigger automated releases
+- **GitLab Releases**: Creates GitLab releases with proper versioning
+- **Access Token**: Requires `GITLAB_ACCESS_TOKEN` with API and repository permissions
+
+**GitLab Setup Requirements:**
+1. Create a Personal Access Token with `api` and `write_repository` scopes
+2. Add `GITLAB_ACCESS_TOKEN` as a CI/CD variable in your GitLab project
+3. The pipeline will automatically trigger on conventional commits to main/master
+
+#### Manual Version Management
+For manual version control, use the version management script:
+```bash
+# Bump patch version (0.7.0 -> 0.7.1)
+./version_docs.sh patch
+
+# Bump minor version (0.7.0 -> 0.8.0)
+./version_docs.sh minor
+
+# Bump major version (0.7.0 -> 1.0.0)
+./version_docs.sh major
+
+# Set specific version
+./version_docs.sh 1.2.3
+```
+
 ### Dependencies
 - **rusqlite**: SQLite database access
 - **image**: Image processing and format support (jpg features)
@@ -268,8 +332,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Version**: 0.5.0
-**Release Date**: September 11, 2025
+**Version**: 0.7.0
+**Release Date**: 2025-09-19
 **Build**: Release (optimized)
 **Platform**: Linux x86-64</content>
 <parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/README.md

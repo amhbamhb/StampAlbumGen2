@@ -1,6 +1,9 @@
 #!/bin/bash
 # Documentation Versioning Script
-# Usage: ./version_docs.sh [major|minor]
+# Usage: ./version_docs.sh [major|minor|patch]
+# This script automatically updates version numbers across all project files
+
+set -e  # Exit on any error
 
 VERSION_TYPE=${1:-minor}
 DATE=$(date +%Y-%m-%d)
@@ -10,22 +13,191 @@ increment_version() {
     local current=$1
     local type=$2
 
-    if [ "$type" = "major" ]; then
-        echo "$((current + 1)).0"
-    else
-        local major=$(echo $current | cut -d. -f1)
-        local minor=$(echo $current | cut -d. -f2)
-        echo "$major.$((minor + 1))"
-    fi
+    # Extract major, minor, patch from version string (e.g., "0.5.0" -> 0 5 0)
+    local major=$(echo $current | cut -d. -f1)
+    local minor=$(echo $current | cut -d. -f2)
+    local patch=$(echo $current | cut -d. -f3)
+
+    case $type in
+        "major")
+            echo "$((major + 1)).0.0"
+            ;;
+        "minor")
+            echo "$major.$((minor + 1)).0"
+            ;;
+        "patch")
+            echo "$major.$minor.$((patch + 1))"
+            ;;
+        *)
+            echo "Error: Invalid version type. Use 'major', 'minor', or 'patch'"
+            exit 1
+            ;;
+    esac
 }
 
-# Backup current versions
-echo "Creating backups..."
-cp .github/instructions docs/versions/instructions_${DATE}_backup.md
-cp README.md docs/versions/README_${DATE}_backup.md
+# Function to get current version from Cargo.toml
+get_current_version() {
+    grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/'
+}
 
-echo "Documentation backups created in docs/versions/"
+# Function to update Cargo.toml version
+update_cargo_toml() {
+    local new_version=$1
+    echo "Updating Cargo.toml version to $new_version..."
+    sed -i "s/^version = \".*\"/version = \"$new_version\"/" Cargo.toml
+}
+
+# Function to update instructions file
+update_instructions() {
+    local new_version=$1
+    local date=$2
+    echo "Updating .github/instructions version to $new_version..."
+
+    # Update version number
+    sed -i "s/^# Version: .*/# Version: $new_version/" .github/instructions
+
+    # Update last updated date
+    sed -i "s/^# Last Updated: .*/# Last Updated: $date/" .github/instructions
+}
+
+# Function to update README.md
+update_readme() {
+    local new_version=$1
+    local date=$2
+    echo "Updating README.md version to $new_version..."
+
+    # Update title version
+    sed -i "s/^# Stamp Album Generator v.*/# Stamp Album Generator v$new_version/" README.md
+
+    # Update HTML comment version and date
+    sed -i "s/<!-- Version: .* | Last Updated: .* | Previous:/<!-- Version: $new_version | Last Updated: $date | Previous:/" README.md
+
+    # Update footer version
+    sed -i "s/^\*\*Version\*\*: .*/**Version**: $new_version/" README.md
+
+    # Update footer release date
+    sed -i "s/^\*\*Release Date\*\*: .*/**Release Date**: $date/" README.md
+}
+
+# Function to update RELEASE_NOTES.md
+update_release_notes() {
+    local new_version=$1
+    local date=$2
+    echo "Updating RELEASE_NOTES.md version to $new_version..."
+
+    # Update title version
+    sed -i "s/^# Stamp Album Generator v.*/# Stamp Album Generator v$new_version Release Notes/" RELEASE_NOTES.md
+
+    # Update footer version
+    sed -i "s/^\*\*Version\*\*: .*/**Version**: $new_version/" RELEASE_NOTES.md
+
+    # Update footer release date
+    sed -i "s/^\*\*Release Date\*\*: .*/**Release Date**: $date/" RELEASE_NOTES.md
+}
+
+# Main execution
+echo "=== Stamp Album Generator Version Update Script ==="
+
+# Handle help
+if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
+    echo "Usage: $0 [major|minor|patch]"
+    echo ""
+    echo "Arguments:"
+    echo "  major    Increment major version (X.0.0)"
+    echo "  minor    Increment minor version (x.X.0) [default]"
+    echo "  patch    Increment patch version (x.x.X)"
+    echo ""
+    echo "Examples:"
+    echo "  $0           # minor version bump (default)"
+    echo "  $0 minor     # minor version bump"
+    echo "  $0 major     # major version bump"
+    echo "  $0 patch     # patch version bump"
+    exit 0
+fi
+
+VERSION_TYPE=${1:-minor}
+DATE=$(date +%Y-%m-%d)
+
+echo "Version type: $VERSION_TYPE"
+echo "Date: $DATE"
+echo ""
+
+# Get current version
+CURRENT_VERSION=$(get_current_version)
+echo "Current version: $CURRENT_VERSION"
+
+# Calculate new version
+NEW_VERSION=$(increment_version "$CURRENT_VERSION" "$VERSION_TYPE")
+echo "New version: $NEW_VERSION"
+echo ""
+
+# Confirm with user
+read -p "Proceed with version update? (y/N): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Version update cancelled."
+    exit 0
+fi
+
+# Create backups
+echo ""
+echo "Creating backups..."
+mkdir -p docs/versions
+cp .github/instructions "docs/versions/instructions_${DATE}_backup.md"
+cp README.md "docs/versions/README_${DATE}_backup.md"
+cp RELEASE_NOTES.md "docs/versions/RELEASE_NOTES_${DATE}_backup.md"
+cp Cargo.toml "docs/versions/Cargo_${DATE}_backup.toml"
+echo "Backups created in docs/versions/"
+echo ""
+
+# Update all files
+echo "Updating version numbers..."
+update_cargo_toml "$NEW_VERSION"
+update_instructions "$NEW_VERSION" "$DATE"
+update_readme "$NEW_VERSION" "$DATE"
+update_release_notes "$NEW_VERSION" "$DATE"
+
+echo ""
+echo "=== Version Update Complete ==="
+echo "Updated to version: $NEW_VERSION"
+echo "Updated files:"
+echo "  - Cargo.toml"
+echo "  - .github/instructions"
+echo "  - README.md"
+echo "  - RELEASE_NOTES.md"
+echo ""
 echo "Next steps:"
-echo "1. Make your documentation changes"
-echo "2. Update version headers in both files"
-echo "3. Update the versioning guide if needed"
+echo "1. Review the changes and make any necessary documentation updates"
+echo "2. Test the build: cargo build"
+echo "3. Test the version: cargo run -- --version"
+echo "4. Commit the changes: git add -A && git commit -m 'Bump version to $NEW_VERSION'"
+echo "5. Create a git tag: git tag v$NEW_VERSION"
+echo "6. Push changes: git push && git push --tags"
+echo ""
+echo "=== Version Consistency Check ==="
+echo "Verifying all files have consistent version numbers..."
+
+# Check versions in all files
+CARGO_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+INSTRUCTIONS_VERSION=$(grep '^# Version: ' .github/instructions | sed 's/# Version: \(.*\)/\1/')
+README_TITLE_VERSION=$(grep '^# Stamp Album Generator v' README.md | sed 's/# Stamp Album Generator v\(.*\)/\1/')
+README_FOOTER_VERSION=$(grep '^\*\*Version\*\*: ' README.md | sed 's/\*\*Version\*\*: \(.*\)/\1/')
+RELEASE_NOTES_VERSION=$(grep '^\*\*Version\*\*: ' RELEASE_NOTES.md | sed 's/\*\*Version\*\*: \(.*\)/\1/')
+
+echo "Cargo.toml: $CARGO_VERSION"
+echo "Instructions: $INSTRUCTIONS_VERSION"
+echo "README title: $README_TITLE_VERSION"
+echo "README footer: $README_FOOTER_VERSION"
+echo "Release Notes: $RELEASE_NOTES_VERSION"
+
+# Check if all versions match
+if [ "$CARGO_VERSION" = "$INSTRUCTIONS_VERSION" ] && \
+   [ "$CARGO_VERSION" = "$README_TITLE_VERSION" ] && \
+   [ "$CARGO_VERSION" = "$README_FOOTER_VERSION" ] && \
+   [ "$CARGO_VERSION" = "$RELEASE_NOTES_VERSION" ]; then
+    echo "✅ All versions are consistent: $CARGO_VERSION"
+else
+    echo "❌ Version mismatch detected!"
+    echo "Please check the files and ensure all versions match."
+    exit 1
+fi

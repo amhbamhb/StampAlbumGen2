@@ -1,6 +1,6 @@
 # Stamp Album Generator - Instructions
-# Version: 1.1
-# Last Updated: September 18, 2025
+# Version: 0.7.0
+# Last Updated: 2025-09-19
 # Previous Versions: docs/versions/instructions_2025-09-18_v1.md
 
 # Best Practices
@@ -13,6 +13,7 @@
 - Commit changes frequently with clear messages.
 - Use descriptive names for files and directories.
 - Review and test your code before pushing.
+- Keep Readme and documentation up to date.
 
 # Location of Help
 - Refer to the README.md in the project root for setup and usage.

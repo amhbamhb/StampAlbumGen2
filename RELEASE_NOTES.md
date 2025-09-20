@@ -1,11 +1,17 @@
-# Stamp Album Generator v0.5.0 Release Notes
+# Stamp Album Generator v0.7.0 Release Notes
 
 ## Overview
-This release introduces a comprehensive embedded reference stamp sizing system that eliminates external file dependencies and provides precise, series-specific dimension control for album generation.
+This release fixes critical page numbering issues and eliminates blank pages in album generation. The embedded reference stamp sizing system from v0.5.0 is maintained with improved reliability.
 
 ## 🚀 New Features
 
-### Embedded Reference System
+### Page Numbering System Fixes
+- **Sequential page numbering**: Fixed inconsistent page numbering (1, 3, 5, 7, 8, 10, 13...) to proper sequential order (1, 2, 3, 4, 5...)
+- **Eliminated blank pages**: Removed duplicate `PAGE_START` commands that created empty pages
+- **Centralized page management**: Created helper functions for consistent page header writing and page creation
+- **Improved album generation reliability**: All pages now contain proper content with no blank pages
+
+### Embedded Reference System (Maintained from v0.5.0)
 - **Embedded B4-s.jpg reference image** using `include_bytes!` macro
 - Eliminates dependency on external reference files
 - Consistent sizing across all countries and installations
@@ -110,7 +116,7 @@ For issues or questions, please check the embedded documentation in the source c
 
 ---
 
-**Release Date**: September 11, 2025
-**Version**: 0.5.0
+**Release Date**: 2025-09-19
+**Version**: 0.7.0
 **Build**: Release (optimized)</content>
 <parameter name="filePath">RELEASE_NOTES.md
