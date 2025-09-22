@@ -16,8 +16,9 @@ serde = "1.0.219"
 clap = { version = "4.5", features = ["derive"] }
 chrono = "0.4"
 whoami = "1.5"
+sha2 = "0.10"
 
 [package]
 name = "stamp_album_gen2"
-version = "0.9.0"
+version = "0.9.1"
 edition = "2021"

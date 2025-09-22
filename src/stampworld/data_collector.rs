@@ -5,7 +5,6 @@ use crate::album_globals::clean_text;
 use crate::album_utils::sanitize_filename;
 use crate::file_utils::get_db_path_from_cli;
 use crate::placeholder_image;
-use rusqlite::params;
 
 /// Extract series information from alt attribute format: [Queen Victoria - Size: ..., type A] or [Series Name, type TYPE]
 fn extract_series_from_alt(alt_text: &str) -> String {
@@ -41,41 +40,6 @@ fn extract_series_from_alt(alt_text: &str) -> String {
     debug!("[extract_series_from_alt] No pattern matched, returning whole text: '{}'", clean_alt);
     clean_alt.to_string()
 }
-
-// /// Determine the proper series name based on stamp type (fallback method)
-// fn determine_series_from_type(stamp_type: &str, block_desc: &str) -> String {
-//     if stamp_type.is_empty() {
-//         return block_desc.to_string();
-//     }
-    
-//     // Extract series letter from stamp type
-//     let series_letter = stamp_type.chars().next().unwrap_or(' ').to_ascii_uppercase();
-    
-//     match series_letter {
-//         'L' => format!("{}-series Registration Stamps", series_letter),
-//         'M' => format!("{}-series Definitive Stamps", series_letter),
-//         'N' => format!("{}-series Definitive Stamps", series_letter),
-//         'O' => format!("{}-series Registration Stamps", series_letter),
-//         'P' => format!("{}-series Registration Stamps", series_letter),
-//         'Q' => format!("{}-series Registration Stamps", series_letter),
-//         'R' => format!("{}-series Special Delivery Stamps", series_letter),
-//         'S' => format!("{}-series Special Delivery Stamps", series_letter),
-//         'T' => format!("{}-series Tax Stamps", series_letter),
-//         'U' => format!("{}-series Utility Stamps", series_letter),
-//         _ => {
-//             // For unknown series, try to extract from block description
-//             if block_desc.contains("Registration") {
-//                 format!("{}-series Registration Stamps", series_letter)
-//             } else if block_desc.contains("Special Delivery") {
-//                 format!("{}-series Special Delivery Stamps", series_letter)
-//             } else if block_desc.contains("Definitive") {
-//                 format!("{}-series Definitive Stamps", series_letter)
-//             } else {
-//                 block_desc.to_string()
-//             }
-//         }
-//     }
-// }
 
 pub fn collect_stampworld_data(
     _sequencer: &mut i32,
@@ -342,8 +306,6 @@ pub fn collect_stampworld_data(
             debug!("[stampworld] Series link {}: '{}'", i, link);
         }
         
-
-        
         'block_loop: for (table_index, content_div) in document.select(&content_selector).enumerate() {
             debug!("Processing table {} with HTML: {}", table_index, content_div.html().chars().take(200).collect::<String>());
             let stop_scraping = false;
@@ -456,17 +418,6 @@ pub fn collect_stampworld_data(
                                 format!("https://www.stampworld.com/{}", src)
                             };
 
-                            // Only log if it's a valid stamp image
-                            if !full_url.is_empty()
-                                && (full_url.contains("stamps") || full_url.contains("Stamps") || full_url.contains(".jpg") || full_url.contains(".png"))
-                                && !full_url.contains("stamp.gif")
-                                && !full_url.contains("layout")
-                                && !full_url.contains("static")
-                                && !full_url.contains(".gif")
-                                && (full_url.contains(".jpg") || full_url.contains(".jpeg") || full_url.contains(".png")) {
-                                // debug!("Found valid image URL: {} with alt: {}", full_url, alt);
-                            }
-
                             Some((full_url, alt.to_string()))
                         })
                         .filter(|(url, _)| !url.is_empty()
@@ -478,18 +429,13 @@ pub fn collect_stampworld_data(
                         )
                         .collect();
 
-                    // debug!("Selector '{}' found {} valid stamp images", selector_str, found_images.len());
-
                     if !found_images.is_empty() {
-                        // debug!("Using selector '{}' with {} images", selector_str, found_images.len());
                         for (url, alt) in found_images {
                             images.push(url);
                             image_alt_texts.push(alt);
                         }
                         break;
                     }
-                } else {
-                    // debug!("Failed to parse selector: {}", selector_str);
                 }
             }
 
@@ -550,7 +496,6 @@ pub fn collect_stampworld_data(
             println!("[INFO] Found {} stamp rows on page {}", stamp_rows.len(), page_num);
             
             debug!("Found {} stamp rows in table with selector 'tr.stamp_tr'", stamp_rows.len());
-            // Removed detailed row debug output to reduce log size
             for tr in stamp_rows {
                 stamp_row_count += 1;
                 let th_selector = scraper::Selector::parse("th").unwrap();
@@ -558,38 +503,28 @@ pub fn collect_stampworld_data(
                 let td_selector = scraper::Selector::parse("td").unwrap();
                 let tds: Vec<_> = tr.select(&td_selector).collect();
                 if ths.is_empty() || tds.len() < 13 { 
-                    // debug!("Skipping row: ths.len()={}, tds.len()={}", ths.len(), tds.len());
                     continue; 
                 }
-                // debug!("Raw stamp row HTML: {}", tr.html());
-                // Mapping based on provided example:
-                // th[0] = No. (sg_number)
-                // td[0] = Type
-                // td[1] = Denomination
-                // td[2] = (blank)
-                // td[3] = Color
-                // td[4] = Description
-                // td[5] = Stamps Issued
-                // td[6] = (blank)
-                // td[7] = Mint Condition
-                // td[8] = Unused
-                // td[9] = Used
-                // td[10] = Letter/FDC
-                // td[11] = Currency
                 let sg_number = ths[0].text().collect::<String>().trim().to_string();
-                // Extract stamp type from data-stamp-type attribute
+
+                // If the SG cell represents a numeric range or group (e.g., "23-25", "45‑52", "29‑44")
+                // then skip this row entirely — these are set/group placeholders, not individual stamps.
+                // Match patterns like: digits hyphen digits, possibly using different hyphen characters.
+                let range_re = regex::Regex::new(r"^\s*\d+\s*[-\u{2011}\u{2013}\u{2012}\u{2010}]\s*\d+\s*$").unwrap();
+                if range_re.is_match(&sg_number) {
+                    debug!("Skipping SG range/group row: sg_number='{}'", sg_number);
+                    continue;
+                }
                 let stamp_type_attr = tr.value().attr("data-stamp-type").unwrap_or("");
                 let type_ = if !stamp_type_attr.is_empty() {
                     stamp_type_attr.to_string()
                 } else {
-                    // Fallback to td[0] text if attribute is missing
                     tds[0].text().collect::<String>().trim().to_string()
                 };
                 let denomination = tds[1].text().collect::<String>().trim().to_string();
                 let color = tds[3].text().collect::<String>().trim().to_string();
                 let description = tds[5].text().collect::<String>().trim().to_string();
                 let stamps_issued = tds[6].text().collect::<String>().trim().to_string();
-                // Clean up stamps_issued by removing parentheses
                 let stamps_issued = stamps_issued.trim_start_matches('(').trim_end_matches(')').to_string();
                 debug!("[stampworld] td[5] (desc): '{}' | td[6] (stamps_issued): '{}'", description, stamps_issued);
                 let mint_condition = tds[8].text().collect::<String>().trim().to_string();
@@ -597,10 +532,7 @@ pub fn collect_stampworld_data(
                 let used = tds[10].text().collect::<String>().trim().to_string();
                 let letter_fdc = tds[11].text().collect::<String>().trim().to_string();
                 let currency_raw = if tds.len() > 12 { tds[12].text().collect::<String>().trim().to_string() } else { String::new() };
-                // Extract currency from the dedicated currency column first
                 let mut currency = currency_raw.clone();
-                
-                // If currency column is empty, try to extract from denomination field (fallback)
                 if currency.is_empty() {
                     let denomination_upper = denomination.to_uppercase();
                     if denomination_upper.contains("$") || denomination_upper.contains("USD") || denomination_upper.contains("DOLLAR") {
@@ -610,15 +542,11 @@ pub fn collect_stampworld_data(
                     } else if denomination_upper.contains("€") || denomination_upper.contains("EUR") || denomination_upper.contains("EURO") {
                         currency = "EUR".to_string();
                     } else if denomination_upper.contains("C") && !denomination_upper.contains("C.") && !denomination_upper.contains("CT") {
-                        // Canadian cents (C) - common in Canadian stamps
                         currency = "CAD".to_string();
                     } else if denomination_upper.contains("¢") || denomination_upper.contains("CENT") {
-                        // Generic cents - could be USD or CAD
                         currency = "USD".to_string();
                     }
                 }
-
-                // Final fallback: look for currency in any table cell
                 if currency.is_empty() {
                     for td in &tds {
                         let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
@@ -634,20 +562,136 @@ pub fn collect_stampworld_data(
                         }
                     }
                 }
-                // Assign image from stamp_images mapping or fallback to global images list
-                let (image_url, alt_text) = if let Some((url, alt)) = stamp_images.get(&(stamp_row_count - 1)) {
-                    debug!("[stampworld] Assigned associated image to stamp {}: {} (alt: {})", sg_number, url, alt);
-                    (url.clone(), alt.clone())
+
+                // Prefer images found within this specific row and try to match by stamp type
+                let mut selected_image_url = String::new();
+                let mut selected_alt = String::new();
+
+                let mut row_imgs: Vec<(String, String)> = Vec::new();
+                for selector_str in &["img", ".stamp_img img", ".stamp_img_js img"] {
+                    if let Ok(selector) = scraper::Selector::parse(selector_str) {
+                        for img in tr.select(&selector) {
+                            if let Some(src) = img.value().attr("src") {
+                                let alt = img.value().attr("alt").unwrap_or("").to_string();
+                                let full_url = if src.starts_with("http") {
+                                    src.to_string()
+                                } else if src.starts_with("//") {
+                                    format!("https:{}", src)
+                                } else if src.starts_with("/") {
+                                    format!("https://www.stampworld.com{}", src)
+                                } else {
+                                    format!("https://www.stampworld.com/{}", src)
+                                };
+                                if !full_url.is_empty() && (full_url.contains("stamps") || full_url.contains("Stamps")) {
+                                    row_imgs.push((full_url, alt));
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !row_imgs.is_empty() {
+                    let type_upper = type_.to_uppercase();
+                    let mut found = None;
+                    for (u, a) in &row_imgs {
+                        let a_upper = a.to_uppercase();
+                        if a_upper.contains(&type_upper) || a_upper.contains(&format!("TYPE {}", type_upper)) {
+                            found = Some((u.clone(), a.clone()));
+                            break;
+                        }
+                    }
+                    if let Some((u,a)) = found {
+                        selected_image_url = u;
+                        selected_alt = a;
+                    } else {
+                        selected_image_url = row_imgs[0].0.clone();
+                        selected_alt = row_imgs[0].1.clone();
+                    }
                 } else if image_idx < images.len() {
-                    let url = images[image_idx].clone();
-                    let alt = image_alt_texts.get(image_idx).unwrap_or(&String::new()).clone();
-                    image_idx += 1;
-                    debug!("[stampworld] Assigned fallback image {} to stamp {}: {} (alt: {})", image_idx-1, sg_number, url, alt);
-                    (url, alt)
+                    // Try to pick a better-matching global image when available.
+                    // Problem: the global images vector ordering doesn't always match stamp rows.
+                    // Heuristic: if the current series (proper_series) or type_ mentions specific
+                    // tokens (e.g. "Maple Leaf" / type P), prefer a global image whose alt or
+                    // filename contains those tokens. Otherwise fall back to the next image.
+                    let mut chosen_index: Option<usize> = None;
+                    let series_upper = proper_series.to_uppercase();
+                    let type_upper = type_.to_uppercase();
+
+                    for idx in image_idx..images.len() {
+                        let alt = image_alt_texts.get(idx).cloned().unwrap_or_default().to_uppercase();
+                        let url = images.get(idx).cloned().unwrap_or_default().to_uppercase();
+
+                        // Match by obvious series keywords first
+                        if series_upper.contains("MAPLE") || series_upper.contains("MAPLE LEAF") {
+                            if alt.contains("MAPLE") || url.contains("/P-") || url.contains("/P1-") || url.contains("/P2-") || url.contains("/P3-") {
+                                chosen_index = Some(idx);
+                                break;
+                            }
+                        }
+
+                        // Match by stamp type token if present (e.g. type 'P' or 'P1')
+                        if !type_upper.is_empty() {
+                            // match 'TYPE P' in alt or '/P' in filename
+                            if alt.contains(&type_upper) || url.contains(&format!("/{}-", type_upper)) {
+                                chosen_index = Some(idx);
+                                break;
+                            }
+                        }
+                    }
+
+                    if let Some(fi) = chosen_index {
+                        selected_image_url = images[fi].clone();
+                        selected_alt = image_alt_texts.get(fi).unwrap_or(&String::new()).clone();
+                        // mark as consumed so future rows don't accidentally reuse the same slot
+                        images[fi] = String::new();
+                        image_alt_texts[fi] = String::new();
+                        image_idx = fi + 1;
+                    } else {
+                        selected_image_url = images[image_idx].clone();
+                        selected_alt = image_alt_texts.get(image_idx).unwrap_or(&String::new()).clone();
+                        image_idx += 1;
+                    }
                 } else {
                     debug!("[stampworld] No image available for stamp {} (row={}, image_idx={}, images.len()={})", sg_number, stamp_row_count, image_idx, images.len());
-                    (String::new(), String::new())
-                };
+                }
+
+                let (image_url, alt_text) = (selected_image_url.clone(), selected_alt.clone());
+                // Diagnostic audit: if we're processing StampWorld page 2, append a CSV line
+                // with the chosen image and available candidates to help diagnose wrong-image selection.
+                if page_num == 2 {
+                    use std::fs::OpenOptions;
+                    use std::io::Write;
+                    let audit_path = "/tmp/stampworld_page2_audit.csv";
+                    let need_header = !std::path::Path::new(audit_path).exists();
+                    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(audit_path) {
+                        if need_header {
+                            let _ = writeln!(f, "page,table_index,sg_number,selected_image_url,selected_alt,row_images,global_images,image_idx");
+                        }
+                        // Serialize row_images and images vectors into small strings
+                        let row_imgs_serialized = {
+                            // gather any row-local images we found (row_imgs is in scope)
+                            let mut parts: Vec<String> = Vec::new();
+                            for (_ridx, (u,a)) in row_imgs.iter().enumerate() {
+                                let u_s = u.replace(',', ";");
+                                let a_s = a.replace(',', ";");
+                                parts.push(format!("{}|{}", u_s, a_s));
+                            }
+                            parts.join(";;")
+                        };
+                        let global_imgs_serialized = {
+                            let mut parts: Vec<String> = Vec::new();
+                            for (i, u) in images.iter().enumerate() {
+                                let u_s = u.replace(',', ";");
+                                let alt = image_alt_texts.get(i).cloned().unwrap_or_default().replace(',', ";");
+                                parts.push(format!("{}|{}", u_s, alt));
+                            }
+                            parts.join(";;")
+                        };
+                        let sel_u = image_url.replace(',', ";");
+                        let sel_a = alt_text.replace(',', ";");
+                        let _ = writeln!(f, "{},{},{},{},{},{},{},{}", page_num, table_index, sg_number.replace(',', ";"), sel_u, sel_a, row_imgs_serialized, global_imgs_serialized, image_idx);
+                    }
+                }
                 debug!("[stampworld] STAMP_ROW: table_index={} sg_number='{}' year='{}' image_url='{}' alt_text='{}'", table_index, sg_number, block_year, image_url, alt_text);
                 debug!("FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
                 // Extract per-stamp year from the series (prefer series year over individual stamp data)
@@ -670,7 +714,7 @@ pub fn collect_stampworld_data(
                             break;
                         }
                     }
-                    
+
                     // Final fallback: try description
                     if !found_stamp_year {
                         if let Some(cap) = year_re.find(&description) {
@@ -685,8 +729,6 @@ pub fn collect_stampworld_data(
                         }
                         if stamp_year > end_year && stamp_year > 0 {
                             debug!("[stampworld] Stamp {} has year {} > endYear {}, but continuing to check other stamps on this page", sg_number, stamp_year, end_year);
-                            // Don't stop scraping here - continue to check other stamps on the page
-                            // Only skip this individual stamp
                             continue;
                         }
                         debug!("[stampworld] STAMP: stamp_year={} context_above='{}' context_details='{}' image_url='{}'", stamp_year, context_above, context_details, image_url);
@@ -703,102 +745,44 @@ pub fn collect_stampworld_data(
                                 let image_path = format!("{}/{}", _images_directory, sanitized_image_name);
                                 let original_image_exists = std::path::Path::new(&image_path).exists();
                                 
-                                // Check if any versioned files exist for this base filename
+                                // Simple behavior: use the sanitized base filename as-is and rely on the
+                                // downloader's overwrite/checksum behavior to avoid unwanted overwrites.
+                                // Do not attempt to generate versioned filenames or rename files on disk.
                                 let base_filename = sanitized_image_name.to_string();
-                                let path = std::path::Path::new(&base_filename);
-                                let stem = path.file_stem().unwrap_or_default().to_string_lossy().to_string();
-                                let extension = path.extension().unwrap_or_default().to_string_lossy().to_string();
-                                
-                                let mut existing_versioned_file = None;
-                                let mut highest_version = 0;
-                                
-                                // Look for existing versioned files
-                                for entry in std::fs::read_dir(_images_directory).unwrap_or_else(|_| std::fs::read_dir(".").unwrap()) {
-                                    if let Ok(entry) = entry {
-                                        let filename = entry.file_name().to_string_lossy().to_string();
-                                        if filename.starts_with(&stem) && filename.ends_with(&extension) {
-                                            if filename == base_filename {
-                                                existing_versioned_file = Some(filename);
-                                                break; // Original file exists, use it
-                                            } else if let Some(version_part) = filename.strip_prefix(&format!("{}_", stem)) {
-                                                if let Some(version_str) = version_part.strip_suffix(&format!(".{}", extension)) {
-                                                    if let Ok(version) = version_str.parse::<i32>() {
-                                                        if version > highest_version {
-                                                            highest_version = version;
-                                                            existing_versioned_file = Some(filename);
-                                                        }
-                                                    }
+                                let image_already_exists = original_image_exists && !overwrite_images;
+
+                                if image_already_exists {
+                                    debug!("[stampworld] Skipping image download for stamp {} - image already exists: {}", sg_number, image_path);
+                                    final_image_name = base_filename.clone();
+                                } else {
+                                    // Download with the original filename (downloader will handle checksum/overwrite)
+                                    let image_status = get_stampworld_image(&image_url, overwrite_images);
+
+                                    // Create a per-row unique filename by prefixing sanitized sg_number
+                                    if image_status.exists {
+                                        // sanitize sg_number to use in filenames
+                                        let sg_safe = sanitize_filename(&sg_number.replace('\u{2011}', "-").replace('\u{2013}', "-").replace(' ', "_"));
+                                        let target_name = format!("{}-{}", sg_safe, image_status.filename);
+                                        let target_path = format!("{}/{}", _images_directory, target_name);
+                                        let downloaded_path = format!("{}/{}", _images_directory, image_status.filename);
+                                        // If target doesn't exist, copy the downloaded file to the target unique name
+                                        if !std::path::Path::new(&target_path).exists() {
+                                            match std::fs::copy(&downloaded_path, &target_path) {
+                                                Ok(_) => {
+                                                    debug!("Copied downloaded image to per-row filename: {}", target_name);
+                                                    final_image_name = target_name;
+                                                }
+                                                Err(e) => {
+                                                    error!("Failed to copy downloaded image {} to {}: {}", downloaded_path, target_path, e);
+                                                    final_image_name = image_status.filename;
                                                 }
                                             }
-                                        }
-                                    }
-                                }
-                                
-                                let image_already_exists = !overwrite_images && (original_image_exists || existing_versioned_file.is_some());
-
-                                // Check if any stamp in database already uses this base filename
-                                let existing_count_sql = "SELECT COUNT(*) FROM stamps WHERE original_image_url LIKE ?1";
-                                let mut stmt = conn.prepare(existing_count_sql).unwrap();
-                                let existing_count: i64 = stmt.query_row(params![format!("{}%", base_filename)], |row| row.get(0)).unwrap_or(0);
-                                
-                                // Generate unique filename if this base filename is already used by another stamp
-                                let unique_filename = if existing_count > 0 {
-                                    let mut counter = 1;
-                                    loop {
-                                        let candidate_name = if extension.is_empty() {
-                                            format!("{}_{}", stem, counter)
                                         } else {
-                                            format!("{}_{}.{}", stem, counter, extension)
-                                        };
-                                        
-                                        // Check if this versioned name is already used
-                                        let versioned_count_sql = "SELECT COUNT(*) FROM stamps WHERE original_image_url = ?1";
-                                        let mut version_stmt = conn.prepare(versioned_count_sql).unwrap();
-                                        let versioned_count: i64 = version_stmt.query_row(params![candidate_name.clone()], |row| row.get(0)).unwrap_or(0);
-                                        
-                                        if versioned_count == 0 {
-                                            break candidate_name;
-                                        }
-                                        counter += 1;
-                                        
-                                        // Prevent infinite loop
-                                        if counter > 1000 {
-                                            break format!("{}_{}", base_filename, counter);
-                                        }
-                                    }
-                                } else {
-                                    base_filename.clone()
-                                };
-
-                                if image_already_exists && !overwrite_images {
-                                    debug!("[stampworld] Skipping image download for stamp {} - image already exists: {}", sg_number, image_path);
-                                    // Use existing versioned file if available, otherwise use the generated unique filename
-                                    final_image_name = existing_versioned_file.unwrap_or(unique_filename);
-                                } else {
-                                    // Download with the original filename first
-                                    let image_status = get_stampworld_image(&image_url, overwrite_images);
-                                    
-                                    // If download was successful and we have a unique filename, rename the file
-                                    if image_status.exists && unique_filename != image_status.filename {
-                                        use std::fs;
-                                        let original_path = format!("{}/{}", _images_directory, image_status.filename);
-                                        let unique_path = format!("{}/{}", _images_directory, unique_filename);
-                                        
-                                        if let Err(e) = fs::rename(&original_path, &unique_path) {
-                                            error!("Failed to rename image from {} to {}: {}", original_path, unique_path, e);
-                                            final_image_name = image_status.filename; // Fall back to original
-                                        } else {
-                                            info!("Renamed image from {} to {}", image_status.filename, unique_filename);
-                                            final_image_name = unique_filename;
+                                            // already exists, use it
+                                            final_image_name = target_name;
                                         }
                                     } else {
                                         final_image_name = image_status.filename;
-                                    }
-                                    
-                                    if image_status.exists {
-                                        // println!("✓ Downloaded: {}", sg_number);
-                                    } else {
-                                        // println!("✗ Failed: {}", sg_number);
                                     }
                                 }
                             }
@@ -920,6 +904,13 @@ pub fn collect_stampworld_data(
                     .filter(|line| !line.trim().is_empty() && line.trim() != "\u{200b}")
                     .collect::<Vec<_>>()
                     .join(" | ");
+
+                // If this block or stamp row is a "Set" placeholder (e.g. "Set (* Stamp not included in this set)")
+                // skip inserting these rows into the DB. They are not real stamps.
+                if cleaned_context_details.contains("Set (") || description.contains("Set (") {
+                    info!("Skipping insertion for placeholder 'Set' row: sg_number='{}' series='{}'", sg_number, proper_series);
+                    continue;
+                }
 
                 debug!("[stampworld] PRE-INSERT: sg_number='{}' year='{}' watermark='{}' design='{}' engraving='{}' perforation='{}'", sg_number, stamp_year, watermark, design, engraving, perforation);
 

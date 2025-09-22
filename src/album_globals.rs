@@ -163,12 +163,15 @@ impl PageLayout {
 pub fn generate_album_output_from_stamps(
     stamps: &[crate::db_utils::StampStub],
     album_name: &str
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<usize, Box<dyn std::error::Error>> {
     use std::fs::File;
     use std::path::Path;
 
-    // Get output path
-    let output_path = if !ALBUM_FILE_NAME.lock().unwrap().is_empty() {
+    // Get output path: prefer the global filename from `types::ALBUM_FILE_NAME` if set,
+    // then fall back to the local ALBUM_FILE_NAME, then to START/END year defaults.
+    let output_path = if !crate::types::ALBUM_FILE_NAME.lock().unwrap().is_empty() {
+        Path::new(&*crate::types::ALBUM_FILE_NAME.lock().unwrap()).to_path_buf()
+    } else if !ALBUM_FILE_NAME.lock().unwrap().is_empty() {
         Path::new(&*ALBUM_FILE_NAME.lock().unwrap()).to_path_buf()
     } else {
         Path::new("Albums").join(album_name.replace(' ', "-")).join(
@@ -285,7 +288,8 @@ pub fn generate_album_output_from_stamps(
     }
 
     println!("[INFO] AlbumEasy output complete. Output file: {:?}", output_path);
-    Ok(())
+    // Return the number of pages generated
+    Ok(page_num)
 }
 
 /// Extract header information from stamps

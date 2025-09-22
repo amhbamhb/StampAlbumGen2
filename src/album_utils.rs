@@ -14,6 +14,8 @@
 
 use std::io::Write;
 use regex::Regex;
+// Use image utilities to measure actual image dimensions where possible
+use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 
 /// Cleans problematic Unicode and formatting from text for AlbumEasy output
 pub fn clean_text(s: &str) -> String {
@@ -206,47 +208,39 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
 /// - **L-series**: (1.25, 2.45) → 49.0mm x 21.0mm target
 /// - **M-series**: (1.15, 1.45) → 31.1mm x 24.1mm target
 /// - **N-series**: (1.10, 1.40) → 26.1mm x 21.0mm target
-pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str) -> (f64, f64) {
-    // Extract series from image path for appropriate sizing
-    let series = if image_path.contains("L-s") || image_path.contains("O-s") {
-        "L" // Large format stamps
-    } else if image_path.contains("M-s") {
-        "M" // Medium format stamps
-    } else if image_path.contains("N-s") {
-        "N" // Small format stamps
-    } else if image_path.contains("R-s") || image_path.contains("S-s") {
-        "R" // Standard pre-1970 stamps
-    } else if image_path.contains("T-s") {
-        "T" // Tax stamps
-    } else if image_path.contains("U-s") {
-        "U" // Utility stamps
-    } else {
-        "" // Default/regular stamps
-    };
+pub fn calculate_stamp_dimensions(image_path: &str, _album_name: &str) -> (f64, f64) {
+    // Preferred approach: use actual image pixel dimensions converted to mm
+    // via the embedded reference image. This eliminates reliance on hard-coded
+    // series groups (L/M/N/O) and produces sizes based on the real image.
 
-    // Get appropriate dimensions based on series
-    let (width, height) = match series {
-        "L" | "O" => (45.0, 32.0), // Large format - matches user's example
-        "M" => (31.0, 28.0),       // Medium format
-        "N" => (26.0, 21.0),       // Small format
-        "R" | "S" => (38.0, 25.0), // Standard pre-1970
-        "T" => (25.0, 24.0),       // Tax stamps
-        "U" => (25.0, 24.0),       // Utility stamps
-        _ => (28.0, 31.0),         // Default regular stamp size - updated to match USA example (28.0 x 31.0)
-    };
+    // Reference real-world dimensions used with the embedded B4-s.jpg
+    // Historically the project used approx 200x240 mm for the reference.
+    const REF_W_MM: f32 = 200.0;
+    const REF_H_MM: f32 = 240.0;
 
-    // Apply album-specific adjustments if needed
-    let scale_factor = match album_name.to_lowercase().as_str() {
-        "canada" => 1.0,
-        "great-britain" | "great britain" => 0.95,
-        "usa" => 1.0,
-        _ => 1.0,
-    };
+    // Attempt to compute mm-per-pixel from the embedded reference image
+    if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(REF_W_MM, REF_H_MM) {
+        // Try to estimate using the actual image file if it exists
+        if let Some((w_mm, h_mm)) = estimate_real_dimensions(image_path, mm_per_px_w, mm_per_px_h) {
+            let width = w_mm as f64;
+            let height = h_mm as f64;
 
-    (
-        width * scale_factor,
-        height * scale_factor
-    )
+            // Do not apply any album-specific scaling. Use measured image dimensions directly.
+
+            // Enforce reasonable bounds to avoid absurd sizes
+            let width = width.clamp(18.0, 60.0);   // between 18mm and 60mm
+            let height = height.clamp(14.0, 60.0); // between 14mm and 60mm
+
+            return (width, height);
+        }
+    }
+
+    // Fallback: if image-based estimation fails, use a conservative default
+    // (previous default was 28.0 x 31.0). Keep a single sensible fallback
+    // and remove the L/M/N/O series branching entirely.
+    let (width, height) = (28.0_f64, 31.0_f64);
+
+    (width, height)
 }
 
 /// Loads stamp data from SQLite database

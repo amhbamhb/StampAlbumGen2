@@ -42,18 +42,40 @@ pub struct CommandsFileGenerator {
 impl CommandsFileGenerator {
     pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> ImageStatus {
         use std::path::Path;
-        let raw_image_name = url.split('/').last().unwrap_or("stampworld.jpg");
-        let image_name = sanitize_filename(raw_image_name);
+        // If the caller passed an id (not a full URL), build the canonical StampWorld CDN URL
+        let remote_url = if url.starts_with("http://") || url.starts_with("https://") {
+            url.to_string()
+        } else {
+            // Java implementation used: https://swmedia-4cd6.kxcdn.com/media/catalogue/{siteName}/Postage-stamps/{id}-s.jpg
+            // Keep site_name as provided by the caller for compatibility.
+            format!("https://swmedia-4cd6.kxcdn.com/media/catalogue/{}/Postage-stamps/{}-s.jpg", self.site_name, url)
+        };
+
+        let raw_image_name = remote_url.split('/').last().unwrap_or("stampworld.jpg");
+        // Normalize filename: strip an extra trailing "-s" before the extension so we don't end up with "-s-s.jpg"
+        let mut image_name = sanitize_filename(raw_image_name);
+        if image_name.to_lowercase().ends_with("-s.jpg") {
+            if let Some(stripped) = image_name.strip_suffix("-s.jpg") {
+                image_name = format!("{}.jpg", stripped);
+            }
+        }
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
             info!("Skipping download, image already exists: {}", file_path);
-            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
+            return ImageStatus { link: remote_url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
         }
-        self.get_image(url, &image_name, &file_path)
+        self.get_image(&remote_url, &image_name, &file_path)
     }
     
     pub fn get_stampworld_image_with_filename(&self, url: &str, filename: &str, overwrite: bool) -> ImageStatus {
         use std::path::Path;
+        let mut filename = filename.to_string();
+        // Normalize any trailing -s.jpg in provided filename to avoid duplication
+        if filename.to_lowercase().ends_with("-s.jpg") {
+            if let Some(stripped) = filename.strip_suffix("-s.jpg") {
+                filename = format!("{}.jpg", stripped);
+            }
+        }
         let file_path = format!("{}/{}", self.images_directory, filename);
         
         // If overwrite is disabled and file exists, skip download
@@ -62,7 +84,14 @@ impl CommandsFileGenerator {
             return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: filename.to_string() };
         }
         
-        self.get_image(url, filename, &file_path)
+        // If `url` is an id rather than a full URL, build the CDN fallback
+        let remote_url = if url.starts_with("http://") || url.starts_with("https://") {
+            url.to_string()
+        } else {
+            format!("https://swmedia-4cd6.kxcdn.com/media/catalogue/{}/Postage-stamps/{}-s.jpg", self.site_name, url)
+        };
+
+        self.get_image(&remote_url, &filename, &file_path)
     }
     
     pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite_images: bool, page_callback: Option<&dyn Fn(usize)>) -> Vec<String> {
@@ -96,8 +125,6 @@ impl CommandsFileGenerator {
                 return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
             }
             
-            // info!("Downloading image: {} -> {}", url, file_path);
-            
             // Use curl to download the image
             use std::process::Command;
             let curl_cmd = if url.starts_with("https://") {
@@ -105,8 +132,6 @@ impl CommandsFileGenerator {
             } else {
                 vec!["curl", "-L", "-o", &file_path, url]
             };
-            
-            // info!("Running curl command: {:?}", curl_cmd);
             
             match Command::new(curl_cmd[0])
                 .args(&curl_cmd[1..])
@@ -177,25 +202,8 @@ impl CommandsFileGenerator {
     }
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
-    crate::album_globals::write_globals(_writer, &self.album_name);
+    let _ = crate::album_globals::write_globals(_writer, &self.album_name);
     }
-
-    /// Remove stub for new_page helper
-    // pub fn new_page<W: Write>(&self, _writer: &mut W) {
-    //     // TODO: Implement new page writing
-    // }
-    /// Remove stub for new_year helper
-    // pub fn new_year<W: Write>(&self, _writer: &mut W, _year: &str) {
-    //     // TODO: Implement new year writing
-    // }
-    /// Remove stub for new_series helper
-    // pub fn new_series<W: Write>(&self, _writer: &mut W, _series: &str, _year: &str, _month: &str, _day: &str, _count: i32, _multi_perf: bool, _desc: &str) {
-    //     // TODO: Implement new series writing
-    // }
-    /// Remove stub for add_stamp helper
-    // pub fn add_stamp<W: Write>(&self, _writer: &mut W, _year: &str, _field1: &str, _field2: &str, _field3: &str, _color: String, _multi_perf: bool, _desc: &str, _width: &str, _height: &str, _catalog_num: &str, _field4: &str) {
-    //     // TODO: Implement stamp writing
-    // }
 
     /// Stub for is_selected_format helper
     pub fn is_selected_format(&self, field: &str) -> bool {
@@ -215,20 +223,17 @@ impl CommandsFileGenerator {
         }
     }
 
-    /// SeriesInfo struct for series metadata
     pub fn save_stamp_data<P: AsRef<std::path::Path>>(&self, file_path: P, data: &[String], _source: &str, overwrite_album: bool) {
         use std::fs::{self, File};
         use std::io::{Write, BufWriter};
         use std::os::unix::fs::PermissionsExt;
         let path = file_path.as_ref();
 
-        // If overwrite is false and file exists, skip without prompting
         if !overwrite_album && path.exists() {
             info!("File {} already exists and overwrite is disabled. Skipping save.", path.display());
             return;
         }
 
-        // If overwrite is true and file exists, remove it first
         if overwrite_album && path.exists() {
             if let Err(e) = fs::remove_file(path) {
                 error!("Failed to remove existing file for overwrite: {}", e);
@@ -248,7 +253,6 @@ impl CommandsFileGenerator {
                         error!("Unable to write stamp data: {}", e);
                     }
                 }
-                // Set file to read-only
                 if let Err(e) = writer.flush() {
                     error!("Unable to flush file: {}", e);
                 }
@@ -276,10 +280,78 @@ impl CommandsFileGenerator {
             return ImageStatus { link: String::new(), exists: false, width: 0, height: 0, filename: String::new() };
         }
         
-        // Check if file already exists
+        // If file already exists, compare content with remote and only replace if different
         if Path::new(file_path).exists() {
-            info!("Skipping download, image already exists: {}", file_path);
-            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: name.to_string() };
+            info!("Target exists, comparing remote vs local: {}", file_path);
+            use sha2::{Digest, Sha256};
+            use std::fs::File;
+            use std::io::Read;
+
+            // Read local sha
+            let mut local_sum = String::new();
+            if let Ok(mut f) = File::open(file_path) {
+                let mut hasher = Sha256::new();
+                let mut buf = [0u8; 8192];
+                loop {
+                    match f.read(&mut buf) {
+                        Ok(0) => break,
+                        Ok(n) => { hasher.update(&buf[..n]); }
+                        Err(_) => break,
+                    }
+                }
+                local_sum = format!("{:x}", hasher.finalize());
+            }
+
+            // If local looks like a placeholder by name, mark as empty so we'll replace
+            if file_path.contains("no_image") {
+                local_sum.clear();
+            }
+
+            // Download remote to temp file
+            let tmp_path = format!("{}{}.tmp", file_path, ".remote");
+            let curl_cmd = if self.no_ssl_check {
+                vec!["curl", "--ssl-no-revoke", "-L", "-o", &tmp_path, url]
+            } else {
+                vec!["curl", "-L", "-o", &tmp_path, url]
+            };
+            let status = Command::new(curl_cmd[0]).args(&curl_cmd[1..]).status();
+            if let Err(e) = status {
+                error!("Error executing curl for imageURL: {}", e);
+            } else if let Ok(s) = status {
+                if s.success() {
+                    // compute remote sha
+                    if let Ok(mut rf) = File::open(&tmp_path) {
+                        let mut hasher = Sha256::new();
+                        let mut buf = [0u8; 8192];
+                        loop {
+                            match rf.read(&mut buf) {
+                                Ok(0) => break,
+                                Ok(n) => { hasher.update(&buf[..n]); }
+                                Err(_) => break,
+                            }
+                        }
+                        let remote_sum = format!("{:x}", hasher.finalize());
+                        // If different (or local_sum empty), replace
+                        if local_sum.is_empty() || remote_sum != local_sum {
+                            if let Err(e) = std::fs::rename(&tmp_path, file_path) {
+                                // fallback to copy
+                                if let Err(e2) = std::fs::copy(&tmp_path, file_path) {
+                                    error!("Failed to move/copy temp image into place: {} / {}", e, e2);
+                                }
+                            }
+                            info!("Replaced local image with remote: {}", file_path);
+                        } else {
+                            // identical; remove temp
+                            let _ = std::fs::remove_file(&tmp_path);
+                            info!("Remote image identical to local; kept existing: {}", file_path);
+                        }
+                    }
+                } else {
+                    error!("Failed to download remote image for comparison: {} exit {:?}", url, s.code());
+                }
+            }
+
+            // At this point return status based on existence and validation below
         }
         
         // println!("[INFO] Downloading image: {} -> {}", name, file_path);
@@ -356,3 +428,4 @@ impl CommandsFileGenerator {
         valid
     }
 }
+

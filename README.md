@@ -1,6 +1,6 @@
-# Stamp Album Generator v0.9.0
+# Stamp Album Generator v0.9.1
 
-<!-- Version: 0.9.0 | Last Updated: 2025-09-20 | Previous: docs/versions/README_2025-09-18_v1.md -->
+<!-- Version: 0.9.1 | Last Updated: 2025-09-21 | Previous: docs/versions/README_2025-09-18_v1.md -->
 
 A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
 
@@ -332,8 +332,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Version**: 0.9.0
-**Release Date**: 2025-09-20
+**Version**: 0.9.1
+**Release Date**: 2025-09-21
 **Build**: Release (optimized)
 **Platform**: Linux x86-64</content>
 <parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/README.md
