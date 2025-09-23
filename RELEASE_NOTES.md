@@ -119,4 +119,23 @@ For issues or questions, please check the embedded documentation in the source c
 **Release Date**: 2025-09-21
 **Version**: 0.9.1
 **Build**: Release (optimized)</content>
+
+---
+
+# Stamp Album Generator v0.9.2 Release Notes
+
+## Overview
+This patch fixes a header aggregation bug and improves placeholder image sizing so that generated AlbumEasy output uses a representative real-image size when available (falls back to 22.0 x 25.0 mm otherwise). It also adds tests to prevent regressions and minor cleanup.
+
+## Bug fixes & improvements
+- Aggregate header fields (Design, Engraving, Watermark, Perforation) across all stamps in a year group instead of taking values only from the first stamp. This fixes missing header entries when present on later stamps in the group.
+- Placeholder sizing: if a real image exists in the same series/year, placeholders now inherit that image's measured mm dimensions so page layout remains consistent. If no representative image is available, placeholders default to 22.0 × 25.0 mm.
+- Added unit tests covering header aggregation and direct emission checks for `write_page_header` to ensure fields are written into AlbumEasy output.
+
+## Notes
+- A small lint/cleanup pass remains (non-functional dead_code warnings) and can be addressed in a follow-up.
+
+**Release Date**: 2025-09-23
+**Version**: 0.9.2
+
 <parameter name="filePath">RELEASE_NOTES.md

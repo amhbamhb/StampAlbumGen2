@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 //! # Placeholder Image Generator
 //!
 //! This module generates placeholder images for stamps that don't have associated images.

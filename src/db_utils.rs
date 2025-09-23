@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 // Returns a list of distinct series names (ordered by series name)
 pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<String>> {
     let mut stmt = conn.prepare("SELECT DISTINCT series FROM stamps ORDER BY series")?;

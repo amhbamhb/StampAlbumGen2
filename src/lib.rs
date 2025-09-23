@@ -1,4 +1,5 @@
 mod config;
+pub use crate::config::{Config, HeaderFormatting};
 // Main library file for StampAlbumGen2
 // External crates
 

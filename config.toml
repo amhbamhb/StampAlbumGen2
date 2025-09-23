@@ -1,6 +1,6 @@
 # Stamp dimension settings
-reference_width_mm = 240.0
-reference_height_mm = 275.0
+reference_width_mm = 24.0
+reference_height_mm = 27.0
 
 # Global album settings
 stamp_box_height = 20.0
@@ -10,10 +10,10 @@ header_font_spacing = 3.0
 # Header formatting options
 [header_formatting]
 # Date format: "dashes" (Month - Day - Year) or "commas" (Month Day, Year)
-date_format = "dashes"
+date_format = "commas"
 
 # Label style: "abbreviated" (WM, Perf.) or "full" (Watermark, Perforation)
-label_style = "abbreviated"
+label_style = "full"
 
 # Series formatting: "title" (TN 12), "subtitle" (TB 8), or "none"
 series_style = "title"
@@ -23,3 +23,24 @@ include_currency = true
 
 # Vertical spacing between header elements
 header_spacing = 1.0
+
+
+# Optional toggles: set true to include those fields in the page header
+# include_design: show the 'Design:' line when present
+include_design = true
+# include_engraving: show the 'Engraving:' line when present
+include_engraving = true
+# include_watermark: show the watermark line when present (default true)
+include_watermark = true
+# include_perforation: show the perforation line when present (default true)
+include_perforation = true
+# include_catalog_numbers: show catalog numbers (e.g. Scott #) when present (default true)
+include_catalog_numbers = true
+# include_series: show the series name in the header (default true)
+include_series = true
+# include_country: show the country name in the header (default false)
+include_country = false
+# include_date: show the date line in the header (default true)
+include_date = true
+
+

@@ -16,7 +16,7 @@
 //! ## Usage
 //!
 //! ```rust
-//! use crate::sample_images::get_scaling_for_series;
+//! use stamp_album_gen2::sample_images::get_scaling_for_series;
 //!
 //! // Get scaling factors for L-series stamps
 //! let (scale_w, scale_h) = get_scaling_for_series("L-s.jpg");
@@ -51,8 +51,8 @@
 /// # Examples
 ///
 /// ```rust
-/// let (w_scale, h_scale) = get_scaling_for_series("L-s.jpg");  // (1.25, 2.45)
-/// let (w_scale, h_scale) = get_scaling_for_series("M-456");   // (1.15, 1.45)
+/// let (w_scale, h_scale) = stamp_album_gen2::sample_images::get_scaling_for_series("L-s.jpg");  // (1.25, 2.45)
+/// let (w_scale, h_scale) = stamp_album_gen2::sample_images::get_scaling_for_series("M-456");   // (1.15, 1.45)
 /// ```
 pub fn get_scaling_for_series(series: &str) -> (f64, f64) {
     match series.chars().next() {
