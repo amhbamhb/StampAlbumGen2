@@ -2,6 +2,8 @@
 
 use std::collections::BTreeMap;
 use std::io::{self, Write};
+use std::io::Read;
+use std::fs;
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 
@@ -459,21 +461,32 @@ let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStu
 pub fn extract_header_info(stamps: &[&crate::db_utils::StampStub]) -> PageHeaderInfo {
     let mut info = PageHeaderInfo::default();
 
-    if let Some(first_stamp) = stamps.first() {
-        info.year = first_stamp.year;
-        info.month = first_stamp.month.clone();
-        info.day = first_stamp.day.clone();
-
-        // Extract and clean series information
-        if !first_stamp.series.is_empty() {
-            info.series = clean_and_format_series(&first_stamp.series);
+    // Determine year (use the minimum/representative year among the stamps)
+    if !stamps.is_empty() {
+        info.year = stamps.iter().map(|s| s.year).min().unwrap_or(0);
+        // Prefer the first non-empty month/day across stamps
+        for stamp in stamps {
+            if info.month.is_empty() && !stamp.month.is_empty() {
+                info.month = stamp.month.clone();
+            }
+            if info.day.is_empty() && !stamp.day.is_empty() {
+                info.day = stamp.day.clone();
+            }
+            if info.series.is_empty() && !stamp.series.is_empty() {
+                info.series = clean_and_format_series(&stamp.series);
+            }
+            if !info.month.is_empty() && !info.day.is_empty() && !info.series.is_empty() {
+                break;
+            }
         }
     }
 
-    // Extract unique values from all stamps
+    // Extract unique values from all stamps for watermark, perforation, design, engraving
     use std::collections::HashSet;
-    let mut watermarks = HashSet::new();
-    let mut perforations = HashSet::new();
+    let mut watermarks: HashSet<String> = HashSet::new();
+    let mut perforations: HashSet<String> = HashSet::new();
+    let mut designs: HashSet<String> = HashSet::new();
+    let mut engravings: HashSet<String> = HashSet::new();
 
     for stamp in stamps {
         if !stamp.watermark.is_empty() {
@@ -482,10 +495,18 @@ pub fn extract_header_info(stamps: &[&crate::db_utils::StampStub]) -> PageHeader
         if !stamp.perforation.is_empty() {
             perforations.insert(stamp.perforation.clone());
         }
+        if !stamp.design.is_empty() {
+            designs.insert(stamp.design.clone());
+        }
+        if !stamp.engraving.is_empty() {
+            engravings.insert(stamp.engraving.clone());
+        }
     }
 
     info.watermark = watermarks.into_iter().collect::<Vec<_>>().join(", ");
     info.perforation = perforations.into_iter().collect::<Vec<_>>().join(", ");
+    info.design = designs.into_iter().collect::<Vec<_>>().join(", ");
+    info.engraving = engravings.into_iter().collect::<Vec<_>>().join(", ");
 
     info
 }
@@ -905,8 +926,7 @@ mod tests {
 
     #[test]
     fn test_series_ordering_deterministic() {
-        use std::fs;
-        use std::io::Read;
+    // no filesystem access required; inspect header_info directly
 
         // Create a set of StampStub instances designed to reproduce ordering issues.
         // Series names chosen to ensure variety; some series have earlier years.
@@ -998,7 +1018,7 @@ mod tests {
         f.read_to_string(&mut contents).expect("read output");
 
         // Find the sequence of PAGE_TEXT_CENTRE TN 12 lines (series headings)
-        let mut series_lines: Vec<String> = contents.lines()
+        let series_lines: Vec<String> = contents.lines()
             .filter_map(|l| {
                 if l.contains("PAGE_TEXT_CENTRE") && l.contains("TN 12") {
                     Some(l.to_string())
@@ -1170,5 +1190,77 @@ mod tests {
         }
 
         assert_eq!(found, expected, "series ordering/paging regression: found={:?}", found);
+    }
+
+    #[test]
+    fn test_design_engraving_aggregation_regression() {
+        use std::fs;
+        use std::io::Read;
+
+        // Build two stamps: first lacks design/engraving; second provides them
+        let s_first = crate::db_utils::StampStub {
+            year: 1900,
+            month: String::new(),
+            day: String::new(),
+            sg_number: "SG100".to_string(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            multi_perf: false,
+            desc: String::new(),
+            catalog_num: "100".to_string(),
+            stamps_issued: String::new(),
+            image_path: String::new(),
+            remote_image_url: String::new(),
+            watermark: String::new(),
+            design: String::new(),
+            engraving: String::new(),
+            perforation: String::new(),
+            series: "Regression Series".to_string(),
+            currency: String::new(),
+            context: String::new(),
+        };
+
+        let s_second = crate::db_utils::StampStub {
+            year: 1900,
+            month: String::new(),
+            day: String::new(),
+            sg_number: "SG101".to_string(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            multi_perf: false,
+            desc: String::new(),
+            catalog_num: "101".to_string(),
+            stamps_issued: String::new(),
+            image_path: String::new(),
+            remote_image_url: String::new(),
+            watermark: String::new(),
+            design: "Test Design".to_string(),
+            engraving: "Line Engraving".to_string(),
+            perforation: String::new(),
+            series: "Regression Series".to_string(),
+            currency: String::new(),
+            context: String::new(),
+        };
+
+        let stamps = vec![s_first, s_second];
+
+        // Use a temp output file
+    // Use a deterministic filename under /tmp so we can inspect it after generation
+    let pid = std::process::id();
+    let out = std::path::PathBuf::from(format!("/tmp/regression-header-{}.txt", pid));
+    *crate::types::ALBUM_FILE_NAME.lock().unwrap() = out.to_string_lossy().to_string();
+
+        // Ensure config toggles include design and engraving
+        let mut cfg = crate::config::Config::default();
+        cfg.include_design = Some(true);
+        cfg.include_engraving = Some(true);
+
+    // Directly test extraction: ensure design and engraving are aggregated from the group
+    let stamp_refs: Vec<&crate::db_utils::StampStub> = stamps.iter().collect();
+    let header_info = extract_header_info(&stamp_refs);
+    assert!(!header_info.design.is_empty() && header_info.design.contains("Test Design"), "expected design to be aggregated from later stamp");
+    assert!(!header_info.engraving.is_empty() && header_info.engraving.contains("Line Engraving"), "expected engraving to be aggregated from later stamp");
     }
 }
