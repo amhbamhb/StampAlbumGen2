@@ -2,8 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::io::{self, Write};
-use std::io::Read;
-use std::fs;
+// test-only imports (moved into test module)
 use std::sync::Mutex;
 use lazy_static::lazy_static;
 
@@ -66,6 +65,7 @@ impl PageLayout {
             max_rows_per_page: 4,
         }
     }
+
 
     /// Construct a PageLayout using values from the provided Config (if any)
     fn from_config(cfg: &crate::config::Config) -> Self {
@@ -213,18 +213,16 @@ impl PageLayout {
             rows_needed += 1;
         }
 
-        // If we couldn't fit all stamps, we need a new page
-        remaining_stamps == 0
-    }
+          // If we couldn't fit all stamps, we need a new page
+          remaining_stamps == 0
+      }
 }
 
-
-    // --- NEW: produce a sorted vector of (series, map) so iteration order is deterministic
-    // Sort series by earliest year, then by lowest numeric SG within that earliest year
-    fn parse_catalog_num(s: &str) -> i32 {
-        s.chars().filter(|c| c.is_digit(10)).collect::<String>().parse::<i32>().unwrap_or(99999)
-    }
-    
+// --- NEW: produce a sorted vector of (series, map) so iteration order is deterministic
+// Sort series by earliest year, then by lowest numeric SG within that earliest year
+fn parse_catalog_num(s: &str) -> i32 {
+    s.chars().filter(|c| c.is_digit(10)).collect::<String>().parse::<i32>().unwrap_or(99999)
+}
 /// Generates AlbumEasy output from a filtered list of stamps and album name
 pub fn generate_album_output_from_stamps(
     stamps: &[crate::db_utils::StampStub],
@@ -784,6 +782,8 @@ mod tests {
     use super::*;
     use crate::config::{Config, HeaderFormatting};
     use crate::types::PageHeaderInfo;
+    use std::fs;
+    use std::io::Read;
 
     // Helper to build a Config with the provided toggles and label style
     fn make_config(
@@ -1048,8 +1048,7 @@ mod tests {
     fn test_series_paging_and_measurement_realistic() {
         use tempfile::tempdir;
     use image::RgbImage;
-        use std::fs;
-        use std::io::Read;
+    // std::fs and std::io::Read are imported at module top-level
 
         // Create temp dir and a couple of small images with different pixel sizes
         let td = tempdir().expect("tempdir");
@@ -1194,8 +1193,8 @@ mod tests {
 
     #[test]
     fn test_design_engraving_aggregation_regression() {
-        use std::fs;
-        use std::io::Read;
+        
+        
 
         // Build two stamps: first lacks design/engraving; second provides them
         let s_first = crate::db_utils::StampStub {
@@ -1263,4 +1262,42 @@ mod tests {
     assert!(!header_info.design.is_empty() && header_info.design.contains("Test Design"), "expected design to be aggregated from later stamp");
     assert!(!header_info.engraving.is_empty() && header_info.engraving.contains("Line Engraving"), "expected engraving to be aggregated from later stamp");
     }
-}
+
+    #[test]
+    fn test_write_page_header_emits_design_and_engraving() {
+        // Construct header info with design and engraving present
+        let mut header = PageHeaderInfo::default();
+        header.series = "Test Series".to_string();
+        header.year = 1950;
+        header.design = "Portrait of King".to_string();
+        header.engraving = "Intaglio".to_string();
+        header.watermark = "Crown".to_string();
+
+        // Config that enables both design and engraving and watermark
+        let mut cfg = Config::default();
+        cfg.include_design = Some(true);
+        cfg.include_engraving = Some(true);
+        cfg.include_watermark = Some(true);
+        cfg.include_perforation = Some(false);
+        cfg.include_series = Some(true);
+        cfg.include_date = Some(true);
+        cfg.header_formatting = Some(HeaderFormatting {
+            date_format: None,
+            label_style: Some("full".to_string()),
+            series_style: None,
+            include_currency: Some(false),
+            header_spacing: None,
+        });
+
+        let mut out: Vec<u8> = Vec::new();
+        write_page_header(&mut out, &header, &cfg).expect("write_page_header failed");
+        let s = String::from_utf8(out).expect("invalid utf8");
+
+        // Expect lines for Design and Engraving (full labels)
+        assert!(s.contains("Design:"), "expected Design line in header output, got:\n{}", s);
+        assert!(s.contains("Engraving:"), "expected Engraving line in header output, got:\n{}", s);
+        // Watermark should also be present with 'full' label
+        assert!(s.contains("Watermark:"), "expected Watermark line in header output, got:\n{}", s);
+    }
+
+    } // end mod tests
