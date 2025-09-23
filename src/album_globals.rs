@@ -216,6 +216,13 @@ impl PageLayout {
     }
 }
 
+
+    // --- NEW: produce a sorted vector of (series, map) so iteration order is deterministic
+    // Sort series by earliest year, then by lowest numeric SG within that earliest year
+    fn parse_catalog_num(s: &str) -> i32 {
+        s.chars().filter(|c| c.is_digit(10)).collect::<String>().parse::<i32>().unwrap_or(99999)
+    }
+    
 /// Generates AlbumEasy output from a filtered list of stamps and album name
 pub fn generate_album_output_from_stamps(
     stamps: &[crate::db_utils::StampStub],
@@ -248,7 +255,7 @@ pub fn generate_album_output_from_stamps(
     write_globals(&mut output, album_name, &cfg)?;
 
     // Group stamps by series, then by year within series
-    let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStub>>> = BTreeMap::new();
+let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStub>>> = BTreeMap::new();
 
     for stamp in stamps {
         let series_key = if stamp.series.is_empty() {
@@ -264,6 +271,26 @@ pub fn generate_album_output_from_stamps(
             .push(stamp);
     }
 
+
+    // Produce a sorted vector of (series, map) so iteration order is deterministic.
+    // Sort series by earliest year, then by lowest numeric SG within that earliest year.
+    let mut series_vec: Vec<(String, BTreeMap<i32, Vec<&crate::db_utils::StampStub>>)> = by_series.into_iter().collect();
+    series_vec.sort_by(|(_, a_map), (_, b_map)| {
+        let a_min_year = a_map.keys().min().cloned().unwrap_or(9999);
+        let b_min_year = b_map.keys().min().cloned().unwrap_or(9999);
+        if a_min_year != b_min_year {
+            return a_min_year.cmp(&b_min_year);
+        }
+        // tie-break by smallest catalog number in the earliest year
+        let a_min_sg = a_map.get(&a_min_year)
+            .and_then(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)).min())
+            .unwrap_or(99999);
+        let b_min_sg = b_map.get(&b_min_year)
+            .and_then(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)).min())
+            .unwrap_or(99999);
+        a_min_sg.cmp(&b_min_sg)
+    });
+
     let layout = PageLayout::from_config(&cfg);
 
     let mut page_num = 1;
@@ -273,21 +300,25 @@ pub fn generate_album_output_from_stamps(
     // Start first page
     write_page_header_consistent(&mut output, page_num)?;
 
-    for (series, series_years) in &by_series {
+    for (series, series_years) in &series_vec {
         println!("[INFO] Processing series '{}' with {} years", series, series_years.len());
 
         for (year, year_stamps) in series_years {
             println!("[INFO] Processing year {} with {} stamps in series '{}'", year, year_stamps.len(), series);
 
+            // Ensure stamps in the year are sorted by numeric catalog_num (SG)
+            let mut sorted_year_stamps = year_stamps.clone();
+            sorted_year_stamps.sort_by_key(|s| parse_catalog_num(&s.catalog_num));
+
             // Extract header information from stamps in this year
-            let header_info = extract_header_info(year_stamps);
+            let header_info = extract_header_info(&sorted_year_stamps);
 
             // Calculate space requirements
             let header_space = layout.calculate_header_space(&header_info, &cfg);
             // Compute per-stamp measured widths for this year to derive stamps-per-row
             let available_w = layout.available_content_width();
             let mut measured_widths: Vec<f64> = Vec::new();
-                for stamp in year_stamps.iter() {
+                for stamp in sorted_year_stamps.iter() {
                 let (w_mm, _h_mm) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
                 // apply stamp_box_adjust as per-side padding (both left and right)
                 measured_widths.push(w_mm + 2.0 * layout.stamp_box_adjust);
@@ -870,5 +901,274 @@ mod tests {
                 }
             }
         }
+    }
+
+    #[test]
+    fn test_series_ordering_deterministic() {
+        use std::fs;
+        use std::io::Read;
+
+        // Create a set of StampStub instances designed to reproduce ordering issues.
+        // Series names chosen to ensure variety; some series have earlier years.
+        let s1 = crate::db_utils::StampStub {
+            year: 1890,
+            month: String::new(),
+            day: String::new(),
+            sg_number: "SG100".to_string(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            multi_perf: false,
+            desc: String::new(),
+            catalog_num: "100".to_string(),
+            stamps_issued: String::new(),
+            image_path: String::new(),
+            remote_image_url: String::new(),
+            watermark: String::new(),
+            design: String::new(),
+            engraving: String::new(),
+            perforation: String::new(),
+            series: "Series B".to_string(),
+            currency: String::new(),
+            context: String::new(),
+        };
+
+        let s2 = crate::db_utils::StampStub {
+            year: 1885,
+            month: String::new(),
+            day: String::new(),
+            sg_number: "SG200".to_string(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            multi_perf: false,
+            desc: String::new(),
+            catalog_num: "200".to_string(),
+            stamps_issued: String::new(),
+            image_path: String::new(),
+            remote_image_url: String::new(),
+            watermark: String::new(),
+            design: String::new(),
+            engraving: String::new(),
+            perforation: String::new(),
+            series: "Series A".to_string(),
+            currency: String::new(),
+            context: String::new(),
+        };
+
+        let s3 = crate::db_utils::StampStub {
+            year: 1890,
+            month: String::new(),
+            day: String::new(),
+            sg_number: "SG50".to_string(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            multi_perf: false,
+            desc: String::new(),
+            catalog_num: "50".to_string(),
+            stamps_issued: String::new(),
+            image_path: String::new(),
+            remote_image_url: String::new(),
+            watermark: String::new(),
+            design: String::new(),
+            engraving: String::new(),
+            perforation: String::new(),
+            series: "Series C".to_string(),
+            currency: String::new(),
+            context: String::new(),
+        };
+
+        // Intentionally unordered input: [B(1890), A(1885), C(1890 with lower SG)]
+        let stamps = vec![s1, s2, s3];
+
+        // Generate album output to a temp file
+        let tmp_dir = tempfile::tempdir().expect("tempdir");
+        let album_name = "TestAlbum";
+        // Temporarily override ALBUM_FILE_NAME global for output path
+        let tmp_file = tmp_dir.path().join("TestAlbum-1880-1900.txt");
+        *crate::types::ALBUM_FILE_NAME.lock().unwrap() = tmp_file.to_string_lossy().to_string();
+
+        let pages = generate_album_output_from_stamps(&stamps, album_name).expect("generation failed");
+        assert!(pages >= 1, "expected at least one page");
+
+        // Read generated output and check the order of series headers
+        let mut contents = String::new();
+        let mut f = fs::File::open(&tmp_file).expect("open output");
+        f.read_to_string(&mut contents).expect("read output");
+
+        // Find the sequence of PAGE_TEXT_CENTRE TN 12 lines (series headings)
+        let mut series_lines: Vec<String> = contents.lines()
+            .filter_map(|l| {
+                if l.contains("PAGE_TEXT_CENTRE") && l.contains("TN 12") {
+                    Some(l.to_string())
+                } else { None }
+            })
+            .collect();
+
+        // We expect series ordered by earliest year (A=1885), then by earliest-year SG tie-break
+        // Therefore expected series order is: Series A, then Series C, then Series B
+        let expected_order = vec!["Series A", "Series C", "Series B"];
+        // Extract cleaned series names from series_lines
+        let mut found = Vec::new();
+        for line in series_lines.iter() {
+            // extract the quoted title
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start+1..].find('"') {
+                    let name = &line[start+1..start+1+end];
+                    found.push(name.to_string());
+                }
+            }
+        }
+
+        assert_eq!(found, expected_order, "series order mismatch: found={:?}", found);
+    }
+
+    #[test]
+    fn test_series_paging_and_measurement_realistic() {
+        use tempfile::tempdir;
+    use image::RgbImage;
+        use std::fs;
+        use std::io::Read;
+
+        // Create temp dir and a couple of small images with different pixel sizes
+        let td = tempdir().expect("tempdir");
+        let img1 = td.path().join("stamp_a.jpg");
+        let img2 = td.path().join("stamp_b.jpg");
+        let img3 = td.path().join("stamp_c.jpg");
+
+        // Create simple images (solid color) with varying dimensions
+        let mut a = RgbImage::new(200, 160); // wider
+        for p in a.pixels_mut() { *p = image::Rgb([200, 200, 200]); }
+    a.save(&img1).expect("save img1");
+
+        let mut b = RgbImage::new(120, 180); // taller
+        for p in b.pixels_mut() { *p = image::Rgb([150, 150, 150]); }
+    b.save(&img2).expect("save img2");
+
+        let mut c = RgbImage::new(160, 140); // medium
+        for p in c.pixels_mut() { *p = image::Rgb([100, 100, 100]); }
+    c.save(&img3).expect("save img3");
+
+        // Build realistic StampStub entries referencing those image files.
+        let mut stamps: Vec<crate::db_utils::StampStub> = Vec::new();
+        // Series A is earliest year
+        for i in 0..3 {
+            stamps.push(crate::db_utils::StampStub {
+                year: 1880,
+                month: String::new(),
+                day: String::new(),
+                sg_number: format!("SG1{:02}", i),
+                stamp_type: String::new(),
+                denomination: String::new(),
+                color: String::new(),
+                multi_perf: false,
+                desc: String::new(),
+                catalog_num: format!("1{:02}", i),
+                stamps_issued: String::new(),
+                image_path: img1.to_string_lossy().to_string(),
+                remote_image_url: String::new(),
+                watermark: String::new(),
+                design: String::new(),
+                engraving: String::new(),
+                perforation: String::new(),
+                series: "Series A".to_string(),
+                currency: String::new(),
+                context: String::new(),
+            });
+        }
+        // Series B later
+        for i in 0..2 {
+            stamps.push(crate::db_utils::StampStub {
+                year: 1890,
+                month: String::new(),
+                day: String::new(),
+                sg_number: format!("SG2{:02}", i),
+                stamp_type: String::new(),
+                denomination: String::new(),
+                color: String::new(),
+                multi_perf: false,
+                desc: String::new(),
+                catalog_num: format!("2{:02}", i),
+                stamps_issued: String::new(),
+                image_path: img2.to_string_lossy().to_string(),
+                remote_image_url: String::new(),
+                watermark: String::new(),
+                design: String::new(),
+                engraving: String::new(),
+                perforation: String::new(),
+                series: "Series B".to_string(),
+                currency: String::new(),
+                context: String::new(),
+            });
+        }
+        // Series C same year as B but lower SG leading to tie-break ordering
+        for i in 0..3 {
+            stamps.push(crate::db_utils::StampStub {
+                year: 1890,
+                month: String::new(),
+                day: String::new(),
+                sg_number: format!("SG0{:02}", i),
+                stamp_type: String::new(),
+                denomination: String::new(),
+                color: String::new(),
+                multi_perf: false,
+                desc: String::new(),
+                catalog_num: format!("0{:02}", i),
+                stamps_issued: String::new(),
+                image_path: img3.to_string_lossy().to_string(),
+                remote_image_url: String::new(),
+                watermark: String::new(),
+                design: String::new(),
+                engraving: String::new(),
+                perforation: String::new(),
+                series: "Series C".to_string(),
+                currency: String::new(),
+                context: String::new(),
+            });
+        }
+
+    // Leave input order intentionally interleaved to ensure generator sorts correctly
+    // (no external RNG dependency required)
+
+        // Prepare output path
+        let tmp_file = td.path().join("TestAlbum-1880-1895.txt");
+        *crate::types::ALBUM_FILE_NAME.lock().unwrap() = tmp_file.to_string_lossy().to_string();
+
+        // Run generator
+        let page_count = generate_album_output_from_stamps(&stamps, "TestAlbum").expect("generation failed");
+        assert!(page_count >= 1, "expected at least one page");
+
+        // Read output and verify that all stamps were emitted and series appear in expected order
+        let mut contents = String::new();
+        let mut f = fs::File::open(&tmp_file).expect("open output");
+        f.read_to_string(&mut contents).expect("read output");
+
+        // Count STAMP_ADD_IMG occurrences
+        let stamp_add_count = contents.lines().filter(|l| l.contains("STAMP_ADD_IMG")).count();
+        assert_eq!(stamp_add_count, stamps.len(), "expected each stamp to produce a STAMP_ADD_IMG line");
+
+        // Extract series headings order
+    let series_lines: Vec<String> = contents.lines()
+            .filter_map(|l| {
+                if l.contains("PAGE_TEXT_CENTRE") && l.contains("TN 12") {
+                    Some(l.to_string())
+                } else { None }
+            })
+            .collect();
+
+        // Expected order: Series A (1880) first, then tie between C and B for 1890 -> C has lower SG so C before B
+        let expected = vec!["Series A", "Series C", "Series B"];
+        let mut found = Vec::new();
+        for line in series_lines.iter() {
+            if let Some(start) = line.find('"') {
+                if let Some(end) = line[start+1..].find('"') {
+                    let name = &line[start+1..start+1+end];
+                    found.push(name.to_string());
+                }
+            }
+        }
+
+        assert_eq!(found, expected, "series ordering/paging regression: found={:?}", found);
     }
 }

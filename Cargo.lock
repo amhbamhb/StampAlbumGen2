@@ -2117,6 +2117,7 @@ dependencies = [
  "scraper",
  "serde",
  "sha2",
+ "tempfile",
  "toml",
  "whoami",
 ]
