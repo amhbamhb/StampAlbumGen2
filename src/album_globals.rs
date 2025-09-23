@@ -346,7 +346,7 @@ pub fn generate_album_output_from_stamps(
                 for i in row_start_idx..year_stamps.len() {
                     let stamp = &year_stamps[i];
                     // Measure the stamp size using album_utils::calculate_stamp_dimensions
-                    let (w_mm, h_mm) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
+                    let (w_mm, _h_mm) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
                     // Include stamp_box_adjust which adds border to box size
                     // treat stamp_box_adjust as per-side padding (left+right, top+bottom)
                     let box_w = w_mm + 2.0 * layout.stamp_box_adjust;
@@ -409,7 +409,9 @@ pub fn generate_album_output_from_stamps(
                     let out_h = h_mm;
                     // Emit image path relative to the album file so AlbumEasy can locate it
                     write!(output, "STAMP_ADD_IMG ({:.1} {:.1} \"images/{}\" \"\" \"\" \"\")\n", out_w, out_h, image_name)?;
-                    write!(output, "STAMP_HEADING (TN 8 \"SG : {}\" 1.0)\n", stamp.catalog_num)?;
+                    if cfg.include_catalog_numbers.unwrap_or(true) {
+                        write!(output, "STAMP_HEADING (TN 8 \"SG : {}\" 1.0)\n", stamp.catalog_num)?;
+                    }
                 }
 
                 row_start_idx += stamps_in_row;

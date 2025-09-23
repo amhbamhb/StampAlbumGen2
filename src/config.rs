@@ -22,6 +22,9 @@ pub struct Config {
     pub global_scale: Option<f32>,
     pub header_font_spacing: Option<f32>,
     pub header_formatting: Option<HeaderFormatting>,
+    // Optional path to an offline calibration CSV file. CSV format:
+    // filename,mm_per_px_w,mm_per_px_h
+    pub calibration_csv: Option<String>,
     // Optional toggles to include certain header fields when true
     pub include_design: Option<bool>,
     pub include_engraving: Option<bool>,
@@ -56,6 +59,7 @@ impl Default for Config {
             include_series: None,
             include_country: None,
             include_date: None,
+            calibration_csv: None,
             max_rows_per_page: None,
         }
     }

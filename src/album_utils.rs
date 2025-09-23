@@ -231,11 +231,52 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
         resolved_image_path = album_images_candidate;
     }
 
+    // If a calibration CSV is provided, load it and check for a basename match.
+    // CSV format: filename,mm_per_px_w,mm_per_px_h
+    fn load_calibration_map(path: &str) -> std::collections::HashMap<String, (f32, f32)> {
+        let mut m = std::collections::HashMap::new();
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for (i, line) in content.lines().enumerate() {
+                let line = line.trim();
+                if line.is_empty() || line.starts_with('#') { continue; }
+                let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+                if parts.len() >= 3 {
+                    if let (Ok(w), Ok(h)) = (parts[1].parse::<f32>(), parts[2].parse::<f32>()) {
+                        m.insert(parts[0].to_string(), (w, h));
+                    }
+                } else {
+                    eprintln!("[WARN] calibration CSV: bad line {}: {}", i+1, line);
+                }
+            }
+        }
+        m
+    }
+
+    // Try to find a calibration match by filename (basename)
+    if let Some(cal_csv) = cfg.calibration_csv.as_ref() {
+        let calib_map = load_calibration_map(cal_csv);
+        if let Some(basename) = std::path::Path::new(&resolved_image_path).file_name().and_then(|s| s.to_str()) {
+            if let Some((mm_per_px_w, mm_per_px_h)) = calib_map.get(basename) {
+                if let Some((w_mm, h_mm)) = estimate_real_dimensions(&resolved_image_path, *mm_per_px_w, *mm_per_px_h) {
+                    let mut width = w_mm as f64;
+                    let mut height = h_mm as f64;
+                    if let Some(scale) = cfg.global_scale {
+                        width *= scale as f64;
+                        height *= scale as f64;
+                    }
+                    width = width.clamp(10.0, 120.0);
+                    height = height.clamp(10.0, 120.0);
+                    return (width, height);
+                }
+            }
+        }
+    }
+
     // Preferred approach: use embedded-reference sizing first (more consistent)
     if let Some((mm_per_px_w, mm_per_px_h)) = crate::image_utils::calc_mm_per_pixel_embedded(REF_W_MM, REF_H_MM) {
         if let Some((w_mm, h_mm)) = estimate_real_dimensions(&resolved_image_path, mm_per_px_w, mm_per_px_h) {
-            let mut width = w_mm as f64;
-            let mut height = h_mm as f64;
+                let mut width = w_mm as f64;
+                let mut height = h_mm as f64;
 
             // Enforce reasonable bounds to avoid absurd sizes from mis-detected images
             if width > 120.0 || height > 120.0 {
