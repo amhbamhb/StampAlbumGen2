@@ -28,3 +28,16 @@ reference_height_mm = 240.0
 # margin_bottom_mm = 10.0
 # font_family = "Arial"
 # debug_mode = false
+
+# --- Stamp Box Adjustment ---
+# Amount of extra space (mm) to add around each stamp as a border.
+# This value is applied per-side when computing box size, i.e. the emitted
+# box width = measured_width + 2 * stamp_box_adjust. Typical values: 2.0 - 4.0
+stamp_box_adjust = 3.0
+
+# --- Per-series packing thresholds ---
+# If the median measured stamp+box width for a series is >= median_width_cap_3
+# the generator will cap stamps-per-row to 3. If median >= median_width_cap_4 it
+# will cap to 4. These are useful to force wide stamps to occupy fewer columns.
+median_width_cap_3 = 36.0
+median_width_cap_4 = 30.0

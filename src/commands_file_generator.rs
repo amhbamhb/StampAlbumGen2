@@ -202,7 +202,8 @@ impl CommandsFileGenerator {
     }
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
-    let _ = crate::album_globals::write_globals(_writer, &self.album_name);
+    let cfg = crate::config::load_config("config.toml");
+    let _ = crate::album_globals::write_globals(_writer, &self.album_name, &cfg);
     }
 
     /// Stub for is_selected_format helper
