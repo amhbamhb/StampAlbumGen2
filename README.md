@@ -111,6 +111,27 @@ row_font_spacing = 2.0
 header_font_spacing = 3.0
 ```
 
+### Flag cover and integration tests
+
+The generator can optionally emit a large cover page that includes a country title and a flag image.
+Control this behavior via `config.toml` using the `print_flag_cover` option (defaults to true when omitted):
+
+```toml
+# print_flag_cover = true  # set to false to skip the flag/title cover
+```
+
+There is also an optional network integration test that verifies downloading a small flag from FlagCDN.
+To avoid running network tests in CI or offline environments this test is ignored by default and
+also requires an explicit environment variable to run.
+
+Run the integration test locally with:
+
+FLAGDB_INTEGRATION=1 cargo test -- --ignored
+
+This will execute just the ignored integration tests and will only perform network access when
+`FLAGDB_INTEGRATION=1` is set.
+
+
 ## 📊 Stamp Dimension System
 
 

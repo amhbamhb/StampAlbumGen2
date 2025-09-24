@@ -41,3 +41,8 @@ stamp_box_adjust = 3.0
 # will cap to 4. These are useful to force wide stamps to occupy fewer columns.
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
+
+# --- Flag cover ---
+# If false, the generator will not attempt to download/copy a country flag or
+# emit the large flag/title cover page. Defaults to true when omitted.
+# print_flag_cover = true

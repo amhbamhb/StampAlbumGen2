@@ -43,4 +43,10 @@ include_country = false
 # include_date: show the date line in the header (default true)
 include_date = true
 
+# --- Flag cover ---
+# When false the generator will skip emitting the large flag/title cover page
+# and will not attempt to download/copy a flag image for the album cover.
+# Defaults to true when omitted.
+print_flag_cover = true
+
 

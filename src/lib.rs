@@ -1,3 +1,4 @@
+pub mod flagdb;
 mod config;
 pub use crate::config::{Config, HeaderFormatting};
 // Main library file for StampAlbumGen2

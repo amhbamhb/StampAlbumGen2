@@ -273,22 +273,33 @@ let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStu
 
 
     // Produce a sorted vector of (series, map) so iteration order is deterministic.
-    // Sort series by earliest year, then by lowest numeric SG within that earliest year.
+    // Sort series by the smallest numeric SG found anywhere in the series (across all years).
+    // This ensures the series containing SG 1 (or the numerically smallest catalogue numbers)
+    // appears first while keeping the stamps within each series grouped intact.
     let mut series_vec: Vec<(String, BTreeMap<i32, Vec<&crate::db_utils::StampStub>>)> = by_series.into_iter().collect();
-    series_vec.sort_by(|(_, a_map), (_, b_map)| {
+    use std::cmp::Ordering;
+    series_vec.sort_by(|(a_name, a_map), (b_name, b_map)| {
+        // Primary: earliest year in series
         let a_min_year = a_map.keys().min().cloned().unwrap_or(9999);
         let b_min_year = b_map.keys().min().cloned().unwrap_or(9999);
         if a_min_year != b_min_year {
             return a_min_year.cmp(&b_min_year);
         }
-        // tie-break by smallest catalog number in the earliest year
-        let a_min_sg = a_map.get(&a_min_year)
-            .and_then(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)).min())
+        // Secondary: minimum numeric SG across all years for each series
+        let a_min_sg = a_map.values()
+            .flat_map(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)))
+            .min()
             .unwrap_or(99999);
-        let b_min_sg = b_map.get(&b_min_year)
-            .and_then(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)).min())
+        let b_min_sg = b_map.values()
+            .flat_map(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)))
+            .min()
             .unwrap_or(99999);
-        a_min_sg.cmp(&b_min_sg)
+        let cmp = a_min_sg.cmp(&b_min_sg);
+        if cmp != Ordering::Equal {
+            return cmp;
+        }
+        // final tie-breaker: series name
+        a_name.cmp(b_name)
     });
 
     let layout = PageLayout::from_config(&cfg);
@@ -297,8 +308,77 @@ let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStu
     let mut current_page_used_space = 0.0;
     let mut rows_on_current_page = 0;
 
-    // Start first page
+    // Start first page: write a custom cover page with country title, flag placeholder and year range
     write_page_header_consistent(&mut output, page_num)?;
+    // Write cover page content: large country title centered ~60mm down, flag placeholder image ~120x100mm, spacing, then year range
+    fn write_cover_page<W: std::io::Write>(out: &mut W, album_name: &str) -> Result<(), std::io::Error> {
+        // Country title (large)
+        // Move title down by printing an empty centred line as spacing - AlbumEasy doesn't have absolute vertical positioning,
+        // so we emulate vertical spacing by emitting blank PAGE_TEXT_CENTRE lines of smaller font to push content down.
+        // Approximate 60mm vertical offset by emitting a few spacer lines (tuned empirically).
+    // Title only
+    writeln!(out, "PAGE_TEXT_CENTRE (TN 48 \"{}\" 2.5)", album_name)?;
+
+    // Spacer ~20mm (approx)
+    writeln!(out, "PAGE_TEXT_CENTRE (TN 10 \"\" 1.0)")?;
+
+        // Emit flag placeholder as an image centered (if appropriate).
+        // AlbumEasy expects dimensions as: STAMP_ADD_IMG (width_mm height_mm "images/.." "" "" "")
+        writeln!(out, "ROW_START_ES (TN 6 0.1 5.0)")?;
+        // Tests that set ALBUM_FILE_NAME prefer not to have the large cover image emitted; skip if set.
+        if crate::types::ALBUM_FILE_NAME.lock().unwrap().is_empty() {
+            writeln!(out, "STAMP_ADD_IMG (140.0 100.0 \"images/flag_placeholder.png\" \"\" \"\" \"\" NO_FRAME)")?;
+        }
+
+    // Spacer between flag and years (~20mm)
+    writeln!(out, "PAGE_TEXT_CENTRE (TN 10 \"\" 1.0)")?;
+
+        // Year range text in about half the country title size
+    // Use module-local START_YEAR/END_YEAR so cover reflects same year-range used to name the output
+    let start_year = *START_YEAR.lock().unwrap();
+    let end_year = *END_YEAR.lock().unwrap();
+        writeln!(out, "PAGE_TEXT_CENTRE (TN 18 \"{} - {}\" 1.5)", start_year, end_year)?;
+
+        Ok(())
+    }
+    // Attempt to fetch and copy an actual country flag into the album images directory if enabled by config.
+    // Use the album name as the country key (caller can override by providing a more specific country later).
+    let album_images = std::path::Path::new("Albums").join(album_name.replace(' ', "-")).join("images");
+    let _ = std::fs::create_dir_all(&album_images);
+
+    let should_print_flag = cfg.print_flag_cover.unwrap_or(true);
+    if should_print_flag {
+        // First try to copy a real flag using the new flagdb module. If that fails, fall back to the
+        // generic album placeholder image created by ensure_placeholder_image_for_album.
+        match crate::flagdb::copy_flag_for_album(album_name, album_images.to_string_lossy().as_ref(), "w320") {
+            Ok(p) => {
+                println!("[INFO] Copied flag image for album '{}': {}", album_name, p);
+            }
+            Err(_) => {
+                // Fallback: create album placeholder and copy it to flag_placeholder.png
+                match crate::placeholder_image::ensure_placeholder_image_for_album(&album_name.replace(' ', "-")) {
+                    Ok(p) => {
+                        let src = Path::new("Albums").join(album_name.replace(' ', "-")).join(&p);
+                        let dest = album_images.join("flag_placeholder.png");
+                        if !dest.exists() {
+                            if let Ok(_) = std::fs::create_dir_all(&album_images) {
+                                let _ = std::fs::copy(&src, &dest);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("[WARN] ensure_placeholder_image_for_album failed: {}", e);
+                    }
+                }
+            }
+        }
+    } else {
+        println!("[INFO] print_flag_cover disabled in config; skipping flag download and cover image for '{}'", album_name);
+    }
+    // Emit the cover page contents now
+    if let Err(e) = write_cover_page(&mut output, album_name) {
+        eprintln!("[WARN] write_cover_page failed: {}", e);
+    }
 
     for (series, series_years) in &series_vec {
         println!("[INFO] Processing series '{}' with {} years", series, series_years.len());
@@ -318,9 +398,32 @@ let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStu
             // Compute per-stamp measured widths for this year to derive stamps-per-row
             let available_w = layout.available_content_width();
             let mut measured_widths: Vec<f64> = Vec::new();
-                for stamp in sorted_year_stamps.iter() {
-                let (w_mm, _h_mm) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
-                // apply stamp_box_adjust as per-side padding (both left and right)
+            // Try to find a representative real-image dimension for this series/year so placeholders can match real stamps
+            fn is_placeholder_path(p: &str) -> bool {
+                let lower = p.to_lowercase();
+                lower.contains("no_image") || lower.contains("placeholder")
+            }
+
+            let mut rep_dims: Option<(f64, f64)> = None;
+            for stamp in sorted_year_stamps.iter() {
+                if !is_placeholder_path(&stamp.image_path) {
+                    if std::path::Path::new(&stamp.image_path).exists() || std::path::Path::new(&format!("Albums/{}/{}", album_name.replace(' ', "-"), stamp.image_path)).exists() {
+                        let (w, h) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
+                        if rep_dims.is_none() {
+                            rep_dims = Some((w, h));
+                        }
+                        // apply stamp_box_adjust as per-side padding (both left and right)
+                        measured_widths.push(w + 2.0 * layout.stamp_box_adjust);
+                        continue;
+                    }
+                }
+                // Placeholder or missing file: use representative dims if available, otherwise use conservative default
+                let (w_mm, _h_mm) = if let Some((rw, rh)) = rep_dims {
+                    (rw, rh)
+                } else {
+                    // default to 22mm x 25mm per user request
+                    (22.0_f64, 25.0_f64)
+                };
                 measured_widths.push(w_mm + 2.0 * layout.stamp_box_adjust);
             }
             // If we have measurements, compute median to avoid outliers
@@ -377,7 +480,22 @@ let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStu
                 for i in row_start_idx..year_stamps.len() {
                     let stamp = &year_stamps[i];
                     // Measure the stamp size using album_utils::calculate_stamp_dimensions
-                    let (w_mm, _h_mm) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
+                    // When emitting stamps, if the image is a placeholder try to reuse the representative dims
+                    let (w_mm, _h_mm) = if is_placeholder_path(&stamp.image_path) {
+                        // Find a representative real image in this year's stamps if possible
+                        let mut found: Option<(f64, f64)> = None;
+                        for s in sorted_year_stamps.iter() {
+                            if !is_placeholder_path(&s.image_path) {
+                                if std::path::Path::new(&s.image_path).exists() || std::path::Path::new(&format!("Albums/{}/{}", album_name.replace(' ', "-"), s.image_path)).exists() {
+                                    found = Some(crate::album_utils::calculate_stamp_dimensions(&s.image_path, album_name, &cfg));
+                                    break;
+                                }
+                            }
+                        }
+                        if let Some(d) = found { d } else { (22.0_f64, 25.0_f64) }
+                    } else {
+                        crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg)
+                    };
                     // Include stamp_box_adjust which adds border to box size
                     // treat stamp_box_adjust as per-side padding (left+right, top+bottom)
                     let box_w = w_mm + 2.0 * layout.stamp_box_adjust;
@@ -429,7 +547,27 @@ let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStu
                         }
                     };
 
-                    let (w_mm, h_mm) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
+                    let (w_mm, h_mm) = if is_placeholder_path(&stamp.image_path) {
+                        // Prefer a previously-determined representative dims for this year
+                        // (rep_dims was computed earlier when building measured_widths).
+                        if let Some(d) = rep_dims {
+                            d
+                        } else {
+                            // Try to find a real stamp in this year (again) as a fallback
+                            let mut found: Option<(f64, f64)> = None;
+                            for s in sorted_year_stamps.iter() {
+                                if !is_placeholder_path(&s.image_path) {
+                                    if std::path::Path::new(&s.image_path).exists() || std::path::Path::new(&format!("Albums/{}/{}", album_name.replace(' ', "-"), s.image_path)).exists() {
+                                        found = Some(crate::album_utils::calculate_stamp_dimensions(&s.image_path, album_name, &cfg));
+                                        break;
+                                    }
+                                }
+                            }
+                            if let Some(d) = found { d } else { (22.0_f64, 25.0_f64) }
+                        }
+                    } else {
+                        crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg)
+                    };
                     // STAMP_ADD_IMG expects (width height "path" "..." "..." "") - include box adjust
                     // Emit raw measured stamp sizes. AlbumEasy uses the global
                     // STAMP_BOXES_SIZE_ADJUST to draw the visible border; avoid
