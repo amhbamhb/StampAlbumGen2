@@ -1,10 +1,86 @@
-use log::{error, info};
+use log::{debug, error, info};
 use std::io::Write;
-use crate::types::ImageStatus;
-use crate::album_globals::sanitize_filename;
-use crate::types::OSType;
+use crate::album_globals;
+use crate::album_utils::sanitize_filename;
+use crate::types::{ImageStatus, OSType};
+pub struct SeriesInfo {
+    pub count: i32,
+    pub multi_perf: bool,
+    pub width: String,
+    pub height: String,
+}
 
-#[derive(Debug, Default)]
+
+
+/// Represents the status of an image operation (stub)
+pub fn get_colnect_image(images_directory: &str, url: &str, name: &str) -> ImageStatus {
+    let clean_name = name.replace(' ', "");
+    let file_path = format!("{}/{}.jpg", images_directory, clean_name);
+    get_image(url, name, &file_path)
+}
+
+/// Stub for get_image, to be implemented
+pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
+    // Debug: Show the process of accessing the external website and getting the image
+    debug!("Attempting to fetch image from URL: {}", _url);
+    debug!("Image will be saved as: {}", _file_path);
+    // Example: Use reqwest to fetch the image
+    match reqwest::blocking::get(_url) {
+        Ok(resp) => {
+            debug!("HTTP status: {}", resp.status());
+            if resp.status().is_success() {
+                match resp.bytes() {
+                    Ok(bytes) => {
+                        match std::fs::write(_file_path, &bytes) {
+                            Ok(_) => debug!("Image saved successfully."),
+                            Err(e) => error!("Failed to save image: {}", e),
+                        }
+                        ImageStatus {
+                            link: _url.to_string(),
+                            exists: true,
+                            width: 0,
+                            height: 0,
+                            filename: _name.to_string(),
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to read image bytes: {}", e);
+                        ImageStatus {
+                            link: _url.to_string(),
+                            exists: false,
+                            width: 0,
+                            height: 0,
+                            filename: _name.to_string(),
+                        }
+                    }
+                        // Remove duplicate ImageStatus struct
+                        // pub struct ImageStatus {
+                        //     pub status: String,
+                        //     pub message: String,
+                        // }
+                }
+            } else {
+                error!("HTTP request failed with status: {}", resp.status());
+                ImageStatus {
+                    link: _url.to_string(),
+                    exists: false,
+                    width: 0,
+                    height: 0,
+                    filename: _name.to_string(),
+                }
+            }
+        }
+        Err(e) => {
+            error!("HTTP request error: {}", e);
+            album_globals::ImageStatus {
+                link: _url.to_string(),
+                exists: false,
+                width: 0,
+                height: 0,
+            }
+        }
+    }
+}#[derive(Debug, Default)]
 pub struct CommandsFileGenerator {
     pub detected_os: Option<OSType>,
     pub file_separator: String,
@@ -40,8 +116,26 @@ pub struct CommandsFileGenerator {
 }
 
 impl CommandsFileGenerator {
-    pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> ImageStatus {
-        use std::path::Path;
+    pub fn month_number(&self, month: &str) -> String {
+        // Stub: convert month name to number as string
+        match month.to_lowercase().as_str() {
+            "january" => "1".to_string(),
+            "february" => "2".to_string(),
+            "march" => "3".to_string(),
+            "april" => "4".to_string(),
+            "may" => "5".to_string(),
+            "june" => "6".to_string(),
+            "july" => "7".to_string(),
+            "august" => "8".to_string(),
+            "september" => "9".to_string(),
+            "october" => "10".to_string(),
+            "november" => "11".to_string(),
+            "december" => "12".to_string(),
+            _ => "0".to_string(),
+        }
+    }
+
+    pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> album_globals::ImageStatus {        use std::path::Path;
         // If the caller passed an id (not a full URL), build the canonical StampWorld CDN URL
         let remote_url = if url.starts_with("http://") || url.starts_with("https://") {
             url.to_string()
@@ -61,9 +155,8 @@ impl CommandsFileGenerator {
         }
         let file_path = format!("{}/{}", self.images_directory, image_name);
         if !overwrite && Path::new(&file_path).exists() {
-            info!("Skipping download, image already exists: {}", file_path);
-            return ImageStatus { link: remote_url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
-        }
+            debug!("Skipping download, file exists: {}", file_path);
+            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };        }
         self.get_image(&remote_url, &image_name, &file_path)
     }
     
@@ -121,35 +214,8 @@ impl CommandsFileGenerator {
             let image_name = sanitize_filename(raw_image_name);
             let file_path = format!("{}/{}", images_directory, image_name);
             if !overwrite && std::path::Path::new(&file_path).exists() {
-                info!("Skipping download, image already exists: {}", file_path);
-                return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name };
-            }
-            
-            // Use curl to download the image
-            use std::process::Command;
-            let curl_cmd = if url.starts_with("https://") {
-                vec!["curl", "--ssl-no-revoke", "-L", "-o", &file_path, url]
-            } else {
-                vec!["curl", "-L", "-o", &file_path, url]
-            };
-            
-            match Command::new(curl_cmd[0])
-                .args(&curl_cmd[1..])
-                .status() {
-                Ok(status) => {
-                    if status.success() {
-                        info!("Successfully downloaded: {}", file_path);
-                        ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name }
-                    } else {
-                        error!("Failed to download {}: curl exit code {:?}", url, status.code());
-                        ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0, filename: image_name }
-                    }
-                }
-                Err(e) => {
-                    error!("Failed to run curl for {}: {}", url, e);
-                    ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0, filename: image_name }
-                }
-            }
+                debug!("Skipping download, file exists: {}", file_path);
+                return album_globals::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };            }
         };
         crate::stampworld::collect_stampworld_data(
             &mut self.sequencer,
@@ -168,8 +234,7 @@ impl CommandsFileGenerator {
     pub fn new() -> Self {
         Self {
             detected_os: None,
-            file_separator: crate::types::FILE_SEPARATOR.to_string(),
-            data_source: String::new(),
+            file_separator: "@".to_string(),            data_source: String::new(),
             file_source: String::new(),
             album_directory: String::new(),
             images_directory: String::new(),
@@ -200,10 +265,109 @@ impl CommandsFileGenerator {
             touchstamps_data_file: Vec::new(),
         }
     }
+    pub fn create_album<P: AsRef<std::path::Path>>(&mut self, file_path: P, data: &[String]) {
+        use std::fs::File;
+        use std::io::{BufWriter, Write};
+        let path = file_path.as_ref();
+        let file = match File::create(path) {
+            Ok(f) => f,
+            Err(e) => {
+                error!("Unable to open output file: {}", e);
+                std::process::exit(1);
+            }
+        };
+        let mut writer = BufWriter::new(file);
+        self.write_globals(&mut writer);
+        let mut prev_year = String::new();
+        let mut prev_series = String::new();
+        let mut prev_date = String::new();
+        let mut width = "0".to_string();
+        let mut height = "0".to_string();
+        let mut series_info: Option<SeriesInfo> = None;
+    // Add required mutable counters and month_names array
+    let mut rows_written = 0;
+    let mut stamps_written = 0;
+    let mut used_width = 0;
+    let mut used_height = 0;
+    let mut max_row_height = 0;
+    let month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        for (idx, line) in data.iter().enumerate() {
+            if line.starts_with("STAMP") {
+                let fields: Vec<&str> = line.split(&self.separator).collect();
+                if fields.len() < 24 { continue; }
+                let year = fields[1];
+                let month = fields[2];
+                let day = fields[3];
+                let series = fields[4];
+                let date = format!("{}{}{}", year, month, day);
+                let _catalog_num = if self.catalog_name.is_empty() {
+                    fields[5].to_string()
+                } else {
+                    self.get_catalog_num(fields[15], false)
+                };
+                let count;
+                let multi_perf;
+                if year != prev_year {
+            album_globals::new_page(&mut writer, &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
+                    album_globals::new_year(&mut writer, year);
+                        series_info = Some(self.get_series_info(data, idx, &width, &height));
+                        count = series_info.as_ref().map_or(1, |s| s.count);
+                        multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
+                        width = series_info.as_ref().map_or("0".to_string(), |s| s.width.clone());
+                        height = series_info.as_ref().map_or("0".to_string(), |s| s.height.clone());
+            album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
+                    prev_year = year.to_string();
+                    prev_series = series.to_string();
+                    prev_date = date.clone();
+                album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
+                prev_year = year.to_string();
+                prev_series = series.to_string();
+                prev_date = date.clone();
+                } else if series != prev_series || date != prev_date {
+                        series_info = Some(self.get_series_info(data, idx, &width, &height));
+                        count = series_info.as_ref().map_or(1, |s| s.count);
+                        multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
+                        width = series_info.as_ref().map_or("0".to_string(), |s| s.width.clone());
+                        height = series_info.as_ref().map_or("0".to_string(), |s| s.height.clone());
+                album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
+                    prev_series = series.to_string();
+                    prev_date = date.clone();
+                }
+                let mut stamp_width = fields[10].to_string();
+                let mut stamp_height = fields[11].to_string();
+                if self.fix_sizes && series_info.as_ref().map_or(1, |s| s.count) > 1 && stamp_width == "0" {
+                    stamp_width = width.clone();
+                    stamp_height = height.clone();
+                }
+                let catalog_num = self.get_catalog_num(fields[15], true);
+                if catalog_num != "" && catalog_num != "Unlisted" && self.is_selected_format(fields[13]) && self.is_selected_emission(fields[14]) {
+                    album_globals::add_stamp(
+                        &mut writer,
+                        year,
+                        fields[6],
+                        fields[7],
+                        fields[8],
+                        self.fix_color(fields[9].into()),
+                        series_info.as_ref().map_or(false, |s| s.multi_perf),
+                        fields[12],
+                        &stamp_width,
+                        &stamp_height,
+                        &catalog_num,
+                        fields[17]
+                    );
+                }
+            }
+        }
+        if let Err(e) = writer.flush() {
+            println!("Unable to close output file: {}", e);
+            std::process::exit(1);
+        }
+        self.snooze(500);
+    }
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
     let cfg = crate::config::load_config("config.toml");
-    let _ = crate::album_globals::write_globals(_writer, &self.album_name, &cfg);
+    let _ = crate::album_globals::write_globals(_writer, &self.album_name);
     }
 
     /// Stub for is_selected_format helper
@@ -271,15 +435,14 @@ impl CommandsFileGenerator {
             }
         }
     }
-    pub fn get_image(&self, url: &str, name: &str, file_path: &str) -> ImageStatus {
+    pub fn get_image(&self, url: &str, name: &str, file_path: &str) -> album_globals::ImageStatus {
         use std::process::Command;
         use std::fs;
         use image::io::Reader as ImageReader;
         use std::path::Path;
         
         if name.is_empty() {
-            return ImageStatus { link: String::new(), exists: false, width: 0, height: 0, filename: String::new() };
-        }
+            return album_globals::ImageStatus { link: String::new(), exists: false, width: 0, height: 0 };        }
         
         // If file already exists, compare content with remote and only replace if different
         if Path::new(file_path).exists() {
@@ -401,8 +564,7 @@ impl CommandsFileGenerator {
         if !exists && img_file.exists() {
             let _ = fs::remove_file(img_file);
         }
-    ImageStatus { link: url.to_string(), exists, width, height, filename: name.to_string() }
-    }
+    album_globals::ImageStatus { link: url.to_string(), exists, width, height }    }
 
     /// Stub for is_valid_jpeg helper
     pub fn is_valid_jpeg(&self, _file_path: &str) -> bool {
@@ -428,5 +590,105 @@ impl CommandsFileGenerator {
         }
         valid
     }
-}
+    pub fn get_touchstamps_stamps(&mut self, link: &str, year: &str, month: &str, day: &str, desc: &str) -> Vec<String> {
+        use reqwest::blocking::Client;
+        use scraper::{Html, Selector};
+
+        let client = Client::new();
+        let url = format!("https://touchstamps.com{}", link);
+        let document = match client.get(&url).timeout(std::time::Duration::from_secs(60)).send() {
+            Ok(resp) => match resp.text() {
+                Ok(body) => Html::parse_document(&body),
+                Err(_) => {
+                    eprintln!("Problem retrieving web page");
+                    std::process::exit(1);
+                }
+            },
+            Err(e) => {
+                eprintln!("Problem retrieving web page: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        let article_selector = Selector::parse("article.contentColumn.item").unwrap();
+        let mut all_stamp_data = Vec::new();
+        for article in document.select(&article_selector) {
+            let stamp_name = article.select(&Selector::parse("header.round-header").unwrap()).next().map(|e| e.text().collect::<String>()).unwrap_or_default();
+            let right_section_html = article.select(&Selector::parse("section.right").unwrap()).next().map(|e| e.html()).unwrap_or_default();
+            let (mut image_url, mut image_id) = (String::new(), String::new());
+            if right_section_html.contains("image_url") {
+                let start = right_section_html.find("image_url").unwrap() + 10;
+                let end = right_section_html[start..].find('"').unwrap() + start;
+                image_url = right_section_html[start..end].to_string();
+                let parts: Vec<&str> = image_url.split('/').collect();
+                image_id = parts.last().unwrap_or(&"").to_string();
+            } else if right_section_html.contains("src") {
+                let start = right_section_html.find("src").unwrap() + 6;
+                let end = right_section_html[start..].find(' ').unwrap_or(0) + start;
+                image_url = right_section_html[start..end.saturating_sub(1)].to_string();
+                image_id = image_url.get(15..).unwrap_or("").to_string();
+            }
+
+            let image_status = self.get_touchstamps_image(&image_url, &image_id);
+            let image_link = image_status.link;
+            let image_exists = image_status.exists;
+            let image_width = image_status.width.to_string();
+            let image_height = image_status.height.to_string();
+            let catalog_code = format!("Ts:{}", image_id);
+
+            let table_selector = Selector::parse("table.table.table-striped.table-condensed").unwrap();
+            let table = article.select(&table_selector).next();
+            let (mut format, mut perforation, mut emission) = (String::new(), String::new(), String::new());
+            let (face_value, currency) = ("0".to_string(), "0".to_string());
+            let value_main = String::new();
+            let value_rest = String::new();
+            if let Some(table_elem) = table {
+                format = table_elem.select(&Selector::parse("tr:contains(Format:)").unwrap())
+                    .next()
+                    .map(|e| e.text().collect::<String>().replace("Format: ", ""))
+                    .unwrap_or_default();
+                perforation = table_elem.select(&Selector::parse("tr:contains(Perforation:)").unwrap())
+                    .next()
+                    .map(|e| e.text().collect::<String>().replace("Perforation: ", ""))
+                    .unwrap_or_default();
+                emission = table_elem.select(&Selector::parse("tr:contains(Emission:)").unwrap())
+                    .next()
+                    .map(|e| e.text().collect::<String>().replace("Emission: ", ""))
+                    .unwrap_or_default();
+            }
+            let mut stamp_data = vec![
+                format!(
+                    "STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                    year, month, day, desc, catalog_code, image_link, image_exists, image_width, image_height, format, perforation, emission, face_value, currency, value_main, value_rest
+                ),
+            ];
+            if image_exists {
+                let image_status = self.get_image(&image_link, &stamp_name, &format!("{}/{}", self.images_directory, image_id));
+                if image_status.exists {
+                    stamp_data.push(format!(
+                        "IMAGE;{};{};{};{};{};{};{}",
+                        year, month, day, desc, image_id, image_status.width, image_status.height
+                    ));
+                }
+            }
+            all_stamp_data.extend(stamp_data);
+        }
+        // Save all data once at the end
+        let file_path = format!("{}_data.txt", self.album_name);
+        self.save_stamp_data(&file_path, &all_stamp_data, "touchstamps");
+        all_stamp_data
+    }
+    pub fn fix_color(&self, color: &str) -> String {
+        // Stub: just return the color for now
+        color.to_string()
+    }
+
+    pub fn snooze(&self, millis: u64) {
+        std::thread::sleep(std::time::Duration::from_millis(millis));
+    }
+
+    pub fn get_touchstamps_image(&self, image_url: &str, _image_id: &str) -> album_globals::ImageStatus {
+        // Stub: just return a default ImageStatus for now
+            ImageStatus { link: image_url.to_string(), exists: false, width: 0, height: 0, filename: String::new() }
+    }}
 

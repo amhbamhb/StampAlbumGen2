@@ -47,6 +47,7 @@ include_date = true
 # When false the generator will skip emitting the large flag/title cover page
 # and will not attempt to download/copy a flag image for the album cover.
 # Defaults to true when omitted.
+# Re-enable the flag cover — set true to emit the large flag/title cover page.
 print_flag_cover = true
 
 

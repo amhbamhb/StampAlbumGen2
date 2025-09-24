@@ -7,6 +7,19 @@ pub struct HeaderFormatting {
     pub label_style: Option<String>,
     pub series_style: Option<String>,
     pub include_currency: Option<bool>,
+    // Optional toggles that may be placed inside the [header_formatting]
+    // table in older or alternate config layouts. We accept these here
+    // and propagate them up into the top-level `Config` so either
+    // placement works.
+    pub include_design: Option<bool>,
+    pub include_engraving: Option<bool>,
+    pub include_watermark: Option<bool>,
+    pub include_perforation: Option<bool>,
+    pub include_catalog_numbers: Option<bool>,
+    pub include_series: Option<bool>,
+    pub include_country: Option<bool>,
+    pub include_date: Option<bool>,
+    pub print_flag_cover: Option<bool>,
     pub header_spacing: Option<f32>,
 }
 
@@ -89,9 +102,45 @@ pub fn load_config(path: &str) -> Config {
 
     for candidate in try_paths.iter() {
         if let Ok(content) = fs::read_to_string(candidate) {
+            // First parse into a generic toml::Value to inspect raw mapping
+            if let Ok(value) = toml::from_str::<toml::Value>(&content) {
+                // Debug: report whether top-level key `print_flag_cover` exists in the parsed value
+                if value.get("print_flag_cover").is_some() {
+                    println!("[DEBUG] toml::Value contains top-level 'print_flag_cover'");
+                } else {
+                    println!("[DEBUG] toml::Value does NOT contain top-level 'print_flag_cover'");
+                }
+            } else {
+                println!("[DEBUG] Failed to parse into toml::Value (this shouldn't happen when parsing into Config succeeded)");
+            }
+
             match toml::from_str::<Config>(&content) {
                 Ok(cfg) => {
+                    // If the file places the include_* toggles inside the
+                    // `[header_formatting]` table (common), propagate those
+                    // values into the top-level `Config` fields when the
+                    // top-level ones are not present. This keeps both
+                    // layouts working.
+                    let mut cfg = cfg;
+                    if let Some(hf) = cfg.header_formatting.clone() {
+                        cfg.include_design = cfg.include_design.or(hf.include_design);
+                        cfg.include_engraving = cfg.include_engraving.or(hf.include_engraving);
+                        cfg.include_watermark = cfg.include_watermark.or(hf.include_watermark);
+                        cfg.include_perforation = cfg.include_perforation.or(hf.include_perforation);
+                        cfg.include_catalog_numbers = cfg.include_catalog_numbers.or(hf.include_catalog_numbers);
+                        cfg.include_series = cfg.include_series.or(hf.include_series);
+                        cfg.include_country = cfg.include_country.or(hf.include_country);
+                        cfg.include_date = cfg.include_date.or(hf.include_date);
+                        // Allow `print_flag_cover` to be placed inside `[header_formatting]`
+                        // in older or mistaken configs; propagate it to the top-level field
+                        // so either placement works.
+                        cfg.print_flag_cover = cfg.print_flag_cover.or(hf.print_flag_cover);
+                    }
+
                     println!("[INFO] Loaded config from {}", candidate.display());
+                    // Debug: show raw content and parsed config to help diagnose missing fields
+                    println!("[DEBUG] Raw config content from {}:\n{}", candidate.display(), &content);
+                    println!("[DEBUG] Parsed Config struct: {:?}", cfg);
                     return cfg;
                 }
                 Err(e) => {

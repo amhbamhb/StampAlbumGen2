@@ -215,94 +215,37 @@ Options:"
         std::process::exit(1);
     }
 
-    // Output-only mode: cargo run -- --output-only --db-path <db_path> --album-name <album_name>
-    if cli.output_only {
-        println!("[INFO] Output-only mode selected. Generating AlbumEasy output from database.");
-        let pb = ProgressBar::new_spinner();
+    // Output-only mode: cargo run -- output-only <db_path> <album_name>
+    if args.get(0).map(|s| s == "output-only").unwrap_or(false) {
+        if args.len() < 3 {
+            println!("USAGE: cargo run -- output-only <db_path> <album_name> [<start_year> <end_year>]");
+            std::process::exit(1);
+        }
+        let db_path = &args[1];
+        let album_name = &args[2];
+        let start_year = args.get(3).and_then(|s| s.parse::<i32>().ok());
+        let end_year = args.get(4).and_then(|s| s.parse::<i32>().ok());        let pb = ProgressBar::new_spinner();
         pb.set_style(
             ProgressStyle::default_spinner()
                 .template("{spinner} Generating AlbumEasy output... {msg}")
                 .unwrap(),
         );
         pb.enable_steady_tick(std::time::Duration::from_millis(100));
-        pb.set_message(format!("Scraping data for album '{}', please wait...", album_name));
-        println!("[INFO] Loading stamps from database: {}", db_path);
-        let all_stamps = stamp_album_gen2::album_globals::load_stamps_from_db(&db_path, &album_name)?;
-        println!("[INFO] Loaded {} stamps from database", all_stamps.len());
-
-        // For development purposes, include all stamps initially
-        // Year filtering will be applied during album generation if needed
-        let filtered_stamps: Vec<stamp_album_gen2::db_utils::StampStub>;
-
-        // Optional: Apply year filtering only if explicitly requested and stamps have year data
-        if start_year > 0 || end_year < 9999 {
-            println!("[INFO] Applying year filter: {} to {}", start_year, end_year);
-            filtered_stamps = all_stamps.into_iter().filter(|stamp| {
-                let mut year = stamp.year;
-
-                // If year is 0, try to extract from description
-                if year == 0 {
-                    let year_regex = regex::Regex::new(r"(18|19|20)\d{2}").unwrap();
-                    if let Some(cap) = year_regex.find(&stamp.desc) {
-                        if let Ok(extracted_year) = cap.as_str().parse::<i32>() {
-                            if extracted_year >= 1800 && extracted_year <= 2100 {
-                                year = extracted_year;
-                                println!("[DEBUG] Extracted year {} from description '{}' for stamp {}", year, stamp.desc, stamp.sg_number);
-                            }
-                        }
-                    }
-                }
-
-                // Include stamp if it has a valid year in range, or if year extraction failed but series suggests it belongs
-                let year_range_span = end_year - start_year;
-                let matches = if year >= start_year && year <= end_year {
-                    true
-                } else if year == 0 && year_range_span > 20 {
-                    // For broad year ranges, include stamps where year extraction failed
-                    // This helps capture stamps that belong to the era but have unclear dating
-                    println!("[DEBUG] Including stamp {} with unknown year (year=0) due to broad range", stamp.sg_number);
-                    true
-                } else {
-                    false
-                };
-                matches
-            }).collect::<Vec<_>>();
-            println!("[INFO] Filtered to {} stamps within year range", filtered_stamps.len());
-        } else {
-            filtered_stamps = all_stamps;
-        }        // Update filename if only end-year was specified
-        let mut final_album_file_name = album_file_name.clone();
-        if start_year == 0 && end_year < 9999 && !filtered_stamps.is_empty() {
-            // Find the minimum year from filtered stamps
-            let min_year = filtered_stamps.iter().map(|stamp| stamp.year).min().unwrap_or(end_year);
-            final_album_file_name = format!("Albums/{}/{}-{}-{}.txt", album_name, album_name, min_year, end_year);
-            println!("[INFO] Corrected output filename to: {}", final_album_file_name);
-        }
-        
-        // Set the global album file name
-        *stamp_album_gen2::types::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
-        *stamp_album_gen2::stampworld::state::ALBUM_FILE_NAME.lock().unwrap() = final_album_file_name.clone();
-
-        // Create placeholder image for output-only mode
-        println!("[INFO] Creating placeholder image for unknown/blank stamps...");
-        match placeholder_image::ensure_placeholder_image_for_album(&album_name) {
-            Ok(path) => println!("[INFO] Placeholder image ready: {}", path),
-            Err(e) => println!("[WARN] Failed to create placeholder image: {}", e),
-        }
-
-        // Download missing images if remote URLs are available
-        println!("[INFO] Downloading missing stamp images...");
-        match stamp_album_gen2::image_downloader::download_missing_stamp_images(&filtered_stamps, &album_name) {
-            Ok(_) => println!("[INFO] Image download process completed"),
-            Err(e) => println!("[WARN] Some images failed to download: {}", e),
-        }
-
-        println!("[INFO] Generating AlbumEasy output for album: {}", album_name);
-        let pages = stamp_album_gen2::stampworld::generate_album_output_from_stamps(
-            &filtered_stamps,
-            &album_name
-        )?;
-        pb.finish_with_message(format!(
+        pb.set_message(format!("for album '{}', please wait...", album_name));
+        let mut last_page = 0;
+        stamp_album_gen2::album_globals::generate_album_output::<Box<dyn FnMut(usize)>>(
+            db_path,
+            album_name,
+            Some(Box::new(|page| {
+                last_page = page;
+                pb.set_message(format!(
+                    "for album '{}', generating page {}",
+                    album_name, page
+                ));
+            })),
+            start_year,
+            end_year,
+        );        pb.finish_with_message(format!(
             "AlbumEasy output generated for album '{}'. Total pages: {}",
             album_name, pages
         ));
@@ -354,37 +297,36 @@ Options:"
         gen.images_directory = images_directory.clone();
         gen.album_file_name = album_file_path.clone();  // Use the corrected path with year range
         gen.extract_file_name = extract_file_name.clone();
-        gen.site_name = site_name.clone();
-        gen.catalog_name = cli.catalog_name.clone();
-        gen.start_year = cli.start_year;
-        gen.end_year = cli.end_year;
-        
-        println!("[INFO] Ensuring album and images directories exist: {}", gen.images_directory);
-        std::fs::create_dir_all(&gen.images_directory).unwrap_or_else(|e| {
-            println!("[ERROR] Failed to create images directory: {}", e);
-        });
-        
-        let images_dir = format!("{}/images", album_directory);
-        std::fs::create_dir_all(&images_dir).unwrap_or_else(|e| {
-            println!("[ERROR] Failed to create images directory: {}", e);
-        });
-        match cli.source.as_str() {
-            "stampworld" => {
-                println!("[INFO] Collecting data from StampWorld...");
-                let base_url = format!(
-                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?user=676374&page=",
-                    site_name, cli.start_year, cli.end_year
-                );
-                println!("[DEBUG] Using base URL: {}", base_url);
-                let data = gen.collect_stampworld_data(&base_url, cli.overwrite_images, Some(&|page| {
-                    pb.set_message(format!("Scraping data for album '{}', page {}...", album_name, page));
-                }));
-                pb.set_message("Scraping complete. Processing and saving data...");
-                println!("[INFO] Scraping complete. Found {} stamp records", data.len());
-                println!("[INFO] Saving extracted data to file: {}", extract_file_name);
-                gen.save_stamp_data(&extract_file_name, &data, "stampworld", cli.overwrite_album);
-                pb.finish_with_message("Scraping and data save complete.");
-
+        gen.catalog_name = catalog_name.to_string();
+        gen.start_year = start_year;
+        gen.end_year = end_year;
+        let stamp_data = gen.collect_stampworld_data(&base_url, overwrite);
+        println!(
+            "[DEBUG] Stampworld data collected: {} entries",
+            stamp_data.len()
+        );
+        gen.save_stamp_data(&extract_file_name, &stamp_data, "stampworld");
+        gen.create_album(&album_file_name, &stamp_data);
+        println!("[DEBUG] Album creation complete.");
+        // After scraping is complete, generate AlbumEasy output from DB
+        let db_path = format!("{}/{}.db", album_directory, site_name.replace("/", "-"));
+        let album_name = args[1].clone();
+        stamp_album_gen2::album_globals::generate_album_output::<fn(usize)>(
+            &db_path,
+            &album_name,
+            None,
+            Some(start_year),
+            Some(end_year),
+        );
+        println!("[DEBUG] AlbumEasy output generated from DB after scraping.");
+    }
+    // Placeholder for the rest of the logic
+    // You will need to implement:
+    // - get_file_source()
+    // - check_options()
+    // - collectColnectData(), collectStampworldData(), collectTouchstampsData()
+    // - getDataFromFile(), getDataFromExport()
+    // - saveStampData(), createAlbum()
                 // Start new spinner for AlbumEasy output generation
                 let pb2 = ProgressBar::new_spinner();
                 pb2.set_style(ProgressStyle::default_spinner()
