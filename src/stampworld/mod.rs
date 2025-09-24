@@ -19,5 +19,7 @@ pub mod state;
 pub use data_collector::collect_stampworld_data;
 pub use state::*;
 
-// Album generation functions are now available from album_globals
-pub use crate::album_globals::{generate_album_output_from_stamps, write_globals, load_stamps_from_db};
+// Provide access to album generation helpers
+pub use crate::album_globals::generate_album_output;
+pub use crate::album_utils::load_stamps_from_db;
+pub use crate::album_globals::write_globals;

@@ -72,12 +72,7 @@ pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
         }
         Err(e) => {
             error!("HTTP request error: {}", e);
-            album_globals::ImageStatus {
-                link: _url.to_string(),
-                exists: false,
-                width: 0,
-                height: 0,
-            }
+            crate::types::ImageStatus { link: _url.to_string(), exists: false, width: 0, height: 0, filename: String::new() }
         }
     }
 }#[derive(Debug, Default)]
@@ -135,7 +130,7 @@ impl CommandsFileGenerator {
         }
     }
 
-    pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> album_globals::ImageStatus {        use std::path::Path;
+    pub fn get_stampworld_image(&self, url: &str, overwrite: bool) -> crate::types::ImageStatus {        use std::path::Path;
         // If the caller passed an id (not a full URL), build the canonical StampWorld CDN URL
         let remote_url = if url.starts_with("http://") || url.starts_with("https://") {
             url.to_string()
@@ -154,9 +149,9 @@ impl CommandsFileGenerator {
             }
         }
         let file_path = format!("{}/{}", self.images_directory, image_name);
-        if !overwrite && Path::new(&file_path).exists() {
-            debug!("Skipping download, file exists: {}", file_path);
-            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };        }
+            if !overwrite && Path::new(&file_path).exists() {
+                debug!("Skipping download, file exists: {}", file_path);
+                return crate::types::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };        }
         self.get_image(&remote_url, &image_name, &file_path)
     }
     
@@ -215,7 +210,10 @@ impl CommandsFileGenerator {
             let file_path = format!("{}/{}", images_directory, image_name);
             if !overwrite && std::path::Path::new(&file_path).exists() {
                 debug!("Skipping download, file exists: {}", file_path);
-                return album_globals::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0 };            }
+                return crate::types::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };
+            }
+            // Default: no-op status indicating not downloaded; caller may decide to fetch
+            crate::types::ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0, filename: image_name.to_string() }
         };
         crate::stampworld::collect_stampworld_data(
             &mut self.sequencer,
@@ -435,14 +433,29 @@ impl CommandsFileGenerator {
             }
         }
     }
-    pub fn get_image(&self, url: &str, name: &str, file_path: &str) -> album_globals::ImageStatus {
+
+    /// Backwards-compatible wrapper for older call sites that pass 3 args
+    pub fn save_stamp_data_default<P: AsRef<std::path::Path>>(&self, file_path: P, data: &[String], _source: &str) {
+        self.save_stamp_data(file_path, data, _source, false)
+    }
+
+    /// Return a catalog number for a record. Simple stub used by the commands generator.
+    pub fn get_catalog_num(&self, field: &str, _prefer_full: bool) -> String {
+        field.to_string()
+    }
+
+    /// Simple series-info extractor stub. Real implementation inspects neighboring lines.
+    pub fn get_series_info(&self, _data: &[String], _idx: usize, width: &str, height: &str) -> SeriesInfo {
+        SeriesInfo { count: 1, multi_perf: false, width: width.to_string(), height: height.to_string() }
+    }
+    pub fn get_image(&self, url: &str, name: &str, file_path: &str) -> crate::types::ImageStatus {
         use std::process::Command;
         use std::fs;
         use image::io::Reader as ImageReader;
         use std::path::Path;
         
         if name.is_empty() {
-            return album_globals::ImageStatus { link: String::new(), exists: false, width: 0, height: 0 };        }
+            return crate::types::ImageStatus { link: String::new(), exists: false, width: 0, height: 0, filename: String::new() };        }
         
         // If file already exists, compare content with remote and only replace if different
         if Path::new(file_path).exists() {
@@ -564,7 +577,7 @@ impl CommandsFileGenerator {
         if !exists && img_file.exists() {
             let _ = fs::remove_file(img_file);
         }
-    album_globals::ImageStatus { link: url.to_string(), exists, width, height }    }
+    crate::types::ImageStatus { link: url.to_string(), exists, width, height, filename: name.to_string() }    }
 
     /// Stub for is_valid_jpeg helper
     pub fn is_valid_jpeg(&self, _file_path: &str) -> bool {
@@ -675,7 +688,7 @@ impl CommandsFileGenerator {
         }
         // Save all data once at the end
         let file_path = format!("{}_data.txt", self.album_name);
-        self.save_stamp_data(&file_path, &all_stamp_data, "touchstamps");
+    self.save_stamp_data_default(&file_path, &all_stamp_data, "touchstamps");
         all_stamp_data
     }
     pub fn fix_color(&self, color: &str) -> String {
@@ -687,8 +700,8 @@ impl CommandsFileGenerator {
         std::thread::sleep(std::time::Duration::from_millis(millis));
     }
 
-    pub fn get_touchstamps_image(&self, image_url: &str, _image_id: &str) -> album_globals::ImageStatus {
+    pub fn get_touchstamps_image(&self, image_url: &str, _image_id: &str) -> crate::types::ImageStatus {
         // Stub: just return a default ImageStatus for now
-            ImageStatus { link: image_url.to_string(), exists: false, width: 0, height: 0, filename: String::new() }
+            crate::types::ImageStatus { link: image_url.to_string(), exists: false, width: 0, height: 0, filename: String::new() }
     }}
 

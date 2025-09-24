@@ -119,13 +119,19 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     let username = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string());
     let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "localhost".to_string());
 
-    // Get command line arguments
+    // Get command line arguments and present them as the full CLI used
     let args: Vec<String> = std::env::args().collect();
     let command_line = if args.len() > 1 {
         args[1..].join(" ")
     } else {
         "No arguments".to_string()
     };
+
+    // Load config so we can emit the values used for header formatting toggles
+    let cfg = crate::config::load_config("config.toml");
+    let cfg_print_flag_cover = cfg.print_flag_cover.unwrap_or(true);
+    let cfg_include_design = cfg.include_design.unwrap_or(true);
+    let cfg_include_engraving = cfg.include_engraving.unwrap_or(true);
 
     let lines: Vec<String> = vec![
         "################################################################################".to_string(),
@@ -136,7 +142,9 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         format!("# OS: {}", std::env::consts::OS),
         format!("# Architecture: {}", std::env::consts::ARCH),
         format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()),
-        format!("# Command Line: {}", command_line),
+    format!("# Command Line: {}", command_line),
+    // Emit key config toggle values used by the generator for transparency
+    format!("# Config: print_flag_cover={} include_design={} include_engraving={}", cfg_print_flag_cover, cfg_include_design, cfg_include_engraving),
         "".to_string(),
         "ALBUM_PAGES_SIZE  (216 270) #Set the page to US Letter (8.5 x 11)".to_string(),
         "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4".to_string(),
@@ -407,24 +415,32 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
         Ok(crate::db_utils::StampStub {
             year: row.get::<_, i32>(0).unwrap_or(0),
             month: row.get(1).unwrap_or(String::new()),
+            month_num: row.get::<_, i32>(7).unwrap_or(0),
             day: row.get(2).unwrap_or(String::new()),
             sg_number: row.get(3).unwrap_or(String::new()),
+            r#type: row.get(4).unwrap_or(String::new()),
             stamp_type: row.get(4).unwrap_or(String::new()),
             denomination: row.get(5).unwrap_or(String::new()),
             color: row.get(6).unwrap_or(String::new()),
-            multi_perf: false,
+            description: row.get(8).unwrap_or(String::new()),
             desc: row.get(8).unwrap_or(String::new()),  // description is at index 8
             catalog_num: row.get(3).unwrap_or(String::new()),  // Use sg_number for catalog_num
             stamps_issued: row.get(9).unwrap_or(String::new()),  // stamps_issued at index 9
+            mint_condition: String::new(),
+            unused: String::new(),
+            used: String::new(),
+            letter_fdc: String::new(),
+            currency: row.get(17).unwrap_or(String::new()),     // currency at index 17
             image_path: row.get(10).unwrap_or(String::new()),   // image_path at index 10
             remote_image_url: row.get(11).unwrap_or(String::new()), // remote_image_url at index 11
+            original_image_url: String::new(),
             watermark: row.get(12).unwrap_or(String::new()),    // watermark at index 12
             design: row.get(13).unwrap_or(String::new()),       // design at index 13
             engraving: row.get(14).unwrap_or(String::new()),    // engraving at index 14
             perforation: row.get(15).unwrap_or(String::new()),  // perforation at index 15
             series: row.get(16).unwrap_or(String::new()),       // series at index 16
-            currency: row.get(17).unwrap_or(String::new()),     // currency at index 17
             context: row.get(18).unwrap_or(String::new()),      // context at index 18
+            multi_perf: false,
         })
     }).expect("Failed to query stamps");
 

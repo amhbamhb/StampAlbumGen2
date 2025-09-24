@@ -1,7 +1,7 @@
 // StampWorld data collection module
 use log::{debug, error, info};
 use crate::types::ImageStatus;
-use crate::album_globals::clean_text;
+use crate::album_utils::clean_text;
 use crate::album_utils::sanitize_filename;
 use crate::file_utils::get_db_path_from_cli;
 use crate::placeholder_image;
@@ -60,7 +60,44 @@ pub fn collect_stampworld_data(
     let mut page_num = 1;
     const MAX_PAGES: i32 = 10; // Prevent infinite loop
     let mut previous_body = String::new();
-    let client = reqwest::blocking::Client::new();
+    // Create a client with browser-like headers to reduce the chance of being served
+    // an error/placeholder page by StampWorld when requests appear to come from a bot.
+    let mut default_headers = reqwest::header::HeaderMap::new();
+    default_headers.insert(
+        reqwest::header::USER_AGENT,
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36".parse().unwrap(),
+    );
+    default_headers.insert(
+        reqwest::header::ACCEPT_LANGUAGE,
+        "en-US,en;q=0.9".parse().unwrap(),
+    );
+    default_headers.insert(
+        reqwest::header::REFERER,
+        "https://www.google.com/".parse().unwrap(),
+    );
+    // Add a few more common headers to mimic a real browser
+    default_headers.insert(
+        reqwest::header::ACCEPT,
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8".parse().unwrap(),
+    );
+    // Intentionally do not set an explicit Accept-Encoding header here so
+    // reqwest can advertise the encodings it actually supports and will
+    // transparently decode responses (e.g., gzip/deflate). Setting an
+    // explicit header including 'br' can lead to servers returning brotli
+    // compressed bodies when reqwest doesn't support brotli, producing
+    // binary files on disk.
+    // 'Connection: keep-alive' header—reqwest may set it automatically, but include for completeness
+    default_headers.insert(
+        reqwest::header::HeaderName::from_static("connection"),
+        "keep-alive".parse().unwrap(),
+    );
+
+    // Build client with cookie store enabled and redirects allowed to follow server's redirects
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(default_headers)
+        .redirect(reqwest::redirect::Policy::limited(10))
+        .build()
+        .expect("Failed to build reqwest client");
 
     // Initialize SQLite database in the album directory for the country
     // Use the CLI-provided db_path for consistency
@@ -78,7 +115,31 @@ pub fn collect_stampworld_data(
             debug!("Reached maximum pages limit: {}", MAX_PAGES);
             break;
         }
-        let url = format!("{}{}", base_url, page_num);
+        // Normalize base_url and ensure the page query is formed as '/stamps/?page=N' when appropriate.
+        // Common incoming shapes: 'https://.../stamps/', 'https://.../stamps', or already containing '?page='
+        let url = if base_url.contains("?page=") || base_url.contains("&page=") {
+            // User already supplied a URL with paging; append page_num directly if there's a placeholder
+            if base_url.contains("{page}") {
+                base_url.replace("{page}", &page_num.to_string())
+            } else {
+                // If URL already has page=, assume caller wants explicit page parameter control; try to append if missing
+                format!("{}{}", base_url, page_num)
+            }
+        } else {
+            // Ensure there's a trailing slash before '?page=' for sites that expect '/stamps/?page='
+            if base_url.ends_with('/') {
+                format!("{}?page={}", base_url, page_num)
+            } else {
+                // If path ends without slash and looks like a directory (no query), add '/?page='
+                // But avoid duplicating when base_url already contains a query string
+                if base_url.contains('?') {
+                    format!("{}&page={}", base_url, page_num)
+                } else {
+                    // Prefer the canonical '/.../stamps/?page=N' that StampWorld redirects to
+                    format!("{}/?page={}", base_url, page_num)
+                }
+            }
+        };
         println!("[INFO] Scraping StampWorld page {}: {}", page_num, url);
         
         if let Some(cb) = page_callback {
@@ -96,6 +157,13 @@ pub fn collect_stampworld_data(
                 std::process::exit(1);
             }
         };
+        // Log Content-Encoding to help debug whether the server returned a
+        // compressed body that reqwest decoded or not.
+        let content_encoding = resp.headers().get(reqwest::header::CONTENT_ENCODING)
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("(none)");
+        debug!("Response Content-Encoding: {}", content_encoding);
+
         let body = match resp.text() {
             Ok(b) => b,
             Err(e) => {
@@ -119,13 +187,66 @@ pub fn collect_stampworld_data(
                 default_year = year_str.to_string();
             }
         }
-        let content_selector = scraper::Selector::parse("table.data_table").unwrap();
-        debug!("Content selector created successfully");
+        // Try a list of possible selectors to locate the content blocks. Sites change
+        // structure frequently, so prefer the first selector that returns results.
+        let possible_selectors = vec![
+            "div.catalogue-container",
+            "div.content_table",
+            "table.table.data_table",
+            "table.data_table",
+            "tr.stamp_tr",
+            "div.catalogue-list",
+            "div.catalogue",
+            ".catalogue-list",
+            ".stamp-list",
+            ".stampContainer",
+            "div.search_results",
+            "[class*='stamp']",
+            "[class*='catalogue']",
+            "[class*='listing']",
+        ];
+
+        let mut chosen_selector_str = "table.data_table";
+        for sel_str in &possible_selectors {
+            if let Ok(sel) = scraper::Selector::parse(sel_str) {
+                if document.select(&sel).count() > 0 {
+                    chosen_selector_str = sel_str;
+                    break;
+                }
+            }
+        }
+
+        let content_selector = scraper::Selector::parse(chosen_selector_str).unwrap();
+        info!("[stampworld] Using content selector: '{}'", chosen_selector_str);
         let content_count = document.select(&content_selector).count();
-        debug!("Found {} content blocks with selector 'table.data_table'", content_count);
-        
+        info!("[stampworld] Found {} content blocks with selector '{}'", content_count, chosen_selector_str);
         if content_count == 0 {
-            debug!("No tables with class 'data_table' found. Available tables:");
+            info!("[stampworld] No content blocks found with any of the tried selectors. Checking a short list of alternates at info level:");
+            let alternates = vec![
+                "div.catalogue-list",
+                ".stamp-list",
+                ".stampContainer",
+                "div.search_results",
+                "table.data_table",
+            ];
+            for alt in alternates.iter() {
+                if let Ok(sel2) = scraper::Selector::parse(alt) {
+                    let c2 = document.select(&sel2).count();
+                    info!("[stampworld] Alternate selector '{}' matched {} blocks", alt, c2);
+                }
+            }
+            // Save the raw HTML for debugging so we can inspect the DOM and tune selectors
+            let debug_path = format!("{}/stampworld_debug_{}_page_{}.html", std::env::current_dir().unwrap().display(), _site_name.replace(' ', "_").to_lowercase(), page_num);
+            // Quick substring counts for well-known markers so diagnostics are readable
+            let found_tr_stamp_tr = body.matches("tr class=\"stamp_tr").count();
+            let found_data_table = body.matches("data_table").count();
+            info!("[stampworld] Raw marker counts: tr.stamp_tr={}, occurrences of 'data_table'={}", found_tr_stamp_tr, found_data_table);
+            // Force-save the decoded text body (overwrite previous file) so it's readable for debugging
+            match std::fs::write(&debug_path, body.as_bytes()) {
+                Ok(_) => info!("[stampworld] Saved debug HTML (text) to: {}", debug_path),
+                Err(e) => error!("[stampworld] Failed to save debug HTML: {}", e),
+            }
+            debug!("No content blocks found with any of the tried selectors. Listing table classes for debugging:");
             let table_selector = scraper::Selector::parse("table").unwrap();
             let all_tables = document.select(&table_selector);
             for (i, table) in all_tables.enumerate() {
@@ -922,6 +1043,7 @@ pub fn collect_stampworld_data(
                     &proper_series,      // series (fixed)
                     stamp_year, // year as i32
                     &month,     // month
+                    &_month_number(&month), // month_num (derived)
                     &day,       // day
                     &sg_number,
                     &type_,
