@@ -36,6 +36,9 @@ pub struct Config {
     pub include_date: Option<bool>,
     // Allow overriding maximum rows per page when header is larger
     pub max_rows_per_page: Option<usize>,
+    // If false, the generator will skip emitting the large flag/title cover page
+    // Default: true (when None or not present)
+    pub print_flag_cover: Option<bool>,
 }
 
 impl Default for Config {
@@ -61,6 +64,7 @@ impl Default for Config {
             include_date: None,
             calibration_csv: None,
             max_rows_per_page: None,
+            print_flag_cover: None,
         }
     }
 }
