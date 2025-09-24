@@ -1,1441 +1,719 @@
-//! Album Globals Module
+// AlbumEasy output and layout logic
+use crate::config::load_config;
+use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
+use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
+use crate::types::{ImageStatus, OSType};
+use crate::album_utils::clean_text;
+use log::{debug, error, warn};
+use std::fs::File;
+use std::io::{BufWriter, Write};
+use std::path::Path;
 
-use std::collections::BTreeMap;
-use std::io::{self, Write};
-// test-only imports (moved into test module)
-use std::sync::Mutex;
-use lazy_static::lazy_static;
-
-// Global state for album generation
-lazy_static! {
-    pub static ref START_YEAR: Mutex<i32> = Mutex::new(0);
-    pub static ref END_YEAR: Mutex<i32> = Mutex::new(9999);
-    pub static ref ALBUM_FILE_NAME: Mutex<String> = Mutex::new(String::new());
-    pub static ref ALBUM_DB_PATH: Mutex<String> = Mutex::new(String::new());
+// Define or import Stamp and GenericAttrs
+#[derive(Debug, Clone, PartialEq)]
+pub struct GenericAttrs {
+    attrs: std::collections::HashMap<String, String>,
 }
-
-use crate::types::PageHeaderInfo;
-
-/// Page layout calculator for AlbumEasy format
-#[derive(Debug, Clone)]
-struct PageLayout {
-    page_width: f64,
-    page_height: f64,
-    margin_left: f64,
-    margin_right: f64,
-    margin_top: f64,
-    margin_bottom: f64,
-    border_top: f64,
-    border_bottom: f64,
-    border_left: f64,
-    border_right: f64,
-    title_height: f64,
-    footer_height: f64,
-    row_spacing: f64,
-    horizontal_spacing: f64,
-    stamp_width: f64,
-    stamp_height: f64,
-    stamp_box_adjust: f64,
-    max_stamps_per_row: usize,
-    max_rows_per_page: usize,
-}
-
-impl PageLayout {
-    fn new() -> Self {
-        // US Letter page size: 8.5" x 11" = 216mm x 279.4mm (but AlbumEasy uses 216 x 270)
+impl GenericAttrs {
+    pub fn new() -> Self {
         Self {
-            page_width: 216.0,
-            page_height: 270.0,
-            margin_left: 10.0,
-            margin_right: 10.0,
-            margin_top: 10.0,
-            margin_bottom: 10.0,
-            border_top: 0.5,
-            border_bottom: 3.0,
-            border_left: 0.5,
-            border_right: 0.1,
-            title_height: 25.0,  // Estimated space for title
-            footer_height: 15.0, // Estimated space for footer
-            row_spacing: 3.0,    // Vertical spacing between rows
-            horizontal_spacing: 3.0, // Horizontal spacing between stamps
-            stamp_width: 28.0,
-            stamp_height: 31.0,
-            stamp_box_adjust: 3.0, // matches STAMP_BOXES_SIZE_ADJUST (adds mm border)
-            max_stamps_per_row: 5,
-            max_rows_per_page: 4,
+            attrs: std::collections::HashMap::new(),
         }
     }
-
-
-    /// Construct a PageLayout using values from the provided Config (if any)
-    fn from_config(cfg: &crate::config::Config) -> Self {
-        let mut layout = PageLayout::new();
-
-        if let Some(w) = cfg.reference_width_mm {
-            layout.stamp_width = w as f64;
-        }
-        if let Some(h) = cfg.reference_height_mm {
-            layout.stamp_height = h as f64;
-        }
-        if let Some(sb) = cfg.stamp_box_height {
-            layout.stamp_height = sb as f64;
-        }
-        if let Some(adjust) = cfg.stamp_box_adjust {
-            layout.stamp_box_adjust = adjust as f64;
-        }
-        if let Some(rs) = cfg.row_font_spacing {
-            layout.row_spacing = rs as f64;
-        }
-
-        // Allow override of max rows per page when provided in config
-        if let Some(mrp) = cfg.max_rows_per_page {
-            layout.max_rows_per_page = mrp;
-        } else {
-            // If the user chooses to include additional header fields, reduce rows
-            let mut extra_lines = 0;
-            if cfg.include_design.unwrap_or(false) { extra_lines += 1; }
-            if cfg.include_engraving.unwrap_or(false) { extra_lines += 1; }
-            if cfg.include_watermark.unwrap_or(false) { extra_lines += 1; }
-            // For each extra header line, conservatively reduce rows per page by 1
-            layout.max_rows_per_page = std::cmp::max(1, layout.max_rows_per_page.saturating_sub(extra_lines));
-        }
-
-        layout
+// End of file: add missing closing brace for module
+    pub fn set(&mut self, key: &str, value: &str) {
+        self.attrs.insert(key.to_string(), value.to_string());
     }
-
-    /// Calculate available content width on a page (for stamps horizontally)
-    fn available_content_width(&self) -> f64 {
-        self.page_width - self.margin_left - self.margin_right - self.border_left - self.border_right
+    pub fn get(&self, key: &str) -> Option<&String> {
+        self.attrs.get(key)
     }
-
-    /// Calculate available content height on a page
-    fn available_content_height(&self) -> f64 {
-        self.page_height
-            - self.margin_top
-            - self.margin_bottom
-            - self.border_top
-            - self.border_bottom
-            - self.title_height
-            - self.footer_height
-    }
-
-    /// Calculate space required for a series header, honoring config toggles
-    fn calculate_header_space(&self, header_info: &PageHeaderInfo, cfg: &crate::config::Config) -> f64 {
-        let mut space = 0.0;
-
-        // Series name (TN 12, 2.0 spacing) - configurable
-        if cfg.include_series.unwrap_or(true) && !header_info.series.is_empty() {
-            space += 12.0 + 2.0;
-        }
-
-        // Date (TN 10, 3.0 spacing)
-        if cfg.include_date.unwrap_or(true) && header_info.year > 0 {
-            space += 10.0 + 3.0;
-        }
-
-        // Watermark (TN 8, 1.0 spacing)
-        if cfg.include_watermark.unwrap_or(true) && !header_info.watermark.is_empty() {
-            space += 8.0 + 1.0;
-        }
-
-        // Perforation (TN 8, 1.0 spacing)
-        if cfg.include_perforation.unwrap_or(true) && !header_info.perforation.is_empty() {
-            space += 8.0 + 1.0;
-        }
-
-        // Design (TN 8, 1.0 spacing)
-        if cfg.include_design.unwrap_or(false) && !header_info.design.is_empty() {
-            space += 8.0 + 1.0;
-        }
-
-        // Engraving (TN 8, 1.0 spacing)
-        if cfg.include_engraving.unwrap_or(false) && !header_info.engraving.is_empty() {
-            space += 8.0 + 1.0;
-        }
-
-        // Currency (TN 8, 1.5 spacing) - controlled by header_formatting.include_currency
-        let include_currency = cfg
-            .header_formatting
-            .as_ref()
-            .and_then(|hf| hf.include_currency)
-            .unwrap_or(true);
-        if include_currency && !header_info.currency.is_empty() {
-            space += 8.0 + 1.5;
-        }
-
-        // Country line (TN 8, 1.0 spacing) - optional, header_info may not include this
-        if cfg.include_country.unwrap_or(false) {
-            // If header_info has country in currency or context, conservatively add space
-            // (no dedicated country field is present in PageHeaderInfo currently)
-            space += 0.0; // placeholder; only count when a country field exists
-        }
-
-        space
-    }
-
-    /// Calculate space required for a stamp row
-    fn calculate_row_space(&self, _stamps_in_row: usize) -> f64 {
-        // Row header (TN 6, 0.1 spacing above, 5.0 below)
-        let row_header_space = 6.0 + 0.1 + 5.0;
-
-        // Stamp space (height + spacing) - using max stamps per row for estimation
-        let stamp_space = self.stamp_height + self.row_spacing;
-
-        row_header_space + stamp_space
-    }
-
-    /// Check if a series/year combination can fit on current page
-    fn can_fit_on_page(&self, header_info: &PageHeaderInfo, stamps: &[&crate::db_utils::StampStub],
-                      used_space: f64, cfg: &crate::config::Config) -> bool {
-        let header_space = self.calculate_header_space(header_info, cfg);
-        let available_space = self.available_content_height() - used_space;
-
-        // If header alone doesn't fit, need new page
-        if header_space >= available_space {
-            return false;
-        }
-
-        // Calculate rows needed for stamps
-        let mut remaining_stamps = stamps.len();
-        let mut rows_needed = 0;
-        let mut space_for_stamps = available_space - header_space;
-
-        while remaining_stamps > 0 && rows_needed < self.max_rows_per_page {
-            let stamps_in_this_row = std::cmp::min(self.max_stamps_per_row, remaining_stamps);
-            let row_space = self.calculate_row_space(stamps_in_this_row);
-
-            if row_space > space_for_stamps {
-                break; // This row won't fit
-            }
-
-            space_for_stamps -= row_space;
-            remaining_stamps -= stamps_in_this_row;
-            rows_needed += 1;
-        }
-
-          // If we couldn't fit all stamps, we need a new page
-          remaining_stamps == 0
-      }
 }
 
-// --- NEW: produce a sorted vector of (series, map) so iteration order is deterministic
-// Sort series by earliest year, then by lowest numeric SG within that earliest year
-fn parse_catalog_num(s: &str) -> i32 {
-    s.chars().filter(|c| c.is_digit(10)).collect::<String>().parse::<i32>().unwrap_or(99999)
+#[derive(Debug, Clone, PartialEq)]
+pub struct Stamp {
+    pub attrs: GenericAttrs,
+    pub image_path: String,
 }
-/// Generates AlbumEasy output from a filtered list of stamps and album name
-pub fn generate_album_output_from_stamps(
-    stamps: &[crate::db_utils::StampStub],
-    album_name: &str
-) -> Result<usize, Box<dyn std::error::Error>> {
-    use std::fs::File;
-    use std::path::Path;
 
-    // Get output path: prefer the global filename from `types::ALBUM_FILE_NAME` if set,
-    // then fall back to the local ALBUM_FILE_NAME, then to START/END year defaults.
-    let output_path = if !crate::types::ALBUM_FILE_NAME.lock().unwrap().is_empty() {
-        Path::new(&*crate::types::ALBUM_FILE_NAME.lock().unwrap()).to_path_buf()
-    } else if !ALBUM_FILE_NAME.lock().unwrap().is_empty() {
-        Path::new(&*ALBUM_FILE_NAME.lock().unwrap()).to_path_buf()
-    } else {
-        Path::new("Albums").join(album_name.replace(' ', "-")).join(
-            format!("{}-{}-{}.txt",
-                album_name.replace(' ', "-"),
-                *START_YEAR.lock().unwrap(),
-                *END_YEAR.lock().unwrap()
-            )
-        )
-    };
+// Top-level definitions for cross-module use
+pub const MONTH_NAMES: [&str; 13] = [
+    "?????", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"
+];
 
-    let mut output = std::io::BufWriter::new(File::create(&output_path)?);
+// Use shared ImageStatus and OSType from `types.rs`
 
-    // Load configuration (if present) and initialize page layout calculator
-    let cfg = crate::config::load_config("config.toml");
-    // Write global album settings (use loaded config to avoid repeated loads)
-    write_globals(&mut output, album_name, &cfg)?;
+pub fn write_globals<W: std::io::Write>(writer: &mut W, album_name: &str) {
+    // Use the canonical globals writer from `album_utils` so all callers get the
+    // same header block. The user-supplied album header is implemented there.
+    crate::album_utils::write_globals(writer, album_name);
+}
 
-    // Group stamps by series, then by year within series
-let mut by_series: BTreeMap<String, BTreeMap<i32, Vec<&crate::db_utils::StampStub>>> = BTreeMap::new();
+pub fn new_series<W: std::io::Write>(
+    writer: &mut W,
+    series_name: &str,
+    year: &str,
+    month: &str,
+    day: &str,
+    stamps_in_series: i32,
+    is_perforated: bool,
+    perforation: &str,
+    rows_written: &mut i32,
+    stamps_written: &mut i32,
+    used_width: &mut i32,
+    used_height: &mut i32,
+    max_row_height: &mut i32,
+) {
+    let _ = writeln!(writer, "SERIES {} {} {} {} {} {} {}", series_name, year, month, day, stamps_in_series, is_perforated, perforation);
+    new_page(writer, rows_written, stamps_written, used_width, used_height, max_row_height);
+}
 
-    for stamp in stamps {
-        let series_key = if stamp.series.is_empty() {
-            "Unknown Series".to_string()
-        } else {
-            // Clean the series name for consistent grouping
-            clean_and_format_series(&stamp.series)
+/// Writes a new page header and resets counters
+pub fn new_page<W: std::io::Write>(
+    writer: &mut W,
+    rows_written: &mut i32,
+    stamps_written: &mut i32,
+    used_width: &mut i32,
+    used_height: &mut i32,
+    max_row_height: &mut i32,
+) {
+    let _ = writeln!(
+        writer,
+        "################################################################################"
+    );
+    let _ = writeln!(writer, "PAGE_START");
+    *rows_written = 0;
+    *stamps_written = 0;
+    *used_width = 0;
+    *used_height = 14;
+    *max_row_height = 0;
+}
+
+/// Writes a new year header
+pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str) {
+    let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", year);
+}
+
+/// Writes a new row, handles page breaks, and updates counters
+pub fn new_row<W: std::io::Write>(
+    writer: &mut W,
+    year: &str,
+    rows_written: &mut i32,
+    stamps_written: &mut i32,
+    used_width: &mut i32,
+    used_height: &mut i32,
+    max_row_height: &mut i32,
+) {
+    *used_height += *max_row_height;
+    if *used_height + 43 > 245 {
+        new_page(
+            writer,
+            rows_written,
+            stamps_written,
+            used_width,
+            used_height,
+            max_row_height,
+        );
+        new_year(writer, year);
+    }
+    let _ = writeln!(writer, "ROW_START_FS (TN 6 0.1 5.0)");
+    *rows_written += 1;
+    *stamps_written = 0;
+    *used_width = 0;
+    *used_height += *max_row_height;
+    *max_row_height = 0;
+}
+
+/// Writes a stamp entry (stub implementation)
+pub fn add_stamp<W: std::io::Write>(
+    writer: &mut W,
+    year: &str,
+    field1: &str,
+    field2: &str,
+    field3: &str,
+    color: String,
+    multi_perf: bool,
+    desc: &str,
+    width: &str,
+    height: &str,
+    catalog_num: &str,
+    field4: &str,
+) {
+    let _ = writeln!(
+        writer,
+        "STAMP {} {} {} {} {} {} {} {} {} {} {}",
+        year, field1, field2, field3, color, multi_perf, desc, width, height, catalog_num, field4
+    );
+}
+
+// AlbumEasy Output Generation
+// ===================// This section contains the main entry point and helpers for generating AlbumEasy output.
+
+// Removed duplicate imports
+
+/// Main entry point for AlbumEasy output generation.
+/// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
+pub fn generate_album_output<F>(
+    db_path: &str,
+    album_name: &str,
+    mut page_callback: Option<F>,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+) -> ()
+where
+    F: FnMut(usize),
+{
+    {
+        // Accept optional year range
+        let (start_year, end_year) = {
+            // Use thread-local storage for now, will be passed from main
+            let mut start: Option<i32> = None;
+            let mut end: Option<i32> = None;
+            // If function signature is updated, use those values
+            // Otherwise, fallback to None
+            (start, end)
         };
-        by_series.entry(series_key)
-            .or_default()
-            .entry(stamp.year)
-            .or_default()
-            .push(stamp);
-    }
-
-
-    // Produce a sorted vector of (series, map) so iteration order is deterministic.
-    // Sort series by the smallest numeric SG found anywhere in the series (across all years).
-    // This ensures the series containing SG 1 (or the numerically smallest catalogue numbers)
-    // appears first while keeping the stamps within each series grouped intact.
-    let mut series_vec: Vec<(String, BTreeMap<i32, Vec<&crate::db_utils::StampStub>>)> = by_series.into_iter().collect();
-    use std::cmp::Ordering;
-    series_vec.sort_by(|(a_name, a_map), (b_name, b_map)| {
-        // Primary: earliest year in series
-        let a_min_year = a_map.keys().min().cloned().unwrap_or(9999);
-        let b_min_year = b_map.keys().min().cloned().unwrap_or(9999);
-        if a_min_year != b_min_year {
-            return a_min_year.cmp(&b_min_year);
-        }
-        // Secondary: minimum numeric SG across all years for each series
-        let a_min_sg = a_map.values()
-            .flat_map(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)))
-            .min()
-            .unwrap_or(99999);
-        let b_min_sg = b_map.values()
-            .flat_map(|v| v.iter().map(|s| parse_catalog_num(&s.catalog_num)))
-            .min()
-            .unwrap_or(99999);
-        let cmp = a_min_sg.cmp(&b_min_sg);
-        if cmp != Ordering::Equal {
-            return cmp;
-        }
-        // final tie-breaker: series name
-        a_name.cmp(b_name)
-    });
-
-    let layout = PageLayout::from_config(&cfg);
-
-    let mut page_num = 1;
-    let mut current_page_used_space = 0.0;
-    let mut rows_on_current_page = 0;
-
-    // Start first page: write a custom cover page with country title, flag placeholder and year range
-    write_page_header_consistent(&mut output, page_num)?;
-    // Write cover page content: large country title centered ~60mm down, flag placeholder image ~120x100mm, spacing, then year range
-    fn write_cover_page<W: std::io::Write>(out: &mut W, album_name: &str) -> Result<(), std::io::Error> {
-        // Country title (large)
-        // Move title down by printing an empty centred line as spacing - AlbumEasy doesn't have absolute vertical positioning,
-        // so we emulate vertical spacing by emitting blank PAGE_TEXT_CENTRE lines of smaller font to push content down.
-        // Approximate 60mm vertical offset by emitting a few spacer lines (tuned empirically).
-    // Title only
-    writeln!(out, "PAGE_TEXT_CENTRE (TN 48 \"{}\" 2.5)", album_name)?;
-
-    // Spacer ~20mm (approx)
-    writeln!(out, "PAGE_TEXT_CENTRE (TN 10 \"\" 1.0)")?;
-
-        // Emit flag placeholder as an image centered (if appropriate).
-        // AlbumEasy expects dimensions as: STAMP_ADD_IMG (width_mm height_mm "images/.." "" "" "")
-        writeln!(out, "ROW_START_ES (TN 6 0.1 5.0)")?;
-        // Tests that set ALBUM_FILE_NAME prefer not to have the large cover image emitted; skip if set.
-        if crate::types::ALBUM_FILE_NAME.lock().unwrap().is_empty() {
-            writeln!(out, "STAMP_ADD_IMG (140.0 100.0 \"images/flag_placeholder.png\" \"\" \"\" \"\" NO_FRAME)")?;
-        }
-
-    // Spacer between flag and years (~20mm)
-    writeln!(out, "PAGE_TEXT_CENTRE (TN 10 \"\" 1.0)")?;
-
-        // Year range text in about half the country title size
-    // Use module-local START_YEAR/END_YEAR so cover reflects same year-range used to name the output
-    let start_year = *START_YEAR.lock().unwrap();
-    let end_year = *END_YEAR.lock().unwrap();
-        writeln!(out, "PAGE_TEXT_CENTRE (TN 18 \"{} - {}\" 1.5)", start_year, end_year)?;
-
-        Ok(())
-    }
-    // Attempt to fetch and copy an actual country flag into the album images directory if enabled by config.
-    // Use the album name as the country key (caller can override by providing a more specific country later).
-    let album_images = std::path::Path::new("Albums").join(album_name.replace(' ', "-")).join("images");
-    let _ = std::fs::create_dir_all(&album_images);
-
-    let should_print_flag = cfg.print_flag_cover.unwrap_or(true);
-    if should_print_flag {
-        // First try to copy a real flag using the new flagdb module. If that fails, fall back to the
-        // generic album placeholder image created by ensure_placeholder_image_for_album.
-        match crate::flagdb::copy_flag_for_album(album_name, album_images.to_string_lossy().as_ref(), "w320") {
-            Ok(p) => {
-                println!("[INFO] Copied flag image for album '{}': {}", album_name, p);
+        // Load config values from config.toml
+        let config = load_config("config.toml");
+    let stamp_box_height = config.stamp_box_height.unwrap_or(24.0) as f64;
+    // extra space applied per-side around each stamp when emitted
+    let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(3.0) as f64;
+        let row_font_spacing = config.row_font_spacing.unwrap_or(5.0) as f64;
+        let header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
+        let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
+        let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
+        // Reference image path and measured size (dynamic by country)
+        let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
+        let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
+        // Use embedded reference ratio as a fallback (no external reference file required)
+        // If the configured reference size is implausibly small (e.g. 24mm), assume it's
+        // a misconfiguration and fall back to sensible defaults used by the project
+        // (200 x 240 mm). This prevents stamp sizes from being calculated as ~1-3mm.
+        let (cfg_ref_w, cfg_ref_h) = (reference_width_mm, reference_height_mm);
+        let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 50.0 || cfg_ref_h < 50.0 {
+            warn!("Configured reference size {:.1}x{:.1}mm looks too small, falling back to 200x240mm", cfg_ref_w, cfg_ref_h);
+            (200.0_f64, 240.0_f64)
+        } else {
+            (cfg_ref_w, cfg_ref_h)
+        };
+        let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel_embedded(
+            ref_w_mm as f32,
+            ref_h_mm as f32,
+        ) {
+            Some(ratio) => ratio,
+            None => {
+                warn!("Embedded reference image failed to load. Using default ratio (1.0, 1.0)");
+                (1.0, 1.0)
             }
-            Err(_) => {
-                // Fallback: create album placeholder and copy it to flag_placeholder.png
-                match crate::placeholder_image::ensure_placeholder_image_for_album(&album_name.replace(' ', "-")) {
-                    Ok(p) => {
-                        let src = Path::new("Albums").join(album_name.replace(' ', "-")).join(&p);
-                        let dest = album_images.join("flag_placeholder.png");
-                        if !dest.exists() {
-                            if let Ok(_) = std::fs::create_dir_all(&album_images) {
-                                let _ = std::fs::copy(&src, &dest);
-                            }
-                        }
-                    }
-                    Err(e) => {
-                        eprintln!("[WARN] ensure_placeholder_image_for_album failed: {}", e);
-                    }
-                }
-            }
+        };
+        use std::path::Path;
+        let conn = init_db(db_path).expect("Failed to open database");
+
+        // Canonical output filename: Albums/{Album-Name}/{Album-Name}.txt
+        let album_dir = std::path::PathBuf::from(format!("Albums/{}", album_name.replace(' ', "-")));
+        if let Err(e) = std::fs::create_dir_all(&album_dir) {
+            warn!("Failed to create album directory {}: {}", album_dir.display(), e);
         }
-    } else {
-        println!("[INFO] print_flag_cover disabled in config; skipping flag download and cover image for '{}'", album_name);
-    }
-    // Emit the cover page contents now
-    if let Err(e) = write_cover_page(&mut output, album_name) {
-        eprintln!("[WARN] write_cover_page failed: {}", e);
-    }
+        let output_path = album_dir.join(format!("{}.txt", album_name.replace(' ', "-")));
+        let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
 
-    for (series, series_years) in &series_vec {
-        println!("[INFO] Processing series '{}' with {} years", series, series_years.len());
+        // Write global album settings
+        write_globals(&mut output, album_name);
 
-        for (year, year_stamps) in series_years {
-            println!("[INFO] Processing year {} with {} stamps in series '{}'", year, year_stamps.len(), series);
+    // Emit a single leading page header for Page 1
+    let _ = writeln!(output, "### Page 1 ###");
+    let _ = writeln!(output, "PAGE_START");
+    let _ = writeln!(output, "################################################################################");
+        // Page size and margins (from AlbumEasy settings)
+        let page_height = 279.4; // US Letter height in mm
+        let top_margin = 10.0;
+        let bottom_margin = 10.0;
+        // Border settings (from config or hardcoded)
+        let border_outer = 0.5; // ALBUM_PAGES_BORDER outer line thickness
+        let border_inner1 = 0.1; // ALBUM_PAGES_BORDER inner1 line thickness
+        let border_inner2 = 0.0; // ALBUM_PAGES_BORDER inner2 line thickness
+        let border_spacing = 3.0; // ALBUM_PAGES_BORDER spacing between lines
+                                  // Total border thickness: outer + inner1 + inner2 + spacing
+        let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
+        let usable_height = (page_height - top_margin - bottom_margin - total_border) as f64;
+        debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
+        page_height, top_margin, bottom_margin, total_border, usable_height);
+        // Font and spacing from AlbumEasy settings
+    let _header_font_spacing = 3.0; // PAGE_TEXT_CENTRE (TN 10 ... 3.0)
+    let row_font_spacing = 5.0; // ROW_START_FS (TN 6 0.1 5.0)
+    let _stamp_box_height = 24.0; // Estimate: typical stamp box height
+    let _header_lines = 4; // Year, name, desc, perforation
+                              // let header_height = (header_lines as f64) * header_font_spacing;
+                              // let row_height = stamp_box_height + row_font_spacing;
 
-            // Ensure stamps in the year are sorted by numeric catalog_num (SG)
-            let mut sorted_year_stamps = year_stamps.clone();
-            sorted_year_stamps.sort_by_key(|s| parse_catalog_num(&s.catalog_num));
-
-            // Extract header information from stamps in this year
-            let header_info = extract_header_info(&sorted_year_stamps);
-
-            // Calculate space requirements
-            let header_space = layout.calculate_header_space(&header_info, &cfg);
-            // Compute per-stamp measured widths for this year to derive stamps-per-row
-            let available_w = layout.available_content_width();
-            let mut measured_widths: Vec<f64> = Vec::new();
-            // Try to find a representative real-image dimension for this series/year so placeholders can match real stamps
-            fn is_placeholder_path(p: &str) -> bool {
-                let lower = p.to_lowercase();
-                lower.contains("no_image") || lower.contains("placeholder")
+        let series_list = get_all_series(&conn).expect("Failed to get series");
+        // We've emitted page 1 above; start counter at 1
+        let mut page_counter = 1usize;
+        let mut current_height = 0.0f64;
+        let mut rows_on_page = 0;
+        // Treat series_list as Vec<String> (series names). We don't filter by year here.
+        let filtered_series: Vec<String> = series_list.iter().map(|s| s.clone()).collect();
+        let series_count = filtered_series.len();
+        for (series_idx, series) in filtered_series.iter().enumerate() {
+            if let Some(cb) = page_callback.as_mut() {
+                cb(page_counter);
             }
-
-            let mut rep_dims: Option<(f64, f64)> = None;
-            for stamp in sorted_year_stamps.iter() {
-                if !is_placeholder_path(&stamp.image_path) {
-                    if std::path::Path::new(&stamp.image_path).exists() || std::path::Path::new(&format!("Albums/{}/{}", album_name.replace(' ', "-"), stamp.image_path)).exists() {
-                        let (w, h) = crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg);
-                        if rep_dims.is_none() {
-                            rep_dims = Some((w, h));
-                        }
-                        // apply stamp_box_adjust as per-side padding (both left and right)
-                        measured_widths.push(w + 2.0 * layout.stamp_box_adjust);
-                        continue;
+            // Example: Load stamps as Vec<Stamp> with generic attributes
+            let stamps = get_stamps_by_series(&conn, &series, "0")
+                .expect("Failed to get stamps");
+            // Diagnostic: write a short comment indicating how many stamps we fetched for this series.
+            // Sanitize the series name to a single line (collapse newlines and extra spaces)
+            // so downstream tools (or grep) can reliably parse this diagnostic.
+            let safe_series = clean_text(series).replace('\n', " ").replace("  ", " ").replace('"', "'");
+            let _ = writeln!(output, "# SERIES_FETCH series=\"{}\" count=\"{}\"", safe_series, stamps.len());
+            let mut stamp_objs: Vec<Stamp> = Vec::new();
+            for stamp in stamps {
+                let mut attrs = GenericAttrs::new();
+                attrs.set("year", &stamp.year.to_string());
+                attrs.set("sg_number", &stamp.sg_number);
+                attrs.set("type", &stamp.r#type);
+                attrs.set("denomination", &stamp.denomination);
+                attrs.set("color", &stamp.color);
+                attrs.set("description", &stamp.description);
+                attrs.set("stamps_issued", &stamp.stamps_issued);
+                attrs.set("mint_condition", &stamp.mint_condition);
+                attrs.set("unused", &stamp.unused);
+                attrs.set("used", &stamp.used);
+                attrs.set("month", &stamp.month);
+                attrs.set("month_num", &stamp.month_num.to_string());
+                attrs.set("day", &stamp.day);
+                attrs.set("currency", &stamp.currency);
+                attrs.set("watermark", &stamp.watermark);
+                attrs.set("design", &stamp.design);
+                attrs.set("perforation", &stamp.perforation);
+                // Set image_path from StampStub
+                stamp_objs.push(Stamp {
+                    attrs,
+                    image_path: stamp.image_path.clone(),
+                });
+            }
+            // Group stamps into rows of 5
+            let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
+            let mut row: Vec<Stamp> = Vec::new();
+            // let mut row_width = 0.0;
+            for stamp in stamp_objs.into_iter() {
+                let image_path = stamp.image_path.trim();
+                let full_image_path =
+                    format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                // Estimate image physical size (mm) and scale to fit the configured stamp_box_height
+                let (est_width_mm, _) = if let Some((w_mm, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
+                    let mut w = w_mm as f64;
+                    let mut h = h_mm as f64;
+                    // If the measured height is larger than the configured stamp box height
+                    // shrink the image proportionally so it fits within stamp_box_height
+                    if h > stamp_box_height {
+                        let scale = stamp_box_height / h;
+                        w *= scale;
+                        h *= scale;
                     }
-                }
-                // Placeholder or missing file: use representative dims if available, otherwise use conservative default
-                let (w_mm, _h_mm) = if let Some((rw, rh)) = rep_dims {
-                    (rw, rh)
+                    (w, h)
                 } else {
-                    // default to 22mm x 25mm per user request
-                    (22.0_f64, 25.0_f64)
+                    (reference_width_mm as f64, reference_height_mm as f64)
                 };
-                measured_widths.push(w_mm + 2.0 * layout.stamp_box_adjust);
-            }
-            // If we have measurements, compute median to avoid outliers
-            let stamps_per_row_limit = if !measured_widths.is_empty() {
-                measured_widths.sort_by(|a, b| a.partial_cmp(b).unwrap());
-                let mid = measured_widths.len() / 2;
-                let median = if measured_widths.len() % 2 == 0 {
-                    (measured_widths[mid - 1] + measured_widths[mid]) / 2.0
-                } else {
-                    measured_widths[mid]
-                };
-                // Compute how many median-width boxes fit (include horizontal spacing)
-                let candidate = ((available_w + layout.horizontal_spacing) / (median + layout.horizontal_spacing)).floor() as usize;
-                let candidate = std::cmp::max(1, candidate);
-                // Per-series heuristic: large median widths should reduce stamps-per-row
-                let mut capped = candidate;
-                // Read configurable thresholds from cfg if present, otherwise use sensible defaults
-                let cap3_thresh = cfg.median_width_cap_3.map(|v| v as f64).unwrap_or(36.0);
-                let cap4_thresh = cfg.median_width_cap_4.map(|v| v as f64).unwrap_or(30.0);
-                if median >= cap3_thresh {
-                    capped = std::cmp::min(capped, 3);
-                } else if median >= cap4_thresh {
-                    capped = std::cmp::min(capped, 4);
-                }
-                std::cmp::min(layout.max_stamps_per_row, capped)
-            } else {
-                layout.max_stamps_per_row
-            };
-
-            // Check if we need a new page for this series/year
-            let can_fit = layout.can_fit_on_page(&header_info, year_stamps, current_page_used_space, &cfg);
-
-            if !can_fit || rows_on_current_page >= layout.max_rows_per_page {
-                // Start new page
-                page_num += 1;
-                current_page_used_space = 0.0;
-                rows_on_current_page = 0;
-                write_page_header_consistent(&mut output, page_num)?;
-                println!("[INFO] Started new page {} for series '{}'", page_num, series);
-            }
-
-            // Write the detailed header for this series/year
-            write_page_header(&mut output, &header_info, &cfg)?;
-            current_page_used_space += header_space;
-
-            // Process stamps in rows (dynamic packing based on measured widths)
-            let mut row_start_idx = 0;
-            while row_start_idx < year_stamps.len() {
-                // Build a row by packing as many stamps as fit horizontally
-                let mut used_width = 0.0_f64;
-                let mut stamps_in_row = 0_usize;
-                let available_w = layout.available_content_width();
-
-                for i in row_start_idx..year_stamps.len() {
-                    let stamp = &year_stamps[i];
-                    // Measure the stamp size using album_utils::calculate_stamp_dimensions
-                    // When emitting stamps, if the image is a placeholder try to reuse the representative dims
-                    let (w_mm, _h_mm) = if is_placeholder_path(&stamp.image_path) {
-                        // Find a representative real image in this year's stamps if possible
-                        let mut found: Option<(f64, f64)> = None;
-                        for s in sorted_year_stamps.iter() {
-                            if !is_placeholder_path(&s.image_path) {
-                                if std::path::Path::new(&s.image_path).exists() || std::path::Path::new(&format!("Albums/{}/{}", album_name.replace(' ', "-"), s.image_path)).exists() {
-                                    found = Some(crate::album_utils::calculate_stamp_dimensions(&s.image_path, album_name, &cfg));
-                                    break;
-                                }
-                            }
+                let margin = 2.0f64; // margin between stamps (mm)
+                let page_width = 216.0f64; // US Letter width in mm
+                let left_margin = 18.0f64;
+                let right_margin = 18.0f64;
+                let usable_width = page_width
+                    - left_margin
+                    - right_margin
+                    - (border_outer + border_inner1 + border_inner2 + border_spacing);
+                // Accumulate row width as stamps are added
+                let mut row_width: f64 = row
+                    .iter()
+                    .map(|s| {
+                        let img_path = s.image_path.trim();
+                        let full_img_path =
+                            format!("Albums/{}/{}", album_name.replace(' ', "-"), img_path);
+                        let (w_mm, h_mm) = estimate_real_dimensions(
+                            &full_img_path,
+                            mm_per_pixel_w,
+                            mm_per_pixel_h,
+                        )
+                        .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
+                        // scale to stamp_box_height if needed
+                        let mut w = w_mm as f64;
+                        let mut h = h_mm as f64;
+                        if h > stamp_box_height {
+                            let s = stamp_box_height / h;
+                            w *= s;
+                            h *= s;
                         }
-                        if let Some(d) = found { d } else { (22.0_f64, 25.0_f64) }
-                    } else {
-                        crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg)
-                    };
-                    // Include stamp_box_adjust which adds border to box size
-                    // treat stamp_box_adjust as per-side padding (left+right, top+bottom)
-                    let box_w = w_mm + 2.0 * layout.stamp_box_adjust;
-                    let stamp_total_w = if stamps_in_row > 0 { layout.horizontal_spacing } else { 0.0 } + box_w;
-
-                    if used_width + stamp_total_w > available_w || stamps_in_row >= stamps_per_row_limit {
-                        break;
+                        (w + 2.0 * stamp_box_adjust) + margin
+                    })
+                    .sum();
+                // If adding this stamp would exceed usable width or row has 5 stamps, start a new row before adding
+                if row.len() == 5 || row_width + est_width_mm + margin > usable_width {
+                    if !row.is_empty() {
+                        stamp_rows.push(row);
                     }
-
-                    used_width += stamp_total_w;
-                    stamps_in_row += 1;
+                    row = Vec::new();
+                    // row_width = 0.0;
                 }
+                row.push(stamp);
+            }
+            if !row.is_empty() {
+                stamp_rows.push(row);
+            }
 
-                if stamps_in_row == 0 {
-                    // Force at least one stamp to avoid infinite loop
-                    stamps_in_row = 1;
-                }
-
-                // Check vertical space for the row
-                let row_space = layout.calculate_row_space(stamps_in_row);
-                if current_page_used_space + row_space > layout.available_content_height() ||
-                   rows_on_current_page >= layout.max_rows_per_page {
-                    // Start new page
-                    page_num += 1;
-                    current_page_used_space = 0.0;
-                    rows_on_current_page = 0;
-                    write_page_header_consistent(&mut output, page_num)?;
-                    write_page_header(&mut output, &header_info, &cfg)?;
-                    current_page_used_space += header_space;
-                    println!("[INFO] Started new page {} for continuing series '{}'", page_num, series);
-                }
-
-                // Write the row
-                writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)")?;
-                current_page_used_space += row_space;
-                rows_on_current_page += 1;
-
-                // Emit stamps for this row with their measured dimensions
-                for i in 0..stamps_in_row {
-                    let stamp = &year_stamps[row_start_idx + i];
-                    // Ensure the image path emitted points to the album's images directory
-                    let image_name = if stamp.image_path.is_empty() {
-                        format!("{}.jpg", stamp.catalog_num)
-                    } else {
-                        // Use only the filename portion so AlbumEasy receives relative "images/<file>"
-                        match std::path::Path::new(&stamp.image_path).file_name() {
-                            Some(fname) => fname.to_string_lossy().into_owned(),
-                            None => stamp.image_path.trim_start_matches("images/").to_string(),
+            let mut header_written = false;
+            let mut row_idx = 0;
+            while row_idx < stamp_rows.len() {
+                let need_header = !header_written;
+                if need_header {
+                    // Collect all header lines to print
+                    let mut header_lines_vec = Vec::new();
+                    let name_line = clean_text(series.trim())
+                        .replace("\n", " ")
+                        .replace("  ", " ");
+                    if !name_line.is_empty() {
+                        header_lines_vec.push((
+                            format!("PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", name_line),
+                            1.0,
+                        ));
+                    }
+                    let perf_trimmed = String::new();
+                    if !perf_trimmed.is_empty() {
+                        header_lines_vec.push((
+                            format!(
+                                "PAGE_TEXT_CENTRE (TN 8 \"Perforation {}\" 1.0)",
+                                perf_trimmed
+                            ),
+                            1.0,
+                        ));
+                    }
+                    let first_stamp = stamp_rows.get(0).and_then(|row| row.get(0));
+                    if let Some(stamp) = first_stamp {
+                        let watermark = clean_text(
+                            stamp
+                                .attrs
+                                .get("watermark")
+                                .unwrap_or(&"".to_string())
+                                .trim(),
+                        )
+                        .replace("\n", " ")
+                        .replace("  ", " ");
+                        if !watermark.is_empty() {
+                            header_lines_vec.push((
+                                format!("PAGE_TEXT_CENTRE (TN 8 \"Watermark: {}\" 1.0)", watermark),
+                                1.0,
+                            ));
                         }
-                    };
-
-                    let (w_mm, h_mm) = if is_placeholder_path(&stamp.image_path) {
-                        // Prefer a previously-determined representative dims for this year
-                        // (rep_dims was computed earlier when building measured_widths).
-                        if let Some(d) = rep_dims {
-                            d
+                        let design_field = stamp
+                            .attrs
+                            .get("design")
+                            .unwrap_or(&"".to_string())
+                            .replace("\n", " ")
+                            .replace("  ", " ");
+                        let mut design = String::new();
+                        let mut engraving = String::new();
+                        let mut parts = design_field.split("Engraving:");
+                        design = parts
+                            .next()
+                            .unwrap_or("")
+                            .split("Perforation:")
+                            .next()
+                            .unwrap_or("")
+                            .trim()
+                            .to_string();
+                        if let Some(engraving_part) = parts.next() {
+                            engraving = engraving_part
+                                .split("Perforation:")
+                                .next()
+                                .unwrap_or("")
+                                .trim()
+                                .to_string();
+                        }
+                        design = clean_text(&design);
+                        engraving = clean_text(&engraving);
+                        if !engraving.is_empty() {
+                            header_lines_vec.push((
+                                format!("PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" 1.0)", engraving),
+                                1.0,
+                            ));
+                        }
+                        if !design.is_empty() {
+                            header_lines_vec.push((
+                                format!("PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" 1.0)", design),
+                                1.0,
+                            ));
+                        }
+                    }
+                    let header_block_height: f64 = header_lines_vec.iter().map(|(_, h)| *h).sum();
+                    let vspace_before_header = 8.0;
+                    let vspace_after_header = 12.5;
+                    // Calculate height of first row
+                    let stamps_in_row = &stamp_rows[row_idx];
+                    let mut max_row_height = 0.0f64;
+                    let font_height = 3.0f64;
+                    let image_spacing = 2.0f64;
+                    for stamp in stamps_in_row {
+                        let image_path = stamp.image_path.trim();
+                        let full_image_path =
+                            format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                        let est_height_mm = if let Some((_, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
+                            let mut h = h_mm as f64;
+                            if h > stamp_box_height {
+                                h = stamp_box_height;
+                            }
+                            h
                         } else {
-                            // Try to find a real stamp in this year (again) as a fallback
-                            let mut found: Option<(f64, f64)> = None;
-                            for s in sorted_year_stamps.iter() {
-                                if !is_placeholder_path(&s.image_path) {
-                                    if std::path::Path::new(&s.image_path).exists() || std::path::Path::new(&format!("Albums/{}/{}", album_name.replace(' ', "-"), s.image_path)).exists() {
-                                        found = Some(crate::album_utils::calculate_stamp_dimensions(&s.image_path, album_name, &cfg));
-                                        break;
-                                    }
-                                }
-                            }
-                            if let Some(d) = found { d } else { (22.0_f64, 25.0_f64) }
+                            reference_height_mm as f64
+                        };
+                        let below_stamp_1 = format!(
+                            "SG {}",
+                            clean_text(stamp.attrs.get("catalog_num").unwrap_or(&"".to_string()))
+                        );
+                        let below_stamp_2 =
+                            clean_text(stamp.attrs.get("field1").unwrap_or(&"".to_string()));
+                        let below_stamp_3 =
+                            clean_text(stamp.attrs.get("field2").unwrap_or(&"".to_string()));
+                        let text_lines = below_stamp_1.matches('\n').count()
+                            + 1
+                            + below_stamp_2.matches('\n').count()
+                            + 1
+                            + below_stamp_3.matches('\n').count()
+                            + 1;
+                        let total_height =
+                            est_height_mm + image_spacing + (text_lines as f64) * font_height;
+                        if total_height > max_row_height {
+                            max_row_height = total_height;
                         }
-                    } else {
-                        crate::album_utils::calculate_stamp_dimensions(&stamp.image_path, album_name, &cfg)
-                    };
-                    // STAMP_ADD_IMG expects (width height "path" "..." "..." "") - include box adjust
-                    // Emit raw measured stamp sizes. AlbumEasy uses the global
-                    // STAMP_BOXES_SIZE_ADJUST to draw the visible border; avoid
-                    // adding the adjust twice (previously we added 2*adjust here
-                    // and also wrote a global STAMP_BOXES_SIZE_ADJUST). Emit the
-                    // actual stamp dimensions and let AlbumEasy apply the border.
-                    let out_w = w_mm;
-                    let out_h = h_mm;
-                    // Emit image path relative to the album file so AlbumEasy can locate it
-                    write!(output, "STAMP_ADD_IMG ({:.1} {:.1} \"images/{}\" \"\" \"\" \"\")\n", out_w, out_h, image_name)?;
-                    if cfg.include_catalog_numbers.unwrap_or(true) {
-                        write!(output, "STAMP_HEADING (TN 8 \"SG : {}\" 1.0)\n", stamp.catalog_num)?;
+                    }
+                    let total_header_and_row_height = vspace_before_header
+                        + header_block_height
+                        + vspace_after_header
+                        + max_row_height
+                        + row_font_spacing as f64;
+                    let conservative_buffer = 2.0; // mm buffer to avoid edge cases
+                    let conservative_needed = total_header_and_row_height + conservative_buffer;
+                    debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
+                    header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
+                    // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
+                    let force_new_page = current_height + conservative_needed > usable_height;
+                    // Diagnostic: write page-fit numbers to the output so we can inspect why
+                    // a forced page break may be happening repeatedly and preventing stamps
+                    // from being emitted.
+                    // Sanitize series to a single line and escape quotes for diagnostics
+                    let safe_series = clean_text(series)
+                        .replace('\n', " ")
+                        .split_whitespace()
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                        .replace('"', "'");
+                    let will_fit = (current_height + conservative_needed <= usable_height);
+                    let _ = writeln!(output, "# PAGE_FIT series=\"{}\" need=\"{:.2}\" current=\"{:.2}\" usable=\"{:.2}\" will_fit=\"{}\"",
+                        safe_series, conservative_needed, current_height, usable_height, will_fit);
+                    // Note: peek-ahead optimization for combining single-row series
+                    // was removed because it introduced complex control flow and
+                    // syntax issues during the merge. We keep the simpler
+                    // conservative page-fit check instead.
+                    if force_new_page {
+                        // start a new page: increment counter and emit header
+                        page_counter += 1;
+                        if page_counter > 1 {
+                            let _ = writeln!(output, "\n################################################################################");
+                        }
+                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "PAGE_START\n################################################################################");
+                        current_height = 0.0;
+                        rows_on_page = 0;
+                        header_written = false;
+                        debug!("Forced page break before header and first row");
+                    }
+                    // Output header and first row together
+                    let _ = writeln!(output, "PAGE_VSPACE (8)");
+                    current_height += vspace_before_header;
+                    for (line, h) in header_lines_vec {
+                        let _ = writeln!(output, "{}", line);
+                        current_height += h;
+                    }
+                    let _ = writeln!(output, "PAGE_VSPACE (12.5)");
+                    current_height += vspace_after_header;
+                    header_written = true;
+                }
+                // Calculate row height: image height + spacing + text below stamp
+                let stamps_in_row = &stamp_rows[row_idx];
+                let mut max_row_height = 0.0f64;
+                let font_height = 3.0f64; // TN 10 font spacing (mm)
+                let image_spacing = 2.0f64; // space below image (mm)
+                for stamp in stamps_in_row {
+                    let image_path = stamp.image_path.trim();
+                    let full_image_path =
+                        format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                        let est_height_mm = if !image_path.is_empty() {
+                            if let Some((_, h_mm)) = estimate_real_dimensions(
+                                &full_image_path,
+                                mm_per_pixel_w,
+                                mm_per_pixel_h,
+                            ) {
+                                let mut h = h_mm as f64;
+                                if h > stamp_box_height {
+                                    h = stamp_box_height;
+                                }
+                                h
+                            } else {
+                                // fallback height for missing image file
+                                stamp_box_height
+                            }
+                        } else {
+                            // default for missing image path (mm)
+                            stamp_box_height / 2.0
+                        };
+                    // Compose all text below stamp
+                    let text_below = [
+                        stamp
+                            .attrs
+                            .get("catalog_num")
+                            .unwrap_or(&String::new())
+                            .clone(),
+                        stamp.attrs.get("field1").unwrap_or(&String::new()).clone(),
+                        stamp.attrs.get("field2").unwrap_or(&String::new()).clone(),
+                    ]
+                    .join("\n");
+                    let text_lines = text_below.lines().count();
+                    let text_height = (text_lines as f64) * font_height;
+                    let total_height = est_height_mm + image_spacing + text_height;
+                    debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
+                    image_path, est_height_mm, text_lines, text_height, total_height);
+                    if total_height > max_row_height {
+                        max_row_height = total_height;
                     }
                 }
-
-                row_start_idx += stamps_in_row;
-            }
-        }
-    }
-
-    println!("[INFO] AlbumEasy output complete. Output file: {:?}", output_path);
-    // Return the number of pages generated
-    Ok(page_num)
-}
-
-/// Extract header information from stamps
-pub fn extract_header_info(stamps: &[&crate::db_utils::StampStub]) -> PageHeaderInfo {
-    let mut info = PageHeaderInfo::default();
-
-    // Determine year (use the minimum/representative year among the stamps)
-    if !stamps.is_empty() {
-        info.year = stamps.iter().map(|s| s.year).min().unwrap_or(0);
-        // Prefer the first non-empty month/day across stamps
-        for stamp in stamps {
-            if info.month.is_empty() && !stamp.month.is_empty() {
-                info.month = stamp.month.clone();
-            }
-            if info.day.is_empty() && !stamp.day.is_empty() {
-                info.day = stamp.day.clone();
-            }
-            if info.series.is_empty() && !stamp.series.is_empty() {
-                info.series = clean_and_format_series(&stamp.series);
-            }
-            if !info.month.is_empty() && !info.day.is_empty() && !info.series.is_empty() {
-                break;
-            }
-        }
-    }
-
-    // Extract unique values from all stamps for watermark, perforation, design, engraving
-    use std::collections::HashSet;
-    let mut watermarks: HashSet<String> = HashSet::new();
-    let mut perforations: HashSet<String> = HashSet::new();
-    let mut designs: HashSet<String> = HashSet::new();
-    let mut engravings: HashSet<String> = HashSet::new();
-
-    for stamp in stamps {
-        if !stamp.watermark.is_empty() {
-            watermarks.insert(stamp.watermark.clone());
-        }
-        if !stamp.perforation.is_empty() {
-            perforations.insert(stamp.perforation.clone());
-        }
-        if !stamp.design.is_empty() {
-            designs.insert(stamp.design.clone());
-        }
-        if !stamp.engraving.is_empty() {
-            engravings.insert(stamp.engraving.clone());
-        }
-    }
-
-    info.watermark = watermarks.into_iter().collect::<Vec<_>>().join(", ");
-    info.perforation = perforations.into_iter().collect::<Vec<_>>().join(", ");
-    info.design = designs.into_iter().collect::<Vec<_>>().join(", ");
-    info.engraving = engravings.into_iter().collect::<Vec<_>>().join(", ");
-
-    info
-}
-
-/// Clean and format series text
-pub fn clean_and_format_series(series: &str) -> String {
-    let mut cleaned = series
-        .replace('"', "'")
-        .replace('\n', " ")
-        .replace('\r', " ")
-        .replace('\t', " ");
-
-    // Remove type information
-    if let Some(type_pos) = cleaned.find(", type") {
-        cleaned = cleaned[..type_pos].to_string();
-    }
-
-    // Remove brackets
-    if cleaned.starts_with('[') && cleaned.ends_with(']') {
-        cleaned = cleaned[1..cleaned.len()-1].to_string();
-    }
-
-    // Remove common stamp-specific suffixes
-    let suffixes_to_remove = ["type P", "type S", "type L"];
-    for suffix in &suffixes_to_remove {
-        if cleaned.ends_with(suffix) {
-            cleaned = cleaned[..cleaned.len() - suffix.len()].trim().to_string();
-            break;
-        }
-    }
-
-    // Clean up extra whitespace
-    cleaned.split_whitespace().collect::<Vec<&str>>().join(" ")
-}
-
-/// Write global album settings
-pub fn write_globals<W: Write>(output: &mut W, album_name: &str, cfg: &crate::config::Config) -> Result<(), io::Error> {
-    writeln!(output, "################################################################################")?;
-    writeln!(output, "# {}", album_name)?;
-    writeln!(output, "################################################################################")?;
-    writeln!(output, "# Generated: {}", chrono::Utc::now().format("%Y-%m-%d %H:%M:%S"))?;
-    writeln!(output, "# User: {}@{}", whoami::username(), whoami::fallible::hostname().unwrap_or_else(|_| "unknown".to_string()))?;
-    writeln!(output, "# OS: {}", std::env::consts::OS)?;
-    writeln!(output, "# Architecture: {}", std::env::consts::ARCH)?;
-    writeln!(output, "# Working Directory: {}", std::env::current_dir()?.display())?;
-    writeln!(output)?;
-
-    writeln!(output, "ALBUM_PAGES_SIZE  (216 270) #Set the page to US Letter (8.5 x 11)")?;
-    writeln!(output, "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4")?;
-    writeln!(output)?;
-    writeln!(output, "ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0 )")?;
-    writeln!(output)?;
-    writeln!(output, "ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border")?;
-    writeln!(output, "#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border")?;
-    writeln!(output)?;
-    writeln!(output, "ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name)?;
-    writeln!(output)?;
-    writeln!(output, "ALBUM_PAGES_SPACING (3.0 10.0)")?;
-    writeln!(output)?;
-    writeln!(output, "ALBUM_STAMP_IMG_ASPECT_RATIO (true) ")?;
-    writeln!(output)?;
-    writeln!(output, "#ALBUM_PAGES_NUMBER (TN 10 R)")?;
-    writeln!(output, "ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")")?;
-    writeln!(output)?;
-    writeln!(output, "ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)")?;
-    writeln!(output)?;
-    writeln!(output, "ROW_ALIGN_MIDDLE")?;
-    writeln!(output)?;
-    writeln!(output, "# The stamp boxes in this album are sized approximately")?;
-    writeln!(output, "# 4mm larger than the actual stamps giving a 2mm border")?;
-    writeln!(output, "# To have the boxes drawn the actual stamp size use")?;
-    writeln!(output, "#STAMP_BOXES_SIZE_ADJUST(-4.0)")?;
-    writeln!(output, "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)")?;
-    // Use stamp_box_adjust from provided config so emitted global matches
-    // what the generator expects. Default to 3.0 mm for backward compatibility.
-    let sb = cfg.stamp_box_adjust.unwrap_or(3.0_f32);
-    writeln!(output, "STAMP_BOXES_SIZE_ADJUST ({:.1})", sb)?;
-    writeln!(output, "################################################################################")?;
-    writeln!(output)?;
-
-    Ok(())
-}
-
-/// Write page header
-pub fn write_page_header<W: Write>(output: &mut W, header_info: &PageHeaderInfo, cfg: &crate::config::Config) -> Result<(), io::Error> {
-    // Write series information (configurable)
-    if cfg.include_series.unwrap_or(true) && !header_info.series.is_empty() {
-        let series_clean = clean_and_format_series(&header_info.series);
-        writeln!(output, "PAGE_TEXT_CENTRE (TN 12 \"{}\" 2.0)", series_clean)?;
-    }
-
-    // Build date string. Prefer user-configured format if present.
-    let date_format = cfg
-        .header_formatting
-        .as_ref()
-        .and_then(|hf| hf.date_format.as_ref())
-        .map(|s| s.as_str())
-        .unwrap_or("dashes");
-
-    let mut date_parts = vec![];
-    if header_info.year > 0 {
-        if !header_info.month.is_empty() && !header_info.day.is_empty() {
-            if date_format == "commas" {
-                // e.g. "November 15, 1897"
-                date_parts.push(format!("{} {}, {}", header_info.month, header_info.day, header_info.year));
-            } else {
-                // default: dashes: "November - 15 - 1897"
-                date_parts.push(format!("{} - {} - {}", header_info.month, header_info.day, header_info.year));
-            }
-        } else if !header_info.month.is_empty() {
-            if date_format == "commas" {
-                // e.g. "November 1897"
-                date_parts.push(format!("{} {}", header_info.month, header_info.year));
-            } else {
-                date_parts.push(format!("{} - {}", header_info.month, header_info.year));
-            }
-        } else {
-            date_parts.push(header_info.year.to_string());
-        }
-    }
-
-    let date_str = date_parts.join(" - ");
-    let date_clean = date_str.replace('"', "'");
-    if cfg.include_date.unwrap_or(true) {
-        writeln!(output, "PAGE_TEXT_CENTRE (TN 10 \"{}\" 3.0)", date_clean)?;
-    }
-
-    // Write watermark and perforation
-    if cfg.include_watermark.unwrap_or(true) && !header_info.watermark.is_empty() {
-        let watermark_clean = header_info.watermark.replace('"', "'");
-        // Respect label_style if provided (abbreviated vs full)
-        let wm_label = cfg
-            .header_formatting
-            .as_ref()
-            .and_then(|hf| hf.label_style.as_ref())
-            .map(|s| s.as_str())
-            .unwrap_or("abbreviated");
-        if wm_label == "full" {
-            writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Watermark: {}\" 1.0)", watermark_clean)?;
-        } else {
-            writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"WM: {}\" 1.0)", watermark_clean)?;
-        }
-    }
-
-    // Perforation is optional and controlled by config.include_perforation
-    if cfg.include_perforation.unwrap_or(true) && !header_info.perforation.is_empty() {
-        let perforation_clean = header_info.perforation.replace('"', "'");
-        // Respect label_style for perforation label
-        let perf_label = cfg
-            .header_formatting
-            .as_ref()
-            .and_then(|hf| hf.label_style.as_ref())
-            .map(|s| s.as_str())
-            .unwrap_or("abbreviated");
-        if perf_label == "full" {
-            writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Perforation: {}\" 1.0)", perforation_clean)?;
-        } else {
-            writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Perf.: {}\" 1.0)", perforation_clean)?;
-        }
-    }
-
-    if cfg.include_design.unwrap_or(false) && !header_info.design.is_empty() {
-        let design_clean = header_info.design.replace('"', "'");
-        writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" 1.0)", design_clean)?;
-    }
-
-    if cfg.include_engraving.unwrap_or(false) && !header_info.engraving.is_empty() {
-        let engraving_clean = header_info.engraving.replace('"', "'");
-        writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" 1.0)", engraving_clean)?;
-    }
-
-    let currency_clean = header_info.currency.replace('"', "'");
-    // Allow toggling inclusion of the currency field via header_formatting.include_currency
-    let include_currency = cfg
-        .header_formatting
-        .as_ref()
-        .and_then(|hf| hf.include_currency)
-        .unwrap_or(true);
-    if include_currency {
-        writeln!(output, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.5)", currency_clean)?;
-    }
-
-    Ok(())
-}
-
-/// Write consistent page header
-pub fn write_page_header_consistent<W: Write>(output: &mut W, page_num: usize) -> Result<(), io::Error> {
-    writeln!(output, "################################################################################")?;
-    writeln!(output, "# Page {}", page_num)?;
-    writeln!(output, "################################################################################")?;
-    writeln!(output, "PAGE_START")?;
-    Ok(())
-}
-
-/// Create new page
-pub fn new_page_main<W: Write>(output: &mut W, page_num: &mut usize, rows_on_page: &mut usize) -> Result<(), io::Error> {
-    *page_num += 1;
-    *rows_on_page = 0;
-    write_page_header_consistent(output, *page_num)?;
-    Ok(())
-}
-
-/// Sanitize filename for filesystem safety
-pub fn sanitize_filename(filename: &str) -> String {
-    filename
-        .chars()
-        .map(|c| match c {
-            '/' | '\\' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => '_',
-            c if c.is_control() => '_',
-            c => c,
-        })
-        .collect()
-}
-
-/// Clean text for processing
-pub fn clean_text(text: &str) -> String {
-    text
-        .replace('"', "'")
-        .replace('\n', " ")
-        .replace('\r', " ")
-        .replace('\t', " ")
-        .split_whitespace()
-        .collect::<Vec<&str>>()
-        .join(" ")
-}
-
-/// Load stamps from database
-pub fn load_stamps_from_db(_db_path: &str, _album_name: &str) -> Result<Vec<crate::db_utils::StampStub>, Box<dyn std::error::Error>> {
-    use rusqlite::Connection;
-
-    let conn = Connection::open(_db_path)?;
-    let mut stmt = conn.prepare(
-        "SELECT year, month, day, sg_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context
-         FROM stamps
-         ORDER BY year, sg_number"
-    )?;
-
-    let stamp_iter = stmt.query_map([], |row| {
-        Ok(crate::db_utils::StampStub {
-            year: row.get(0)?,
-            month: row.get(1)?,
-            day: row.get(2)?,
-            sg_number: row.get(3)?,
-            stamp_type: row.get(4)?,
-            denomination: row.get(5)?,
-            color: row.get(6)?,
-            multi_perf: false,
-            desc: row.get(8)?,
-            catalog_num: row.get(3)?,  // Use sg_number for catalog_num
-            stamps_issued: row.get(9)?,
-            image_path: row.get(10)?,
-            remote_image_url: row.get(11)?,
-            watermark: row.get(12)?,
-            design: row.get(13)?,
-            engraving: row.get(14)?,
-            perforation: row.get(15)?,
-            series: row.get(16)?,
-            currency: row.get(17)?,
-            context: row.get(18)?,
-        })
-    })?;
-
-    let mut stamps = Vec::new();
-    for stamp in stamp_iter {
-        stamps.push(stamp?);
-    }
-
-    Ok(stamps)
-}
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::{Config, HeaderFormatting};
-    use crate::types::PageHeaderInfo;
-    use std::fs;
-    use std::io::Read;
-
-    // Helper to build a Config with the provided toggles and label style
-    fn make_config(
-        include_design: bool,
-        include_engraving: bool,
-        include_watermark: bool,
-        include_perforation: bool,
-        include_catalog_numbers: bool,
-        include_series: bool,
-        include_country: bool,
-        include_date: bool,
-        label_style: &str,
-        include_currency: bool,
-    ) -> Config {
-        let mut cfg = Config::default();
-        cfg.include_design = Some(include_design);
-        cfg.include_engraving = Some(include_engraving);
-        cfg.include_watermark = Some(include_watermark);
-        cfg.include_perforation = Some(include_perforation);
-        cfg.include_catalog_numbers = Some(include_catalog_numbers);
-        cfg.include_series = Some(include_series);
-        cfg.include_country = Some(include_country);
-        cfg.include_date = Some(include_date);
-        cfg.header_formatting = Some(HeaderFormatting {
-            date_format: None,
-            label_style: Some(label_style.to_string()),
-            series_style: None,
-            include_currency: Some(include_currency),
-            header_spacing: None,
-        });
-        cfg
-    }
-
-    #[test]
-    fn test_header_toggles_exhaustive() {
-        // Create a PageHeaderInfo with all fields non-empty so we can test toggles
-        let mut header = PageHeaderInfo::default();
-        header.year = 1897;
-        header.month = "November".to_string();
-        header.day = "15".to_string();
-        header.series = "1897 -1898 Queen Victoria - Maple Leaf in Corners".to_string();
-        header.perforation = "12".to_string();
-        header.design = "Maple Leaf".to_string();
-        header.engraving = "Line Engraving".to_string();
-        header.watermark = "None".to_string();
-        header.currency = "Canada".to_string();
-
-        // iterate all boolean combinations for the 8 toggles (256 combinations)
-        for bits in 0u16..(1u16 << 8) {
-            let include_design = (bits & (1 << 0)) != 0;
-            let include_engraving = (bits & (1 << 1)) != 0;
-            let include_watermark = (bits & (1 << 2)) != 0;
-            let include_perforation = (bits & (1 << 3)) != 0;
-            let include_catalog_numbers = (bits & (1 << 4)) != 0;
-            let include_series = (bits & (1 << 5)) != 0;
-            let include_country = (bits & (1 << 6)) != 0;
-            let include_date = (bits & (1 << 7)) != 0;
-
-            for &label_style in &["abbreviated", "full"] {
-                // include_currency true/false (2x)
-                for &include_currency in &[true, false] {
-                    let cfg = make_config(
-                        include_design,
-                        include_engraving,
-                        include_watermark,
-                        include_perforation,
-                        include_catalog_numbers,
-                        include_series,
-                        include_country,
-                        include_date,
-                        label_style,
-                        include_currency,
+                let total_row_height = max_row_height + row_font_spacing as f64;
+                // Check if this row fits before adding, and if max rows per page reached
+                if current_height + total_row_height > usable_height || rows_on_page >= 4 {
+                    // If the row (including header) is larger than a single page's usable
+                    // height, we must still emit it once rather than endlessly starting
+                    // new pages. In that case, if we're mid-page start a new page and
+                    // fall through to emit the row; otherwise (we're already at a fresh
+                    // page) allow emission even though it will overflow the page.
+                    if total_row_height > usable_height {
+                        // Force a new page if we already have rows on this page,
+                        // otherwise proceed to emit the (oversized) row on the
+                        // current fresh page so we don't loop forever.
+                        if rows_on_page != 0 {
+                            page_counter += 1;
+                            let _ = writeln!(output, "\n################################################################################");
+                            let _ = writeln!(output, "### Page {} ###", page_counter);
+                            let _ = writeln!(output, "PAGE_START\n################################################################################");
+                            current_height = 0.0;
+                            header_written = false;
+                            rows_on_page = 0;
+                        }
+                        // Don't continue; fall through to emit the row even if it
+                        // doesn't fully fit in the usable height. This avoids an
+                        // infinite loop of empty page headers.
+                    } else {
+                        // Start new page and repeat header then re-check on next loop
+                        page_counter += 1;
+                        let _ = writeln!(output, "\n################################################################################");
+                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "PAGE_START\n################################################################################");
+                        current_height = 0.0;
+                        header_written = false;
+                        rows_on_page = 0;
+                        continue; // re-check header on next loop
+                    }
+                }
+                let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                for stamp in stamps_in_row {
+                    // Use correct fields from StampStub
+                    // Use image_path from the database directly
+                    let image_path = stamp.image_path.trim();
+                    let full_image_path =
+                        format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                    // Estimate and scale final emitted width/height to fit stamp_box_height and include stamp_box_adjust margins
+                    let (mut est_width_mm, mut est_height_mm) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+                        .map(|(w,h)| (w as f64, h as f64))
+                        .unwrap_or((reference_width_mm as f64, reference_height_mm as f64));
+                    if est_height_mm > stamp_box_height {
+                        let s = stamp_box_height / est_height_mm;
+                        est_width_mm *= s;
+                        est_height_mm *= s;
+                    }
+                    // add per-side adjust to the emitted box width/height
+                    let emit_width = est_width_mm + 2.0 * stamp_box_adjust;
+                    let emit_height = est_height_mm + 2.0 * stamp_box_adjust;
+                    // Left: sg_number
+                    let left = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
+                    // Centre: denomination, color, description
+                    let centre = format!(
+                        "{}\\n{}\\n{}",
+                        clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string())),
+                        clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string())),
+                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()))
                     );
-
-                    // Capture header output
-                    let mut out: Vec<u8> = Vec::new();
-                    write_page_header(&mut out, &header, &cfg).expect("write_page_header failed");
-                    let s = String::from_utf8(out).expect("invalid utf8");
-
-                    // series line
-                    if include_series {
-                        assert!(s.contains("TN 12"), "expected series line when include_series=true; cfg={:?}", cfg);
+                    // Right: mint_condition (or unused), used, stamps_issued
+                    let mint =
+                        clean_text(stamp.attrs.get("mint_condition").unwrap_or(&"".to_string()));
+                    let unused = clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string()));
+                    let right = if !mint.is_empty() {
+                        format!(
+                            "{}\\n{}\\n{}",
+                            mint,
+                            clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())),
+                            clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()))
+                        )
                     } else {
-                        assert!(!s.contains("TN 12"), "did not expect series line when include_series=false; cfg={:?}", cfg);
-                    }
-
-                    // date line
-                    if include_date {
-                        assert!(s.contains("TN 10"), "expected date line when include_date=true; cfg={:?}", cfg);
+                        format!(
+                            "{}\\n{}\\n{}",
+                            unused,
+                            clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())),
+                            clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()))
+                        )
+                    };
+                    if !image_path.is_empty() && Path::new(&full_image_path).exists() {
+                        // Emit a lightweight diagnostic comment so we can later grep the
+                        // output file and verify stamps are actually being written to the
+                        // canonical Albums/{Album}/{Album}.txt file. Make sure the
+                        // comment is a single line by sanitizing newlines/extra spaces.
+                        let safe_series = clean_text(series)
+                            .replace('\n', " ")
+                            .split_whitespace()
+                            .collect::<Vec<&str>>()
+                            .join(" ")
+                            .replace('"', "'");
+                        let safe_sg = left.replace('\n', " ").split_whitespace().collect::<Vec<&str>>().join(" ").replace('"', "'");
+                        let safe_img = image_path.replace('"', "'");
+                        let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
+                        // estimate_real_dimensions returns millimetres; emit mm directly
+                        let line = format!(
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
+                            emit_width, emit_height, image_path, left, centre, right
+                        );
+                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                     } else {
-                        assert!(!s.contains("TN 10"), "did not expect date line when include_date=false; cfg={:?}", cfg);
-                    }
-
-                    // watermark
-                    if include_watermark {
-                        if label_style == "full" {
-                            assert!(s.contains("Watermark:"), "expected full watermark label; cfg={:?}", cfg);
-                        } else {
-                            assert!(s.contains("WM:"), "expected abbreviated watermark label; cfg={:?}", cfg);
-                        }
-                    } else {
-                        assert!(!s.contains("WM:") && !s.contains("Watermark:"), "did not expect watermark when include_watermark=false; cfg={:?}", cfg);
-                    }
-
-                    // perforation
-                    if include_perforation {
-                        if label_style == "full" {
-                            assert!(s.contains("Perforation:"), "expected full perforation label; cfg={:?}", cfg);
-                        } else {
-                            assert!(s.contains("Perf."), "expected abbreviated perforation label; cfg={:?}", cfg);
-                        }
-                    } else {
-                        assert!(!s.contains("Perforation:") && !s.contains("Perf."), "did not expect perforation when include_perforation=false; cfg={:?}", cfg);
-                    }
-
-                    // design
-                    if include_design {
-                        assert!(s.contains("Design:"), "expected Design line when include_design=true; cfg={:?}", cfg);
-                    } else {
-                        assert!(!s.contains("Design:"), "did not expect Design when include_design=false; cfg={:?}", cfg);
-                    }
-
-                    // engraving
-                    if include_engraving {
-                        assert!(s.contains("Engraving:"), "expected Engraving line when include_engraving=true; cfg={:?}", cfg);
-                    } else {
-                        assert!(!s.contains("Engraving:"), "did not expect Engraving when include_engraving=false; cfg={:?}", cfg);
-                    }
-
-                    // currency
-                    if include_currency {
-                        assert!(s.contains(&header.currency), "expected currency line when include_currency=true; cfg={:?}", cfg);
-                    } else {
-                        assert!(!s.contains(&header.currency), "did not expect currency when include_currency=false; cfg={:?}", cfg);
+                        let safe_series = clean_text(series)
+                            .replace('\n', " ")
+                            .split_whitespace()
+                            .collect::<Vec<&str>>()
+                            .join(" ")
+                            .replace('"', "'");
+                        let safe_sg = left.replace('\n', " ").split_whitespace().collect::<Vec<&str>>().join(" ").replace('"', "'");
+                        let safe_img = image_path.replace('"', "'");
+                        let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
+                        let line = format!(
+                            "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
+                            emit_width,
+                            emit_height,
+                            left,
+                            centre,
+                            right
+                        );
+                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                     }
                 }
-            }
-        }
-    }
-
-    #[test]
-    fn test_series_ordering_deterministic() {
-    // no filesystem access required; inspect header_info directly
-
-        // Create a set of StampStub instances designed to reproduce ordering issues.
-        // Series names chosen to ensure variety; some series have earlier years.
-        let s1 = crate::db_utils::StampStub {
-            year: 1890,
-            month: String::new(),
-            day: String::new(),
-            sg_number: "SG100".to_string(),
-            stamp_type: String::new(),
-            denomination: String::new(),
-            color: String::new(),
-            multi_perf: false,
-            desc: String::new(),
-            catalog_num: "100".to_string(),
-            stamps_issued: String::new(),
-            image_path: String::new(),
-            remote_image_url: String::new(),
-            watermark: String::new(),
-            design: String::new(),
-            engraving: String::new(),
-            perforation: String::new(),
-            series: "Series B".to_string(),
-            currency: String::new(),
-            context: String::new(),
-        };
-
-        let s2 = crate::db_utils::StampStub {
-            year: 1885,
-            month: String::new(),
-            day: String::new(),
-            sg_number: "SG200".to_string(),
-            stamp_type: String::new(),
-            denomination: String::new(),
-            color: String::new(),
-            multi_perf: false,
-            desc: String::new(),
-            catalog_num: "200".to_string(),
-            stamps_issued: String::new(),
-            image_path: String::new(),
-            remote_image_url: String::new(),
-            watermark: String::new(),
-            design: String::new(),
-            engraving: String::new(),
-            perforation: String::new(),
-            series: "Series A".to_string(),
-            currency: String::new(),
-            context: String::new(),
-        };
-
-        let s3 = crate::db_utils::StampStub {
-            year: 1890,
-            month: String::new(),
-            day: String::new(),
-            sg_number: "SG50".to_string(),
-            stamp_type: String::new(),
-            denomination: String::new(),
-            color: String::new(),
-            multi_perf: false,
-            desc: String::new(),
-            catalog_num: "50".to_string(),
-            stamps_issued: String::new(),
-            image_path: String::new(),
-            remote_image_url: String::new(),
-            watermark: String::new(),
-            design: String::new(),
-            engraving: String::new(),
-            perforation: String::new(),
-            series: "Series C".to_string(),
-            currency: String::new(),
-            context: String::new(),
-        };
-
-        // Intentionally unordered input: [B(1890), A(1885), C(1890 with lower SG)]
-        let stamps = vec![s1, s2, s3];
-
-        // Generate album output to a temp file
-        let tmp_dir = tempfile::tempdir().expect("tempdir");
-        let album_name = "TestAlbum";
-        // Temporarily override ALBUM_FILE_NAME global for output path
-        let tmp_file = tmp_dir.path().join("TestAlbum-1880-1900.txt");
-        *crate::types::ALBUM_FILE_NAME.lock().unwrap() = tmp_file.to_string_lossy().to_string();
-
-        let pages = generate_album_output_from_stamps(&stamps, album_name).expect("generation failed");
-        assert!(pages >= 1, "expected at least one page");
-
-        // Read generated output and check the order of series headers
-        let mut contents = String::new();
-        let mut f = fs::File::open(&tmp_file).expect("open output");
-        f.read_to_string(&mut contents).expect("read output");
-
-        // Find the sequence of PAGE_TEXT_CENTRE TN 12 lines (series headings)
-        let series_lines: Vec<String> = contents.lines()
-            .filter_map(|l| {
-                if l.contains("PAGE_TEXT_CENTRE") && l.contains("TN 12") {
-                    Some(l.to_string())
-                } else { None }
-            })
-            .collect();
-
-        // We expect series ordered by earliest year (A=1885), then by earliest-year SG tie-break
-        // Therefore expected series order is: Series A, then Series C, then Series B
-        let expected_order = vec!["Series A", "Series C", "Series B"];
-        // Extract cleaned series names from series_lines
-        let mut found = Vec::new();
-        for line in series_lines.iter() {
-            // extract the quoted title
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start+1..].find('"') {
-                    let name = &line[start+1..start+1+end];
-                    found.push(name.to_string());
-                }
+                current_height += total_row_height;
+                rows_on_page += 1;
+                row_idx += 1;
             }
         }
 
-        assert_eq!(found, expected_order, "series order mismatch: found={:?}", found);
+        // End of generate_album_output inner scope: use shared clean_text from album_utils
     }
-
-    #[test]
-    fn test_series_paging_and_measurement_realistic() {
-        use tempfile::tempdir;
-    use image::RgbImage;
-    // std::fs and std::io::Read are imported at module top-level
-
-        // Create temp dir and a couple of small images with different pixel sizes
-        let td = tempdir().expect("tempdir");
-        let img1 = td.path().join("stamp_a.jpg");
-        let img2 = td.path().join("stamp_b.jpg");
-        let img3 = td.path().join("stamp_c.jpg");
-
-        // Create simple images (solid color) with varying dimensions
-        let mut a = RgbImage::new(200, 160); // wider
-        for p in a.pixels_mut() { *p = image::Rgb([200, 200, 200]); }
-    a.save(&img1).expect("save img1");
-
-        let mut b = RgbImage::new(120, 180); // taller
-        for p in b.pixels_mut() { *p = image::Rgb([150, 150, 150]); }
-    b.save(&img2).expect("save img2");
-
-        let mut c = RgbImage::new(160, 140); // medium
-        for p in c.pixels_mut() { *p = image::Rgb([100, 100, 100]); }
-    c.save(&img3).expect("save img3");
-
-        // Build realistic StampStub entries referencing those image files.
-        let mut stamps: Vec<crate::db_utils::StampStub> = Vec::new();
-        // Series A is earliest year
-        for i in 0..3 {
-            stamps.push(crate::db_utils::StampStub {
-                year: 1880,
-                month: String::new(),
-                day: String::new(),
-                sg_number: format!("SG1{:02}", i),
-                stamp_type: String::new(),
-                denomination: String::new(),
-                color: String::new(),
-                multi_perf: false,
-                desc: String::new(),
-                catalog_num: format!("1{:02}", i),
-                stamps_issued: String::new(),
-                image_path: img1.to_string_lossy().to_string(),
-                remote_image_url: String::new(),
-                watermark: String::new(),
-                design: String::new(),
-                engraving: String::new(),
-                perforation: String::new(),
-                series: "Series A".to_string(),
-                currency: String::new(),
-                context: String::new(),
-            });
-        }
-        // Series B later
-        for i in 0..2 {
-            stamps.push(crate::db_utils::StampStub {
-                year: 1890,
-                month: String::new(),
-                day: String::new(),
-                sg_number: format!("SG2{:02}", i),
-                stamp_type: String::new(),
-                denomination: String::new(),
-                color: String::new(),
-                multi_perf: false,
-                desc: String::new(),
-                catalog_num: format!("2{:02}", i),
-                stamps_issued: String::new(),
-                image_path: img2.to_string_lossy().to_string(),
-                remote_image_url: String::new(),
-                watermark: String::new(),
-                design: String::new(),
-                engraving: String::new(),
-                perforation: String::new(),
-                series: "Series B".to_string(),
-                currency: String::new(),
-                context: String::new(),
-            });
-        }
-        // Series C same year as B but lower SG leading to tie-break ordering
-        for i in 0..3 {
-            stamps.push(crate::db_utils::StampStub {
-                year: 1890,
-                month: String::new(),
-                day: String::new(),
-                sg_number: format!("SG0{:02}", i),
-                stamp_type: String::new(),
-                denomination: String::new(),
-                color: String::new(),
-                multi_perf: false,
-                desc: String::new(),
-                catalog_num: format!("0{:02}", i),
-                stamps_issued: String::new(),
-                image_path: img3.to_string_lossy().to_string(),
-                remote_image_url: String::new(),
-                watermark: String::new(),
-                design: String::new(),
-                engraving: String::new(),
-                perforation: String::new(),
-                series: "Series C".to_string(),
-                currency: String::new(),
-                context: String::new(),
-            });
-        }
-
-    // Leave input order intentionally interleaved to ensure generator sorts correctly
-    // (no external RNG dependency required)
-
-        // Prepare output path
-        let tmp_file = td.path().join("TestAlbum-1880-1895.txt");
-        *crate::types::ALBUM_FILE_NAME.lock().unwrap() = tmp_file.to_string_lossy().to_string();
-
-        // Run generator
-        let page_count = generate_album_output_from_stamps(&stamps, "TestAlbum").expect("generation failed");
-        assert!(page_count >= 1, "expected at least one page");
-
-        // Read output and verify that all stamps were emitted and series appear in expected order
-        let mut contents = String::new();
-        let mut f = fs::File::open(&tmp_file).expect("open output");
-        f.read_to_string(&mut contents).expect("read output");
-
-        // Count STAMP_ADD_IMG occurrences
-        let stamp_add_count = contents.lines().filter(|l| l.contains("STAMP_ADD_IMG")).count();
-        assert_eq!(stamp_add_count, stamps.len(), "expected each stamp to produce a STAMP_ADD_IMG line");
-
-        // Extract series headings order
-    let series_lines: Vec<String> = contents.lines()
-            .filter_map(|l| {
-                if l.contains("PAGE_TEXT_CENTRE") && l.contains("TN 12") {
-                    Some(l.to_string())
-                } else { None }
-            })
-            .collect();
-
-        // Expected order: Series A (1880) first, then tie between C and B for 1890 -> C has lower SG so C before B
-        let expected = vec!["Series A", "Series C", "Series B"];
-        let mut found = Vec::new();
-        for line in series_lines.iter() {
-            if let Some(start) = line.find('"') {
-                if let Some(end) = line[start+1..].find('"') {
-                    let name = &line[start+1..start+1+end];
-                    found.push(name.to_string());
-                }
-            }
-        }
-
-        assert_eq!(found, expected, "series ordering/paging regression: found={:?}", found);
-    }
-
-    #[test]
-    fn test_design_engraving_aggregation_regression() {
-        
-        
-
-        // Build two stamps: first lacks design/engraving; second provides them
-        let s_first = crate::db_utils::StampStub {
-            year: 1900,
-            month: String::new(),
-            day: String::new(),
-            sg_number: "SG100".to_string(),
-            stamp_type: String::new(),
-            denomination: String::new(),
-            color: String::new(),
-            multi_perf: false,
-            desc: String::new(),
-            catalog_num: "100".to_string(),
-            stamps_issued: String::new(),
-            image_path: String::new(),
-            remote_image_url: String::new(),
-            watermark: String::new(),
-            design: String::new(),
-            engraving: String::new(),
-            perforation: String::new(),
-            series: "Regression Series".to_string(),
-            currency: String::new(),
-            context: String::new(),
-        };
-
-        let s_second = crate::db_utils::StampStub {
-            year: 1900,
-            month: String::new(),
-            day: String::new(),
-            sg_number: "SG101".to_string(),
-            stamp_type: String::new(),
-            denomination: String::new(),
-            color: String::new(),
-            multi_perf: false,
-            desc: String::new(),
-            catalog_num: "101".to_string(),
-            stamps_issued: String::new(),
-            image_path: String::new(),
-            remote_image_url: String::new(),
-            watermark: String::new(),
-            design: "Test Design".to_string(),
-            engraving: "Line Engraving".to_string(),
-            perforation: String::new(),
-            series: "Regression Series".to_string(),
-            currency: String::new(),
-            context: String::new(),
-        };
-
-        let stamps = vec![s_first, s_second];
-
-        // Use a temp output file
-    // Use a deterministic filename under /tmp so we can inspect it after generation
-    let pid = std::process::id();
-    let out = std::path::PathBuf::from(format!("/tmp/regression-header-{}.txt", pid));
-    *crate::types::ALBUM_FILE_NAME.lock().unwrap() = out.to_string_lossy().to_string();
-
-        // Ensure config toggles include design and engraving
-        let mut cfg = crate::config::Config::default();
-        cfg.include_design = Some(true);
-        cfg.include_engraving = Some(true);
-
-    // Directly test extraction: ensure design and engraving are aggregated from the group
-    let stamp_refs: Vec<&crate::db_utils::StampStub> = stamps.iter().collect();
-    let header_info = extract_header_info(&stamp_refs);
-    assert!(!header_info.design.is_empty() && header_info.design.contains("Test Design"), "expected design to be aggregated from later stamp");
-    assert!(!header_info.engraving.is_empty() && header_info.engraving.contains("Line Engraving"), "expected engraving to be aggregated from later stamp");
-    }
-
-    #[test]
-    fn test_write_page_header_emits_design_and_engraving() {
-        // Construct header info with design and engraving present
-        let mut header = PageHeaderInfo::default();
-        header.series = "Test Series".to_string();
-        header.year = 1950;
-        header.design = "Portrait of King".to_string();
-        header.engraving = "Intaglio".to_string();
-        header.watermark = "Crown".to_string();
-
-        // Config that enables both design and engraving and watermark
-        let mut cfg = Config::default();
-        cfg.include_design = Some(true);
-        cfg.include_engraving = Some(true);
-        cfg.include_watermark = Some(true);
-        cfg.include_perforation = Some(false);
-        cfg.include_series = Some(true);
-        cfg.include_date = Some(true);
-        cfg.header_formatting = Some(HeaderFormatting {
-            date_format: None,
-            label_style: Some("full".to_string()),
-            series_style: None,
-            include_currency: Some(false),
-            header_spacing: None,
-        });
-
-        let mut out: Vec<u8> = Vec::new();
-        write_page_header(&mut out, &header, &cfg).expect("write_page_header failed");
-        let s = String::from_utf8(out).expect("invalid utf8");
-
-        // Expect lines for Design and Engraving (full labels)
-        assert!(s.contains("Design:"), "expected Design line in header output, got:\n{}", s);
-        assert!(s.contains("Engraving:"), "expected Engraving line in header output, got:\n{}", s);
-        // Watermark should also be present with 'full' label
-        assert!(s.contains("Watermark:"), "expected Watermark line in header output, got:\n{}", s);
-    }
-
-    } // end mod tests
+}

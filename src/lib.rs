@@ -26,9 +26,10 @@ pub mod album_globals;
 pub mod album_utils;
 
 // Re-export commonly used functions and types
-pub use album_globals::generate_album_output_from_stamps;
+// Re-export album generation wrapper
+pub use album_globals::generate_album_output;
 // pub use stamp_dimensions::*;
 pub use file_utils::*;
 // pub use text_utils::*;
 pub use album_utils::*;
-pub use types::{ImageStatus, OSType, SeriesInfo, ImageStatus as GlobalImageStatus};
+pub use types::{ImageStatus, OSType, SeriesInfo};
