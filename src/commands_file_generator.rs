@@ -204,16 +204,17 @@ impl CommandsFileGenerator {
                 _ => "0".to_string(),
             }
         };
-        let get_stampworld_image = |url: &str, overwrite: bool| {
-            let raw_image_name = url.split('/').last().unwrap_or("stampworld.jpg");
-            let image_name = sanitize_filename(raw_image_name);
-            let file_path = format!("{}/{}", images_directory, image_name);
-            if !overwrite && std::path::Path::new(&file_path).exists() {
-                debug!("Skipping download, file exists: {}", file_path);
-                return crate::types::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };
-            }
-            // Default: no-op status indicating not downloaded; caller may decide to fetch
-            crate::types::ImageStatus { link: url.to_string(), exists: false, width: 0, height: 0, filename: image_name.to_string() }
+        // Use the CommandsFileGenerator's real downloader so images are fetched.
+        // To avoid borrowing `self` while it's mutably borrowed for sequencer,
+        // capture the site_name and images_directory and call a temporary
+        // CommandsFileGenerator instance to perform the download.
+        let captured_site = self.site_name.clone();
+        let captured_images_dir = images_directory.clone();
+        let downloader = move |url: &str, overwrite: bool| {
+            let mut tmp = CommandsFileGenerator::new();
+            tmp.site_name = captured_site.clone();
+            tmp.images_directory = captured_images_dir.clone();
+            tmp.get_stampworld_image(url, overwrite)
         };
         crate::stampworld::collect_stampworld_data(
             &mut self.sequencer,
@@ -221,7 +222,7 @@ impl CommandsFileGenerator {
             &self.site_name,
             &images_directory,
             &month_number,
-            &get_stampworld_image,
+            &downloader,
             base_url,
             start_year,
             end_year,
@@ -288,7 +289,7 @@ impl CommandsFileGenerator {
     let mut used_width = 0;
     let mut used_height = 0;
     let mut max_row_height = 0;
-    let month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    let _month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         for (idx, line) in data.iter().enumerate() {
             if line.starts_with("STAMP") {
                 let fields: Vec<&str> = line.split(&self.separator).collect();
@@ -313,14 +314,10 @@ impl CommandsFileGenerator {
                         multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
                         width = series_info.as_ref().map_or("0".to_string(), |s| s.width.clone());
                         height = series_info.as_ref().map_or("0".to_string(), |s| s.height.clone());
-            album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
+                album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
                     prev_year = year.to_string();
                     prev_series = series.to_string();
                     prev_date = date.clone();
-                album_globals::new_series(&mut writer, series, year, month, day, count, multi_perf, fields[12], &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
-                prev_year = year.to_string();
-                prev_series = series.to_string();
-                prev_date = date.clone();
                 } else if series != prev_series || date != prev_date {
                         series_info = Some(self.get_series_info(data, idx, &width, &height));
                         count = series_info.as_ref().map_or(1, |s| s.count);
@@ -364,7 +361,7 @@ impl CommandsFileGenerator {
     }
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
-    let cfg = crate::config::load_config("config.toml");
+    let _cfg = crate::config::load_config("config.toml");
     let _ = crate::album_globals::write_globals(_writer, &self.album_name);
     }
 
@@ -456,7 +453,15 @@ impl CommandsFileGenerator {
         
         if name.is_empty() {
             return crate::types::ImageStatus { link: String::new(), exists: false, width: 0, height: 0, filename: String::new() };        }
-        
+        // Ensure the images directory (parent of file_path) exists before any downloads
+        if let Some(parent) = Path::new(file_path).parent() {
+            if !parent.exists() {
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    error!("Failed to create image directory {}: {}", parent.display(), e);
+                }
+            }
+        }
+
         // If file already exists, compare content with remote and only replace if different
         if Path::new(file_path).exists() {
             info!("Target exists, comparing remote vs local: {}", file_path);
@@ -486,10 +491,11 @@ impl CommandsFileGenerator {
 
             // Download remote to temp file
             let tmp_path = format!("{}{}.tmp", file_path, ".remote");
+            // Use fail-on-error and quiet+show-errors for the compare-download as well
             let curl_cmd = if self.no_ssl_check {
-                vec!["curl", "--ssl-no-revoke", "-L", "-o", &tmp_path, url]
+                vec!["curl", "-sS", "-f", "--ssl-no-revoke", "-L", "-o", &tmp_path, url]
             } else {
-                vec!["curl", "-L", "-o", &tmp_path, url]
+                vec!["curl", "-sS", "-f", "-L", "-o", &tmp_path, url]
             };
             let status = Command::new(curl_cmd[0]).args(&curl_cmd[1..]).status();
             if let Err(e) = status {
@@ -525,19 +531,33 @@ impl CommandsFileGenerator {
                     }
                 } else {
                     error!("Failed to download remote image for comparison: {} exit {:?}", url, s.code());
+                    // ensure temp file removed if curl wrote a partial file
+                    if Path::new(&tmp_path).exists() {
+                        let _ = std::fs::remove_file(&tmp_path);
+                    }
                 }
             }
 
             // At this point return status based on existence and validation below
         }
         
-        // println!("[INFO] Downloading image: {} -> {}", name, file_path);
-        
+        // Ensure parent directory exists before attempting download
+        if let Some(parent) = std::path::Path::new(file_path).parent() {
+            if !parent.exists() {
+                if let Err(e) = std::fs::create_dir_all(parent) {
+                    error!("Failed to create image directory {}: {}", parent.display(), e);
+                }
+            }
+        }
+
+        // Use curl in fail-on-error mode and quiet (still will return non-zero on HTTP errors).
+        // -sS quiet+show-errors, -f fail silently on server errors, -L follow redirects, -o output file
         let curl_cmd = if self.no_ssl_check {
-            vec!["curl", "--ssl-no-revoke", "-L", "-o", file_path, url]
+            vec!["curl", "-sS", "-f", "--ssl-no-revoke", "-L", "-o", file_path, url]
         } else {
-            vec!["curl", "-L", "-o", file_path, url]
+            vec!["curl", "-sS", "-f", "-L", "-o", file_path, url]
         };
+
         let mut exists = true;
         let mut width = 0;
         let mut height = 0;
@@ -545,12 +565,24 @@ impl CommandsFileGenerator {
         let status = Command::new(curl_cmd[0])
             .args(&curl_cmd[1..])
             .status();
-        if let Err(e) = status {
-            error!("Error executing curl for imageURL: {}", e);
-            std::process::exit(1);
+        match status {
+            Err(e) => {
+                error!("Error executing curl for imageURL {}: {}", url, e);
+                exists = false;
+            }
+            Ok(s) => {
+                if s.success() {
+                    info!("Image downloaded successfully: {} -> {}", name, file_path);
+                } else {
+                    error!("curl failed to download {} (exit code: {:?}). Falling back to placeholder.", url, s.code());
+                    // ensure partial file is removed if present
+                    if std::path::Path::new(file_path).exists() {
+                        let _ = std::fs::remove_file(file_path);
+                    }
+                    exists = false;
+                }
+            }
         }
-        
-        println!("[INFO] Image downloaded successfully: {}", name);
         
         // Read image dimensions
         let img_file = std::path::Path::new(file_path);

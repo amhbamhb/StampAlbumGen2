@@ -107,7 +107,10 @@ pub fn collect_stampworld_data(
     // If overwrite is true, clear existing data
     if overwrite_images {
         debug!("Overwrite flag is true, clearing existing stamp data");
-        conn.execute("DELETE FROM stamps", []).expect("Failed to clear existing data");
+        match conn.execute("DELETE FROM stamps", []) {
+            Ok(affected) => info!("Cleared existing stamp data: {} rows removed", affected),
+            Err(e) => error!("Failed to clear existing data: {}", e),
+        }
     }
 
     while !done {

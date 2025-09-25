@@ -2,12 +2,12 @@
 use crate::config::load_config;
 use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
-use crate::types::{ImageStatus, OSType};
+// ImageStatus and OSType not needed in this module today
 use crate::album_utils::clean_text;
-use log::{debug, error, warn};
+use log::{debug, warn};
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::Path;
+// std::path::Path not needed here
 
 // Define or import Stamp and GenericAttrs
 #[derive(Debug, Clone, PartialEq)]
@@ -163,15 +163,9 @@ where
     F: FnMut(usize),
 {
     {
-        // Accept optional year range
-        let (start_year, end_year) = {
-            // Use thread-local storage for now, will be passed from main
-            let mut start: Option<i32> = None;
-            let mut end: Option<i32> = None;
-            // If function signature is updated, use those values
-            // Otherwise, fallback to None
-            (start, end)
-        };
+        // Use the start_year/end_year passed to this function (may be None)
+        let passed_start_year = start_year;
+        let passed_end_year = end_year;
         // Load config values from config.toml
         let config = load_config("config.toml");
     let stamp_box_height = config.stamp_box_height.unwrap_or(24.0) as f64;
@@ -213,7 +207,19 @@ where
         if let Err(e) = std::fs::create_dir_all(&album_dir) {
             warn!("Failed to create album directory {}: {}", album_dir.display(), e);
         }
-        let output_path = album_dir.join(format!("{}.txt", album_name.replace(' ', "-")));
+        // Build output filename. If a sensible start/end year range is provided
+        // (start > 0 and end < 9999 and start <= end), include it as
+        // AlbumName-START-END.txt. Otherwise fall back to AlbumName.txt
+        let filename = if let (Some(s), Some(e)) = (passed_start_year, passed_end_year) {
+            if s > 0 && e < 9999 && s <= e {
+                format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e)
+            } else {
+                format!("{}.txt", album_name.replace(' ', "-"))
+            }
+        } else {
+            format!("{}.txt", album_name.replace(' ', "-"))
+        };
+        let output_path = album_dir.join(filename);
         let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
 
         // Write global album settings
@@ -239,7 +245,7 @@ where
         page_height, top_margin, bottom_margin, total_border, usable_height);
         // Font and spacing from AlbumEasy settings
     let _header_font_spacing = 3.0; // PAGE_TEXT_CENTRE (TN 10 ... 3.0)
-    let row_font_spacing = 5.0; // ROW_START_FS (TN 6 0.1 5.0)
+    let _row_font_spacing = 5.0; // ROW_START_FS (TN 6 0.1 5.0)
     let _stamp_box_height = 24.0; // Estimate: typical stamp box height
     let _header_lines = 4; // Year, name, desc, perforation
                               // let header_height = (header_lines as f64) * header_font_spacing;
@@ -252,8 +258,8 @@ where
         let mut rows_on_page = 0;
         // Treat series_list as Vec<String> (series names). We don't filter by year here.
         let filtered_series: Vec<String> = series_list.iter().map(|s| s.clone()).collect();
-        let series_count = filtered_series.len();
-        for (series_idx, series) in filtered_series.iter().enumerate() {
+    let _series_count = filtered_series.len();
+    for (_series_idx, series) in filtered_series.iter().enumerate() {
             if let Some(cb) = page_callback.as_mut() {
                 cb(page_counter);
             }
@@ -323,7 +329,7 @@ where
                     - right_margin
                     - (border_outer + border_inner1 + border_inner2 + border_spacing);
                 // Accumulate row width as stamps are added
-                let mut row_width: f64 = row
+                let row_width: f64 = row
                     .iter()
                     .map(|s| {
                         let img_path = s.image_path.trim();
@@ -505,7 +511,7 @@ where
                         .collect::<Vec<&str>>()
                         .join(" ")
                         .replace('"', "'");
-                    let will_fit = (current_height + conservative_needed <= usable_height);
+                    let will_fit = current_height + conservative_needed <= usable_height;
                     let _ = writeln!(output, "# PAGE_FIT series=\"{}\" need=\"{:.2}\" current=\"{:.2}\" usable=\"{:.2}\" will_fit=\"{}\"",
                         safe_series, conservative_needed, current_height, usable_height, will_fit);
                     // Note: peek-ahead optimization for combining single-row series

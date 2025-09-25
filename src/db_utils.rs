@@ -142,7 +142,13 @@ use log::{debug, error};
 
 pub fn init_db(db_path: &str) -> Result<Connection> {
     let conn = Connection::open(db_path)?;
-    debug!("Opened database at {}", db_path);
+    // Log the path opened and some filesystem metadata to help debug DB path mismatches
+    let canonical = std::fs::canonicalize(db_path).unwrap_or_else(|_| std::path::PathBuf::from(db_path));
+    debug!("Opened database at {} (canonical: {})", db_path, canonical.display());
+    match std::fs::metadata(&canonical) {
+        Ok(md) => debug!("Database file exists. size={} bytes, readonly={}", md.len(), md.permissions().readonly()),
+        Err(_) => debug!("Database file does not exist yet: {}", canonical.display()),
+    }
     // Always create the table first
     conn.execute(
         "CREATE TABLE IF NOT EXISTS stamps (
@@ -463,6 +469,9 @@ pub fn insert_stamp(
     // Arguments now match the new signature and DB columns
             Ok(_) => {
                     debug!("Insert succeeded on attempt {}", attempts);
+                    // Log the last insert row id for tracing
+                    let last_id = conn.last_insert_rowid();
+                    debug!("Last insert rowid: {}", last_id);
                 break;
             }
                 Err(e) => {

@@ -50,6 +50,9 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
+    // Debug: show parsed CLI early so we can diagnose routing (scrape vs output-only)
+    println!("DEBUG: CLI args = {:?}", cli);
+
     // Basic logging setup
     Logger::try_with_env_or_str("info")?.log_to_stderr().start()?;
 
@@ -59,41 +62,58 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    // Decide behavior based on source flag
-    if cli.source.to_lowercase() == "stampworld" {
+    // If a database path is explicitly provided, treat this as output-only mode
+    // (do not perform a scrape). Otherwise, when source == "stampworld" run
+    // the scraper; for other source values require --db-path.
+    if cli.db_path.is_some() {
+        // Output-only mode: use the provided db_path and album_name
+        let db_path = cli.db_path.unwrap();
+        let album_name = cli.album_name.unwrap_or_else(|| "Album".to_string());
+        stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+    } else if cli.source.to_lowercase() == "stampworld" {
         // Scrape mode
-        let site_name = cli.site_name.unwrap_or_else(|| "Israel".to_string());
+        // Require site_name for scraping. If album_name is provided but site_name
+        // is not, derive site_name from album_name. This avoids accidentally
+        // defaulting to 'Israel'.
+        let site_name = if let Some(s) = cli.site_name.clone() {
+            s
+        } else if let Some(a) = cli.album_name.clone() {
+            a.clone()
+        } else {
+            eprintln!("--site-name is required for scraping mode (or provide --album-name to derive it)");
+            std::process::exit(1);
+        };
         let album_name = cli.album_name.unwrap_or_else(|| site_name.clone());
 
         println!("Starting StampWorld scrape for site='{}' album='{}' years={}..{} overwrite_images={} overwrite_album={}", site_name, album_name, cli.start_year, cli.end_year, cli.overwrite_images, cli.overwrite_album);
 
         // Build a CommandsFileGenerator and invoke the collector
-    let mut cfg = CommandsFileGenerator::new();
+        let mut cfg = CommandsFileGenerator::new();
         cfg.site_name = site_name.clone();
         cfg.images_directory = format!("Albums/{}/images", album_name.replace(' ', "-"));
         cfg.album_directory = format!("Albums/{}", album_name.replace(' ', "-"));
         cfg.album_name = album_name.clone();
-    cfg.start_year = cli.start_year;
-    cfg.end_year = cli.end_year;
+        cfg.start_year = cli.start_year;
+        cfg.end_year = cli.end_year;
 
-        // Build base URL for stampworld pages
+    // Build base URL for stampworld pages
         // Use the English-prefixed canonical path: '/en/stamps/{country}/' and let the collector append '?page=N'
         let base_url = format!("https://www.stampworld.com/en/stamps/{}/", site_name.replace(' ', "%20"));
+    // Compose the DB path early and set it for the collector so both scraper
+    // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
+    let db_path = format!("{}/{}.db", cfg.album_directory, album_name.replace('/', "-"));
+    stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
+    println!("DEBUG: collector DB path set to {}", db_path);
 
-        let pages = cfg.collect_stampworld_data(&base_url, cli.overwrite_images, None::<&dyn Fn(usize)>);
-        println!("Scrape produced {} stamp lines", pages.len());
+    let pages = cfg.collect_stampworld_data(&base_url, cli.overwrite_images, None::<&dyn Fn(usize)>);
+    println!("Scrape produced {} stamp lines", pages.len());
 
-        // After scraping, generate album output from DB
-        let db_path = format!("{}/{}.db", cfg.album_directory, site_name.replace('/', "-"));
-        stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+    // After scraping, generate album output from the same DB
+    stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
     } else {
-        // Output-only mode: require db_path and album_name
-        let db_path = cli.db_path.unwrap_or_else(|| {
-            eprintln!("--db-path is required for output-only mode");
-            std::process::exit(1);
-        });
-        let album_name = cli.album_name.unwrap_or_else(|| "Album".to_string());
-        stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+        // No db_path and not stampworld: require db_path
+        eprintln!("--db-path is required when not using stampworld scraping mode");
+        std::process::exit(1);
     }
 
     Ok(())
