@@ -3,6 +3,52 @@ use std::io::Write;
 use crate::album_globals;
 use crate::album_utils::sanitize_filename;
 use crate::types::{ImageStatus, OSType};
+
+// Native blocking downloader helper: streams to a temp file and atomically
+// renames into place. Retries on transient failures.
+fn download_to_path(url: &str, dest: &std::path::Path, _no_ssl_check: bool) -> Result<(), String> {
+    use reqwest::blocking::Client;
+    use std::time::Duration;
+    use tempfile::NamedTempFile;
+    use std::io::{self};
+
+    let client_builder = Client::builder().timeout(Duration::from_secs(30));
+    let client = client_builder.build().map_err(|e| format!("failed to build client: {}", e))?;
+
+    if let Some(parent) = dest.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("failed to create dir {}: {}", parent.display(), e))?;
+    }
+
+    let mut last_err: Option<String> = None;
+    for attempt in 1..=3 {
+        match client.get(url).send() {
+            Ok(mut resp) => {
+                if !resp.status().is_success() {
+                    last_err = Some(format!("HTTP {}", resp.status()));
+                } else {
+                    match NamedTempFile::new_in(dest.parent().unwrap_or(std::path::Path::new("."))) {
+                        Ok(mut tmp) => {
+                            let copy_res = io::copy(&mut resp, &mut tmp);
+                            if let Err(e) = copy_res {
+                                last_err = Some(format!("io copy error: {}", e));
+                            } else {
+                                if let Err(e) = tmp.persist(dest) {
+                                    last_err = Some(format!("persist error: {}", e));
+                                } else {
+                                    return Ok(());
+                                }
+                            }
+                        }
+                        Err(e) => last_err = Some(format!("tempfile create error: {}", e)),
+                    }
+                }
+            }
+            Err(e) => last_err = Some(format!("request error: {}", e)),
+        }
+        std::thread::sleep(Duration::from_millis(500 * attempt));
+    }
+    Err(last_err.unwrap_or_else(|| "unknown error".to_string()))
+}
 pub struct SeriesInfo {
     pub count: i32,
     pub multi_perf: bool,
@@ -446,8 +492,7 @@ impl CommandsFileGenerator {
         SeriesInfo { count: 1, multi_perf: false, width: width.to_string(), height: height.to_string() }
     }
     pub fn get_image(&self, url: &str, name: &str, file_path: &str) -> crate::types::ImageStatus {
-        use std::process::Command;
-        use std::fs;
+    use std::fs;
         use image::io::Reader as ImageReader;
         use std::path::Path;
         
@@ -462,15 +507,17 @@ impl CommandsFileGenerator {
             }
         }
 
-        // If file already exists, compare content with remote and only replace if different
-        if Path::new(file_path).exists() {
-            info!("Target exists, comparing remote vs local: {}", file_path);
-            use sha2::{Digest, Sha256};
-            use std::fs::File;
-            use std::io::Read;
+        // Initialize result vars
+        let mut exists: bool = false;
+        let mut width: i32 = 0;
+        let mut height: i32 = 0;
 
-            // Read local sha
-            let mut local_sum = String::new();
+        // Compute local checksum if file exists
+        use sha2::{Digest, Sha256};
+        use std::fs::File;
+        use std::io::Read;
+        let mut local_sum = String::new();
+        if Path::new(file_path).exists() {
             if let Ok(mut f) = File::open(file_path) {
                 let mut hasher = Sha256::new();
                 let mut buf = [0u8; 8192];
@@ -483,104 +530,18 @@ impl CommandsFileGenerator {
                 }
                 local_sum = format!("{:x}", hasher.finalize());
             }
-
-            // If local looks like a placeholder by name, mark as empty so we'll replace
-            if file_path.contains("no_image") {
-                local_sum.clear();
-            }
-
-            // Download remote to temp file
-            let tmp_path = format!("{}{}.tmp", file_path, ".remote");
-            // Use fail-on-error and quiet+show-errors for the compare-download as well
-            let curl_cmd = if self.no_ssl_check {
-                vec!["curl", "-sS", "-f", "--ssl-no-revoke", "-L", "-o", &tmp_path, url]
-            } else {
-                vec!["curl", "-sS", "-f", "-L", "-o", &tmp_path, url]
-            };
-            let status = Command::new(curl_cmd[0]).args(&curl_cmd[1..]).status();
-            if let Err(e) = status {
-                error!("Error executing curl for imageURL: {}", e);
-            } else if let Ok(s) = status {
-                if s.success() {
-                    // compute remote sha
-                    if let Ok(mut rf) = File::open(&tmp_path) {
-                        let mut hasher = Sha256::new();
-                        let mut buf = [0u8; 8192];
-                        loop {
-                            match rf.read(&mut buf) {
-                                Ok(0) => break,
-                                Ok(n) => { hasher.update(&buf[..n]); }
-                                Err(_) => break,
-                            }
-                        }
-                        let remote_sum = format!("{:x}", hasher.finalize());
-                        // If different (or local_sum empty), replace
-                        if local_sum.is_empty() || remote_sum != local_sum {
-                            if let Err(e) = std::fs::rename(&tmp_path, file_path) {
-                                // fallback to copy
-                                if let Err(e2) = std::fs::copy(&tmp_path, file_path) {
-                                    error!("Failed to move/copy temp image into place: {} / {}", e, e2);
-                                }
-                            }
-                            info!("Replaced local image with remote: {}", file_path);
-                        } else {
-                            // identical; remove temp
-                            let _ = std::fs::remove_file(&tmp_path);
-                            info!("Remote image identical to local; kept existing: {}", file_path);
-                        }
-                    }
-                } else {
-                    error!("Failed to download remote image for comparison: {} exit {:?}", url, s.code());
-                    // ensure temp file removed if curl wrote a partial file
-                    if Path::new(&tmp_path).exists() {
-                        let _ = std::fs::remove_file(&tmp_path);
-                    }
-                }
-            }
-
-            // At this point return status based on existence and validation below
-        }
-        
-        // Ensure parent directory exists before attempting download
-        if let Some(parent) = std::path::Path::new(file_path).parent() {
-            if !parent.exists() {
-                if let Err(e) = std::fs::create_dir_all(parent) {
-                    error!("Failed to create image directory {}: {}", parent.display(), e);
-                }
-            }
+            if file_path.contains("no_image") { local_sum.clear(); }
         }
 
-        // Use curl in fail-on-error mode and quiet (still will return non-zero on HTTP errors).
-        // -sS quiet+show-errors, -f fail silently on server errors, -L follow redirects, -o output file
-        let curl_cmd = if self.no_ssl_check {
-            vec!["curl", "-sS", "-f", "--ssl-no-revoke", "-L", "-o", file_path, url]
-        } else {
-            vec!["curl", "-sS", "-f", "-L", "-o", file_path, url]
-        };
-
-        let mut exists = true;
-        let mut width = 0;
-        let mut height = 0;
-        // Download image
-        let status = Command::new(curl_cmd[0])
-            .args(&curl_cmd[1..])
-            .status();
-        match status {
+        // Attempt to download/refresh the file
+        let dest = std::path::Path::new(file_path);
+        match download_to_path(url, dest, self.no_ssl_check) {
+            Ok(()) => {
+                exists = true;
+            }
             Err(e) => {
-                error!("Error executing curl for imageURL {}: {}", url, e);
-                exists = false;
-            }
-            Ok(s) => {
-                if s.success() {
-                    info!("Image downloaded successfully: {} -> {}", name, file_path);
-                } else {
-                    error!("curl failed to download {} (exit code: {:?}). Falling back to placeholder.", url, s.code());
-                    // ensure partial file is removed if present
-                    if std::path::Path::new(file_path).exists() {
-                        let _ = std::fs::remove_file(file_path);
-                    }
-                    exists = false;
-                }
+                error!("Download failed for {}: {}", url, e);
+                // leave exists=false; caller will use placeholder
             }
         }
         

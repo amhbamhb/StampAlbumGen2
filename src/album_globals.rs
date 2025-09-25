@@ -14,6 +14,28 @@ use std::io::{BufWriter, Write};
 pub struct GenericAttrs {
     attrs: std::collections::HashMap<String, String>,
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn filename_generation_with_year_range() {
+        // Mirror the filename-generation logic used by generate_album_output
+        let album_name = "Israel";
+        let make_name = |start: Option<i32>, end: Option<i32>| {
+            if let (Some(s), Some(e)) = (start, end) {
+                if s > 0 && e < 9999 && s <= e {
+                    return format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e);
+                }
+            }
+            format!("{}.txt", album_name.replace(' ', "-"))
+        };
+
+        assert_eq!(make_name(Some(1948), Some(1948)), "Israel-1948-1948.txt");
+        assert_eq!(make_name(Some(0), Some(1948)), "Israel.txt");
+        assert_eq!(make_name(None, None), "Israel.txt");
+        assert_eq!(make_name(Some(1950), Some(1949)), "Israel.txt");
+    }
+}
 impl GenericAttrs {
     pub fn new() -> Self {
         Self {
@@ -171,13 +193,13 @@ where
     let stamp_box_height = config.stamp_box_height.unwrap_or(24.0) as f64;
     // extra space applied per-side around each stamp when emitted
     let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(3.0) as f64;
-        let row_font_spacing = config.row_font_spacing.unwrap_or(5.0) as f64;
-        let header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
+    let row_font_spacing = config.row_font_spacing.unwrap_or(5.0) as f64;
+    let _header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
         let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
         let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
         // Reference image path and measured size (dynamic by country)
-        let country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-        let reference_image_path = format!("{}/BG1-s.jpg", country_dir);
+        let _country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
+        let _reference_image_path = format!("{}/BG1-s.jpg", _country_dir);
         // Use embedded reference ratio as a fallback (no external reference file required)
         // If the configured reference size is implausibly small (e.g. 24mm), assume it's
         // a misconfiguration and fall back to sensible defaults used by the project
@@ -244,10 +266,9 @@ where
         debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
         page_height, top_margin, bottom_margin, total_border, usable_height);
         // Font and spacing from AlbumEasy settings
-    let _header_font_spacing = 3.0; // PAGE_TEXT_CENTRE (TN 10 ... 3.0)
-    let _row_font_spacing = 5.0; // ROW_START_FS (TN 6 0.1 5.0)
-    let _stamp_box_height = 24.0; // Estimate: typical stamp box height
-    let _header_lines = 4; // Year, name, desc, perforation
+    // Local layout estimates (we use configured values above where available)
+    let _stamp_box_height = 24.0; // Estimate: typical stamp box height (unused default)
+    let _header_lines = 4; // Year, name, desc, perforation (unused default)
                               // let header_height = (header_lines as f64) * header_font_spacing;
                               // let row_height = stamp_box_height + row_font_spacing;
 
@@ -343,11 +364,11 @@ where
                         .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
                         // scale to stamp_box_height if needed
                         let mut w = w_mm as f64;
-                        let mut h = h_mm as f64;
+                        let h = h_mm as f64;
                         if h > stamp_box_height {
                             let s = stamp_box_height / h;
                             w *= s;
-                            h *= s;
+                            // scaled height not needed for width accumulation here
                         }
                         (w + 2.0 * stamp_box_adjust) + margin
                     })
@@ -415,10 +436,8 @@ where
                             .unwrap_or(&"".to_string())
                             .replace("\n", " ")
                             .replace("  ", " ");
-                        let mut design = String::new();
-                        let mut engraving = String::new();
                         let mut parts = design_field.split("Engraving:");
-                        design = parts
+                        let design_raw = parts
                             .next()
                             .unwrap_or("")
                             .split("Perforation:")
@@ -426,16 +445,12 @@ where
                             .unwrap_or("")
                             .trim()
                             .to_string();
-                        if let Some(engraving_part) = parts.next() {
-                            engraving = engraving_part
-                                .split("Perforation:")
-                                .next()
-                                .unwrap_or("")
-                                .trim()
-                                .to_string();
-                        }
-                        design = clean_text(&design);
-                        engraving = clean_text(&engraving);
+                        let engraving_raw = parts
+                            .next()
+                            .map(|p| p.split("Perforation:").next().unwrap_or("").trim().to_string())
+                            .unwrap_or_default();
+                        let design = clean_text(&design_raw);
+                        let engraving = clean_text(&engraving_raw);
                         if !engraving.is_empty() {
                             header_lines_vec.push((
                                 format!("PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" 1.0)", engraving),
@@ -528,7 +543,6 @@ where
                         let _ = writeln!(output, "PAGE_START\n################################################################################");
                         current_height = 0.0;
                         rows_on_page = 0;
-                        header_written = false;
                         debug!("Forced page break before header and first row");
                     }
                     // Output header and first row together
