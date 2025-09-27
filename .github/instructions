@@ -1,6 +1,6 @@
 # Stamp Album Generator - Instructions
-# Version: 0.10.0
-# Last Updated: 2025-09-25
+# Version: 0.9.1
+# Last Updated: 2025-09-21
 # Previous Versions: docs/versions/instructions_2025-09-18_v1.md
 
 # Best Practices
@@ -39,7 +39,7 @@
 
 # Postage Stamps
 - Store stamp images in `Albums/{country name}/images/`.
-- Follow the naming convention: `country_year_{image Name}.jpg`.
+
 
 
 # StampEasy Output
