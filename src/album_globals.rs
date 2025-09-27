@@ -205,7 +205,9 @@ where
         // a misconfiguration and fall back to sensible defaults used by the project
         // (200 x 240 mm). This prevents stamp sizes from being calculated as ~1-3mm.
         let (cfg_ref_w, cfg_ref_h) = (reference_width_mm, reference_height_mm);
-        let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 50.0 || cfg_ref_h < 50.0 {
+        // Accept smaller reference sizes (stamp-size references like 24x27mm are valid).
+        // Only treat sizes under 10mm as implausibly small and trigger fallback.
+        let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 10.0 || cfg_ref_h < 10.0 {
             warn!("Configured reference size {:.1}x{:.1}mm looks too small, falling back to 200x240mm", cfg_ref_w, cfg_ref_h);
             (200.0_f64, 240.0_f64)
         } else {

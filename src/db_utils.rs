@@ -221,6 +221,122 @@ pub struct StampStub {
 use rusqlite::{params, Connection, Result};
 use log::{debug, error};
 
+// Robust migration helper: recreate `stamps` table with canonical schema while preserving data.
+pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
+    debug!("Starting stamps table migration");
+    // We'll execute statements inside an explicit BEGIN/COMMIT to avoid needing
+    // a mutable transaction object borrowed from `conn`.
+    conn.execute_batch("BEGIN IMMEDIATE;")?;
+
+    // Desired final schema columns and types (same as earlier, plus uniq_key)
+    let desired_cols = vec![
+        "id INTEGER PRIMARY KEY",
+        "country TEXT",
+        "series TEXT",
+        "year INTEGER",
+        "month TEXT",
+        "month_num INTEGER",
+        "day TEXT",
+        "sg_number TEXT",
+        "type TEXT",
+        "denomination TEXT",
+        "color TEXT",
+        "description TEXT",
+        "stamps_issued TEXT",
+        "mint_condition TEXT",
+        "unused TEXT",
+        "used TEXT",
+        "letter_fdc TEXT",
+        "currency TEXT",
+        "image_path TEXT",
+        "remote_image_url TEXT",
+        "original_image_url TEXT",
+        "watermark TEXT",
+        "design TEXT",
+        "engraving TEXT",
+        "perforation TEXT",
+        "context TEXT",
+        "uniq_key TEXT",
+    ];
+
+    // Also keep a simple list of desired column NAMES for matching existing columns.
+    let desired_col_names = vec![
+        "id", "country", "series", "year", "month", "month_num", "day",
+        "sg_number", "type", "denomination", "color", "description",
+        "stamps_issued", "mint_condition", "unused", "used", "letter_fdc",
+        "currency", "image_path", "remote_image_url", "original_image_url",
+        "watermark", "design", "engraving", "perforation", "context", "uniq_key",
+    ];
+
+    // Create new table
+    let create_sql = format!("CREATE TABLE IF NOT EXISTS stamps_new ({})", desired_cols.join(","));
+    conn.execute(&create_sql, [])?;
+
+    // Get existing columns from old table
+    let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
+    let mut rows = stmt.query([])?;
+    let mut existing_cols: Vec<String> = Vec::new();
+    while let Ok(Some(r)) = rows.next() {
+        let name: String = r.get(1)?;
+        existing_cols.push(name);
+    }
+    debug!("Existing stamps columns: {:?}", existing_cols);
+    // Determine which columns we can copy
+    // Determine which columns exist in both the old table and our desired schema
+    let common_cols: Vec<String> = existing_cols.iter().filter(|c| desired_col_names.contains(&c.as_str())).cloned().collect();
+    // always include id if present and available
+    let copy_cols = if existing_cols.contains(&"id".to_string()) {
+        // ensure id is first
+        let mut v = vec!["id".to_string()];
+        for col in &common_cols {
+            if col != "id" {
+                v.push(col.clone());
+            }
+        }
+        v
+    } else {
+        common_cols.clone()
+    };
+    debug!("Copying columns into stamps_new: {:?}", copy_cols);
+
+    if !copy_cols.is_empty() {
+        let cols_list = copy_cols.join(",");
+        let insert_sql = format!("INSERT INTO stamps_new ({0}) SELECT {0} FROM stamps", cols_list);
+        conn.execute(&insert_sql, [])?;
+        debug!("Data copied into stamps_new");
+    }
+
+    // Safety check: if stamps_new is empty after the copy, abort the migration
+    // to avoid accidentally dropping the live `stamps` table and losing data.
+    let new_count: i64 = conn.query_row("SELECT COUNT(*) FROM stamps_new", [], |r| r.get(0))?;
+    if new_count == 0 {
+        error!("Migration aborted: stamps_new contains 0 rows after attempted copy. Rolling back to avoid data loss.");
+        // Roll back the explicit transaction we started earlier and return an error
+        let _ = conn.execute_batch("ROLLBACK;");
+        return Err(rusqlite::Error::InvalidQuery);
+    }
+
+    // For rows where uniq_key is null/empty, backfill it
+    conn.execute("UPDATE stamps_new SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'') WHERE uniq_key IS NULL OR uniq_key = ''", [])?;
+
+    // Check for duplicates on uniq_key
+    let dup_groups: i64 = conn.query_row("SELECT COUNT(*) FROM (SELECT uniq_key FROM stamps_new GROUP BY uniq_key HAVING COUNT(*) > 1)", [], |r| r.get(0))?;
+    if dup_groups == 0 {
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps_new(uniq_key)", [])?;
+        debug!("Created UNIQUE index on stamps_new.uniq_key");
+    } else {
+        error!("Migration found {} duplicate uniq_key groups. UNIQUE index not created.", dup_groups);
+    }
+
+    // Drop old table and rename
+    conn.execute("DROP TABLE IF EXISTS stamps", [])?;
+    conn.execute("ALTER TABLE stamps_new RENAME TO stamps", [])?;
+
+    conn.execute_batch("COMMIT;")?;
+    debug!("Stamps table migration completed successfully");
+    Ok(())
+}
+
 pub fn init_db(db_path: &str) -> Result<Connection> {
     // Ensure parent directory for the database exists so SQLite can create the file
     if let Some(parent) = std::path::Path::new(db_path).parent() {
@@ -285,70 +401,31 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             // eprintln!("[DEBUG] Stamps table columns after creation: {:?} (count: {})", col_names, col_names.len());
         }
     }
-    // Now check column count and drop/recreate if needed
-    let mut needs_recreate = false;
+    // Now check column count. If it doesn't match our expected schema we should
+    // run a safe migration rather than blindly dropping the table which loses
+    // existing data. The desired schema currently has 27 columns (including
+    // the 'uniq_key' column).
     let mut col_count = 0;
+    let mut col_names = Vec::new();
     {
         let pragma = conn.prepare("PRAGMA table_info(stamps)");
         if let Ok(mut stmt) = pragma {
             let mut rows = stmt.query([])?;
-            let mut col_names = Vec::new();
             while let Ok(Some(row)) = rows.next() {
                 let name: String = row.get(1)?;
                 col_names.push(name.clone());
                 col_count += 1;
             }
-            debug!("Stamps table columns before possible drop: {:?} (count: {})", col_names, col_count);
-            if col_count > 0 && col_count != 26 {
-                needs_recreate = true;
-            }
+            debug!("Stamps table columns before possible migration: {:?} (count: {})", col_names, col_count);
         }
     }
-    if needs_recreate {
-        debug!("Dropping outdated stamps table ({} columns)...", col_count);
-        conn.execute("DROP TABLE IF EXISTS stamps", [])?;
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS stamps (
-                id INTEGER PRIMARY KEY,
-                country TEXT,
-                series TEXT,
-                year INTEGER,
-                month TEXT,
-                month_num INTEGER,
-                day TEXT,
-                sg_number TEXT,
-                type TEXT,
-                denomination TEXT,
-                color TEXT,
-                description TEXT,
-                stamps_issued TEXT,
-                mint_condition TEXT,
-                unused TEXT,
-                used TEXT,
-                letter_fdc TEXT,
-                currency TEXT,
-                image_path TEXT,
-                remote_image_url TEXT,
-                original_image_url TEXT,
-                watermark TEXT,
-                design TEXT,
-                engraving TEXT,
-                perforation TEXT,
-                context TEXT
-            )",
-            [],
-        )?;
-            debug!("Stamps table recreated.");
-        // Print column names and count after recreation
-        let pragma = conn.prepare("PRAGMA table_info(stamps)");
-        if let Ok(mut stmt) = pragma {
-            let mut rows = stmt.query([])?;
-            let mut col_names = Vec::new();
-            while let Ok(Some(row)) = rows.next() {
-                let name: String = row.get(1)?;
-                col_names.push(name);
-            }
-                debug!("Stamps table columns after recreation: {:?} (count: {})", col_names, col_names.len());
+    // Expected columns (including uniq_key)
+    let expected_col_count = 27;
+    if col_count > 0 && col_count != expected_col_count {
+        debug!("Stamps table column count ({}) does not match expected ({}). Running safe migration.", col_count, expected_col_count);
+        match migrate_stamps_table(&conn) {
+            Ok(_) => debug!("Safe migration completed from init_db."),
+            Err(e) => error!("Safe migration failed from init_db: {}", e),
         }
     }
     // Set this to true to enable debug output, false to disable
@@ -356,6 +433,64 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     if DEBUG {
             debug!("Stamps table ensured.");
     }
+
+    // Migration: add a `uniq_key` column (if missing), backfill it with a
+    // canonical dedupe key, then create a UNIQUE index on that column if there
+    // are no duplicate keys. This approach is safer when series/country text
+    // normalization is required and lets us inspect/backfill before enforcing
+    // the constraint.
+    // 1) Add column if missing
+    let mut has_uniq_col = false;
+    {
+        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            if name == "uniq_key" {
+                has_uniq_col = true;
+                break;
+            }
+        }
+    }
+    if !has_uniq_col {
+        debug!("Adding column 'uniq_key' to stamps table");
+        match conn.execute("ALTER TABLE stamps ADD COLUMN uniq_key TEXT", []) {
+            Ok(_) => debug!("Added uniq_key column."),
+            Err(e) => error!("Failed to add uniq_key column: {}", e),
+        }
+    }
+
+    // 2) Backfill uniq_key using a normalized concatenation; use COALESCE to
+    // guard against NULLs and lower() for basic normalization.
+    match conn.execute(
+        "UPDATE stamps SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'') WHERE uniq_key IS NULL OR uniq_key = ''",
+        [],
+    ) {
+        Ok(n) => debug!("Backfilled uniq_key for {} rows", n),
+        Err(e) => error!("Failed to backfill uniq_key: {}", e),
+    }
+
+    // 3) Check for duplicates on uniq_key; only create UNIQUE index if none exist
+    match conn.query_row(
+        "SELECT COUNT(*) FROM (SELECT uniq_key FROM stamps GROUP BY uniq_key HAVING COUNT(*) > 1);",
+        [],
+        |r| r.get::<_, i64>(0),
+    ) {
+        Ok(dup_groups) => {
+            if dup_groups == 0 {
+                match conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps(uniq_key);", []) {
+                    Ok(_) => debug!("Created UNIQUE index stamps_unique_uniq_key"),
+                    Err(e) => error!("Failed to create UNIQUE index stamps_unique_uniq_key: {}", e),
+                }
+            } else {
+                error!("Found {} duplicate uniq_key group(s). UNIQUE index not created. Please deduplicate rows before enabling this constraint.", dup_groups);
+            }
+        }
+        Err(e) => {
+            error!("Failed to check for duplicate uniq_key groups: {}. Skipping UNIQUE index creation.", e);
+        }
+    }
+
     Ok(conn)
 }
 
@@ -452,82 +587,42 @@ pub fn insert_stamp(
     // Check if stamp already exists
     let exists_sql = "SELECT COUNT(*), image_path, remote_image_url FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
-    let (count, existing_image_path, existing_remote_url): (i64, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
+    let (count, _existing_image_path, existing_remote_url): (i64, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
         Ok((row.get(0)?, row.get(1).unwrap_or(String::new()), row.get(2).unwrap_or(String::new())))
     })?;
     
     if count > 0 {
-        // Check if we should update this existing stamp
-    // Consider any placeholder that starts with images/no_image_ (including per-stamp placeholders)
-    let has_placeholder = existing_image_path.is_empty() || existing_image_path.starts_with("images/no_image");
-        let has_new_remote_url = !remote_image_url.is_empty() && remote_image_url != existing_remote_url;
-        
-        if has_placeholder && has_new_remote_url {
-            debug!("Stamp exists but has placeholder image (country='{}', series='{}', sg_number='{}'), updating with new image data", country, series, sg_number);
-            
-            // Update the existing record with new image information
+        // We may need to update an existing row if the caller provided a new
+        // remote_image_url (or original_image_url). Previously we only updated
+        // when the existing row contained a placeholder image. That prevented
+        // backfilling remote_image_url for rows that already had an image_path
+        // but no remote URL recorded. Update when a new remote URL is provided.
+    let has_new_remote_url = !remote_image_url.is_empty() && remote_image_url != existing_remote_url;
+
+        if has_new_remote_url {
+            debug!("Stamp exists and a new remote_image_url was provided (country='{}', series='{}', sg_number='{}'), updating remote_url/filenames", country, series, sg_number);
+
+            // Only overwrite image_path when the existing value is empty or is a placeholder
             let update_sql = "UPDATE stamps SET 
-                image_path = ?1, 
-                remote_image_url = ?2, 
-                original_image_url = ?3,
-                year = ?4,
-                month = ?5,
-                month_num = ?6,
-                day = ?7,
-                type = ?8,
-                denomination = ?9,
-                color = ?10,
-                description = ?11,
-                stamps_issued = ?12,
-                mint_condition = ?13,
-                unused = ?14,
-                used = ?15,
-                letter_fdc = ?16,
-                currency = ?17,
-                watermark = ?18,
-                design = ?19,
-                engraving = ?20,
-                perforation = ?21,
-                context = ?22
-                WHERE country = ?23 AND series = ?24 AND sg_number = ?25";
-            
-            let month_num = match month.trim().to_lowercase().as_str() {
-                "wm" | "" => 0,
-                "january" | "jan" => 1,
-                "february" | "feb" => 2,
-                "march" | "mar" => 3,
-                "april" | "apr" => 4,
-                "may" => 5,
-                "june" | "jun" => 6,
-                "july" | "jul" => 7,
-                "august" | "aug" => 8,
-                "september" | "sep" | "sept" => 9,
-                "october" | "oct" => 10,
-                "november" | "nov" => 11,
-                "december" | "dec" => 12,
-                _ => 0,
-            };
-            
-            match conn.execute(update_sql, params![
-                image_path, remote_image_url, original_image_url,
-                year, month, month_num, day, type_, denomination, color, description,
-                stamps_issued, mint_condition, unused, used, letter_fdc, currency,
-                watermark, design, engraving, perforation, context,
-                country, series, sg_number
-            ]) {
-                Ok(_) => {
-                    debug!("Successfully updated existing stamp: {} {} {}", country, series, sg_number);
+                remote_image_url = ?1,
+                original_image_url = ?2,
+                image_path = CASE WHEN (image_path IS NULL OR image_path = '' OR image_path LIKE 'images/no_image%') AND (?3 != '') THEN ?3 ELSE image_path END
+                WHERE country = ?4 AND series = ?5 AND sg_number = ?6";
+
+            match conn.execute(update_sql, params![remote_image_url, original_image_url, image_path, country, series, sg_number]) {
+                Ok(n) => {
+                    debug!("Updated existing stamp remote/original/image_path (rows={}) for {} {} {}", n, country, series, sg_number);
                     return Ok(true);
                 }
                 Err(e) => {
-                    error!("Failed to update existing stamp: {} {} {} | Error: {}", country, series, sg_number, e);
+                    error!("Failed to update existing stamp remote/original url: {} {} {} | Error: {}", country, series, sg_number, e);
                     return Err(e.into());
                 }
             }
-        } else {
-            debug!("Stamp already exists with valid data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
-            return Ok(false);
         }
+
+        debug!("Stamp already exists with valid data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
+        return Ok(false);
     }
     
     debug!("--- STAMP INSERT ATTEMPT ---");

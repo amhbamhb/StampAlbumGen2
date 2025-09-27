@@ -1,8 +1,9 @@
-use log::{debug, error};
+use log::{debug, error, info};
 use crate::types::ImageStatus;
 use scraper::{Html, Selector};
 use regex::Regex;
 use std::collections::HashSet;
+use rusqlite::params;
 
 /// Consolidated StampWorld collector implementing the key heuristics:
 /// - Prefer images scoped to a stamp row; fall back to block/global images only when needed
@@ -104,6 +105,7 @@ pub fn collect_stampworld_data(
                 if let Some(caps) = Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap().captures(&text) {
                     block_year_int = caps.get(1).map_or("0", |m| m.as_str()).parse::<i32>().unwrap_or(0);
                 }
+                // (no-op) header debug removed — header_texts will be logged later when available
             }
 
             // If block start year is well beyond requested end_year, stop to avoid unnecessary scraping
@@ -123,6 +125,37 @@ pub fn collect_stampworld_data(
                     // Filter out obvious icons and gifs
                     if url.to_lowercase().contains(".gif") || url.to_lowercase().contains("layout") || url.to_lowercase().contains("static") { continue; }
                     global_images.push((url, alt));
+                }
+            }
+
+            // Build a header -> column index map for this table so we can robustly
+            // extract fields like "Stamps Issued", "Mint Condition", "Unused", "Used", "Letter/FDC"
+            use std::collections::HashMap;
+            let mut col_map: HashMap<String, usize> = HashMap::new();
+            let mut header_texts: Vec<String> = Vec::new();
+            if let Some(table_node) = content_div.select(&Selector::parse("table").unwrap()).next() {
+                if let Some(thead) = table_node.select(&Selector::parse("thead").unwrap()).next() {
+                    for th in thead.select(&Selector::parse("th").unwrap()) {
+                        let mut txt = th.text().collect::<String>();
+                        txt = txt.trim().to_string();
+                        if let Some(img) = th.select(&Selector::parse("img").unwrap()).next() {
+                            if let Some(alt) = img.value().attr("alt") {
+                                let a = alt.trim();
+                                if !a.is_empty() { txt = a.to_string(); }
+                            }
+                        }
+                        header_texts.push(txt.clone());
+                    }
+                    // Map names to header indices (we'll align these with row cells including th)
+                    for (i, txt) in header_texts.iter().enumerate() {
+                        let low = txt.to_lowercase();
+                        if low.contains("stamps issued") || low.contains("released") { col_map.insert("stamps_issued".to_string(), i); }
+                        if low.contains("mint condition") || low.contains("mint") { col_map.insert("mint_condition".to_string(), i); }
+                        if low.contains("unused") { col_map.insert("unused".to_string(), i); }
+                        if low.contains("used") { col_map.insert("used".to_string(), i); }
+                        if low.contains("letter") || low.contains("fdc") { col_map.insert("letter_fdc".to_string(), i); }
+                        if low.contains("currency") || low.contains("usd") { col_map.insert("currency".to_string(), i); }
+                    }
                 }
             }
 
@@ -244,9 +277,98 @@ pub fn collect_stampworld_data(
                 }
                 let month_num = if month.is_empty() { "0".to_string() } else { month_number(&month) };
 
+                // Extract additional metadata from block-level details (WM, Design, Engraving, Perforation)
+                let mut watermark = String::new();
+                let mut design = String::new();
+                let mut engraving = String::new();
+                let mut perforation = String::new();
+                for d in &details_vec {
+                    let low = d.to_lowercase();
+                    if low.contains("wm:") || low.contains("watermark") {
+                        // e.g. "WM: None" or "Watermark: None"
+                        if let Some(pos) = d.find(':') { watermark = d[pos+1..].trim().to_string(); }
+                    }
+                    if low.contains("design:") {
+                        if let Some(pos) = d.find(':') { design = d[pos+1..].trim().to_string(); }
+                    }
+                    if low.contains("engraving:") {
+                        if let Some(pos) = d.find(':') { engraving = d[pos+1..].trim().to_string(); }
+                    }
+                    if low.contains("perforation:") || low.contains("perf:") {
+                        if let Some(pos) = d.find(':') { perforation = d[pos+1..].trim().to_string(); }
+                        else if low.contains("perf") { perforation = d.split_whitespace().find(|s| s.to_lowercase().starts_with("perf")).unwrap_or("").to_string(); }
+                    }
+                }
+
                 let cleaned_context_details = context_details.lines().filter(|l| !l.trim().is_empty() && l.trim() != "\u{200b}").collect::<Vec<_>>().join(" | ");
 
+                // Per-row metadata: description already captured; try to extract
+                // stamps_issued, mint_condition, unused, used, letter_fdc, currency
+                let mut mint_condition = String::new();
+                let mut unused = String::new();
+                let mut used = String::new();
+                let mut letter_fdc = String::new();
+                let mut currency = String::new();
+                let mut stamps_issued = stamps_issued.clone();
+                // Use header mapping when available to extract per-column values reliably.
+                // The table rows include a leading <th> for the 'No.' column; to align headers
+                // with row cells, build a flattened row_cells vector that starts with the row's th
+                // (if present) followed by the row's tds. Then header index i maps to row_cells[i].
+                if !col_map.is_empty() {
+                    let mut row_cells: Vec<String> = Vec::new();
+                    // include the row's th (catalog number) as first cell if present
+                    if let Some(th_row) = tr.select(&Selector::parse("th").unwrap()).next() {
+                        row_cells.push(th_row.text().collect::<String>().trim().to_string());
+                    } else {
+                        // ensure alignment: if header begins with No., push an empty placeholder for this row
+                        if !header_texts.is_empty() {
+                            let first = header_texts[0].to_lowercase();
+                            if first.contains("no") || first.contains("no.") || first.contains("#") {
+                                row_cells.push(String::new());
+                            }
+                        }
+                    }
+                    for td in &tds {
+                        row_cells.push(td.text().collect::<String>().trim().to_string());
+                    }
+                    let get_col = |name: &str| -> String {
+                        if let Some(&idx) = col_map.get(name) {
+                            if idx < row_cells.len() {
+                                return row_cells[idx].clone();
+                            }
+                        }
+                        String::new()
+                    };
+                    if series_desc.contains("1860 -1862 Queen Victoria - Not Watermarked") && sg_number == "2" {
+                        debug!("[debug-row] sg_number={} row_cells={:?}", sg_number, row_cells);
+                    }
+                    stamps_issued = get_col("stamps_issued");
+                    mint_condition = get_col("mint_condition");
+                    unused = get_col("unused");
+                    used = get_col("used");
+                    letter_fdc = get_col("letter_fdc");
+                    currency = get_col("currency");
+                    if currency.is_empty() {
+                        // fallback: last cell
+                        if let Some(last) = row_cells.last() { currency = last.clone(); }
+                    }
+                } else {
+                    // fallback heuristics when header mapping isn't present
+                    if tds.len() > 13 {
+                        mint_condition = tds[9].text().collect::<String>().trim().to_string();
+                        unused = tds[10].text().collect::<String>().trim().to_string();
+                        used = tds[11].text().collect::<String>().trim().to_string();
+                        letter_fdc = tds[12].text().collect::<String>().trim().to_string();
+                        currency = tds[13].text().collect::<String>().trim().to_string();
+                    } else if tds.len() > 9 {
+                        mint_condition = tds.get(9).map(|n| n.text().collect::<String>().trim().to_string()).unwrap_or_default();
+                        currency = tds.last().map(|n| n.text().collect::<String>().trim().to_string()).unwrap_or_default();
+                    }
+                }
+
                 // Call DB insert following the existing callers' parameter order
+                info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
+                    site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
                 let res = crate::db_utils::insert_stamp(
                     &conn,
                     site_name,
@@ -261,28 +383,72 @@ pub fn collect_stampworld_data(
                     &color,
                     &description,
                     &stamps_issued,
-                    "", // mint_condition (not reliably parsed here)
-                    "", // unused
-                    "", // used
-                    "", // letter_fdc
-                    "", // currency
+                    &mint_condition,
+                    &unused,
+                    &used,
+                    &letter_fdc,
+                    &currency,
                     &local_image_path,
                     &remote_image_url,
                     &original_image_url,
-                    "", // watermark
-                    "", // design
-                    "", // engraving
-                    "", // perforation
+                    &watermark,
+                    &design,
+                    &engraving,
+                    &perforation,
                     &cleaned_context_details,
                 );
                 match res {
                     Ok(inserted) => {
                         if inserted {
+                            info!("Inserted new stamp: {} | {} | {}", site_name, series_name, sg_number);
                             new_stamps_this_page += 1;
                             seen_stamps.insert(key.clone());
-                            let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
-                                stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, "", "", "", "", local_image_path, remote_image_url, original_image_url, "", "", "", cleaned_context_details);
+                            let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                                stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, "", "", "", "", "", local_image_path, remote_image_url, original_image_url, "", "", "", "", cleaned_context_details);
                             all_stamp_data.push(stamp_line);
+                        } else if overwrite_images {
+                            // The row already exists and wasn't updated by insert_stamp (no placeholder).
+                            // If --overwrite-images was requested, perform a targeted UPDATE to replace image fields
+                            // and fill any missing metadata fields (but do not overwrite existing non-empty values).
+                            info!("--overwrite-images set; attempting conditional UPDATE for {} | {} | {}", site_name, series_name, sg_number);
+                            let update_sql = "UPDATE stamps SET
+                                image_path = CASE WHEN (?1 != '') THEN ?1 ELSE image_path END,
+                                remote_image_url = CASE WHEN (?2 != '') THEN ?2 ELSE remote_image_url END,
+                                original_image_url = CASE WHEN (?3 != '') THEN ?3 ELSE original_image_url END,
+                                description = CASE WHEN (description IS NULL OR description = '') AND (?4 != '') THEN ?4 ELSE description END,
+                                stamps_issued = CASE WHEN (stamps_issued IS NULL OR stamps_issued = '') AND (?5 != '') THEN ?5 ELSE stamps_issued END,
+                                mint_condition = CASE WHEN (mint_condition IS NULL OR mint_condition = '') AND (?6 != '') THEN ?6 ELSE mint_condition END,
+                                unused = CASE WHEN (unused IS NULL OR unused = '') AND (?7 != '') THEN ?7 ELSE unused END,
+                                used = CASE WHEN (used IS NULL OR used = '') AND (?8 != '') THEN ?8 ELSE used END,
+                                letter_fdc = CASE WHEN (letter_fdc IS NULL OR letter_fdc = '') AND (?9 != '') THEN ?9 ELSE letter_fdc END,
+                                currency = CASE WHEN (currency IS NULL OR currency = '') AND (?10 != '') THEN ?10 ELSE currency END,
+                                watermark = CASE WHEN (watermark IS NULL OR watermark = '') AND (?11 != '') THEN ?11 ELSE watermark END,
+                                design = CASE WHEN (design IS NULL OR design = '') AND (?12 != '') THEN ?12 ELSE design END,
+                                engraving = CASE WHEN (engraving IS NULL OR engraving = '') AND (?13 != '') THEN ?13 ELSE engraving END,
+                                perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?14 != '') THEN ?14 ELSE perforation END
+                                WHERE country = ?15 AND series = ?16 AND sg_number = ?17";
+                            let params_vec = params![
+                                local_image_path, remote_image_url, original_image_url,
+                                description, stamps_issued, mint_condition, unused, used, letter_fdc, currency,
+                                watermark, design, engraving, perforation,
+                                site_name, series_name, sg_number
+                            ];
+                            match conn.execute(update_sql, params_vec) {
+                                Ok(rows) => {
+                                    if rows > 0 {
+                                        info!("Updated images/metadata for {} | {} | {} (rows={})", site_name, series_name, sg_number, rows);
+                                        // Treat this as an update event: emit a STAMP line so downstream tools see the refreshed image/metadata
+                                        new_stamps_this_page += 1;
+                                        seen_stamps.insert(key.clone());
+                                        let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                                            stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, local_image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, cleaned_context_details);
+                                        all_stamp_data.push(stamp_line);
+                                    } else {
+                                        debug!("--overwrite-images set but no DB row matched for update: {} | {} | {}", site_name, series_name, sg_number);
+                                    }
+                                }
+                                Err(e) => { error!("DB update error for {} {} {}: {}", site_name, series_name, sg_number, e); }
+                            }
                         }
                     }
                     Err(e) => { error!("DB insert error for {} {} {}: {}", site_name, series_name, sg_number, e); }
