@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.9.1 Release Notes
+# Stamp Album Generator v0.10.0 Release Notes
 
 ## Overview
 This release fixes critical page numbering issues and eliminates blank pages in album generation. The embedded reference stamp sizing system from v0.5.0 is maintained with improved reliability.
@@ -116,13 +116,13 @@ For issues or questions, please check the embedded documentation in the source c
 
 ---
 
-**Release Date**: 2025-09-21
-**Version**: 0.9.1
+**Release Date**: 2025-09-25
+**Version**: 0.10.0
 **Build**: Release (optimized)</content>
 
 ---
 
-# Stamp Album Generator v0.9.2 Release Notes
+# Stamp Album Generator v0.10.0 Release Notes
 
 ## Overview
 This patch fixes a header aggregation bug and improves placeholder image sizing so that generated AlbumEasy output uses a representative real-image size when available (falls back to 22.0 x 25.0 mm otherwise). It also adds tests to prevent regressions and minor cleanup.
@@ -135,7 +135,7 @@ This patch fixes a header aggregation bug and improves placeholder image sizing 
 ## Notes
 - A small lint/cleanup pass remains (non-functional dead_code warnings) and can be addressed in a follow-up.
 
-**Release Date**: 2025-09-23
-**Version**: 0.9.2
+**Release Date**: 2025-09-25
+**Version**: 0.10.0
 
 <parameter name="filePath">RELEASE_NOTES.md

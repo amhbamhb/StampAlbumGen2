@@ -156,7 +156,7 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         "".to_string(),
         format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name),
         "".to_string(),
-        "ALBUM_PAGES_SPACING (3.0 10.0)".to_string(),
+        "ALBUM_PAGES_SPACING (3.0 6.0)".to_string(),
         "".to_string(),
         "ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string(),
         "".to_string(),

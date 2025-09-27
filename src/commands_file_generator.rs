@@ -228,7 +228,7 @@ impl CommandsFileGenerator {
         self.get_image(&remote_url, &filename, &file_path)
     }
     
-    pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite_images: bool, page_callback: Option<&dyn Fn(usize)>) -> Vec<String> {
+    pub fn collect_stampworld_data(&mut self, base_url: &str, overwrite_images: bool, page_callback: Option<&dyn Fn(usize)>, max_pages: i32, stop_after_no_hits: i32) -> Vec<String> {
         let separator = self.separator.clone();
         let images_directory = self.images_directory.clone();
         let start_year = self.start_year;
@@ -274,6 +274,8 @@ impl CommandsFileGenerator {
             end_year,
             overwrite_images,
             page_callback,
+            max_pages,
+            stop_after_no_hits,
         )
     }
     pub fn new() -> Self {

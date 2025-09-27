@@ -203,7 +203,8 @@ pub fn generate_placeholder_image(width: u32, height: u32, output_path: &Path) -
 
 /// Generates the default placeholder image if it doesn't exist
 pub fn ensure_placeholder_image_for_album(album_name: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let album_dir = Path::new("Albums").join(album_name);
+    // Normalize album directory name to match other modules (use hyphens for spaces)
+    let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
     let placeholder_path = album_dir.join("images").join("no_image_placeholder.png");
 
     // Check if the placeholder already exists
@@ -225,7 +226,8 @@ pub fn ensure_placeholder_image_for_album(album_name: &str) -> Result<String, Bo
 /// Generates a per-stamp placeholder image (includes SG number and year) inside the album images folder.
 /// Returns the relative path (from album dir) to the generated image, e.g. "images/no_image_SG1234_1967.png".
 pub fn ensure_placeholder_image_for_stamp(album_name: &str, sg_number: &str, year: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let album_dir = Path::new("Albums").join(album_name);
+    // Normalize album directory name to match other modules (use hyphens for spaces)
+    let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
     // sanitize sg_number for filename (replace slashes etc.)
     let safe_sg = sg_number.replace(|c: char| !c.is_alphanumeric(), "_");
     let safe_year = if year.is_empty() { "unknown" } else { year };

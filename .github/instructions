@@ -1,6 +1,6 @@
 # Stamp Album Generator - Instructions
-# Version: 0.9.1
-# Last Updated: 2025-09-21
+# Version: 0.10.0
+# Last Updated: 2025-09-25
 # Previous Versions: docs/versions/instructions_2025-09-18_v1.md
 
 # Best Practices
@@ -47,3 +47,14 @@
 - Album text files are named `{country name}.txt`.
 - Extract files are named `{country name}_extract.txt`.
 - Review the output logs in the project root (timestamped .log files).
+
+# Developing with Automated Version Management
+- Refer to `docs/AUTOMATION_SETUP.md` for setup instructions.
+- Use `docs/AUTOMATION_QUICK_REFERENCE.md` for quick usage.
+- Consult `docs/AUTOMATION_SYSTEM_DOCUMENTATION.md` for full technical details.
+
+# Development Testing
+- Run tests with:
+- use a single year for all testing
+- use best pratices for testing (ie. testing in seperate file(s) for unit tests, etc.)
+

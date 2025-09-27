@@ -1,6 +1,6 @@
-# Stamp Album Generator v0.9.1
+# Stamp Album Generator v0.10.0
 
-<!-- Version: 0.9.1 | Last Updated: 2025-09-21 | Previous: docs/versions/README_2025-09-18_v1.md -->
+<!-- Version: 0.10.0 | Last Updated: 2025-09-25 | Previous: docs/versions/README_2025-09-18_v1.md -->
 
 A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
 
@@ -353,8 +353,36 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Version**: 0.9.1
-**Release Date**: 2025-09-21
+**Version**: 0.10.0
+  
+Additional CLI flags (added recently):
+
+  --base-url <BASE_URL>
+          Optional override for the base URL used when scraping web sources that
+          paginate by appending a page number. Example: "https://...&page="
+
+  --max-pages <MAX_PAGES>
+          Optional explicit limit on number of pages to fetch when scraping.
+          Use 0 to disable the explicit cap and rely on internal heuristics.
+
+  --stop-after-no-hits <N>
+          Stop scraping after N consecutive pages that yield zero stamps in the
+          requested year range. Useful to avoid long, multi-year listings from
+      causing excessive downloads. Default is 1.
+
+Example: controlled scrape for Bahamas (1859-1863) using an explicit base URL
+and stop-after-no-hits heuristic to avoid over-downloading:
+
+```bash
+./target/release/stamp_album_gen2 \
+    --source stampworld \
+    --site-name Bahamas \
+    --album-name Bahamas \
+    --base-url "https://www.stampworld.com/en/stamps/Bahamas/Postage%20stamps/1859-2024?user=676374&page=" \
+    --start-year 1859 --end-year 1863 \
+    --stop-after-no-hits 3 --max-pages 0
+```
+**Release Date**: 2025-09-25
 **Build**: Release (optimized)
 **Platform**: Linux x86-64</content>
 <parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/README.md
