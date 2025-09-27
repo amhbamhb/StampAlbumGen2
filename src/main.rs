@@ -34,6 +34,10 @@ struct Cli {
     #[arg(long)]
     db_path: Option<String>,
 
+    /// Optional base URL to use when scraping StampWorld (overrides default construction)
+    #[arg(long)]
+    base_url: Option<String>,
+
     #[arg(long, default_value_t = 0)]
     start_year: i32,
 
@@ -45,6 +49,14 @@ struct Cli {
 
     #[arg(long, default_value_t = false)]
     overwrite_images: bool,
+
+    /// Maximum number of pages to fetch when scraping StampWorld (0 = no explicit cap)
+    #[arg(long, default_value_t = 0)]
+    max_pages: i32,
+
+    /// Stop scraping after this many consecutive pages that yielded zero matching stamps (default 3)
+    #[arg(long, default_value_t = 3)]
+    stop_after_no_hits: i32,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -96,16 +108,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         cfg.start_year = cli.start_year;
         cfg.end_year = cli.end_year;
 
-    // Build base URL for stampworld pages
-        // Use the English-prefixed canonical path: '/en/stamps/{country}/' and let the collector append '?page=N'
-        let base_url = format!("https://www.stampworld.com/en/stamps/{}/", site_name.replace(' ', "%20"));
+        // Build base URL for stampworld pages.
+        // When the caller does not provide --base-url, construct the canonical
+        // StampWorld listing URL that includes the Postage stamps year-range
+        // so the collector can append a page number. Example produced:
+        // https://www.stampworld.com/en/stamps/Bahamas/Postage%20stamps/1859-1863?page=
+        let base_url = if let Some(b) = &cli.base_url {
+            b.clone()
+        } else {
+            format!(
+                "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
+                site_name.replace(' ', "%20"),
+                cli.start_year,
+                cli.end_year
+            )
+        };
     // Compose the DB path early and set it for the collector so both scraper
     // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
     let db_path = format!("{}/{}.db", cfg.album_directory, album_name.replace('/', "-"));
     stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
     println!("DEBUG: collector DB path set to {}", db_path);
 
-    let pages = cfg.collect_stampworld_data(&base_url, cli.overwrite_images, None::<&dyn Fn(usize)>);
+    let pages = cfg.collect_stampworld_data(&base_url, cli.overwrite_images, None::<&dyn Fn(usize)>, cli.max_pages, cli.stop_after_no_hits);
     println!("Scrape produced {} stamp lines", pages.len());
 
     // After scraping, generate album output from the same DB

@@ -23,5 +23,6 @@ httpmock = { version = "0.6", optional = true }
 
 [package]
 name = "stamp_album_gen2"
-version = "0.9.2"
+version = "0.10.0"
 edition = "2021"
+default-run = "stamp_album_gen2"

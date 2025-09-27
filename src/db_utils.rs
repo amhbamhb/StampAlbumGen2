@@ -12,6 +12,84 @@ pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<Strin
     Ok(result)
 }
 
+// Helper: extract leading integer prefix from sg_number
+fn leading_int(s: &str) -> Option<i64> {
+    let s = s.trim();
+    let mut digits = String::new();
+    for ch in s.chars() {
+        if ch.is_ascii_digit() {
+            digits.push(ch);
+        } else {
+            break;
+        }
+    }
+    if digits.is_empty() {
+        None
+    } else {
+        digits.parse::<i64>().ok()
+    }
+}
+
+// Create a suffix key that normalizes letters to lower-case and maps
+// punctuation like '*' to a high-sort char so letters sort before '*'.
+fn suffix_key(s: &str) -> String {
+    let s = s.trim();
+    // drop leading digits
+    let mut chars = s.chars();
+    while let Some(c) = chars.clone().next() {
+        if c.is_ascii_digit() {
+            chars.next();
+        } else {
+            break;
+        }
+    }
+    let rem: String = chars.collect();
+    rem.chars()
+        .map(|c| {
+            if c.is_ascii_alphabetic() {
+                c.to_ascii_lowercase()
+            } else if c == '*' {
+                '~' // map '*' to a high char so it sorts after letters
+            } else {
+                // keep other characters but normalize to lowercase where applicable
+                c.to_ascii_lowercase()
+            }
+        })
+        .collect()
+}
+
+// Public helper so tests can call the same sorting logic without requiring DB IO
+pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
+    v.sort_by(|a, b| {
+        // Compare year first
+        let year_cmp = a.year.cmp(&b.year);
+        if year_cmp != std::cmp::Ordering::Equal {
+            return year_cmp;
+        }
+        match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
+            (Some(ai), Some(bi)) => {
+                let cmp = ai.cmp(&bi);
+                if cmp != std::cmp::Ordering::Equal {
+                    return cmp;
+                }
+                // same numeric prefix: compare suffix keys, empty suffix sorts first
+                let a_suf = suffix_key(&a.sg_number);
+                let b_suf = suffix_key(&b.sg_number);
+                let a_empty = a_suf.is_empty();
+                let b_empty = b_suf.is_empty();
+                if a_empty != b_empty {
+                    return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
+                }
+                // tie-breaker: compare normalized suffix then full string
+                a_suf.cmp(&b_suf).then_with(|| a.sg_number.cmp(&b.sg_number))
+            }
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => a.sg_number.cmp(&b.sg_number),
+        }
+    });
+}
+
 #[derive(Debug)]
 pub struct SeriesStub {
     pub name: String,
@@ -101,6 +179,9 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
             result.push(s?);
         }
     }
+    // apply sorting to the result vector (module-level helper)
+    sort_stampstubs_inplace(&mut result);
+
     Ok(result)
 }
 
@@ -141,6 +222,16 @@ use rusqlite::{params, Connection, Result};
 use log::{debug, error};
 
 pub fn init_db(db_path: &str) -> Result<Connection> {
+    // Ensure parent directory for the database exists so SQLite can create the file
+    if let Some(parent) = std::path::Path::new(db_path).parent() {
+        if !parent.as_os_str().is_empty() {
+            if let Err(e) = std::fs::create_dir_all(parent) {
+                error!("Failed to create parent directory for DB {}: {}", parent.display(), e);
+                // Continue and attempt to open the DB - the original behaviour was to fail here;
+                // returning the error from Connection::open will surface the problem to callers.
+            }
+        }
+    }
     let conn = Connection::open(db_path)?;
     // Log the path opened and some filesystem metadata to help debug DB path mismatches
     let canonical = std::fs::canonicalize(db_path).unwrap_or_else(|_| std::path::PathBuf::from(db_path));
@@ -268,6 +359,68 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     Ok(conn)
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_stub(sg: &str, year: i32) -> StampStub {
+        StampStub {
+            year,
+            month: String::new(),
+            month_num: 0,
+            day: String::new(),
+            sg_number: sg.to_string(),
+            r#type: String::new(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            description: String::new(),
+            desc: String::new(),
+            catalog_num: sg.to_string(),
+            stamps_issued: String::new(),
+            mint_condition: String::new(),
+            unused: String::new(),
+            used: String::new(),
+            letter_fdc: String::new(),
+            currency: String::new(),
+            image_path: String::new(),
+            remote_image_url: String::new(),
+            original_image_url: String::new(),
+            watermark: String::new(),
+            design: String::new(),
+            engraving: String::new(),
+            perforation: String::new(),
+            series: String::new(),
+            context: String::new(),
+            multi_perf: false,
+        }
+    }
+
+    #[test]
+    fn test_numeric_prefix_ordering() {
+        let mut v = vec![
+            make_stub("10", 1948),
+            make_stub("1", 1948),
+            make_stub("2", 1948),
+            make_stub("4AT", 1948),
+            make_stub("4", 1948),
+            make_stub("4*", 1948),
+            make_stub("A1", 1948),
+        ];
+        sort_stampstubs_inplace(&mut v);
+        let order: Vec<String> = v.into_iter().map(|s| s.sg_number).collect();
+        assert_eq!(order, vec!["1", "2", "4", "4AT", "4*", "10", "A1"]);
+    }
+
+    #[test]
+    fn test_different_years_preserve_year_sort() {
+        let mut v = vec![make_stub("1", 1949), make_stub("2", 1948), make_stub("10", 1950)];
+        sort_stampstubs_inplace(&mut v);
+        let order: Vec<(i32, String)> = v.into_iter().map(|s| (s.year, s.sg_number)).collect();
+        assert_eq!(order, vec![(1948, "2".to_string()), (1949, "1".to_string()), (1950, "10".to_string())]);
+    }
+}
+
 pub fn insert_stamp(
     conn: &Connection,
     country: &str,
@@ -295,7 +448,7 @@ pub fn insert_stamp(
     engraving: &str,
     perforation: &str,
     context: &str,
-) -> Result<()> {
+) -> Result<bool> {
     // Check if stamp already exists
     let exists_sql = "SELECT COUNT(*), image_path, remote_image_url FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
@@ -364,7 +517,7 @@ pub fn insert_stamp(
             ]) {
                 Ok(_) => {
                     debug!("Successfully updated existing stamp: {} {} {}", country, series, sg_number);
-                    return Ok(());
+                    return Ok(true);
                 }
                 Err(e) => {
                     error!("Failed to update existing stamp: {} {} {} | Error: {}", country, series, sg_number, e);
@@ -373,7 +526,7 @@ pub fn insert_stamp(
             }
         } else {
             debug!("Stamp already exists with valid data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
-            return Ok(());
+            return Ok(false);
         }
     }
     
@@ -484,7 +637,8 @@ pub fn insert_stamp(
                 }
             }        }
     }
-    Ok(())
+    // If we reach here, insert was attempted and we assume it succeeded above; return true to indicate an insert occurred
+    Ok(true)
 }
 
 pub fn get_stamps_by_country_series(conn: &Connection, country: &str, series: &str) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {

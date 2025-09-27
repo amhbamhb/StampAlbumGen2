@@ -5,6 +5,7 @@
 
 use std::fs;
 use std::path::Path;
+use std::time::Duration;
 use reqwest;
 
 /// Downloads an image from a remote URL to the local filesystem
@@ -15,22 +16,76 @@ use reqwest;
 ///
 /// # Returns
 /// * `Result<(), Box<dyn std::error::Error>>` - Success or error
-pub fn download_image(url: &str, local_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    println!("[INFO] Downloading image from: {}", url);
+pub fn download_image(url: &str, local_path: &Path, sg: &str) -> Result<(), Box<dyn std::error::Error>> {
+    println!("[DOWNLOAD_ATTEMPT] sg={} url={} -> {}", sg, url, local_path.display());
 
     // Create the directory if it doesn't exist
     if let Some(parent) = local_path.parent() {
         fs::create_dir_all(parent)?;
     }
 
-    // Download the image
-    let response = reqwest::blocking::get(url)?;
-    let bytes = response.bytes()?;
+    // Build a small client that looks like a browser to reduce anti-bot responses
+    let mut default_headers = reqwest::header::HeaderMap::new();
+    default_headers.insert(
+        reqwest::header::USER_AGENT,
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36".parse().unwrap(),
+    );
+    default_headers.insert(
+        reqwest::header::REFERER,
+        "https://www.google.com/".parse().unwrap(),
+    );
+
+    let client = reqwest::blocking::Client::builder()
+        .default_headers(default_headers)
+        .redirect(reqwest::redirect::Policy::limited(10))
+        .timeout(Duration::from_secs(30))
+        .build()?;
+
+    let resp = match client.get(url).send() {
+        Ok(r) => r,
+        Err(e) => {
+            println!("[DOWNLOAD_FAIL] sg={} url={} error=failed_request:{}", sg, url, e);
+            return Err(Box::new(e));
+        }
+    };
+
+    let status = resp.status();
+    if !status.is_success() {
+        println!("[DOWNLOAD_FAIL] sg={} url={} error=status:{}", sg, url, status.as_u16());
+        return Err(format!("HTTP status {}", status.as_u16()).into());
+    }
+
+    // Check content-type header to avoid saving HTML error pages
+    if let Some(ct) = resp.headers().get(reqwest::header::CONTENT_TYPE) {
+        if let Ok(ct_str) = ct.to_str() {
+            if !ct_str.starts_with("image/") {
+                println!("[DOWNLOAD_FAIL] sg={} url={} error=unexpected_content_type:{}", sg, url, ct_str);
+                return Err(format!("unexpected content-type: {}", ct_str).into());
+            }
+        }
+    }
+
+    let bytes = match resp.bytes() {
+        Ok(b) => b,
+        Err(e) => {
+            println!("[DOWNLOAD_FAIL] sg={} url={} error=read_bytes:{}", sg, url, e);
+            return Err(Box::new(e));
+        }
+    };
+
+    // Validate bytes decode as an image before writing to disk
+    if image::load_from_memory(&bytes).is_err() {
+        println!("[DOWNLOAD_FAIL] sg={} url={} error=invalid_image_bytes size={}", sg, url, bytes.len());
+        return Err("downloaded bytes did not decode as an image".into());
+    }
 
     // Save to file
-    fs::write(local_path, &bytes)?;
+    if let Err(e) = fs::write(local_path, &bytes) {
+        println!("[DOWNLOAD_FAIL] sg={} url={} error=write_file:{}", sg, url, e);
+        return Err(Box::new(e));
+    }
 
-    println!("[INFO] Successfully downloaded image to: {}", local_path.display());
+    println!("[DOWNLOAD_OK] sg={} url={} status={} saved={} size={}", sg, url, status.as_u16(), local_path.display(), bytes.len());
     Ok(())
 }
 
@@ -46,7 +101,8 @@ pub fn download_image(url: &str, local_path: &Path) -> Result<(), Box<dyn std::e
 pub fn download_stamp_image_if_missing(
     image_path: &str,
     remote_url: &str,
-    album_name: &str
+    album_name: &str,
+    sg: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     if remote_url.is_empty() {
         return Ok(image_path.to_string());
@@ -70,14 +126,19 @@ pub fn download_stamp_image_if_missing(
         return Ok(image_path.to_string());
     }
 
-    // Try to download the image
-    match download_image(remote_url, &local_path) {
-        Ok(_) => Ok(image_path.to_string()),
+    // Try to download the image (instrumented)
+    match download_image(remote_url, &local_path, sg) {
+        Ok(_) => {
+            // Ensure file now exists
+            if local_path.exists() {
+                Ok(image_path.to_string())
+            } else {
+                Err("download reported OK but file not found".into())
+            }
+        }
         Err(e) => {
-            println!("[WARN] Failed to download image from {}: {}", remote_url, e);
-            // Return the original path even if download failed
-            // The placeholder system will handle missing images
-            Ok(image_path.to_string())
+            println!("[DOWNLOAD_FAIL_FINAL] sg={} url={} error={}", sg, remote_url, e);
+            Err(e)
         }
     }
 }
@@ -115,7 +176,7 @@ pub fn download_missing_stamp_images(
 
             if !local_path.exists() {
                 total_missing += 1;
-                match download_stamp_image_if_missing(&stamp.image_path, &stamp.remote_image_url, album_name) {
+                match download_stamp_image_if_missing(&stamp.image_path, &stamp.remote_image_url, album_name, &stamp.sg_number) {
                     Ok(_) => {
                         downloaded_count += 1;
                     }
