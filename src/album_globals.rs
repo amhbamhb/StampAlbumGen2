@@ -704,48 +704,15 @@ where
                     let v_mint = get_meaningful("mint_condition");
                     let v_unused = get_meaningful("unused");
                     let v_used = get_meaningful("used");
-                    let v_stamps = get_meaningful("stamps_issued");
-                    // If centre already contains stamps_issued (v_stamps.is_some()),
-                    // suppress repeating it in the right-hand third line.
-                    let centre_has_stamps = v_stamps.is_some();
 
-                    // Helper to detect numeric-like values (counts or amounts)
-                    let is_numeric_like = |s: &str| -> bool {
-                        s.chars().any(|c| c.is_ascii_digit())
-                    };
-
-                    // Determine stamps_issued: prefer explicit field (but if centre has it,
-                    // don't repeat it on the right). Otherwise fall back to a numeric unused or used value
-                    let mut third_line = if centre_has_stamps { None } else { v_stamps.clone() };
-                    let mut v_unused_for_first = v_unused.clone();
-                    let mut v_used_for_second = v_used.clone();
-                    if third_line.is_none() {
-                        if let Some(ref u) = v_unused {
-                            if is_numeric_like(u) {
-                                third_line = Some(u.clone());
-                                // avoid showing the same number twice by clearing unused for the first line
-                                v_unused_for_first = None;
-                            }
-                        }
-                    }
-                    if third_line.is_none() {
-                        if let Some(ref u) = v_used {
-                            if is_numeric_like(u) {
-                                third_line = Some(u.clone());
-                                // used moved into stamps_issued; clear used for second line
-                                v_used_for_second = None;
-                            }
-                        }
-                    }
-
-                    // First line: prefer mint_condition if meaningful, otherwise fallback to unused (but maybe cleared above)
-                    let first_line = v_mint.or(v_unused_for_first).unwrap_or_else(|| "".to_string());
-                    // Second line: used (unless it was shifted into stamps_issued above)
-                    let second_line = v_used_for_second.unwrap_or_else(|| "".to_string());
-                    // Third line: stamps_issued candidate, else empty
-                    let third_line = third_line.unwrap_or_else(|| "".to_string());
-
-                    let right = format!("{}\\n{}\\n{}", first_line, second_line, third_line);
+                    // Right-hand field rule: per user preference the right column must be
+                    //   - first line: mint_condition (if meaningful) else fallback to unused
+                    //   - second line: used
+                    // Do NOT shift used/unused into a separate third-right line here. The centre
+                    // field continues to hold `stamps_issued` when present.
+                    let first_line = v_mint.or(v_unused.clone()).unwrap_or_else(|| "".to_string());
+                    let second_line = v_used.clone().unwrap_or_else(|| "".to_string());
+                    let right = format!("{}\\n{}", first_line, second_line);
                     if !image_path.is_empty() && Path::new(&full_image_path).exists() {
                         // Emit a lightweight diagnostic comment so we can later grep the
                         // output file and verify stamps are actually being written to the
@@ -790,8 +757,9 @@ where
                             centre,
                             right
                         );
-                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
+                        
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
                     }
                 }
                 current_height += total_row_height;
