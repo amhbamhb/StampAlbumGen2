@@ -3,16 +3,18 @@
 ## 🚀 Quick Start
 
 ### For New Developers
+
 ```bash
 # 1. Use the interactive commit helper
 ./conventional-commit.sh
 
 # 2. Or commit directly with conventional format
 git commit -m "feat: add new feature"
-git push  # Triggers automated release
+git push  # Triggers CI/CD pipeline (GitLab primary)
 ```
 
 ### For Manual Control
+
 ```bash
 # Version bump types
 ./version_docs.sh patch    # 1.0.0 → 1.0.1
@@ -34,94 +36,92 @@ git push  # Triggers automated release
 
 ## 🔧 Git Hooks
 
-### Automatic Guidance
-- **Before commit**: Suggests commit types based on changes
-- **After commit**: Shows version bump impact and next steps
+- Before commit: suggests/validates conventional commit format
+- After commit: prints next-step guidance and bump impact
 
-### Manual Testing
 ```bash
-# Test hooks
+# Enable hooks if missing
 chmod +x .git/hooks/prepare-commit-msg
 chmod +x .git/hooks/post-commit
 ```
 
 ## ⚙️ Platform Setup
 
-### GitHub
-- ✅ Automatic (no setup required)
-- ✅ Uses `.github/workflows/release.yml`
+### Primary: GitLab (current)
 
-### GitLab
-- 🔑 Requires `GITLAB_ACCESS_TOKEN`
-- 📁 Uses `.gitlab-ci.yml`
-- 🏷️ Add token to CI/CD variables
+- 🔑 Requires `GITLAB_ACCESS_TOKEN` in CI/CD variables (scopes: api, write_repository)
+- 📁 Uses `.gitlab-ci.yml` for pipelines and release creation
+- Pushes / merge requests to protected branches trigger release pipeline
+
+### Future: GitHub (planned)
+
+- When added, GitHub-specific workflows and docs will be placed in docs/ and Appendix B of system documentation.
+- Suggested artifacts: `.github/workflows/release.yml`, Actions secrets, mapping notes.
 
 ## 🧪 Testing
 
 ### Full System Test
+
 ```bash
 ./test_automation.sh
 ```
 
 ### GitLab Specific
+
 ```bash
 ./test_gitlab.sh
 ```
 
 ## 📊 Version Flow
 
-```
+```text
 Developer Commit → CI/CD Trigger → Version Analysis → File Updates → Release Creation
-     ↓                ↓              ↓                ↓              ↓
-  "feat: ..."     GitHub/GitLab   Detect "feat"    Update files    Create v1.1.0
-  (conventional)  Actions/CI      → minor bump    (Cargo.toml,    (with notes)
-                                                  README.md)      (with tag)
 ```
 
-## 🎯 Key Benefits
+## 🖼 Album layout / metadata — current code notes
 
-- ✅ **Zero manual versioning** - happens automatically
-- ✅ **Consistent releases** - every conventional commit
-- ✅ **Cross-platform** - works on GitHub and GitLab
-- ✅ **Local guidance** - git hooks help developers
-- ✅ **Flexible control** - manual override available
+- Image paths are read from the DB and composed as:
+  Albums/{album-name}/{image_path} (album_name spaces replaced with '-').
+- Physical sizes estimated using estimate_real_dimensions(...). Images are scaled so height ≤ stamp_box_height; final emitted size adds stamp_box_adjust margins.
+- Left column: cleaned denomination (sg number/denomination).
+- Centre column: color, description, and stamps_issued (counts shown when present) joined with newline separators.
+- Right column: first line = mint_condition fallback — if blank the code substitutes the literal "Unsed"; second line = used; stamps_issued remains in centre.
+- get_meaningful(...) helper filters common placeholders (e.g. "n/a", "-", "0") to determine when a value is meaningful.
+- Strings (sg, image_path) are sanitized for quotes/newlines before rendering.
 
 ## 🚨 Troubleshooting
 
-### Pipeline Not Running?
+### Pipeline not running?
+
 ```bash
-# Check commit format
 git log --oneline -1
-
-# Verify branch
 git branch --show-current
-
-# Check platform CI status
+# Check GitLab pipeline page for the repo
 ```
 
-### Version Not Updating?
-```bash
-# Check current version
-grep '^version = ' Cargo.toml
+### Version not updating?
 
-# Test manually
+```bash
+# Ensure commit uses conventional format
 ./version_docs.sh --dry-run patch
 ```
 
-### Hooks Not Working?
-```bash
-# Check permissions
-ls -la .git/hooks/
+### Hooks not working?
 
-# Make executable
+```bash
+ls -la .git/hooks/
 chmod +x .git/hooks/*
 ```
 
+### Image/layout issues?
+
+- Confirm Images exist at Albums/{album-name}/{image_path}
+- Missing/unreadable images fall back to reference dimensions in estimate_real_dimensions
+
 ## 📚 Full Documentation
 
-See `docs/AUTOMATION_SYSTEM_DOCUMENTATION.md` for complete details.
+See `docs/AUTOMATION_SYSTEM_DOCUMENTATION.md` for complete details and Appendix entries for GitLab/GitHub.
 
 ---
 
-**Quick Reference v0.7.0** | **Last Updated: 2025-09-20**</content>
-<parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/AUTOMATION_QUICK_REFERENCE.md
+**Quick Reference v0.8.0** | **Last Updated: 2025-09-28**

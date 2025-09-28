@@ -7,25 +7,28 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 🚀 Features
 
 ### Core Functionality
+
 - **Database Processing**: Reads stamp data from SQLite databases
 - **AlbumEasy Output**: Generates compatible album page layouts
 - **Multi-Country Support**: Works with various stamp collections
 - **Year-based Organization**: Automatically groups stamps by year
 
 ### Advanced Sizing System
+
 - **Embedded Reference Images**: No external file dependencies
 - **Series-Specific Scaling**: Precise control stamp sizes
 - **Dynamic Layout**: Optimizes stamp arrangement within page constraints
 - **Aspect Ratio Control**: Configurable dimension calculation modes
 
 ### Performance & Portability
+
 - **Release Build**: Optimized 12MB binary for production use
 - **Cross-Platform**: Linux x86-64 compatible, windows
-
 
 ## 📦 Installation
 
 ### Option 1: Pre-built Release (Recommended)
+
 ```bash
 # Copy the portable binary to your system
 cp target/release/stamp_album_gen2 /usr/local/bin/stamp_album_gen2
@@ -33,6 +36,7 @@ chmod +x /usr/local/bin/stamp_album_gen2
 ```
 
 ### Option 2: Build from Source
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -47,6 +51,7 @@ cargo build --release
 ## 🎯 Usage
 
 ### Basic Album Generation
+
 ```bash
 # Generate album for Canada stamps (1875-1876)
 stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
@@ -56,6 +61,7 @@ stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Ca
 ```
 
 ### Command Line Options
+
 ```
 Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs.
 
@@ -99,7 +105,9 @@ Options:
 ```
 
 ### Configuration
+
 Edit `config.toml` to customize behavior:
+
 ```toml
 # Stamp dimension settings
 reference_width_mm = 200.0
@@ -131,18 +139,17 @@ FLAGDB_INTEGRATION=1 cargo test -- --ignored
 This will execute just the ignored integration tests and will only perform network access when
 `FLAGDB_INTEGRATION=1` is set.
 
-
 ## 📊 Stamp Dimension System
 
-
 ### Embedded Reference System
+
 - Uses compiled-in B4-s.jpg reference image
 - Eliminates external file dependencies
 - Automatic fallback to default ratios if embedded image fails
 
 ## 🏗️ Project Structure
 
-```
+```text
 stamp-album-gen2/
 ├── src/
 │   ├── main.rs                    # Application entry point
@@ -183,6 +190,7 @@ stamp-album-gen2/
 ## 🔧 Development
 
 ### Building
+
 ```bash
 # Debug build
 cargo build
@@ -199,7 +207,9 @@ cargo test
 This project uses automated version management with conventional commits and GitHub Actions for seamless releases.
 
 #### Conventional Commits
+
 Use conventional commit format for automatic version bumping:
+
 ```bash
 # Feature commits (minor version bump)
 git commit -m "feat: add new stamp filtering options"
@@ -214,7 +224,9 @@ git commit -m "feat!: redesign album layout system"
 ```
 
 #### Quick Commit Helper
+
 Use the interactive commit helper for easy conventional commits:
+
 ```bash
 ./conventional-commit.sh
 ```
@@ -246,20 +258,20 @@ Below are the configuration keys recognized in `config.toml` (top-level or some 
 - global_scale: f32 (optional)
 - header_font_spacing: f32 (optional)
 - header_formatting: table (optional)
-    - date_format: string ("dashes" or "commas")
-    - label_style: string ("abbreviated" or "full")
-    - series_style: string ("title", "subtitle" or "none")
-    - include_currency: bool
-    - include_design: bool
-    - include_engraving: bool
-    - include_watermark: bool
-    - include_perforation: bool
-    - include_catalog_numbers: bool
-    - include_series: bool
-    - include_country: bool
-    - include_date: bool
-    - print_flag_cover: bool
-    - header_spacing: float
+  - date_format: string ("dashes" or "commas")
+  - label_style: string ("abbreviated" or "full")
+  - series_style: string ("title", "subtitle" or "none")
+  - include_currency: bool
+  - include_design: bool
+  - include_engraving: bool
+  - include_watermark: bool
+  - include_perforation: bool
+  - include_catalog_numbers: bool
+  - include_series: bool
+  - include_country: bool
+  - include_date: bool
+  - print_flag_cover: bool
+  - header_spacing: float
 - calibration_csv: string (optional)
 - max_rows_per_page: integer (optional)
 - include_design/include_engraving/include_watermark/include_perforation/include_catalog_numbers/include_series/include_country/include_date: booleans (top-level alternative placement supported)
@@ -285,32 +297,40 @@ The CLI supports these flags and options (more verbose listing):
 
 When scraping StampWorld, the program will by default percent-encode common problematic characters (space -> `%20`, `!` -> `%21`, `/` -> `%2F`). It also consults `slug_overrides.toml` and will attempt a small deterministic fallback (insert `!` before first or last hyphen) if the constructed listing returns a 404. This behavior is logged at info level.
 
-
 #### Git Hooks
+
 Automatic git hooks provide guidance for conventional commits:
+
 - **prepare-commit-msg**: Suggests version bump types based on your changes
 - **post-commit**: Detects conventional commits and recommends next steps
 
 #### GitHub Actions Workflow
+
 The `.github/workflows/release.yml` provides:
+
 - **Automatic Releases**: Conventional commits trigger version bumps and releases
 - **Version Consistency**: Updates all version references across the project
 - **File Updates**: Automatically updates README.md, Cargo.toml, and other files
 - **Release Notes**: Generates comprehensive release notes
 
 #### GitLab CI/CD Pipeline (Alternative)
+
 For GitLab repositories, use `.gitlab-ci.yml` instead:
+
 - **Same Automation**: Conventional commits trigger automated releases
 - **GitLab Releases**: Creates GitLab releases with proper versioning
 - **Access Token**: Requires `GITLAB_ACCESS_TOKEN` with API and repository permissions
 
 **GitLab Setup Requirements:**
+
 1. Create a Personal Access Token with `api` and `write_repository` scopes
 2. Add `GITLAB_ACCESS_TOKEN` as a CI/CD variable in your GitLab project
 3. The pipeline will automatically trigger on conventional commits to main/master
 
 #### Manual Version Management
+
 For manual version control, use the version management script:
+
 ```bash
 # Bump patch version (0.7.0 -> 0.7.1)
 ./version_docs.sh patch
@@ -326,6 +346,7 @@ For manual version control, use the version management script:
 ```
 
 ### Dependencies
+
 - **rusqlite**: SQLite database access
 - **image**: Image processing and format support (jpg features)
 - **reqwest**: HTTP client for data scraping (blocking + JSON features)
@@ -345,12 +366,14 @@ For manual version control, use the version management script:
 ## 📋 System Requirements
 
 ### Minimum Requirements
+
 - **OS**: Linux x86-64
 - **RAM**: 256MB
 - **Storage**: 50MB (plus album data)
 - **Dependencies**: SQLite3, OpenSSL, standard C libraries
 
 ### Recommended Setup
+
 - **RAM**: 512MB or more
 - **Storage**: 1GB+ for large stamp collections
 - **CPU**: Multi-core processor for faster processing
@@ -360,20 +383,25 @@ For manual version control, use the version management script:
 ### Common Issues
 
 **"Could not load embedded reference image"**
+
 - This is a warning, not an error
 - The system will use default scaling ratios
 - Check that the binary was built correctly
 
 **"Database not found"**
+
 - Verify the `--db-path` points to a valid SQLite database
 - Ensure the database file has proper permissions
 
 **"Image dimensions not found"**
+
 - Check that stamp images exist in `Albums/{album}/images/`
 - Verify image files are not corrupted
 
 ### Debug Mode
+
 Run with debug logging:
+
 ```bash
 RUST_LOG=debug stamp_album_gen2 [options]
 ```
@@ -383,21 +411,27 @@ RUST_LOG=debug stamp_album_gen2 [options]
 ### Core Functions
 
 #### `generate_album_output_from_stamps(stamps, album_name, page_callback)`
+
 Generates complete AlbumEasy output from a filtered list of stamps. Takes pre-filtered stamp data and creates optimized album page layouts with proper spacing and year-based organization.
 
 #### `calc_mm_per_pixel_embedded(real_width_mm, real_height_mm)`
+
 Calculates precise mm-per-pixel ratios using the embedded B4-s.jpg reference image. Eliminates external file dependencies and ensures consistent dimension calculations across all installations.
 
 #### `get_scaling_for_series(series)`
+
 Returns appropriate scaling factors based on stamp series identifier (L/M/N/R/S/T/U series). Each series has optimized scaling factors for precise stamp dimension control in album layouts.
 
 #### `load_stamps_from_db(db_path)`
+
 Loads and filters stamp data from SQLite databases with support for year-based filtering and series-specific processing. Handles database connections and stamp data extraction.
 
 #### `download_stamp_image_if_missing(album_name, image_path, base_url)`
+
 Downloads missing stamp images automatically from configured sources. Supports multiple image formats and handles network errors gracefully with retry logic.
 
 #### `extract_header_info(stamps)`
+
 Extracts page header information from stamp collections including year ranges, series information, and layout metadata for AlbumEasy format generation.
 
 ## 🤝 Contributing
@@ -449,7 +483,8 @@ and stop-after-no-hits heuristic to avoid over-downloading:
     --start-year 1859 --end-year 1863 \
     --stop-after-no-hits 3 --max-pages 0
 ```
+
 **Release Date**: 2025-09-25
 **Build**: Release (optimized)
 **Platform**: Linux x86-64</content>
-<parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/README.md
+`filePath`: README.md
