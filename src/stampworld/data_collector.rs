@@ -189,6 +189,14 @@ pub fn collect_stampworld_data(
     let year_re = Regex::new(r"(18|19|20)\d{2}").unwrap();
     let range_re = Regex::new(r"^\s*\d+\s*[-\u{2011}\u{2013}\u{2012}\u{2010}]\s*\d+\s*$").unwrap();
 
+    // allow a small set of deterministic slug-fallback attempts when the
+    // first request for page 1 returns 404. We keep a mutable
+    // `working_base_url` and a queue `slug_variants` so we can try up to a
+    // couple of reasonable alternatives (insert '!' before first hyphen,
+    // or before last hyphen) without guessing lots of permutations.
+    let mut working_base_url = base_url.to_string();
+    let mut slug_variants: Vec<String> = Vec::new();
+
     while !done {
         // Respect max_pages if set
         if max_pages > 0 && page_num > max_pages {
@@ -196,9 +204,10 @@ pub fn collect_stampworld_data(
             break;
         }
 
-        // Fetch page
-        let url = format!("{}{}", base_url, page_num);
-        debug!("Fetching StampWorld page: {}", url);
+    // Fetch page using the current working base URL
+    let url = format!("{}{}", working_base_url, page_num);
+    // Temporary info: log exact request URL we'll call (use info so it appears without RUST_LOG=debug)
+    info!("Request URL: {}", url);
         let resp = match client.get(&url).send() {
             Ok(r) => r,
             Err(e) => {
@@ -206,10 +215,68 @@ pub fn collect_stampworld_data(
                 break;
             }
         };
+        let status = resp.status();
         let body = match resp.text() {
             Ok(b) => b,
             Err(e) => { error!("Failed to read page text: {}", e); break; }
         };
+        // Log short HTTP response info to help diagnose site errors (info-level to avoid huge debug dumps)
+        info!("HTTP status for {} -> {}", url, status);
+        // If page 1 returns 404, prepare and/or consume deterministic
+        // slug_variants (insert '!' before first/last hyphen) and retry them
+        // one-by-one. We only populate the queue once per run to avoid
+        // recomputing variants on every 404.
+        if status.as_u16() == 404 && page_num == 1 {
+            // Populate variants if not already done and the site_name doesn't
+            // already contain an '!'. Use a small encoder similar to main.rs.
+            if slug_variants.is_empty() && !site_name.contains('!') {
+                let encode_site = |s: &str| s.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                // first-hyphen insertion
+                if let Some((first, rest)) = site_name.split_once('-') {
+                    let variant = format!("{}!{}", first, rest);
+                    if variant != site_name {
+                        let encoded = encode_site(&variant);
+                        let alt_base = format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, start_year, end_year);
+                        slug_variants.push(alt_base);
+                    }
+                }
+                // last-hyphen insertion
+                if let Some(pos) = site_name.rfind('-') {
+                    // only build if different from first insertion
+                    let (head, tail) = site_name.split_at(pos);
+                    // tail starts with '-', drop it then build
+                    if tail.len() > 1 {
+                        let tail_rest = &tail[1..];
+                        let variant = format!("{}!{}", head, tail_rest);
+                        if variant != site_name {
+                            let encode = |s: &str| s.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                            let encoded = encode(&variant);
+                            let alt_base = format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, start_year, end_year);
+                            // avoid duplicates
+                            if !slug_variants.contains(&alt_base) {
+                                slug_variants.push(alt_base);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If we have prepared variants, consume the next one and retry
+            if !slug_variants.is_empty() {
+                let alt_base = slug_variants.remove(0);
+                info!("Page 1 returned 404; retrying with slug-variant URL: {}", alt_base);
+                working_base_url = alt_base;
+                // reset page counter so we re-request page 1 for the new slug
+                page_num = 1;
+                // continue to try the alternate URL immediately
+                continue;
+            }
+        }
+        // Emit first ~2KB of body to aid debugging (avoid flood) - chars taken as approximate
+        let snippet: String = body.chars().take(2048).collect();
+        if !snippet.is_empty() {
+            info!("HTTP body snippet for {}:\n{}", url, snippet);
+        }
         if let Some(cb) = page_callback { cb(page_num as usize); }
 
         let document = Html::parse_document(&body);
@@ -662,5 +729,51 @@ mod tests {
         assert_eq!(design, "King George");
         assert_eq!(engr, "Recess");
         assert_eq!(perf, "12");
+    }
+
+    #[test]
+    fn test_extract_block_metadata_multiline_block() {
+        // This simulates the original problematic <p> block which contained multiple
+        // labeled lines concatenated together and previously was stored verbatim
+        // into multiple DB columns.
+        let block = "Design: Herman Herbert Schwartz\nEngraving: Herman Herbert Schwartz\nPerforation: 12\nWM: None".to_string();
+        let src = vec![block];
+        let (wm, design, engr, perf) = extract_block_metadata(&src);
+        assert_eq!(wm, "None");
+        assert_eq!(design, "Herman Herbert Schwartz");
+        assert_eq!(engr, "Herman Herbert Schwartz");
+        assert_eq!(perf, "12");
+    }
+
+    #[test]
+    fn test_slug_variant_encoding() {
+        // mimic the small encoder used in the fallback heuristic
+        let encode = |s: &str| s.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+        let original = "British-ColumbiaIsland";
+        // original should encode spaces and punctuation (none here)
+        assert_eq!(encode(original), "British-ColumbiaIsland");
+
+        let with_hyphen = "British-Columbia-Vancouver-Island";
+        // split-on-first-hyphen and insert '!'
+        if let Some((first, rest)) = with_hyphen.split_once('-') {
+            let variant = format!("{}!{}", first, rest);
+            assert_eq!(variant, "British!Columbia-Vancouver-Island");
+            let encoded = encode(&variant);
+            assert_eq!(encoded, "British%21Columbia-Vancouver-Island");
+        } else {
+            panic!("expected hyphen in test string");
+        }
+        // last-hyphen insertion
+        let multi = "A-B-C-D";
+        if let Some(pos) = multi.rfind('-') {
+            let (head, tail) = multi.split_at(pos);
+            let tail_rest = &tail[1..];
+            let variant = format!("{}!{}", head, tail_rest);
+            assert_eq!(variant, "A-B-C!D");
+            let encoded = encode(&variant);
+            assert_eq!(encoded, "A-B-C%21D");
+        } else {
+            panic!("expected hyphen in multi string");
+        }
     }
 }

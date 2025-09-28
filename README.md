@@ -219,6 +219,73 @@ Use the interactive commit helper for easy conventional commits:
 ./conventional-commit.sh
 ```
 
+## Slug overrides (stampworld)
+
+If StampWorld uses a canonical slug that doesn't match the `--site-name` you pass, you can create a `slug_overrides.toml` in the project root to map your input to the canonical slug. The loader will search upward from the current working directory (like `config.toml`).
+
+Example `slug_overrides.toml`:
+
+```toml
+[slug_overrides]
+"British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
+```
+
+When present, this mapping is used before any automatic heuristic fallback. This is the preferred long-term approach for site names that consistently require a different slug.
+
+## Configuration keys (full list)
+
+Below are the configuration keys recognized in `config.toml` (top-level or some inside `[header_formatting]`):
+
+- reference_width_mm: f32 (optional)
+- reference_height_mm: f32 (optional)
+- stamp_box_height: f32 (optional)
+- stamp_box_adjust: f32 (optional)
+- median_width_cap_3: f32 (optional)
+- median_width_cap_4: f32 (optional)
+- row_font_spacing: f32 (optional)
+- global_scale: f32 (optional)
+- header_font_spacing: f32 (optional)
+- header_formatting: table (optional)
+    - date_format: string ("dashes" or "commas")
+    - label_style: string ("abbreviated" or "full")
+    - series_style: string ("title", "subtitle" or "none")
+    - include_currency: bool
+    - include_design: bool
+    - include_engraving: bool
+    - include_watermark: bool
+    - include_perforation: bool
+    - include_catalog_numbers: bool
+    - include_series: bool
+    - include_country: bool
+    - include_date: bool
+    - print_flag_cover: bool
+    - header_spacing: float
+- calibration_csv: string (optional)
+- max_rows_per_page: integer (optional)
+- include_design/include_engraving/include_watermark/include_perforation/include_catalog_numbers/include_series/include_country/include_date: booleans (top-level alternative placement supported)
+- print_flag_cover: bool (top-level or under header_formatting)
+
+The loader will propagate values placed inside `[header_formatting]` up to the top-level fields for backwards compatibility.
+
+## CLI options (complete)
+
+The CLI supports these flags and options (more verbose listing):
+
+- --source <stampworld|touchstamps|extractfile|colnectexport> (default: stampworld)
+- --site-name <SITE_NAME> (required for scraping)
+- --album-name <ALBUM_NAME>
+- --db-path <DB_PATH> (required in output-only mode)
+- --base-url <URL> (optional: override automatic StampWorld URL construction)
+- --start-year <START_YEAR> (default 0)
+- --end-year <END_YEAR> (default 9999)
+- --overwrite-album (boolean)
+- --overwrite-images (boolean)
+- --max-pages <N> (0 = unlimited)
+- --stop-after-no_hits <N> (default 3)
+
+When scraping StampWorld, the program will by default percent-encode common problematic characters (space -> `%20`, `!` -> `%21`, `/` -> `%2F`). It also consults `slug_overrides.toml` and will attempt a small deterministic fallback (insert `!` before first or last hyphen) if the constructed listing returns a 404. This behavior is logged at info level.
+
+
 #### Git Hooks
 Automatic git hooks provide guidance for conventional commits:
 - **prepare-commit-msg**: Suggests version bump types based on your changes

@@ -238,6 +238,42 @@ for country in countries {
 - ✅ Embedded reference image system
 - ✅ Series-specific scaling factors
 - ✅ Comprehensive API documentation
+
+## StampWorld slug overrides
+
+The application supports a `slug_overrides.toml` mapping to resolve mismatches between the user-provided `--site-name` and the canonical StampWorld slug. Place a file named `slug_overrides.toml` in the project root with:
+
+```toml
+[slug_overrides]
+"British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
+```
+
+The loader searches upward from the current working directory and will use the provided mapping before applying heuristic fallbacks.
+
+## CLI options (summary)
+
+- --source <source> (default: stampworld)
+- --site-name <site_name> (required for scraping)
+- --album-name <album_name>
+- --db-path <path> (output-only mode)
+- --base-url <url> (override default StampWorld URL construction)
+- --start-year <int>
+- --end-year <int>
+- --overwrite-album
+- --overwrite-images
+- --max-pages <int>
+- --stop-after-no-hits <int>
+
+## Config keys (summary)
+
+See `config_template.toml` for a template. Key groups:
+
+- Page and stamp sizing: `reference_width_mm`, `reference_height_mm`, `stamp_box_height`, `stamp_box_adjust`
+- Layout spacing: `row_font_spacing`, `header_font_spacing`
+- Header toggles: `include_design`, `include_engraving`, `include_watermark`, `include_perforation`, `include_catalog_numbers`, `include_series`, `include_country`, `include_date`
+- `print_flag_cover` (bool)
+- Optional `slug_overrides` table (documented above)
+
 - ✅ Release build optimizations
 
 ### Future Enhancements

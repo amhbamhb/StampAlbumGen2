@@ -1,6 +1,6 @@
 pub mod flagdb;
-mod config;
-pub use crate::config::{Config, HeaderFormatting};
+pub mod config;
+pub use crate::config::{Config, HeaderFormatting, load_slug_overrides};
 // Main library file for StampAlbumGen2
 // External crates
 

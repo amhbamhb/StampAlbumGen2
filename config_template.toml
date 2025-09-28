@@ -46,3 +46,9 @@ median_width_cap_4 = 30.0
 # If false, the generator will not attempt to download/copy a country flag or
 # emit the large flag/title cover page. Defaults to true when omitted.
 # print_flag_cover = true
+
+# --- Slug overrides for StampWorld ---
+# Map your local `--site-name` to a canonical StampWorld slug when needed.
+# Example:
+# [slug_overrides]
+# "British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"

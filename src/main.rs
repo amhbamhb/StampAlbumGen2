@@ -116,12 +116,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let base_url = if let Some(b) = &cli.base_url {
             b.clone()
         } else {
-            format!(
-                "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                site_name.replace(' ', "%20"),
-                cli.start_year,
-                cli.end_year
-            )
+            // Allow users to provide explicit overrides via `slug_overrides.toml`.
+            // This file (looked up like `config.toml`) may contain a table
+            // `[slug_overrides]` mapping the provided site_name to a canonical
+            // StampWorld slug (which may contain '!' or other punctuation).
+            let overrides = stamp_album_gen2::config::load_slug_overrides("slug_overrides.toml");
+            if let Some(canon) = overrides.get(&site_name) {
+                // If there's an explicit override, use it verbatim (but still
+                // percent-encode reserved characters for the URL path).
+                let encoded = canon.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                println!("Using slug override for '{}': '{}' -> encoded='{}'", site_name, canon, encoded);
+                format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, cli.start_year, cli.end_year)
+            } else {
+                // Minimal percent-encoding for common problematic characters
+                // that appear in StampWorld site names (space, '!' and '/').
+                let encoded_site = site_name.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                format!(
+                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
+                    encoded_site,
+                    cli.start_year,
+                    cli.end_year
+                )
+            }
         };
     // Compose the DB path early and set it for the collector so both scraper
     // and generator operate on the same DB file under Albums/{Album}/{Album}.db.

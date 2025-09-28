@@ -154,3 +154,44 @@ pub fn load_config(path: &str) -> Config {
     println!("[INFO] config.toml not found in parent dirs or failed to parse, using default values");
     Config::default()
 }
+
+use std::collections::HashMap;
+
+/// Load a simple mapping file that allows users to override site_name -> canonical_slug
+/// Example TOML:
+/// [slug_overrides]
+/// "British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
+pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
+    // Search upward from cwd like load_config
+    let try_paths = {
+        let mut paths = Vec::new();
+        if let Ok(mut dir) = std::env::current_dir() {
+            for _ in 0..8 {
+                paths.push(dir.join(path));
+                if !dir.pop() { break; }
+            }
+        }
+        paths.push(std::path::PathBuf::from(path));
+        paths
+    };
+
+    for candidate in try_paths.iter() {
+        if let Ok(content) = fs::read_to_string(candidate) {
+            if let Ok(value) = toml::from_str::<toml::Value>(&content) {
+                if let Some(table) = value.get("slug_overrides") {
+                    if let Some(tbl) = table.as_table() {
+                        let mut out = HashMap::new();
+                        for (k, v) in tbl.iter() {
+                            if let Some(s) = v.as_str() {
+                                out.insert(k.clone(), s.to_string());
+                            }
+                        }
+                        println!("[INFO] Loaded slug_overrides from {} ({} entries)", candidate.display(), out.len());
+                        return out;
+                    }
+                }
+            }
+        }
+    }
+    HashMap::new()
+}

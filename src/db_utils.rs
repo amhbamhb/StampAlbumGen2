@@ -220,7 +220,7 @@ pub struct StampStub {
 }
 use rusqlite::{params, Connection, Result};
 use regex::Regex;
-use log::{debug, error};
+use log::{debug, error, info};
 
 // Robust migration helper: recreate `stamps` table with canonical schema while preserving data.
 pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
@@ -392,6 +392,7 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
     }
 
     // The above push used a temporary tuple; convert and apply updates
+    let mut updated_count: i64 = 0;
     for (id, _, _, _, _, _) in updates.iter() {
         // Re-fetch per-row to ensure we operate on the latest values
         let id = *id;
@@ -424,11 +425,14 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
             values.push(Box::new(id));
             // Create a slice of &dyn ToSql
             let refs: Vec<&dyn rusqlite::ToSql> = values.iter().map(|b| &**b as &dyn rusqlite::ToSql).collect();
-            let _ = conn.execute(&sql, rusqlite::params_from_iter(refs));
+            if let Ok(rows) = conn.execute(&sql, rusqlite::params_from_iter(refs)) {
+                updated_count += rows as i64;
+            }
         }
     }
 
     conn.execute_batch("COMMIT;")?;
+    info!("Migration fixed block metadata; updated {} row(s)", updated_count);
     debug!("Completed migration: fix block metadata and normalize currency");
     Ok(())
 }
