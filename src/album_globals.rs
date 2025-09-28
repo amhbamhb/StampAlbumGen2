@@ -252,6 +252,7 @@ where
     // Emit a single leading page header for Page 1
     let _ = writeln!(output, "### Page 1 ###");
     let _ = writeln!(output, "PAGE_START");
+    let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
     let _ = writeln!(output, "################################################################################");
         // Page size and margins (from AlbumEasy settings)
         let page_height = 279.4; // US Letter height in mm
@@ -542,7 +543,9 @@ where
                             let _ = writeln!(output, "\n################################################################################");
                         }
                         let _ = writeln!(output, "### Page {} ###", page_counter);
-                        let _ = writeln!(output, "PAGE_START\n################################################################################");
+                        let _ = writeln!(output, "PAGE_START");
+                        let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                        let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         rows_on_page = 0;
                         debug!("Forced page break before header and first row");
@@ -622,7 +625,9 @@ where
                             page_counter += 1;
                             let _ = writeln!(output, "\n################################################################################");
                             let _ = writeln!(output, "### Page {} ###", page_counter);
-                            let _ = writeln!(output, "PAGE_START\n################################################################################");
+                            let _ = writeln!(output, "PAGE_START");
+                            let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                            let _ = writeln!(output, "################################################################################");
                             current_height = 0.0;
                             header_written = false;
                             rows_on_page = 0;
@@ -635,7 +640,9 @@ where
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
                         let _ = writeln!(output, "### Page {} ###", page_counter);
-                        let _ = writeln!(output, "PAGE_START\n################################################################################");
+                        let _ = writeln!(output, "PAGE_START");
+                        let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                        let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         header_written = false;
                         rows_on_page = 0;

@@ -102,19 +102,11 @@ pub fn sanitize_filename(filename: &str) -> String {
 
 /// Writes global album settings to the provided writer
 pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
-    // Get current date/time and user information
-    use std::time::{SystemTime, UNIX_EPOCH};
-    let now = SystemTime::now();
-    let datetime = now.duration_since(UNIX_EPOCH).unwrap();
-    let secs = datetime.as_secs();
-    let datetime_str = format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
-        1970 + (secs / 31536000), // years since 1970
-        ((secs % 31536000) / 2628000) + 1, // months (approximate)
-        ((secs % 2628000) / 86400) + 1, // days (approximate)
-        (secs % 86400) / 3600, // hours
-        (secs % 3600) / 60, // minutes
-        secs % 60 // seconds
-    );
+    // Get current date/time and user information using chrono (cross-platform)
+    // Use UTC for the canonical generated timestamp and Local for the host localtime
+    use chrono::{Utc, Local};
+    let datetime_str = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let localdatetime = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     // Get user information (cross-platform)
     let username = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string());
@@ -138,7 +130,8 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         "################################################################################".to_string(),
         format!("# {}", album_name),
         "################################################################################".to_string(),
-        format!("# Generated: {}", datetime_str),
+        format!("# Generated: UTC: {} localtime : {}", datetime_str, localdatetime),
+
         format!("# User: {}@{}", username, hostname),
         format!("# OS: {}", std::env::consts::OS),
         format!("# Architecture: {}", std::env::consts::ARCH),
@@ -237,17 +230,20 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         let _ = writeln!(writer, "### {} ###", album_name);
     let _ = writeln!(writer, "PAGE_START");
     // Ensure cover pages also begin with a row start so the layout is initialized
-    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+    // let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
         // If we have a flag image, emit it as a large image entry on the cover.
         if let Some(fp) = flag_path_opt.as_ref() {
             // Emit a large image placeholder (AlbumEasy consumer will scale)
-            let _ = writeln!(writer, "PAGE_VSPACE (12)");
+            let _ = writeln!(writer, "PAGE_VSPACE (40)");
+            let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
             let _ = writeln!(writer, "STAMP_ADD_IMG (160.0 80.0 \"{}\" \"\" \"\" \"\")", fp);
             let _ = writeln!(writer, "PAGE_VSPACE (12)");
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 32 \"{}\" 1.0)", album_name.replace("\\n", " "));
         } else {
             // Text-only cover: large centered title
             let _ = writeln!(writer, "PAGE_VSPACE (24)");
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 32 \"{}\" 1.0)", album_name.replace("\\n", " "));
+            let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 48 \"{}\" 1.0)", album_name.replace("\\n", " "));
             let _ = writeln!(writer, "PAGE_VSPACE (18)");
         }
         // After cover, emit a page separator so normal globals follow

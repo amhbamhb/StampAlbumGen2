@@ -1,0 +1,7 @@
+error: unexpected argument '--max_pages' found
+
+  tip: a similar argument exists: '--max-pages'
+
+Usage: stamp_album_gen2 --source <SOURCE> --site-name <SITE_NAME> --start-year <START_YEAR> --end-year <END_YEAR> --max-pages <MAX_PAGES>
+
+For more information, try '--help'.

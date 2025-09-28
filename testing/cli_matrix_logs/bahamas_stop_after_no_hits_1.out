@@ -1,0 +1,7 @@
+error: unexpected argument '--stop_after_no_hits' found
+
+  tip: a similar argument exists: '--stop-after-no-hits'
+
+Usage: stamp_album_gen2 --source <SOURCE> --site-name <SITE_NAME> --start-year <START_YEAR> --end-year <END_YEAR> --stop-after-no-hits <STOP_AFTER_NO_HITS>
+
+For more information, try '--help'.
