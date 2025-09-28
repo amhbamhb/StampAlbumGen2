@@ -137,7 +137,7 @@ pub fn new_row<W: std::io::Write>(
         );
         new_year(writer, year);
     }
-    let _ = writeln!(writer, "ROW_START_FS (TN 6 0.1 5.0)");
+    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
     *rows_written += 1;
     *stamps_written = 0;
     *used_width = 0;
@@ -548,13 +548,13 @@ where
                         debug!("Forced page break before header and first row");
                     }
                     // Output header and first row together
-                    let _ = writeln!(output, "PAGE_VSPACE (8)");
+                    let _ = writeln!(output, "PAGE_VSPACE (6)");
                     current_height += vspace_before_header;
                     for (line, h) in header_lines_vec {
                         let _ = writeln!(output, "{}", line);
                         current_height += h;
                     }
-                    let _ = writeln!(output, "PAGE_VSPACE (12.5)");
+                    let _ = writeln!(output, "PAGE_VSPACE (6)");
                     current_height += vspace_after_header;
                     header_written = true;
                 }
@@ -662,63 +662,126 @@ where
                     let emit_width = est_width_mm + 2.0 * stamp_box_adjust;
                     let emit_height = est_height_mm + 2.0 * stamp_box_adjust;
                     // Left: sg_number
-                    let left = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
-                    // Centre: denomination, color, description
+                    let left =  clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
+                    // let sgnum = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
+                    // Centre: color, description, and stamps_issued (counts are shown here when present)
                     let centre = format!(
                         "{}\\n{}\\n{}",
-                        clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string())),
                         clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string())),
-                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()))
+                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string())),
+                        clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()))
                     );
                     // Right: mint_condition (or unused), used, stamps_issued
-                    let mint =
-                        clean_text(stamp.attrs.get("mint_condition").unwrap_or(&"".to_string()));
-                    let unused = clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string()));
-                    let right = if !mint.is_empty() {
-                        format!(
-                            "{}\\n{}\\n{}",
-                            mint,
-                            clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())),
-                            clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()))
-                        )
-                    } else {
-                        format!(
-                            "{}\\n{}\\n{}",
-                            unused,
-                            clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())),
-                            clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()))
-                        )
+                    let mint_raw = stamp
+                        .attrs
+                        .get("mint_condition")
+                        .unwrap_or(&"".to_string())
+                        .trim()
+                        .to_string();
+                    let _mint = clean_text(&mint_raw);
+                    let _unused = clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string()));
+                    let sgnum = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
+                    let _safe_sg = left
+                        .replace("\\n", " ")
+                        .split_whitespace()
+                        .collect::<Vec<&str>>()
+                        .join(" ")
+                        .replace("\"", "'");
+                    let _safe_img = image_path.replace("\"", "'");
+
+                    // Helper: consider common placeholders as "empty"
+                    let get_meaningful = |key: &str| -> Option<String> {
+                        let v = clean_text(stamp.attrs.get(key).unwrap_or(&"".to_string())).trim().to_string();
+                        let low = v.to_lowercase();
+                        if v.is_empty() || low == "0" || low == "-" || low == "n/a" || low == "—" {
+                            None
+                        } else {
+                            Some(v)
+                        }
                     };
+
+                    // Fetch cleaned values for all relevant keys
+                    let v_mint = get_meaningful("mint_condition");
+                    let v_unused = get_meaningful("unused");
+                    let v_used = get_meaningful("used");
+                    let v_stamps = get_meaningful("stamps_issued");
+                    // If centre already contains stamps_issued (v_stamps.is_some()),
+                    // suppress repeating it in the right-hand third line.
+                    let centre_has_stamps = v_stamps.is_some();
+
+                    // Helper to detect numeric-like values (counts or amounts)
+                    let is_numeric_like = |s: &str| -> bool {
+                        s.chars().any(|c| c.is_ascii_digit())
+                    };
+
+                    // Determine stamps_issued: prefer explicit field (but if centre has it,
+                    // don't repeat it on the right). Otherwise fall back to a numeric unused or used value
+                    let mut third_line = if centre_has_stamps { None } else { v_stamps.clone() };
+                    let mut v_unused_for_first = v_unused.clone();
+                    let mut v_used_for_second = v_used.clone();
+                    if third_line.is_none() {
+                        if let Some(ref u) = v_unused {
+                            if is_numeric_like(u) {
+                                third_line = Some(u.clone());
+                                // avoid showing the same number twice by clearing unused for the first line
+                                v_unused_for_first = None;
+                            }
+                        }
+                    }
+                    if third_line.is_none() {
+                        if let Some(ref u) = v_used {
+                            if is_numeric_like(u) {
+                                third_line = Some(u.clone());
+                                // used moved into stamps_issued; clear used for second line
+                                v_used_for_second = None;
+                            }
+                        }
+                    }
+
+                    // First line: prefer mint_condition if meaningful, otherwise fallback to unused (but maybe cleared above)
+                    let first_line = v_mint.or(v_unused_for_first).unwrap_or_else(|| "".to_string());
+                    // Second line: used (unless it was shifted into stamps_issued above)
+                    let second_line = v_used_for_second.unwrap_or_else(|| "".to_string());
+                    // Third line: stamps_issued candidate, else empty
+                    let third_line = third_line.unwrap_or_else(|| "".to_string());
+
+                    let right = format!("{}\\n{}\\n{}", first_line, second_line, third_line);
                     if !image_path.is_empty() && Path::new(&full_image_path).exists() {
                         // Emit a lightweight diagnostic comment so we can later grep the
                         // output file and verify stamps are actually being written to the
                         // canonical Albums/{Album}/{Album}.txt file. Make sure the
                         // comment is a single line by sanitizing newlines/extra spaces.
-                        let safe_series = clean_text(series)
-                            .replace('\n', " ")
+                        let _safe_series = clean_text(series)
+                            .replace("\\n", " ")
                             .split_whitespace()
                             .collect::<Vec<&str>>()
                             .join(" ")
-                            .replace('"', "'");
-                        let safe_sg = left.replace('\n', " ").split_whitespace().collect::<Vec<&str>>().join(" ").replace('"', "'");
-                        let safe_img = image_path.replace('"', "'");
-                        let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
+                            .replace("\"", "'");
+                      
+                        // let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
                         // estimate_real_dimensions returns millimetres; emit mm directly
                         let line = format!(
                             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
                             emit_width, emit_height, image_path, left, centre, right
                         );
+                        
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
                     } else {
-                        let safe_series = clean_text(series)
-                            .replace('\n', " ")
+                        let _safe_series = clean_text(series)
+                            .replace("\\n", " ")
                             .split_whitespace()
                             .collect::<Vec<&str>>()
                             .join(" ")
-                            .replace('"', "'");
-                        let safe_sg = left.replace('\n', " ").split_whitespace().collect::<Vec<&str>>().join(" ").replace('"', "'");
-                        let safe_img = image_path.replace('"', "'");
-                        let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
+                            .replace("\"", "'");
+                        let _safe_sg = left
+                            .replace("\\n", " ")
+                            .split_whitespace()
+                            .collect::<Vec<&str>>()
+                            .join(" ")
+                            .replace("\"", "'");
+                        let _safe_img = image_path.replace("\"", "'");
+                        // let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
                         let line = format!(
                             "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
                             emit_width,
@@ -727,6 +790,7 @@ where
                             centre,
                             right
                         );
+                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                     }
                 }

@@ -6,18 +6,22 @@ This document provides detailed API documentation for the key functions and modu
 
 ### `album_globals`
 
-#### `calculate_stamp_dimensions(image_path: &str, album_name: &str) -> (f64, f64)`
+#### `calculate_stamp_dimensions(image_path: &str, album_name: &str) -` (f64, f64)`
 
 Calculates appropriate stamp box dimensions based on image dimensions and series-specific scaling.
 
 **Parameters:**
+
 - `image_path`: Relative path to the stamp image (e.g., "L-s.jpg")
+
 - `album_name`: Name of the album for path construction
 
 **Returns:**
+
 - Tuple of `(width_mm, height_mm)` representing the calculated stamp dimensions
 
 **Algorithm:**
+
 1. Load actual image pixel dimensions from disk
 2. Calculate mm-per-pixel ratios using embedded B4-s.jpg reference
 3. Apply series-specific scaling factors (L/M/N series)
@@ -25,6 +29,7 @@ Calculates appropriate stamp box dimensions based on image dimensions and series
 5. Return final dimensions or defaults if image loading fails
 
 **Examples:**
+
 ```rust
 // L-series stamp (registration/large)
 let (w, h) = calculate_stamp_dimensions("L-s.jpg", "Canada");
@@ -49,40 +54,46 @@ Generates complete AlbumEasy output from a pre-filtered list of stamps.
 - `page_callback`: Optional callback function called for each page
 
 **Output:**
+
 - Creates `{album_name}.txt` in the `Albums/{album_name}/` directory
 - AlbumEasy-compatible format with proper page layout
 - Includes global settings, headers, and stamp positioning
 
 ### `image_utils`
 
-#### `calc_mm_per_pixel_embedded(real_width_mm, real_height_mm) -> Option<(f32, f32)>`
+#### `calc_mm_per_pixel_embedded(real_width_mm, real_height_mm) -` Option`(f32, f32)``
 
 Calculates mm-per-pixel ratio using the embedded B4-s.jpg reference image.
 
 **Parameters:**
+
 - `real_width_mm`: Real-world width of reference in millimeters
 - `real_height_mm`: Real-world height of reference in millimeters
 
 **Returns:**
+
 - `Some((mm_per_pixel_width, mm_per_pixel_height))` or `None` if loading fails
 
 **Reference Values:**
+
 - Standard reference: `(200.0, 240.0)` mm
 - Returns: `(0.208, 0.107)` mm/px ratio
 
-#### `estimate_real_dimensions(image_path, mm_per_pixel_w, mm_per_pixel_h) -> Option<(f32, f32)>`
+#### `estimate_real_dimensions(image_path, mm_per_pixel_w, mm_per_pixel_h) -` Option`(f32, f32)``
 
 Converts pixel dimensions to real-world millimeters.
 
 **Parameters:**
+
 - `image_path`: Path to the image file
+
 - `mm_per_pixel_w`: Millimeters per pixel for width
 - `mm_per_pixel_h`: Millimeters per pixel for height
 
 **Returns:**
 - `Some((width_mm, height_mm))` or `None` if image loading fails
 
-#### `get_embedded_reference_dimensions() -> Option<(u32, u32)>`
+#### `get_embedded_reference_dimensions() -` Option`(u32, u32)``
 
 Returns pixel dimensions of the embedded reference image.
 
@@ -92,7 +103,7 @@ Returns pixel dimensions of the embedded reference image.
 
 ### `sample_images`
 
-#### `get_stamp_references() -> HashMap<String, StampReference>`
+#### `get_stamp_references() -` HashMap`String, StampReference``
 
 Returns complete map of stamp series configurations.
 
@@ -100,7 +111,7 @@ Returns complete map of stamp series configurations.
 - HashMap with keys: "L", "M", "N", "small"
 - Each entry contains target dimensions and scaling factors
 
-#### `get_scaling_for_series(series: &str) -> (f64, f64)`
+#### `get_scaling_for_series(series: &str) -` (f64, f64)`
 
 Determines scaling factors based on stamp series identifier.
 
@@ -119,6 +130,7 @@ Determines scaling factors based on stamp series identifier.
 ## Data Structures
 
 ### `StampReference`
+
 ```rust
 pub struct StampReference {
     pub name: String,              // Human-readable series name
@@ -130,13 +142,14 @@ pub struct StampReference {
 ```
 
 ### `StampStub`
+
 Core stamp data structure used throughout the application:
 ```rust
 pub struct StampStub {
     pub id: i32,
     pub year: i32,
-    pub month: Option<String>,
-    pub day: Option<String>,
+    pub month: Option`String`,
+    pub day: Option`String`,
     pub country: String,
     pub series: String,
     pub denomination: String,
@@ -149,6 +162,7 @@ pub struct StampStub {
 ## Configuration
 
 ### Global Settings (config.toml)
+
 ```toml
 # Reference dimensions for mm-per-pixel calculations
 reference_width_mm = 200.0
@@ -163,6 +177,7 @@ header_font_spacing = 3.0
 ```
 
 ### AlbumEasy Global Settings
+
 - `ALBUM_STAMP_IMG_ASPECT_RATIO`: Controls dimension calculation mode
 - `ALBUM_STAMP_IMG_NEW_SETTING`: Additional scaling parameters
 - `STAMP_BOXES_SIZE_ADJUST`: Fine-tuning for box dimensions
@@ -179,12 +194,14 @@ The API uses Rust's `Result` and `Option` types for error handling:
 ## Performance Considerations
 
 ### Optimizations
+
 - **Embedded assets**: No runtime file I/O for reference images
 - **Lazy loading**: Images loaded only when needed
 - **Bounds checking**: Prevents layout calculation errors
 - **Series caching**: Scaling factors computed once per series
 
 ### Memory Usage
+
 - **Release build**: ~12MB resident memory
 - **Per-stamp overhead**: Minimal additional memory
 - **Image processing**: Temporary buffers for dimension calculations
@@ -192,6 +209,7 @@ The API uses Rust's `Result` and `Option` types for error handling:
 ## Integration Examples
 
 ### Custom Stamp Processing
+
 ```rust
 use stamp_album_gen2::{album_globals, image_utils, sample_images};
 
@@ -216,6 +234,7 @@ album_globals::generate_album_output_from_stamps(
 ```
 
 ### Batch Processing
+
 ```rust
 // Process multiple albums
 let countries = vec!["Canada", "USA", "UK"];
@@ -235,6 +254,7 @@ for country in countries {
 ## Version History
 
 ### v0.5.0 (Current)
+
 - ✅ Embedded reference image system
 - ✅ Series-specific scaling factors
 - ✅ Comprehensive API documentation
@@ -252,17 +272,17 @@ The loader searches upward from the current working directory and will use the p
 
 ## CLI options (summary)
 
-- --source <source> (default: stampworld)
-- --site-name <site_name> (required for scraping)
-- --album-name <album_name>
-- --db-path <path> (output-only mode)
-- --base-url <url> (override default StampWorld URL construction)
-- --start-year <int>
-- --end-year <int>
+- --source `source` (default: stampworld)
+- --site-name `site_name` (required for scraping)
+- --album-name `album_name`
+- --db-path `path` (output-only mode)
+- --base-url `url` (override default StampWorld URL construction)
+- --start-year `int`
+- --end-year `int`
 - --overwrite-album
 - --overwrite-images
-- --max-pages <int>
-- --stop-after-no-hits <int>
+- --max-pages `int`
+- --stop-after-no-hits `int`
 
 ## Config keys (summary)
 
@@ -277,8 +297,10 @@ See `config_template.toml` for a template. Key groups:
 - ✅ Release build optimizations
 
 ### Future Enhancements
+
 - 🔄 Additional stamp series support
 - 🔄 Configurable scaling per country
 - 🔄 Enhanced image processing options
-- 🔄 Web API interface</content>
-<parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/API_DOCUMENTATION.md
+- 🔄 Web API interface`/content`
+
+**Parameter:** `filePath = /media/ray/program/Rust/StampAlbumGen2/API_DOCUMENTATION.md`
