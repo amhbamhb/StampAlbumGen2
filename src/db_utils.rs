@@ -219,6 +219,7 @@ pub struct StampStub {
     pub multi_perf: bool,
 }
 use rusqlite::{params, Connection, Result};
+use regex::Regex;
 use log::{debug, error};
 
 // Robust migration helper: recreate `stamps` table with canonical schema while preserving data.
@@ -556,6 +557,69 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+mod insert_tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    #[test]
+    fn test_insert_stamp_backfill() {
+        // Create an in-memory DB and init schema
+        let conn = Connection::open_in_memory().expect("open in memory");
+        // Instead create table directly for testing
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                month TEXT,
+                month_num INTEGER,
+                day TEXT,
+                sg_number TEXT,
+                type TEXT,
+                denomination TEXT,
+                color TEXT,
+                description TEXT,
+                stamps_issued TEXT,
+                mint_condition TEXT,
+                unused TEXT,
+                used TEXT,
+                letter_fdc TEXT,
+                currency TEXT,
+                image_path TEXT,
+                remote_image_url TEXT,
+                original_image_url TEXT,
+                watermark TEXT,
+                design TEXT,
+                engraving TEXT,
+                perforation TEXT,
+                context TEXT,
+                uniq_key TEXT
+            )",
+            [],
+        ).unwrap();
+
+        // Insert a partial row (only country, series, sg_number and description)
+        conn.execute("INSERT INTO stamps (country, series, sg_number, description, uniq_key) VALUES (?1,?2,?3,?4,?5)", params!["X","S","1","Existing desc","x|s|1"]).unwrap();
+
+    // Now call insert_stamp with additional fields; description should NOT be overwritten
+    let res = insert_stamp(&conn, "X", "S", 1900, "Jan", "1", "1", "1", "Type", "Denom", "Color", "New Desc", "1.234", "Mint", "Unused", "Used", "Letter", "USD", "images/1.jpg", "https://example.com/1.jpg", "orig.jpg", "WM", "Design", "Engr", "12", "Context");
+        assert!(res.is_ok());
+
+        // Query back the row
+        let mut stmt = conn.prepare("SELECT description, stamps_issued, image_path, remote_image_url FROM stamps WHERE country=?1 AND series=?2 AND sg_number=?3").unwrap();
+        let row = stmt.query_row(params!["X","S","1"], |r| Ok((r.get::<_,String>(0)?, r.get::<_,String>(1)?, r.get::<_,String>(2)?, r.get::<_,String>(3)?))).unwrap();
+        // Description should remain the old value
+        assert_eq!(row.0, "Existing desc");
+        // stamps_issued should have been backfilled
+    assert_eq!(row.1, "1,234");
+        // image path and remote url should have been set
+        assert_eq!(row.2, "images/1.jpg");
+        assert_eq!(row.3, "https://example.com/1.jpg");
+    }
+}
+
 pub fn insert_stamp(
     conn: &Connection,
     country: &str,
@@ -584,44 +648,113 @@ pub fn insert_stamp(
     perforation: &str,
     context: &str,
 ) -> Result<bool> {
-    // Check if stamp already exists
-    let exists_sql = "SELECT COUNT(*), image_path, remote_image_url FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
+    // Normalize stamps_issued: if dots are used as thousand separators and no commas are present, replace them with commas
+    let mut stamps_issued_normalized = stamps_issued.trim().to_string();
+    if stamps_issued_normalized.starts_with('(') && stamps_issued_normalized.ends_with(')') {
+        stamps_issued_normalized = stamps_issued_normalized[1..stamps_issued_normalized.len()-1].to_string();
+    }
+    let re_non = Regex::new(r"[^0-9\.,]").unwrap();
+    stamps_issued_normalized = re_non.replace_all(&stamps_issued_normalized, "").to_string();
+    if stamps_issued_normalized.contains('.') && !stamps_issued_normalized.contains(',') {
+        stamps_issued_normalized = stamps_issued_normalized.replace('.', ",");
+    }
+    // Check if stamp already exists and fetch existing metadata to decide if we
+    // should backfill missing columns. We will only fill columns that are NULL
+    // or empty and where the caller provided a non-empty value.
+    let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
-    let (count, _existing_image_path, existing_remote_url): (i64, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
-        Ok((row.get(0)?, row.get(1).unwrap_or(String::new()), row.get(2).unwrap_or(String::new())))
+    let (count, existing_image_path, existing_remote_url, existing_description, existing_stamps_issued, existing_mint_condition, existing_unused, existing_used, existing_letter_fdc, existing_currency, existing_watermark, existing_design, existing_engraving, existing_perforation, existing_context): (i64, String, String, String, String, String, String, String, String, String, String, String, String, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
+        Ok((
+            row.get(0)?,
+            row.get(1).unwrap_or(String::new()),
+            row.get(2).unwrap_or(String::new()),
+            row.get(3).unwrap_or(String::new()),
+            row.get(4).unwrap_or(String::new()),
+            row.get(5).unwrap_or(String::new()),
+            row.get(6).unwrap_or(String::new()),
+            row.get(7).unwrap_or(String::new()),
+            row.get(8).unwrap_or(String::new()),
+            row.get(9).unwrap_or(String::new()),
+            row.get(10).unwrap_or(String::new()),
+            row.get(11).unwrap_or(String::new()),
+            row.get(12).unwrap_or(String::new()),
+            row.get(13).unwrap_or(String::new()),
+            row.get(14).unwrap_or(String::new()),
+        ))
     })?;
-    
+
     if count > 0 {
-        // We may need to update an existing row if the caller provided a new
-        // remote_image_url (or original_image_url). Previously we only updated
-        // when the existing row contained a placeholder image. That prevented
-        // backfilling remote_image_url for rows that already had an image_path
-        // but no remote URL recorded. Update when a new remote URL is provided.
-    let has_new_remote_url = !remote_image_url.is_empty() && remote_image_url != existing_remote_url;
+        // Determine whether any of the provided values should be used to backfill
+        // existing empty columns. We treat empty string and NULL as missing.
+        let is_empty = |s: &str| s.trim().is_empty();
+        let mut needs_update = false;
 
-        if has_new_remote_url {
-            debug!("Stamp exists and a new remote_image_url was provided (country='{}', series='{}', sg_number='{}'), updating remote_url/filenames", country, series, sg_number);
+        // Remote URL or original filename
+        let has_new_remote_url = !remote_image_url.trim().is_empty() && remote_image_url != existing_remote_url;
+        if has_new_remote_url { needs_update = true; }
 
-            // Only overwrite image_path when the existing value is empty or is a placeholder
-            let update_sql = "UPDATE stamps SET 
-                remote_image_url = ?1,
-                original_image_url = ?2,
-                image_path = CASE WHEN (image_path IS NULL OR image_path = '' OR image_path LIKE 'images/no_image%') AND (?3 != '') THEN ?3 ELSE image_path END
-                WHERE country = ?4 AND series = ?5 AND sg_number = ?6";
-
-            match conn.execute(update_sql, params![remote_image_url, original_image_url, image_path, country, series, sg_number]) {
-                Ok(n) => {
-                    debug!("Updated existing stamp remote/original/image_path (rows={}) for {} {} {}", n, country, series, sg_number);
-                    return Ok(true);
-                }
-                Err(e) => {
-                    error!("Failed to update existing stamp remote/original url: {} {} {} | Error: {}", country, series, sg_number, e);
-                    return Err(e.into());
-                }
+        // Image path (only if existing image path is empty or placeholder)
+        if !image_path.trim().is_empty() {
+            if is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image") {
+                needs_update = true;
             }
         }
 
-        debug!("Stamp already exists with valid data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
+        // Metadata fields: update only if existing value is empty and caller provided non-empty
+        if is_empty(&existing_description) && !description.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_stamps_issued) && !stamps_issued.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_mint_condition) && !mint_condition.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_unused) && !unused.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_used) && !used.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_letter_fdc) && !letter_fdc.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_currency) && !currency.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_watermark) && !watermark.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_design) && !design.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_engraving) && !engraving.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_perforation) && !perforation.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_context) && !context.trim().is_empty() { needs_update = true; }
+
+        if needs_update {
+            debug!("Stamp exists and backfill/update required (country='{}', series='{}', sg_number='{}')", country, series, sg_number);
+
+            let update_sql = "UPDATE stamps SET
+                image_path = CASE WHEN (?1 != '') AND (image_path IS NULL OR image_path = '' OR image_path LIKE 'images/no_image%') THEN ?1 ELSE image_path END,
+                remote_image_url = CASE WHEN (?2 != '') THEN ?2 ELSE remote_image_url END,
+                original_image_url = CASE WHEN (?3 != '') THEN ?3 ELSE original_image_url END,
+                description = CASE WHEN (description IS NULL OR description = '') AND (?4 != '') THEN ?4 ELSE description END,
+                stamps_issued = CASE WHEN (stamps_issued IS NULL OR stamps_issued = '') AND (?5 != '') THEN ?5 ELSE stamps_issued END,
+                mint_condition = CASE WHEN (mint_condition IS NULL OR mint_condition = '') AND (?6 != '') THEN ?6 ELSE mint_condition END,
+                unused = CASE WHEN (unused IS NULL OR unused = '') AND (?7 != '') THEN ?7 ELSE unused END,
+                used = CASE WHEN (used IS NULL OR used = '') AND (?8 != '') THEN ?8 ELSE used END,
+                letter_fdc = CASE WHEN (letter_fdc IS NULL OR letter_fdc = '') AND (?9 != '') THEN ?9 ELSE letter_fdc END,
+                currency = CASE WHEN (currency IS NULL OR currency = '') AND (?10 != '') THEN ?10 ELSE currency END,
+                watermark = CASE WHEN (watermark IS NULL OR watermark = '') AND (?11 != '') THEN ?11 ELSE watermark END,
+                design = CASE WHEN (design IS NULL OR design = '') AND (?12 != '') THEN ?12 ELSE design END,
+                engraving = CASE WHEN (engraving IS NULL OR engraving = '') AND (?13 != '') THEN ?13 ELSE engraving END,
+                perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?14 != '') THEN ?14 ELSE perforation END,
+                context = CASE WHEN (context IS NULL OR context = '') AND (?15 != '') THEN ?15 ELSE context END
+                WHERE country = ?16 AND series = ?17 AND sg_number = ?18";
+
+            let params_vec = params![
+                image_path, remote_image_url, original_image_url,
+                description, stamps_issued_normalized, mint_condition, unused, used, letter_fdc, currency,
+                watermark, design, engraving, perforation, context,
+                country, series, sg_number
+            ];
+            match conn.execute(update_sql, params_vec) {
+                Ok(rows) => {
+                    if rows > 0 {
+                        debug!("Updated existing stamp metadata/image for {} | {} | {} (rows={})", country, series, sg_number, rows);
+                        return Ok(true);
+                    } else {
+                        debug!("Backfill attempted but no DB row matched for update: {} | {} | {}", country, series, sg_number);
+                    }
+                }
+                Err(e) => { error!("DB update error for {} {} {}: {}", country, series, sg_number, e); }
+            }
+        }
+
+        debug!("Stamp already exists with no new fillable data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
         return Ok(false);
     }
     

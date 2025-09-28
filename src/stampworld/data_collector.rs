@@ -5,6 +5,103 @@ use regex::Regex;
 use std::collections::HashSet;
 use rusqlite::params;
 
+// Normalize stamps_issued values and provide small parser helpers used by
+// both runtime code and unit tests.
+pub(crate) fn normalize_stamps_issued(s: &str) -> String {
+    let mut v = s.trim().to_string();
+    if v.starts_with('(') && v.ends_with(')') {
+        v = v[1..v.len()-1].to_string();
+    }
+    // Remove any characters except digits, dot and comma
+    let re_non = Regex::new(r"[^0-9\.,]").unwrap();
+    v = re_non.replace_all(&v, "").to_string();
+    // If dots are used as thousand separators and no commas are present, replace them with commas
+    if v.contains('.') && !v.contains(',') {
+        v = v.replace('.', ",");
+    }
+    v
+}
+
+// Remove duplicate detail lines while preserving order.
+pub(crate) fn dedupe_details(details: &[String]) -> Vec<String> {
+    let mut seen: HashSet<String> = HashSet::new();
+    let mut out: Vec<String> = Vec::new();
+    for d in details {
+        let t = d.trim().to_string();
+        if t.is_empty() { continue; }
+        if !seen.contains(&t) {
+            seen.insert(t.clone());
+            out.push(t);
+        }
+    }
+    out
+}
+
+// Extract common block metadata fields from a list of detail lines.
+// Returns (watermark, design, engraving, perforation)
+pub(crate) fn extract_block_metadata(details: &[String]) -> (String, String, String, String) {
+    let mut watermark = String::new();
+    let mut design = String::new();
+    let mut engraving = String::new();
+    let mut perforation = String::new();
+    for d in details {
+        let low = d.to_lowercase();
+        if (low.contains("wm:") || low.contains("watermark")) && watermark.is_empty() {
+            if let Some(pos) = d.find(':') { watermark = d[pos+1..].trim().to_string(); }
+            else { watermark = d.replace("WM", "").replace("wm", "").trim().to_string(); }
+        }
+        if low.contains("design:") && design.is_empty() {
+            if let Some(pos) = d.find(':') { design = d[pos+1..].trim().to_string(); }
+        }
+        if low.contains("engraving:") && engraving.is_empty() {
+            if let Some(pos) = d.find(':') { engraving = d[pos+1..].trim().to_string(); }
+        }
+        if (low.contains("perforation:") || low.contains("perf:" )|| low.contains("perf")) && perforation.is_empty() {
+            if let Some(pos) = d.find(':') { perforation = d[pos+1..].trim().to_string(); }
+            else {
+                // fallback: try to pick a token that starts with digits or 'perf'
+                for tok in d.split_whitespace() {
+                    let tl = tok.to_lowercase();
+                    if tl.starts_with("perf") || tl.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                        perforation = tok.trim().to_string();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    // Final trimming and normalization
+    watermark = watermark.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
+    design = design.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
+    engraving = engraving.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
+    perforation = perforation.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
+    (watermark, design, engraving, perforation)
+}
+
+// Compress a context string by removing consecutive duplicate tokens separated by '|'
+// and truncate if it exceeds a reasonable length.
+pub(crate) fn compress_context(s: &str, max_len: usize) -> String {
+    let parts: Vec<&str> = s.split('|').map(|p| p.trim()).filter(|p| !p.is_empty()).collect();
+    let mut out_parts: Vec<&str> = Vec::new();
+    let mut last: Option<&str> = None;
+    for p in parts.iter() {
+        if last.map(|l| l == *p).unwrap_or(false) {
+            continue;
+        }
+        out_parts.push(*p);
+        last = Some(*p);
+        // Quick break if we already exceeded max parts
+        if out_parts.len() >= 20 { break; }
+    }
+    let mut out = out_parts.join(" | ");
+    if out.len() > max_len {
+        out.truncate(max_len);
+        // avoid trailing partial token
+        if let Some(pos) = out.rfind('|') { out.truncate(pos); }
+    }
+    out
+}
+
 /// Consolidated StampWorld collector implementing the key heuristics:
 /// - Prefer images scoped to a stamp row; fall back to block/global images only when needed
 /// - Stop after N consecutive pages that add zero new stamps (`stop_after_no_hits`)
@@ -86,14 +183,14 @@ pub fn collect_stampworld_data(
 
         for content_div in document.select(&content_selector) {
             // Extract block-level details
-            let mut context_details = String::new();
             let p_selector = Selector::parse("p").unwrap();
             let mut details_vec: Vec<String> = Vec::new();
             for p in content_div.select(&p_selector) {
                 let t = p.text().collect::<String>();
                 if !t.trim().is_empty() { details_vec.push(t); }
             }
-            if !details_vec.is_empty() { context_details = details_vec.join(" | "); }
+            // Deduplicate detail lines and produce a compact context string
+            let deduped = dedupe_details(&details_vec);
 
             // Extract block year from .table_header a if present
             let table_header_selector = Selector::parse(".table_header a").unwrap();
@@ -277,30 +374,10 @@ pub fn collect_stampworld_data(
                 }
                 let month_num = if month.is_empty() { "0".to_string() } else { month_number(&month) };
 
-                // Extract additional metadata from block-level details (WM, Design, Engraving, Perforation)
-                let mut watermark = String::new();
-                let mut design = String::new();
-                let mut engraving = String::new();
-                let mut perforation = String::new();
-                for d in &details_vec {
-                    let low = d.to_lowercase();
-                    if low.contains("wm:") || low.contains("watermark") {
-                        // e.g. "WM: None" or "Watermark: None"
-                        if let Some(pos) = d.find(':') { watermark = d[pos+1..].trim().to_string(); }
-                    }
-                    if low.contains("design:") {
-                        if let Some(pos) = d.find(':') { design = d[pos+1..].trim().to_string(); }
-                    }
-                    if low.contains("engraving:") {
-                        if let Some(pos) = d.find(':') { engraving = d[pos+1..].trim().to_string(); }
-                    }
-                    if low.contains("perforation:") || low.contains("perf:") {
-                        if let Some(pos) = d.find(':') { perforation = d[pos+1..].trim().to_string(); }
-                        else if low.contains("perf") { perforation = d.split_whitespace().find(|s| s.to_lowercase().starts_with("perf")).unwrap_or("").to_string(); }
-                    }
-                }
-
-                let cleaned_context_details = context_details.lines().filter(|l| !l.trim().is_empty() && l.trim() != "\u{200b}").collect::<Vec<_>>().join(" | ");
+                // Extract block-level metadata using the helper and produce a cleaned context
+                let (watermark, design, engraving, perforation) = extract_block_metadata(&deduped);
+                let raw_context = deduped.iter().filter(|l| !l.trim().is_empty() && l.trim() != "\u{200b}").map(|s| s.as_str()).collect::<Vec<_>>().join(" | ");
+                let cleaned_context_details = compress_context(&raw_context, 1024);
 
                 // Per-row metadata: description already captured; try to extract
                 // stamps_issued, mint_condition, unused, used, letter_fdc, currency
@@ -366,6 +443,10 @@ pub fn collect_stampworld_data(
                     }
                 }
 
+                // Normalize stamps_issued: strip parentheses and non-digit/sep chars,
+                // and convert '.' thousand separators to ',' per user request.
+                let stamps_issued_norm = normalize_stamps_issued(&stamps_issued);
+
                 // Call DB insert following the existing callers' parameter order
                 info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
                     site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
@@ -382,7 +463,7 @@ pub fn collect_stampworld_data(
                     &denomination,
                     &color,
                     &description,
-                    &stamps_issued,
+                    &stamps_issued_norm,
                     &mint_condition,
                     &unused,
                     &used,
@@ -477,4 +558,34 @@ pub fn collect_stampworld_data(
 
     debug!("Total stamp data lines collected: {}", all_stamp_data.len());
     all_stamp_data
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_normalize_stamps_issued_basic() {
+        assert_eq!(normalize_stamps_issued("1.234.567"), "1,234,567");
+        assert_eq!(normalize_stamps_issued("(1234)"), "1234");
+        assert_eq!(normalize_stamps_issued("1,234"), "1,234");
+        assert_eq!(normalize_stamps_issued("N/A"), "");
+    }
+
+    #[test]
+    fn test_dedupe_details_preserves_order() {
+        let src = vec!["WM: None".to_string(), "Perforation: 12".to_string(), "WM: None".to_string(), "Note".to_string()];
+        let out = dedupe_details(&src);
+        assert_eq!(out, vec!["WM: None".to_string(), "Perforation: 12".to_string(), "Note".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_block_metadata() {
+        let src = vec!["WM: None".to_string(), "Design: King George".to_string(), "Engraving: Recess".to_string(), "Perf: 12".to_string()];
+        let (wm, design, engr, perf) = extract_block_metadata(&src);
+        assert_eq!(wm, "None");
+        assert_eq!(design, "King George");
+        assert_eq!(engr, "Recess");
+        assert_eq!(perf, "12");
+    }
 }
