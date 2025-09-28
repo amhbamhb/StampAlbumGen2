@@ -338,6 +338,101 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
+/// Migration to fix rows where block metadata (design/engraving/perforation)
+/// were stored as concatenated block text. This function heuristically
+/// detects suspect rows, parses their `context` / combined text using the
+/// collector helper `extract_block_metadata`, normalizes currency tokens and
+/// updates only the missing or obviously-wrong columns. It's safe to run
+/// multiple times and uses a transaction.
+pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
+    debug!("Starting migration: fix block metadata and normalize currency");
+    conn.execute_batch("BEGIN IMMEDIATE;")?;
+
+    // Small helper: normalize currency tokens similarly to the collector
+    fn normalize_currency_token_inner(s: &str) -> String {
+        let t = s.trim();
+        if t.is_empty() { return String::new(); }
+        let low = t.to_lowercase();
+        if low == "sell" || low == "usd" || low == "$" || low == "us$" || low.contains("usd") || low.contains("us$") { return "USD".to_string(); }
+        if low == "eur" || low.contains("€") { return "EUR".to_string(); }
+        if low == "gbp" || low.contains("£") { return "GBP".to_string(); }
+        t.to_uppercase()
+    }
+
+    // Find candidate rows: those where design/engraving/perforation contain labels
+    let mut stmt = conn.prepare("SELECT id, design, engraving, perforation, context, currency FROM stamps")?;
+    let mut rows = stmt.query([])?;
+    let mut updates: Vec<(i64, String, String, String, String, String)> = Vec::new();
+    while let Ok(Some(r)) = rows.next() {
+        let id: i64 = r.get(0)?;
+        let design: String = r.get::<_, Option<String>>(1)?.unwrap_or_default();
+        let engraving: String = r.get::<_, Option<String>>(2)?.unwrap_or_default();
+        let perforation: String = r.get::<_, Option<String>>(3)?.unwrap_or_default();
+        let context: String = r.get::<_, Option<String>>(4)?.unwrap_or_default();
+        let currency: String = r.get::<_, Option<String>>(5)?.unwrap_or_default();
+
+        // Heuristic: if any of the design/engraving/perforation fields contain the words
+        // 'Design:' or 'Engraving:' or 'Perforation:' or contain newlines, treat as suspect
+        let suspect = |s: &str| {
+            let low = s.to_lowercase();
+            low.contains("design:") || low.contains("engraving:") || low.contains("perforation:") || s.contains('\n') || s.contains('\r')
+        };
+    if suspect(&design) || suspect(&engraving) || suspect(&perforation) {
+            // Build a details vector by splitting context plus the fields to give the parser enough material
+            let mut details: Vec<String> = Vec::new();
+            if !context.trim().is_empty() { details.push(context.clone()); }
+            if !design.trim().is_empty() { details.push(design.clone()); }
+            if !engraving.trim().is_empty() { details.push(engraving.clone()); }
+            if !perforation.trim().is_empty() { details.push(perforation.clone()); }
+            // Call the collector helper (it's pub(crate) so available in the crate)
+            let (wm_new, design_new, engr_new, perf_new) = crate::stampworld::data_collector::extract_block_metadata(&details);
+            let currency_new = normalize_currency_token_inner(&currency);
+            updates.push((id, wm_new, design_new, engr_new, perf_new, currency_new));
+        }
+    }
+
+    // The above push used a temporary tuple; convert and apply updates
+    for (id, _, _, _, _, _) in updates.iter() {
+        // Re-fetch per-row to ensure we operate on the latest values
+        let id = *id;
+        let row: (String, String, String, String, String) = conn.query_row(
+            "SELECT watermark, design, engraving, perforation, currency FROM stamps WHERE id = ?1",
+            params![id],
+            |r| Ok((
+                r.get::<_, Option<String>>(0)?.unwrap_or_default(),
+                r.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                r.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                r.get::<_, Option<String>>(4)?.unwrap_or_default(),
+            )),
+        )?;
+        let combined = vec![row.0.clone(), row.1.clone(), row.2.clone(), row.3.clone()];
+        let (wm_new, design_new, engr_new, perf_new) = crate::stampworld::data_collector::extract_block_metadata(&combined);
+        let currency_new = normalize_currency_token_inner(&row.4);
+
+        // Build update statement and params
+        let mut set_clauses: Vec<String> = Vec::new();
+        let mut values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if !wm_new.is_empty() { set_clauses.push("watermark = ?".to_string()); values.push(Box::new(wm_new)); }
+        if !design_new.is_empty() { set_clauses.push("design = ?".to_string()); values.push(Box::new(design_new)); }
+        if !engr_new.is_empty() { set_clauses.push("engraving = ?".to_string()); values.push(Box::new(engr_new)); }
+        if !perf_new.is_empty() { set_clauses.push("perforation = ?".to_string()); values.push(Box::new(perf_new)); }
+        if !currency_new.is_empty() { set_clauses.push("currency = ?".to_string()); values.push(Box::new(currency_new)); }
+
+        if !set_clauses.is_empty() {
+            let sql = format!("UPDATE stamps SET {} WHERE id = ?", set_clauses.join(", "));
+            values.push(Box::new(id));
+            // Create a slice of &dyn ToSql
+            let refs: Vec<&dyn rusqlite::ToSql> = values.iter().map(|b| &**b as &dyn rusqlite::ToSql).collect();
+            let _ = conn.execute(&sql, rusqlite::params_from_iter(refs));
+        }
+    }
+
+    conn.execute_batch("COMMIT;")?;
+    debug!("Completed migration: fix block metadata and normalize currency");
+    Ok(())
+}
+
 pub fn init_db(db_path: &str) -> Result<Connection> {
     // Ensure parent directory for the database exists so SQLite can create the file
     if let Some(parent) = std::path::Path::new(db_path).parent() {
@@ -617,6 +712,76 @@ mod insert_tests {
         // image path and remote url should have been set
         assert_eq!(row.2, "images/1.jpg");
         assert_eq!(row.3, "https://example.com/1.jpg");
+    }
+}
+
+#[cfg(test)]
+mod migration_tests {
+    use super::*;
+    use rusqlite::Connection;
+
+    #[test]
+    fn test_migrate_fix_block_metadata_basic() {
+        let conn = Connection::open_in_memory().expect("open in memory");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                month TEXT,
+                month_num INTEGER,
+                day TEXT,
+                sg_number TEXT,
+                type TEXT,
+                denomination TEXT,
+                color TEXT,
+                description TEXT,
+                stamps_issued TEXT,
+                mint_condition TEXT,
+                unused TEXT,
+                used TEXT,
+                letter_fdc TEXT,
+                currency TEXT,
+                image_path TEXT,
+                remote_image_url TEXT,
+                original_image_url TEXT,
+                watermark TEXT,
+                design TEXT,
+                engraving TEXT,
+                perforation TEXT,
+                context TEXT,
+                uniq_key TEXT
+            )",
+            [],
+        ).unwrap();
+
+        // Insert a row with concatenated block text in 'design' and 'engraving' and currency 'Sell'
+        let bad_block = "Design: Herman Herbert Schwartz\nEngraving: Herman Herbert Schwartz\nPerforation: 12";
+        conn.execute("INSERT INTO stamps (country, series, sg_number, design, engraving, perforation, context, currency, uniq_key) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+            params!["Canada","S","183", bad_block, bad_block, bad_block, bad_block, "Sell", "canada|s|183"]).unwrap();
+
+        // Run migration
+        let res = migrate_fix_block_metadata(&conn);
+        if let Err(e) = &res {
+            eprintln!("migrate_fix_block_metadata error: {}", e);
+        }
+        assert!(res.is_ok());
+
+        // Verify row corrected
+        let row: (Option<String>, Option<String>, Option<String>, Option<String>) = conn.query_row(
+            "SELECT watermark, design, engraving, perforation FROM stamps WHERE sg_number = '183'",
+            [],
+            |r| Ok((r.get::<_, Option<String>>(0)?, r.get::<_, Option<String>>(1)?, r.get::<_, Option<String>>(2)?, r.get::<_, Option<String>>(3)?)),
+        ).unwrap();
+        // watermark may be empty but design/engraving/perf should be isolated
+        assert_eq!(row.1.unwrap_or_default(), "Herman Herbert Schwartz");
+        assert_eq!(row.2.unwrap_or_default(), "Herman Herbert Schwartz");
+        assert_eq!(row.3.unwrap_or_default(), "12");
+
+        // currency normalized
+        let cur: String = conn.query_row("SELECT currency FROM stamps WHERE sg_number = '183'", [], |r| r.get(0)).unwrap();
+        assert_eq!(cur, "USD");
     }
 }
 
