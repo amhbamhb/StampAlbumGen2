@@ -16,6 +16,7 @@ use std::io::Write;
 use regex::Regex;
 // Use image utilities to measure actual image dimensions where possible
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions, get_image_dimensions};
+use crate::flagdb;
 use std::process::Command;
 
 /// Cleans problematic Unicode and formatting from text for AlbumEasy output
@@ -174,8 +175,83 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)".to_string(),
         "STAMP_BOXES_SIZE_ADJUST (3)".to_string(),
     ];
+    // Emit each global line. Ensure we always insert a PAGE_START before any
+    // PAGE_ command (PAGE_VSPACE, PAGE_TEXT_CENTRE, etc.) unless the last
+    // emitted line was already a PAGE_START. This guarantees the generated
+    // AlbumEasy file always begins page sections correctly.
+    let mut last_was_page_start = false;
     for line in lines.iter() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("PAGE_") {
+            if !last_was_page_start {
+                let _ = writeln!(writer, "PAGE_START");
+                // Ensure page sections always begin with a row start
+                let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                last_was_page_start = true;
+            }
+            let _ = writeln!(writer, "{}", line);
+            // keep last_was_page_start = true
+            continue;
+        }
+
+        // If the line itself is an explicit PAGE_START, write it and set the flag
+        if trimmed == "PAGE_START" {
+            let _ = writeln!(writer, "{}", line);
+            // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
+            let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+            last_was_page_start = true;
+            continue;
+        }
+
+        // Non-page lines clear the page-start flag
         let _ = writeln!(writer, "{}", line);
+        last_was_page_start = false;
+    }
+
+    // Emit an optional cover page containing a large title and (when available)
+    // a flag image. We attempt to copy a flag into Albums/{Album}/images/flag_placeholder.png
+    // using the `flagdb` helper. If a flag image cannot be found or downloaded,
+    // still emit a textual cover so the album begins with a title page.
+    if cfg_print_flag_cover {
+        // Write a simple cover block after the standard globals so it appears
+        // below the STAMP_BOXES_SIZE_ADJUST section as requested.
+        let album_images_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
+        // Try to fetch/copy a flag image (size w320). If this fails we ignore the error.
+        let mut flag_path_opt: Option<String> = None;
+        match flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
+            Ok(p) => {
+                // convert to relative path under album dir if possible
+                if let Some(fname) = std::path::Path::new(&p).file_name().and_then(|s| s.to_str()) {
+                    flag_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    flag_path_opt = Some(p);
+                }
+            }
+            Err(_) => {
+                // no flag available; proceed with textual cover only
+            }
+        }
+
+        // Emit a cover page header
+        let _ = writeln!(writer, "################################################################################");
+        let _ = writeln!(writer, "### {} ###", album_name);
+    let _ = writeln!(writer, "PAGE_START");
+    // Ensure cover pages also begin with a row start so the layout is initialized
+    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+        // If we have a flag image, emit it as a large image entry on the cover.
+        if let Some(fp) = flag_path_opt.as_ref() {
+            // Emit a large image placeholder (AlbumEasy consumer will scale)
+            let _ = writeln!(writer, "PAGE_VSPACE (12)");
+            let _ = writeln!(writer, "STAMP_ADD_IMG (160.0 80.0 \"{}\" \"\" \"\" \"\")", fp);
+            let _ = writeln!(writer, "PAGE_VSPACE (12)");
+        } else {
+            // Text-only cover: large centered title
+            let _ = writeln!(writer, "PAGE_VSPACE (24)");
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 32 \"{}\" 1.0)", album_name.replace("\\n", " "));
+            let _ = writeln!(writer, "PAGE_VSPACE (18)");
+        }
+        // After cover, emit a page separator so normal globals follow
+        let _ = writeln!(writer, "################################################################################");
     }
 }
 

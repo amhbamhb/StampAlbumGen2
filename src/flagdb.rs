@@ -52,6 +52,35 @@ pub fn country_to_code(country: &str) -> Option<String> {
         return Some(code.clone());
     }
 
+    // Fallback: some albums are sub-national regions (provinces/states) like "New Brunswick"
+    // Provide a small mapping from common region names to their parent country codes so a
+    // sensible flag (e.g. Canada) can be used for the cover page when the album is regional.
+    let mut region_map: HashMap<String, String> = HashMap::new();
+    // Canadian provinces (common names)
+    region_map.insert("new brunswick".to_string(), "ca".to_string());
+    region_map.insert("british columbia".to_string(), "ca".to_string());
+    region_map.insert("nova scotia".to_string(), "ca".to_string());
+    region_map.insert("prince edward island".to_string(), "ca".to_string());
+    region_map.insert("ontario".to_string(), "ca".to_string());
+    region_map.insert("quebec".to_string(), "ca".to_string());
+    region_map.insert("manitoba".to_string(), "ca".to_string());
+    region_map.insert("saskatchewan".to_string(), "ca".to_string());
+    region_map.insert("newfoundland".to_string(), "ca".to_string());
+
+    // US states (examples) - fallback to 'us' for obvious matches
+    region_map.insert("alabama".to_string(), "us".to_string());
+    region_map.insert("alaska".to_string(), "us".to_string());
+    region_map.insert("california".to_string(), "us".to_string());
+    region_map.insert("new york".to_string(), "us".to_string());
+
+    // Try lookup in region_map using key and key2
+    if let Some(code) = region_map.get(&key) {
+        return Some(code.clone());
+    }
+    if let Some(code) = region_map.get(&key2) {
+        return Some(code.clone());
+    }
+
     None
 }
 
