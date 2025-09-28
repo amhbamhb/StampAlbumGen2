@@ -44,27 +44,62 @@ pub(crate) fn extract_block_metadata(details: &[String]) -> (String, String, Str
     let mut design = String::new();
     let mut engraving = String::new();
     let mut perforation = String::new();
+    // Precompile simple regexes for per-line capture (case-insensitive)
+    let re_wm = Regex::new(r"(?i)^\s*(?:wm|watermark)\s*[:\-]?\s*(.+)$").unwrap();
+    let re_design = Regex::new(r"(?i)^\s*design\s*[:\-]?\s*(.+)$").unwrap();
+    let re_engr = Regex::new(r"(?i)^\s*engraving\s*[:\-]?\s*(.+)$").unwrap();
+    let re_perf = Regex::new(r"(?i)^\s*(?:perforation|perf)\s*[:\-]?\s*(.+)$").unwrap();
     for d in details {
-        let low = d.to_lowercase();
-        if (low.contains("wm:") || low.contains("watermark")) && watermark.is_empty() {
-            if let Some(pos) = d.find(':') { watermark = d[pos+1..].trim().to_string(); }
-            else { watermark = d.replace("WM", "").replace("wm", "").trim().to_string(); }
-        }
-        if low.contains("design:") && design.is_empty() {
-            if let Some(pos) = d.find(':') { design = d[pos+1..].trim().to_string(); }
-        }
-        if low.contains("engraving:") && engraving.is_empty() {
-            if let Some(pos) = d.find(':') { engraving = d[pos+1..].trim().to_string(); }
-        }
-        if (low.contains("perforation:") || low.contains("perf:" )|| low.contains("perf")) && perforation.is_empty() {
-            if let Some(pos) = d.find(':') { perforation = d[pos+1..].trim().to_string(); }
-            else {
-                // fallback: try to pick a token that starts with digits or 'perf'
-                for tok in d.split_whitespace() {
-                    let tl = tok.to_lowercase();
-                    if tl.starts_with("perf") || tl.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                        perforation = tok.trim().to_string();
-                        break;
+        // Some <p> blocks include multiple logical lines concatenated with newlines.
+        // Split into actual lines and inspect each one independently so we don't
+        // accidentally capture the remainder of the block when multiple labels
+        // appear in the same <p> element.
+        for line in d.lines() {
+            let l = line.trim();
+            if l.is_empty() { continue; }
+            if watermark.is_empty() {
+                if let Some(cap) = re_wm.captures(l) {
+                    watermark = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                    continue;
+                }
+            }
+            if design.is_empty() {
+                if let Some(cap) = re_design.captures(l) {
+                    design = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                    continue;
+                }
+            }
+            if engraving.is_empty() {
+                if let Some(cap) = re_engr.captures(l) {
+                    engraving = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                    continue;
+                }
+            }
+            if perforation.is_empty() {
+                if let Some(cap) = re_perf.captures(l) {
+                    // capture only numeric portion where possible
+                    let mut val = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                    // If the captured value contains non-digit extras, try to extract the first number token
+                    if !val.chars().all(|c| c.is_ascii_digit()) {
+                        for tok in val.split_whitespace() {
+                            if tok.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                                val = tok.trim().trim_matches(|c: char| !c.is_ascii_digit()).to_string();
+                                break;
+                            }
+                        }
+                    }
+                    perforation = val;
+                    continue;
+                } else {
+                    // fallback: if the line contains the word 'perf' or 'perforation' anywhere, try to extract digits
+                    let low = l.to_lowercase();
+                    if (low.contains("perf") || low.contains("perforation")) && perforation.is_empty() {
+                        for tok in l.split_whitespace() {
+                            if tok.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
+                                perforation = tok.trim().trim_matches(|c: char| !c.is_ascii_digit()).to_string();
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -428,6 +463,18 @@ pub fn collect_stampworld_data(
                     if currency.is_empty() {
                         // fallback: last cell
                         if let Some(last) = row_cells.last() { currency = last.clone(); }
+                        // secondary fallback: scan row cells (end-first) for currency-like tokens
+                        if currency.trim().is_empty() {
+                            for cell in row_cells.iter().rev() {
+                                let c = cell.trim();
+                                if c.is_empty() { continue; }
+                                let low = c.to_lowercase();
+                                if low.contains("usd") || low == "$" || low == "sell" || low.contains("us$") || low.contains("eur") || low.contains("€") || low.contains("gbp") || low.contains("£") {
+                                    currency = c.to_string();
+                                    break;
+                                }
+                            }
+                        }
                     }
                 } else {
                     // fallback heuristics when header mapping isn't present
@@ -440,8 +487,36 @@ pub fn collect_stampworld_data(
                     } else if tds.len() > 9 {
                         mint_condition = tds.get(9).map(|n| n.text().collect::<String>().trim().to_string()).unwrap_or_default();
                         currency = tds.last().map(|n| n.text().collect::<String>().trim().to_string()).unwrap_or_default();
+                        // fallback scan for currency tokens inside tds if last cell is not the currency
+                        if currency.trim().is_empty() {
+                            for td in tds.iter().rev() {
+                                let c = td.text().collect::<String>().trim().to_string();
+                                if c.is_empty() { continue; }
+                                let low = c.to_lowercase();
+                                if low.contains("usd") || low == "$" || low == "sell" || low.contains("us$") || low.contains("eur") || low.contains("€") || low.contains("gbp") || low.contains("£") {
+                                    currency = c;
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
+
+                // Normalize currency tokens (map known site tokens like 'SELL' to USD)
+                fn normalize_currency_token(s: &str) -> String {
+                    let t = s.trim();
+                    if t.is_empty() { return String::new(); }
+                    let low = t.to_lowercase();
+                    // Common mappings
+                    if low == "sell" || low == "usd" || low == "$" || low == "us$" || low.contains("usd") || low.contains("us$") {
+                        return "USD".to_string();
+                    }
+                    if low == "eur" || low.contains("€") { return "EUR".to_string(); }
+                    if low == "gbp" || low.contains("£") { return "GBP".to_string(); }
+                    // fallback: uppercase and trim
+                    t.to_uppercase()
+                }
+                let currency_norm = normalize_currency_token(&currency);
 
                 // Normalize stamps_issued: strip parentheses and non-digit/sep chars,
                 // and convert '.' thousand separators to ',' per user request.
@@ -463,12 +538,12 @@ pub fn collect_stampworld_data(
                     &denomination,
                     &color,
                     &description,
-                    &stamps_issued_norm,
+                        &stamps_issued_norm,
                     &mint_condition,
                     &unused,
                     &used,
                     &letter_fdc,
-                    &currency,
+                        &currency_norm,
                     &local_image_path,
                     &remote_image_url,
                     &original_image_url,
