@@ -1,6 +1,6 @@
-# Stamp Album Generator v0.10.0
+# Stamp Album Generator v0.11.0
 
-<!-- Version: 0.10.0 | Last Updated: 2025-09-25 | Previous: docs/versions/README_2025-09-18_v1.md -->
+ !-- Version: 0.10.0 | Last Updated: 2025-09-25 | Previous: docs/versions/README_2025-09-18_v1.md --
 
 A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
 
@@ -39,7 +39,7 @@ chmod +x /usr/local/bin/stamp_album_gen2
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone  repository-url 
 cd stamp-album-gen2
 
 # Build release version
@@ -70,33 +70,33 @@ Usage: stamp_album_gen2 [OPTIONS]
 Options:
       --output-only
           Output-only mode: Generate AlbumEasy from existing DB (requires --db-path and --album-name)
-      --country <COUNTRY>
+      --country  COUNTRY 
           Country name (used as default for other parameters if not specified)
-      --db-path <DB_PATH>
+      --db-path  DB_PATH 
           Path to the SQLite database (required for --output-only mode)
-      --album-name <ALBUM_NAME>
+      --album-name  ALBUM_NAME 
           Album name (required for album generation)
-      --source <SOURCE>
+      --source  SOURCE 
           Source type: stampworld, touchstamps, extractfile, colnectexport [default: stampworld]
-      --site-name <SITE_NAME>
+      --site-name  SITE_NAME 
           Site name for scraping (required for scraping mode, e.g. 'Great-Britain', 'Canada')
-      --album-directory <ALBUM_DIRECTORY>
+      --album-directory  ALBUM_DIRECTORY 
           Album directory (default: Albums/{album_name})
-      --images-directory <IMAGES_DIRECTORY>
+      --images-directory  IMAGES_DIRECTORY 
           Images directory (default: Albums/{album_name}/images)
-      --album-file-name <ALBUM_FILE_NAME>
+      --album-file-name  ALBUM_FILE_NAME 
           Album file name (default: Albums/{album_name}/{album_name}.txt)
-      --extract-file-name <EXTRACT_FILE_NAME>
+      --extract-file-name  EXTRACT_FILE_NAME 
           Extract file name (default: Albums/{album_name}/{album_name}_extract.txt)
-      --catalog-name <CATALOG_NAME>
+      --catalog-name  CATALOG_NAME 
           Catalog name (e.g. 'SG', 'Michel') [default: SG]
       --overwrite-album
           Overwrite existing album text files
       --overwrite-images
           Overwrite existing image files
-      --start-year <START_YEAR>
+      --start-year  START_YEAR 
           Start year for filtering stamps [default: 0]
-      --end-year <END_YEAR>
+      --end-year  END_YEAR 
           End year for filtering stamps [default: 9999]
   -h, --help
           Print help (see more with '--help')
@@ -117,7 +117,10 @@ reference_height_mm = 240.0
 stamp_box_height = 30.0
 row_font_spacing = 2.0
 header_font_spacing = 3.0
+etc...
 ```
+
+Note: There is a short guide about page-fit tuning (the `page_fit_conservative_buffer_mm` option and how to avoid footer overlap) in `docs/AUTOMATION_QUICK_REFERENCE.md`.
 
 ### Flag cover and integration tests
 
@@ -283,19 +286,19 @@ The loader will propagate values placed inside `[header_formatting]` up to the t
 
 The CLI supports these flags and options (more verbose listing):
 
-- --source <stampworld|touchstamps|extractfile|colnectexport> (default: stampworld)
-- --site-name <SITE_NAME> (required for scraping)
-- --album-name <ALBUM_NAME>
-- --db-path <DB_PATH> (required in output-only mode)
-- --base-url <URL> (optional: override automatic StampWorld URL construction)
-- --start-year <START_YEAR> (default 0)
-- --end-year <END_YEAR> (default 9999)
+- --source  stampworld|touchstamps|extractfile|colnectexport  (default: stampworld)
+- --site-name  SITE_NAME  (required for scraping)
+- --album-name  ALBUM_NAME 
+- --db-path  DB_PATH  (required in output-only mode)
+- --base-url  URL  (optional: override automatic StampWorld URL construction)
+- --start-year  START_YEAR  (default 0)
+- --end-year  END_YEAR  (default 9999)
 - --overwrite-album (boolean)
 - --overwrite-images (boolean)
-- --max-pages <N> (0 = unlimited)
-- --stop-after-no_hits <N> (default 3)
+- --max-pages  N  (0 = unlimited)
+- --stop-after-no_hits  N  (default 3)
 
-When scraping StampWorld, the program will by default percent-encode common problematic characters (space -> `%20`, `!` -> `%21`, `/` -> `%2F`). It also consults `slug_overrides.toml` and will attempt a small deterministic fallback (insert `!` before first or last hyphen) if the constructed listing returns a 404. This behavior is logged at info level.
+When scraping StampWorld, the program will by default percent-encode common problematic characters (space -  `%20`, `!` -  `%21`, `/` -  `%2F`). It also consults `slug_overrides.toml` and will attempt a small deterministic fallback (insert `!` before first or last hyphen) if the constructed listing returns a 404. This behavior is logged at info level.
 
 #### Git Hooks
 
@@ -332,13 +335,13 @@ For GitLab repositories, use `.gitlab-ci.yml` instead:
 For manual version control, use the version management script:
 
 ```bash
-# Bump patch version (0.7.0 -> 0.7.1)
+# Bump patch version (0.7.0 -  0.7.1)
 ./version_docs.sh patch
 
-# Bump minor version (0.7.0 -> 0.8.0)
+# Bump minor version (0.7.0 -  0.8.0)
 ./version_docs.sh minor
 
-# Bump major version (0.7.0 -> 1.0.0)
+# Bump major version (0.7.0 -  1.0.0)
 ./version_docs.sh major
 
 # Set specific version
@@ -382,18 +385,18 @@ For manual version control, use the version management script:
 
 ### Common Issues
 
-**"Could not load embedded reference image"**
+#### "Could not load embedded reference image"
 
 - This is a warning, not an error
 - The system will use default scaling ratios
 - Check that the binary was built correctly
 
-**"Database not found"**
+#### "Database not found"#### 
 
 - Verify the `--db-path` points to a valid SQLite database
 - Ensure the database file has proper permissions
 
-**"Image dimensions not found"**
+#### "Image dimensions not found"#### 
 
 - Check that stamp images exist in `Albums/{album}/images/`
 - Verify image files are not corrupted
@@ -454,19 +457,19 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Version**: 0.10.0
+#### Version#### : 0.10.0
   
 Additional CLI flags (added recently):
 
-  --base-url <BASE_URL>
+  --base-url  BASE_URL 
           Optional override for the base URL used when scraping web sources that
           paginate by appending a page number. Example: "https://...&page="
 
-  --max-pages <MAX_PAGES>
+  --max-pages  MAX_PAGES 
           Optional explicit limit on number of pages to fetch when scraping.
           Use 0 to disable the explicit cap and rely on internal heuristics.
 
-  --stop-after-no-hits <N>
+  --stop-after-no-hits  N 
           Stop scraping after N consecutive pages that yield zero stamps in the
           requested year range. Useful to avoid long, multi-year listings from
       causing excessive downloads. Default is 1.
@@ -484,7 +487,7 @@ and stop-after-no-hits heuristic to avoid over-downloading:
     --stop-after-no-hits 3 --max-pages 0
 ```
 
-**Release Date**: 2025-09-25
+**Release Date**: 2025-09-28
 **Build**: Release (optimized)
-**Platform**: Linux x86-64</content>
+**Platform**: Linux x86-64 /content 
 `filePath`: README.md

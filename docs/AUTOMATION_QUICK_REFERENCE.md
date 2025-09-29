@@ -90,6 +90,13 @@ Developer Commit → CI/CD Trigger → Version Analysis → File Updates → Rel
 - get_meaningful(...) helper filters common placeholders (e.g. "n/a", "-", "0") to determine when a value is meaningful.
 - Strings (sg, image_path) are sanitized for quotes/newlines before rendering.
 
+### Page-fit tuning and conservative buffer
+
+- `page_fit_conservative_buffer_mm` (float, mm): a new configuration key you can add to `config.toml` to reserve extra vertical space at the bottom of each page. The generator subtracts this buffer from the usable page height when deciding whether a header+row will fit on the current page. Default: 11.0 mm (if not present in `config.toml`).
+- Purpose: small differences in font rendering and the AlbumEasy PDF library can make the generator's estimated heights slightly optimistic. Increasing this buffer moves borderline rows to the next page instead of allowing them to visually overlap the footer.
+- Tuning: if you still observe a footer overlap in generated PDFs, increase the value in small steps (e.g., 0.5–1.0 mm) and regenerate the album until the overflow disappears. If you want a more compact layout, decrease the value similarly.
+
+
 ## 🚨 Troubleshooting
 
 ### Pipeline not running?

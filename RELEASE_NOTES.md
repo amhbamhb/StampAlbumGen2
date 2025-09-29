@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.10.0 Release Notes
+# Stamp Album Generator v0.11.0 Release Notes
 
 ## Overview
 
@@ -133,8 +133,8 @@ For issues or questions, please check the embedded documentation in the source c
 
 ---
 
-**Release Date**: 2025-09-25
-**Version**: 0.10.0
+**Release Date**: 2025-09-28
+**Version**: 0.11.0
 **Build**: Release (optimized)</content>
 
 ---
@@ -149,11 +149,13 @@ This patch fixes a header aggregation bug and improves placeholder image sizing 
 - Placeholder sizing: if a real image exists in the same series/year, placeholders now inherit that image's measured mm dimensions so page layout remains consistent. If no representative image is available, placeholders default to 22.0 × 25.0 mm.
 - Added unit tests covering header aggregation and direct emission checks for `write_page_header` to ensure fields are written into AlbumEasy output.
 
+- Page-fit robustness: added a new configuration key `page_fit_conservative_buffer_mm` (default 11.0 mm) to reserve extra vertical space at the bottom of each page to avoid footer overlap. Also added a regression test (`tests/page_fit_regression.rs`) to prevent regressions to page-fit behavior.
+
 ## Notes
 
 - A small lint/cleanup pass remains (non-functional dead_code warnings) and can be addressed in a follow-up.
 
-**Release Date**: 2025-09-25
-**Version**: 0.10.0
+**Release Date**: 2025-09-28
+**Version**: 0.11.0
 
 <parameter name="filePath">RELEASE_NOTES.md

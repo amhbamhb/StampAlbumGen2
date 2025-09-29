@@ -45,6 +45,27 @@ detailed_page_fit_diagnostics = false
 # content bleeding into the footer. Default: 11.0
 page_fit_conservative_buffer_mm = 11.0
 
+# Example: adjust the conservative buffer to tune page breaks
+#
+# The generator subtracts this buffer from the usable page height when
+# determining whether a header+row will fit on the current page. If you
+# generate AlbumEasy content using page size 216x279.4 mm (e.g. A4-like), the
+# global AlbumEasy header emitted by the generator looks like:
+#
+#   ALBUM_PAGES_SIZE  (216.0 279.4) # Page size in mm (width height)
+#
+# If the generator estimates a header+row + buffer would exceed the usable
+# height, it will start a new page instead of allowing the row to be emitted
+# near the bottom (which can visually overlap the footer). Example commented
+# setting to add to your `config.toml`:
+#
+# page_fit_conservative_buffer_mm = 11.0  # reserve 11 mm at page bottom (default)
+#
+# Tuning tips:
+# - If you still see footer overlap in the rendered PDF, increase by +0.5 or
+#   +1.0 mm until the overlap disappears.
+# - If you want a slightly denser layout, reduce it in small steps.
+
 # --- Per-series packing thresholds ---
 # If the median measured stamp+box width for a series is >= median_width_cap_3
 # the generator will cap stamps-per-row to 3. If median >= median_width_cap_4 it
