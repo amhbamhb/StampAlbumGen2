@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::fs;
+use log::{info, debug};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct HeaderFormatting {
@@ -29,12 +30,30 @@ pub struct Config {
     pub reference_height_mm: Option<f32>,
     pub stamp_box_height: Option<f32>,
     pub stamp_box_adjust: Option<f32>,
+    // Page layout overrides (mm)
+    pub album_page_width_mm: Option<f32>,
+    pub album_page_height_mm: Option<f32>,
+    pub page_top_margin_mm: Option<f32>,
+    pub page_bottom_margin_mm: Option<f32>,
+    pub page_left_margin_mm: Option<f32>,
+    pub page_right_margin_mm: Option<f32>,
+    pub page_border_outer: Option<f32>,
+    pub page_border_inner1: Option<f32>,
+    pub page_border_inner2: Option<f32>,
+    pub page_border_spacing: Option<f32>,
+    pub album_pages_spacing_h: Option<f32>,
+    pub album_pages_spacing_v: Option<f32>,
     pub median_width_cap_3: Option<f32>,
     pub median_width_cap_4: Option<f32>,
     pub row_font_spacing: Option<f32>,
     pub global_scale: Option<f32>,
     pub header_font_spacing: Option<f32>,
     pub header_formatting: Option<HeaderFormatting>,
+    // When true, emit detailed per-stamp PAGE_FIT diagnostics into generated
+    // AlbumEasy text output to help debug page-fit math (disabled by default).
+    pub detailed_page_fit_diagnostics: Option<bool>,
+    // Conservative buffer reserved at bottom of page (mm) to avoid footer bleed
+    pub page_fit_conservative_buffer_mm: Option<f32>,
     // Optional path to an offline calibration CSV file. CSV format:
     // filename,mm_per_px_w,mm_per_px_h
     pub calibration_csv: Option<String>,
@@ -49,6 +68,23 @@ pub struct Config {
     pub include_date: Option<bool>,
     // Allow overriding maximum rows per page when header is larger
     pub max_rows_per_page: Option<usize>,
+    // When false, don't emit ROW_START_ES automatically after PAGE_START
+    // Default: true
+    pub row_start_es_enabled: Option<bool>,
+    // Allow a single very large stamp (or row) to occupy a page if enabled
+    // and it exceeds the fraction `single_stamp_threshold_pct` of usable height.
+    pub allow_single_large_stamp_per_page: Option<bool>,
+    // Fraction (0.0..1.0) above which a single-row page is permitted.
+    pub single_stamp_threshold_pct: Option<f32>,
+    // Extra padding subtracted from usable height (mm) to avoid bleed at page bottom
+    pub usable_height_padding_mm: Option<f32>,
+    pub header_vspace_before_mm: Option<f32>,
+    pub header_vspace_after_mm: Option<f32>,
+    pub text_line_height_mm: Option<f32>,
+    pub image_spacing_mm: Option<f32>,
+    pub album_stamp_img_new_setting_w_mm: Option<f32>,
+    pub album_stamp_img_new_setting_h_mm: Option<f32>,
+    pub album_stamp_img_new_setting_preserve_aspect: Option<bool>,
     // If false, the generator will skip emitting the large flag/title cover page
     // Default: true (when None or not present)
     pub print_flag_cover: Option<bool>,
@@ -57,16 +93,30 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Config {
+            album_page_width_mm: None,
+            album_page_height_mm: None,
+            page_top_margin_mm: None,
+                        page_left_margin_mm: None,
+                        page_right_margin_mm: None,
+            page_bottom_margin_mm: None,
+            page_border_outer: None,
+            page_border_inner1: None,
+            page_border_inner2: None,
+            page_border_spacing: None,
             reference_width_mm: None,
             reference_height_mm: None,
             stamp_box_height: None,
             stamp_box_adjust: None,
+                        album_pages_spacing_h: None,
+                        album_pages_spacing_v: None,
             median_width_cap_3: None,
             median_width_cap_4: None,
             global_scale: None,
             row_font_spacing: None,
             header_font_spacing: None,
             header_formatting: None,
+            detailed_page_fit_diagnostics: None,
+            page_fit_conservative_buffer_mm: None,
             include_design: None,
             include_engraving: None,
             include_watermark: None,
@@ -78,6 +128,17 @@ impl Default for Config {
             calibration_csv: None,
             max_rows_per_page: None,
             print_flag_cover: None,
+            row_start_es_enabled: None,
+            allow_single_large_stamp_per_page: None,
+              single_stamp_threshold_pct: None,
+              usable_height_padding_mm: None,
+              header_vspace_before_mm: None,
+              header_vspace_after_mm: None,
+              text_line_height_mm: None,
+              image_spacing_mm: None,
+                            album_stamp_img_new_setting_w_mm: None,
+                            album_stamp_img_new_setting_h_mm: None,
+                            album_stamp_img_new_setting_preserve_aspect: None,
         }
     }
 }
@@ -103,49 +164,75 @@ pub fn load_config(path: &str) -> Config {
     for candidate in try_paths.iter() {
         if let Ok(content) = fs::read_to_string(candidate) {
             // First parse into a generic toml::Value to inspect raw mapping
-            if let Ok(value) = toml::from_str::<toml::Value>(&content) {
-                // Debug: report whether top-level key `print_flag_cover` exists in the parsed value
-                if value.get("print_flag_cover").is_some() {
-                    println!("[DEBUG] toml::Value contains top-level 'print_flag_cover'");
-                } else {
-                    println!("[DEBUG] toml::Value does NOT contain top-level 'print_flag_cover'");
-                }
+            if let Ok(_value) = toml::from_str::<toml::Value>(&content) {
+                // Successfully parsed into toml::Value; suppress noisy stdout debug prints
+                // and use the log crate for structured logging instead.
             } else {
-                println!("[DEBUG] Failed to parse into toml::Value (this shouldn't happen when parsing into Config succeeded)");
+                debug!("Failed to parse content into toml::Value while inspecting config");
             }
 
-            match toml::from_str::<Config>(&content) {
-                Ok(cfg) => {
-                    // If the file places the include_* toggles inside the
-                    // `[header_formatting]` table (common), propagate those
-                    // values into the top-level `Config` fields when the
-                    // top-level ones are not present. This keeps both
-                    // layouts working.
-                    let mut cfg = cfg;
-                    if let Some(hf) = cfg.header_formatting.clone() {
-                        cfg.include_design = cfg.include_design.or(hf.include_design);
-                        cfg.include_engraving = cfg.include_engraving.or(hf.include_engraving);
-                        cfg.include_watermark = cfg.include_watermark.or(hf.include_watermark);
-                        cfg.include_perforation = cfg.include_perforation.or(hf.include_perforation);
-                        cfg.include_catalog_numbers = cfg.include_catalog_numbers.or(hf.include_catalog_numbers);
-                        cfg.include_series = cfg.include_series.or(hf.include_series);
-                        cfg.include_country = cfg.include_country.or(hf.include_country);
-                        cfg.include_date = cfg.include_date.or(hf.include_date);
-                        // Allow `print_flag_cover` to be placed inside `[header_formatting]`
-                        // in older or mistaken configs; propagate it to the top-level field
-                        // so either placement works.
-                        cfg.print_flag_cover = cfg.print_flag_cover.or(hf.print_flag_cover);
+            // Parse the content into a toml::Value so we can detect keys that
+            // may have been placed inside `[header_formatting]` by mistake.
+            match toml::from_str::<toml::Value>(&content) {
+                Ok(mut value) => {
+                    // If keys are present inside the header_formatting table but
+                    // not at top-level, promote them to top-level so deserialization
+                    // into `Config` picks them up. This handles malformed or
+                    // legacy configs that put page/layout keys inside
+                    // `[header_formatting]`.
+                    if let Some(hf_table) = value.get("header_formatting").and_then(|v| v.as_table()).cloned() {
+                        // Only promote keys that are missing from top-level. We cloned
+                        // the header_formatting table above so we don't hold an immutable
+                        // borrow on `value` while mutating it.
+                        if let Some(tbl) = value.as_table_mut() {
+                            for (k, v) in hf_table.iter() {
+                                if tbl.get(k).is_none() {
+                                    tbl.insert(k.clone(), v.clone());
+                                }
+                            }
+                        }
                     }
 
-                    println!("[INFO] Loaded config from {}", candidate.display());
-                    // Debug: show raw content and parsed config to help diagnose missing fields
-                    println!("[DEBUG] Raw config content from {}:\n{}", candidate.display(), &content);
-                    println!("[DEBUG] Parsed Config struct: {:?}", cfg);
-                    return cfg;
+                    // Now serialize the possibly-modified `Value` back to TOML
+                    // and deserialize into the strongly-typed `Config`.
+                    match toml::to_string(&value) {
+                        Ok(s) => match toml::from_str::<Config>(&s) {
+                            Ok(mut cfg) => {
+                            // If the file places the include_* toggles inside the
+                            // `[header_formatting]` table (common), ensure those
+                            // values are propagated into the top-level `Config` fields
+                            // when the top-level ones are not present.
+                            if let Some(hf) = cfg.header_formatting.clone() {
+                                cfg.include_design = cfg.include_design.or(hf.include_design);
+                                cfg.include_engraving = cfg.include_engraving.or(hf.include_engraving);
+                                cfg.include_watermark = cfg.include_watermark.or(hf.include_watermark);
+                                cfg.include_perforation = cfg.include_perforation.or(hf.include_perforation);
+                                cfg.include_catalog_numbers = cfg.include_catalog_numbers.or(hf.include_catalog_numbers);
+                                cfg.include_series = cfg.include_series.or(hf.include_series);
+                                cfg.include_country = cfg.include_country.or(hf.include_country);
+                                cfg.include_date = cfg.include_date.or(hf.include_date);
+                                cfg.print_flag_cover = cfg.print_flag_cover.or(hf.print_flag_cover);
+                            // header_formatting currently does not include the detailed
+                            // diagnostics toggle; leave it as-is when present at top-level.
+                            }
+
+                            info!("Loaded config from {}", candidate.display());
+                            debug!("Parsed Config struct: {:?}", cfg);
+                            return cfg;
+                            }
+                            Err(e) => {
+                                println!("[WARN] Failed to deserialize merged config from {}: {} -- using defaults", candidate.display(), e);
+                                break;
+                            }
+                        },
+                        Err(e) => {
+                            println!("[WARN] Failed to serialize merged toml::Value for {}: {} -- using defaults", candidate.display(), e);
+                            break;
+                        }
+                    }
                 }
                 Err(e) => {
-                    println!("[WARN] Failed to parse {}: {} -- using defaults", candidate.display(), e);
-                    break; // If parsing fails for a found file, don't keep searching
+                    println!("[DEBUG] Failed to parse into toml::Value (this shouldn't happen when parsing into Config succeeded): {}", e);
                 }
             }
         }

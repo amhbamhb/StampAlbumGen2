@@ -86,6 +86,7 @@ Developer Commit → CI/CD Trigger → Version Analysis → File Updates → Rel
 - Left column: cleaned denomination (sg number/denomination).
 - Centre column: color, description, and stamps_issued (counts shown when present) joined with newline separators.
 - Right column: first line = mint_condition fallback — if blank the code substitutes the literal "Unsed"; second line = used; stamps_issued remains in centre.
+- Day/month parsing: the collector accepts Unicode month names (e.g., "3. März") using the module-level `DAY_MONTH_RE` in `src/stampworld/data_collector.rs`.
 - get_meaningful(...) helper filters common placeholders (e.g. "n/a", "-", "0") to determine when a value is meaningful.
 - Strings (sg, image_path) are sanitized for quotes/newlines before rendering.
 

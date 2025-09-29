@@ -28,18 +28,25 @@ header_spacing = 1.0
 # Optional toggles: set true to include those fields in the page header
 # include_design: show the 'Design:' line when present
 include_design = true
+
 # include_engraving: show the 'Engraving:' line when present
 include_engraving = true
+
 # include_watermark: show the watermark line when present (default true)
 include_watermark = true
+
 # include_perforation: show the perforation line when present (default true)
 include_perforation = true
+
 # include_catalog_numbers: show catalog numbers (e.g. Scott #) when present (default true)
 include_catalog_numbers = true
+
 # include_series: show the series name in the header (default true)
 include_series = true
+
 # include_country: show the country name in the header (default false)
 include_country = false
+
 # include_date: show the date line in the header (default true)
 include_date = true
 
@@ -49,5 +56,72 @@ include_date = true
 # Defaults to true when omitted.
 # Re-enable the flag cover — set true to emit the large flag/title cover page.
 print_flag_cover = true
+
+
+
+# --- Page layout defaults (AlbumEasy) ---
+# Page size in mm (width height). Common values: US Letter = 216 279.4, A4 = 210 297
+album_page_width_mm = 216.0
+album_page_height_mm = 279.4
+
+# Page margins (top bottom) in mm
+page_top_margin_mm = 10.0
+page_bottom_margin_mm = 10.0
+
+# Page left/right margins (mm)
+page_left_margin_mm = 10.0
+page_right_margin_mm = 10.0
+
+# Page border (outer, inner1, inner2, spacing) in mm used to compute usable area
+page_border_outer = 0.5
+page_border_inner1 = 0.1
+page_border_inner2 = 0.0
+page_border_spacing = 3.0
+
+# AlbumEasy page spacing: horizontal (between decorative elements) and vertical
+# (between header/footer areas). Matches ALBUM_PAGES_SPACING (h v).
+album_pages_spacing_h = 3.0
+album_pages_spacing_v = 6.0
+
+# Maximum rows per page before forcing a new page (optional; defaults to 4 when omitted)
+max_rows_per_page = 4
+
+# When true the generator will automatically insert ROW_START_ES after PAGE_START
+# Set to false to manage row starts manually in custom templates
+row_start_es_enabled = true
+
+# If enabled, a single very large stamp (or a single row that requires more than
+# `single_stamp_threshold_pct` of the usable page height) will be allowed to
+# occupy a page by itself rather than being split or forcing unexpected layout
+# behavior. This is a preference to handle large commemoratives gracefully.
+allow_single_large_stamp_per_page = true
+
+# Fraction (0.0..1.0) of usable height above which a single-row page is
+# permitted for a large stamp/row. Default 0.6 means 60% of usable height.
+single_stamp_threshold_pct = 0.6
+
+# Additional safety padding (mm) subtracted from the usable page height to
+# more closely match AlbumEasy's printable area rules (header/footer and
+# typographic spacing). Increase if you see rows bleeding at the bottom.
+usable_height_padding_mm = 24.0
+
+# Fine-tunable typography and spacing to match AlbumEasy's document metrics.
+# Use the AlbumEasy_4.2.1.pdf to determine exact values and adjust these if
+# rows still bleed or spacing looks off.
+header_vspace_before_mm = 6.0
+header_vspace_after_mm = 6.0
+text_line_height_mm = 2.6
+image_spacing_mm = 1.5
+
+# ALBUM_STAMP_IMG_NEW_SETTING: width_adjust_mm, height_adjust_mm, preserve_aspect
+album_stamp_img_new_setting_w_mm = 3.0
+album_stamp_img_new_setting_h_mm = 3.0
+album_stamp_img_new_setting_preserve_aspect = true
+
+# STAMP_BOXES_SIZE_ADJUST equivalent: adds/subtracts mm to emitted stamp box sizes
+stamp_box_adjust = 0.5
+
+# Debug: emit detailed per-stamp PAGE_FIT diagnostics
+detailed_page_fit_diagnostics = true
 
 

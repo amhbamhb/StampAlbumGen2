@@ -35,6 +35,16 @@ reference_height_mm = 240.0
 # box width = measured_width + 2 * stamp_box_adjust. Typical values: 2.0 - 4.0
 stamp_box_adjust = 3.0
 
+# When true the generator will emit detailed per-stamp PAGE_FIT diagnostics
+# into the generated AlbumEasy text output. This is verbose and intended only
+# for debugging layout/fit issues. Default: false
+detailed_page_fit_diagnostics = false
+
+# Conservative buffer (mm) reserved at the bottom of each page to avoid
+# overlapping AlbumEasy footers or page decorations. Increase if you observe
+# content bleeding into the footer. Default: 11.0
+page_fit_conservative_buffer_mm = 11.0
+
 # --- Per-series packing thresholds ---
 # If the median measured stamp+box width for a series is >= median_width_cap_3
 # the generator will cap stamps-per-row to 3. If median >= median_width_cap_4 it

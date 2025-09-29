@@ -125,49 +125,66 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     let cfg_print_flag_cover = cfg.print_flag_cover.unwrap_or(true);
     let cfg_include_design = cfg.include_design.unwrap_or(true);
     let cfg_include_engraving = cfg.include_engraving.unwrap_or(true);
+    let cfg_row_start_es = cfg.row_start_es_enabled.unwrap_or(true);
 
-    let lines: Vec<String> = vec![
-        "################################################################################".to_string(),
-        format!("# {}", album_name),
-        "################################################################################".to_string(),
-        format!("# Generated: UTC: {} localtime : {}", datetime_str, localdatetime),
+    // Build AlbumEasy header lines dynamically from config so the emitted
+    // header matches the layout math used later in the generator.
+    let page_w = cfg.album_page_width_mm.unwrap_or(216.0);
+    let page_h = cfg.album_page_height_mm.unwrap_or(279.4);
+    let top_margin = cfg.page_top_margin_mm.unwrap_or(10.0);
+    let bottom_margin = cfg.page_bottom_margin_mm.unwrap_or(10.0);
+    let left_margin = cfg.page_left_margin_mm.unwrap_or(10.0);
+    let right_margin = cfg.page_right_margin_mm.unwrap_or(10.0);
+    let border_outer = cfg.page_border_outer.unwrap_or(0.5);
+    let border_inner1 = cfg.page_border_inner1.unwrap_or(0.1);
+    let border_inner2 = cfg.page_border_inner2.unwrap_or(0.0);
+    let border_spacing = cfg.page_border_spacing.unwrap_or(3.0);
+    let pages_spacing_h = cfg.album_pages_spacing_h.unwrap_or(0.0);
+    let pages_spacing_v = cfg.album_pages_spacing_v.unwrap_or(0.0);
+    let img_new_w = cfg.album_stamp_img_new_setting_w_mm.unwrap_or(0.0);
+    let img_new_h = cfg.album_stamp_img_new_setting_h_mm.unwrap_or(0.0);
+    let img_preserve = cfg.album_stamp_img_new_setting_preserve_aspect.unwrap_or(true);
+    let stamp_box_adj = cfg.stamp_box_adjust.unwrap_or(3.0);
 
-        format!("# User: {}@{}", username, hostname),
-        format!("# OS: {}", std::env::consts::OS),
-        format!("# Architecture: {}", std::env::consts::ARCH),
-        format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()),
-    format!("# Command Line: {}", command_line),
-    // Emit key config toggle values used by the generator for transparency
-    format!("# Config: print_flag_cover={} include_design={} include_engraving={}", cfg_print_flag_cover, cfg_include_design, cfg_include_engraving),
-        "".to_string(),
-        "ALBUM_PAGES_SIZE  (216 270) #Set the page to US Letter (8.5 x 11)".to_string(),
-        "#ALBUM_PAGES_SIZE (210.0 297.0) #Setting for A4".to_string(),
-        "".to_string(),
-        "ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0 )".to_string(),
-        "".to_string(),
-        "ALBUM_PAGES_BORDER (0.5 0.1 0.0 3.0)    #two line border".to_string(),
-        "#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string(),
-        "".to_string(),
-        format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name),
-        "".to_string(),
-        "ALBUM_PAGES_SPACING (3.0 6.0)".to_string(),
-        "".to_string(),
-        "ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string(),
-        "".to_string(),
-        "#ALBUM_PAGES_NUMBER (TN 10 R)".to_string(),
-        "ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string(),
-        "".to_string(),
-        "ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)".to_string(),
-        "".to_string(),
-        "ROW_ALIGN_MIDDLE".to_string(),
-        "".to_string(),
-        "# The stamp boxes in this album are sized approximately".to_string(),
-        "# 4mm larger than the actual stamps giving a 2mm border".to_string(),
-        "# To have the boxes drawn the actual stamp size use".to_string(),
-        "#STAMP_BOXES_SIZE_ADJUST(-4.0)".to_string(),
-        "# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)".to_string(),
-        "STAMP_BOXES_SIZE_ADJUST (3)".to_string(),
-    ];
+    let mut lines: Vec<String> = Vec::new();
+    lines.push("################################################################################".to_string());
+    lines.push(format!("# {}", album_name));
+    lines.push("################################################################################".to_string());
+    lines.push(format!("# Generated: UTC: {} localtime : {}", datetime_str, localdatetime));
+    lines.push(format!("# User: {}@{}", username, hostname));
+    lines.push(format!("# OS: {}", std::env::consts::OS));
+    lines.push(format!("# Architecture: {}", std::env::consts::ARCH));
+    lines.push(format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()));
+    lines.push(format!("# Command Line: {}", command_line));
+    lines.push(format!("# Config: print_flag_cover={} include_design={} include_engraving={}", cfg_print_flag_cover, cfg_include_design, cfg_include_engraving));
+    lines.push("".to_string());
+    lines.push(format!("ALBUM_PAGES_SIZE  ({:.1} {:.1}) # Page size in mm (width height)", page_w, page_h));
+    lines.push("".to_string());
+    // Emit margins as (left right top bottom) to match internal layout assumptions
+    lines.push(format!("ALBUM_PAGES_MARGINS  ({:.1} {:.1} {:.1} {:.1} )", left_margin, right_margin, top_margin, bottom_margin));
+    lines.push("".to_string());
+    lines.push(format!("ALBUM_PAGES_BORDER ({:.2} {:.2} {:.2} {:.2})    #outer inner1 inner2 spacing", border_outer, border_inner1, border_inner2, border_spacing));
+    lines.push("#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string());
+    lines.push("".to_string());
+    lines.push(format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name));
+    lines.push("".to_string());
+    lines.push(format!("ALBUM_PAGES_SPACING ({:.1} {:.1})", pages_spacing_h, pages_spacing_v));
+    lines.push("".to_string());
+    lines.push("ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string());
+    lines.push("".to_string());
+    lines.push("#ALBUM_PAGES_NUMBER (TN 10 R)".to_string());
+    lines.push("ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string());
+    lines.push("".to_string());
+    lines.push(format!("ALBUM_STAMP_IMG_NEW_SETTING ({:.1} {:.1} {})", img_new_w, img_new_h, img_preserve));
+    lines.push("".to_string());
+    lines.push("ROW_ALIGN_MIDDLE".to_string());
+    lines.push("".to_string());
+    lines.push("# The stamp boxes in this album are sized approximately".to_string());
+    lines.push("# 4mm larger than the actual stamps giving a 2mm border".to_string());
+    lines.push("# To have the boxes drawn the actual stamp size use".to_string());
+    lines.push("#STAMP_BOXES_SIZE_ADJUST(-4.0)".to_string());
+    lines.push("# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)".to_string());
+    lines.push(format!("STAMP_BOXES_SIZE_ADJUST ({:.1})", stamp_box_adj));
     // Emit each global line. Ensure we always insert a PAGE_START before any
     // PAGE_ command (PAGE_VSPACE, PAGE_TEXT_CENTRE, etc.) unless the last
     // emitted line was already a PAGE_START. This guarantees the generated
@@ -178,8 +195,10 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         if trimmed.starts_with("PAGE_") {
             if !last_was_page_start {
                 let _ = writeln!(writer, "PAGE_START");
-                // Ensure page sections always begin with a row start
-                let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                // Ensure page sections begin with a row start when enabled
+                if cfg_row_start_es {
+                    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                }
                 last_was_page_start = true;
             }
             let _ = writeln!(writer, "{}", line);
@@ -191,7 +210,9 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         if trimmed == "PAGE_START" {
             let _ = writeln!(writer, "{}", line);
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
-            let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+            if cfg_row_start_es {
+                let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+            }
             last_was_page_start = true;
             continue;
         }
@@ -230,7 +251,9 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         let _ = writeln!(writer, "### {} ###", album_name);
     let _ = writeln!(writer, "PAGE_START");
     // Ensure cover pages also begin with a row start so the layout is initialized
-    // let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+    if cfg_row_start_es {
+        let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+    }
         // If we have a flag image, emit it as a large image entry on the cover.
         if let Some(fp) = flag_path_opt.as_ref() {
             // Emit a large image placeholder (AlbumEasy consumer will scale)

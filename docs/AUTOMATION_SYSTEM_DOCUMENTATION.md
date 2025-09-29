@@ -82,3 +82,9 @@ Edit .copilot-commit-message-instructions.md to change prefixes, ticket rules, o
   ```bash
   ./test_automation.sh
   ```
+
+## Day / Month parsing (code note)
+
+The collector now uses a precompiled regular expression `DAY_MONTH_RE` (defined in `src/stampworld/data_collector.rs`) to extract day and month tokens from block detail lines. It supports Unicode month names (for example `März`, `Décembre`) and hyphenated month tokens. This avoids per-loop regex compilation and improves robustness for internationalized month names.
+
+If you need to accept trailing dots on month abbreviations (e.g. `Feb.`), the regex can be widened to allow a trailing `.` in the capture.

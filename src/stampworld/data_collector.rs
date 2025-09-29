@@ -4,6 +4,19 @@ use scraper::{Html, Selector};
 use regex::Regex;
 use std::collections::HashSet;
 use rusqlite::params;
+use once_cell::sync::Lazy;
+
+// Precompiled regexes used across the module
+static RANGE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"^\s*\d+\s*\p{Pd}\s*\d+\s*$")
+        .expect("invalid range regex")
+});
+
+static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
+    // Matches "1. January", "12. Feb", " 3. März", case-insensitive, accepts Unicode letters and hyphens
+    Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$")
+        .expect("invalid day-month regex")
+});
 
 // Normalize stamps_issued values and provide small parser helpers used by
 // both runtime code and unit tests.
@@ -187,7 +200,6 @@ pub fn collect_stampworld_data(
 
     // Precompile regexes
     let year_re = Regex::new(r"(18|19|20)\d{2}").unwrap();
-    let range_re = Regex::new(r"^\s*\d+\s*[-\u{2011}\u{2013}\u{2012}\u{2010}]\s*\d+\s*$").unwrap();
 
     // allow a small set of deterministic slug-fallback attempts when the
     // first request for page 1 returns 404. We keep a mutable
@@ -230,7 +242,8 @@ pub fn collect_stampworld_data(
             // Populate variants if not already done and the site_name doesn't
             // already contain an '!'. Use a small encoder similar to main.rs.
             if slug_variants.is_empty() && !site_name.contains('!') {
-                let encode_site = |s: &str| s.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                // prefer hyphen-separated slugs for fallback variants
+                let encode_site = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
                 // first-hyphen insertion
                 if let Some((first, rest)) = site_name.split_once('-') {
                     let variant = format!("{}!{}", first, rest);
@@ -241,7 +254,7 @@ pub fn collect_stampworld_data(
                     }
                 }
                 // last-hyphen insertion
-                if let Some(pos) = site_name.rfind('-') {
+                    if let Some(pos) = site_name.rfind('-') {
                     // only build if different from first insertion
                     let (head, tail) = site_name.split_at(pos);
                     // tail starts with '-', drop it then build
@@ -249,7 +262,7 @@ pub fn collect_stampworld_data(
                         let tail_rest = &tail[1..];
                         let variant = format!("{}!{}", head, tail_rest);
                         if variant != site_name {
-                            let encode = |s: &str| s.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                            let encode = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
                             let encoded = encode(&variant);
                             let alt_base = format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, start_year, end_year);
                             // avoid duplicates
@@ -370,7 +383,7 @@ pub fn collect_stampworld_data(
 
                 let sg_number = ths[0].text().collect::<String>().trim().to_string();
                 // skip ranges/groups like "23-25"
-                if range_re.is_match(&sg_number) { continue; }
+                if RANGE_RE.is_match(&sg_number) { continue; }
                 let type_ = tds[0].text().collect::<String>().trim().to_string();
                 let denomination = tds[1].text().collect::<String>().trim().to_string();
                 let color = if tds.len() > 3 { tds[3].text().collect::<String>().trim().to_string() } else { String::new() };
@@ -467,8 +480,7 @@ pub fn collect_stampworld_data(
                 let mut month = String::new();
                 let mut day = String::new();
                 for d in &details_vec {
-                    let re = Regex::new(r"(\d{1,2})\.\s*([A-Za-z]+)").unwrap();
-                    if let Some(cap) = re.captures(d) {
+                    if let Some(cap) = DAY_MONTH_RE.captures(d) {
                         day = cap.get(1).map_or("", |m| m.as_str()).to_string();
                         month = cap.get(2).map_or("", |m| m.as_str()).to_string();
                         break;
@@ -747,8 +759,8 @@ mod tests {
 
     #[test]
     fn test_slug_variant_encoding() {
-        // mimic the small encoder used in the fallback heuristic
-        let encode = |s: &str| s.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+    // mimic the small encoder used in the fallback heuristic (hyphen for spaces)
+    let encode = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
         let original = "British-ColumbiaIsland";
         // original should encode spaces and punctuation (none here)
         assert_eq!(encode(original), "British-ColumbiaIsland");
@@ -774,6 +786,19 @@ mod tests {
             assert_eq!(encoded, "A-B-C%21D");
         } else {
             panic!("expected hyphen in multi string");
+        }
+    }
+
+    #[test]
+    fn test_day_month_regex_unicode() {
+        // Verify the precompiled DAY_MONTH_RE matches Unicode month names and extracts day and month
+        let samples = vec!["3. März", "12. Feb", " 1. januari", "21. Décembre"];
+        for s in samples {
+            let caps = DAY_MONTH_RE.captures(s).expect(&format!("DAY_MONTH_RE failed to match '{}'", s));
+            let day = caps.get(1).map_or("", |m| m.as_str()).to_string();
+            let month = caps.get(2).map_or("", |m| m.as_str()).to_string();
+            assert!(!day.is_empty(), "day empty for '{}'", s);
+            assert!(!month.is_empty(), "month empty for '{}'", s);
         }
     }
 }

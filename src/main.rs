@@ -84,11 +84,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
     } else if cli.source.to_lowercase() == "stampworld" {
         // Scrape mode
-        // Require site_name for scraping. If album_name is provided but site_name
-        // is not, derive site_name from album_name. This avoids accidentally
-        // defaulting to 'Israel'.
+        // Require site_name for scraping. If the caller explicitly passed
+        // --site-name but set it to the literal value 'stampworld' (the
+        // default/source name), prefer the provided --album-name when
+        // available. This prevents constructing URLs like
+        // '/en/stamps/stampworld/...' when the intended album slug is the
+        // album name (e.g. 'New-Brunswick'). If neither is provided, exit.
         let site_name = if let Some(s) = cli.site_name.clone() {
-            s
+            if s.to_lowercase() == "stampworld" {
+                if let Some(a) = cli.album_name.clone() {
+                    a.clone()
+                } else {
+                    s
+                }
+            } else {
+                s
+            }
         } else if let Some(a) = cli.album_name.clone() {
             a.clone()
         } else {
@@ -121,22 +132,40 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             // `[slug_overrides]` mapping the provided site_name to a canonical
             // StampWorld slug (which may contain '!' or other punctuation).
             let overrides = stamp_album_gen2::config::load_slug_overrides("slug_overrides.toml");
+            // Helper to percent-encode a slug for a path component
+            // Prefer hyphen-separated slugs for multi-word site/album names
+            let encode = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
+
+            // If the caller requested the full open range (0..9999) treat this
+            // as an intent to fetch the album/main slug page rather than the
+            // 'Postage stamps' year-range listing. In that case construct URLs
+            // like: https://www.stampworld.com/en/stamps/<slug>/?page=
+            let use_main_slug = cli.start_year == 0 && cli.end_year == 9999;
+
             if let Some(canon) = overrides.get(&site_name) {
                 // If there's an explicit override, use it verbatim (but still
                 // percent-encode reserved characters for the URL path).
-                let encoded = canon.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
+                let encoded = encode(canon);
                 println!("Using slug override for '{}': '{}' -> encoded='{}'", site_name, canon, encoded);
-                format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, cli.start_year, cli.end_year)
+                if use_main_slug {
+                    format!("https://www.stampworld.com/en/stamps/{}/?page=", encoded)
+                } else {
+                    format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, cli.start_year, cli.end_year)
+                }
             } else {
                 // Minimal percent-encoding for common problematic characters
                 // that appear in StampWorld site names (space, '!' and '/').
-                let encoded_site = site_name.replace(' ', "%20").replace('!', "%21").replace('/', "%2F");
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                    encoded_site,
-                    cli.start_year,
-                    cli.end_year
-                )
+                let encoded_site = encode(&site_name);
+                if use_main_slug {
+                    format!("https://www.stampworld.com/en/stamps/{}/?page=", encoded_site)
+                } else {
+                    format!(
+                        "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
+                        encoded_site,
+                        cli.start_year,
+                        cli.end_year
+                    )
+                }
             }
         };
     // Compose the DB path early and set it for the collector so both scraper

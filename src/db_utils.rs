@@ -300,6 +300,11 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     };
     debug!("Copying columns into stamps_new: {:?}", copy_cols);
 
+    // Determine how many rows exist in the original stamps table before attempting copy.
+    // If the original table is empty, it's safe to continue the migration even if
+    // the copy produces 0 rows (there was nothing to copy).
+    let original_count: i64 = conn.query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))?;
+
     if !copy_cols.is_empty() {
         let cols_list = copy_cols.join(",");
         let insert_sql = format!("INSERT INTO stamps_new ({0}) SELECT {0} FROM stamps", cols_list);
@@ -310,7 +315,9 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     // Safety check: if stamps_new is empty after the copy, abort the migration
     // to avoid accidentally dropping the live `stamps` table and losing data.
     let new_count: i64 = conn.query_row("SELECT COUNT(*) FROM stamps_new", [], |r| r.get(0))?;
-    if new_count == 0 {
+    if new_count == 0 && original_count > 0 {
+        // If stamps_new ended up empty but the original table actually had rows,
+        // abort to avoid data loss. If the original was empty, proceed.
         error!("Migration aborted: stamps_new contains 0 rows after attempted copy. Rolling back to avoid data loss.");
         // Roll back the explicit transaction we started earlier and return an error
         let _ = conn.execute_batch("ROLLBACK;");
