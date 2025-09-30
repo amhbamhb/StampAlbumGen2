@@ -7,7 +7,7 @@ Thank you for your interest in contributing to StampAlbumGen2! This document pro
 ### Development Setup
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone REPOSITORY_URL
 cd stamp-album-gen2
 
 # Build in debug mode

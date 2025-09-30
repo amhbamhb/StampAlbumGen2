@@ -1,6 +1,47 @@
 # Stamp Album Generator v0.11.0
 
- !-- Version: 0.10.0 | Last Updated: 2025-09-25 | Previous: docs/versions/README_2025-09-18_v1.md --
+Version: 0.11.0 | Last Updated: 2025-09-25
+
+A Rust tool to generate AlbumEasy pages from stamp databases.
+
+## Features
+
+- Generate AlbumEasy pages from SQLite DBs
+- Conservative page-fit logic to avoid footer overlap
+- Embedded reference images and series scaling
+- Configurable via `config.toml`
+
+## Installation
+
+```bash
+# Build release binary
+git clone REPOSITORY_URL
+cd stamp-album-gen2
+cargo build --release
+```
+
+## Quick Usage
+
+```bash
+# Generate album from an existing DB (output-only behavior when --db-path is present)
+stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
+```
+
+## Support / Donations
+
+If you find this project useful, please consider donating. See the `LICENSE` file for guidance or add a sponsorship link to the repository.
+
+## Development
+
+```bash
+# Run tests
+cargo test
+```
+
+For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
+# Stamp Album Generator v0.11.0
+
+Version: 0.11.0 | Last Updated: 2025-09-25
 
 A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
 
@@ -16,14 +57,14 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ### Advanced Sizing System
 
 - **Embedded Reference Images**: No external file dependencies
-- **Series-Specific Scaling**: Precise control stamp sizes
+- **Series-Specific Scaling**: Precise control of stamp sizes
 - **Dynamic Layout**: Optimizes stamp arrangement within page constraints
 - **Aspect Ratio Control**: Configurable dimension calculation modes
 
 ### Performance & Portability
 
 - **Release Build**: Optimized 12MB binary for production use
-- **Cross-Platform**: Linux x86-64 compatible, windows
+- **Cross-Platform**: Linux x86-64 compatible
 
 ## 📦 Installation
 
@@ -39,7 +80,7 @@ chmod +x /usr/local/bin/stamp_album_gen2
 
 ```bash
 # Clone the repository
-git clone  repository-url 
+git clone REPOSITORY_URL
 cd stamp-album-gen2
 
 # Build release version
@@ -56,8 +97,176 @@ cargo build --release
 # Generate album for Canada stamps (1875-1876)
 stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
 
-# Generate with output preview only
-stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
+# Generate from an existing DB (output-only behavior is triggered by passing --db-path)
+stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
+```
+
+### Command Line Options
+
+```text
+Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs.
+
+Usage: stamp_album_gen2 [OPTIONS]
+
+Options:
+      --db-path  DB_PATH
+          Path to the SQLite database. When provided the program runs in output-only mode and will generate AlbumEasy files from the existing DB (skips scraping).
+      --country  COUNTRY
+          Country name (used as default for other parameters if not specified)
+      --album-name  ALBUM_NAME
+          Album name (required for album generation)
+      --source  SOURCE
+          Source type: stampworld, touchstamps, extractfile, colnectexport [default: stampworld]
+      --site-name  SITE_NAME
+          Site name for scraping (required for scraping mode, e.g. 'Great-Britain', 'Canada')
+      --album-directory  ALBUM_DIRECTORY
+          Album directory (default: Albums/{album_name})
+      --images-directory  IMAGES_DIRECTORY
+          Images directory (default: Albums/{album_name}/images)
+      --album-file-name  ALBUM_FILE_NAME
+          Album file name (default: Albums/{album_name}/{album_name}.txt)
+      --extract-file-name  EXTRACT_FILE_NAME
+          Extract file name (default: Albums/{album_name}/{album_name}_extract.txt)
+      --catalog-name  CATALOG_NAME
+          Catalog name (e.g. 'SG', 'Michel') [default: SG]
+      --overwrite-album
+          Overwrite existing album text files
+      --overwrite-images
+          Overwrite existing image files
+      --start-year  START_YEAR
+          Start year for filtering stamps [default: 0]
+      --end-year  END_YEAR
+          End year for filtering stamps [default: 9999]
+  -h, --help
+          Print help (see more with '--help')
+  -V, --version
+          Print version
+```
+
+### Configuration
+
+Edit `config.toml` to customize behavior:
+
+```toml
+# Stamp dimension settings
+reference_width_mm = 200.0
+reference_height_mm = 240.0
+
+# Global album settings
+stamp_box_height = 30.0
+row_font_spacing = 2.0
+header_font_spacing = 3.0
+```
+
+Note: There is a short guide about page-fit tuning (the `page_fit_conservative_buffer_mm` option and how to avoid footer overlap) in `docs/AUTOMATION_QUICK_REFERENCE.md`.
+
+### Flag cover and integration tests
+
+The generator can optionally emit a large cover page that includes a country title and a flag image. Control this behavior via `config.toml` using the `print_flag_cover` option (defaults to true when omitted):
+
+```toml
+# print_flag_cover = true  # set to false to skip the flag/title cover
+```
+
+There is also an optional network integration test that verifies downloading a small flag from FlagCDN. To avoid running network tests in CI or offline environments this test is ignored by default and also requires an explicit environment variable to run.
+
+Run the integration test locally with:
+
+```bash
+FLAGDB_INTEGRATION=1 cargo test -- --ignored
+```
+
+This will execute just the ignored integration tests and will only perform network access when `FLAGDB_INTEGRATION=1` is set.
+
+## 📊 Stamp Dimension System
+
+### Embedded Reference System
+
+- Uses compiled-in B4-s.jpg reference image
+- Eliminates external file dependencies
+- Automatic fallback to default ratios if embedded image fails
+
+## 🏗️ Project Structure
+
+```text
+stamp-album-gen2/
+├── src/
+│   ├── main.rs                    # Application entry point
+│   ├── lib.rs                     # Library exports
+│   ├── album_globals.rs           # Core album generation logic
+│   ├── image_utils.rs             # Image processing utilities
+│   ├── image_downloader.rs        # Image downloading functionality
+│   ├── db_utils.rs                # Database utilities
+│   ├── file_utils.rs              # File handling utilities
+│   ├── config.rs                  # Configuration management
+│   ├── types.rs                   # Type definitions
+│   ├── commands_file_generator.rs # Command file generation
+│   ├── placeholder_image.rs       # Placeholder image handling
+│   ├── B4-s.jpg                   # Embedded reference image
+│   ├── data_sources/
+│   │   └── mod.rs                 # Data source modules
+│   └── stampworld/
+├── Albums/                        # Album databases and images
+├── Archive/                       # Archived source files
+├── docs/                          # Documentation files
+├── examples/                      # Example stamp collections
+├── images/                        # Image assets
+├── tests/                         # Test files
+├── target/                        # Build artifacts
+├── API_DOCUMENTATION.md           # API documentation
+├── CONTRIBUTING.md                # Contributing guidelines
+├── RELEASE_NOTES.md               # Release notes
+├── Cargo.toml                     # Rust dependencies
+├── Cargo.lock                     # Dependency lock file
+├── config.toml                    # Configuration file
+├── config_template.toml           # Configuration template
+└── *.log                          # Log files
+```
+
+## 🔧 Development
+
+### Building
+
+```bash
+# Debug build
+cargo build
+
+# Release build (optimized)
+cargo build --release
+
+# Run tests
+cargo test
+```
+
+### Automated Version Management
+
+This project uses automated version management with conventional commits and GitHub Actions for seamless releases.
+
+### Conventional Commits
+
+Use conventional commit format for automatic version bumping:
+
+```bash
+# Feature commits (minor version bump)
+git commit -m "feat: add new stamp filtering options"
+
+# Bug fixes (patch version bump)
+git commit -m "fix: resolve image download timeout issue"
+```
+
+# The binary will be available at target/release/stamp_album_gen2
+```
+
+## 🎯 Usage
+
+### Basic Album Generation
+
+```bash
+# Generate album for Canada stamps (1875-1876)
+stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
+
+# Generate from an existing DB (output-only behavior is triggered by passing --db-path)
+stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
 ```
 
 ### Command Line Options
@@ -68,12 +277,10 @@ Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs
 Usage: stamp_album_gen2 [OPTIONS]
 
 Options:
-      --output-only
-          Output-only mode: Generate AlbumEasy from existing DB (requires --db-path and --album-name)
+      --db-path  DB_PATH 
+          Path to the SQLite database. When provided the program runs in output-only mode and will generate AlbumEasy files from the existing DB (skips scraping).
       --country  COUNTRY 
           Country name (used as default for other parameters if not specified)
-      --db-path  DB_PATH 
-          Path to the SQLite database (required for --output-only mode)
       --album-name  ALBUM_NAME 
           Album name (required for album generation)
       --source  SOURCE 

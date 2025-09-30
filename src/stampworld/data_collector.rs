@@ -233,7 +233,7 @@ pub fn collect_stampworld_data(
             Err(e) => { error!("Failed to read page text: {}", e); break; }
         };
         // Log short HTTP response info to help diagnose site errors (info-level to avoid huge debug dumps)
-        info!("HTTP status for {} -> {}", url, status);
+        // info!("HTTP status for {} -> {}", url, status);
         // If page 1 returns 404, prepare and/or consume deterministic
         // slug_variants (insert '!' before first/last hyphen) and retry them
         // one-by-one. We only populate the queue once per run to avoid
@@ -287,9 +287,9 @@ pub fn collect_stampworld_data(
         }
         // Emit first ~2KB of body to aid debugging (avoid flood) - chars taken as approximate
         let snippet: String = body.chars().take(2048).collect();
-        if !snippet.is_empty() {
-            info!("HTTP body snippet for {}:\n{}", url, snippet);
-        }
+        // if !snippet.is_empty() {
+        //     info!("HTTP body snippet for {}:\n{}", url, snippet);
+        // }
         if let Some(cb) = page_callback { cb(page_num as usize); }
 
         let document = Html::parse_document(&body);
@@ -602,8 +602,8 @@ pub fn collect_stampworld_data(
                 let stamps_issued_norm = normalize_stamps_issued(&stamps_issued);
 
                 // Call DB insert following the existing callers' parameter order
-                info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
-                    site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
+                // info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
+                //     site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
                 let res = crate::db_utils::insert_stamp(
                     &conn,
                     site_name,
@@ -635,7 +635,7 @@ pub fn collect_stampworld_data(
                 match res {
                     Ok(inserted) => {
                         if inserted {
-                            info!("Inserted new stamp: {} | {} | {}", site_name, series_name, sg_number);
+                            // info!("Inserted new stamp: {} | {} | {}", site_name, series_name, sg_number);
                             new_stamps_this_page += 1;
                             seen_stamps.insert(key.clone());
                             let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
@@ -645,7 +645,7 @@ pub fn collect_stampworld_data(
                             // The row already exists and wasn't updated by insert_stamp (no placeholder).
                             // If --overwrite-images was requested, perform a targeted UPDATE to replace image fields
                             // and fill any missing metadata fields (but do not overwrite existing non-empty values).
-                            info!("--overwrite-images set; attempting conditional UPDATE for {} | {} | {}", site_name, series_name, sg_number);
+                            // info!("--overwrite-images set; attempting conditional UPDATE for {} | {} | {}", site_name, series_name, sg_number);
                             let update_sql = "UPDATE stamps SET
                                 image_path = CASE WHEN (?1 != '') THEN ?1 ELSE image_path END,
                                 remote_image_url = CASE WHEN (?2 != '') THEN ?2 ELSE remote_image_url END,
@@ -671,7 +671,7 @@ pub fn collect_stampworld_data(
                             match conn.execute(update_sql, params_vec) {
                                 Ok(rows) => {
                                     if rows > 0 {
-                                        info!("Updated images/metadata for {} | {} | {} (rows={})", site_name, series_name, sg_number, rows);
+                                        // info!("Updated images/metadata for {} | {} | {} (rows={})", site_name, series_name, sg_number, rows);
                                         // Treat this as an update event: emit a STAMP line so downstream tools see the refreshed image/metadata
                                         new_stamps_this_page += 1;
                                         seen_stamps.insert(key.clone());

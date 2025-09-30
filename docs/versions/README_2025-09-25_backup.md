@@ -7,6 +7,7 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 🚀 Features
 
 ### Core Functionality
+
 - **Database Processing**: Reads stamp data from SQLite databases
 - **AlbumEasy Output**: Generates compatible album page layouts
 - **Multi-Country Support**: Works with various stamp collections
@@ -35,7 +36,7 @@ chmod +x /usr/local/bin/stamp_album_gen2
 ### Option 2: Build from Source
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone REPOSITORY_URL
 cd stamp-album-gen2
 
 # Build release version
@@ -52,7 +53,7 @@ cargo build --release
 stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
 
 # Generate with output preview only
-stamp_album_gen2 --output-only --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
+stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
 ```
 
 ### Command Line Options
@@ -62,12 +63,10 @@ Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs
 Usage: stamp_album_gen2 [OPTIONS]
 
 Options:
-      --output-only
-          Output-only mode: Generate AlbumEasy from existing DB (requires --db-path and --album-name)
       --country <COUNTRY>
           Country name (used as default for other parameters if not specified)
       --db-path <DB_PATH>
-          Path to the SQLite database (required for --output-only mode)
+          Path to the SQLite database. When provided the program runs in output-only mode and will generate AlbumEasy files from the existing DB (skips scraping).
       --album-name <ALBUM_NAME>
           Album name (required for album generation)
       --source <SOURCE>
