@@ -2889,6 +2889,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
+name = "stamp_album_db"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "regex",
+ "rusqlite",
+]
+
+[[package]]
 name = "stamp_album_gen2"
 version = "0.11.0"
 dependencies = [
@@ -2914,6 +2923,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
+ "stamp_album_db",
  "strsim 0.10.0",
  "tempfile",
  "toml",

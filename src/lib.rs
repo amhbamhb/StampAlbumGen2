@@ -19,7 +19,11 @@ pub mod file_utils;
 // pub mod text_utils;
 pub mod types;
 pub mod placeholder_image;
-pub mod db_utils;
+// db utilities moved to `stamp_album_db` crate in Phase 2; keep a compatibility shim
+pub mod db_utils {
+	// Re-export items from the new crate so existing `crate::db_utils::Foo` paths keep working
+	pub use stamp_album_db::{get_all_series, get_stamps_by_series, StampStub, sort_stampstubs_inplace, migrate_stamps_table, migrate_fix_block_metadata, init_db, insert_stamp};
+}
 pub mod image_downloader;
 pub mod sample_images;
 pub mod album_globals;
