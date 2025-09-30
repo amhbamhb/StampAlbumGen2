@@ -442,14 +442,41 @@ impl CommandsFileGenerator {
             return;
         }
 
+        // If overwrite_album is requested and the file exists, instead of removing it
+        // create a new versioned filename so multiple versions are preserved.
+        let mut target_path = path.to_path_buf();
         if overwrite_album && path.exists() {
-            if let Err(e) = fs::remove_file(path) {
-                error!("Failed to remove existing file for overwrite: {}", e);
-                return;
+            // Determine a new filename by inserting `.vN` before the extension (or at the end).
+            if let Some(parent) = path.parent() {
+                if let Some(stem_os) = path.file_stem() {
+                    if let Some(stem) = stem_os.to_str() {
+                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                        // Try increasing suffixes until an unused name is found.
+                        let mut idx: u32 = 1;
+                        loop {
+                            let candidate_name = if ext.is_empty() {
+                                format!("{}.v{}", stem, idx)
+                            } else {
+                                format!("{}.v{}.{}", stem, idx, ext)
+                            };
+                            let candidate = parent.join(&candidate_name);
+                            if !candidate.exists() {
+                                target_path = candidate;
+                                break;
+                            }
+                            idx += 1;
+                            // Safety: avoid infinite loops; bail after a large number
+                            if idx > 10000 {
+                                error!("Unable to find free versioned filename after 10000 attempts");
+                                return;
+                            }
+                        }
+                    }
+                }
             }
         }
 
-        let file = File::create(path);
+        let file = File::create(&target_path);
         match file {
             Ok(f) => {
                 let mut writer = BufWriter::new(f);
@@ -464,14 +491,14 @@ impl CommandsFileGenerator {
                 if let Err(e) = writer.flush() {
                     error!("Unable to flush file: {}", e);
                 }
-                if let Ok(metadata) = fs::metadata(path) {
+                if let Ok(metadata) = fs::metadata(&target_path) {
                     let mut perms = metadata.permissions();
                     perms.set_mode(0o444); // read-only for all
-                    if let Err(e) = fs::set_permissions(path, perms) {
+                    if let Err(e) = fs::set_permissions(&target_path, perms) {
                         error!("Unable to set file to read-only: {}", e);
                     }
                 }
-                info!("Successfully saved stamp data to {}", path.display());
+                info!("Successfully saved stamp data to {}", target_path.display());
             }
             Err(e) => {
                 error!("Unable to save extract file: {}", e);
