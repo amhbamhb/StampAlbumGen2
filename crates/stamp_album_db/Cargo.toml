@@ -1,0 +1,13 @@
+[package]
+name = "stamp_album_db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rusqlite = "0.37"
+regex = "1.10"
+log = "0.4"
+
+[features]
+# no default features; keep small
+default = []
