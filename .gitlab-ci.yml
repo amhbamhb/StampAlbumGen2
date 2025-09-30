@@ -112,7 +112,8 @@ test_workspace:
   script: |
     rustc --version
     cargo --version
-    cargo install cargo2junit --version 0.3.0 || true
+    # Try to install cargo2junit if available; suppress stderr to avoid noisy logs when registry/package isn't present.
+    cargo install cargo2junit --version 0.3.0 2>/dev/null || true
     mkdir -p target
     # Capture cargo's JSON stream to a file. Try cargo2junit first; if it doesn't produce a junit file, use the fallback python converter.
     set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | tee target/cargo-json.log | cargo2junit > target/junit-report.xml || true
