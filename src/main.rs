@@ -215,10 +215,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // Try opening the DB now to detect corrupt/non-sqlite files early and
         // provide a friendly message with suggestions rather than panicking later.
-        match stamp_album_gen2::db_utils::init_db(&db_path) {
-            Ok(_) => {
-                // Close immediately; generate_album_output will open again as needed.
-            }
+        // Open the database once and hand a reference to the generator.
+        let conn = match stamp_album_gen2::db_utils::init_db(&db_path) {
+            Ok(c) => c,
             Err(e) => {
                 eprintln!("Failed to open database '{}': {}", db_path, e);
                 eprintln!("Possible causes:");
@@ -231,9 +230,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("  - Ensure the path is correct and you have read/write permissions");
                 std::process::exit(1);
             }
-        }
+        };
         let album_name = cli.album_name.unwrap_or_else(|| "Album".to_string());
-        stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+        stamp_album_gen2::album_globals::generate_album_output_conn(&conn, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
     } else if effective_source == "stampworld" {
         // Scrape mode
         // Require site_name for scraping. If the caller explicitly passed
@@ -334,7 +333,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Scrape produced {} stamp lines", pages.len());
 
     // After scraping, generate album output from the same DB
-    stamp_album_gen2::album_globals::generate_album_output(&db_path, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+    // Open the DB that the collector used and call the conn-taking API so
+    // both scraper and generator share the same connection lifecycle.
+    match stamp_album_gen2::db_utils::init_db(&db_path) {
+        Ok(conn) => {
+            stamp_album_gen2::album_globals::generate_album_output_conn(&conn, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+        }
+        Err(e) => {
+            eprintln!("Failed to open database for generation '{}': {}", db_path, e);
+            std::process::exit(1);
+        }
+    }
     } else {
         // No db_path and not stampworld: require db_path
         eprintln!("You requested a source other than 'stampworld' but did not provide a database path to use.");
