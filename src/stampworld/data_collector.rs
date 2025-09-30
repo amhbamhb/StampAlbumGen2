@@ -286,7 +286,7 @@ pub fn collect_stampworld_data(
             }
         }
         // Emit first ~2KB of body to aid debugging (avoid flood) - chars taken as approximate
-        let snippet: String = body.chars().take(2048).collect();
+        // let snippet: String = body.chars().take(2048).collect();
         // if !snippet.is_empty() {
         //     info!("HTTP body snippet for {}:\n{}", url, snippet);
         // }

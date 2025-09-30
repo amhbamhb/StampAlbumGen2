@@ -1,13 +1,14 @@
 // AlbumEasy output and layout logic
 use crate::config::load_config;
 use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
+use rusqlite::Connection;
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 // ImageStatus and OSType not needed in this module today
 use crate::album_utils::clean_text;
 use log::{debug, warn};
 use std::fs::File;
 use std::io::{BufWriter, Write};
-// std::path::Path not needed here
+use std::path::Path;
 
 // Define or import Stamp and GenericAttrs
 #[derive(Debug, Clone, PartialEq)]
@@ -173,8 +174,8 @@ pub fn add_stamp<W: std::io::Write>(
 
 /// Main entry point for AlbumEasy output generation.
 /// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
-pub fn generate_album_output<F>(
-    db_path: &str,
+pub fn generate_album_output_conn<F>(
+    conn: &Connection,
     album_name: &str,
     mut page_callback: Option<F>,
     start_year: Option<i32>,
@@ -183,70 +184,67 @@ pub fn generate_album_output<F>(
 where
     F: FnMut(usize),
 {
-    {
-        // Use the start_year/end_year passed to this function (may be None)
-        let passed_start_year = start_year;
-        let passed_end_year = end_year;
-        // Load config values from config.toml
-        let config = load_config("config.toml");
+    // Use the start_year/end_year passed to this function (may be None)
+    let passed_start_year = start_year;
+    let passed_end_year = end_year;
+    // Load config values from config.toml
+    let config = load_config("config.toml");
     let stamp_box_height = config.stamp_box_height.unwrap_or(24.0) as f64;
     // extra space applied per-side around each stamp when emitted
     let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(3.0) as f64;
     let row_font_spacing = config.row_font_spacing.unwrap_or(5.0) as f64;
     let _header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
-        let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
-        let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
-        // Reference image path and measured size (dynamic by country)
-        let _country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-        let _reference_image_path = format!("{}/BG1-s.jpg", _country_dir);
-        // Use embedded reference ratio as a fallback (no external reference file required)
-        // If the configured reference size is implausibly small (e.g. 24mm), assume it's
-        // a misconfiguration and fall back to sensible defaults used by the project
-        // (200 x 240 mm). This prevents stamp sizes from being calculated as ~1-3mm.
-        let (cfg_ref_w, cfg_ref_h) = (reference_width_mm, reference_height_mm);
-        // Accept smaller reference sizes (stamp-size references like 24x27mm are valid).
-        // Only treat sizes under 10mm as implausibly small and trigger fallback.
-        let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 10.0 || cfg_ref_h < 10.0 {
-            warn!("Configured reference size {:.1}x{:.1}mm looks too small, falling back to 200x240mm", cfg_ref_w, cfg_ref_h);
-            (200.0_f64, 240.0_f64)
-        } else {
-            (cfg_ref_w, cfg_ref_h)
-        };
-        let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel_embedded(
-            ref_w_mm as f32,
-            ref_h_mm as f32,
-        ) {
-            Some(ratio) => ratio,
-            None => {
-                warn!("Embedded reference image failed to load. Using default ratio (1.0, 1.0)");
-                (1.0, 1.0)
-            }
-        };
-        use std::path::Path;
-        let conn = init_db(db_path).expect("Failed to open database");
-
-        // Canonical output filename: Albums/{Album-Name}/{Album-Name}.txt
-        let album_dir = std::path::PathBuf::from(format!("Albums/{}", album_name.replace(' ', "-")));
-        if let Err(e) = std::fs::create_dir_all(&album_dir) {
-            warn!("Failed to create album directory {}: {}", album_dir.display(), e);
+    let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
+    let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
+    // Reference image path and measured size (dynamic by country)
+    let _country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
+    let _reference_image_path = format!("{}/BG1-s.jpg", _country_dir);
+    // Use embedded reference ratio as a fallback (no external reference file required)
+    // If the configured reference size is implausibly small (e.g. 24mm), assume it's
+    // a misconfiguration and fall back to sensible defaults used by the project
+    // (200 x 240 mm). This prevents stamp sizes from being calculated as ~1-3mm.
+    let (cfg_ref_w, cfg_ref_h) = (reference_width_mm, reference_height_mm);
+    // Accept smaller reference sizes (stamp-size references like 24x27mm are valid).
+    // Only treat sizes under 10mm as implausibly small and trigger fallback.
+    let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 10.0 || cfg_ref_h < 10.0 {
+        warn!("Configured reference size {:.1}x{:.1}mm looks too small, falling back to 200x240mm", cfg_ref_w, cfg_ref_h);
+        (200.0_f64, 240.0_f64)
+    } else {
+        (cfg_ref_w, cfg_ref_h)
+    };
+    let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel_embedded(
+        ref_w_mm as f32,
+        ref_h_mm as f32,
+    ) {
+        Some(ratio) => ratio,
+        None => {
+            warn!("Embedded reference image failed to load. Using default ratio (1.0, 1.0)");
+            (1.0, 1.0)
         }
-        // Build output filename. If a sensible start/end year range is provided
-        // (start > 0 and end < 9999 and start <= end), include it as
-        // AlbumName-START-END.txt. Otherwise fall back to AlbumName.txt
-        let filename = if let (Some(s), Some(e)) = (passed_start_year, passed_end_year) {
-            if s > 0 && e < 9999 && s <= e {
-                format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e)
-            } else {
-                format!("{}.txt", album_name.replace(' ', "-"))
-            }
+    };
+
+    // Canonical output filename: Albums/{Album-Name}/{Album-Name}.txt
+    let album_dir = std::path::PathBuf::from(format!("Albums/{}", album_name.replace(' ', "-")));
+    if let Err(e) = std::fs::create_dir_all(&album_dir) {
+        warn!("Failed to create album directory {}: {}", album_dir.display(), e);
+    }
+    // Build output filename. If a sensible start/end year range is provided
+    // (start > 0 and end < 9999 and start <= end), include it as
+    // AlbumName-START-END.txt. Otherwise fall back to AlbumName.txt
+    let filename = if let (Some(s), Some(e)) = (passed_start_year, passed_end_year) {
+        if s > 0 && e < 9999 && s <= e {
+            format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e)
         } else {
             format!("{}.txt", album_name.replace(' ', "-"))
-        };
-        let output_path = album_dir.join(filename);
-        let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
+        }
+    } else {
+        format!("{}.txt", album_name.replace(' ', "-"))
+    };
+    let output_path = album_dir.join(filename);
+    let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
 
-        // Write global album settings
-        write_globals(&mut output, album_name);
+    // Write global album settings
+    write_globals(&mut output, album_name);
 
     // Emit a single leading page header for Page 1
     let _ = writeln!(output, "### Page 1 ###");
@@ -993,4 +991,21 @@ where
 
         // End of generate_album_output inner scope: use shared clean_text from album_utils
     }
+
+/// Backwards-compatible wrapper: accept a DB path, open the DB and call the
+/// connection-based implementation. This keeps existing callers (tests and
+/// other modules) working while allowing callers that already hold a
+/// Connection to use the more efficient conn-based variant.
+pub fn generate_album_output<F>(
+    db_path: &str,
+    album_name: &str,
+    page_callback: Option<F>,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+) -> ()
+where
+    F: FnMut(usize),
+{
+    let conn = init_db(db_path).expect("Failed to open database");
+    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year);
 }
