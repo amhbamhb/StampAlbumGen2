@@ -109,17 +109,17 @@ manual_release:
 test_workspace:
   stage: test
   image: rust:latest
-  script:
-    - rustc --version
-    - cargo --version
-    - cargo install cargo2junit --version 0.3.0 || true
-    - mkdir -p target
+  script: |
+    rustc --version
+    cargo --version
+    cargo install cargo2junit --version 0.3.0 || true
+    mkdir -p target
     # Capture cargo's JSON stream to a file. Try cargo2junit first; if it doesn't produce a junit file, use the fallback python converter.
-    - set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | tee target/cargo-json.log | cargo2junit > target/junit-report.xml || true
-    - if [ ! -s target/junit-report.xml ] || grep -q "No test suite results were found" target/junit-report.xml 2>/dev/null || grep -q "<testsuites */>" target/junit-report.xml 2>/dev/null || ! grep -q "<testcase" target/junit-report.xml 2>/dev/null; then
-        echo "cargo2junit didn't produce results (or produced empty report); running fallback converter"
-        python3 scripts/cargo_json_to_junit.py target/cargo-json.log target/junit-report.xml || true
-      fi
+    set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | tee target/cargo-json.log | cargo2junit > target/junit-report.xml || true
+    if [ ! -s target/junit-report.xml ] || grep -q "No test suite results were found" target/junit-report.xml 2>/dev/null || grep -q "<testsuites */>" target/junit-report.xml 2>/dev/null || ! grep -q "<testcase" target/junit-report.xml 2>/dev/null; then
+      echo "cargo2junit didn't produce results (or produced empty report); running fallback converter"
+      python3 scripts/cargo_json_to_junit.py target/cargo-json.log target/junit-report.xml || true
+    fi
   only:
     - branches
     - merge_requests
