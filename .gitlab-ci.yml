@@ -112,7 +112,9 @@ test_workspace:
   script:
     - rustc --version
     - cargo --version
-    - cargo test --workspace --all-features
+    - cargo install cargo2junit --version 0.3.0 || true
+    - mkdir -p target
+    - set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | cargo2junit > target/junit-report.xml || true
   only:
     - branches
     - merge_requests
@@ -122,3 +124,6 @@ test_workspace:
     when: always
     paths:
       - target/debug
+      - target/junit-report.xml
+    reports:
+      junit: target/junit-report.xml
