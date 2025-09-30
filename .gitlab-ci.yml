@@ -1,4 +1,5 @@
 stages:
+  - test
   - release
 
 variables:
@@ -103,3 +104,21 @@ manual_release:
   when: manual
   script:
     - echo "Manual release triggered"
+
+# Add a lightweight test stage for merge requests / branches
+test_workspace:
+  stage: test
+  image: rust:latest
+  script:
+    - rustc --version
+    - cargo --version
+    - cargo test --workspace --all-features
+  only:
+    - branches
+    - merge_requests
+  except:
+    - tags
+  artifacts:
+    when: always
+    paths:
+      - target/debug
