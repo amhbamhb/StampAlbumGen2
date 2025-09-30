@@ -299,20 +299,4 @@ pub fn get_placeholder_image_path() -> String {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_generate_placeholder_image() {
-        let test_path = Path::new("test_placeholder.png");
-        let result = generate_placeholder_image(100, 75, test_path);
-        assert!(result.is_ok());
-
-        // Check if file was created
-        assert!(test_path.exists());
-
-        // Clean up
-        std::fs::remove_file(test_path).unwrap();
-    }
-}
+// Inline tests moved to `tests/placeholder_image.rs`.

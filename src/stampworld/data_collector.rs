@@ -7,12 +7,12 @@ use rusqlite::params;
 use once_cell::sync::Lazy;
 
 // Precompiled regexes used across the module
-static RANGE_RE: Lazy<Regex> = Lazy::new(|| {
+pub static RANGE_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^\s*\d+\s*\p{Pd}\s*\d+\s*$")
         .expect("invalid range regex")
 });
 
-static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
+pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
     // Matches "1. January", "12. Feb", " 3. März", case-insensitive, accepts Unicode letters and hyphens
     Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$")
         .expect("invalid day-month regex")
@@ -20,7 +20,7 @@ static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
 
 // Normalize stamps_issued values and provide small parser helpers used by
 // both runtime code and unit tests.
-pub(crate) fn normalize_stamps_issued(s: &str) -> String {
+pub fn normalize_stamps_issued(s: &str) -> String {
     let mut v = s.trim().to_string();
     if v.starts_with('(') && v.ends_with(')') {
         v = v[1..v.len()-1].to_string();
@@ -36,7 +36,7 @@ pub(crate) fn normalize_stamps_issued(s: &str) -> String {
 }
 
 // Remove duplicate detail lines while preserving order.
-pub(crate) fn dedupe_details(details: &[String]) -> Vec<String> {
+pub fn dedupe_details(details: &[String]) -> Vec<String> {
     let mut seen: HashSet<String> = HashSet::new();
     let mut out: Vec<String> = Vec::new();
     for d in details {
@@ -52,7 +52,7 @@ pub(crate) fn dedupe_details(details: &[String]) -> Vec<String> {
 
 // Extract common block metadata fields from a list of detail lines.
 // Returns (watermark, design, engraving, perforation)
-pub(crate) fn extract_block_metadata(details: &[String]) -> (String, String, String, String) {
+pub fn extract_block_metadata(details: &[String]) -> (String, String, String, String) {
     let mut watermark = String::new();
     let mut design = String::new();
     let mut engraving = String::new();
@@ -128,7 +128,7 @@ pub(crate) fn extract_block_metadata(details: &[String]) -> (String, String, Str
 
 // Compress a context string by removing consecutive duplicate tokens separated by '|'
 // and truncate if it exceeds a reasonable length.
-pub(crate) fn compress_context(s: &str, max_len: usize) -> String {
+pub fn compress_context(s: &str, max_len: usize) -> String {
     let parts: Vec<&str> = s.split('|').map(|p| p.trim()).filter(|p| !p.is_empty()).collect();
     let mut out_parts: Vec<&str> = Vec::new();
     let mut last: Option<&str> = None;
@@ -714,91 +714,3 @@ pub fn collect_stampworld_data(
     all_stamp_data
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_normalize_stamps_issued_basic() {
-        assert_eq!(normalize_stamps_issued("1.234.567"), "1,234,567");
-        assert_eq!(normalize_stamps_issued("(1234)"), "1234");
-        assert_eq!(normalize_stamps_issued("1,234"), "1,234");
-        assert_eq!(normalize_stamps_issued("N/A"), "");
-    }
-
-    #[test]
-    fn test_dedupe_details_preserves_order() {
-        let src = vec!["WM: None".to_string(), "Perforation: 12".to_string(), "WM: None".to_string(), "Note".to_string()];
-        let out = dedupe_details(&src);
-        assert_eq!(out, vec!["WM: None".to_string(), "Perforation: 12".to_string(), "Note".to_string()]);
-    }
-
-    #[test]
-    fn test_extract_block_metadata() {
-        let src = vec!["WM: None".to_string(), "Design: King George".to_string(), "Engraving: Recess".to_string(), "Perf: 12".to_string()];
-        let (wm, design, engr, perf) = extract_block_metadata(&src);
-        assert_eq!(wm, "None");
-        assert_eq!(design, "King George");
-        assert_eq!(engr, "Recess");
-        assert_eq!(perf, "12");
-    }
-
-    #[test]
-    fn test_extract_block_metadata_multiline_block() {
-        // This simulates the original problematic <p> block which contained multiple
-        // labeled lines concatenated together and previously was stored verbatim
-        // into multiple DB columns.
-        let block = "Design: Herman Herbert Schwartz\nEngraving: Herman Herbert Schwartz\nPerforation: 12\nWM: None".to_string();
-        let src = vec![block];
-        let (wm, design, engr, perf) = extract_block_metadata(&src);
-        assert_eq!(wm, "None");
-        assert_eq!(design, "Herman Herbert Schwartz");
-        assert_eq!(engr, "Herman Herbert Schwartz");
-        assert_eq!(perf, "12");
-    }
-
-    #[test]
-    fn test_slug_variant_encoding() {
-    // mimic the small encoder used in the fallback heuristic (hyphen for spaces)
-    let encode = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
-        let original = "British-ColumbiaIsland";
-        // original should encode spaces and punctuation (none here)
-        assert_eq!(encode(original), "British-ColumbiaIsland");
-
-        let with_hyphen = "British-Columbia-Vancouver-Island";
-        // split-on-first-hyphen and insert '!'
-        if let Some((first, rest)) = with_hyphen.split_once('-') {
-            let variant = format!("{}!{}", first, rest);
-            assert_eq!(variant, "British!Columbia-Vancouver-Island");
-            let encoded = encode(&variant);
-            assert_eq!(encoded, "British%21Columbia-Vancouver-Island");
-        } else {
-            panic!("expected hyphen in test string");
-        }
-        // last-hyphen insertion
-        let multi = "A-B-C-D";
-        if let Some(pos) = multi.rfind('-') {
-            let (head, tail) = multi.split_at(pos);
-            let tail_rest = &tail[1..];
-            let variant = format!("{}!{}", head, tail_rest);
-            assert_eq!(variant, "A-B-C!D");
-            let encoded = encode(&variant);
-            assert_eq!(encoded, "A-B-C%21D");
-        } else {
-            panic!("expected hyphen in multi string");
-        }
-    }
-
-    #[test]
-    fn test_day_month_regex_unicode() {
-        // Verify the precompiled DAY_MONTH_RE matches Unicode month names and extracts day and month
-        let samples = vec!["3. März", "12. Feb", " 1. januari", "21. Décembre"];
-        for s in samples {
-            let caps = DAY_MONTH_RE.captures(s).expect(&format!("DAY_MONTH_RE failed to match '{}'", s));
-            let day = caps.get(1).map_or("", |m| m.as_str()).to_string();
-            let month = caps.get(2).map_or("", |m| m.as_str()).to_string();
-            assert!(!day.is_empty(), "day empty for '{}'", s);
-            assert!(!month.is_empty(), "month empty for '{}'", s);
-        }
-    }
-}

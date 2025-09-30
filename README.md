@@ -254,8 +254,9 @@ git commit -m "feat: add new stamp filtering options"
 git commit -m "fix: resolve image download timeout issue"
 ```
 
-# The binary will be available at target/release/stamp_album_gen2
-```
+## The binary will be available at target/release/stamp_album_gen2
+
+```bash
 
 ## 🎯 Usage
 
@@ -269,9 +270,9 @@ stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-y
 stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
 ```
 
-### Command Line Options
+## Command Line Options
 
-```
+```text
 Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs.
 
 Usage: stamp_album_gen2 [OPTIONS]

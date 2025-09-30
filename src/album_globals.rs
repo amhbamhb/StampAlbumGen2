@@ -15,27 +15,7 @@ pub struct GenericAttrs {
     attrs: std::collections::HashMap<String, String>,
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn filename_generation_with_year_range() {
-        // Mirror the filename-generation logic used by generate_album_output
-        let album_name = "Israel";
-        let make_name = |start: Option<i32>, end: Option<i32>| {
-            if let (Some(s), Some(e)) = (start, end) {
-                if s > 0 && e < 9999 && s <= e {
-                    return format!("{}-{}-{}.txt", album_name.replace(' ', "-"), s, e);
-                }
-            }
-            format!("{}.txt", album_name.replace(' ', "-"))
-        };
-
-        assert_eq!(make_name(Some(1948), Some(1948)), "Israel-1948-1948.txt");
-        assert_eq!(make_name(Some(0), Some(1948)), "Israel.txt");
-        assert_eq!(make_name(None, None), "Israel.txt");
-        assert_eq!(make_name(Some(1950), Some(1949)), "Israel.txt");
-    }
-}
+// Inline unit tests moved to integration tests under `tests/`.
 impl GenericAttrs {
     pub fn new() -> Self {
         Self {
