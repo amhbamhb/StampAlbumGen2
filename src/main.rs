@@ -4,8 +4,9 @@ use clap::Parser;
 use clap::CommandFactory;
 use strsim::jaro_winkler;
 use stamp_album_gen2::types::OSType;
-use flexi_logger::Logger;
+use flexi_logger::{Logger, FileSpec};
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
+use log::info;
 
 fn get_operating_system_type() -> OSType {
     let os = std::env::consts::OS;
@@ -105,8 +106,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(1);
     }
 
-    // Basic logging setup
-    Logger::try_with_env_or_str("info")?.log_to_stderr().start()?;
+    // Ensure Logs directory exists and configure flexi_logger to write to a
+    // uniquely-named file (timestamped) plus duplicate to stderr.
+    let logs_dir = std::path::Path::new("Logs");
+    if !logs_dir.exists() {
+        if let Err(e) = std::fs::create_dir_all(logs_dir) {
+            eprintln!("Failed to create Logs directory: {}", e);
+            std::process::exit(1);
+        }
+    }
+    // Build a timestamped basename like 'stamp_album_gen2-20251020-171234'
+    let ts = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+    let basename = format!("stamp_album_gen2-{}", ts);
+    Logger::try_with_env_or_str("info")?
+        .log_to_file(FileSpec::default().directory("Logs").basename(&basename).suffix("log"))
+        .duplicate_to_stderr(flexi_logger::Duplicate::All)
+        .start()?;
 
     let detected_os = get_operating_system_type();
     if detected_os == OSType::Unknown {
@@ -323,7 +338,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         };
-    // Compose the DB path early and set it for the collector so both scraper
+        // Load full config (so flag/wiki toggles are available)
+    let cfg_file = stamp_album_gen2::config::load_config("config.toml");
+
+        // Compose the DB path early and set it for the collector so both scraper
     // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
     let db_path = format!("{}/{}.db", cfg.album_directory, album_name.replace('/', "-"));
     stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
@@ -337,6 +355,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // both scraper and generator share the same connection lifecycle.
     match stamp_album_gen2::db_utils::init_db(&db_path) {
         Ok(conn) => {
+            // Attempt to copy a flag into the album images dir if enabled in config
+            let print_flag = cfg_file.print_flag_cover.unwrap_or(true);
+            if print_flag {
+                let album_images = cfg.images_directory.clone();
+                match stamp_album_gen2::flagdb::copy_flag_for_album(&site_name, &album_images, "w320") {
+                    Ok(p) => info!("Copied flag into album images: {}", p),
+                    Err(_) => info!("No flag found for '{}' or download failed; continuing", site_name),
+                }
+            }
+            // Optional: fetch Wikipedia summary if requested by config
+            let fetch_wiki = cfg_file.fetch_wikipedia.unwrap_or(false);
+            if fetch_wiki {
+                let album_dir = cfg.album_directory.clone();
+                match stamp_album_gen2::wikipedia::fetch_and_save_summary(&site_name, &album_dir) {
+                    Ok(p) => info!("Saved Wikipedia summary to {}", p),
+                    Err(e) => info!("Wikipedia fetch failed for {}: {}", site_name, e),
+                }
+            }
+
             stamp_album_gen2::album_globals::generate_album_output_conn(&conn, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
         }
         Err(e) => {

@@ -27,6 +27,7 @@ Notes
 - The sample file is authoritative for field names and HTML structure for import tasks unless explicitly replaced by a newer canonical sample.
 
 Debugging outside VS Code
+
 -------------------------
 
 If running with RUST_LOG=debug inside VS Code causes issues (e.g. terminal crashes), use the helper script instead which runs the app in the background and writes a timestamped debug log under `Logs/`:

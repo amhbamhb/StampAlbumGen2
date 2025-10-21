@@ -52,6 +52,12 @@ pub struct Config {
     // When true, emit detailed per-stamp PAGE_FIT diagnostics into generated
     // AlbumEasy text output to help debug page-fit math (disabled by default).
     pub detailed_page_fit_diagnostics: Option<bool>,
+    // When set to Some("placeholders"), grouped-range tokens like "1067-1068"
+    // encountered on StampWorld pages will be expanded into individual
+    // placeholder DB rows (fast). When set to Some("detail_fetch") the
+    // collector may attempt to visit individual stamp detail pages to
+    // populate full metadata (slower, not implemented here yet).
+    pub expand_grouped_ranges: Option<String>,
     // Conservative buffer reserved at bottom of page (mm) to avoid footer bleed
     pub page_fit_conservative_buffer_mm: Option<f32>,
     // Optional path to an offline calibration CSV file. CSV format:
@@ -88,6 +94,9 @@ pub struct Config {
     // If false, the generator will skip emitting the large flag/title cover page
     // Default: true (when None or not present)
     pub print_flag_cover: Option<bool>,
+    // If true, fetch a short Wikipedia summary for the album/site and save
+    // it under the album directory (wiki_summary.txt). Default: false
+    pub fetch_wikipedia: Option<bool>,
 }
 
 impl Default for Config {
@@ -116,6 +125,7 @@ impl Default for Config {
             header_font_spacing: None,
             header_formatting: None,
             detailed_page_fit_diagnostics: None,
+            expand_grouped_ranges: None,
             page_fit_conservative_buffer_mm: None,
             include_design: None,
             include_engraving: None,
@@ -128,6 +138,7 @@ impl Default for Config {
             calibration_csv: None,
             max_rows_per_page: None,
             print_flag_cover: None,
+            fetch_wikipedia: None,
             row_start_es_enabled: None,
             allow_single_large_stamp_per_page: None,
               single_stamp_threshold_pct: None,

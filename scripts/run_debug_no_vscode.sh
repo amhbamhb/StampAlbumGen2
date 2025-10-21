@@ -7,9 +7,12 @@ mkdir -p "$LOGS_DIR"
 TS=$(date +"%Y%m%d-%H%M%S")
 LOGFILE="$LOGS_DIR/debug-run-$TS.log"
 
-# The `--` after the script's flags allows passing args to cargo run
-# We run cargo in a nohup background so it won't crash the VS Code terminal
-# and we capture all output (stdout+stderr) into the logfile.
+# The `--` after the script's flags allows passing args to cargo run.
+# If callers pass an explicit leading '--' we strip it so the binary does
+# not receive a literal '--' token as an argument (which can confuse clap).
+if [ "x$1" = "x--" ]; then
+	shift
+fi
 
 echo "Starting background run with debug logging. Log file: $LOGFILE"
 nohup sh -c "RUST_LOG=debug cargo run -- $*" > "$LOGFILE" 2>&1 &
