@@ -14,6 +14,10 @@ config.toml.*
 # Ignore all .toml files except config.toml
 *.html
 testing/*
+Logs/
+logs/   
+logs/*
+Logs/*
 
 
 # Visual Studio Code

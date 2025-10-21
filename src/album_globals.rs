@@ -289,8 +289,25 @@ where
                 cb(page_counter);
             }
             // Example: Load stamps as Vec<Stamp> with generic attributes
-            let stamps = get_stamps_by_series(&conn, &series, "0")
+            let mut stamps = get_stamps_by_series(&conn, &series, "0")
                 .expect("Failed to get stamps");
+            // Apply inclusive year filtering if start/end years were provided.
+            // The generator receives Optional start/end from the CLI. If present,
+            // filter stamps to the inclusive range [start_year, end_year].
+            if let (Some(sy), Some(ey)) = (passed_start_year, passed_end_year) {
+                // Only apply when a sensible range was provided
+                if sy > 0 && ey < 9999 && sy <= ey {
+                    stamps.retain(|st| st.year >= sy && st.year <= ey);
+                }
+            } else if let Some(sy) = passed_start_year {
+                if sy > 0 {
+                    stamps.retain(|st| st.year >= sy);
+                }
+            } else if let Some(ey) = passed_end_year {
+                if ey < 9999 {
+                    stamps.retain(|st| st.year <= ey);
+                }
+            }
             // Diagnostic: write a short comment indicating how many stamps we fetched for this series.
             // Sanitize the series name to a single line (collapse newlines and extra spaces)
             // so downstream tools (or grep) can reliably parse this diagnostic.
