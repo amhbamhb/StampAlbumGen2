@@ -35,3 +35,11 @@ pub use file_utils::*;
 // pub use text_utils::*;
 pub use album_utils::*;
 pub use types::{ImageStatus, OSType, SeriesInfo};
+
+// Re-export selected DB helpers for convenience tests and external callers
+pub use db_utils::{
+	insert_stamp_placeholder,
+	insert_stamp,
+	migrate_stamps_table,
+	migrate_fix_block_metadata,
+};
