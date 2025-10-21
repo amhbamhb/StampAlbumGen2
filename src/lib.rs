@@ -1,4 +1,5 @@
 pub mod flagdb;
+pub mod wikipedia;
 pub mod config;
 pub use crate::config::{Config, HeaderFormatting, load_slug_overrides};
 // Main library file for StampAlbumGen2
@@ -20,10 +21,7 @@ pub mod file_utils;
 pub mod types;
 pub mod placeholder_image;
 // db utilities moved to `stamp_album_db` crate in Phase 2; keep a compatibility shim
-pub mod db_utils {
-	// Re-export items from the new crate so existing `crate::db_utils::Foo` paths keep working
-	pub use stamp_album_db::{get_all_series, get_stamps_by_series, StampStub, sort_stampstubs_inplace, migrate_stamps_table, migrate_fix_block_metadata, init_db, insert_stamp};
-}
+pub mod db_utils;
 pub mod image_downloader;
 pub mod sample_images;
 pub mod album_globals;
@@ -37,3 +35,11 @@ pub use file_utils::*;
 // pub use text_utils::*;
 pub use album_utils::*;
 pub use types::{ImageStatus, OSType, SeriesInfo};
+
+// Re-export selected DB helpers for convenience tests and external callers
+pub use db_utils::{
+	insert_stamp_placeholder,
+	insert_stamp,
+	migrate_stamps_table,
+	migrate_fix_block_metadata,
+};

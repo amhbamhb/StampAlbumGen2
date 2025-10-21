@@ -852,6 +852,44 @@ pub fn insert_stamp(
     Ok(true)
 }
 
+/// Insert a minimal placeholder stamp row when the collector encountered a grouped
+/// range on the listing page and the user requested placeholder expansion.
+/// This will only insert if a row with the same country/series/sg_number does
+/// not already exist. Returns Ok(true) if an insert occurred, Ok(false) if no
+/// insert was needed, or Err on DB error.
+pub fn insert_stamp_placeholder(
+    conn: &Connection,
+    country: &str,
+    series: &str,
+    year: i32,
+    sg_number: &str,
+) -> Result<bool> {
+    // Check existence
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3",
+        params![country, series, sg_number],
+        |r| r.get(0),
+    )?;
+    if exists > 0 {
+        debug!("Placeholder not inserted because row exists: {}|{}|{}", country, series, sg_number);
+        return Ok(false);
+    }
+    // Insert with a minimal non-NULL `type` so consumers (album generator)
+    // that expect a text value do not panic. Also set description/context
+    // to empty strings. We deliberately avoid touching image fields.
+    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '')";
+    match conn.execute(sql, params![country, series, year, sg_number]) {
+        Ok(_) => {
+            debug!("Inserted placeholder for {}|{}|{}", country, series, sg_number);
+            Ok(true)
+        }
+        Err(e) => {
+            error!("Failed to insert placeholder {}|{}|{}: {}", country, series, sg_number, e);
+            Err(e)
+        }
+    }
+}
+
 pub fn get_stamps_by_country_series(conn: &Connection, country: &str, series: &str) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {
     let mut stmt = conn.prepare(
         "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
