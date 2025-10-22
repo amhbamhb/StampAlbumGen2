@@ -1,7 +1,6 @@
-# Stamp Album Generator v0.19.3
+# Stamp Album Generator v0.20.0
 
-Version: 0.11.0 
-Last Updated: 2025-09-25
+
 
 A Rust tool to generate AlbumEasy pages from stamp databases.
 
@@ -40,7 +39,7 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v0.19.3
+# Stamp Album Generator v0.20.0
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -70,9 +69,9 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 📦 Installation
 
 # Generate from an existing DB (output-only behavior is triggered by passing --db-path)
-# Stamp Album Generator v0.19.3
+# Stamp Album Generator v0.20.0
 
-**Version**: 0.19.3
+**Version**: 0.20.0
 **Release Date**: 2025-10-21
 
 A compact, up-to-date README for development and contributors. This file
@@ -114,6 +113,27 @@ Key areas:
 - Image sizing and aspect-ratio handling
 - Header toggles (design, watermark, perforation, catalog numbers, series, country, date)
 - Flag cover rendering hints (keys prefixed with `flag_cover_`)
+
+For a minimal starting point use `config_template.toml`. When experimenting
+with more advanced options prefer `config_full_example.toml` which contains
+the superset of keys used by the project and example values.
+
+New configuration groups (added in recent releases):
+
+- album_pages_*: tune AlbumEasy header/footer output. Example keys:
+    - `album_pages_title_font`, `album_pages_title_size`, `album_pages_header_position`,
+        `album_pages_footer_number_enabled`.
+
+- row_start_es_*: small layout tuning for the optional ROW_START_ES lines
+    (font, size, spacing, vertical spacing). Keys: `row_start_es_enabled`,
+    `row_start_es_font`, `row_start_es_size`, `row_start_es_spacing`,
+    `row_start_es_vspace`.
+
+- flag_cover_*: per-flag cover rendering hints used when `print_flag_cover`
+    is enabled. These are intentionally conservative and optional; the
+    generator will fall back to previous defaults when a key is missing. See
+    `config_template.toml` for example values such as `flag_cover_img_w_mm` and
+    `flag_cover_image_title_size`.
 
 ## Development & Best Practices
 
@@ -209,7 +229,7 @@ stamp-album-gen2/
 └── *.log                          # Log files
 ```
 
-**Version**: 0.19.3
+**Version**: 0.20.0
 **Release Date**: 2025-10-21
 
 

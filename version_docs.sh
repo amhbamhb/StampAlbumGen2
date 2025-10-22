@@ -21,6 +21,12 @@ for arg in "$@"; do
         auto-patch)
             AUTO_PATCH=true
             ;;
+        --git)
+            DO_GIT=true
+            ;;
+        --push)
+            DO_PUSH=true
+            ;;
         --yes|-y)
             NON_INTERACTIVE=true
             ;;
@@ -28,6 +34,10 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+# Default values
+DO_GIT=${DO_GIT:-false}
+DO_PUSH=${DO_PUSH:-false}
 
 # Function to increment version
 increment_version() {
@@ -132,6 +142,8 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo ""
     echo "Options:" 
     echo "  --yes, -y   Run non-interactively (assume yes)"
+    echo "  --git       Create a git commit and annotated tag for the new version (local)"
+    echo "  --push      When used with --git, push commit and tag to origin"
     echo "  --help, -h  Show this help"
     echo ""
     echo "Examples:"
@@ -139,6 +151,7 @@ if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "  $0 minor          # minor version bump"
     echo "  $0 patch          # patch version bump"
     echo "  $0 auto-patch -y  # run build and bump patch on success without prompting"
+    echo "  $0 patch --git --push -y  # bump patch, create commit+tag, and push (CI-friendly)"
     exit 0
 fi
 
@@ -220,11 +233,11 @@ echo "=== Version Consistency Check ==="
 echo "Verifying all files have consistent version numbers..."
 
 # Check versions in all files
-CARGO_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-INSTRUCTIONS_VERSION=$(grep '^# Version: ' .github/instructions | sed 's/# Version: \(.*\)/\1/')
-README_TITLE_VERSION=$(grep '^# Stamp Album Generator v' README.md | sed 's/# Stamp Album Generator v\(.*\)/\1/')
-README_FOOTER_VERSION=$(grep '^\*\*Version\*\*: ' README.md | sed 's/\*\*Version\*\*: \(.*\)/\1/')
-RELEASE_NOTES_VERSION=$(grep '^\*\*Version\*\*: ' RELEASE_NOTES.md | sed 's/\*\*Version\*\*: \(.*\)/\1/')
+CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+INSTRUCTIONS_VERSION=$(grep '^# Version: ' .github/instructions | head -1 | sed 's/# Version: \(.*\)/\1/')
+README_TITLE_VERSION=$(grep '^# Stamp Album Generator v' README.md | head -1 | sed 's/# Stamp Album Generator v\(.*\)/\1/')
+README_FOOTER_VERSION=$(grep '^\*\*Version\*\*: ' README.md | head -1 | sed 's/\*\*Version\*\*: \(.*\)/\1/')
+RELEASE_NOTES_VERSION=$(grep '^\*\*Version\*\*: ' RELEASE_NOTES.md | head -1 | sed 's/\*\*Version\*\*: \(.*\)/\1/')
 
 echo "Cargo.toml: $CARGO_VERSION"
 echo "Instructions: $INSTRUCTIONS_VERSION"
@@ -242,4 +255,35 @@ else
     echo "❌ Version mismatch detected!"
     echo "Please check the files and ensure all versions match."
     exit 1
+fi
+
+# If requested, create a git commit and tag the new version
+if [ "$DO_GIT" = true ]; then
+    echo "Preparing git commit and tag for v$NEW_VERSION"
+
+    # Ensure working tree is clean unless NON_INTERACTIVE forces it
+    if [ -n "$(git status --porcelain)" ] && [ "$NON_INTERACTIVE" = false ]; then
+        echo "Working tree is dirty. Commit or stash changes before running with --git, or run with --yes to proceed." 
+        exit 2
+    fi
+
+    # Stage changed files
+    git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md || true
+
+    # Commit
+    git commit -m "chore(release): bump version to $NEW_VERSION" --no-verify || echo "No changes to commit"
+
+    # Create tag if it doesn't exist
+    TAG_NAME="v$NEW_VERSION"
+    if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+        echo "Tag $TAG_NAME already exists — skipping tag creation"
+    else
+        git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+        echo "Created tag $TAG_NAME"
+    fi
+
+    if [ "$DO_PUSH" = true ]; then
+        echo "Pushing commit and tag to origin..."
+        git push --follow-tags || git push && git push --tags
+    fi
 fi

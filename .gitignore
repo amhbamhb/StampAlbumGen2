@@ -10,7 +10,7 @@ Archive/*
 examples/
 /examples/
 examples/*
-config.toml.*
+
 # Ignore all .toml files except config.toml
 *.html
 testing/*

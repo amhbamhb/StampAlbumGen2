@@ -83,3 +83,40 @@ median_width_cap_4 = 30.0
 # Example:
 # [slug_overrides]
 # "British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
+
+# --- Album pages and header/footer tuning ---
+# Controls for AlbumEasy header/footer, title font, and footer numbering.
+# These are optional; the generator will use sensible defaults when omitted.
+# album_pages_title_font = "Helvetica-Bold"
+# album_pages_title_size = 16.0
+# album_pages_header_position = "centre" # or "left", "right"
+# album_pages_footer_number_enabled = true
+
+# --- ROW_START_ES formatting (optional) ---
+# Controls the small line printed at the start of rows for certain albums.
+# When enabled, these values control the emitted font, size, spacing and
+# vertical spacing used for the ROW_START_ES block. If unset sensible
+# defaults are used that match the previous hard-coded behavior.
+# row_start_es_enabled = true
+# row_start_es_font = "Helvetica"
+# row_start_es_size = 8.0
+# row_start_es_spacing = 1.0
+# row_start_es_vspace = 2.0
+
+# --- Flag cover rendering hints (flag_cover_*) ---
+# These fields provide per-flag/cover rendering hints used when the
+# optional large cover page is emitted. Keys are optional and are
+# intentionally conservative — the generator will fall back to
+# previous hard-coded values when these are not present.
+#
+# Values are applied as millimeters for sizing and spacing, or strings for
+# font names. Example settings:
+# flag_cover_img_w_mm = 120.0
+# flag_cover_img_h_mm = 60.0
+# flag_cover_page_vspace_top = 18.0
+# flag_cover_image_vspace_after = 8.0
+# flag_cover_image_title_font = "Helvetica-Bold"
+# flag_cover_image_title_size = 36.0
+# flag_cover_text_only_vspace_top = 24.0
+# flag_cover_text_only_title_font = "Helvetica-Bold"
+# flag_cover_text_only_title_size = 40.0
