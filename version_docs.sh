@@ -1,12 +1,33 @@
 #!/bin/bash
 # Documentation Versioning Script
 # Usage: ./version_docs.sh [major|minor|patch]
+#        ./version_docs.sh auto-patch    # run build and bump patch on success (CI-friendly)
+# Options:
+#   --yes | -y        : do not prompt, assume yes
+#   --help | -h       : show help
 # This script automatically updates version numbers across all project files
 
 set -e  # Exit on any error
 
 VERSION_TYPE=${1:-minor}
 DATE=$(date +%Y-%m-%d)
+
+# CI/auto mode: if first argument is 'auto-patch' then run build and only on
+# successful build bump the patch number automatically (non-interactive).
+AUTO_PATCH=false
+NON_INTERACTIVE=false
+for arg in "$@"; do
+    case "$arg" in
+        auto-patch)
+            AUTO_PATCH=true
+            ;;
+        --yes|-y)
+            NON_INTERACTIVE=true
+            ;;
+        --help|-h)
+            ;;
+    esac
+done
 
 # Function to increment version
 increment_version() {
@@ -101,17 +122,23 @@ echo "=== Stamp Album Generator Version Update Script ==="
 # Handle help
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "Usage: $0 [major|minor|patch]"
+    echo "       $0 auto-patch [--yes]   # run build and bump patch on success (CI-friendly)"
     echo ""
     echo "Arguments:"
     echo "  major    Increment major version (X.0.0)"
     echo "  minor    Increment minor version (x.X.0) [default]"
     echo "  patch    Increment patch version (x.x.X)"
+    echo "  auto-patch Run 'cargo build' and on success increment patch (non-interactive with --yes)"
+    echo ""
+    echo "Options:" 
+    echo "  --yes, -y   Run non-interactively (assume yes)"
+    echo "  --help, -h  Show this help"
     echo ""
     echo "Examples:"
-    echo "  $0           # minor version bump (default)"
-    echo "  $0 minor     # minor version bump"
-    echo "  $0 major     # major version bump"
-    echo "  $0 patch     # patch version bump"
+    echo "  $0                # minor version bump (default)"
+    echo "  $0 minor          # minor version bump"
+    echo "  $0 patch          # patch version bump"
+    echo "  $0 auto-patch -y  # run build and bump patch on success without prompting"
     exit 0
 fi
 
@@ -122,6 +149,17 @@ echo "Version type: $VERSION_TYPE"
 echo "Date: $DATE"
 echo ""
 
+# If auto-patch mode requested: run a build and only proceed if build passes
+if [ "$AUTO_PATCH" = true ]; then
+    echo "AUTO-PATCH mode: running 'cargo build' to verify build succeeds before bumping patch..."
+    if ! cargo build --quiet; then
+        echo "Build failed — aborting auto-patch. Fix build errors then retry."
+        exit 2
+    fi
+    echo "Build successful. Auto-patch will increment patch version."
+    VERSION_TYPE=patch
+fi
+
 # Get current version
 CURRENT_VERSION=$(get_current_version)
 echo "Current version: $CURRENT_VERSION"
@@ -131,12 +169,16 @@ NEW_VERSION=$(increment_version "$CURRENT_VERSION" "$VERSION_TYPE")
 echo "New version: $NEW_VERSION"
 echo ""
 
-# Confirm with user
-read -p "Proceed with version update? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Version update cancelled."
-    exit 0
+# Confirm with user unless non-interactive
+if [ "$NON_INTERACTIVE" = false ]; then
+    read -p "Proceed with version update? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Version update cancelled."
+        exit 0
+    fi
+else
+    echo "Non-interactive mode: proceeding without confirmation."
 fi
 
 # Create backups
