@@ -1,6 +1,7 @@
 # Stamp Album Generator v0.19.3
 
-Version: 0.11.0 | Last Updated: 2025-09-25
+Version: 0.11.0 
+Last Updated: 2025-09-25
 
 A Rust tool to generate AlbumEasy pages from stamp databases.
 
@@ -68,114 +69,99 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 
 ## 📦 Installation
 
-### Option 1: Pre-built Release (Recommended)
+# Generate from an existing DB (output-only behavior is triggered by passing --db-path)
+# Stamp Album Generator v0.19.3
+
+**Version**: 0.19.3
+**Release Date**: 2025-10-21
+
+A compact, up-to-date README for development and contributors. This file
+focuses on practical usage, configuration pointers, and best practices for
+commits and releases.
+
+## Features
+
+- Generate AlbumEasy pages from SQLite DBs
+- Conservative page-fit logic to avoid footer overlap
+- Embedded reference images and series scaling
+- Configurable via `config.toml` and `config_full_example.toml`
+
+## Quick start
+
+Build and generate an album from an existing DB:
 
 ```bash
-# Copy the portable binary to your system
-cp target/release/stamp_album_gen2 /usr/local/bin/stamp_album_gen2
-chmod +x /usr/local/bin/stamp_album_gen2
-```
-
-### Option 2: Build from Source
-
-```bash
-# Clone the repository
 git clone REPOSITORY_URL
 cd stamp-album-gen2
-
-# Build release version
 cargo build --release
-
-# The binary will be available at target/release/stamp_album_gen2
+stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
 ```
 
-## 🎯 Usage
-
-### Basic Album Generation
+Filter by years:
 
 ```bash
-# Generate album for Canada stamps (1875-1876)
-stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
-
-# Generate from an existing DB (output-only behavior is triggered by passing --db-path)
 stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada --start-year 1875 --end-year 1876
 ```
 
-### Command Line Options
+## Configuration
 
-```text
-Stamp Album Generator: Scrape, filter, and output AlbumEasy files from stamp DBs.
+- Primary file: `config.toml` (local, not committed)
+- Example config: `config_full_example.toml` (repository root)
 
-Usage: stamp_album_gen2 [OPTIONS]
+Key areas:
+- Page size, margins, borders
+- Row and header spacing
+- Image sizing and aspect-ratio handling
+- Header toggles (design, watermark, perforation, catalog numbers, series, country, date)
+- Flag cover rendering hints (keys prefixed with `flag_cover_`)
 
-Options:
-      --db-path  DB_PATH
-          Path to the SQLite database. When provided the program runs in output-only mode and will generate AlbumEasy files from the existing DB (skips scraping).
-      --country  COUNTRY
-          Country name (used as default for other parameters if not specified)
-      --album-name  ALBUM_NAME
-          Album name (required for album generation)
-      --source  SOURCE
-          Source type: stampworld, touchstamps, extractfile, colnectexport [default: stampworld]
-      --site-name  SITE_NAME
-          Site name for scraping (required for scraping mode, e.g. 'Great-Britain', 'Canada')
-      --album-directory  ALBUM_DIRECTORY
-          Album directory (default: Albums/{album_name})
-      --images-directory  IMAGES_DIRECTORY
-          Images directory (default: Albums/{album_name}/images)
-      --album-file-name  ALBUM_FILE_NAME
-          Album file name (default: Albums/{album_name}/{album_name}.txt)
-      --extract-file-name  EXTRACT_FILE_NAME
-          Extract file name (default: Albums/{album_name}/{album_name}_extract.txt)
-      --catalog-name  CATALOG_NAME
-          Catalog name (e.g. 'SG', 'Michel') [default: SG]
-      --overwrite-album
-          Overwrite existing album text files
-      --overwrite-images
-          Overwrite existing image files
-      --start-year  START_YEAR
-          Start year for filtering stamps [default: 0]
-      --end-year  END_YEAR
-          End year for filtering stamps [default: 9999]
-  -h, --help
-          Print help (see more with '--help')
-  -V, --version
-          Print version
-```
+## Development & Best Practices
 
-### Configuration
-
-Edit `config.toml` to customize behavior:
-
-```toml
-# Stamp dimension settings
-reference_width_mm = 200.0
-reference_height_mm = 240.0
-
-# Global album settings
-stamp_box_height = 30.0
-row_font_spacing = 2.0
-header_font_spacing = 3.0
-```
-
-Note: There is a short guide about page-fit tuning (the `page_fit_conservative_buffer_mm` option and how to avoid footer overlap) in `docs/AUTOMATION_QUICK_REFERENCE.md`.
-
-### Flag cover and integration tests
-
-The generator can optionally emit a large cover page that includes a country title and a flag image. Control this behavior via `config.toml` using the `print_flag_cover` option (defaults to true when omitted):
-
-```toml
-# print_flag_cover = true  # set to false to skip the flag/title cover
-```
-
-There is also an optional network integration test that verifies downloading a small flag from FlagCDN. To avoid running network tests in CI or offline environments this test is ignored by default and also requires an explicit environment variable to run.
-
-Run the integration test locally with:
+### Running tests
 
 ```bash
-FLAGDB_INTEGRATION=1 cargo test -- --ignored
+cargo test --all
 ```
 
+### Commit and release guidance
+
+- Use Conventional Commits:
+    - `feat:` → minor bump
+    - `fix:` → patch bump
+    - Use `BREAKING CHANGE:` for major bumps
+- Use `version_docs.sh` to keep `Cargo.toml`, `README.md`, `.github/instructions`, and `RELEASE_NOTES.md` in sync.
+    - CI-friendly: `./version_docs.sh auto-patch --git --push -y` will run `cargo build` and bump patch on success, create a commit and tag, and push.
+
+### Local developer notes
+
+- Use `config_full_example.toml` when testing feature toggles.
+- For repeatable scraping, use pre-populated DBs in `Albums/`.
+
+## Project layout (high level)
+
+```
+stamp-album-gen2/
+├── src/                # Rust sources
+├── Albums/             # Album DBs and images
+├── docs/               # Documentation
+├── tests/              # Tests
+├── config_full_example.toml
+├── config.toml         # local config (usually ignored in VCS)
+├── README.md
+├── RELEASE_NOTES.md
+└── Cargo.toml
+```
+
+## Contributing
+
+1. Fork
+2. Branch
+3. Add tests for behaviour changes
+4. Open a merge request
+
+## License
+
+MIT
 This will execute just the ignored integration tests and will only perform network access when `FLAGDB_INTEGRATION=1` is set.
 
 ## 📊 Stamp Dimension System
