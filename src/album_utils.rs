@@ -248,7 +248,12 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
                 let _ = writeln!(writer, "PAGE_START");
                 // Ensure page sections begin with a row start when enabled
                 if cfg_row_start_es {
-                    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                    // Emit ROW_START_ES using config params
+                    let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+                    let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                    let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                    let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                    let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
                 }
                 last_was_page_start = true;
             }
@@ -262,7 +267,11 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
             let _ = writeln!(writer, "{}", line);
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
             if cfg_row_start_es {
-                let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
             }
             last_was_page_start = true;
             continue;
