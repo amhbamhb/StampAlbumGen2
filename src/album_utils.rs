@@ -320,27 +320,46 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     }
         // If we have a flag image, emit it as a large image entry on the cover.
         if let Some(fp) = flag_path_opt.as_ref() {
+            // Use flag_cover_* config values if provided, otherwise fall back to
+            // the previously hard-coded numbers so behavior is unchanged.
+            let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
+            let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
+            let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
+            let after_vspace = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
+
             // Emit a large image placeholder (AlbumEasy consumer will scale)
-            let _ = writeln!(writer, "PAGE_VSPACE (40)");
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+
             // Use configured ROW_START_ES params for cover image block
             let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
             let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
             let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
             let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
             let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
-            let _ = writeln!(writer, "STAMP_ADD_IMG (160.0 80.0 \"{}\" \"\" \"\" \"\")", fp);
-            let _ = writeln!(writer, "PAGE_VSPACE (12)");
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 32 \"{}\" 1.0)", album_name.replace("\\n", " "));
+
+            let _ = writeln!(writer, "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\")", img_w, img_h, fp);
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+
+            // Title parameters for image cover
+            let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
+            // scale is not directly used by AlbumEasy; keep for downstream consumers
+            let _title_scale = cfg.flag_cover_image_title_scale.unwrap_or(1.0);
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)", title_size as i32, album_name.replace("\\n", " "));
         } else {
             // Text-only cover: large centered title
-            let _ = writeln!(writer, "PAGE_VSPACE (24)");
+            let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
+            let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
+            let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
+            let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
+
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
             let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
             let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
             let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
             let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
             let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 48 \"{}\" 1.0)", album_name.replace("\\n", " "));
-            let _ = writeln!(writer, "PAGE_VSPACE (18)");
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)", title_size as i32, album_name.replace("\\n", " "));
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
         }
         // After cover, emit a page separator so normal globals follow
         let _ = writeln!(writer, "################################################################################");
