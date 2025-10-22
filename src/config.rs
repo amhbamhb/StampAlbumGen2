@@ -33,6 +33,11 @@ pub struct Config {
     // Page layout overrides (mm)
     pub album_page_width_mm: Option<f32>,
     pub album_page_height_mm: Option<f32>,
+    // Album title/header font and size (AlbumEasy font codes)
+    pub album_pages_title_font: Option<String>,
+    pub album_pages_title_size: Option<f32>,
+    // Header position: L, R, C, LR, RL
+    pub album_pages_header_position: Option<String>,
     pub page_top_margin_mm: Option<f32>,
     pub page_bottom_margin_mm: Option<f32>,
     pub page_left_margin_mm: Option<f32>,
@@ -49,6 +54,14 @@ pub struct Config {
     pub global_scale: Option<f32>,
     pub header_font_spacing: Option<f32>,
     pub header_formatting: Option<HeaderFormatting>,
+    // Footer/page number controls
+    pub album_pages_footer_number_enabled: Option<bool>,
+    pub album_pages_footer_number_font: Option<String>,
+    pub album_pages_footer_number_size: Option<f32>,
+    pub album_pages_footer_number_position: Option<String>,
+    pub album_pages_footer_number_start: Option<i32>,
+    pub album_pages_footer_number_before: Option<String>,
+    pub album_pages_footer_number_after: Option<String>,
     // When true, emit detailed per-stamp PAGE_FIT diagnostics into generated
     // AlbumEasy text output to help debug page-fit math (disabled by default).
     pub detailed_page_fit_diagnostics: Option<bool>,
@@ -155,6 +168,16 @@ impl Default for Config {
             row_font_spacing: None,
             header_font_spacing: None,
             header_formatting: None,
+            album_pages_title_font: None,
+            album_pages_title_size: None,
+            album_pages_header_position: None,
+            album_pages_footer_number_enabled: None,
+            album_pages_footer_number_font: None,
+            album_pages_footer_number_size: None,
+            album_pages_footer_number_position: None,
+            album_pages_footer_number_start: None,
+            album_pages_footer_number_before: None,
+            album_pages_footer_number_after: None,
             detailed_page_fit_diagnostics: None,
             expand_grouped_ranges: None,
             page_fit_conservative_buffer_mm: None,
