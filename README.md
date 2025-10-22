@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.19.1
+# Stamp Album Generator v0.19.3
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -39,7 +39,7 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v0.19.1
+# Stamp Album Generator v0.19.3
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -223,7 +223,7 @@ stamp-album-gen2/
 └── *.log                          # Log files
 ```
 
-**Version**: 0.19.1
+**Version**: 0.19.3
 **Release Date**: 2025-10-21
 
 
