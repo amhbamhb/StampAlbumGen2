@@ -90,6 +90,11 @@ pub struct Config {
     // When false, don't emit ROW_START_ES automatically after PAGE_START
     // Default: true
     pub row_start_es_enabled: Option<bool>,
+    // Configurable ROW_START_ES parameters
+    pub row_start_es_font: Option<String>,
+    pub row_start_es_size: Option<f32>,
+    pub row_start_es_spacing: Option<f32>,
+    pub row_start_es_vspace: Option<f32>,
     // Allow a single very large stamp (or row) to occupy a page if enabled
     // and it exceeds the fraction `single_stamp_threshold_pct` of usable height.
     pub allow_single_large_stamp_per_page: Option<bool>,
@@ -215,6 +220,10 @@ impl Default for Config {
             color_stamp_text: None,
             color_stamp_background: None,
             row_start_es_enabled: None,
+            row_start_es_font: None,
+            row_start_es_size: None,
+            row_start_es_spacing: None,
+            row_start_es_vspace: None,
             allow_single_large_stamp_per_page: None,
               single_stamp_threshold_pct: None,
               usable_height_padding_mm: None,
