@@ -156,7 +156,33 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     lines.push(format!("# Architecture: {}", std::env::consts::ARCH));
     lines.push(format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()));
     lines.push(format!("# Command Line: {}", command_line));
-    lines.push(format!("# Config: print_flag_cover={} include_design={} include_engraving={}", cfg_print_flag_cover, cfg_include_design, cfg_include_engraving));
+    // Emit a rich set of Config: lines so the generated header captures all
+    // config toggles used for this run. This mirrors the legacy header
+    // format and makes it easier to trace generation params.
+    let cfg_include_wikipedia = cfg.include_wikipedia_content.unwrap_or(cfg.fetch_wikipedia.unwrap_or(false));
+    let cfg_allow_single_large = cfg.allow_single_large_stamp_per_page.unwrap_or(true);
+    let cfg_preserve_aspect = cfg.preserve_aspect.unwrap_or(img_preserve);
+    let cfg_emit_placeholder_diags = cfg.emit_placeholder_diagnostics.unwrap_or(false);
+    let cfg_detailed_page_fit = cfg.detailed_page_fit.unwrap_or(cfg.detailed_page_fit_diagnostics.unwrap_or(false));
+
+    lines.push(format!("# Config: print_flag_cover={}", cfg_print_flag_cover));
+    lines.push(format!("# Config: include_design={}", cfg_include_design));
+    lines.push(format!("# Config: include_engraving={}", cfg_include_engraving));
+    lines.push(format!("# Config: include_watermark={}", cfg.include_watermark.unwrap_or(true)));
+    lines.push(format!("# Config: include_perforation={}", cfg.include_perforation.unwrap_or(true)));
+    lines.push(format!("# Config: include_catalog_numbers={}", cfg.include_catalog_numbers.unwrap_or(true)));
+    lines.push(format!("# Config: include_series={}", cfg.include_series.unwrap_or(true)));
+    lines.push(format!("# Config: include_country={}", cfg.include_country.unwrap_or(true)));
+    lines.push(format!("# Config: include_date={}", cfg.include_date.unwrap_or(true)));
+    lines.push(format!("# Config: include_wikipedia_content={}", cfg_include_wikipedia));
+    lines.push(format!("# Config: row_start_es_enabled={}", cfg_row_start_es));
+    lines.push(format!("# Config: allow_single_large_stamp={}", cfg_allow_single_large));
+    lines.push(format!("# Config: preserve_aspect={}", cfg_preserve_aspect));
+    lines.push(format!("# Config: emit_placeholder_diagnostics={}", cfg_emit_placeholder_diags));
+    lines.push(format!("# Config: detailed_page_fit={}", cfg_detailed_page_fit));
+    lines.push(format!("# Config: stamp_heading_in_row_height={}", cfg.stamp_heading_in_row_height.unwrap_or(false)));
+    lines.push(format!("# Config: pages_vspace_in_row_height={}", cfg.pages_vspace_in_row_height.unwrap_or(false)));
+    lines.push(format!("# Config_SAFETY: packing_horizontal_safety_mm={:?} packing_vertical_safety_mm={:?}", cfg.packing_horizontal_safety_mm, cfg.packing_vertical_safety_mm));
     lines.push("".to_string());
     lines.push(format!("ALBUM_PAGES_SIZE  ({:.1} {:.1}) # Page size in mm (width height)", page_w, page_h));
     lines.push("".to_string());
@@ -166,11 +192,24 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     lines.push(format!("ALBUM_PAGES_BORDER ({:.2} {:.2} {:.2} {:.2})    #outer inner1 inner2 spacing", border_outer, border_inner1, border_inner2, border_spacing));
     lines.push("#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string());
     lines.push("".to_string());
-    lines.push(format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name));
+    // Use ALBUM_PAGES_HEADER for a tighter legacy-compatible header line
+    lines.push(format!("ALBUM_PAGES_HEADER (HN 10 C \"{}\")", album_name));
     lines.push("".to_string());
     lines.push(format!("ALBUM_PAGES_SPACING ({:.1} {:.1})", pages_spacing_h, pages_spacing_v));
     lines.push("".to_string());
-    lines.push("ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string());
+    // Emit the per-album image aspect ratio flag based on config
+    lines.push(format!("ALBUM_STAMP_IMG_ASPECT_RATIO ({}) ", cfg_preserve_aspect));
+    // Emit color overrides if present in config
+    if let Some(ref c) = cfg.color_album_border { lines.push(format!("COLOR_ALBUM_BORDER({})", c)); }
+    if let Some(ref c) = cfg.color_album_footer { lines.push(format!("COLOR_ALBUM_FOOTER({})", c)); }
+    if let Some(ref c) = cfg.color_album_header { lines.push(format!("COLOR_ALBUM_HEADER({})", c)); }
+    if let Some(ref c) = cfg.color_album_title { lines.push(format!("COLOR_ALBUM_TITLE({})", c)); }
+    if let Some(ref c) = cfg.color_album_margin_txt { lines.push(format!("COLOR_ALBUM_MARGIN_TXT({})", c)); }
+    // Stamp color overrides
+    if let Some(ref c) = cfg.color_stamp_border { lines.push(format!("COLOR_STAMP_BORDER({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_heading { lines.push(format!("COLOR_STAMP_HEADING({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_text { lines.push(format!("COLOR_STAMP_TEXT({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_background { lines.push(format!("COLOR_STAMP_BACKGROUND({})", c)); }
     lines.push("".to_string());
     lines.push("#ALBUM_PAGES_NUMBER (TN 10 R)".to_string());
     lines.push("ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string());
