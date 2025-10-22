@@ -97,6 +97,37 @@ pub struct Config {
     // If true, fetch a short Wikipedia summary for the album/site and save
     // it under the album directory (wiki_summary.txt). Default: false
     pub fetch_wikipedia: Option<bool>,
+    // Legacy / alternate name: include_wikipedia_content
+    pub include_wikipedia_content: Option<bool>,
+    // Keep-alive alias for preserve aspect ratio flag used in some configs
+    pub preserve_aspect: Option<bool>,
+
+    // Emit extra diagnostics related to placeholder expansion
+    pub emit_placeholder_diagnostics: Option<bool>,
+
+    // Backwards-compatible alias for detailed_page_fit_diagnostics
+    pub detailed_page_fit: Option<bool>,
+
+    // When true, include the stamp heading height in the row height calculation
+    pub stamp_heading_in_row_height: Option<bool>,
+    // When true, include pages vertical vspace in row height calculations
+    pub pages_vspace_in_row_height: Option<bool>,
+
+    // Packing safety margins (mm) - used to add small horizontal/vertical
+    // safety paddings during packing to avoid visual overlap.
+    pub packing_horizontal_safety_mm: Option<f32>,
+    pub packing_vertical_safety_mm: Option<f32>,
+
+    // Color customization keys (string names understood by the generator)
+    pub color_album_border: Option<String>,
+    pub color_album_footer: Option<String>,
+    pub color_album_header: Option<String>,
+    pub color_album_title: Option<String>,
+    pub color_album_margin_txt: Option<String>,
+    pub color_stamp_border: Option<String>,
+    pub color_stamp_heading: Option<String>,
+    pub color_stamp_text: Option<String>,
+    pub color_stamp_background: Option<String>,
 }
 
 impl Default for Config {
@@ -139,6 +170,27 @@ impl Default for Config {
             max_rows_per_page: None,
             print_flag_cover: None,
             fetch_wikipedia: None,
+            include_wikipedia_content: None,
+            preserve_aspect: None,
+
+            emit_placeholder_diagnostics: None,
+            detailed_page_fit: None,
+
+            stamp_heading_in_row_height: None,
+            pages_vspace_in_row_height: None,
+
+            packing_horizontal_safety_mm: None,
+            packing_vertical_safety_mm: None,
+
+            color_album_border: None,
+            color_album_footer: None,
+            color_album_header: None,
+            color_album_title: None,
+            color_album_margin_txt: None,
+            color_stamp_border: None,
+            color_stamp_heading: None,
+            color_stamp_text: None,
+            color_stamp_background: None,
             row_start_es_enabled: None,
             allow_single_large_stamp_per_page: None,
               single_stamp_threshold_pct: None,
