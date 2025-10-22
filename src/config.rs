@@ -33,6 +33,11 @@ pub struct Config {
     // Page layout overrides (mm)
     pub album_page_width_mm: Option<f32>,
     pub album_page_height_mm: Option<f32>,
+    // Album title/header font and size (AlbumEasy font codes)
+    pub album_pages_title_font: Option<String>,
+    pub album_pages_title_size: Option<f32>,
+    // Header position: L, R, C, LR, RL
+    pub album_pages_header_position: Option<String>,
     pub page_top_margin_mm: Option<f32>,
     pub page_bottom_margin_mm: Option<f32>,
     pub page_left_margin_mm: Option<f32>,
@@ -49,6 +54,14 @@ pub struct Config {
     pub global_scale: Option<f32>,
     pub header_font_spacing: Option<f32>,
     pub header_formatting: Option<HeaderFormatting>,
+    // Footer/page number controls
+    pub album_pages_footer_number_enabled: Option<bool>,
+    pub album_pages_footer_number_font: Option<String>,
+    pub album_pages_footer_number_size: Option<f32>,
+    pub album_pages_footer_number_position: Option<String>,
+    pub album_pages_footer_number_start: Option<i32>,
+    pub album_pages_footer_number_before: Option<String>,
+    pub album_pages_footer_number_after: Option<String>,
     // When true, emit detailed per-stamp PAGE_FIT diagnostics into generated
     // AlbumEasy text output to help debug page-fit math (disabled by default).
     pub detailed_page_fit_diagnostics: Option<bool>,
@@ -77,6 +90,11 @@ pub struct Config {
     // When false, don't emit ROW_START_ES automatically after PAGE_START
     // Default: true
     pub row_start_es_enabled: Option<bool>,
+    // Configurable ROW_START_ES parameters
+    pub row_start_es_font: Option<String>,
+    pub row_start_es_size: Option<f32>,
+    pub row_start_es_spacing: Option<f32>,
+    pub row_start_es_vspace: Option<f32>,
     // Allow a single very large stamp (or row) to occupy a page if enabled
     // and it exceeds the fraction `single_stamp_threshold_pct` of usable height.
     pub allow_single_large_stamp_per_page: Option<bool>,
@@ -97,6 +115,50 @@ pub struct Config {
     // If true, fetch a short Wikipedia summary for the album/site and save
     // it under the album directory (wiki_summary.txt). Default: false
     pub fetch_wikipedia: Option<bool>,
+    // Legacy / alternate name: include_wikipedia_content
+    pub include_wikipedia_content: Option<bool>,
+    // Keep-alive alias for preserve aspect ratio flag used in some configs
+    pub preserve_aspect: Option<bool>,
+
+    // Emit extra diagnostics related to placeholder expansion
+    pub emit_placeholder_diagnostics: Option<bool>,
+
+    // Backwards-compatible alias for detailed_page_fit_diagnostics
+    pub detailed_page_fit: Option<bool>,
+
+    // When true, include the stamp heading height in the row height calculation
+    pub stamp_heading_in_row_height: Option<bool>,
+    // When true, include pages vertical vspace in row height calculations
+    pub pages_vspace_in_row_height: Option<bool>,
+
+    // Packing safety margins (mm) - used to add small horizontal/vertical
+    // safety paddings during packing to avoid visual overlap.
+    pub packing_horizontal_safety_mm: Option<f32>,
+    pub packing_vertical_safety_mm: Option<f32>,
+
+    // Color customization keys (string names understood by the generator)
+    pub color_album_border: Option<String>,
+    pub color_album_footer: Option<String>,
+    pub color_album_header: Option<String>,
+    pub color_album_title: Option<String>,
+    pub color_album_margin_txt: Option<String>,
+    pub color_stamp_border: Option<String>,
+    pub color_stamp_heading: Option<String>,
+    pub color_stamp_text: Option<String>,
+    pub color_stamp_background: Option<String>,
+    // Flag cover specific settings (unique names prefixed with `flag_cover_`)
+    pub flag_cover_img_w_mm: Option<f32>,
+    pub flag_cover_img_h_mm: Option<f32>,
+    pub flag_cover_page_vspace_top: Option<f32>,
+    pub flag_cover_image_vspace_after: Option<f32>,
+    pub flag_cover_image_title_font: Option<String>,
+    pub flag_cover_image_title_size: Option<f32>,
+    pub flag_cover_image_title_scale: Option<f32>,
+    pub flag_cover_text_only_vspace_top: Option<f32>,
+    pub flag_cover_text_only_title_font: Option<String>,
+    pub flag_cover_text_only_title_size: Option<f32>,
+    pub flag_cover_text_only_title_scale: Option<f32>,
+    pub flag_cover_text_only_vspace_after: Option<f32>,
 }
 
 impl Default for Config {
@@ -124,6 +186,16 @@ impl Default for Config {
             row_font_spacing: None,
             header_font_spacing: None,
             header_formatting: None,
+            album_pages_title_font: None,
+            album_pages_title_size: None,
+            album_pages_header_position: None,
+            album_pages_footer_number_enabled: None,
+            album_pages_footer_number_font: None,
+            album_pages_footer_number_size: None,
+            album_pages_footer_number_position: None,
+            album_pages_footer_number_start: None,
+            album_pages_footer_number_before: None,
+            album_pages_footer_number_after: None,
             detailed_page_fit_diagnostics: None,
             expand_grouped_ranges: None,
             page_fit_conservative_buffer_mm: None,
@@ -139,7 +211,44 @@ impl Default for Config {
             max_rows_per_page: None,
             print_flag_cover: None,
             fetch_wikipedia: None,
+            include_wikipedia_content: None,
+            preserve_aspect: None,
+
+            emit_placeholder_diagnostics: None,
+            detailed_page_fit: None,
+
+            stamp_heading_in_row_height: None,
+            pages_vspace_in_row_height: None,
+
+            packing_horizontal_safety_mm: None,
+            packing_vertical_safety_mm: None,
+
+            color_album_border: None,
+            color_album_footer: None,
+            color_album_header: None,
+            color_album_title: None,
+            color_album_margin_txt: None,
+            color_stamp_border: None,
+            color_stamp_heading: None,
+            color_stamp_text: None,
+            color_stamp_background: None,
+            flag_cover_img_w_mm: None,
+            flag_cover_img_h_mm: None,
+            flag_cover_page_vspace_top: None,
+            flag_cover_image_vspace_after: None,
+            flag_cover_image_title_font: None,
+            flag_cover_image_title_size: None,
+            flag_cover_image_title_scale: None,
+            flag_cover_text_only_vspace_top: None,
+            flag_cover_text_only_title_font: None,
+            flag_cover_text_only_title_size: None,
+            flag_cover_text_only_title_scale: None,
+            flag_cover_text_only_vspace_after: None,
             row_start_es_enabled: None,
+            row_start_es_font: None,
+            row_start_es_size: None,
+            row_start_es_spacing: None,
+            row_start_es_vspace: None,
             allow_single_large_stamp_per_page: None,
               single_stamp_threshold_pct: None,
               usable_height_padding_mm: None,

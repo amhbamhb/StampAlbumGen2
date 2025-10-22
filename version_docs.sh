@@ -1,12 +1,43 @@
 #!/bin/bash
 # Documentation Versioning Script
 # Usage: ./version_docs.sh [major|minor|patch]
+#        ./version_docs.sh auto-patch    # run build and bump patch on success (CI-friendly)
+# Options:
+#   --yes | -y        : do not prompt, assume yes
+#   --help | -h       : show help
 # This script automatically updates version numbers across all project files
 
 set -e  # Exit on any error
 
 VERSION_TYPE=${1:-minor}
 DATE=$(date +%Y-%m-%d)
+
+# CI/auto mode: if first argument is 'auto-patch' then run build and only on
+# successful build bump the patch number automatically (non-interactive).
+AUTO_PATCH=false
+NON_INTERACTIVE=false
+for arg in "$@"; do
+    case "$arg" in
+        auto-patch)
+            AUTO_PATCH=true
+            ;;
+        --git)
+            DO_GIT=true
+            ;;
+        --push)
+            DO_PUSH=true
+            ;;
+        --yes|-y)
+            NON_INTERACTIVE=true
+            ;;
+        --help|-h)
+            ;;
+    esac
+done
+
+# Default values
+DO_GIT=${DO_GIT:-false}
+DO_PUSH=${DO_PUSH:-false}
 
 # Function to increment version
 increment_version() {
@@ -101,17 +132,26 @@ echo "=== Stamp Album Generator Version Update Script ==="
 # Handle help
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
     echo "Usage: $0 [major|minor|patch]"
+    echo "       $0 auto-patch [--yes]   # run build and bump patch on success (CI-friendly)"
     echo ""
     echo "Arguments:"
     echo "  major    Increment major version (X.0.0)"
     echo "  minor    Increment minor version (x.X.0) [default]"
     echo "  patch    Increment patch version (x.x.X)"
+    echo "  auto-patch Run 'cargo build' and on success increment patch (non-interactive with --yes)"
+    echo ""
+    echo "Options:" 
+    echo "  --yes, -y   Run non-interactively (assume yes)"
+    echo "  --git       Create a git commit and annotated tag for the new version (local)"
+    echo "  --push      When used with --git, push commit and tag to origin"
+    echo "  --help, -h  Show this help"
     echo ""
     echo "Examples:"
-    echo "  $0           # minor version bump (default)"
-    echo "  $0 minor     # minor version bump"
-    echo "  $0 major     # major version bump"
-    echo "  $0 patch     # patch version bump"
+    echo "  $0                # minor version bump (default)"
+    echo "  $0 minor          # minor version bump"
+    echo "  $0 patch          # patch version bump"
+    echo "  $0 auto-patch -y  # run build and bump patch on success without prompting"
+    echo "  $0 patch --git --push -y  # bump patch, create commit+tag, and push (CI-friendly)"
     exit 0
 fi
 
@@ -122,6 +162,17 @@ echo "Version type: $VERSION_TYPE"
 echo "Date: $DATE"
 echo ""
 
+# If auto-patch mode requested: run a build and only proceed if build passes
+if [ "$AUTO_PATCH" = true ]; then
+    echo "AUTO-PATCH mode: running 'cargo build' to verify build succeeds before bumping patch..."
+    if ! cargo build --quiet; then
+        echo "Build failed — aborting auto-patch. Fix build errors then retry."
+        exit 2
+    fi
+    echo "Build successful. Auto-patch will increment patch version."
+    VERSION_TYPE=patch
+fi
+
 # Get current version
 CURRENT_VERSION=$(get_current_version)
 echo "Current version: $CURRENT_VERSION"
@@ -131,12 +182,16 @@ NEW_VERSION=$(increment_version "$CURRENT_VERSION" "$VERSION_TYPE")
 echo "New version: $NEW_VERSION"
 echo ""
 
-# Confirm with user
-read -p "Proceed with version update? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Version update cancelled."
-    exit 0
+# Confirm with user unless non-interactive
+if [ "$NON_INTERACTIVE" = false ]; then
+    read -p "Proceed with version update? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Version update cancelled."
+        exit 0
+    fi
+else
+    echo "Non-interactive mode: proceeding without confirmation."
 fi
 
 # Create backups
@@ -178,11 +233,11 @@ echo "=== Version Consistency Check ==="
 echo "Verifying all files have consistent version numbers..."
 
 # Check versions in all files
-CARGO_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-INSTRUCTIONS_VERSION=$(grep '^# Version: ' .github/instructions | sed 's/# Version: \(.*\)/\1/')
-README_TITLE_VERSION=$(grep '^# Stamp Album Generator v' README.md | sed 's/# Stamp Album Generator v\(.*\)/\1/')
-README_FOOTER_VERSION=$(grep '^\*\*Version\*\*: ' README.md | sed 's/\*\*Version\*\*: \(.*\)/\1/')
-RELEASE_NOTES_VERSION=$(grep '^\*\*Version\*\*: ' RELEASE_NOTES.md | sed 's/\*\*Version\*\*: \(.*\)/\1/')
+CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+INSTRUCTIONS_VERSION=$(grep '^# Version: ' .github/instructions | head -1 | sed 's/# Version: \(.*\)/\1/')
+README_TITLE_VERSION=$(grep '^# Stamp Album Generator v' README.md | head -1 | sed 's/# Stamp Album Generator v\(.*\)/\1/')
+README_FOOTER_VERSION=$(grep '^\*\*Version\*\*: ' README.md | head -1 | sed 's/\*\*Version\*\*: \(.*\)/\1/')
+RELEASE_NOTES_VERSION=$(grep '^\*\*Version\*\*: ' RELEASE_NOTES.md | head -1 | sed 's/\*\*Version\*\*: \(.*\)/\1/')
 
 echo "Cargo.toml: $CARGO_VERSION"
 echo "Instructions: $INSTRUCTIONS_VERSION"
@@ -200,4 +255,35 @@ else
     echo "❌ Version mismatch detected!"
     echo "Please check the files and ensure all versions match."
     exit 1
+fi
+
+# If requested, create a git commit and tag the new version
+if [ "$DO_GIT" = true ]; then
+    echo "Preparing git commit and tag for v$NEW_VERSION"
+
+    # Ensure working tree is clean unless NON_INTERACTIVE forces it
+    if [ -n "$(git status --porcelain)" ] && [ "$NON_INTERACTIVE" = false ]; then
+        echo "Working tree is dirty. Commit or stash changes before running with --git, or run with --yes to proceed." 
+        exit 2
+    fi
+
+    # Stage changed files
+    git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md || true
+
+    # Commit
+    git commit -m "chore(release): bump version to $NEW_VERSION" --no-verify || echo "No changes to commit"
+
+    # Create tag if it doesn't exist
+    TAG_NAME="v$NEW_VERSION"
+    if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+        echo "Tag $TAG_NAME already exists — skipping tag creation"
+    else
+        git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+        echo "Created tag $TAG_NAME"
+    fi
+
+    if [ "$DO_PUSH" = true ]; then
+        echo "Pushing commit and tag to origin..."
+        git push --follow-tags || git push && git push --tags
+    fi
 fi

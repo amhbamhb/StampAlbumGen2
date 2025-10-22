@@ -156,7 +156,33 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     lines.push(format!("# Architecture: {}", std::env::consts::ARCH));
     lines.push(format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()));
     lines.push(format!("# Command Line: {}", command_line));
-    lines.push(format!("# Config: print_flag_cover={} include_design={} include_engraving={}", cfg_print_flag_cover, cfg_include_design, cfg_include_engraving));
+    // Emit a rich set of Config: lines so the generated header captures all
+    // config toggles used for this run. This mirrors the legacy header
+    // format and makes it easier to trace generation params.
+    let cfg_include_wikipedia = cfg.include_wikipedia_content.unwrap_or(cfg.fetch_wikipedia.unwrap_or(false));
+    let cfg_allow_single_large = cfg.allow_single_large_stamp_per_page.unwrap_or(true);
+    let cfg_preserve_aspect = cfg.preserve_aspect.unwrap_or(img_preserve);
+    let cfg_emit_placeholder_diags = cfg.emit_placeholder_diagnostics.unwrap_or(false);
+    let cfg_detailed_page_fit = cfg.detailed_page_fit.unwrap_or(cfg.detailed_page_fit_diagnostics.unwrap_or(false));
+
+    lines.push(format!("# Config: print_flag_cover={}", cfg_print_flag_cover));
+    lines.push(format!("# Config: include_design={}", cfg_include_design));
+    lines.push(format!("# Config: include_engraving={}", cfg_include_engraving));
+    lines.push(format!("# Config: include_watermark={}", cfg.include_watermark.unwrap_or(true)));
+    lines.push(format!("# Config: include_perforation={}", cfg.include_perforation.unwrap_or(true)));
+    lines.push(format!("# Config: include_catalog_numbers={}", cfg.include_catalog_numbers.unwrap_or(true)));
+    lines.push(format!("# Config: include_series={}", cfg.include_series.unwrap_or(true)));
+    lines.push(format!("# Config: include_country={}", cfg.include_country.unwrap_or(true)));
+    lines.push(format!("# Config: include_date={}", cfg.include_date.unwrap_or(true)));
+    lines.push(format!("# Config: include_wikipedia_content={}", cfg_include_wikipedia));
+    lines.push(format!("# Config: row_start_es_enabled={}", cfg_row_start_es));
+    lines.push(format!("# Config: allow_single_large_stamp={}", cfg_allow_single_large));
+    lines.push(format!("# Config: preserve_aspect={}", cfg_preserve_aspect));
+    lines.push(format!("# Config: emit_placeholder_diagnostics={}", cfg_emit_placeholder_diags));
+    lines.push(format!("# Config: detailed_page_fit={}", cfg_detailed_page_fit));
+    lines.push(format!("# Config: stamp_heading_in_row_height={}", cfg.stamp_heading_in_row_height.unwrap_or(false)));
+    lines.push(format!("# Config: pages_vspace_in_row_height={}", cfg.pages_vspace_in_row_height.unwrap_or(false)));
+    lines.push(format!("# Config_SAFETY: packing_horizontal_safety_mm={:?} packing_vertical_safety_mm={:?}", cfg.packing_horizontal_safety_mm, cfg.packing_vertical_safety_mm));
     lines.push("".to_string());
     lines.push(format!("ALBUM_PAGES_SIZE  ({:.1} {:.1}) # Page size in mm (width height)", page_w, page_h));
     lines.push("".to_string());
@@ -166,14 +192,39 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     lines.push(format!("ALBUM_PAGES_BORDER ({:.2} {:.2} {:.2} {:.2})    #outer inner1 inner2 spacing", border_outer, border_inner1, border_inner2, border_spacing));
     lines.push("#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string());
     lines.push("".to_string());
-    lines.push(format!("ALBUM_PAGES_TITLE (TB 18 \"{}\")", album_name));
+    // Use ALBUM_PAGES_HEADER with configurable font/size/position
+    let title_font = cfg.album_pages_title_font.clone().unwrap_or_else(|| "HN".to_string());
+    let title_size = cfg.album_pages_title_size.unwrap_or(10.0);
+    let title_pos = cfg.album_pages_header_position.clone().unwrap_or_else(|| "C".to_string());
+    lines.push(format!("ALBUM_PAGES_HEADER ({} {} {} \"{}\")", title_font, title_size as i32, title_pos, album_name));
     lines.push("".to_string());
     lines.push(format!("ALBUM_PAGES_SPACING ({:.1} {:.1})", pages_spacing_h, pages_spacing_v));
     lines.push("".to_string());
-    lines.push("ALBUM_STAMP_IMG_ASPECT_RATIO (true) ".to_string());
+    // Emit the per-album image aspect ratio flag based on config
+    lines.push(format!("ALBUM_STAMP_IMG_ASPECT_RATIO ({}) ", cfg_preserve_aspect));
+    // Emit color overrides if present in config
+    if let Some(ref c) = cfg.color_album_border { lines.push(format!("COLOR_ALBUM_BORDER({})", c)); }
+    if let Some(ref c) = cfg.color_album_footer { lines.push(format!("COLOR_ALBUM_FOOTER({})", c)); }
+    if let Some(ref c) = cfg.color_album_header { lines.push(format!("COLOR_ALBUM_HEADER({})", c)); }
+    if let Some(ref c) = cfg.color_album_title { lines.push(format!("COLOR_ALBUM_TITLE({})", c)); }
+    if let Some(ref c) = cfg.color_album_margin_txt { lines.push(format!("COLOR_ALBUM_MARGIN_TXT({})", c)); }
+    // Stamp color overrides
+    if let Some(ref c) = cfg.color_stamp_border { lines.push(format!("COLOR_STAMP_BORDER({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_heading { lines.push(format!("COLOR_STAMP_HEADING({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_text { lines.push(format!("COLOR_STAMP_TEXT({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_background { lines.push(format!("COLOR_STAMP_BACKGROUND({})", c)); }
     lines.push("".to_string());
     lines.push("#ALBUM_PAGES_NUMBER (TN 10 R)".to_string());
-    lines.push("ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string());
+    // Parameterize footer page number format from config
+    if cfg.album_pages_footer_number_enabled.unwrap_or(true) {
+        let foot_font = cfg.album_pages_footer_number_font.clone().unwrap_or_else(|| "HN".to_string());
+        let foot_size = cfg.album_pages_footer_number_size.unwrap_or(10.0);
+        let foot_pos = cfg.album_pages_footer_number_position.clone().unwrap_or_else(|| "C".to_string());
+        let foot_start = cfg.album_pages_footer_number_start.unwrap_or(1);
+        let foot_before = cfg.album_pages_footer_number_before.clone().unwrap_or_else(|| "Page ".to_string());
+        let foot_after = cfg.album_pages_footer_number_after.clone().unwrap_or_else(|| " of $PAGES$".to_string());
+        lines.push(format!("ALBUM_PAGES_FOOTER_NUMBER ({} {} {} {} \"{}\" \"{}\")", foot_font, foot_size as i32, foot_pos, foot_start, foot_before, foot_after));
+    }
     lines.push("".to_string());
     lines.push(format!("ALBUM_STAMP_IMG_NEW_SETTING ({:.1} {:.1} {})", img_new_w, img_new_h, img_preserve));
     lines.push("".to_string());
@@ -197,7 +248,12 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
                 let _ = writeln!(writer, "PAGE_START");
                 // Ensure page sections begin with a row start when enabled
                 if cfg_row_start_es {
-                    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                    // Emit ROW_START_ES using config params
+                    let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+                    let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                    let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                    let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                    let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
                 }
                 last_was_page_start = true;
             }
@@ -211,7 +267,11 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
             let _ = writeln!(writer, "{}", line);
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
             if cfg_row_start_es {
-                let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+                let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
             }
             last_was_page_start = true;
             continue;
@@ -252,22 +312,54 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     let _ = writeln!(writer, "PAGE_START");
     // Ensure cover pages also begin with a row start so the layout is initialized
     if cfg_row_start_es {
-        let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+        let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+        let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+        let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+        let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+        let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
     }
         // If we have a flag image, emit it as a large image entry on the cover.
         if let Some(fp) = flag_path_opt.as_ref() {
+            // Use flag_cover_* config values if provided, otherwise fall back to
+            // the previously hard-coded numbers so behavior is unchanged.
+            let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
+            let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
+            let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
+            let after_vspace = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
+
             // Emit a large image placeholder (AlbumEasy consumer will scale)
-            let _ = writeln!(writer, "PAGE_VSPACE (40)");
-            let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
-            let _ = writeln!(writer, "STAMP_ADD_IMG (160.0 80.0 \"{}\" \"\" \"\" \"\")", fp);
-            let _ = writeln!(writer, "PAGE_VSPACE (12)");
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 32 \"{}\" 1.0)", album_name.replace("\\n", " "));
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+
+            // Use configured ROW_START_ES params for cover image block
+            let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+            let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
+
+            let _ = writeln!(writer, "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\")", img_w, img_h, fp);
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+
+            // Title parameters for image cover
+            let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
+            // scale is not directly used by AlbumEasy; keep for downstream consumers
+            let _title_scale = cfg.flag_cover_image_title_scale.unwrap_or(1.0);
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)", title_size as i32, album_name.replace("\\n", " "));
         } else {
             // Text-only cover: large centered title
-            let _ = writeln!(writer, "PAGE_VSPACE (24)");
-            let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB 48 \"{}\" 1.0)", album_name.replace("\\n", " "));
-            let _ = writeln!(writer, "PAGE_VSPACE (18)");
+            let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
+            let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
+            let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
+            let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
+
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+            let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+            let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
+            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)", title_size as i32, album_name.replace("\\n", " "));
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
         }
         // After cover, emit a page separator so normal globals follow
         let _ = writeln!(writer, "################################################################################");

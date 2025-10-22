@@ -473,3 +473,39 @@ color_album_footer = "darkblue"
 color_album_header = "darkblue"
 color_album_title = "darkblue"
 color_album_margin_txt = "darkblue"
+
+############################################
+# --- Flag cover (image) specific overrides ---
+# These keys control the cover page when a flag image is available.
+# Values are in millimetres (mm) where applicable.
+############################################
+
+# Vertical space above the flag image/title on the cover page (mm)
+flag_cover_page_vspace_top = 40.0
+
+# If a flag image is emitted, use these width/height hints (mm)
+flag_cover_img_w_mm = 160.0
+flag_cover_img_h_mm = 80.0
+
+# Vertical space after the cover image (mm)
+flag_cover_image_vspace_after = 12.0
+
+# Title rendering hints for image-based cover (font, size, scale)
+flag_cover_image_title_font = "HN"
+flag_cover_image_title_size = 32.0
+flag_cover_image_title_scale = 1.0
+
+############################################
+# --- Flag cover (text-only) overrides ---
+############################################
+
+# Vertical space above the text-only cover title (mm)
+flag_cover_text_only_vspace_top = 24.0
+
+# Title rendering hints for text-only cover
+flag_cover_text_only_title_font = "HN"
+flag_cover_text_only_title_size = 48.0
+flag_cover_text_only_title_scale = 1.0
+
+# Vertical space after the text-only cover title (mm)
+flag_cover_text_only_vspace_after = 18.0
