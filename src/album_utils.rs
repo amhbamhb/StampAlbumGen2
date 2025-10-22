@@ -192,8 +192,11 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     lines.push(format!("ALBUM_PAGES_BORDER ({:.2} {:.2} {:.2} {:.2})    #outer inner1 inner2 spacing", border_outer, border_inner1, border_inner2, border_spacing));
     lines.push("#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string());
     lines.push("".to_string());
-    // Use ALBUM_PAGES_HEADER for a tighter legacy-compatible header line
-    lines.push(format!("ALBUM_PAGES_HEADER (HN 10 C \"{}\")", album_name));
+    // Use ALBUM_PAGES_HEADER with configurable font/size/position
+    let title_font = cfg.album_pages_title_font.clone().unwrap_or_else(|| "HN".to_string());
+    let title_size = cfg.album_pages_title_size.unwrap_or(10.0);
+    let title_pos = cfg.album_pages_header_position.clone().unwrap_or_else(|| "C".to_string());
+    lines.push(format!("ALBUM_PAGES_HEADER ({} {} {} \"{}\")", title_font, title_size as i32, title_pos, album_name));
     lines.push("".to_string());
     lines.push(format!("ALBUM_PAGES_SPACING ({:.1} {:.1})", pages_spacing_h, pages_spacing_v));
     lines.push("".to_string());
@@ -212,7 +215,16 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     if let Some(ref c) = cfg.color_stamp_background { lines.push(format!("COLOR_STAMP_BACKGROUND({})", c)); }
     lines.push("".to_string());
     lines.push("#ALBUM_PAGES_NUMBER (TN 10 R)".to_string());
-    lines.push("ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 \"Page \" \" of $PAGES$\")".to_string());
+    // Parameterize footer page number format from config
+    if cfg.album_pages_footer_number_enabled.unwrap_or(true) {
+        let foot_font = cfg.album_pages_footer_number_font.clone().unwrap_or_else(|| "HN".to_string());
+        let foot_size = cfg.album_pages_footer_number_size.unwrap_or(10.0);
+        let foot_pos = cfg.album_pages_footer_number_position.clone().unwrap_or_else(|| "C".to_string());
+        let foot_start = cfg.album_pages_footer_number_start.unwrap_or(1);
+        let foot_before = cfg.album_pages_footer_number_before.clone().unwrap_or_else(|| "Page ".to_string());
+        let foot_after = cfg.album_pages_footer_number_after.clone().unwrap_or_else(|| " of $PAGES$".to_string());
+        lines.push(format!("ALBUM_PAGES_FOOTER_NUMBER ({} {} {} {} \"{}\" \"{}\")", foot_font, foot_size as i32, foot_pos, foot_start, foot_before, foot_after));
+    }
     lines.push("".to_string());
     lines.push(format!("ALBUM_STAMP_IMG_NEW_SETTING ({:.1} {:.1} {})", img_new_w, img_new_h, img_preserve));
     lines.push("".to_string());
