@@ -42,6 +42,7 @@ Summary:
   - include_date -> `include_date`
   - print_flag_cover -> `print_flag_cover`
   - expand_grouped_ranges -> `expand_grouped_ranges`
+  - series_order -> `series_order`
   - detailed_page_fit_diagnostics -> `detailed_page_fit_diagnostics`
   - fetch_wikipedia -> `fetch_wikipedia`
   - row_start_es_enabled -> `row_start_es_enabled`
@@ -54,6 +55,9 @@ Summary:
 
 - Keys present in the example but NOT present in `Config` (none found in this example):
   - None. All keys in the example map to existing `Config` fields.
+
+Additional note:
+- `series_order` is a documented option and maps to `Config::series_order` (allowed values: "first_date", "first_sg", "alpha" with optional "_desc" suffix).
 
 Notes:
 

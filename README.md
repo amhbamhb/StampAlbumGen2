@@ -113,6 +113,8 @@ Key areas:
 - Image sizing and aspect-ratio handling
 - Header toggles (design, watermark, perforation, catalog numbers, series, country, date)
 - Flag cover rendering hints (keys prefixed with `flag_cover_`)
+- Series ordering: `series_order` (options: "first_date", "first_sg", "alpha"; append `_desc` for descending)
+- StampWorld grouped-range handling: `expand_grouped_ranges` (options: "placeholders", "detail_fetch")
 
 For a minimal starting point use `config_template.toml`. When experimenting
 with more advanced options prefer `config_full_example.toml` which contains

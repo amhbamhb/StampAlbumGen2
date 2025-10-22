@@ -78,6 +78,14 @@ median_width_cap_4 = 30.0
 # emit the large flag/title cover page. Defaults to true when omitted.
 # print_flag_cover = true
 
+# How series are ordered in generated albums. Options:
+# - "first_date": order series by the date of their first stamp (default)
+# - "first_sg": order series by the representative stamp's SG number (numeric-aware)
+# - "alpha": alphabetical series order
+# You can request descending order by appending "_desc" (e.g. "first_sg_desc").
+# Example:
+# series_order = "first_sg_desc"
+
 # --- Slug overrides for StampWorld ---
 # Map your local `--site-name` to a canonical StampWorld slug when needed.
 # Example:
@@ -120,3 +128,25 @@ median_width_cap_4 = 30.0
 # flag_cover_text_only_vspace_top = 24.0
 # flag_cover_text_only_title_font = "Helvetica-Bold"
 # flag_cover_text_only_title_size = 40.0
+
+# Example: Conservative defaults you can copy into your `config.toml`:
+# flag_cover_img_w_mm = 120.0
+# flag_cover_img_h_mm = 60.0
+# flag_cover_page_vspace_top = 18.0
+# flag_cover_image_vspace_after = 8.0
+# flag_cover_image_title_font = "Helvetica-Bold"
+# flag_cover_image_title_size = 36.0
+# flag_cover_text_only_vspace_top = 24.0
+# flag_cover_text_only_title_font = "Helvetica-Bold"
+# flag_cover_text_only_title_size = 40.0
+
+# --- StampWorld grouped-range handling ---
+# Controls how grouped-range tokens like "1067-1068" on StampWorld pages are
+# processed when collecting stamps. Allowed values:
+# - "none" or omitted: leave grouped-range tokens as-is (no expansion)
+# - "placeholders": expand grouped-range tokens into individual placeholder
+#    DB rows (fast)
+# - "detail_fetch": attempt to fetch individual stamp detail pages to
+#    populate full metadata (slower; may trigger additional network access)
+# Example to expand grouped ranges into placeholders:
+# expand_grouped_ranges = "placeholders"
