@@ -18,8 +18,8 @@ fn test_load_example_config_roundtrip() {
     let orig = env::current_dir().expect("cwd");
     env::set_current_dir(&td_path).expect("chdir to tempdir");
 
-    // Call loader
-    let cfg = crate::config::load_config("config.toml");
+    // Call loader from the library crate
+    let cfg = stamp_album_gen2::config::load_config("config.toml");
 
     // Basic assertions for a few keys present in the example
     assert_eq!(cfg.stamp_box_height.unwrap(), 24.0_f32);
