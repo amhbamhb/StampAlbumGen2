@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.17.0
+# Stamp Album Generator v0.19.1
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -39,7 +39,7 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v0.17.0
+# Stamp Album Generator v0.19.1
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -222,6 +222,10 @@ stamp-album-gen2/
 ├── config_template.toml           # Configuration template
 └── *.log                          # Log files
 ```
+
+**Version**: 0.19.1
+**Release Date**: 2025-10-21
+
 
 ## 🔧 Development
 
@@ -695,7 +699,7 @@ and stop-after-no-hits heuristic to avoid over-downloading:
     --stop-after-no-hits 3 --max-pages 0
 ```
 
-**Release Date**: 2025-10-20
+**Release Date**: 2025-10-21
 **Build**: Release (optimized)
 **Platform**: Linux x86-64 /content 
 `filePath`: README.md
