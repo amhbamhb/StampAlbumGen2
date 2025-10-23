@@ -276,7 +276,9 @@ where
                               // let header_height = (header_lines as f64) * header_font_spacing;
                               // let row_height = stamp_box_height + row_font_spacing;
 
-        let series_list = get_all_series(&conn).expect("Failed to get series");
+    let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
+    let series_order_slice = series_order.as_deref();
+    let series_list = get_all_series(&conn, series_order_slice).expect("Failed to get series");
         // We've emitted page 1 above; start counter at 1
         let mut page_counter = 1usize;
         let mut current_height = 0.0f64;
@@ -855,7 +857,9 @@ where
                 // If we have a pending header, write it now (we are about to
                 // emit the first row for this series on the current page).
                 if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
-                    let _ = writeln!(output, "PAGE_VSPACE (6)");
+                    // Use configurable marker so tests/tools can detect the vspace
+                    let pv_marker = config.page_vspace_marker.clone().unwrap_or_else(|| "(6)".to_string());
+                    let _ = writeln!(output, "PAGE_VSPACE {}", pv_marker);
                     current_height += v_before;
                     // header vspace written (diagnostics suppressed)
                     for (line, h) in pending_lines {
@@ -863,12 +867,21 @@ where
                         current_height += h;
                         // header line written (diagnostics suppressed)
                     }
-                    let _ = writeln!(output, "PAGE_VSPACE (6)");
+                    let pv_marker = config.page_vspace_marker.clone().unwrap_or_else(|| "(6)".to_string());
+                    let _ = writeln!(output, "PAGE_VSPACE {}", pv_marker);
                     current_height += v_after;
                     // header vspace after written (diagnostics suppressed)
                     header_written = true;
                 }
-                let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                // Build ROW_START_ES from parameterized config if provided, otherwise fall back to
+                // the legacy `row_start_es_marker` string. Parameters are: token (e.g. TN),
+                // font (e.g. 6), size (e.g. 0.1), vspace (e.g. 5.0)
+                let row_token = config.row_start_es_token.clone().unwrap_or_else(|| "TN".to_string());
+                let row_font = config.row_start_es_font.clone().unwrap_or_else(|| "6".to_string());
+                let row_size = config.row_start_es_size.unwrap_or(0.1_f32);
+                let row_vspace = config.row_start_es_vspace.unwrap_or(5.0_f32);
+                let row_marker = format!("{} {} {:.2} {:.1}", row_token, row_font, row_size, row_vspace);
+                let _ = writeln!(output, "ROW_START_ES ({})", row_marker);
                 // row start written (diagnostics suppressed)
                 for stamp in stamps_in_row {
                     // Use correct fields from StampStub

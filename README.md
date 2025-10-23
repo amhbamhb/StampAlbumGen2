@@ -113,6 +113,8 @@ Key areas:
 - Image sizing and aspect-ratio handling
 - Header toggles (design, watermark, perforation, catalog numbers, series, country, date)
 - Flag cover rendering hints (keys prefixed with `flag_cover_`)
+- Series ordering: `series_order` (options: "first_date", "first_sg", "alpha"; append `_desc` for descending)
+- StampWorld grouped-range handling: `expand_grouped_ranges` (options: "placeholders", "detail_fetch")
 
 For a minimal starting point use `config_template.toml`. When experimenting
 with more advanced options prefer `config_full_example.toml` which contains
@@ -134,6 +136,45 @@ New configuration groups (added in recent releases):
     generator will fall back to previous defaults when a key is missing. See
     `config_template.toml` for example values such as `flag_cover_img_w_mm` and
     `flag_cover_image_title_size`.
+
+For page-generation marker customization you can set the following keys in
+`config.toml` to control the emitted diagnostic markers used during album
+generation. These are primarily used by tests and downstream post-processors
+to locate headers and rows in the emitted AlbumEasy text output:
+
+- `page_vspace_marker` (string) — emitted as the vspace marker around headers, default reproduces historic `(6)` marker.
+- `row_start_es_marker` (string) — emitted inside `ROW_START_ES` parentheses, default reproduces `TN 6 0.1 5.0`.
+
+Example:
+
+```toml
+page_vspace_marker = "(6)"
+row_start_es_marker = "TN 6 0.1 5.0"
+```
+
+### Flags lookup and overrides
+
+- The repository includes a comprehensive `flags/flag_codes.json` mapping
+    (country name -> alpha-2) that is now embedded in the binary. This means
+    the program can resolve country names to flag codes even when run from a
+    minimal working directory.
+- When `flags/flag_codes.json` is not present on disk the binary will use the
+    embedded mapping and will attempt to write a copy to a `flags/flag_codes.json`
+    file in a sensible location (current working dir `flags/` preferred). This
+    makes subsequent runs or other tools pick up the same mapping file.
+- To override where flags are read/written, set the environment variable
+    `STAMP_FLAGS_DIR` to a directory that contains (or should contain) the
+    `flag_codes.json` and any pre-downloaded flag images. Example:
+
+```bash
+# Use custom flags directory (absolute or relative)
+export STAMP_FLAGS_DIR=/path/to/my/flags
+stamp_album_gen2 --source stampworld --site-name Switzerland --album-name Switzerland
+```
+
+If you prefer the embedded mapping to be used only in-memory (no write-back),
+let me know and I can add an opt-in config or environment flag to disable the
+automatic write-back behavior.
 
 ## Development & Best Practices
 

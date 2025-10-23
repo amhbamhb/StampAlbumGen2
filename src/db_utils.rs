@@ -1,15 +1,136 @@
 #![allow(dead_code)]
 // Returns a list of distinct series names (ordered by series name)
-pub fn get_all_series(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT DISTINCT series FROM stamps ORDER BY series")?;
-    let series_iter = stmt.query_map([], |row| {
-        Ok(row.get::<_, String>(0)?)
-    })?;
-    let mut result = Vec::new();
+pub fn get_all_series(conn: &rusqlite::Connection, series_order: Option<&str>) -> rusqlite::Result<Vec<String>> {
+    // Collect distinct series and pick a representative stamp for each series
+    // using the existing stamp sorting rules. Then sort series according to
+    // their representative stamp so series ordering matches stamp ordering
+    // (keeps series together and orders by date/sg_number as requested).
+    let mut stmt = conn.prepare("SELECT DISTINCT series FROM stamps")?;
+    let series_iter = stmt.query_map([], |row| Ok(row.get::<_, String>(0)?))?;
+    let mut temp: Vec<(String, Option<StampStub>)> = Vec::new();
     for s in series_iter {
-        result.push(s?);
+        let s_name = s?;
+        // Fetch stamps for this series (get_stamps_by_series will sort the stamps)
+        let stamps = match get_stamps_by_series(conn, &s_name, "0") {
+            Ok(mut v) => {
+                if v.is_empty() { None } else { Some(v.remove(0)) }
+            }
+            Err(_) => None,
+        };
+        temp.push((s_name, stamps));
     }
-    Ok(result)
+
+    #[cfg(test)]
+    {
+        println!("[dbg get_all_series] before sort temp: {:?}", temp.iter().map(|(n, s)| (n.clone(), s.as_ref().map(|st| st.sg_number.clone()))).collect::<Vec<_>>());
+    }
+
+    // Helper that compares optional representative stamps; None sorts after Some
+    fn cmp_opt(a: &Option<StampStub>, b: &Option<StampStub>) -> std::cmp::Ordering {
+        match (a, b) {
+            (Some(sa), Some(sb)) => compare_stampstubs(sa, sb),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        }
+    }
+
+    // Extracted sorting into helper so tests can exercise ordering modes.
+    fn sort_series_temp(temp: &mut Vec<(String, Option<StampStub>)>, series_order: Option<&str>) {
+        // Support suffixes like 'desc' to request descending order, e.g. 'first_sg_desc'
+        let raw_mode = series_order.unwrap_or("first_date").to_string();
+        let mode_lc = raw_mode.to_lowercase();
+        let desc = mode_lc.contains("desc");
+        // normalize base mode by removing common separators and the 'desc' token
+        let mut base_mode = mode_lc.replace("desc", "").replace(":", "").replace("-", "_");
+        base_mode = base_mode.trim_matches(|c: char| c == '_' || c == ' ').to_string();
+
+        // Debug: print representative SGs before sorting (helpful for tests)
+        
+
+        match base_mode.as_str() {
+            "alpha" => temp.sort_by(|(a_name, _), (b_name, _)| a_name.cmp(b_name)),
+            "first_sg" => {
+                // Build a temporary vector of keys to sort deterministically.
+                // Key: (numeric_prefix_or_max, suffix_key, year, month_num, day, series_name)
+                let mut keyed: Vec<(
+                    (i64, String, i32, i32, String, String),
+                    (String, Option<StampStub>)
+                )> = temp
+                    .drain(..)
+                    .map(|(name, rep)| {
+                        let key = if let Some(ref s) = rep {
+                            let num = leading_int(&s.sg_number).unwrap_or(i64::MAX);
+                            let suf = suffix_key(&s.sg_number);
+                            (num, suf, s.year, s.month_num, s.day.clone(), name.clone())
+                        } else {
+                            // None representative sorts after real reps: use MAX numeric
+                            (i64::MAX, String::new(), i32::MAX, i32::MAX, String::new(), name.clone())
+                        };
+                        (key, (name, rep))
+                    })
+                    .collect();
+                println!("[dbg first_sg keys BEFORE sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
+                keyed.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
+                println!("[dbg first_sg keys AFTER sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
+                // Reconstruct temp in sorted order
+                temp.extend(keyed.into_iter().map(|(_, pair)| pair));
+            }
+            _ => temp.sort_by(|(a_name, a_rep), (b_name, b_rep)| {
+                let o = cmp_opt(a_rep, b_rep);
+                if o == std::cmp::Ordering::Equal {
+                    a_name.cmp(b_name)
+                } else {
+                    o
+                }
+            }),
+        }
+
+        if desc {
+            temp.reverse();
+        }
+    }
+
+    // Call the helper to sort 'temp' according to series_order
+    sort_series_temp(&mut temp, series_order);
+
+    Ok(temp.into_iter().map(|(name, _)| name).collect())
+}
+
+// Compare two StampStub records using the same rules as sort_stampstubs_inplace.
+pub fn compare_stampstubs(a: &StampStub, b: &StampStub) -> std::cmp::Ordering {
+    // Year, then month_num, then day
+    let year_cmp = a.year.cmp(&b.year);
+    if year_cmp != std::cmp::Ordering::Equal {
+        return year_cmp;
+    }
+    let month_cmp = a.month_num.cmp(&b.month_num);
+    if month_cmp != std::cmp::Ordering::Equal {
+        return month_cmp;
+    }
+    let day_cmp = a.day.cmp(&b.day);
+    if day_cmp != std::cmp::Ordering::Equal {
+        return day_cmp;
+    }
+    match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
+        (Some(ai), Some(bi)) => {
+            let cmp = ai.cmp(&bi);
+            if cmp != std::cmp::Ordering::Equal {
+                return cmp;
+            }
+            let a_suf = suffix_key(&a.sg_number);
+            let b_suf = suffix_key(&b.sg_number);
+            let a_empty = a_suf.is_empty();
+            let b_empty = b_suf.is_empty();
+            if a_empty != b_empty {
+                return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
+            }
+            a_suf.cmp(&b_suf).then_with(|| a.sg_number.cmp(&b.sg_number))
+        }
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => a.sg_number.cmp(&b.sg_number),
+    }
 }
 
 // Helper: extract leading integer prefix from sg_number
@@ -58,13 +179,45 @@ fn suffix_key(s: &str) -> String {
         .collect()
 }
 
+// Compare two SG number strings in a numeric-aware way using the same
+// leading-int + suffix_key rules used elsewhere. Returns Ordering.
+fn compare_sg_numbers(a: &str, b: &str) -> std::cmp::Ordering {
+    match (leading_int(a), leading_int(b)) {
+        (Some(ai), Some(bi)) => {
+            let cmp = ai.cmp(&bi);
+            if cmp != std::cmp::Ordering::Equal {
+                return cmp;
+            }
+            let a_suf = suffix_key(a);
+            let b_suf = suffix_key(b);
+            let a_empty = a_suf.is_empty();
+            let b_empty = b_suf.is_empty();
+            if a_empty != b_empty {
+                return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
+            }
+            a_suf.cmp(&b_suf).then_with(|| a.cmp(b))
+        }
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => a.cmp(b),
+    }
+}
+
 // Public helper so tests can call the same sorting logic without requiring DB IO
 pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
     v.sort_by(|a, b| {
-        // Compare year first
+        // Compare by year, then month number, then day to ensure date-ordered stamps
         let year_cmp = a.year.cmp(&b.year);
         if year_cmp != std::cmp::Ordering::Equal {
             return year_cmp;
+        }
+        let month_cmp = a.month_num.cmp(&b.month_num);
+        if month_cmp != std::cmp::Ordering::Equal {
+            return month_cmp;
+        }
+        let day_cmp = a.day.cmp(&b.day);
+        if day_cmp != std::cmp::Ordering::Equal {
+            return day_cmp;
         }
         match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
             (Some(ai), Some(bi)) => {

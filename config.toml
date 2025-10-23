@@ -44,7 +44,7 @@ series_style = "title"
 
 
 # Vertical spacing between header elements
-header_spacing = 1.0
+header_spacing = 10.0
 
 ############################################
 # Optional toggles: set true to include those fields in the page header
@@ -258,6 +258,9 @@ album_stamp_img_new_setting_w_mm = 6.0
 album_stamp_img_new_setting_h_mm = 6.0
 album_stamp_img_new_setting_preserve_aspect = true
 
+# How series should be ordered when generating albums: "first_date" | "first_sg" | "alpha"| "first_sg_desc"
+series_order = "first_sg_desc"
+
 ############################################
 # STAMP_BOXES_SIZE_ADJUST equivalent: adds/subtracts mm to emitted stamp box sizes
 ############################################
@@ -355,6 +358,15 @@ album_pages_title_size = 10
 # ROW_START_ES (HN 6 0.1 5.0)
 # these values are set and used in the generated template
 ############################################
+# Page marker settings (optional)
+# Controls small helper markers emitted into AlbumEasy output. These are
+# optional; defaults below preserve historical behavior used by the generator.
+page_vspace_marker = "(6)"
+# Label used for the ROW_START_ES block when emitted into the template
+row_start_es_marker = "ROW_START_ES"
+# Short token printed inside the ROW_START_ES block (historical token: "TN")
+row_start_es_token = "TN"
+
 row_start_es_font = "HN"
 row_start_es_size = 6
 row_start_es_spacing = 0.1
@@ -509,3 +521,5 @@ flag_cover_text_only_title_scale = 1.0
 
 # Vertical space after the text-only cover title (mm)
 flag_cover_text_only_vspace_after = 18.0
+
+
