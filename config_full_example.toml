@@ -82,3 +82,13 @@ flag_cover_text_only_title_font = "HN"
 flag_cover_text_only_title_size = 48.0
 flag_cover_text_only_title_scale = 1.0
 flag_cover_text_only_vspace_after = 18.0
+
+# --- Page markers and ROW_START_ES formatting (optional) ---
+# These values control small helper markers emitted into generated AlbumEasy
+# output. They are optional; sensible defaults are used when omitted.
+# page_vspace_marker = "(6)"
+# row_start_es_marker = "ROW_START_ES"
+# row_start_es_token = "TN"
+# row_start_es_font = "6"
+# row_start_es_size = 0.10
+# row_start_es_vspace = 5.0
