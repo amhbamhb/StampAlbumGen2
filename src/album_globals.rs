@@ -873,7 +873,14 @@ where
                     // header vspace after written (diagnostics suppressed)
                     header_written = true;
                 }
-                let row_marker = config.row_start_es_marker.clone().unwrap_or_else(|| "TN 6 0.1 5.0".to_string());
+                // Build ROW_START_ES from parameterized config if provided, otherwise fall back to
+                // the legacy `row_start_es_marker` string. Parameters are: token (e.g. TN),
+                // font (e.g. 6), size (e.g. 0.1), vspace (e.g. 5.0)
+                let row_token = config.row_start_es_token.clone().unwrap_or_else(|| "TN".to_string());
+                let row_font = config.row_start_es_font.clone().unwrap_or_else(|| "6".to_string());
+                let row_size = config.row_start_es_size.unwrap_or(0.1_f32);
+                let row_vspace = config.row_start_es_vspace.unwrap_or(5.0_f32);
+                let row_marker = format!("{} {} {:.2} {:.1}", row_token, row_font, row_size, row_vspace);
                 let _ = writeln!(output, "ROW_START_ES ({})", row_marker);
                 // row start written (diagnostics suppressed)
                 for stamp in stamps_in_row {

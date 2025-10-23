@@ -95,6 +95,10 @@ pub struct Config {
     pub row_start_es_size: Option<f32>,
     pub row_start_es_spacing: Option<f32>,
     pub row_start_es_vspace: Option<f32>,
+    // Token to use as the ROW_START_ES type (e.g. "TN"). When combined with
+    // `row_start_es_font`, `row_start_es_size` and `row_start_es_vspace` this
+    // forms a parameterized ROW_START_ES marker like: `TN 6 0.1 5.0`.
+    pub row_start_es_token: Option<String>,
     // Allow a single very large stamp (or row) to occupy a page if enabled
     // and it exceeds the fraction `single_stamp_threshold_pct` of usable height.
     pub allow_single_large_stamp_per_page: Option<bool>,
