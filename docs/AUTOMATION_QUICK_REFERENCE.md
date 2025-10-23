@@ -126,6 +126,17 @@ chmod +x .git/hooks/*
 - Confirm Images exist at Albums/{album-name}/{image_path}
 - Missing/unreadable images fall back to reference dimensions in estimate_real_dimensions
 
+### Flags lookup and embedded fallback
+
+- This project ships with a comprehensive `flags/flag_codes.json` mapping (country name → alpha-2) which is also embedded into the binary. If no `flags/flag_codes.json` is present on disk the binary uses the embedded mapping and will attempt to write a copy to a `flags/flag_codes.json` file (current working directory `flags/` preferred).
+- To force a particular flags directory for both reads and writes set the `STAMP_FLAGS_DIR` environment variable to the desired directory. Example:
+
+```bash
+export STAMP_FLAGS_DIR=$HOME/.stamp_album_flags
+```
+
+If you want the embedded mapping to be used only in-memory (no write-back), open an issue or request and we can add an opt-in config flag to disable write-back.
+
 ## 📚 Full Documentation
 
 See `docs/AUTOMATION_SYSTEM_DOCUMENTATION.md` for complete details and Appendix entries for GitLab/GitHub.

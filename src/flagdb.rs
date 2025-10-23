@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::io::{self};
 
 use reqwest::blocking::Client;
@@ -28,14 +28,83 @@ pub fn default_flag_map() -> HashMap<String, String> {
 /// Attempt to load an override JSON file at flags/flag_codes.json. The file should be a JSON map
 /// of "country name" -> "alpha2 code". If not present, fall back to default_flag_map.
 pub fn load_flag_map_from_fs() -> HashMap<String, String> {
-    let p = Path::new("flags/flag_codes.json");
-    if p.exists() {
-        if let Ok(contents) = fs::read_to_string(p) {
-            if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(&contents) {
-                return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+    // Try a few candidate locations for flags/flag_codes.json to be tolerant
+    // when the binary is run from a different working directory. Prefer the
+    // current working directory's `flags/` first, then the executable's
+    // parent directory (useful when running from a dist directory that sits
+    // beside the repo). If none found, fall back to the built-in map.
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    // Environment override (highest priority)
+    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
+        candidates.push(PathBuf::from(p).join("flag_codes.json"));
+    }
+    // Current working directory
+    candidates.push(PathBuf::from("flags/flag_codes.json"));
+    // Executable parent directory
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            candidates.push(parent.join("flags/flag_codes.json"));
+        }
+    }
+    // Parent of current working dir (common when running from a dist dir)
+    if let Ok(cwd) = std::env::current_dir() {
+        if let Some(parent) = cwd.parent() {
+            candidates.push(parent.join("flags/flag_codes.json"));
+        }
+    }
+    // At build time, embed the manifest dir so distributed binaries can still
+    // look up the repo's flags/ directory if the source tree is present.
+    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags/flag_codes.json"));
+
+    for p in candidates.iter() {
+        if p.exists() {
+            if let Ok(contents) = fs::read_to_string(p) {
+                if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(&contents) {
+                    return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+                }
             }
         }
     }
+
+    // If no file found on disk, fall back to an embedded copy of the
+    // flag_codes.json so the binary is usable even when run from a small
+    // temporary directory. Also attempt to write the embedded JSON out to a
+    // 'flags/flag_codes.json' file so subsequent runs can pick it up.
+    const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
+    if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(EMBEDDED_FLAGS_JSON) {
+        // Attempt to write the embedded json to the preferred writable location
+        // (cwd 'flags' preferred). Ignore write errors but log them at caller
+        // level if needed; here we simply try the obvious locations.
+        let prefer_dirs: Vec<PathBuf> = vec![
+            PathBuf::from("flags"),
+            // exe parent
+            std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())).unwrap_or_else(|| PathBuf::from("flags")),
+            // build manifest
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
+        ];
+        // Try writing to the current working directory 'flags' first and
+        // overwrite any existing file so tests that set a temporary cwd can
+        // reliably observe the write-back. If that fails, try the other
+        // preferred dirs and stop when a write succeeds.
+        let cwd_flags = PathBuf::from("flags");
+        if fs::create_dir_all(&cwd_flags).is_ok() {
+            let out_path = cwd_flags.join("flag_codes.json");
+            let _ = fs::write(&out_path, EMBEDDED_FLAGS_JSON);
+        } else {
+            for dir in prefer_dirs.iter() {
+                if fs::create_dir_all(dir).is_ok() {
+                    let out_path = dir.join("flag_codes.json");
+                    // Attempt to write (overwrite) and stop on success
+                    if fs::write(&out_path, EMBEDDED_FLAGS_JSON).is_ok() {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+    }
+
     default_flag_map()
 }
 
@@ -88,13 +157,64 @@ pub fn country_to_code(country: &str) -> Option<String> {
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
 pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
     let alpha = alpha2.to_lowercase();
-    let dir = Path::new("flags");
-    fs::create_dir_all(dir)?;
     let filename = format!("{}-{}.png", alpha, size);
-    let filepath = dir.join(&filename);
-    if filepath.exists() {
-        return Ok(filepath.to_string_lossy().to_string());
+
+    // Candidate directories to look for an existing flags image. Check the
+    // current working directory first, then the executable parent, then the
+    // parent of the cwd (useful in some layouts).
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    // Environment override
+    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
+        candidates.push(PathBuf::from(p));
     }
+    // Current working directory 'flags'
+    candidates.push(PathBuf::from("flags"));
+    // Executable parent 'flags'
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            candidates.push(parent.join("flags"));
+        }
+    }
+    // Parent of cwd 'flags'
+    if let Ok(cwd) = std::env::current_dir() {
+        if let Some(parent) = cwd.parent() {
+            candidates.push(parent.join("flags"));
+        }
+    }
+    // Build-time manifest 'flags' (source tree)
+    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"));
+
+    // If we already have the image in any candidate dir, return its path.
+    for dir in candidates.iter() {
+        let filepath = dir.join(&filename);
+        if filepath.exists() {
+            return Ok(filepath.to_string_lossy().to_string());
+        }
+    }
+
+    // Not found locally: pick a writeable target directory to store downloaded flags.
+    // Preference order: STAMP_FLAGS_DIR env, cwd 'flags', exe parent 'flags', build manifest 'flags'.
+    let mut target_dir = PathBuf::from("flags");
+    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
+        let cand = PathBuf::from(p);
+        if fs::create_dir_all(&cand).is_ok() {
+            target_dir = cand;
+        }
+    }
+    if !target_dir.exists() {
+        if fs::create_dir_all(&target_dir).is_err() {
+            if let Ok(exe) = std::env::current_exe() {
+                if let Some(parent) = exe.parent() {
+                    let alt = parent.join("flags");
+                    if fs::create_dir_all(&alt).is_ok() {
+                        target_dir = alt;
+                    }
+                }
+            }
+        }
+    }
+
+    let filepath = target_dir.join(&filename);
 
     // Build URL: https://flagcdn.com/[size]/[code].png where size is like w40 (width px)
     let url = format!("https://flagcdn.com/{}/{}.png", size, alpha);

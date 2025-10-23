@@ -361,7 +361,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 let album_images = cfg.images_directory.clone();
                 match stamp_album_gen2::flagdb::copy_flag_for_album(&site_name, &album_images, "w320") {
                     Ok(p) => info!("Copied flag into album images: {}", p),
-                    Err(_) => info!("No flag found for '{}' or download failed; continuing", site_name),
+                    Err(e) => info!("No flag found for '{}' or download failed; continuing. error={}", site_name, e),
                 }
             }
             // Optional: fetch Wikipedia summary if requested by config
