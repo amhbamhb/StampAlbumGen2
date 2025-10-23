@@ -857,7 +857,9 @@ where
                 // If we have a pending header, write it now (we are about to
                 // emit the first row for this series on the current page).
                 if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
-                    let _ = writeln!(output, "PAGE_VSPACE (6)");
+                    // Use configurable marker so tests/tools can detect the vspace
+                    let pv_marker = config.page_vspace_marker.clone().unwrap_or_else(|| "(6)".to_string());
+                    let _ = writeln!(output, "PAGE_VSPACE {}", pv_marker);
                     current_height += v_before;
                     // header vspace written (diagnostics suppressed)
                     for (line, h) in pending_lines {
@@ -865,12 +867,14 @@ where
                         current_height += h;
                         // header line written (diagnostics suppressed)
                     }
-                    let _ = writeln!(output, "PAGE_VSPACE (6)");
+                    let pv_marker = config.page_vspace_marker.clone().unwrap_or_else(|| "(6)".to_string());
+                    let _ = writeln!(output, "PAGE_VSPACE {}", pv_marker);
                     current_height += v_after;
                     // header vspace after written (diagnostics suppressed)
                     header_written = true;
                 }
-                let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                let row_marker = config.row_start_es_marker.clone().unwrap_or_else(|| "TN 6 0.1 5.0".to_string());
+                let _ = writeln!(output, "ROW_START_ES ({})", row_marker);
                 // row start written (diagnostics suppressed)
                 for stamp in stamps_in_row {
                     // Use correct fields from StampStub

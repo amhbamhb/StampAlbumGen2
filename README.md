@@ -137,6 +137,21 @@ New configuration groups (added in recent releases):
     `config_template.toml` for example values such as `flag_cover_img_w_mm` and
     `flag_cover_image_title_size`.
 
+For page-generation marker customization you can set the following keys in
+`config.toml` to control the emitted diagnostic markers used during album
+generation. These are primarily used by tests and downstream post-processors
+to locate headers and rows in the emitted AlbumEasy text output:
+
+- `page_vspace_marker` (string) — emitted as the vspace marker around headers, default reproduces historic `(6)` marker.
+- `row_start_es_marker` (string) — emitted inside `ROW_START_ES` parentheses, default reproduces `TN 6 0.1 5.0`.
+
+Example:
+
+```toml
+page_vspace_marker = "(6)"
+row_start_es_marker = "TN 6 0.1 5.0"
+```
+
 ### Flags lookup and overrides
 
 - The repository includes a comprehensive `flags/flag_codes.json` mapping

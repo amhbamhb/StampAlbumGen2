@@ -165,6 +165,11 @@ pub struct Config {
     // - Some("first_sg"): order series by the first stamp's SG number
     // - Some("alpha"): alphabetical series order
     pub series_order: Option<String>,
+    // Custom string markers emitted around headers and row starts so tests
+    // and downstream tools can reliably parse and identify sections.
+    // Default values are chosen to reproduce historic output.
+    pub page_vspace_marker: Option<String>,
+    pub row_start_es_marker: Option<String>,
 }
 
 impl Default for Config {
@@ -252,6 +257,8 @@ impl Default for Config {
             flag_cover_text_only_vspace_after: None,
             flag_cover_background_color: None,
             series_order: None,
+            page_vspace_marker: None,
+            row_start_es_marker: None,
             row_start_es_enabled: None,
             row_start_es_font: None,
             row_start_es_size: None,
