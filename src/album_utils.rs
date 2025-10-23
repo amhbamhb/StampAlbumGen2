@@ -336,8 +336,15 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
             let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
             let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
             let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
+            let _ = writeln!(writer, "# Cover flag image for album");
+            let flag_cover_background_color = cfg.flag_cover_background_color.clone().unwrap_or_else(|| "white".to_string());
+            let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", flag_cover_background_color);
+            let _ = writeln!(writer, "# Change background for flag if needed");
+            
+            let _ = writeln!(writer, "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)", img_w, img_h, fp);
+            let _ = writeln!(writer, "# Change the color background back to default after flag");
+            let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", cfg.color_stamp_background.clone().unwrap_or_else(|| "white".to_string())  );
 
-            let _ = writeln!(writer, "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\")", img_w, img_h, fp);
             let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
 
             // Title parameters for image cover

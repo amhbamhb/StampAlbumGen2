@@ -44,7 +44,7 @@ series_style = "title"
 
 
 # Vertical spacing between header elements
-header_spacing = 1.0
+header_spacing = 10.0
 
 ############################################
 # Optional toggles: set true to include those fields in the page header
@@ -257,6 +257,9 @@ image_spacing_mm = 15.0
 album_stamp_img_new_setting_w_mm = 6.0
 album_stamp_img_new_setting_h_mm = 6.0
 album_stamp_img_new_setting_preserve_aspect = true
+
+# How series should be ordered when generating albums: "first_date" | "first_sg" | "alpha"| "first_sg_desc"
+series_order = "first_sg_desc"
 
 ############################################
 # STAMP_BOXES_SIZE_ADJUST equivalent: adds/subtracts mm to emitted stamp box sizes
@@ -509,3 +512,5 @@ flag_cover_text_only_title_scale = 1.0
 
 # Vertical space after the text-only cover title (mm)
 flag_cover_text_only_vspace_after = 18.0
+
+

@@ -276,7 +276,9 @@ where
                               // let header_height = (header_lines as f64) * header_font_spacing;
                               // let row_height = stamp_box_height + row_font_spacing;
 
-        let series_list = get_all_series(&conn).expect("Failed to get series");
+    let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
+    let series_order_slice = series_order.as_deref();
+    let series_list = get_all_series(&conn, series_order_slice).expect("Failed to get series");
         // We've emitted page 1 above; start counter at 1
         let mut page_counter = 1usize;
         let mut current_height = 0.0f64;

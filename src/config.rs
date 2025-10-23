@@ -159,6 +159,12 @@ pub struct Config {
     pub flag_cover_text_only_title_size: Option<f32>,
     pub flag_cover_text_only_title_scale: Option<f32>,
     pub flag_cover_text_only_vspace_after: Option<f32>,
+    pub flag_cover_background_color: Option<String>, 
+    // How series are ordered in generated albums. Options:
+    // - Some("first_date"): order series by the date of their first stamp (default behavior)
+    // - Some("first_sg"): order series by the first stamp's SG number
+    // - Some("alpha"): alphabetical series order
+    pub series_order: Option<String>,
 }
 
 impl Default for Config {
@@ -244,6 +250,8 @@ impl Default for Config {
             flag_cover_text_only_title_size: None,
             flag_cover_text_only_title_scale: None,
             flag_cover_text_only_vspace_after: None,
+            flag_cover_background_color: None,
+            series_order: None,
             row_start_es_enabled: None,
             row_start_es_font: None,
             row_start_es_size: None,
