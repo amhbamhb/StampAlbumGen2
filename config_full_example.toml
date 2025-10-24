@@ -88,7 +88,29 @@ flag_cover_text_only_vspace_after = 18.0
 # output. They are optional; sensible defaults are used when omitted.
 # page_vspace_marker = "(6)"
 # row_start_es_marker = "ROW_START_ES"
-# row_start_es_token = "TN"
+# historical token is not required; use font/size/spacing settings instead
 # row_start_es_font = "6"
 # row_start_es_size = 0.10
 # row_start_es_vspace = 5.0
+
+# --- PAGE_TEXT templates ---
+# Customize the PAGE_TEXT output formatting. Must contain a single `{}` placeholder.
+page_text_format = 'PAGE_TEXT (HN 10 "{}" 1.0)'
+page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+page_text_right_format = 'PAGE_TEXT_RIGHT (HN 10 "{}" 1.0)'
+
+# Optional per-field overrides. If provided these are used to synthesize the
+# full template string and are useful when you want to tune font/size/vspace
+# independently without providing a full format string above. Defaults are
+# used when a value is omitted.
+page_text_font = "HN"
+page_text_size = 10.0
+page_text_vspace = 1.0
+
+page_text_centre_font = "TN"
+page_text_centre_size = 8.0
+page_text_centre_vspace = 1.0
+
+page_text_right_font = "HN"
+page_text_right_size = 10.0
+page_text_right_vspace = 1.0

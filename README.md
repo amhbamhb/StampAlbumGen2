@@ -143,7 +143,7 @@ generation. These are primarily used by tests and downstream post-processors
 to locate headers and rows in the emitted AlbumEasy text output:
 
 - `page_vspace_marker` (string) — emitted as the vspace marker around headers, default reproduces historic `(6)` marker.
-- `row_start_es_marker` (string) — emitted inside `ROW_START_ES` parentheses, default reproduces `TN 6 0.1 5.0`.
+-- `row_start_es_marker` (string) — emitted inside `ROW_START_ES` parentheses, default reproduces `HN 6 0.1 5.0`.
 
 Example:
 
@@ -151,6 +151,54 @@ Example:
 page_vspace_marker = "(6)"
 row_start_es_marker = "TN 6 0.1 5.0"
 ```
+
+### PAGE_TEXT templates
+
+You can customize how the generator emits AlbumEasy `PAGE_TEXT` commands by
+providing template strings in `config.toml`. Each template must include a
+single `{}` placeholder which will be replaced with the text you want to
+output. When omitted the generator falls back to sensible historical defaults.
+
+Available keys:
+
+- `page_text_format` — template used for left-aligned `PAGE_TEXT` lines.
+- `page_text_centre_format` — template used for centred `PAGE_TEXT_CENTRE` lines.
+- `page_text_right_format` — template used for right-aligned `PAGE_TEXT_RIGHT` lines.
+
+Per-field tuning: instead of supplying a full template string you can set
+the individual font/size/vspace values and the generator will synthesize the
+template for you. These keys are optional and have sensible defaults:
+
+- `page_text_font`, `page_text_size`, `page_text_vspace`
+- `page_text_centre_font`, `page_text_centre_size`, `page_text_centre_vspace`
+- `page_text_right_font`, `page_text_right_size`, `page_text_right_vspace`
+
+If both a full-format template and per-field values are present, the full
+template (`page_text_*_format`) takes precedence.
+
+Example usage in `config.toml`:
+
+```toml
+page_text_format = 'PAGE_TEXT (HN 10 "{}" 1.0)'
+page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+page_text_right_format = 'PAGE_TEXT_RIGHT (HN 10 "{}" 1.0)'
+```
+
+Notes:
+
+- Provide exactly one `{}` placeholder in each template — it will be replaced
+    with the escaped text content.
+- You can include an optional vspace value in the template if you want to
+    control vertical spacing after the text, for example:
+
+```toml
+page_text_format = 'PAGE_TEXT (HN 10 "{}" 0.5)'
+```
+
+This is useful when composing multi-line headers where lines use different
+fonts or spacing and you want precise control over the resulting paragraph
+spacing.
+
 
 ### Flags lookup and overrides
 

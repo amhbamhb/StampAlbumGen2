@@ -15,8 +15,8 @@ reference_height_mm = 27.0
 # pixel dimensions are available.
 ############################################
 
-stamp_box_height = 40.0
-row_font_spacing = 5.0
+stamp_box_height = 30.0
+row_font_spacing = 0.1
 
 ############################################
 # Approximate height of header-font lines in mm (used to compute header block height).
@@ -25,7 +25,7 @@ row_font_spacing = 5.0
 # approximates the resulting mm height for header lines (measured: country name ≈ 5mm).
 ############################################
 
-header_font_spacing = 1.0
+header_font_spacing = 5.0
 
 ############################################
 # Header formatting options
@@ -227,7 +227,7 @@ usable_height_padding_mm = 1.0
 # series header)
 ############################################
 
-header_vspace_before_mm = 10.0
+header_vspace_before_mm = 1.0
 
 ############################################
 # header_vspace_after_mm: space after the header block and before the first stamp row
@@ -247,15 +247,15 @@ text_line_height_mm = 2.6
 # Spacing (mm) used between images / boxes in rows
 ############################################
 
-image_spacing_mm = 15.0
+image_spacing_mm = 5.0
 
 ############################################
 # ALBUM_STAMP_IMG_NEW_SETTING: width_adjust_mm, height_adjust_mm, preserve_aspect
 # ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)
 ############################################
 
-album_stamp_img_new_setting_w_mm = 6.0
-album_stamp_img_new_setting_h_mm = 6.0
+album_stamp_img_new_setting_w_mm = 3.0
+album_stamp_img_new_setting_h_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
 
 # How series should be ordered when generating albums: "first_date" | "first_sg" | "alpha"| "first_sg_desc"
@@ -361,16 +361,42 @@ album_pages_title_size = 10
 # Page marker settings (optional)
 # Controls small helper markers emitted into AlbumEasy output. These are
 # optional; defaults below preserve historical behavior used by the generator.
-page_vspace_marker = "(6)"
+page_vspace_marker = "6"
 # Label used for the ROW_START_ES block when emitted into the template
 row_start_es_marker = "ROW_START_ES"
-# Short token printed inside the ROW_START_ES block (historical token: "TN")
-row_start_es_token = "TN"
 
+#row_font_spacing = "0.1"
 row_start_es_font = "HN"
 row_start_es_size = 6
 row_start_es_spacing = 0.1
-row_start_es_vspace = 5.0
+row_start_es_vspace = 0.1
+
+############################################
+# PAGE_TEXT templates and per-field overrides
+# These control how PAGE_TEXT / PAGE_TEXT_CENTRE / PAGE_TEXT_RIGHT
+# lines are emitted. Each full-format string must include a single
+# `{}` placeholder which will be replaced with the escaped text.
+# Per-field overrides (font/size/vspace) are provided for convenience
+# and are used when the corresponding full-format key is not present.
+############################################
+
+# Full template with placeholder. Example: PAGE_TEXT (HN 10 "{}" 1.0)
+page_text_format = 'PAGE_TEXT (HN 10 "{}" 1.0)'
+page_text_font = "HN"
+page_text_size = 10
+page_text_vspace = 1.0
+
+# Centre (header) template and per-field overrides
+page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+page_text_centre_font = "TN"
+page_text_centre_size = 8
+page_text_centre_vspace = 1.0
+
+# Right-aligned text template and per-field overrides
+page_text_right_format = 'PAGE_TEXT_RIGHT (HN 10 "{}" 1.0)'
+page_text_right_font = "HN"
+page_text_right_size = 10
+page_text_right_vspace = 1.0
 
 
 ############################################

@@ -70,9 +70,9 @@ pub fn get_all_series(conn: &rusqlite::Connection, series_order: Option<&str>) -
                         (key, (name, rep))
                     })
                     .collect();
-                println!("[dbg first_sg keys BEFORE sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
+                // println!("[dbg first_sg keys BEFORE sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
                 keyed.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                println!("[dbg first_sg keys AFTER sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
+                // println!("[dbg first_sg keys AFTER sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
                 // Reconstruct temp in sorted order
                 temp.extend(keyed.into_iter().map(|(_, pair)| pair));
             }
