@@ -125,7 +125,7 @@ include_date = true
 # Re-enable the flag cover — set true to emit the large flag/title cover page.
 ############################################
 
-print_flag_cover = true
+print_flag_cover = false
 
 ############################################
 # --- Wikipedia content ---
