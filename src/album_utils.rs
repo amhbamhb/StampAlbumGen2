@@ -860,7 +860,7 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
                 description: row.get(8).unwrap_or(String::new()),
                 desc: row.get(8).unwrap_or(String::new()), // description is at index 8
                 catalog_num: row.get(3).unwrap_or(String::new()), // Use sg_number for catalog_num
-                stamps_issued: row.get(9).unwrap_or(String::new()), // stamps_issued at index 9
+                stamps_issued: crate::db_utils::format_stamps_issued(&row.get::<_, String>(9).unwrap_or(String::new())), // stamps_issued at index 9
                 mint_condition: String::new(),
                 unused: String::new(),
                 used: String::new(),

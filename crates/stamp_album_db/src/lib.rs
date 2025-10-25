@@ -62,6 +62,108 @@ fn suffix_key(s: &str) -> String {
     rem.chars().map(|c| if c.is_ascii_alphabetic() { c.to_ascii_lowercase() } else if c == '*' { '~' } else { c.to_ascii_lowercase() }).collect()
 }
 
+// Format stamps_issued into thousands-separated form like "3,890,589".
+// This strips any non-digit characters and then inserts commas every 3 digits
+// from the right. If no digits are found, returns the original trimmed input.
+fn format_stamps_issued(s: &str) -> String {
+    let t = s.trim();
+    if t.is_empty() { return String::new(); }
+
+    // Remove surrounding parentheses
+    let mut v = t.to_string();
+    if v.starts_with('(') && v.ends_with(')') {
+        v = v[1..v.len()-1].to_string();
+    }
+
+    // Remove any chars except digits, dot, comma
+    let re_keep = Regex::new(r"[^0-9\.,]").unwrap();
+    v = re_keep.replace_all(&v, "").to_string();
+    if v.is_empty() { return String::new(); }
+
+    // Determine decimal separator using heuristics:
+    // - If both '.' and ',' present: the last-occurring separator is the decimal separator.
+    // - If only one separator type is present but occurs multiple times, it's likely thousand separators.
+    // - If only one separator and the part after it has length 3, treat as thousand separator; otherwise treat as decimal.
+    let dot_count = v.matches('.').count();
+    let comma_count = v.matches(',').count();
+    let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
+        let last_dot = v.rfind('.').unwrap();
+        let last_comma = v.rfind(',').unwrap();
+        if last_dot > last_comma { (v[..last_dot].to_string(), Some(v[last_dot+1..].to_string())) }
+        else { (v[..last_comma].to_string(), Some(v[last_comma+1..].to_string())) }
+    } else if dot_count > 0 {
+        if dot_count > 1 {
+            // multiple dots -> treat as thousands separators
+            (v.replace('.', ""), None)
+        } else {
+            let idx = v.rfind('.').unwrap();
+            let right_len = v.len() - idx - 1;
+            if right_len == 3 { (v.replace('.', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+        }
+    } else if comma_count > 0 {
+        if comma_count > 1 {
+            // multiple commas -> thousands separators
+            (v.replace(',', ""), None)
+        } else {
+            let idx = v.rfind(',').unwrap();
+            let right_len = v.len() - idx - 1;
+            if right_len == 3 { (v.replace(',', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+        }
+    } else {
+        (v.clone(), None)
+    };
+
+    // Strip any separators from integer and fraction parts, leaving only digits
+    let re_digits = Regex::new(r"\D").unwrap();
+    let int_digits = re_digits.replace_all(&int_part, "").to_string();
+    if int_digits.is_empty() {
+        return String::new();
+    }
+
+    // Format integer with commas
+    let rev: Vec<char> = int_digits.chars().rev().collect();
+    let mut grouped = String::new();
+    for (i, c) in rev.iter().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(*c);
+    }
+    let int_fmt: String = grouped.chars().rev().collect();
+
+    // If there is a fraction part, strip non-digits and append with '.' as decimal separator
+    if let Some(frac_raw) = frac_part_opt {
+        let frac_digits = re_digits.replace_all(&frac_raw, "").to_string();
+        if frac_digits.is_empty() {
+            return int_fmt;
+        }
+        return format!("{}.{}", int_fmt, frac_digits);
+    }
+
+    int_fmt
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_stamps_issued;
+
+    #[test]
+    fn test_format_integer_only() {
+        assert_eq!(format_stamps_issued("3890589"), "3,890,589");
+        assert_eq!(format_stamps_issued("3.890.589"), "3,890,589");
+        assert_eq!(format_stamps_issued("(1234)"), "1,234");
+        assert_eq!(format_stamps_issued("N/A"), "");
+    }
+
+    #[test]
+    fn test_format_with_decimal() {
+        assert_eq!(format_stamps_issued("1234.56"), "1,234.56");
+        assert_eq!(format_stamps_issued("1,234.56"), "1,234.56");
+        assert_eq!(format_stamps_issued("1.234,56"), "1,234.56");
+        assert_eq!(format_stamps_issued("(1.234,56)"), "1,234.56");
+    }
+}
+
 pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
     v.sort_by(|a, b| {
         let year_cmp = a.year.cmp(&b.year);
@@ -89,6 +191,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
     if year.trim().is_empty() || year == "0" {
         let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
         let rows = stmt.query_map([series], |row| {
+            let raw_stamps_issued: String = row.get::<_, Option<String>>(9)?.unwrap_or_default();
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
                 month: row.get(1)?,
@@ -102,7 +205,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 description: row.get::<_, String>(8)?,
                 desc: row.get(8)?,
                 catalog_num: row.get(4)?,
-                stamps_issued: row.get(9)?,
+                stamps_issued: format_stamps_issued(&raw_stamps_issued),
                 image_path: row.get(10)?,
                 remote_image_url: row.get(11)?,
                 original_image_url: row.get(12)?,
@@ -124,6 +227,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
     } else {
         let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
         let rows = stmt.query_map([series, year], |row| {
+            let raw_stamps_issued: String = row.get::<_, Option<String>>(9)?.unwrap_or_default();
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
                 month: row.get(1)?,
@@ -137,7 +241,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 description: row.get::<_, String>(8)?,
                 desc: row.get(8)?,
                 catalog_num: row.get(4)?,
-                stamps_issued: row.get(9)?,
+                stamps_issued: format_stamps_issued(&raw_stamps_issued),
                 image_path: row.get(10)?,
                 remote_image_url: row.get(11)?,
                 original_image_url: row.get(12)?,

@@ -21,7 +21,6 @@ row_font_spacing = 0.1
 ############################################
 # Approximate height of header-font lines in mm (used to compute header block height).
 # AlbumEasy reference: header text line heights are controlled by HN/HN font sizes; 
-
 # approximates the resulting mm height for header lines (measured: country name ≈ 5mm).
 ############################################
 
@@ -45,6 +44,44 @@ series_style = "title"
 
 # Vertical spacing between header elements
 header_spacing = 10.0
+
+############################################
+# Standard font size for stamp headings (HN value)
+# here is list of posible font:
+############################################
+
+# CN = Courier
+# CB = Courier Bold
+# CI = Courier Italic
+# CS = Courier Bold-Italic
+# HN = Times Roman
+# TB = Times Roman Bold
+# TI = Times Roman Italic
+# TS = Times Roman Bold-Italic
+# HN = Helvetica
+# HB = Helvetica Bold
+# HI = Helvetica Italic
+# HS = Helvetica Bold-Italic
+
+############################################
+# Stamp heading font settings and used for STAMP_HEADING
+# 
+############################################
+
+stamp_heading_font = "HN"
+
+############################################
+# album_pages_title_font font settings and used for STAMP_HEADING
+# 
+############################################
+
+album_pages_title_font = "HN"
+
+############################################
+# Album pages header position: L (Left), R (Right), C (Centre), LR, RL
+############################################
+
+album_pages_header_position = "C"
 
 ############################################
 # Optional toggles: set true to include those fields in the page header
@@ -128,6 +165,19 @@ wikipedia_section_title_font = "HB"
 
 # Font size for Wikipedia section titles
 wikipedia_section_title_font_size = 14
+
+############################################
+# These are wiki content font settings and used for PAGE_TEXT
+# also the size and font can be adjusted here
+############################################
+
+content_wiki_font = "HN"
+content_wiki_font_size = 12
+content_wiki_max_lines_per_page = 5
+content_wiki_estimated_chars_per_line = 250
+
+
+wikipedia_cache_db_path = "wikipedia_cache.db"
 
 
 ############################################
@@ -227,7 +277,7 @@ usable_height_padding_mm = 1.0
 # series header)
 ############################################
 
-header_vspace_before_mm = 1.0
+header_vspace_before_mm = 10.0
 
 ############################################
 # header_vspace_after_mm: space after the header block and before the first stamp row
@@ -259,7 +309,7 @@ album_stamp_img_new_setting_h_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
 
 # How series should be ordered when generating albums: "first_date" | "first_sg" | "alpha"| "first_sg_desc"
-series_order = "first_sg_desc"
+series_order = "first_sg"
 
 ############################################
 # STAMP_BOXES_SIZE_ADJUST equivalent: adds/subtracts mm to emitted stamp box sizes
@@ -388,7 +438,7 @@ page_text_vspace = 1.0
 
 # Centre (header) template and per-field overrides
 page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
-page_text_centre_font = "TN"
+page_text_centre_font = "HN"
 page_text_centre_size = 8
 page_text_centre_vspace = 1.0
 
@@ -399,43 +449,7 @@ page_text_right_size = 10
 page_text_right_vspace = 1.0
 
 
-############################################
-# Standard font size for stamp headings (HN value)
-# here is list of posible font:
-############################################
 
-# CN = Courier
-# CB = Courier Bold
-# CI = Courier Italic
-# CS = Courier Bold-Italic
-# HN = Times Roman
-# TB = Times Roman Bold
-# TI = Times Roman Italic
-# TS = Times Roman Bold-Italic
-# HN = Helvetica
-# HB = Helvetica Bold
-# HI = Helvetica Italic
-# HS = Helvetica Bold-Italic
-
-############################################
-# Stamp heading font settings and used for STAMP_HEADING
-# 
-############################################
-
-stamp_heading_font = "HN"
-
-############################################
-# album_pages_title_font font settings and used for STAMP_HEADING
-# 
-############################################
-
-album_pages_title_font = "HN"
-
-############################################
-# Album pages header position: L (Left), R (Right), C (Centre), LR, RL
-############################################
-
-album_pages_header_position = "C"
 
 ############################################
 # Album pages footer number settings
@@ -475,18 +489,7 @@ album_pages_footer_number_before = "Page "
 
 album_pages_footer_number_after = " of $PAGES$"
 
-############################################
-# These are wiki content font settings and used for PAGE_TEXT
-# also the size and font can be adjusted here
-############################################
 
-content_wiki_font = "HN"
-content_wiki_font_size = 12
-content_wiki_max_lines_per_page = 5
-content_wiki_estimated_chars_per_line = 250
-
-
-wikipedia_cache_db_path = "wikipedia_cache.db"
 
 
 ############################################
