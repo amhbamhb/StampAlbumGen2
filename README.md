@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.21.0
+# Stamp Album Generator v0.23.0
 
 
 
@@ -6,16 +6,12 @@ A Rust tool to generate AlbumEasy pages from stamp databases.
 
 ## Features
 
-- Generate AlbumEasy pages from SQLite DBs
-- Conservative page-fit logic to avoid footer overlap
-- Embedded reference images and series scaling
-- Configurable via `config.toml`
 
-## Installation
-
-```bash
-# Build release binary
-git clone REPOSITORY_URL
+ The generator writes lines like:
+ 
+ ```text
+ STAMP_HEADING(HN 10 "SG : 1234")
+ ```
 cd stamp-album-gen2
 cargo build --release
 ```
@@ -39,7 +35,7 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v0.21.0
+# Stamp Album Generator v0.23.0
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -69,9 +65,9 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 📦 Installation
 
 # Generate from an existing DB (output-only behavior is triggered by passing --db-path)
-# Stamp Album Generator v0.21.0
+# Stamp Album Generator v0.23.0
 
-**Version**: 0.21.0
+**Version**: 0.23.0
 **Release Date**: 2025-10-24
 
 A compact, up-to-date README for development and contributors. This file
@@ -144,6 +140,20 @@ to locate headers and rows in the emitted AlbumEasy text output:
 
 - `page_vspace_marker` (string) — emitted as the vspace marker around headers, default reproduces historic `(6)` marker.
 -- `row_start_es_marker` (string) — emitted inside `ROW_START_ES` parentheses, default reproduces `HN 6 0.1 5.0`.
+
+New: stamp heading formatting
+
+- `stamp_heading_font` (string) — AlbumEasy font code used for the per-stamp heading (default: "HN").
+- `stamp_heading_size` (integer/float) — Numeric size used in the `STAMP_HEADING` token (default: 10).
+- `stamp_heading_label` (string) — Short label shown before the SG number (default: "SG").
+
+These control the small heading emitted immediately after each `STAMP_ADD` or `STAMP_ADD_IMG` line. The generator writes lines like:
+
+```
+STAMP_HEADING(HN 10 "SG : 1234")
+```
+
+You can customize the font/size/label in your `config.toml` to match your AlbumEasy templates or parser expectations. Example values are present in `config_full_example.toml`.
 
 Example:
 
@@ -318,7 +328,7 @@ stamp-album-gen2/
 └── *.log                          # Log files
 ```
 
-**Version**: 0.21.0
+**Version**: 0.23.0
 **Release Date**: 2025-10-24
 
 

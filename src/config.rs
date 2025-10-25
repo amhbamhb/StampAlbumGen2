@@ -192,6 +192,10 @@ pub struct Config {
     pub page_text_right_font: Option<String>,
     pub page_text_right_size: Option<f32>,
     pub page_text_right_vspace: Option<f32>,
+    // Stamp heading formatting: font, size and label used in STAMP_HEADING
+    pub stamp_heading_font: Option<String>,
+    pub stamp_heading_size: Option<f32>,
+    pub stamp_heading_label: Option<String>,
 }
 
 impl Default for Config {
@@ -308,6 +312,9 @@ impl Default for Config {
             album_stamp_img_new_setting_w_mm: None,
             album_stamp_img_new_setting_h_mm: None,
             album_stamp_img_new_setting_preserve_aspect: None,
+            stamp_heading_font: None,
+            stamp_heading_size: None,
+            stamp_heading_label: None,
         }
     }
 }

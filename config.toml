@@ -69,6 +69,8 @@ header_spacing = 10.0
 ############################################
 
 stamp_heading_font = "HN"
+stamp_heading_size = 6
+stamp_heading_label = "SG"
 
 ############################################
 # album_pages_title_font font settings and used for STAMP_HEADING
@@ -123,7 +125,7 @@ include_date = true
 # Re-enable the flag cover — set true to emit the large flag/title cover page.
 ############################################
 
-print_flag_cover = true
+print_flag_cover = false
 
 ############################################
 # --- Wikipedia content ---
@@ -402,7 +404,7 @@ include_pages_vspace_in_row_height = true
 
 stamp_heading_height_mm = 8.0
 
-album_pages_title_size = 6
+album_pages_title_size = 10
 
 ############################################
 # ROW_START_ES (HN 6 0.1 5.0)

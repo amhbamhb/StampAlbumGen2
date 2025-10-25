@@ -1,0 +1,47 @@
+To do list
+
+Need to update the stamp_heading with new config.toml value for "HN", "10" and "SG"
+
+let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
+
+Need to update the title to include the year given in the params (--start-year, --end-year)
+
+This is the current output format:
+
+ALBUM_PAGES_HEADER (HN 10 C "Switzerland")
+
+this is the current code:
+
+// Use ALBUM_PAGES_HEADER with configurable font/size/position
+    let title_font = cfg.album_pages_title_font.clone().unwrap_or_else(|| "HN".to_string());
+    let title_size = cfg.album_pages_title_size.unwrap_or(10.0);
+    let title_pos = cfg.album_pages_header_position.clone().unwrap_or_else(|| "C".to_string());
+    lines.push(
+        format!(
+            "ALBUM_PAGES_HEADER ({} {} {} \"{}\")",
+            title_font,
+            title_size as i32,
+            title_pos,
+            album_name
+        )
+    );
+
+
+logic it if --start-year 1960 and --end-year 1970 the format would be:
+
+ALBUM_PAGES_HEADER (HN 10 C "Switzerland - 1960 - 1970")
+
+logic it if --start-year 1960 and no endyear the format would be:
+
+ALBUM_PAGES_HEADER (HN 10 C "Switzerland - 1960 - (current year or last year on stamp DB)")
+
+logic it if  --end-year 1970 the format would be:
+
+ALBUM_PAGES_HEADER (HN 10 C "Switzerland - (read DB year and use eariest year)  - 1970")
+
+logic it if --start-year 1970 and --end-year 1970 the format would be:
+
+ALBUM_PAGES_HEADER (HN 10 C "Switzerland - 1970")  - note no 2 year values when a single year is used
+
+
+update :  the stamp image when not avaiable to create a placeholder 

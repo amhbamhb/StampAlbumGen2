@@ -408,6 +408,7 @@ where
                 attrs.set("currency", &stamp.currency);
                 attrs.set("watermark", &stamp.watermark);
                 attrs.set("design", &stamp.design);
+                attrs.set("engraving", &stamp.engraving);
                 attrs.set("perforation", &stamp.perforation);
                 // Set image_path from StampStub
                 stamp_objs.push(Stamp {
@@ -592,20 +593,24 @@ where
                         )
                         .replace("\n", " ")
                         .replace("  ", " ");
-                        if !watermark.is_empty() {
+                        if config.include_watermark.unwrap_or(true) && !watermark.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Watermark: {}", watermark);
                             let safe = text.replace('"', "\\\"");
                             header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
+                        // Prefer an explicit `engraving` attribute from the DB if present.
+                        // Some data sources put engraving into the separate `engraving` column
+                        // while others append it to the `design` column as "... Engraving: ...".
                         let design_field = stamp
                             .attrs
                             .get("design")
                             .unwrap_or(&"".to_string())
                             .replace("\n", " ")
                             .replace("  ", " ");
-                        let mut parts = design_field.split("Engraving:");
-                        let design_raw = parts
+                        // Extract design portion before any embedded "Engraving:" or "Perforation:"
+                        let design_raw = design_field
+                            .split("Engraving:")
                             .next()
                             .unwrap_or("")
                             .split("Perforation:")
@@ -613,19 +618,48 @@ where
                             .unwrap_or("")
                             .trim()
                             .to_string();
-                        let engraving_raw = parts
-                            .next()
-                            .map(|p| p.split("Perforation:").next().unwrap_or("").trim().to_string())
-                            .unwrap_or_default();
+
+                        // Perforation value: prefer explicit DB column, otherwise try to parse
+                        // it from the `design` field (some sources embed "Perforation: ...").
+                        let perforation_from_column = stamp.attrs.get("perforation").map(|s| s.trim()).unwrap_or("");
+                        let perforation_raw = if !perforation_from_column.is_empty() {
+                            perforation_from_column.to_string()
+                        } else {
+                            design_field
+                                .split("Perforation:")
+                                .nth(1)
+                                .map(|p| p.split("Engraving:").next().unwrap_or("").trim().to_string())
+                                .unwrap_or_default()
+                        };
+                        let perforation = clean_text(&perforation_raw);
+                        if config.include_perforation.unwrap_or(true) && !perforation.is_empty() {
+                            let tmpl = build_page_text_template(&config, "centre");
+                            let text = format!("Perforation: {}", perforation);
+                            let safe = text.replace('"', "\\\"");
+                            header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
+                        }
+
+                        // engraving may be stored separately in the `engraving` attr; prefer that
+                        let engraving_from_column = stamp.attrs.get("engraving").map(|s| s.trim()).unwrap_or("");
+                        let engraving_raw = if !engraving_from_column.is_empty() {
+                            engraving_from_column.to_string()
+                        } else {
+                            // fallback: try to parse engraving from the design_field
+                            design_field
+                                .split("Engraving:")
+                                .nth(1)
+                                .map(|p| p.split("Perforation:").next().unwrap_or("").trim().to_string())
+                                .unwrap_or_default()
+                        };
                         let design = clean_text(&design_raw);
                         let engraving = clean_text(&engraving_raw);
-                        if !engraving.is_empty() {
+                        if config.include_engraving.unwrap_or(true) && !engraving.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Engraving: {}", engraving);
                             let safe = text.replace('"', "\\\"");
                             header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
-                        if !design.is_empty() {
+                        if config.include_design.unwrap_or(true) && !design.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Design: {}", design);
                             let safe = text.replace('"', "\\\"");
@@ -830,7 +864,7 @@ where
                     // attempt to pull watermark/design from first stamp if present
                     if let Some(next_first_stamp) = next_stamps.get(0) {
                         let watermark = clean_text(next_first_stamp.watermark.trim()).replace("\n", " ").replace("  ", " ");
-                        if !watermark.is_empty() {
+                        if config.include_watermark.unwrap_or(true) && !watermark.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Watermark: {}", watermark);
                             let safe = text.replace('"', "\\\"");
@@ -1118,7 +1152,10 @@ where
                         );
                         
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
+                        let sh_font = config.stamp_heading_font.clone().unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config.stamp_heading_label.clone().unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(output, "STAMP_HEADING({} {} \"{} : {}\")", sh_font, sh_size, sh_label, sgnum);
                         // Emit an immediate state line showing the stamp box that
                         // was just written and the expected new current_height if
                         // this were the tallest row on the page.
@@ -1148,7 +1185,10 @@ where
                         );
                         
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
+                        let sh_font = config.stamp_heading_font.clone().unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config.stamp_heading_label.clone().unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(output, "STAMP_HEADING({} {} \"{} : {}\")", sh_font, sh_size, sh_label, sgnum);
                         let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
                             clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
                     }

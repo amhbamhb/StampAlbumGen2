@@ -148,6 +148,17 @@ median_width_cap_4 = 30.0
 # page_text_right_size = 10.0
 # page_text_right_vspace = 1.0
 
+# --- Stamp heading formatting ---
+# Controls the small heading line emitted directly above each stamp box. The
+# generator emits a `STAMP_HEADING(<FONT> <SIZE> "<LABEL> : <SGNUM>")` line
+# after each STAMP_ADD/ADD_IMG. These keys let you tune the font, numeric
+# size, and the label shown before the SG number. Defaults are chosen to
+# reproduce historical output when omitted: font="HN", size=10, label="SG".
+# Example:
+# stamp_heading_font = "HN"
+# stamp_heading_size = 10
+# stamp_heading_label = "SG"
+
 
 
 # --- Flag cover rendering hints (flag_cover_*) ---
