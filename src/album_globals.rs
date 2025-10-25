@@ -619,6 +619,26 @@ where
                             .trim()
                             .to_string();
 
+                        // Perforation value: prefer explicit DB column, otherwise try to parse
+                        // it from the `design` field (some sources embed "Perforation: ...").
+                        let perforation_from_column = stamp.attrs.get("perforation").map(|s| s.trim()).unwrap_or("");
+                        let perforation_raw = if !perforation_from_column.is_empty() {
+                            perforation_from_column.to_string()
+                        } else {
+                            design_field
+                                .split("Perforation:")
+                                .nth(1)
+                                .map(|p| p.split("Engraving:").next().unwrap_or("").trim().to_string())
+                                .unwrap_or_default()
+                        };
+                        let perforation = clean_text(&perforation_raw);
+                        if config.include_perforation.unwrap_or(true) && !perforation.is_empty() {
+                            let tmpl = build_page_text_template(&config, "centre");
+                            let text = format!("Perforation: {}", perforation);
+                            let safe = text.replace('"', "\\\"");
+                            header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
+                        }
+
                         // engraving may be stored separately in the `engraving` attr; prefer that
                         let engraving_from_column = stamp.attrs.get("engraving").map(|s| s.trim()).unwrap_or("");
                         let engraving_raw = if !engraving_from_column.is_empty() {
@@ -1132,7 +1152,10 @@ where
                         );
                         
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
+                        let sh_font = config.stamp_heading_font.clone().unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config.stamp_heading_label.clone().unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(output, "STAMP_HEADING({} {} \"{} : {}\")", sh_font, sh_size, sh_label, sgnum);
                         // Emit an immediate state line showing the stamp box that
                         // was just written and the expected new current_height if
                         // this were the tallest row on the page.
@@ -1162,7 +1185,10 @@ where
                         );
                         
                         let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                        let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
+                        let sh_font = config.stamp_heading_font.clone().unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config.stamp_heading_label.clone().unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(output, "STAMP_HEADING({} {} \"{} : {}\")", sh_font, sh_size, sh_label, sgnum);
                         let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
                             clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
                     }

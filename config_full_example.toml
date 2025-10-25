@@ -51,6 +51,13 @@ include_country = true
 include_date = true
 print_flag_cover = true
 
+# --- Stamp heading formatting ---
+# Emitted for each stamp as: STAMP_HEADING(<FONT> <SIZE> "<LABEL> : <SGNUM>")
+# Tune the small heading displayed above/beside each stamp box.
+stamp_heading_font = "HN"
+stamp_heading_size = 10
+stamp_heading_label = "SG"
+
 # --- Grouped range handling ---
 expand_grouped_ranges = "placeholders"
 

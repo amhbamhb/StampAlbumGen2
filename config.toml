@@ -69,6 +69,8 @@ header_spacing = 10.0
 ############################################
 
 stamp_heading_font = "HN"
+stamp_heading_size = 6
+stamp_heading_label = "SG"
 
 ############################################
 # album_pages_title_font font settings and used for STAMP_HEADING
