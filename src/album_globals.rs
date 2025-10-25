@@ -387,7 +387,7 @@ where
             // Diagnostic: write a short comment indicating how many stamps we fetched for this series.
             // Sanitize the series name to a single line (collapse newlines and extra spaces)
             // so downstream tools (or grep) can reliably parse this diagnostic.
-            let safe_series = clean_text(series).replace('\n', " ").replace("  ", " ").replace('"', "'");
+            let _safe_series = clean_text(series).replace('\n', " ").replace("  ", " ").replace('"', "'");
             // let _ = writeln!(output, "# SERIES_FETCH series=\"{}\" count=\"{}\"", safe_series, stamps.len());
             let mut stamp_objs: Vec<Stamp> = Vec::new();
             for stamp in stamps {
@@ -521,6 +521,68 @@ where
                     }
                     let first_stamp = stamp_rows.get(0).and_then(|row| row.get(0));
                     if let Some(stamp) = first_stamp {
+                        // Optionally include a date line in the header (from DB year/month/day)
+                        if config.include_date.unwrap_or(true) {
+                            let date_format_cfg = config
+                                .header_formatting
+                                .as_ref()
+                                .and_then(|hf| hf.date_format.clone())
+                                .unwrap_or_else(|| "commas".to_string());
+                            let year = stamp.attrs.get("year").map(|s| s.trim()).unwrap_or("");
+                            let day = stamp.attrs.get("day").map(|s| s.trim()).unwrap_or("");
+                            let month_raw = stamp.attrs.get("month").map(|s| s.trim()).unwrap_or("");
+                            let month = if !month_raw.is_empty() {
+                                month_raw.to_string()
+                            } else {
+                                // fall back to numeric month -> name
+                                let month_num = stamp.attrs.get("month_num").map(|s| s.trim()).unwrap_or("0");
+                                if let Ok(mn) = month_num.parse::<usize>() {
+                                    if mn >= 1 && mn <= 12 { MONTH_NAMES[mn].to_string() } else { "".to_string() }
+                                } else { "".to_string() }
+                            };
+                            let mut date_text = String::new();
+                            if !year.is_empty() {
+                                if date_format_cfg == "dashes" {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} - {} - {}", month, day, year);
+                                    } else if !month.is_empty() {
+                                        date_text = format!("{} - {}", month, year);
+                                    } else {
+                                        date_text = year.to_string();
+                                    }
+                                } else {
+                                    // default to commas style: "Month Day, Year"
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} {}, {}", month, day, year);
+                                    } else if !month.is_empty() {
+                                        date_text = format!("{} {}", month, year);
+                                    } else {
+                                        date_text = year.to_string();
+                                    }
+                                }
+                            } else {
+                                // no year available, but maybe month/day exist
+                                if date_format_cfg == "dashes" {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} - {}", month, day);
+                                    } else if !month.is_empty() {
+                                        date_text = month.clone();
+                                    }
+                                } else {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} {}", month, day);
+                                    } else if !month.is_empty() {
+                                        date_text = month.clone();
+                                    }
+                                }
+                            }
+                            if !date_text.is_empty() {
+                                let tmpl = build_page_text_template(&config, "centre");
+                                let safe = date_text.replace('"', "\\\"");
+                                header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
+                            }
+                        }
+
                         let watermark = clean_text(
                             stamp
                                 .attrs

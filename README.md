@@ -1,4 +1,4 @@
-# Stamp Album Generator v0.20.0
+# Stamp Album Generator v0.21.0
 
 
 
@@ -39,7 +39,7 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v0.20.0
+# Stamp Album Generator v0.21.0
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -69,10 +69,10 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 📦 Installation
 
 # Generate from an existing DB (output-only behavior is triggered by passing --db-path)
-# Stamp Album Generator v0.20.0
+# Stamp Album Generator v0.21.0
 
-**Version**: 0.20.0
-**Release Date**: 2025-10-21
+**Version**: 0.21.0
+**Release Date**: 2025-10-24
 
 A compact, up-to-date README for development and contributors. This file
 focuses on practical usage, configuration pointers, and best practices for
@@ -318,8 +318,8 @@ stamp-album-gen2/
 └── *.log                          # Log files
 ```
 
-**Version**: 0.20.0
-**Release Date**: 2025-10-21
+**Version**: 0.21.0
+**Release Date**: 2025-10-24
 
 
 ## 🔧 Development
@@ -794,7 +794,7 @@ and stop-after-no-hits heuristic to avoid over-downloading:
     --stop-after-no-hits 3 --max-pages 0
 ```
 
-**Release Date**: 2025-10-21
+**Release Date**: 2025-10-24
 **Build**: Release (optimized)
 **Platform**: Linux x86-64 /content 
 `filePath`: README.md
