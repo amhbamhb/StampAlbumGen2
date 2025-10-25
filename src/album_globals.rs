@@ -10,6 +10,67 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+// Helper: emit a standardized ROW_START_ES line using configured values (or sensible defaults)
+// Accept an Option<&Config> so callers that don't have access to the loaded
+// config (for example `new_row`) can still emit a conservative default.
+fn emit_row_start_es(output: &mut dyn Write, config_opt: Option<&crate::config::Config>) -> std::io::Result<()> {
+    let (rs_font, rs_size, rs_spacing, rs_vspace) = if let Some(cfg) = config_opt {
+        (
+            cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string()),
+            cfg.row_start_es_size.unwrap_or(6.0),
+            cfg.row_start_es_spacing.unwrap_or(0.1),
+            cfg.row_start_es_vspace.unwrap_or(5.0),
+        )
+    } else {
+        ("HN".to_string(), 6.0_f32, 0.1_f32, 5.0_f32)
+    };
+    writeln!(output, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace)
+}
+
+// Build a PAGE_TEXT template string for the requested kind. The generator
+// supports a full-template override (e.g. `page_text_centre_format`) or a
+// set of per-field values (font/size/vspace) that are combined into a
+// template when present. `kind` may be "left", "centre" or "right".
+fn build_page_text_template(cfg: &crate::config::Config, kind: &str) -> String {
+    match kind {
+        "centre" => {
+            if let Some(t) = cfg.page_text_centre_format.clone() {
+                return t;
+            }
+            let font = cfg.page_text_centre_font.clone().unwrap_or_else(|| "TN".to_string());
+            let size = cfg.page_text_centre_size.unwrap_or(8.0) as i32;
+            let vspace = cfg.page_text_centre_vspace.unwrap_or(1.0_f32);
+            // Construct the template with a literal `{}` placeholder for later replacement.
+            let head = format!("PAGE_TEXT_CENTRE ({} {} \"", font, size);
+            let tail = format!("\" {:.1})", vspace);
+            head + "{}" + &tail
+        }
+        "right" => {
+            if let Some(t) = cfg.page_text_right_format.clone() {
+                return t;
+            }
+            let font = cfg.page_text_right_font.clone().unwrap_or_else(|| "HN".to_string());
+            let size = cfg.page_text_right_size.unwrap_or(10.0) as i32;
+            let vspace = cfg.page_text_right_vspace.unwrap_or(1.0_f32);
+            let head = format!("PAGE_TEXT_RIGHT ({} {} \"", font, size);
+            let tail = format!("\" {:.1})", vspace);
+            head + "{}" + &tail
+        }
+        _ => {
+            // Default: left-aligned
+            if let Some(t) = cfg.page_text_format.clone() {
+                return t;
+            }
+            let font = cfg.page_text_font.clone().unwrap_or_else(|| "HN".to_string());
+            let size = cfg.page_text_size.unwrap_or(10.0) as i32;
+            let vspace = cfg.page_text_vspace.unwrap_or(1.0_f32);
+            let head = format!("PAGE_TEXT ({} {} \"", font, size);
+            let tail = format!("\" {:.1})", vspace);
+            head + "{}" + &tail
+        }
+    }
+}
+
 // Define or import Stamp and GenericAttrs
 #[derive(Debug, Clone, PartialEq)]
 pub struct GenericAttrs {
@@ -100,6 +161,10 @@ pub fn new_page<W: std::io::Write>(
         "################################################################################"
     );
     let _ = writeln!(writer, "PAGE_START");
+    let _ = writeln!(
+        writer,
+        "################################################################################"
+    );
     *rows_written = 0;
     *stamps_written = 0;
     *used_width = 0;
@@ -107,9 +172,12 @@ pub fn new_page<W: std::io::Write>(
     *max_row_height = 0;
 }
 
-/// Writes a new year header
-pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str) {
-    let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", year);
+/// Writes a new year header. Accept an optional `Config` so callers that have
+/// access to loaded configuration can provide a custom PAGE_TEXT_CENTRE template.
+pub fn new_year<W: std::io::Write>(writer: &mut W, year: &str, config_opt: Option<&crate::config::Config>) {
+    let tmpl = if let Some(cfg) = config_opt { build_page_text_template(cfg, "centre") } else { "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)".to_string() };
+    let safe = year.replace('"', "\\\"");
+    let _ = writeln!(writer, "{}", tmpl.replace("{}", &safe));
 }
 
 /// Writes a new row, handles page breaks, and updates counters
@@ -135,9 +203,14 @@ pub fn new_row<W: std::io::Write>(
             used_height,
             max_row_height,
         );
-        new_year(writer, year);
+        // new_year without a Config falls back to the default template
+        new_year(writer, year, None);
     }
-    let _ = writeln!(writer, "ROW_START_ES (TN 6 0.1 5.0)");
+    // Write a conservative default ROW_START_ES using the provided writer.
+    // (This function does not have access to the loaded `Config`, so call
+    // the helper with `None` to use built-in sensible defaults.)
+    let _ = emit_row_start_es(writer, None);
+
     *rows_written += 1;
     *stamps_written = 0;
     *used_width = 0;
@@ -192,7 +265,7 @@ where
     let stamp_box_height = config.stamp_box_height.unwrap_or(24.0) as f64;
     // extra space applied per-side around each stamp when emitted
     let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(3.0) as f64;
-    let row_font_spacing = config.row_font_spacing.unwrap_or(5.0) as f64;
+    let row_font_spacing = config.row_font_spacing.unwrap_or(0.1) as f64;
     let _header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
     let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
     let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
@@ -247,9 +320,10 @@ where
     write_globals(&mut output, album_name);
 
     // Emit a single leading page header for Page 1
-    let _ = writeln!(output, "### Page 1 ###");
-    let _ = writeln!(output, "PAGE_START");
-    let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+        let _ = writeln!(output, "### Page 1 ###");
+        let _ = writeln!(output, "PAGE_START");
+        let _ = emit_row_start_es(&mut output, Some(&config));
+
     let _ = writeln!(output, "################################################################################");
     // Compute usable height via shared helper (centralizes margins/borders/padding)
     let usable_height = compute_usable_height(&config);
@@ -314,7 +388,7 @@ where
             // Sanitize the series name to a single line (collapse newlines and extra spaces)
             // so downstream tools (or grep) can reliably parse this diagnostic.
             let safe_series = clean_text(series).replace('\n', " ").replace("  ", " ").replace('"', "'");
-            let _ = writeln!(output, "# SERIES_FETCH series=\"{}\" count=\"{}\"", safe_series, stamps.len());
+            // let _ = writeln!(output, "# SERIES_FETCH series=\"{}\" count=\"{}\"", safe_series, stamps.len());
             let mut stamp_objs: Vec<Stamp> = Vec::new();
             for stamp in stamps {
                 let mut attrs = GenericAttrs::new();
@@ -433,20 +507,17 @@ where
                     // accurately reflect visual space consumed by AlbumEasy font sizes.
                         let header_font_h = config.text_line_height_mm.unwrap_or(2.82) as f64;
                     if !name_line.is_empty() {
-                        header_lines_vec.push((
-                            format!("PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", name_line),
-                            header_font_h,
-                        ));
+                        // Use configurable PAGE_TEXT_CENTRE template when present in config
+                        let tmpl = build_page_text_template(&config, "centre");
+                        let safe = name_line.replace('"', "\\\"");
+                        header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                     }
                     let perf_trimmed = String::new();
                     if !perf_trimmed.is_empty() {
-                        header_lines_vec.push((
-                            format!(
-                                "PAGE_TEXT_CENTRE (TN 8 \"Perforation {}\" 1.0)",
-                                perf_trimmed
-                            ),
-                            header_font_h,
-                        ));
+                        let tmpl = build_page_text_template(&config, "centre");
+                        let text = format!("Perforation {}", perf_trimmed);
+                        let safe = text.replace('"', "\\\"");
+                        header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                     }
                     let first_stamp = stamp_rows.get(0).and_then(|row| row.get(0));
                     if let Some(stamp) = first_stamp {
@@ -460,10 +531,10 @@ where
                         .replace("\n", " ")
                         .replace("  ", " ");
                         if !watermark.is_empty() {
-                            header_lines_vec.push((
-                                format!("PAGE_TEXT_CENTRE (TN 8 \"Watermark: {}\" 1.0)", watermark),
-                                header_font_h,
-                            ));
+                            let tmpl = build_page_text_template(&config, "centre");
+                            let text = format!("Watermark: {}", watermark);
+                            let safe = text.replace('"', "\\\"");
+                            header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
                         let design_field = stamp
                             .attrs
@@ -487,16 +558,16 @@ where
                         let design = clean_text(&design_raw);
                         let engraving = clean_text(&engraving_raw);
                         if !engraving.is_empty() {
-                            header_lines_vec.push((
-                                format!("PAGE_TEXT_CENTRE (TN 8 \"Engraving: {}\" 1.0)", engraving),
-                                header_font_h,
-                            ));
+                            let tmpl = build_page_text_template(&config, "centre");
+                            let text = format!("Engraving: {}", engraving);
+                            let safe = text.replace('"', "\\\"");
+                            header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
                         if !design.is_empty() {
-                            header_lines_vec.push((
-                                format!("PAGE_TEXT_CENTRE (TN 8 \"Design: {}\" 1.0)", design),
-                                header_font_h,
-                            ));
+                            let tmpl = build_page_text_template(&config, "centre");
+                            let text = format!("Design: {}", design);
+                            let safe = text.replace('"', "\\\"");
+                            header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
                     }
                     let header_block_height: f64 = header_lines_vec.iter().map(|(_, h)| *h).sum();
@@ -602,7 +673,8 @@ where
                         }
                         let _ = writeln!(output, "### Page {} ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
-                        let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                              let _ = emit_row_start_es(&mut output, Some(&config));
+
                         let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         rows_on_page = 0;
@@ -689,13 +761,18 @@ where
                     let next_name_line = clean_text(next_series_name.trim()).replace("\n", " ").replace("  ", " ");
                     let header_font_h = config.text_line_height_mm.unwrap_or(2.82) as f64;
                     if !next_name_line.is_empty() {
-                        next_header_lines_vec.push((format!("PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)", next_name_line), header_font_h));
+                        let tmpl = build_page_text_template(&config, "centre");
+                        let safe = next_name_line.replace('"', "\\\"");
+                        next_header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                     }
                     // attempt to pull watermark/design from first stamp if present
                     if let Some(next_first_stamp) = next_stamps.get(0) {
                         let watermark = clean_text(next_first_stamp.watermark.trim()).replace("\n", " ").replace("  ", " ");
                         if !watermark.is_empty() {
-                            next_header_lines_vec.push((format!("PAGE_TEXT_CENTRE (TN 8 \"Watermark: {}\" 1.0)", watermark), header_font_h));
+                            let tmpl = build_page_text_template(&config, "centre");
+                            let text = format!("Watermark: {}", watermark);
+                            let safe = text.replace('"', "\\\"");
+                            next_header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
                     }
                     let next_header_block_height: f64 = next_header_lines_vec.iter().map(|(_, h)| *h).sum();
@@ -743,7 +820,8 @@ where
                         let _ = writeln!(output, "\n################################################################################");
                         let _ = writeln!(output, "### Page {} ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
-                        let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                            let _ = emit_row_start_es(&mut output, Some(&config));
+
                         let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         header_written = false;
@@ -778,7 +856,8 @@ where
                             let _ = writeln!(output, "\n################################################################################");
                             let _ = writeln!(output, "### Page {} ###", page_counter);
                             let _ = writeln!(output, "PAGE_START");
-                            let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                                  let _ = emit_row_start_es(&mut output, Some(&config));
+
                             let _ = writeln!(output, "################################################################################");
                             current_height = 0.0;
                             header_written = false;
@@ -790,7 +869,8 @@ where
                             let _ = writeln!(output, "\n################################################################################");
                             let _ = writeln!(output, "### Page {} ###", page_counter);
                             let _ = writeln!(output, "PAGE_START");
-                            let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                                  let _ = emit_row_start_es(&mut output, Some(&config));
+
                             let _ = writeln!(output, "################################################################################");
                             current_height = 0.0;
                             header_written = false;
@@ -805,7 +885,8 @@ where
                         let _ = writeln!(output, "\n################################################################################");
                         let _ = writeln!(output, "### Page {} ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
-                        let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                              let _ = emit_row_start_es(&mut output, Some(&config));
+
                         let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         header_written = false;
@@ -831,7 +912,8 @@ where
                             let _ = writeln!(output, "\n################################################################################");
                             let _ = writeln!(output, "### Page {} ###", page_counter);
                             let _ = writeln!(output, "PAGE_START");
-                            let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                                  let _ = emit_row_start_es(&mut output, Some(&config));
+
                             let _ = writeln!(output, "################################################################################");
                             current_height = 0.0;
                             header_written = false;
@@ -845,7 +927,8 @@ where
                         let _ = writeln!(output, "\n################################################################################");
                         let _ = writeln!(output, "### Page {} ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
-                        let _ = writeln!(output, "ROW_START_ES (TN 6 0.1 5.0)");
+                              let _ = emit_row_start_es(&mut output, Some(&config));
+
                         let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         header_written = false;
@@ -859,7 +942,7 @@ where
                 if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
                     // Use configurable marker so tests/tools can detect the vspace
                     let pv_marker = config.page_vspace_marker.clone().unwrap_or_else(|| "(6)".to_string());
-                    let _ = writeln!(output, "PAGE_VSPACE {}", pv_marker);
+                    let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
                     current_height += v_before;
                     // header vspace written (diagnostics suppressed)
                     for (line, h) in pending_lines {
@@ -868,20 +951,15 @@ where
                         // header line written (diagnostics suppressed)
                     }
                     let pv_marker = config.page_vspace_marker.clone().unwrap_or_else(|| "(6)".to_string());
-                    let _ = writeln!(output, "PAGE_VSPACE {}", pv_marker);
+                    let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
                     current_height += v_after;
                     // header vspace after written (diagnostics suppressed)
                     header_written = true;
                 }
                 // Build ROW_START_ES from parameterized config if provided, otherwise fall back to
-                // the legacy `row_start_es_marker` string. Parameters are: token (e.g. TN),
-                // font (e.g. 6), size (e.g. 0.1), vspace (e.g. 5.0)
-                let row_token = config.row_start_es_token.clone().unwrap_or_else(|| "TN".to_string());
-                let row_font = config.row_start_es_font.clone().unwrap_or_else(|| "6".to_string());
-                let row_size = config.row_start_es_size.unwrap_or(0.1_f32);
-                let row_vspace = config.row_start_es_vspace.unwrap_or(5.0_f32);
-                let row_marker = format!("{} {} {:.2} {:.1}", row_token, row_font, row_size, row_vspace);
-                let _ = writeln!(output, "ROW_START_ES ({})", row_marker);
+                // the legacy `row_start_es_marker` string. Parameters are: font, size, spacing, vspace
+                let _ = emit_row_start_es(&mut output, Some(&config));
+
                 // row start written (diagnostics suppressed)
                 for stamp in stamps_in_row {
                     // Use correct fields from StampStub
@@ -912,9 +990,9 @@ where
                     // Centre: color, description, and stamps_issued (counts are shown here when present)
                     let centre = format!(
                         "{}\\n{}\\n{}",
-                        clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string())),
+                        clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())),
                         clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string())),
-                        clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()))
+                        clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()))
                     );
                     // Right: mint_condition (or unused), used, stamps_issued
                     let mint_raw = stamp

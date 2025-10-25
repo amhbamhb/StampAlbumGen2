@@ -95,10 +95,7 @@ pub struct Config {
     pub row_start_es_size: Option<f32>,
     pub row_start_es_spacing: Option<f32>,
     pub row_start_es_vspace: Option<f32>,
-    // Token to use as the ROW_START_ES type (e.g. "TN"). When combined with
-    // `row_start_es_font`, `row_start_es_size` and `row_start_es_vspace` this
-    // forms a parameterized ROW_START_ES marker like: `TN 6 0.1 5.0`.
-    pub row_start_es_token: Option<String>,
+    // Configurable ROW_START_ES parameters (font/size/spacing/vspace)
     // Allow a single very large stamp (or row) to occupy a page if enabled
     // and it exceeds the fraction `single_stamp_threshold_pct` of usable height.
     pub allow_single_large_stamp_per_page: Option<bool>,
@@ -174,6 +171,27 @@ pub struct Config {
     // Default values are chosen to reproduce historic output.
     pub page_vspace_marker: Option<String>,
     pub row_start_es_marker: Option<String>,
+    // Optional templates for PAGE_TEXT output. Each template must include
+    // a single `{}` placeholder which will be replaced with the text to
+    // emit. If omitted the generator falls back to historical literals
+    // such as `PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)`.
+    pub page_text_format: Option<String>,
+    pub page_text_centre_format: Option<String>,
+    pub page_text_right_format: Option<String>,
+    // Per-field overrides for PAGE_TEXT templates. If present these fields
+    // are used to synthesize a template string and provide convenient tuning
+    // for font, size and optional vspace without having to provide a full
+    // template string. Each of these are optional and defaults are used
+    // when omitted.
+    pub page_text_font: Option<String>,
+    pub page_text_size: Option<f32>,
+    pub page_text_vspace: Option<f32>,
+    pub page_text_centre_font: Option<String>,
+    pub page_text_centre_size: Option<f32>,
+    pub page_text_centre_vspace: Option<f32>,
+    pub page_text_right_font: Option<String>,
+    pub page_text_right_size: Option<f32>,
+    pub page_text_right_vspace: Option<f32>,
 }
 
 impl Default for Config {
@@ -263,7 +281,18 @@ impl Default for Config {
             series_order: None,
             page_vspace_marker: None,
             row_start_es_marker: None,
-            row_start_es_token: None,
+            page_text_format: None,
+            page_text_centre_format: None,
+            page_text_right_format: None,
+            page_text_font: None,
+            page_text_size: None,
+            page_text_vspace: None,
+            page_text_centre_font: None,
+            page_text_centre_size: None,
+            page_text_centre_vspace: None,
+            page_text_right_font: None,
+            page_text_right_size: None,
+            page_text_right_vspace: None,
             row_start_es_enabled: None,
             row_start_es_font: None,
             row_start_es_size: None,

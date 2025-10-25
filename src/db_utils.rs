@@ -70,9 +70,9 @@ pub fn get_all_series(conn: &rusqlite::Connection, series_order: Option<&str>) -
                         (key, (name, rep))
                     })
                     .collect();
-                println!("[dbg first_sg keys BEFORE sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
+                // println!("[dbg first_sg keys BEFORE sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
                 keyed.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                println!("[dbg first_sg keys AFTER sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
+                // println!("[dbg first_sg keys AFTER sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
                 // Reconstruct temp in sorted order
                 temp.extend(keyed.into_iter().map(|(_, pair)| pair));
             }
@@ -253,6 +253,77 @@ pub struct SeriesStub {
     pub perforation: String,
 }
 
+// Format stamps_issued into thousands-separated form and preserve decimals.
+// Output uses comma for thousands and dot for decimal separator, e.g. "1,234.56".
+pub fn format_stamps_issued(s: &str) -> String {
+    let t = s.trim();
+    if t.is_empty() { return String::new(); }
+
+    // Remove surrounding parentheses
+    let mut v = t.to_string();
+    if v.starts_with('(') && v.ends_with(')') {
+        v = v[1..v.len()-1].to_string();
+    }
+
+    // Keep only digits, dot, comma
+    let re_keep = Regex::new(r"[^0-9\.,]").unwrap();
+    v = re_keep.replace_all(&v, "").to_string();
+    if v.is_empty() { return String::new(); }
+
+    // Determine decimal separator using heuristics:
+    // - If both '.' and ',' present: the last-occurring separator is the decimal separator.
+    // - If only one separator type is present but occurs multiple times, it's likely thousand separators.
+    // - If only one separator and the part after it has length 3, treat as thousand separator; otherwise treat as decimal.
+    let dot_count = v.matches('.').count();
+    let comma_count = v.matches(',').count();
+    let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
+        let last_dot = v.rfind('.').unwrap();
+        let last_comma = v.rfind(',').unwrap();
+        if last_dot > last_comma { (v[..last_dot].to_string(), Some(v[last_dot+1..].to_string())) }
+        else { (v[..last_comma].to_string(), Some(v[last_comma+1..].to_string())) }
+    } else if dot_count > 0 {
+        if dot_count > 1 {
+            // multiple dots -> treat as thousands separators
+            (v.replace('.', ""), None)
+        } else {
+            let idx = v.rfind('.').unwrap();
+            let right_len = v.len() - idx - 1;
+            if right_len == 3 { (v.replace('.', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+        }
+    } else if comma_count > 0 {
+        if comma_count > 1 {
+            // multiple commas -> thousands separators
+            (v.replace(',', ""), None)
+        } else {
+            let idx = v.rfind(',').unwrap();
+            let right_len = v.len() - idx - 1;
+            if right_len == 3 { (v.replace(',', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+        }
+    } else {
+        (v.clone(), None)
+    };
+
+    let re_digits = Regex::new(r"\D").unwrap();
+    let int_digits = re_digits.replace_all(&int_part, "").to_string();
+    if int_digits.is_empty() { return String::new(); }
+
+    let rev: Vec<char> = int_digits.chars().rev().collect();
+    let mut grouped = String::new();
+    for (i, c) in rev.iter().enumerate() {
+        if i > 0 && i % 3 == 0 { grouped.push(','); }
+        grouped.push(*c);
+    }
+    let int_fmt: String = grouped.chars().rev().collect();
+
+    if let Some(frac_raw) = frac_part_opt {
+        let frac_digits = re_digits.replace_all(&frac_raw, "").to_string();
+        if frac_digits.is_empty() { return int_fmt; }
+        return format!("{}.{}", int_fmt, frac_digits);
+    }
+
+    int_fmt
+}
+
 // Returns a list of stamps for a given series and year
 pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &str) -> rusqlite::Result<Vec<StampStub>> {
     // Decide which query to run and collect rows into a Vec<StampStub>
@@ -273,7 +344,7 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
                 description: row.get::<_, String>(8)?,
                 desc: row.get(8)?,
                 catalog_num: row.get(4)?,
-                stamps_issued: row.get(9)?,
+                stamps_issued: crate::db_utils::format_stamps_issued(&row.get::<_, Option<String>>(9)?.unwrap_or_default()),
                 image_path: row.get(10)?,
                 remote_image_url: row.get(11)?,
                 original_image_url: row.get(12)?,
@@ -310,7 +381,7 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
                 description: row.get::<_, String>(8)?,
                 desc: row.get(8)?,
                 catalog_num: row.get(4)?,
-                stamps_issued: row.get(9)?,
+                stamps_issued: crate::db_utils::format_stamps_issued(&row.get::<_, Option<String>>(9)?.unwrap_or_default()),
                 image_path: row.get(10)?,
                 remote_image_url: row.get(11)?,
                 original_image_url: row.get(12)?,

@@ -15,7 +15,11 @@
 use std::io::Write;
 use regex::Regex;
 // Use image utilities to measure actual image dimensions where possible
-use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions, get_image_dimensions};
+use crate::image_utils::{
+    calc_mm_per_pixel_embedded,
+    estimate_real_dimensions,
+    get_image_dimensions,
+};
 use crate::flagdb;
 use std::process::Command;
 
@@ -71,8 +75,7 @@ pub fn clean_text(s: &str) -> String {
     s.chars()
         .map(|c| {
             match c {
-                '£' | '€' | '$' | '¥' |
-                '½' | '¼' | '¾' | '⅓' | '⅔' | '⅛' | '⅜' | '⅝' | '⅞' => c,
+                '£' | '€' | '$' | '¥' | '½' | '¼' | '¾' | '⅓' | '⅔' | '⅛' | '⅜' | '⅝' | '⅞' => c,
                 _ if c.is_ascii() => c,
                 _ => ' ',
             }
@@ -84,18 +87,20 @@ pub fn clean_text(s: &str) -> String {
 pub fn sanitize_filename(filename: &str) -> String {
     filename
         .chars()
-        .map(|c| match c {
-            '*' => 's',  // star -> s
-            '?' => 'q',  // question -> q
-            '<' => 'l',  // less -> l
-            '>' => 'g',  // greater -> g
-            ':' => 'c',  // colon -> c
-            '"' => 'd',  // double quote -> d
-            '|' => 'p',  // pipe -> p
-            '\\' => 'b', // backslash -> b
-            '/' => 'f',  // forward slash -> f
-            _ if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' => c,
-            _ => '_',    // replace other non-alphanumeric with underscore
+        .map(|c| {
+            match c {
+                '*' => 's', // star -> s
+                '?' => 'q', // question -> q
+                '<' => 'l', // less -> l
+                '>' => 'g', // greater -> g
+                ':' => 'c', // colon -> c
+                '"' => 'd', // double quote -> d
+                '|' => 'p', // pipe -> p
+                '\\' => 'b', // backslash -> b
+                '/' => 'f', // forward slash -> f
+                _ if c.is_ascii_alphanumeric() || c == '.' || c == '-' || c == '_' => c,
+                _ => '_', // replace other non-alphanumeric with underscore
+            }
         })
         .collect()
 }
@@ -104,12 +109,15 @@ pub fn sanitize_filename(filename: &str) -> String {
 pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     // Get current date/time and user information using chrono (cross-platform)
     // Use UTC for the canonical generated timestamp and Local for the host localtime
-    use chrono::{Utc, Local};
+    use chrono::{ Utc, Local };
     let datetime_str = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
     let localdatetime = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
     // Get user information (cross-platform)
-    let username = std::env::var("USER").or_else(|_| std::env::var("USERNAME")).unwrap_or_else(|_| "unknown".to_string());
+    let username = std::env
+        ::var("USER")
+        .or_else(|_| std::env::var("USERNAME"))
+        .unwrap_or_else(|_| "unknown".to_string());
     let hostname = std::env::var("HOSTNAME").unwrap_or_else(|_| "localhost".to_string());
 
     // Get command line arguments and present them as the full CLI used
@@ -147,30 +155,50 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     let stamp_box_adj = cfg.stamp_box_adjust.unwrap_or(3.0);
 
     let mut lines: Vec<String> = Vec::new();
-    lines.push("################################################################################".to_string());
+    lines.push(
+        "################################################################################".to_string()
+    );
     lines.push(format!("# {}", album_name));
-    lines.push("################################################################################".to_string());
+    lines.push(
+        "################################################################################".to_string()
+    );
     lines.push(format!("# Generated: UTC: {} localtime : {}", datetime_str, localdatetime));
     lines.push(format!("# User: {}@{}", username, hostname));
     lines.push(format!("# OS: {}", std::env::consts::OS));
     lines.push(format!("# Architecture: {}", std::env::consts::ARCH));
-    lines.push(format!("# Working Directory: {}", std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")).display()));
+    lines.push(
+        format!(
+            "# Working Directory: {}",
+            std::env
+                ::current_dir()
+                .unwrap_or_else(|_| std::path::PathBuf::from("."))
+                .display()
+        )
+    );
     lines.push(format!("# Command Line: {}", command_line));
     // Emit a rich set of Config: lines so the generated header captures all
     // config toggles used for this run. This mirrors the legacy header
     // format and makes it easier to trace generation params.
-    let cfg_include_wikipedia = cfg.include_wikipedia_content.unwrap_or(cfg.fetch_wikipedia.unwrap_or(false));
+    let cfg_include_wikipedia = cfg.include_wikipedia_content.unwrap_or(
+        cfg.fetch_wikipedia.unwrap_or(false)
+    );
     let cfg_allow_single_large = cfg.allow_single_large_stamp_per_page.unwrap_or(true);
     let cfg_preserve_aspect = cfg.preserve_aspect.unwrap_or(img_preserve);
     let cfg_emit_placeholder_diags = cfg.emit_placeholder_diagnostics.unwrap_or(false);
-    let cfg_detailed_page_fit = cfg.detailed_page_fit.unwrap_or(cfg.detailed_page_fit_diagnostics.unwrap_or(false));
+    let cfg_detailed_page_fit = cfg.detailed_page_fit.unwrap_or(
+        cfg.detailed_page_fit_diagnostics.unwrap_or(false)
+    );
 
     lines.push(format!("# Config: print_flag_cover={}", cfg_print_flag_cover));
     lines.push(format!("# Config: include_design={}", cfg_include_design));
     lines.push(format!("# Config: include_engraving={}", cfg_include_engraving));
     lines.push(format!("# Config: include_watermark={}", cfg.include_watermark.unwrap_or(true)));
-    lines.push(format!("# Config: include_perforation={}", cfg.include_perforation.unwrap_or(true)));
-    lines.push(format!("# Config: include_catalog_numbers={}", cfg.include_catalog_numbers.unwrap_or(true)));
+    lines.push(
+        format!("# Config: include_perforation={}", cfg.include_perforation.unwrap_or(true))
+    );
+    lines.push(
+        format!("# Config: include_catalog_numbers={}", cfg.include_catalog_numbers.unwrap_or(true))
+    );
     lines.push(format!("# Config: include_series={}", cfg.include_series.unwrap_or(true)));
     lines.push(format!("# Config: include_country={}", cfg.include_country.unwrap_or(true)));
     lines.push(format!("# Config: include_date={}", cfg.include_date.unwrap_or(true)));
@@ -180,53 +208,133 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     lines.push(format!("# Config: preserve_aspect={}", cfg_preserve_aspect));
     lines.push(format!("# Config: emit_placeholder_diagnostics={}", cfg_emit_placeholder_diags));
     lines.push(format!("# Config: detailed_page_fit={}", cfg_detailed_page_fit));
-    lines.push(format!("# Config: stamp_heading_in_row_height={}", cfg.stamp_heading_in_row_height.unwrap_or(false)));
-    lines.push(format!("# Config: pages_vspace_in_row_height={}", cfg.pages_vspace_in_row_height.unwrap_or(false)));
-    lines.push(format!("# Config_SAFETY: packing_horizontal_safety_mm={:?} packing_vertical_safety_mm={:?}", cfg.packing_horizontal_safety_mm, cfg.packing_vertical_safety_mm));
+    lines.push(
+        format!(
+            "# Config: stamp_heading_in_row_height={}",
+            cfg.stamp_heading_in_row_height.unwrap_or(false)
+        )
+    );
+    lines.push(
+        format!(
+            "# Config: pages_vspace_in_row_height={}",
+            cfg.pages_vspace_in_row_height.unwrap_or(false)
+        )
+    );
+    lines.push(
+        format!(
+            "# Config_SAFETY: packing_horizontal_safety_mm={:?} packing_vertical_safety_mm={:?}",
+            cfg.packing_horizontal_safety_mm,
+            cfg.packing_vertical_safety_mm
+        )
+    );
     lines.push("".to_string());
-    lines.push(format!("ALBUM_PAGES_SIZE  ({:.1} {:.1}) # Page size in mm (width height)", page_w, page_h));
+    lines.push(
+        format!("ALBUM_PAGES_SIZE  ({:.1} {:.1}) # Page size in mm (width height)", page_w, page_h)
+    );
     lines.push("".to_string());
     // Emit margins as (left right top bottom) to match internal layout assumptions
-    lines.push(format!("ALBUM_PAGES_MARGINS  ({:.1} {:.1} {:.1} {:.1} )", left_margin, right_margin, top_margin, bottom_margin));
+    lines.push(
+        format!(
+            "ALBUM_PAGES_MARGINS  ({:.1} {:.1} {:.1} {:.1} )",
+            left_margin,
+            right_margin,
+            top_margin,
+            bottom_margin
+        )
+    );
     lines.push("".to_string());
-    lines.push(format!("ALBUM_PAGES_BORDER ({:.2} {:.2} {:.2} {:.2})    #outer inner1 inner2 spacing", border_outer, border_inner1, border_inner2, border_spacing));
+    lines.push(
+        format!(
+            "ALBUM_PAGES_BORDER ({:.2} {:.2} {:.2} {:.2})    #outer inner1 inner2 spacing",
+            border_outer,
+            border_inner1,
+            border_inner2,
+            border_spacing
+        )
+    );
     lines.push("#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border".to_string());
     lines.push("".to_string());
     // Use ALBUM_PAGES_HEADER with configurable font/size/position
     let title_font = cfg.album_pages_title_font.clone().unwrap_or_else(|| "HN".to_string());
     let title_size = cfg.album_pages_title_size.unwrap_or(10.0);
     let title_pos = cfg.album_pages_header_position.clone().unwrap_or_else(|| "C".to_string());
-    lines.push(format!("ALBUM_PAGES_HEADER ({} {} {} \"{}\")", title_font, title_size as i32, title_pos, album_name));
+    lines.push(
+        format!(
+            "ALBUM_PAGES_HEADER ({} {} {} \"{}\")",
+            title_font,
+            title_size as i32,
+            title_pos,
+            album_name
+        )
+    );
     lines.push("".to_string());
     lines.push(format!("ALBUM_PAGES_SPACING ({:.1} {:.1})", pages_spacing_h, pages_spacing_v));
     lines.push("".to_string());
     // Emit the per-album image aspect ratio flag based on config
     lines.push(format!("ALBUM_STAMP_IMG_ASPECT_RATIO ({}) ", cfg_preserve_aspect));
     // Emit color overrides if present in config
-    if let Some(ref c) = cfg.color_album_border { lines.push(format!("COLOR_ALBUM_BORDER({})", c)); }
-    if let Some(ref c) = cfg.color_album_footer { lines.push(format!("COLOR_ALBUM_FOOTER({})", c)); }
-    if let Some(ref c) = cfg.color_album_header { lines.push(format!("COLOR_ALBUM_HEADER({})", c)); }
-    if let Some(ref c) = cfg.color_album_title { lines.push(format!("COLOR_ALBUM_TITLE({})", c)); }
-    if let Some(ref c) = cfg.color_album_margin_txt { lines.push(format!("COLOR_ALBUM_MARGIN_TXT({})", c)); }
+    if let Some(ref c) = cfg.color_album_border {
+        lines.push(format!("COLOR_ALBUM_BORDER({})", c));
+    }
+    if let Some(ref c) = cfg.color_album_footer {
+        lines.push(format!("COLOR_ALBUM_FOOTER({})", c));
+    }
+    if let Some(ref c) = cfg.color_album_header {
+        lines.push(format!("COLOR_ALBUM_HEADER({})", c));
+    }
+    if let Some(ref c) = cfg.color_album_title {
+        lines.push(format!("COLOR_ALBUM_TITLE({})", c));
+    }
+    if let Some(ref c) = cfg.color_album_margin_txt {
+        lines.push(format!("COLOR_ALBUM_MARGIN_TXT({})", c));
+    }
     // Stamp color overrides
-    if let Some(ref c) = cfg.color_stamp_border { lines.push(format!("COLOR_STAMP_BORDER({})", c)); }
-    if let Some(ref c) = cfg.color_stamp_heading { lines.push(format!("COLOR_STAMP_HEADING({})", c)); }
-    if let Some(ref c) = cfg.color_stamp_text { lines.push(format!("COLOR_STAMP_TEXT({})", c)); }
-    if let Some(ref c) = cfg.color_stamp_background { lines.push(format!("COLOR_STAMP_BACKGROUND({})", c)); }
+    if let Some(ref c) = cfg.color_stamp_border {
+        lines.push(format!("COLOR_STAMP_BORDER({})", c));
+    }
+    if let Some(ref c) = cfg.color_stamp_heading {
+        lines.push(format!("COLOR_STAMP_HEADING({})", c));
+    }
+    if let Some(ref c) = cfg.color_stamp_text {
+        lines.push(format!("COLOR_STAMP_TEXT({})", c));
+    }
+    if let Some(ref c) = cfg.color_stamp_background {
+        lines.push(format!("COLOR_STAMP_BACKGROUND({})", c));
+    }
     lines.push("".to_string());
     lines.push("#ALBUM_PAGES_NUMBER (TN 10 R)".to_string());
     // Parameterize footer page number format from config
     if cfg.album_pages_footer_number_enabled.unwrap_or(true) {
-        let foot_font = cfg.album_pages_footer_number_font.clone().unwrap_or_else(|| "HN".to_string());
+        let foot_font = cfg.album_pages_footer_number_font
+            .clone()
+            .unwrap_or_else(|| "HN".to_string());
         let foot_size = cfg.album_pages_footer_number_size.unwrap_or(10.0);
-        let foot_pos = cfg.album_pages_footer_number_position.clone().unwrap_or_else(|| "C".to_string());
+        let foot_pos = cfg.album_pages_footer_number_position
+            .clone()
+            .unwrap_or_else(|| "C".to_string());
         let foot_start = cfg.album_pages_footer_number_start.unwrap_or(1);
-        let foot_before = cfg.album_pages_footer_number_before.clone().unwrap_or_else(|| "Page ".to_string());
-        let foot_after = cfg.album_pages_footer_number_after.clone().unwrap_or_else(|| " of $PAGES$".to_string());
-        lines.push(format!("ALBUM_PAGES_FOOTER_NUMBER ({} {} {} {} \"{}\" \"{}\")", foot_font, foot_size as i32, foot_pos, foot_start, foot_before, foot_after));
+        let foot_before = cfg.album_pages_footer_number_before
+            .clone()
+            .unwrap_or_else(|| "Page ".to_string());
+        let foot_after = cfg.album_pages_footer_number_after
+            .clone()
+            .unwrap_or_else(|| " of $PAGES$".to_string());
+        lines.push(
+            format!(
+                "ALBUM_PAGES_FOOTER_NUMBER ({} {} {} {} \"{}\" \"{}\")",
+                foot_font,
+                foot_size as i32,
+                foot_pos,
+                foot_start,
+                foot_before,
+                foot_after
+            )
+        );
     }
     lines.push("".to_string());
-    lines.push(format!("ALBUM_STAMP_IMG_NEW_SETTING ({:.1} {:.1} {})", img_new_w, img_new_h, img_preserve));
+    lines.push(
+        format!("ALBUM_STAMP_IMG_NEW_SETTING ({:.1} {:.1} {})", img_new_w, img_new_h, img_preserve)
+    );
     lines.push("".to_string());
     lines.push("ROW_ALIGN_MIDDLE".to_string());
     lines.push("".to_string());
@@ -253,7 +361,14 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
                     let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
                     let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
                     let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                    let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
+                    let _ = writeln!(
+                        writer,
+                        "ROW_START_ES ({} {} {:.1} {:.1})",
+                        rs_font,
+                        rs_size as i32,
+                        rs_spacing,
+                        rs_vspace
+                    );
                 }
                 last_was_page_start = true;
             }
@@ -271,7 +386,14 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
                 let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
                 let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
                 let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
+                let _ = writeln!(
+                    writer,
+                    "ROW_START_ES ({} {} {:.1} {:.1})",
+                    rs_font,
+                    rs_size as i32,
+                    rs_spacing,
+                    rs_vspace
+                );
             }
             last_was_page_start = true;
             continue;
@@ -295,7 +417,12 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         match flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
             Ok(p) => {
                 // convert to relative path under album dir if possible
-                if let Some(fname) = std::path::Path::new(&p).file_name().and_then(|s| s.to_str()) {
+                if
+                    let Some(fname) = std::path::Path
+                        ::new(&p)
+                        .file_name()
+                        .and_then(|s| s.to_str())
+                {
                     flag_path_opt = Some(format!("images/{}", fname));
                 } else {
                     flag_path_opt = Some(p);
@@ -307,17 +434,27 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
         }
 
         // Emit a cover page header
-        let _ = writeln!(writer, "################################################################################");
+        let _ = writeln!(
+            writer,
+            "################################################################################"
+        );
         let _ = writeln!(writer, "### {} ###", album_name);
-    let _ = writeln!(writer, "PAGE_START");
-    // Ensure cover pages also begin with a row start so the layout is initialized
-    if cfg_row_start_es {
-        let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
-        let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-        let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-        let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-        let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
-    }
+        let _ = writeln!(writer, "PAGE_START");
+        // Ensure cover pages also begin with a row start so the layout is initialized
+        if cfg_row_start_es {
+            let rs_font = cfg.row_start_es_font.clone().unwrap_or_else(|| "HN".to_string());
+            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+            let _ = writeln!(
+                writer,
+                "ROW_START_ES ({} {} {:.1} {:.1})",
+                rs_font,
+                rs_size as i32,
+                rs_spacing,
+                rs_vspace
+            );
+        }
         // If we have a flag image, emit it as a large image entry on the cover.
         if let Some(fp) = flag_path_opt.as_ref() {
             // Use flag_cover_* config values if provided, otherwise fall back to
@@ -335,15 +472,34 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
             let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
             let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
             let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
+            let _ = writeln!(
+                writer,
+                "ROW_START_ES ({} {} {:.1} {:.1})",
+                rs_font,
+                rs_size as i32,
+                rs_spacing,
+                rs_vspace
+            );
             let _ = writeln!(writer, "# Cover flag image for album");
-            let flag_cover_background_color = cfg.flag_cover_background_color.clone().unwrap_or_else(|| "white".to_string());
+            let flag_cover_background_color = cfg.flag_cover_background_color
+                .clone()
+                .unwrap_or_else(|| "white".to_string());
             let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", flag_cover_background_color);
             let _ = writeln!(writer, "# Change background for flag if needed");
-            
-            let _ = writeln!(writer, "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)", img_w, img_h, fp);
+
+            let _ = writeln!(
+                writer,
+                "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
+                img_w,
+                img_h,
+                fp
+            );
             let _ = writeln!(writer, "# Change the color background back to default after flag");
-            let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", cfg.color_stamp_background.clone().unwrap_or_else(|| "white".to_string())  );
+            let _ = writeln!(
+                writer,
+                "COLOR_STAMP_BACKGROUND({})",
+                cfg.color_stamp_background.clone().unwrap_or_else(|| "white".to_string())
+            );
 
             let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
 
@@ -351,7 +507,12 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
             let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
             // scale is not directly used by AlbumEasy; keep for downstream consumers
             let _title_scale = cfg.flag_cover_image_title_scale.unwrap_or(1.0);
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)", title_size as i32, album_name.replace("\\n", " "));
+            let _ = writeln!(
+                writer,
+                "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
+                title_size as i32,
+                album_name.replace("\\n", " ")
+            );
         } else {
             // Text-only cover: large centered title
             let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
@@ -364,12 +525,27 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
             let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
             let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
             let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(writer, "ROW_START_ES ({} {} {:.1} {:.1})", rs_font, rs_size as i32, rs_spacing, rs_vspace);
-            let _ = writeln!(writer, "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)", title_size as i32, album_name.replace("\\n", " "));
+            let _ = writeln!(
+                writer,
+                "ROW_START_ES ({} {} {:.1} {:.1})",
+                rs_font,
+                rs_size as i32,
+                rs_spacing,
+                rs_vspace
+            );
+            let _ = writeln!(
+                writer,
+                "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
+                title_size as i32,
+                album_name.replace("\\n", " ")
+            );
             let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
         }
         // After cover, emit a page separator so normal globals follow
-        let _ = writeln!(writer, "################################################################################");
+        let _ = writeln!(
+            writer,
+            "################################################################################"
+        );
     }
 }
 
@@ -412,7 +588,11 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
 /// - **L-series**: (1.25, 2.45) → 49.0mm x 21.0mm target
 /// - **M-series**: (1.15, 1.45) → 31.1mm x 24.1mm target
 /// - **N-series**: (1.10, 1.40) → 26.1mm x 21.0mm target
-pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crate::config::Config) -> (f64, f64) {
+pub fn calculate_stamp_dimensions(
+    image_path: &str,
+    album_name: &str,
+    cfg: &crate::config::Config
+) -> (f64, f64) {
     // Preferred approach: use actual image pixel dimensions converted to mm
     // via the embedded reference image. This eliminates reliance on hard-coded
     // series groups (L/M/N/O) and produces sizes based on the real image.
@@ -429,7 +609,10 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
     let mut resolved_image_path = image_path.to_string();
     let album_images_candidate = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
     // If the straight image_path does not exist, use the album images candidate for measurements.
-    if !std::path::Path::new(&resolved_image_path).exists() && std::path::Path::new(&album_images_candidate).exists() {
+    if
+        !std::path::Path::new(&resolved_image_path).exists() &&
+        std::path::Path::new(&album_images_candidate).exists()
+    {
         resolved_image_path = album_images_candidate;
     }
 
@@ -440,14 +623,19 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
         if let Ok(content) = std::fs::read_to_string(path) {
             for (i, line) in content.lines().enumerate() {
                 let line = line.trim();
-                if line.is_empty() || line.starts_with('#') { continue; }
-                let parts: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
+                if line.is_empty() || line.starts_with('#') {
+                    continue;
+                }
+                let parts: Vec<&str> = line
+                    .split(',')
+                    .map(|s| s.trim())
+                    .collect();
                 if parts.len() >= 3 {
                     if let (Ok(w), Ok(h)) = (parts[1].parse::<f32>(), parts[2].parse::<f32>()) {
                         m.insert(parts[0].to_string(), (w, h));
                     }
                 } else {
-                    eprintln!("[WARN] calibration CSV: bad line {}: {}", i+1, line);
+                    eprintln!("[WARN] calibration CSV: bad line {}: {}", i + 1, line);
                 }
             }
         }
@@ -457,9 +645,20 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
     // Try to find a calibration match by filename (basename)
     if let Some(cal_csv) = cfg.calibration_csv.as_ref() {
         let calib_map = load_calibration_map(cal_csv);
-        if let Some(basename) = std::path::Path::new(&resolved_image_path).file_name().and_then(|s| s.to_str()) {
+        if
+            let Some(basename) = std::path::Path
+                ::new(&resolved_image_path)
+                .file_name()
+                .and_then(|s| s.to_str())
+        {
             if let Some((mm_per_px_w, mm_per_px_h)) = calib_map.get(basename) {
-                if let Some((w_mm, h_mm)) = estimate_real_dimensions(&resolved_image_path, *mm_per_px_w, *mm_per_px_h) {
+                if
+                    let Some((w_mm, h_mm)) = estimate_real_dimensions(
+                        &resolved_image_path,
+                        *mm_per_px_w,
+                        *mm_per_px_h
+                    )
+                {
                     let mut width = w_mm as f64;
                     let mut height = h_mm as f64;
                     if let Some(scale) = cfg.global_scale {
@@ -475,14 +674,30 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
     }
 
     // Preferred approach: use embedded-reference sizing first (more consistent)
-    if let Some((mm_per_px_w, mm_per_px_h)) = crate::image_utils::calc_mm_per_pixel_embedded(REF_W_MM, REF_H_MM) {
-        if let Some((w_mm, h_mm)) = estimate_real_dimensions(&resolved_image_path, mm_per_px_w, mm_per_px_h) {
-                let mut width = w_mm as f64;
-                let mut height = h_mm as f64;
+    if
+        let Some((mm_per_px_w, mm_per_px_h)) = crate::image_utils::calc_mm_per_pixel_embedded(
+            REF_W_MM,
+            REF_H_MM
+        )
+    {
+        if
+            let Some((w_mm, h_mm)) = estimate_real_dimensions(
+                &resolved_image_path,
+                mm_per_px_w,
+                mm_per_px_h
+            )
+        {
+            let mut width = w_mm as f64;
+            let mut height = h_mm as f64;
 
             // Enforce reasonable bounds to avoid absurd sizes from mis-detected images
             if width > 120.0 || height > 120.0 {
-                eprintln!("[WARN] Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'.", width, height, resolved_image_path);
+                eprintln!(
+                    "[WARN] Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'.",
+                    width,
+                    height,
+                    resolved_image_path
+                );
             } else {
                 // Apply global_scale from provided config if present
                 if let Some(scale) = cfg.global_scale {
@@ -499,7 +714,11 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
     }
 
     // If embedded-reference approach failed, try DPI-based sizing
-    if let Ok(output) = Command::new("identify").args(&["-format", "%x %y %U", &resolved_image_path]).output() {
+    if
+        let Ok(output) = Command::new("identify")
+            .args(&["-format", "%x %y %U", &resolved_image_path])
+            .output()
+    {
         if output.status.success() {
             if let Ok(s) = String::from_utf8(output.stdout) {
                 let parts: Vec<&str> = s.split_whitespace().collect();
@@ -535,9 +754,15 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
                 }
 
                 if let (Some(dpi_x), Some(dpi_y), Some(unit)) = (dpi_x_opt, dpi_y_opt, unit_opt) {
-                    let (mm_per_px_w_dpi, mm_per_px_h_dpi) = if unit.to_lowercase().contains("inch") || unit.to_lowercase().contains("pixelsperinch") {
+                    let (mm_per_px_w_dpi, mm_per_px_h_dpi) = if
+                        unit.to_lowercase().contains("inch") ||
+                        unit.to_lowercase().contains("pixelsperinch")
+                    {
                         (25.4_f32 / dpi_x, 25.4_f32 / dpi_y)
-                    } else if unit.to_lowercase().contains("centimeter") || unit.to_lowercase().contains("pixelspercentimeter") {
+                    } else if
+                        unit.to_lowercase().contains("centimeter") ||
+                        unit.to_lowercase().contains("pixelspercentimeter")
+                    {
                         (10.0_f32 / dpi_x, 10.0_f32 / dpi_y)
                     } else {
                         (0.0_f32, 0.0_f32)
@@ -545,8 +770,8 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
 
                     if mm_per_px_w_dpi > 0.0 && mm_per_px_h_dpi > 0.0 {
                         if let Some((wpx, hpx)) = get_image_dimensions(&resolved_image_path) {
-                            let mut w_mm = wpx as f32 * mm_per_px_w_dpi;
-                            let mut h_mm = hpx as f32 * mm_per_px_h_dpi;
+                            let mut w_mm = (wpx as f32) * mm_per_px_w_dpi;
+                            let mut h_mm = (hpx as f32) * mm_per_px_h_dpi;
                             // Apply global_scale if present
                             if let Some(scale) = cfg.global_scale {
                                 w_mm *= scale;
@@ -566,19 +791,30 @@ pub fn calculate_stamp_dimensions(image_path: &str, album_name: &str, cfg: &crat
     // If DPI-based approach failed or unknown, attempt to compute mm-per-pixel from the embedded reference image
     if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(REF_W_MM, REF_H_MM) {
         // Try to estimate using the actual image file if it exists
-        if let Some((w_mm, h_mm)) = estimate_real_dimensions(&resolved_image_path, mm_per_px_w, mm_per_px_h) {
+        if
+            let Some((w_mm, h_mm)) = estimate_real_dimensions(
+                &resolved_image_path,
+                mm_per_px_w,
+                mm_per_px_h
+            )
+        {
             let width = w_mm as f64;
             let height = h_mm as f64;
 
             // If measurements are absurdly large (likely a full-page scan or wrong reference),
             // attempt a DPI-based fallback (already tried), otherwise fall back to conservative default.
             if width > 120.0 || height > 120.0 {
-                eprintln!("[WARN] Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'. Falling back to default.", width, height, resolved_image_path);
+                eprintln!(
+                    "[WARN] Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'. Falling back to default.",
+                    width,
+                    height,
+                    resolved_image_path
+                );
                 return (28.0_f64, 31.0_f64);
             }
 
             // Enforce reasonable bounds to avoid absurd sizes
-            let width = width.clamp(18.0, 60.0);   // between 18mm and 60mm
+            let width = width.clamp(18.0, 60.0); // between 18mm and 60mm
             let height = height.clamp(14.0, 60.0); // between 14mm and 60mm
 
             return (width, height);
@@ -598,45 +834,51 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
     let conn = crate::db_utils::init_db(db_path).expect("Failed to open database");
 
     // Load all stamps directly instead of filtering by series
-    let mut stmt = conn.prepare("SELECT year, month, day, sg_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context FROM stamps ORDER BY sg_number").expect("Failed to prepare statement");
+    let mut stmt = conn
+        .prepare(
+            "SELECT year, month, day, sg_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context FROM stamps ORDER BY sg_number"
+        )
+        .expect("Failed to prepare statement");
 
-    let stamp_iter = stmt.query_map([], |row| {
-        // Debug: print raw row data
-        // let sg_result: Result<String, _> = row.get(3);
-        // let desc_result: Result<String, _> = row.get(8);
-        // println!("[DEBUG] Raw row data: sg_number={:?}, description={:?}", sg_result, desc_result);
+    let stamp_iter = stmt
+        .query_map([], |row| {
+            // Debug: print raw row data
+            // let sg_result: Result<String, _> = row.get(3);
+            // let desc_result: Result<String, _> = row.get(8);
+            // println!("[DEBUG] Raw row data: sg_number={:?}, description={:?}", sg_result, desc_result);
 
-        Ok(crate::db_utils::StampStub {
-            year: row.get::<_, i32>(0).unwrap_or(0),
-            month: row.get(1).unwrap_or(String::new()),
-            month_num: row.get::<_, i32>(7).unwrap_or(0),
-            day: row.get(2).unwrap_or(String::new()),
-            sg_number: row.get(3).unwrap_or(String::new()),
-            r#type: row.get(4).unwrap_or(String::new()),
-            stamp_type: row.get(4).unwrap_or(String::new()),
-            denomination: row.get(5).unwrap_or(String::new()),
-            color: row.get(6).unwrap_or(String::new()),
-            description: row.get(8).unwrap_or(String::new()),
-            desc: row.get(8).unwrap_or(String::new()),  // description is at index 8
-            catalog_num: row.get(3).unwrap_or(String::new()),  // Use sg_number for catalog_num
-            stamps_issued: row.get(9).unwrap_or(String::new()),  // stamps_issued at index 9
-            mint_condition: String::new(),
-            unused: String::new(),
-            used: String::new(),
-            letter_fdc: String::new(),
-            currency: row.get(17).unwrap_or(String::new()),     // currency at index 17
-            image_path: row.get(10).unwrap_or(String::new()),   // image_path at index 10
-            remote_image_url: row.get(11).unwrap_or(String::new()), // remote_image_url at index 11
-            original_image_url: String::new(),
-            watermark: row.get(12).unwrap_or(String::new()),    // watermark at index 12
-            design: row.get(13).unwrap_or(String::new()),       // design at index 13
-            engraving: row.get(14).unwrap_or(String::new()),    // engraving at index 14
-            perforation: row.get(15).unwrap_or(String::new()),  // perforation at index 15
-            series: row.get(16).unwrap_or(String::new()),       // series at index 16
-            context: row.get(18).unwrap_or(String::new()),      // context at index 18
-            multi_perf: false,
+            Ok(crate::db_utils::StampStub {
+                year: row.get::<_, i32>(0).unwrap_or(0),
+                month: row.get(1).unwrap_or(String::new()),
+                month_num: row.get::<_, i32>(7).unwrap_or(0),
+                day: row.get(2).unwrap_or(String::new()),
+                sg_number: row.get(3).unwrap_or(String::new()),
+                r#type: row.get(4).unwrap_or(String::new()),
+                stamp_type: row.get(4).unwrap_or(String::new()),
+                denomination: row.get(5).unwrap_or(String::new()),
+                color: row.get(6).unwrap_or(String::new()),
+                description: row.get(8).unwrap_or(String::new()),
+                desc: row.get(8).unwrap_or(String::new()), // description is at index 8
+                catalog_num: row.get(3).unwrap_or(String::new()), // Use sg_number for catalog_num
+                stamps_issued: crate::db_utils::format_stamps_issued(&row.get::<_, String>(9).unwrap_or(String::new())), // stamps_issued at index 9
+                mint_condition: String::new(),
+                unused: String::new(),
+                used: String::new(),
+                letter_fdc: String::new(),
+                currency: row.get(17).unwrap_or(String::new()), // currency at index 17
+                image_path: row.get(10).unwrap_or(String::new()), // image_path at index 10
+                remote_image_url: row.get(11).unwrap_or(String::new()), // remote_image_url at index 11
+                original_image_url: String::new(),
+                watermark: row.get(12).unwrap_or(String::new()), // watermark at index 12
+                design: row.get(13).unwrap_or(String::new()), // design at index 13
+                engraving: row.get(14).unwrap_or(String::new()), // engraving at index 14
+                perforation: row.get(15).unwrap_or(String::new()), // perforation at index 15
+                series: row.get(16).unwrap_or(String::new()), // series at index 16
+                context: row.get(18).unwrap_or(String::new()), // context at index 18
+                multi_perf: false,
+            })
         })
-    }).expect("Failed to query stamps");
+        .expect("Failed to query stamps");
 
     let mut all_stamps = Vec::new();
     for stamp_result in stamp_iter {

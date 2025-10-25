@@ -356,7 +356,7 @@ impl CommandsFileGenerator {
                 let multi_perf;
                 if year != prev_year {
             album_globals::new_page(&mut writer, &mut rows_written, &mut stamps_written, &mut used_width, &mut used_height, &mut max_row_height);
-                    album_globals::new_year(&mut writer, year);
+                    album_globals::new_year(&mut writer, year, None);
                         series_info = Some(self.get_series_info(data, idx, &width, &height));
                         count = series_info.as_ref().map_or(1, |s| s.count);
                         multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);

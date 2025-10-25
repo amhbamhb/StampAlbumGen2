@@ -122,10 +122,32 @@ median_width_cap_4 = 30.0
 # Example settings (uncomment and tune in your `config.toml`):
 # page_vspace_marker = "(6)"            # default marker string for page vspace
 # row_start_es_marker = "ROW_START_ES" # marker label for the ROW_START_ES block
-# row_start_es_token = "TN"            # short token printed inside the block
 # row_start_es_font = "6"              # small font identifier used historically
 # row_start_es_size = 0.10              # numeric size value (AlbumEasy units)
 # row_start_es_vspace = 5.0             # extra vspace after the token (mm)
+
+# --- PAGE_TEXT templates ---
+# You can customize how the generator emits PAGE_TEXT commands by providing
+# template strings here. Each template must include a single `{}` placeholder
+# which will be replaced with the text to emit. Defaults reproduce historical
+# AlbumEasy literals used by the generator.
+# Examples:
+# page_text_format = 'PAGE_TEXT (HN 10 "{}" 1.0)'
+# page_text_centre_format = 'PAGE_TEXT_CENTRE (HB 10 "{}" 1.0)'
+# page_text_right_format = 'PAGE_TEXT_RIGHT (HN 10 "{}" 1.0)'
+
+# Optional per-field overrides (font, size, vspace) which will be combined
+# into a template if present. Uncomment and tune as needed in your `config.toml`:
+# page_text_font = "HN"
+# page_text_size = 10.0
+# page_text_vspace = 1.0
+# page_text_centre_font = "TN"
+# page_text_centre_size = 8.0
+# page_text_centre_vspace = 1.0
+# page_text_right_font = "HN"
+# page_text_right_size = 10.0
+# page_text_right_vspace = 1.0
+
 
 
 # --- Flag cover rendering hints (flag_cover_*) ---
