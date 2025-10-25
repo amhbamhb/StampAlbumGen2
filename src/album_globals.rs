@@ -408,6 +408,7 @@ where
                 attrs.set("currency", &stamp.currency);
                 attrs.set("watermark", &stamp.watermark);
                 attrs.set("design", &stamp.design);
+                attrs.set("engraving", &stamp.engraving);
                 attrs.set("perforation", &stamp.perforation);
                 // Set image_path from StampStub
                 stamp_objs.push(Stamp {
@@ -592,20 +593,24 @@ where
                         )
                         .replace("\n", " ")
                         .replace("  ", " ");
-                        if !watermark.is_empty() {
+                        if config.include_watermark.unwrap_or(true) && !watermark.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Watermark: {}", watermark);
                             let safe = text.replace('"', "\\\"");
                             header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
+                        // Prefer an explicit `engraving` attribute from the DB if present.
+                        // Some data sources put engraving into the separate `engraving` column
+                        // while others append it to the `design` column as "... Engraving: ...".
                         let design_field = stamp
                             .attrs
                             .get("design")
                             .unwrap_or(&"".to_string())
                             .replace("\n", " ")
                             .replace("  ", " ");
-                        let mut parts = design_field.split("Engraving:");
-                        let design_raw = parts
+                        // Extract design portion before any embedded "Engraving:" or "Perforation:"
+                        let design_raw = design_field
+                            .split("Engraving:")
                             .next()
                             .unwrap_or("")
                             .split("Perforation:")
@@ -613,19 +618,28 @@ where
                             .unwrap_or("")
                             .trim()
                             .to_string();
-                        let engraving_raw = parts
-                            .next()
-                            .map(|p| p.split("Perforation:").next().unwrap_or("").trim().to_string())
-                            .unwrap_or_default();
+
+                        // engraving may be stored separately in the `engraving` attr; prefer that
+                        let engraving_from_column = stamp.attrs.get("engraving").map(|s| s.trim()).unwrap_or("");
+                        let engraving_raw = if !engraving_from_column.is_empty() {
+                            engraving_from_column.to_string()
+                        } else {
+                            // fallback: try to parse engraving from the design_field
+                            design_field
+                                .split("Engraving:")
+                                .nth(1)
+                                .map(|p| p.split("Perforation:").next().unwrap_or("").trim().to_string())
+                                .unwrap_or_default()
+                        };
                         let design = clean_text(&design_raw);
                         let engraving = clean_text(&engraving_raw);
-                        if !engraving.is_empty() {
+                        if config.include_engraving.unwrap_or(true) && !engraving.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Engraving: {}", engraving);
                             let safe = text.replace('"', "\\\"");
                             header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                         }
-                        if !design.is_empty() {
+                        if config.include_design.unwrap_or(true) && !design.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Design: {}", design);
                             let safe = text.replace('"', "\\\"");
@@ -830,7 +844,7 @@ where
                     // attempt to pull watermark/design from first stamp if present
                     if let Some(next_first_stamp) = next_stamps.get(0) {
                         let watermark = clean_text(next_first_stamp.watermark.trim()).replace("\n", " ").replace("  ", " ");
-                        if !watermark.is_empty() {
+                        if config.include_watermark.unwrap_or(true) && !watermark.is_empty() {
                             let tmpl = build_page_text_template(&config, "centre");
                             let text = format!("Watermark: {}", watermark);
                             let safe = text.replace('"', "\\\"");

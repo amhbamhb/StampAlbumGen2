@@ -836,7 +836,7 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
     // Load all stamps directly instead of filtering by series
     let mut stmt = conn
         .prepare(
-            "SELECT year, month, day, sg_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context FROM stamps ORDER BY sg_number"
+            "SELECT year, month, day, w_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context FROM stamps ORDER BY sg_number"
         )
         .expect("Failed to prepare statement");
 
