@@ -382,13 +382,13 @@ pub fn collect_stampworld_data(
                 }
             }
             if !header_texts.is_empty() {
-                info!("Block {} headers: {:?}", block_idx, header_texts);
+                // info!("Block {} headers: {:?}", block_idx, header_texts);
             }
 
             // Associate images with specific rows first
             let mut image_idx = 0usize;
             let rows: Vec<_> = content_div.select(&table_selector).collect();
-            info!("Block {} has {} table rows matching selector", block_idx, rows.len());
+            // info!("Block {} has {} table rows matching selector", block_idx, rows.len());
             for (ridx, tr) in rows.into_iter().enumerate() {
                 // Basic row parsing: build a flattened row_cells vector so we can
                 // handle tables where the catalog number is either in a <th>
@@ -424,9 +424,13 @@ pub fn collect_stampworld_data(
 
                 let sg_number = row_cells.get(0).map(|s| s.trim().to_string()).unwrap_or_default();
                 // Pull a couple of fields early so grouped-range handling can
-                // inspect the description cell for a year fallback.
-                let description = row_cells.get(5).map(|s| s.clone()).unwrap_or_default();
-                let _stamps_issued = row_cells.get(6).map(|s| s.clone()).unwrap_or_default();
+                // inspect the description cell for a year fallback. Observed
+                // pages commonly have the description at index 6 (0=sg), so
+                // prefer that when available; fall back to index 5 for older
+                // or alternate layouts. Stamps issued is usually one column
+                // after the description (index 7) when present.
+                let description = if row_cells.len() > 6 { row_cells.get(6).map(|s| s.clone()).unwrap_or_default() } else { row_cells.get(5).map(|s| s.clone()).unwrap_or_default() };
+                let _stamps_issued = if row_cells.len() > 7 { row_cells.get(7).map(|s| s.clone()).unwrap_or_default() } else { row_cells.get(6).map(|s| s.clone()).unwrap_or_default() };
                     // Handle grouped-range tokens like "1067-1068": expand into
                     // placeholders if the config requests it. We compute stamp_year
                     // here (fallback to block_year_int) so inserted placeholders
@@ -526,7 +530,8 @@ pub fn collect_stampworld_data(
                                                                     let type_f = row_cells2.get(1).map(|s| s.clone()).unwrap_or_default();
                                                                     let denomination_f = row_cells2.get(2).map(|s| s.clone()).unwrap_or_default();
                                                                     let color_f = row_cells2.get(4).map(|s| s.clone()).unwrap_or_default();
-                                                                    let description_f = row_cells2.get(5).map(|s| s.clone()).unwrap_or_default();
+                                                                    // Observed real pages place description at index 6 (0=sg,1=type,2=denom,3=blank,4=color,5=blank,6=description)
+                                                                    let description_f = if row_cells2.len() > 6 { row_cells2.get(6).map(|s| s.clone()).unwrap_or_default() } else { row_cells2.get(5).map(|s| s.clone()).unwrap_or_default() };
                                                                     // Extract month/day heuristics per-line
                                                                     let mut month_f = String::new();
                                                                     let mut day_f = String::new();
@@ -640,8 +645,9 @@ pub fn collect_stampworld_data(
                 let type_ = row_cells.get(1).map(|s| s.clone()).unwrap_or_default();
                 let denomination = row_cells.get(2).map(|s| s.clone()).unwrap_or_default();
                 let color = row_cells.get(4).map(|s| s.clone()).unwrap_or_default();
-                let description = row_cells.get(5).map(|s| s.clone()).unwrap_or_default();
-                let stamps_issued = row_cells.get(6).map(|s| s.clone()).unwrap_or_default();
+                // Observed real pages commonly place description at index 6 (0=sg), so prefer that when available.
+                let description = if row_cells.len() > 6 { row_cells.get(6).map(|s| s.clone()).unwrap_or_default() } else { row_cells.get(5).map(|s| s.clone()).unwrap_or_default() };
+                let stamps_issued = if row_cells.len() > 7 { row_cells.get(7).map(|s| s.clone()).unwrap_or_default() } else { row_cells.get(6).map(|s| s.clone()).unwrap_or_default() };
 
                 // Prefer images scoped inside the row
                 let mut selected_image_url = String::new();
@@ -907,6 +913,16 @@ pub fn collect_stampworld_data(
                             let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
                                 stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, "", "", "", "", "", local_image_path, remote_image_url, original_image_url, "", "", "", "", cleaned_context_details);
                             all_stamp_data.push(stamp_line);
+                            // Persist image pixel dimensions when available (read from local file if present)
+                            if !local_image_path.is_empty() {
+                                if let Some((w_px, h_px)) = crate::image_utils::get_image_dimensions(&local_image_path) {
+                                    let w = Some(w_px as i32);
+                                    let h = Some(h_px as i32);
+                                    if let Err(e) = crate::db_utils::update_image_dimensions(&conn, site_name, &series_name, &sg_number, w, h) {
+                                        error!("Failed to persist image dimensions for {} {} {}: {}", site_name, series_name, sg_number, e);
+                                    }
+                                }
+                            }
                         } else if overwrite_images {
                             // The row already exists and wasn't updated by insert_stamp (no placeholder).
                             // If --overwrite-images was requested, perform a targeted UPDATE to replace image fields
@@ -944,6 +960,16 @@ pub fn collect_stampworld_data(
                                         let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
                                             stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, local_image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, cleaned_context_details);
                                         all_stamp_data.push(stamp_line);
+                                        // Persist image pixel dimensions when available (read from local file if present)
+                                        if !local_image_path.is_empty() {
+                                            if let Some((w_px, h_px)) = crate::image_utils::get_image_dimensions(&local_image_path) {
+                                                let w = Some(w_px as i32);
+                                                let h = Some(h_px as i32);
+                                                if let Err(e) = crate::db_utils::update_image_dimensions(&conn, site_name, &series_name, &sg_number, w, h) {
+                                                    error!("Failed to persist image dimensions for {} {} {}: {}", site_name, series_name, sg_number, e);
+                                                }
+                                            }
+                                        }
                                     } else {
                                         debug!("--overwrite-images set but no DB row matched for update: {} | {} | {}", site_name, series_name, sg_number);
                                     }

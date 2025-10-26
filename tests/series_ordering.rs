@@ -32,6 +32,8 @@ fn test_get_all_series_asc_desc_simple() {
             unused TEXT,
             used TEXT,
             letter_fdc TEXT
+            ,image_width_px INTEGER,
+            image_height_px INTEGER
         );",
     ).unwrap();
 

@@ -97,6 +97,8 @@ impl GenericAttrs {
 pub struct Stamp {
     pub attrs: GenericAttrs,
     pub image_path: String,
+    pub image_width_px: Option<i32>,
+    pub image_height_px: Option<i32>,
 }
 
 // Top-level definitions for cross-module use
@@ -106,10 +108,10 @@ pub const MONTH_NAMES: [&str; 13] = [
 
 // Use shared ImageStatus and OSType from `types.rs`
 
-pub fn write_globals<W: std::io::Write>(writer: &mut W, album_name: &str) {
+pub fn write_globals<W: std::io::Write>(writer: &mut W, album_name: &str, conn_opt: Option<&Connection>, start_year: Option<i32>, end_year: Option<i32>) {
     // Use the canonical globals writer from `album_utils` so all callers get the
     // same header block. The user-supplied album header is implemented there.
-    crate::album_utils::write_globals(writer, album_name);
+    crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year);
 }
 
 /// Compute usable height (mm) given a Config. This mirrors the logic used
@@ -285,16 +287,27 @@ where
     } else {
         (cfg_ref_w, cfg_ref_h)
     };
-    let (mm_per_pixel_w, mm_per_pixel_h) = match calc_mm_per_pixel_embedded(
-        ref_w_mm as f32,
-        ref_h_mm as f32,
-    ) {
-        Some(ratio) => ratio,
-        None => {
-            warn!("Embedded reference image failed to load. Using default ratio (1.0, 1.0)");
-            (1.0, 1.0)
+    // Compute mm-per-pixel. Allow an explicit DPI override from config
+    // (useful when the page provides pixels and you want a DPI-based mapping).
+    let (mm_per_pixel_w, mm_per_pixel_h) = if let Some(dpi) = config.force_dpi {
+        // mm per pixel = 25.4 mm / dpi
+        let mmpp = 25.4_f32 / dpi;
+        (mmpp, mmpp)
+    } else {
+        match calc_mm_per_pixel_embedded(
+            ref_w_mm as f32,
+            ref_h_mm as f32,
+        ) {
+            Some(ratio) => ratio,
+            None => {
+                warn!("Embedded reference image failed to load. Using default ratio (1.0, 1.0)");
+                (1.0, 1.0)
+            }
         }
     };
+    // If set, preserve_real_image_size tells the generator to emit the real
+    // DPI-derived image sizes and NOT scale them down to `stamp_box_height`.
+    let preserve_real = config.preserve_real_image_size.unwrap_or(false);
 
     // Canonical output filename: Albums/{Album-Name}/{Album-Name}.txt
     let album_dir = std::path::PathBuf::from(format!("Albums/{}", album_name.replace(' ', "-")));
@@ -316,8 +329,8 @@ where
     let output_path = album_dir.join(filename);
     let mut output = BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
 
-    // Write global album settings
-    write_globals(&mut output, album_name);
+    // Write global album settings (pass DB connection and CLI year range so the header can include years)
+    write_globals(&mut output, album_name, Some(conn), passed_start_year, passed_end_year);
 
     // Emit a single leading page header for Page 1
         let _ = writeln!(output, "### Page 1 ###");
@@ -414,6 +427,8 @@ where
                 stamp_objs.push(Stamp {
                     attrs,
                     image_path: stamp.image_path.clone(),
+                    image_width_px: stamp.image_width_px,
+                    image_height_px: stamp.image_height_px,
                 });
             }
             // Group stamps into rows of 5
@@ -424,13 +439,15 @@ where
                 let image_path = stamp.image_path.trim();
                 let full_image_path =
                     format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-                // Estimate image physical size (mm) and scale to fit the configured stamp_box_height
-                let (est_width_mm, _) = if let Some((w_mm, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
+                // Prefer DB-stored pixel dimensions if available; otherwise fall back to image-based estimation
+                let (est_width_mm, _) = if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
+                    (((w_px as f64) * (mm_per_pixel_w as f64)), ((h_px as f64) * (mm_per_pixel_h as f64)))
+                } else if let Some((w_mm, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
                     let mut w = w_mm as f64;
                     let mut h = h_mm as f64;
                     // If the measured height is larger than the configured stamp box height
                     // shrink the image proportionally so it fits within stamp_box_height
-                    if h > stamp_box_height {
+                    if !preserve_real && h > stamp_box_height {
                         let scale = stamp_box_height / h;
                         w *= scale;
                         h *= scale;
@@ -458,16 +475,16 @@ where
                         let img_path = s.image_path.trim();
                         let full_img_path =
                             format!("Albums/{}/{}", album_name.replace(' ', "-"), img_path);
-                        let (w_mm, h_mm) = estimate_real_dimensions(
-                            &full_img_path,
-                            mm_per_pixel_w,
-                            mm_per_pixel_h,
-                        )
-                        .unwrap_or((reference_width_mm as f32, reference_height_mm as f32));
+                        let (w_mm, h_mm) = if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+                            (w_px as f32 * mm_per_pixel_w, h_px as f32 * mm_per_pixel_h)
+                        } else {
+                            estimate_real_dimensions(&full_img_path, mm_per_pixel_w, mm_per_pixel_h)
+                                .unwrap_or((reference_width_mm as f32, reference_height_mm as f32))
+                        };
                         // scale to stamp_box_height if needed
                         let mut w = w_mm as f64;
                         let h = h_mm as f64;
-                        if h > stamp_box_height {
+                        if !preserve_real && h > stamp_box_height {
                             let s = stamp_box_height / h;
                             w *= s;
                             // scaled height not needed for width accumulation here
@@ -680,11 +697,13 @@ where
                         let image_path = stamp.image_path.trim();
                         let full_image_path =
                             format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-                        let est_height_mm = if let Some((_, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
+                        let est_height_mm = if let (Some(_w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
+                            let mut h = (h_px as f64) * (mm_per_pixel_h as f64);
+                            if !preserve_real && h > stamp_box_height { h = stamp_box_height; }
+                            h
+                        } else if let Some((_, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
                             let mut h = h_mm as f64;
-                            if h > stamp_box_height {
-                                h = stamp_box_height;
-                            }
+                            if !preserve_real && h > stamp_box_height { h = stamp_box_height; }
                             h
                         } else {
                             reference_height_mm as f64
@@ -795,14 +814,25 @@ where
                     let image_path = stamp.image_path.trim();
                     let full_image_path =
                         format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                        // Prefer stored pixel height from DB when available. If absent,
+                        // fall back to estimating from the local image file using the
+                        // embedded-reference mm/px ratio. Final fallback is a
+                        // conservative stamp_box_height value.
                         let est_height_mm = if !image_path.is_empty() {
-                            if let Some((_, h_mm)) = estimate_real_dimensions(
+                            if let Some(h_px) = stamp.image_height_px {
+                                // Use DB-stored pixel height -> convert to mm
+                                let mut h = (h_px as f64) * (mm_per_pixel_h as f64);
+                                if !preserve_real && h > stamp_box_height {
+                                    h = stamp_box_height;
+                                }
+                                h
+                            } else if let Some((_, h_mm)) = estimate_real_dimensions(
                                 &full_image_path,
                                 mm_per_pixel_w,
                                 mm_per_pixel_h,
                             ) {
                                 let mut h = h_mm as f64;
-                                if h > stamp_box_height {
+                                if !preserve_real && h > stamp_box_height {
                                     h = stamp_box_height;
                                 }
                                 h
@@ -891,9 +921,14 @@ where
                         for stamp in first_row {
                             let image_path = stamp.image_path.trim();
                             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-                            let est_height_mm = if let Some((_, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
+                            // Prefer DB-stored pixels when available, otherwise estimate from file
+                            let est_height_mm = if let (Some(_w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
+                                let mut h = (h_px as f64) * (mm_per_pixel_h as f64);
+                                if !preserve_real && h > stamp_box_height { h = stamp_box_height; }
+                                h
+                            } else if let Some((_, h_mm)) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h) {
                                 let mut h = h_mm as f64;
-                                if h > stamp_box_height { h = stamp_box_height; }
+                                if !preserve_real && h > stamp_box_height { h = stamp_box_height; }
                                 h
                             } else { reference_height_mm as f64 };
                             let text_lines = 1usize; // conservative minimal estimate
@@ -1064,32 +1099,142 @@ where
                     let full_image_path =
                         format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
                     // Estimate and scale final emitted width/height to fit stamp_box_height and include stamp_box_adjust margins
-                    let (mut est_width_mm, mut est_height_mm) = estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
-                        .map(|(w,h)| (w as f64, h as f64))
-                        .unwrap_or((reference_width_mm as f64, reference_height_mm as f64));
-                    if est_height_mm > stamp_box_height {
-                        let s = stamp_box_height / est_height_mm;
-                        est_width_mm *= s;
-                        est_height_mm *= s;
+                    // Prefer DB-stored pixel dims if present; otherwise attempt image-based estimation
+                    let (mut est_width_mm, mut est_height_mm) = if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
+                        ((w_px as f64) * (mm_per_pixel_w as f64), (h_px as f64) * (mm_per_pixel_h as f64))
+                    } else {
+                        estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+                            .map(|(w,h)| (w as f64, h as f64))
+                            .unwrap_or((reference_width_mm as f64, reference_height_mm as f64))
+                    };
+                    // If the estimated image height is larger than the configured
+                    // stamp box height, scale the image down proportionally.
+                    // Respect the `preserve_real_image_size` flag: when set we
+                    // should NOT scale images to the stamp box height and should
+                    // emit raw DPI-derived mm values instead.
+                    let mut scale = 1.0f64;
+                    if !preserve_real && est_height_mm > stamp_box_height {
+                        scale = stamp_box_height / est_height_mm;
+                        est_width_mm *= scale;
+                        est_height_mm *= scale;
                     }
                     // Apply ALBUM_STAMP_IMG_NEW_SETTING adjustments to width/height (additive)
                     let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
                     let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
                     est_width_mm += img_new_w;
                     est_height_mm += img_new_h;
+                    // Debug: emit detailed per-stamp sizing diagnostics when debug logging enabled
+                    debug!("Stamp [{}|{}] DB_px=({:?},{:?}) mm_per_px=({:.6},{:.6}) pre_scale_mm=({:.2},{:.2}) scale={:.4} img_new=(w:{:.2},h:{:.2}) box_adjust={:.2} emit_mm_before_adjust=({:.2},{:.2}) emit_mm_final=({:.2},{:.2})",
+                        album_name,
+                        stamp.attrs.get("sg_number").unwrap_or(&String::new()),
+                        stamp.image_width_px,
+                        stamp.image_height_px,
+                        mm_per_pixel_w as f64,
+                        mm_per_pixel_h as f64,
+                        (est_width_mm - img_new_w) / (if scale==0.0 {1.0} else {scale}), // approximate pre-scale width
+                        (est_height_mm - img_new_h) / (if scale==0.0 {1.0} else {scale}), // approximate pre-scale height
+                        scale,
+                        img_new_w,
+                        img_new_h,
+                        stamp_box_adjust,
+                        est_width_mm - 2.0 * stamp_box_adjust,
+                        est_height_mm - 2.0 * stamp_box_adjust,
+                        est_width_mm + 2.0 * stamp_box_adjust,
+                        est_height_mm + 2.0 * stamp_box_adjust
+                    );
                     // add per-side adjust to the emitted box width/height (STAMP_BOXES_SIZE_ADJUST)
                     let emit_width = est_width_mm + 2.0 * stamp_box_adjust;
                     let emit_height = est_height_mm + 2.0 * stamp_box_adjust;
-                    // Left: sg_number
-                    let left =  clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
+                    // Left: denomination (may include surcharge like "20+10 (C)").
+                    // Wrap/split the denomination so a surcharge does not force the
+                    // centre/right columns to be overwritten. Prefer splitting at
+                    // a '+' when present (keep the '+' with the second line),
+                    // otherwise perform a small greedy word-wrap.
+                    let raw_left = clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
+                    // Compute a conservative max chars for the left column from emit_width
+                    let approx_char_width_mm_left = 2.6_f64;
+                    let padding_mm_left = 4.0_f64;
+                    let avail_width_mm_left = if emit_width > padding_mm_left { emit_width - padding_mm_left } else { emit_width };
+                    let mut chars_per_line_left = (avail_width_mm_left / approx_char_width_mm_left / 2.5).floor() as usize; // left column is smaller portion
+                    if chars_per_line_left < 4 { chars_per_line_left = 4; }
+
+                    let wrap_left = |s: &str, max_chars: usize| -> String {
+                        if s.trim().is_empty() { return String::new(); }
+                        // If string contains a '+' and not whitespace around it (common surcharge form),
+                        // split at the first '+' and keep the '+' on the second line.
+                        if s.contains('+') && !s.contains(' ') {
+                            if let Some(pos) = s.find('+') {
+                                let first = s[..pos].to_string();
+                                let second = format!("+{}", s[pos+1..].trim());
+                                return format!("{}\\n{}", first, second);
+                            }
+                        }
+                        // Greedy word-wrap preserving words
+                        let mut lines: Vec<String> = Vec::new();
+                        let mut current = String::new();
+                        for word in s.split_whitespace() {
+                            if current.is_empty() {
+                                current.push_str(word);
+                            } else if current.len() + 1 + word.len() <= max_chars {
+                                current.push(' ');
+                                current.push_str(word);
+                            } else {
+                                lines.push(current);
+                                current = word.to_string();
+                            }
+                        }
+                        if !current.is_empty() { lines.push(current); }
+                        lines.join("\\n")
+                    };
+
+                    let left = wrap_left(&raw_left, chars_per_line_left);
                     // let sgnum = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
                     // Centre: color, description, and stamps_issued (counts are shown here when present)
-                    let centre = format!(
-                        "{}\\n{}\\n{}",
-                        clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())),
-                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string())),
-                        clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()))
-                    );
+                    // Wrap long descriptions to multiple lines based on stamp width so they
+                    // don't overflow adjacent fields in the AlbumEasy output. We approximate
+                    // average character width and greedily build lines that fit the
+                    // estimated emit_width (mm).
+                    let raw_stamps_issued = clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()));
+                    let raw_description = clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
+                    let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
+
+                    // Simple wrapping: estimate characters per line from emit_width.
+                    // Use an approximate character width (mm). This is heuristic but
+                    // prevents very long single-line descriptions from overwriting
+                    // neighboring fields. Leave short descriptions unchanged.
+                    let approx_char_width_mm = 2.6_f64; // heuristic average char width
+                    let padding_mm = 4.0_f64; // horizontal padding to avoid tight wrap
+                    let avail_width_mm = if emit_width > padding_mm { emit_width - padding_mm } else { emit_width };
+                    let mut chars_per_line = (avail_width_mm / approx_char_width_mm).floor() as usize;
+                    if chars_per_line < 10 { chars_per_line = 10; } // minimum line length
+
+                    // Greedy word-wrap preserving words when possible
+                    let wrap_words = |s: &str, max_chars: usize| -> String {
+                        if s.trim().is_empty() { return String::new(); }
+                        let mut lines: Vec<String> = Vec::new();
+                        let mut current = String::new();
+                        for word in s.split_whitespace() {
+                            if current.is_empty() {
+                                current.push_str(word);
+                            } else if current.len() + 1 + word.len() <= max_chars {
+                                current.push(' ');
+                                current.push_str(word);
+                            } else {
+                                lines.push(current);
+                                current = word.to_string();
+                            }
+                        }
+                        if !current.is_empty() { lines.push(current); }
+                        lines.join("\\n")
+                    };
+
+                    let wrapped_desc = wrap_words(&raw_description, chars_per_line);
+                    // Build centre block: stamps_issued (one line), wrapped description (may be multi-line), then color
+                    let centre = if wrapped_desc.is_empty() {
+                        format!("{}\\n{}", raw_stamps_issued, raw_color)
+                    } else {
+                        format!("{}\\n{}\\n{}", raw_stamps_issued, wrapped_desc, raw_color)
+                    };
                     // Right: mint_condition (or unused), used, stamps_issued
                     let mint_raw = stamp
                         .attrs

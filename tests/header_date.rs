@@ -42,6 +42,8 @@ fn test_series_header_includes_date() {
             unused TEXT,
             used TEXT,
             letter_fdc TEXT
+            ,image_width_px INTEGER,
+            image_height_px INTEGER
         );",
     ).expect("create table");
 

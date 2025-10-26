@@ -29,6 +29,12 @@ reference_height_mm = 240.0
 # font_family = "Arial"
 # debug_mode = false
 
+# Optional DPI override: force the generator to convert pixels -> mm using a
+# fixed DPI value rather than the embedded-reference ratio. Useful if pages
+# report pixel sizes and you want to use a standard DPI (for example 96).
+# Uncomment and set to your desired DPI (float). Example:
+# force_dpi = 96.0
+
 # --- Stamp Box Adjustment ---
 # Amount of extra space (mm) to add around each stamp as a border.
 # This value is applied per-side when computing box size, i.e. the emitted

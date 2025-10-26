@@ -106,7 +106,7 @@ pub fn sanitize_filename(filename: &str) -> String {
 }
 
 /// Writes global album settings to the provided writer
-pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
+pub fn write_globals<W: Write>(writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>) {
     // Get current date/time and user information using chrono (cross-platform)
     // Use UTC for the canonical generated timestamp and Local for the host localtime
     use chrono::{ Utc, Local };
@@ -258,13 +258,52 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) {
     let title_font = cfg.album_pages_title_font.clone().unwrap_or_else(|| "HN".to_string());
     let title_size = cfg.album_pages_title_size.unwrap_or(10.0);
     let title_pos = cfg.album_pages_header_position.clone().unwrap_or_else(|| "C".to_string());
+    // Build title including optional year range. Logic:
+    // - If both start and end provided: if equal -> single year, else show "start - end"
+    // - If only start provided: append "start - <max year from DB or current year>"
+    // - If only end provided: prepend "<min year from DB or current year> - end"
+    // - If neither provided: just album_name
+    use chrono::Datelike;
+    let mut title_body = album_name.to_string();
+    // Helper to query min/max year from DB if available
+    let db_min_year = conn_opt.and_then(|c| c.query_row("SELECT MIN(year) FROM stamps", [], |r| r.get::<_, Option<i32>>(0)).ok().flatten());
+    let db_max_year = conn_opt.and_then(|c| c.query_row("SELECT MAX(year) FROM stamps", [], |r| r.get::<_, Option<i32>>(0)).ok().flatten());
+    let current_year = chrono::Utc::now().year();
+    match (start_year, end_year) {
+        (Some(s), Some(e)) => {
+            if s == e {
+                title_body = format!("{} {}", album_name, s);
+            } else {
+                title_body = format!("{} - {} - {}", album_name, s, e);
+            }
+        }
+        (Some(s), None) => {
+            let maxy = db_max_year.unwrap_or(current_year);
+            if s == maxy {
+                title_body = format!("{} {}", album_name, s);
+            } else {
+                title_body = format!("{} - {} - {}", album_name, s, maxy);
+            }
+        }
+        (None, Some(e)) => {
+            let miny = db_min_year.unwrap_or(current_year);
+            if miny == e {
+                title_body = format!("{} {}", album_name, e);
+            } else {
+                title_body = format!("{} - {} - {}", album_name, miny, e);
+            }
+        }
+        (None, None) => {
+            // leave album_name as-is
+        }
+    }
     lines.push(
         format!(
             "ALBUM_PAGES_HEADER ({} {} {} \"{}\")",
             title_font,
             title_size as i32,
             title_pos,
-            album_name
+            title_body
         )
     );
     lines.push("".to_string());
@@ -847,7 +886,7 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
             // let desc_result: Result<String, _> = row.get(8);
             // println!("[DEBUG] Raw row data: sg_number={:?}, description={:?}", sg_result, desc_result);
 
-            Ok(crate::db_utils::StampStub {
+        Ok(crate::db_utils::StampStub {
                 year: row.get::<_, i32>(0).unwrap_or(0),
                 month: row.get(1).unwrap_or(String::new()),
                 month_num: row.get::<_, i32>(7).unwrap_or(0),
@@ -868,7 +907,9 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
                 currency: row.get(17).unwrap_or(String::new()), // currency at index 17
                 image_path: row.get(10).unwrap_or(String::new()), // image_path at index 10
                 remote_image_url: row.get(11).unwrap_or(String::new()), // remote_image_url at index 11
-                original_image_url: String::new(),
+            original_image_url: String::new(),
+            image_width_px: row.get::<_, Option<i64>>("image_width_px").ok().flatten().map(|v| v as i32),
+            image_height_px: row.get::<_, Option<i64>>("image_height_px").ok().flatten().map(|v| v as i32),
                 watermark: row.get(12).unwrap_or(String::new()), // watermark at index 12
                 design: row.get(13).unwrap_or(String::new()), // design at index 13
                 engraving: row.get(14).unwrap_or(String::new()), // engraving at index 14
