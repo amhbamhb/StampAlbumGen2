@@ -196,6 +196,16 @@ pub struct Config {
     pub stamp_heading_font: Option<String>,
     pub stamp_heading_size: Option<f32>,
     pub stamp_heading_label: Option<String>,
+    // Optional override: force a DPI to be used when converting pixels -> mm.
+    // If present the generator will compute mm_per_pixel = 25.4 / dpi and
+    // use that instead of the embedded-reference ratio when converting
+    // stored pixel dimensions to millimetres.
+    pub force_dpi: Option<f32>,
+    // When true, prefer the DPI-derived/DB-stored real-world image sizes and
+    // do NOT scale images down to `stamp_box_height` during emission.
+    // This allows emitted STAMP_ADD_IMG boxes to reflect real-world mm
+    // dimensions (useful when `force_dpi` is set and you want physical sizes).
+    pub preserve_real_image_size: Option<bool>,
 }
 
 impl Default for Config {
@@ -315,6 +325,8 @@ impl Default for Config {
             stamp_heading_font: None,
             stamp_heading_size: None,
             stamp_heading_label: None,
+            force_dpi: None,
+            preserve_real_image_size: None,
         }
     }
 }

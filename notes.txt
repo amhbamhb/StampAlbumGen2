@@ -42,3 +42,10 @@ ALBUM_PAGES_HEADER (HN 10 C "Switzerland - (read DB year and use eariest year)  
 logic it if --start-year 1970 and --end-year 1970 the format would be:
 
 ALBUM_PAGES_HEADER (HN 10 C "Switzerland - 1970")  - note no 2 year values when a single year is used
+
+
+update :  the stamp image when not avaiable to create a placeholder with stamp number and SG:123 and country.
+
+
+update : get wikipedia up and running again.
+

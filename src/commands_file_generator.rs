@@ -197,7 +197,13 @@ impl CommandsFileGenerator {
         let file_path = format!("{}/{}", self.images_directory, image_name);
             if !overwrite && Path::new(&file_path).exists() {
                 debug!("Skipping download, file exists: {}", file_path);
-                return crate::types::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };        }
+                // Try to compute dimensions from the existing file so callers get real values
+                if let Some((w, h)) = crate::image_utils::get_image_dimensions(&file_path) {
+                    return crate::types::ImageStatus { link: url.to_string(), exists: true, width: w as i32, height: h as i32, filename: image_name.to_string() };
+                } else {
+                    return crate::types::ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: image_name.to_string() };
+                }
+            }
         self.get_image(&remote_url, &image_name, &file_path)
     }
     
@@ -212,10 +218,14 @@ impl CommandsFileGenerator {
         }
         let file_path = format!("{}/{}", self.images_directory, filename);
         
-        // If overwrite is disabled and file exists, skip download
+        // If overwrite is disabled and file exists, skip download but try to get dimensions
         if !overwrite && Path::new(&file_path).exists() {
             info!("Skipping download, image already exists: {}", file_path);
-            return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: filename.to_string() };
+            if let Some((w, h)) = crate::image_utils::get_image_dimensions(&file_path) {
+                return ImageStatus { link: url.to_string(), exists: true, width: w as i32, height: h as i32, filename: filename.to_string() };
+            } else {
+                return ImageStatus { link: url.to_string(), exists: true, width: 0, height: 0, filename: filename.to_string() };
+            }
         }
         
         // If `url` is an id rather than a full URL, build the CDN fallback
@@ -410,7 +420,8 @@ impl CommandsFileGenerator {
     /// Stub for write_globals helper
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
     let _cfg = crate::config::load_config("config.toml");
-    let _ = crate::album_globals::write_globals(_writer, &self.album_name);
+    // No DB connection or explicit year range available here: pass None values
+    let _ = crate::album_globals::write_globals(_writer, &self.album_name, None, None, None);
     }
 
     /// Stub for is_selected_format helper
@@ -581,7 +592,7 @@ impl CommandsFileGenerator {
                 Ok(img) => {
                     width = img.width() as i32;
                     height = img.height() as i32;
-                    println!("[INFO] Image dimensions: {} x {} pixels", width, height);
+                    println!("[INFO] Image dimensions: {} x {} pixels - {} ", width, height, img_file.display());
                 }
                 Err(e) => {
                     error!("Error decoding image: {}", e);

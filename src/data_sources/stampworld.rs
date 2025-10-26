@@ -86,7 +86,9 @@ pub fn collect_stampworld_data(
             let mut desc = String::new();
             if let Some(header_a) = content_div.select(&table_header_selector).next() {
                 let text = header_a.text().collect::<String>();
-                debug!("[stampworld] Raw block header HTML: {}", header_a.html());
+                // Avoid dumping entire HTML (can be very large). Log a snippet and length instead.
+                let header_html = header_a.html();
+                debug!("[stampworld] Raw block header HTML len={} snippet='{}'", header_html.len(), header_html.chars().take(400).collect::<String>());
                 desc = text.clone();
                 let year_regex = regex::Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").unwrap();
                 if let Some(caps) = year_regex.captures(&desc) {
@@ -124,7 +126,9 @@ pub fn collect_stampworld_data(
                 let td_selector = scraper::Selector::parse("td").unwrap();
                 let tds: Vec<_> = tr.select(&td_selector).collect();
                 if ths.is_empty() || tds.len() < 12 { continue; }
-                debug!("Raw stamp row HTML: {}", tr.html());
+                // Avoid dumping entire row HTML; show length and a short snippet for debugging.
+                let tr_html = tr.html();
+                debug!("Raw stamp row HTML len={} snippet='{}'", tr_html.len(), tr_html.chars().take(400).collect::<String>());
                 // Mapping based on provided example:
                 // th[0] = No. (sg_number)
                 // td[0] = Type
@@ -143,18 +147,22 @@ pub fn collect_stampworld_data(
                 let type_ = tds[0].text().collect::<String>().trim().to_string();
                 let denomination = tds[1].text().collect::<String>().trim().to_string();
                 let color = tds[3].text().collect::<String>().trim().to_string();
-                let description = tds[5].text().collect::<String>().trim().to_string();
-                let stamps_issued = if tds.len() > 7 { tds[7].text().collect::<String>().trim().to_string() } else { String::new() };
-                let mint_condition = tds[7].text().collect::<String>().trim().to_string();
-                let unused = tds[9].text().collect::<String>().trim().to_string(); // used column is actually unused
-                let used = tds[10].text().collect::<String>().trim().to_string(); // letter_fdc column is actually used
-                let letter_fdc = String::new(); // not present
+                // According to observed table layout: td[6] = Description, td[5] = Stamps Issued
+                // Some pages have extra blank columns, so prefer the later index when available.
+                let description = if tds.len() > 6 { tds[6].text().collect::<String>().trim().to_string() } else if tds.len() > 4 { tds[4].text().collect::<String>().trim().to_string() } else { String::new() };
+                let stamps_issued = if tds.len() > 5 { tds[5].text().collect::<String>().trim().to_string() } else { String::new() };
+                // Other metadata: td[7]=mint_condition, td[8]=unused, td[9]=used, td[10]=letter_fdc
+                let mint_condition = if tds.len() > 7 { tds[7].text().collect::<String>().trim().to_string() } else { String::new() };
+                let unused = if tds.len() > 8 { tds[8].text().collect::<String>().trim().to_string() } else { String::new() };
+                let used = if tds.len() > 9 { tds[9].text().collect::<String>().trim().to_string() } else { String::new() };
+                let letter_fdc = if tds.len() > 10 { tds[10].text().collect::<String>().trim().to_string() } else { String::new() };
                 let mut currency = String::new();
                 for td in &tds {
                     let td_text = td.text().collect::<String>().replace('\u{a0}', " ").trim().to_uppercase();
                     if td_text.contains("USD") {
                         currency = "USD".to_string();
-                        debug!("Found currency cell: '{}', bytes: {:?}", td_text, td_text.as_bytes());
+                        // Don't dump the raw bytes; that can produce huge logs. Log length instead.
+                        debug!("Found currency cell containing USD: '{}' (len={})", td_text, td_text.as_bytes().len());
                         break;
                     }
                 }
@@ -167,7 +175,7 @@ pub fn collect_stampworld_data(
                     String::new()
                 };
                 debug!("[stampworld] STAMP_ROW: sg_number='{}' year='{}' image_url='{}'", sg_number, block_year, image_url);
-                debug!("FIELDS: sg_number='{}' type='{}' denomination='{}' color='{}' description='{}' mint_condition='{}' unused='{}' used='{}' currency='{}'", sg_number, type_, denomination, color, description, mint_condition, unused, used, currency);
+                // per-field verbose dump removed
                 // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
         // Extract per-stamp year from the stamp row (prefer td[4] or td[5] if it contains a year)
         let mut stamp_year = block_year_int;

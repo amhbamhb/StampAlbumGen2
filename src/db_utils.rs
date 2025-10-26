@@ -97,6 +97,12 @@ pub fn get_all_series(conn: &rusqlite::Connection, series_order: Option<&str>) -
     Ok(temp.into_iter().map(|(name, _)| name).collect())
 }
 
+// Update persisted image pixel dimensions for a given stamp row. Width/height are nullable.
+pub fn update_image_dimensions(conn: &rusqlite::Connection, country: &str, series: &str, sg_number: &str, width: Option<i32>, height: Option<i32>) -> rusqlite::Result<usize> {
+    let sql = "UPDATE stamps SET image_width_px = ?1, image_height_px = ?2 WHERE country = ?3 AND series = ?4 AND sg_number = ?5";
+    conn.execute(sql, rusqlite::params![width, height, country, series, sg_number])
+}
+
 // Compare two StampStub records using the same rules as sort_stampstubs_inplace.
 pub fn compare_stampstubs(a: &StampStub, b: &StampStub) -> std::cmp::Ordering {
     // Year, then month_num, then day
@@ -329,7 +335,9 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
     // Decide which query to run and collect rows into a Vec<StampStub>
     let mut result: Vec<StampStub> = Vec::new();
     if year.trim().is_empty() || year == "0" {
-        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
+    let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
+    // Note: we expect image_width_px and image_height_px to be present in the table; if not, the PRAGMA-based migration
+    // should have added them. Use named retrieval below when mapping rows.
         let rows = stmt.query_map([series], |row| -> std::result::Result<StampStub, rusqlite::Error> {
                 Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
@@ -359,6 +367,8 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
                 unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
                 used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
                 letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+                image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
+                image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
                 multi_perf: false,
             })
         })?;
@@ -366,7 +376,7 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
             result.push(s?);
         }
     } else {
-        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
+    let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
         let rows = stmt.query_map([series, year], |row| -> std::result::Result<StampStub, rusqlite::Error> {
                 Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
@@ -396,6 +406,8 @@ pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &st
                 unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
                 used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
                 letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+                image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
+                image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
                 multi_perf: false,
             })
         })?;
@@ -434,6 +446,8 @@ pub struct StampStub {
     pub image_path: String,
     pub remote_image_url: String,
     pub original_image_url: String,
+    pub image_width_px: Option<i32>,
+    pub image_height_px: Option<i32>,
     pub watermark: String,
     pub design: String,
     pub engraving: String,
@@ -454,6 +468,7 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     conn.execute_batch("BEGIN IMMEDIATE;")?;
 
     // Desired final schema columns and types (same as earlier, plus uniq_key)
+    // include image_width_px and image_height_px so the canonical schema contains them
     let desired_cols = vec![
         "id INTEGER PRIMARY KEY",
         "country TEXT",
@@ -475,8 +490,10 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
         "currency TEXT",
         "image_path TEXT",
         "remote_image_url TEXT",
-        "original_image_url TEXT",
-        "watermark TEXT",
+    "original_image_url TEXT",
+    "image_width_px INTEGER",
+    "image_height_px INTEGER",
+    "watermark TEXT",
         "design TEXT",
         "engraving TEXT",
         "perforation TEXT",
@@ -490,7 +507,7 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
         "sg_number", "type", "denomination", "color", "description",
         "stamps_issued", "mint_condition", "unused", "used", "letter_fdc",
         "currency", "image_path", "remote_image_url", "original_image_url",
-        "watermark", "design", "engraving", "perforation", "context", "uniq_key",
+        "image_width_px", "image_height_px", "watermark", "design", "engraving", "perforation", "context", "uniq_key",
     ];
 
     // Create new table
@@ -711,6 +728,8 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             image_path TEXT,
             remote_image_url TEXT,
             original_image_url TEXT,
+            image_width_px INTEGER,
+            image_height_px INTEGER,
             watermark TEXT,
             design TEXT,
             engraving TEXT,
@@ -750,8 +769,8 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             debug!("Stamps table columns before possible migration: {:?} (count: {})", col_names, col_count);
         }
     }
-    // Expected columns (including uniq_key)
-    let expected_col_count = 27;
+    // Expected columns (including uniq_key). We've added image_width_px and image_height_px so the expected count increases by 2.
+    let expected_col_count = 29;
     if col_count > 0 && col_count != expected_col_count {
         debug!("Stamps table column count ({}) does not match expected ({}). Running safe migration.", col_count, expected_col_count);
         match migrate_stamps_table(&conn) {
@@ -891,6 +910,7 @@ pub fn insert_stamp(
     })?;
 
     if count > 0 {
+    // trace removed
         // Determine whether any of the provided values should be used to backfill
         // existing empty columns. We treat empty string and NULL as missing.
         let is_empty = |s: &str| s.trim().is_empty();
@@ -922,7 +942,7 @@ pub fn insert_stamp(
         if is_empty(&existing_context) && !context.trim().is_empty() { needs_update = true; }
 
         if needs_update {
-            debug!("Stamp exists and backfill/update required (country='{}', series='{}', sg_number='{}')", country, series, sg_number);
+            // trace removed
 
             let update_sql = "UPDATE stamps SET
                 image_path = CASE WHEN (?1 != '') AND (image_path IS NULL OR image_path = '' OR image_path LIKE 'images/no_image%') THEN ?1 ELSE image_path END,
@@ -951,44 +971,21 @@ pub fn insert_stamp(
             match conn.execute(update_sql, params_vec) {
                 Ok(rows) => {
                     if rows > 0 {
-                        debug!("Updated existing stamp metadata/image for {} | {} | {} (rows={})", country, series, sg_number, rows);
+                        // trace removed
                         return Ok(true);
                     } else {
-                        debug!("Backfill attempted but no DB row matched for update: {} | {} | {}", country, series, sg_number);
+                        // trace removed
                     }
                 }
                 Err(e) => { error!("DB update error for {} {} {}: {}", country, series, sg_number, e); }
             }
         }
 
-        debug!("Stamp already exists with no new fillable data (country='{}', series='{}', sg_number='{}'), skipping", country, series, sg_number);
+    // trace removed
         return Ok(false);
     }
     
-    debug!("--- STAMP INSERT ATTEMPT ---");
-    debug!("[insert_stamp] country='{}'", country);
-    debug!("[insert_stamp] series='{}'", series);
-    debug!("[insert_stamp] year={}", year);
-    debug!("[insert_stamp] month='{}'", month);
-    debug!("[insert_stamp] day='{}'", day);
-    debug!("[insert_stamp] sg_number='{}'", sg_number);
-    debug!("[insert_stamp] type_='{}'", type_);
-    debug!("[insert_stamp] denomination='{}'", denomination);
-    debug!("[insert_stamp] color='{}'", color);
-    debug!("[insert_stamp] description='{}'", description);
-    debug!("[insert_stamp] stamps_issued='{}'", stamps_issued);
-    debug!("[insert_stamp] mint_condition='{}'", mint_condition);
-    debug!("[insert_stamp] unused='{}'", unused);
-    debug!("[insert_stamp] used='{}'", used);
-    debug!("[insert_stamp] letter_fdc='{}'", letter_fdc);
-    debug!("[insert_stamp] currency='{}'", currency);
-    debug!("[insert_stamp] image_path='{}'", image_path);
-    debug!("[insert_stamp] remote_image_url='{}'", remote_image_url);
-    debug!("[insert_stamp] watermark='{}'", watermark);
-    debug!("[insert_stamp] design='{}'", design);
-    debug!("[insert_stamp] engraving='{}'", engraving);
-    debug!("[insert_stamp] perforation='{}'", perforation);
-    debug!("[insert_stamp] context='{}'", context);
+    // trace removed
     let month_clean = match month.trim().to_lowercase().as_str() {
         "wm" | "" => "",
         "january" | "jan" => "January",
@@ -1048,27 +1045,24 @@ pub fn insert_stamp(
         perforation.to_string(),
         context.to_string()
     ];
-        debug!("SQL: {}", sql);
-        debug!("Params: {:?}", params_vec);
+    // trace removed
     let mut attempts = 0;
     loop {
         attempts += 1;
     match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context]) {
     // Arguments now match the new signature and DB columns
             Ok(_) => {
-                    debug!("Insert succeeded on attempt {}", attempts);
-                    // Log the last insert row id for tracing
-                    let last_id = conn.last_insert_rowid();
-                    debug!("Last insert rowid: {}", last_id);
+                    // insert succeeded
+                    debug!("Last insert rowid: {}", conn.last_insert_rowid());
                 break;
             }
                 Err(e) => {
                     error!("Insert failed on attempt {}: {}", attempts, e);
-                if attempts >= 2 {
-                        error!("Giving up after {} attempts. Params: {:?}", attempts, params_vec);
+        if attempts >= 2 {
+            error!("Giving up after {} attempts. Params: {:?}", attempts, params_vec);
                     break;
                 } else {
-                        debug!("Retrying insert...");
+            // retry
                 }
             }        }
     }

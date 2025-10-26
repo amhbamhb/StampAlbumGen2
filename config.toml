@@ -5,6 +5,26 @@
 reference_width_mm = 24.0
 reference_height_mm = 27.0
 
+
+############################################
+# Optional DPI override: force the generator to convert pixels -> mm using a
+# fixed DPI value rather than the embedded-reference ratio. Useful if pages
+# report pixel sizes and you want to use a standard DPI (for example 96).
+# Uncomment and set to your desired DPI (float). Example:
+############################################
+
+force_dpi = 96.0
+
+############################################
+# When true the generator will emit real-world image sizes derived from
+# pixel dimensions and the configured `force_dpi` (mm_per_px = 25.4 / dpi).
+# When enabled the generator will NOT scale images down to `stamp_box_height`.
+# Set to true when you want STAMP_ADD_IMG to reflect physical mm sizes.
+############################################
+
+preserve_real_image_size = true
+
+
 ############################################
 # Global album settings
 # Maximum emitted stamp box height (mm). When the generator must fallback to
@@ -136,10 +156,12 @@ print_flag_cover = false
 
 include_wikipedia_content = true
 
+############################################
 # --- Wikipedia Paragraph Formatting ---
 # Settings for formatting Wikipedia content paragraphs using 
 # PAGE_TEXT_PARAGRAPH_START END
 # These provide better text formatting with justification, padding, and spacing
+############################################
 
 # Font name for Wikipedia paragraphs (AlbumEasy font code)
 wikipedia_paragraph_font = "HN"
@@ -316,7 +338,7 @@ series_order = "first_sg"
 ############################################
 # STAMP_BOXES_SIZE_ADJUST equivalent: adds/subtracts mm to emitted stamp box sizes
 ############################################
-stamp_box_adjust = -1.0
+stamp_box_adjust = -3.5
 
 ############################################
 # Optional: maximum number of stamps allowed per row. Set to 0 to disable this cap.
@@ -421,7 +443,7 @@ row_start_es_marker = "ROW_START_ES"
 row_start_es_font = "HN"
 row_start_es_size = 6
 row_start_es_spacing = 0.1
-row_start_es_vspace = 0.1
+row_start_es_vspace = 5
 
 ############################################
 # PAGE_TEXT templates and per-field overrides

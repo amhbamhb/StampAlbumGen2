@@ -118,7 +118,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Build a timestamped basename like 'stamp_album_gen2-20251020-171234'
     let ts = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
     let basename = format!("stamp_album_gen2-{}", ts);
-    Logger::try_with_env_or_str("info")?
+    // Use a conservative default filter that keeps this crate at `debug` but
+    // silences noisy external crates (html5ever, reqwest). Allow overriding
+    // via the environment (RUST_LOG) for one-off trace captures during
+    // debugging, while keeping a safe default to avoid runaway logs.
+    Logger::try_with_env_or_str("stamp_album_gen2=debug,html5ever=warn,reqwest=warn")?
         .log_to_file(FileSpec::default().directory("Logs").basename(&basename).suffix("log"))
         .duplicate_to_stderr(flexi_logger::Duplicate::All)
         .start()?;

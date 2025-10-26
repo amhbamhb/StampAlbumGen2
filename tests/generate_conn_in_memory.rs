@@ -43,6 +43,8 @@ fn test_generate_conn_in_memory_clean() {
             unused TEXT,
             used TEXT,
             letter_fdc TEXT
+            ,image_width_px INTEGER,
+            image_height_px INTEGER
         );",
     ).expect("create table");
 

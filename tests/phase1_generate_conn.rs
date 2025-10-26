@@ -45,9 +45,11 @@ fn phase1_generate_with_in_memory_conn() {
             mint_condition TEXT,
             unused TEXT,
             used TEXT,
-            letter_fdc TEXT
+            letter_fdc TEXT,
+            image_width_px INTEGER,
+            image_height_px INTEGER
         );",
-    ).expect("create stamps table");
+    ).expect("create table");
 
     // Insert a single non-null row for every column that get_stamps_by_series
     // expects as a String; use conservative placeholder values.
