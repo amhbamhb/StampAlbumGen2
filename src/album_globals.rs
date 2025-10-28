@@ -477,8 +477,8 @@ where
     let border_inner2 = config.page_border_inner2.unwrap_or(0.0) as f64;
     let border_spacing = config.page_border_spacing.unwrap_or(3.0) as f64;
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
-    debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
-        page_height, top_margin, bottom_margin, total_border, usable_height);
+    // debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
+        // page_height, top_margin, bottom_margin, total_border, usable_height);
     // Font and spacing from AlbumEasy settings
     // Local layout estimates (we use configured values above where available)
     let _stamp_box_height = 24.0; // Estimate: typical stamp box height (unused default)
@@ -920,8 +920,8 @@ where
                 // matching AlbumEasy's rendering metrics more closely.
                 let conservative_buffer = 11.0; // mm buffer to avoid edge cases (footer + safety)
                 let conservative_needed = total_header_and_row_height + conservative_buffer;
-                debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
-                    header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
+                // debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
+                    // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
                 // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
                 let force_new_page = current_height + conservative_needed > usable_height;
                 // Diagnostic: write page-fit numbers to the output so we can inspect why
@@ -962,7 +962,7 @@ where
                     let _ = writeln!(output, "################################################################################");
                     current_height = 0.0;
                     rows_on_page = 0;
-                    debug!("Forced page break before header and first row");
+                    // debug!("Forced page break before header and first row");
                     // forced page break: state tracked internally but not emitted
                 }
                 // Buffer the header lines (do not write yet). We'll write
@@ -1030,8 +1030,8 @@ where
                 // page-fit checks matches the actual emitted box height.
                 let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
                 let total_height = adj_est_height + image_spacing + text_height + stamp_heading_h;
-                debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
-                    image_path, est_height_mm, text_lines, text_height, total_height);
+                // debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
+                    // image_path, est_height_mm, text_lines, text_height, total_height);
                 if total_height > max_row_height {
                     max_row_height = total_height;
                 }
@@ -1342,24 +1342,24 @@ where
                 est_width_mm += img_new_w;
                 est_height_mm += img_new_h;
                 // Debug: emit detailed per-stamp sizing diagnostics when debug logging enabled
-                debug!("Stamp [{}|{}] DB_px=({:?},{:?}) mm_per_px=({:.6},{:.6}) pre_scale_mm=({:.2},{:.2}) scale={:.4} img_new=(w:{:.2},h:{:.2}) box_adjust={:.2} emit_mm_before_adjust=({:.2},{:.2}) emit_mm_final=({:.2},{:.2})",
-                        album_name,
-                        stamp.attrs.get("sg_number").unwrap_or(&String::new()),
-                        stamp.image_width_px,
-                        stamp.image_height_px,
-                        mm_per_pixel_w as f64,
-                        mm_per_pixel_h as f64,
-                        (est_width_mm - img_new_w) / (if scale==0.0 {1.0} else {scale}), // approximate pre-scale width
-                        (est_height_mm - img_new_h) / (if scale==0.0 {1.0} else {scale}), // approximate pre-scale height
-                        scale,
-                        img_new_w,
-                        img_new_h,
-                        stamp_box_adjust,
-                        est_width_mm - 2.0 * stamp_box_adjust,
-                        est_height_mm - 2.0 * stamp_box_adjust,
-                        est_width_mm + 2.0 * stamp_box_adjust,
-                        est_height_mm + 2.0 * stamp_box_adjust
-                    );
+                // debug!("Stamp [{}|{}] DB_px=({:?},{:?}) mm_per_px=({:.6},{:.6}) pre_scale_mm=({:.2},{:.2}) scale={:.4} img_new=(w:{:.2},h:{:.2}) box_adjust={:.2} emit_mm_before_adjust=({:.2},{:.2}) emit_mm_final=({:.2},{:.2})",
+                //         album_name,
+                //         stamp.attrs.get("sg_number").unwrap_or(&String::new()),
+                //         stamp.image_width_px,
+                //         stamp.image_height_px,
+                //         mm_per_pixel_w as f64,
+                //         mm_per_pixel_h as f64,
+                //         (est_width_mm - img_new_w) / (if scale==0.0 {1.0} else {scale}), // approximate pre-scale width
+                //         (est_height_mm - img_new_h) / (if scale==0.0 {1.0} else {scale}), // approximate pre-scale height
+                //         scale,
+                //         img_new_w,
+                //         img_new_h,
+                //         stamp_box_adjust,
+                //         est_width_mm - 2.0 * stamp_box_adjust,
+                //         est_height_mm - 2.0 * stamp_box_adjust,
+                //         est_width_mm + 2.0 * stamp_box_adjust,
+                //         est_height_mm + 2.0 * stamp_box_adjust
+                //     );
                 // add per-side adjust to the emitted box width/height (STAMP_BOXES_SIZE_ADJUST)
                 let emit_width = est_width_mm + 2.0 * stamp_box_adjust;
                 let emit_height = est_height_mm + 2.0 * stamp_box_adjust;

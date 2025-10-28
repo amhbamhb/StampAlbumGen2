@@ -4,8 +4,23 @@ To do list
 this next phase is completly new phase for the importtation and eventual use in the creation of the albul easy stamp page.
 
 
+also 
 
+cargo run -- --source stampworld --site-name Switzerland --album-name Switzerland --start-year 1976 --end-year 1976
 
+and 
+
+target/release/stamp_album_gen2 --source stampworld --site-name Switzerland --album-name Switzerland --start-year 1976 --end-year 1976
+
+and 
+
+target/release/stamp_album_gen2 --db-source Album/Switzerland/Switzerland.db --site-name Switzerland --album-name Switzerland --start-year 1976 --end-year 1976
+
+and
+
+cargo run -- --db-source Album/Switzerland/Switzerland.db --site-name Switzerland --album-name Switzerland --start-year 1976 --end-year 1976
+
+Should all produce the exact same page output (other than date and command line info)
 
 
 

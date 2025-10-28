@@ -421,8 +421,8 @@ pub fn load_config(path: &str) -> Config {
                                 return cfg;
                             }
                             Err(e) => {
-                                println!(
-                                        "[WARN] Failed to deserialize merged config from {}: {} -- using defaults",
+                                log::warn!(
+                                        "Failed to deserialize merged config from {}: {} -- using defaults",
                                         candidate.display(),
                                         e
                                     );
@@ -430,8 +430,8 @@ pub fn load_config(path: &str) -> Config {
                             }
                         },
                         Err(e) => {
-                            println!(
-                                "[WARN] Failed to serialize merged toml::Value for {}: {} -- using defaults",
+                            log::warn!(
+                                "Failed to serialize merged toml::Value for {}: {} -- using defaults",
                                 candidate.display(),
                                 e
                             );
@@ -440,15 +440,15 @@ pub fn load_config(path: &str) -> Config {
                     }
                 }
                 Err(e) => {
-                    println!("[DEBUG] Failed to parse into toml::Value (this shouldn't happen when parsing into Config succeeded): {}", e);
+                    log::debug!(
+                        "Failed to parse into toml::Value (this shouldn't happen when parsing into Config succeeded): {}",
+                        e
+                    );
                 }
             }
         }
     }
-
-    println!(
-        "[INFO] config.toml not found in parent dirs or failed to parse, using default values"
-    );
+    log::info!("config.toml not found in parent dirs or failed to parse, using default values");
     Config::default()
 }
 
@@ -485,8 +485,8 @@ pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
                                 out.insert(k.clone(), s.to_string());
                             }
                         }
-                        println!(
-                            "[INFO] Loaded slug_overrides from {} ({} entries)",
+                        log::info!(
+                            "Loaded slug_overrides from {} ({} entries)",
                             candidate.display(),
                             out.len()
                         );

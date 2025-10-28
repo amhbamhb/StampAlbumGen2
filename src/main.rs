@@ -137,7 +137,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .basename(&basename)
                 .suffix("log"),
         )
-        .duplicate_to_stderr(flexi_logger::Duplicate::All)
+        // Only duplicate errors to stderr by default so debug/info go to the log file only
+        .duplicate_to_stderr(flexi_logger::Duplicate::Error)
         .start()?;
 
     let detected_os = get_operating_system_type();

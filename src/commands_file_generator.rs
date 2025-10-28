@@ -540,7 +540,7 @@ impl CommandsFileGenerator {
             }
         }
         if let Err(e) = writer.flush() {
-            println!("Unable to close output file: {}", e);
+            error!("Unable to close output file: {}", e);
             std::process::exit(1);
         }
         self.snooze(500);
@@ -773,8 +773,8 @@ impl CommandsFileGenerator {
                 Ok(img) => {
                     width = img.width() as i32;
                     height = img.height() as i32;
-                    println!(
-                        "[INFO] Image dimensions: {} x {} pixels - {} ",
+                    info!(
+                        "Image dimensions: {} x {} pixels - {} ",
                         width,
                         height,
                         img_file.display()
@@ -850,12 +850,12 @@ impl CommandsFileGenerator {
             Ok(resp) => match resp.text() {
                 Ok(body) => Html::parse_document(&body),
                 Err(_) => {
-                    eprintln!("Problem retrieving web page");
+                    error!("Problem retrieving web page");
                     std::process::exit(1);
                 }
             },
             Err(e) => {
-                eprintln!("Problem retrieving web page: {}", e);
+                error!("Problem retrieving web page: {}", e);
                 std::process::exit(1);
             }
         };

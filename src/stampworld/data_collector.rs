@@ -239,6 +239,24 @@ pub fn collect_stampworld_data(
         }
     };
 
+    // Helper to resolve a stored `local_image_path` (which is typically
+    // a relative value like "images/foo.jpg") into an actual filesystem
+    // path that can be opened. Try the path as-given first; if that fails,
+    // fall back to joining with the configured `images_directory`.
+    let resolve_get_dimensions = |p: &str| -> Option<(u32, u32)> {
+        if p.is_empty() {
+            return None;
+        }
+        // Try as-given first (some callers pass absolute or cwd-relative paths)
+        if let Some(d) = crate::image_utils::get_image_dimensions(p) {
+            return Some(d);
+        }
+        // If path begins with "images/", drop that prefix and join with images_directory
+        let rest = if p.starts_with("images/") { &p["images/".len()..] } else { p };
+        let alt = format!("{}/{}", images_directory.trim_end_matches('/'), rest);
+        crate::image_utils::get_image_dimensions(alt)
+    };
+
     let mut all_stamp_data: Vec<String> = Vec::new();
     let mut done = false;
     let mut page_num: i32 = 1;
@@ -1360,9 +1378,7 @@ pub fn collect_stampworld_data(
                             all_stamp_data.push(stamp_line);
                             // Persist image pixel dimensions when available (read from local file if present)
                             if !local_image_path.is_empty() {
-                                if let Some((w_px, h_px)) =
-                                    crate::image_utils::get_image_dimensions(&local_image_path)
-                                {
+                                if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
                                     let w = Some(w_px as i32);
                                     let h = Some(h_px as i32);
                                     if let Err(e) = crate::db_utils::update_image_dimensions(
@@ -1432,11 +1448,7 @@ pub fn collect_stampworld_data(
                                         all_stamp_data.push(stamp_line);
                                         // Persist image pixel dimensions when available (read from local file if present)
                                         if !local_image_path.is_empty() {
-                                            if let Some((w_px, h_px)) =
-                                                crate::image_utils::get_image_dimensions(
-                                                    &local_image_path,
-                                                )
-                                            {
+                                            if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
                                                 let w = Some(w_px as i32);
                                                 let h = Some(h_px as i32);
                                                 if let Err(e) =
@@ -1462,6 +1474,45 @@ pub fn collect_stampworld_data(
                                         "DB update error for {} {} {}: {}",
                                         site_name, series_name, sg_number, e
                                     );
+                                }
+                            }
+                        } else {
+                            // Row already existed and we are not overwriting images.
+                            // Ensure we backfill image pixel dimensions when a local image file
+                            // is available but the DB columns are still NULL.
+                            if !local_image_path.is_empty() {
+                                // Check whether dimensions are already set
+                                match conn.query_row(
+                                    "SELECT image_width_px, image_height_px FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3",
+                                    rusqlite::params![site_name, &series_name, &sg_number],
+                                    |r| Ok((r.get::<_, Option<i32>>(0)?, r.get::<_, Option<i32>>(1)?)),
+                                ) {
+                                    Ok((maybe_w, maybe_h)) => {
+                                        if maybe_w.is_none() || maybe_h.is_none() {
+                                            if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
+                                                let w = Some(w_px as i32);
+                                                let h = Some(h_px as i32);
+                                                if let Err(e) = crate::db_utils::update_image_dimensions(
+                                                    &conn,
+                                                    site_name,
+                                                    &series_name,
+                                                    &sg_number,
+                                                    w,
+                                                    h,
+                                                ) {
+                                                    error!(
+                                                        "Failed to persist backfilled image dimensions for {} {} {}: {}",
+                                                        site_name, series_name, sg_number, e
+                                                    );
+                                                } else {
+                                                    debug!("Backfilled image dimensions for {} {} {} -> {}x{}", site_name, series_name, sg_number, w_px, h_px);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        error!("Failed to read existing dimensions for {} {} {}: {}", site_name, series_name, sg_number, e);
+                                    }
                                 }
                             }
                         }

@@ -723,7 +723,7 @@ pub fn calculate_stamp_dimensions(
                         m.insert(parts[0].to_string(), (w, h));
                     }
                 } else {
-                    eprintln!("[WARN] calibration CSV: bad line {}: {}", i + 1, line);
+                    log::warn!("calibration CSV: bad line {}: {}", i + 1, line);
                 }
             }
         }
@@ -767,8 +767,8 @@ pub fn calculate_stamp_dimensions(
 
             // Enforce reasonable bounds to avoid absurd sizes from mis-detected images
             if width > 120.0 || height > 120.0 {
-                eprintln!(
-                    "[WARN] Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'.",
+                log::warn!(
+                    "Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'.",
                     width,
                     height,
                     resolved_image_path
@@ -872,8 +872,8 @@ pub fn calculate_stamp_dimensions(
             // If measurements are absurdly large (likely a full-page scan or wrong reference),
             // attempt a DPI-based fallback (already tried), otherwise fall back to conservative default.
             if width > 120.0 || height > 120.0 {
-                eprintln!(
-                    "[WARN] Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'. Falling back to default.",
+                log::warn!(
+                    "Embedded-reference measured size is unexpectedly large ({:.1} x {:.1} mm) for image '{}'. Falling back to default.",
                     width,
                     height,
                     resolved_image_path

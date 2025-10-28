@@ -1,128 +1,137 @@
-use rusqlite::params;
+use log::{debug, error, info, warn};
+use flexi_logger::{Duplicate, FileSpec, Logger};
 use std::env;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-fn print_usage() {
-    eprintln!(
-        "Usage: backfill_image_dims --db-path <DB_PATH> [--images-dir <IMAGES_DIR>] [--apply]"
-    );
+fn print_usage(prog: &str) {
+    eprintln!("Usage: {} [--apply] [--albums-dir DIR] [--verbose]", prog);
+    eprintln!("  --apply       : actually write updates to DB (default: dry-run)");
+    eprintln!("  --albums-dir  : directory containing Albums (default: Albums)");
+    eprintln!("  --verbose     : emit debug logs");
+}
+
+fn resolve_dimensions(images_dir: &Path, image_path: &str) -> Option<(u32, u32)> {
+    if image_path.is_empty() {
+        return None;
+    }
+    // try as-given first
+    if let Some(d) = stamp_album_gen2::image_utils::get_image_dimensions(image_path) {
+        return Some(d);
+    }
+    // Try relative to album images dir
+    let rest = if image_path.starts_with("images/") {
+        &image_path["images/".len()..]
+    } else {
+        image_path
+    };
+    let alt = images_dir.join(rest);
+    stamp_album_gen2::image_utils::get_image_dimensions(alt)
+}
+
+fn process_db(db_path: &Path, apply: bool) -> Result<usize, Box<dyn std::error::Error>> {
+    info!("Processing DB: {}", db_path.display());
+    let conn = stamp_album_gen2::db_utils::init_db(db_path.to_str().unwrap())?;
+    let album_dir = db_path.parent().unwrap_or_else(|| Path::new("."));
+    let images_dir = album_dir.join("images");
+
+    let mut stmt = conn.prepare(
+        "SELECT country, series, sg_number, image_path FROM stamps WHERE image_path IS NOT NULL AND image_path != '' AND (image_width_px IS NULL OR image_height_px IS NULL)",
+    )?;
+    let mut rows = stmt.query([])?;
+    let mut updated = 0usize;
+    while let Some(r) = rows.next()? {
+        let country: String = r.get(0)?;
+        let series: String = r.get(1)?;
+        let sg: String = r.get(2)?;
+        let image_path: String = r.get(3)?;
+        debug!("Found NULL-dim row: {} | {} | {} -> {}", country, series, sg, image_path);
+        if let Some((w, h)) = resolve_dimensions(&images_dir, &image_path) {
+            info!("Resolved {} -> {}x{}", image_path, w, h);
+            if apply {
+                match stamp_album_gen2::db_utils::update_image_dimensions(&conn, &country, &series, &sg, Some(w as i32), Some(h as i32)) {
+                    Ok(n) => {
+                        debug!("DB update affected {} rows", n);
+                        updated += 1;
+                    }
+                    Err(e) => {
+                        error!("Failed to update {} {} {}: {}", country, series, sg, e);
+                    }
+                }
+            } else {
+                info!("Dry-run: would update {}|{}|{} -> {}x{}", country, series, sg, w, h);
+            }
+        } else {
+            warn!("Could not resolve image dimensions for {} (album images dir: {})", image_path, images_dir.display());
+        }
+    }
+    Ok(updated)
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        print_usage();
+    let prog = args.get(0).map(|s| s.as_str()).unwrap_or("backfill_image_dims");
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print_usage(prog);
+        return;
+    }
+    let apply = args.iter().any(|a| a == "--apply");
+    let verbose = args.iter().any(|a| a == "--verbose");
+    let mut albums_dir = PathBuf::from("Albums");
+    if let Some(pos) = args.iter().position(|a| a == "--albums-dir") {
+        if let Some(v) = args.get(pos + 1) {
+            albums_dir = PathBuf::from(v);
+        } else {
+            print_usage(prog);
+            return;
+        }
+    }
+
+    if verbose {
+        std::env::set_var("RUST_LOG", "debug");
+    }
+    // Initialize logger to write debug/info to a file under Logs and only duplicate errors to stderr
+    let ts = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+    let basename = format!("backfill-{}", ts);
+    match Logger::try_with_env_or_str(std::env::var("RUST_LOG").as_deref().unwrap_or("info")) {
+        Ok(l) => {
+            if let Err(e) = l
+                .log_to_file(FileSpec::default().directory("Logs").basename(&basename).suffix("log"))
+                .duplicate_to_stderr(Duplicate::Error)
+                .start()
+            {
+                eprintln!("Failed to start logger: {}", e);
+            }
+        }
+        Err(e) => eprintln!("Logger init failed: {}", e),
+    }
+
+    info!("Backfill runner starting (albums_dir={}, apply={})", albums_dir.display(), apply);
+
+    let mut total_updated = 0usize;
+    if !albums_dir.exists() {
+        error!("Albums dir does not exist: {}", albums_dir.display());
         std::process::exit(1);
     }
-    let mut db_path = String::new();
-    let mut images_dir: Option<String> = None;
-    let mut apply = false;
-    let mut i = 1;
-    while i < args.len() {
-        match args[i].as_str() {
-            "--db-path" => {
-                i += 1;
-                if i < args.len() {
-                    db_path = args[i].clone();
+
+    for entry in std::fs::read_dir(&albums_dir).unwrap_or_else(|_| panic!("Failed to read Albums dir {}", albums_dir.display())) {
+        if let Ok(ent) = entry {
+            let path = ent.path();
+            if path.is_dir() {
+                // Expect DB at Albums/<name>/<name>.db
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    let db_path = path.join(format!("{}.db", name));
+                    if db_path.exists() {
+                        match process_db(&db_path, apply) {
+                            Ok(n) => total_updated += n,
+                            Err(e) => error!("Error processing {}: {}", db_path.display(), e),
+                        }
+                    } else {
+                        debug!("No DB found for album {} at expected path {}", name, db_path.display());
+                    }
                 }
             }
-            "--images-dir" => {
-                i += 1;
-                if i < args.len() {
-                    images_dir = Some(args[i].clone());
-                }
-            }
-            "--apply" => {
-                apply = true;
-            }
-            _ => {}
-        }
-        i += 1;
-    }
-    if db_path.is_empty() {
-        eprintln!("--db-path is required");
-        print_usage();
-        std::process::exit(2);
-    }
-
-    println!("Opening DB: {}", db_path);
-    let conn = match rusqlite::Connection::open(&db_path) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Failed to open DB {}: {}", db_path, e);
-            std::process::exit(3);
-        }
-    };
-
-    // Run migration from stamp_album_db crate to ensure columns exist
-    match stamp_album_db::migrate_stamps_table(&conn) {
-        Ok(_) => println!("Migration complete."),
-        Err(e) => {
-            eprintln!("Migration failed: {}", e);
-            std::process::exit(4);
         }
     }
 
-    // Query rows needing dimensions
-    let mut stmt = conn.prepare("SELECT id, image_path FROM stamps WHERE image_path IS NOT NULL AND image_path != '' AND (image_width_px IS NULL OR image_height_px IS NULL)").expect("prepare select");
-    let mut rows = stmt.query([]).expect("query");
-    let mut count = 0;
-    while let Ok(Some(r)) = rows.next() {
-        let id: i64 = r.get(0).unwrap_or(0);
-        let image_path: String = r.get(1).unwrap_or_default();
-        let candidates = if let Some(ref dir) = images_dir {
-            vec![
-                image_path.clone(),
-                format!("{}/{}", dir, image_path),
-                format!(
-                    "{}/{}",
-                    dir,
-                    Path::new(&image_path)
-                        .file_name()
-                        .map(|s| s.to_string_lossy().into_owned())
-                        .unwrap_or_default()
-                ),
-            ]
-        } else {
-            vec![
-                image_path.clone(),
-                format!("images/{}", image_path),
-                image_path.clone(),
-            ]
-        };
-        let mut found: Option<(i32, i32)> = None;
-        for p in candidates {
-            if p.is_empty() {
-                continue;
-            }
-            if Path::new(&p).exists() {
-                if let Some((w, h)) = stamp_album_gen2::image_utils::get_image_dimensions(&p) {
-                    found = Some((w as i32, h as i32));
-                    break;
-                }
-            }
-        }
-        if let Some((w, h)) = found {
-            println!(
-                "Found dims for id={} path='{}' => {}x{}",
-                id, image_path, w, h
-            );
-            if apply {
-                match conn.execute(
-                    "UPDATE stamps SET image_width_px = ?1, image_height_px = ?2 WHERE id = ?3",
-                    params![w, h, id],
-                ) {
-                    Ok(rows_updated) => println!("Updated id {} (rows {})", id, rows_updated),
-                    Err(e) => eprintln!("Failed to update id {}: {}", id, e),
-                }
-            }
-            count += 1;
-        } else {
-            println!("No local image found for id={} path='{}'", id, image_path);
-        }
-    }
-    println!(
-        "Backfill scan complete; {} rows with found dims (apply={})",
-        count, apply
-    );
+    info!("Backfill completed. total_updated={}", total_updated);
 }
