@@ -1,5 +1,7 @@
+use lazy_static::lazy_static;
 use std::fs;
 use std::io::Read;
+use std::sync::Mutex;
 use tempfile::tempdir;
 
 // Integration test: create a tiny config and DB so a row will overflow the usable
@@ -8,13 +10,16 @@ use tempfile::tempdir;
 // page break (Page 2).
 #[test]
 fn overflowing_row_moves_to_next_page_and_emits_row_start() {
+    lazy_static! {
+        static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
+    }
+    let _lock = TEST_CWD_MUTEX.lock().unwrap();
     // Prepare temporary workspace
     let td = tempdir().expect("tempdir");
     let td_path = td.path();
 
     // Write a small config.toml in the tempdir that makes usable height tiny
-    let cfg =
-        r#"
+    let cfg = r#"
 album_page_height_mm = 60.0
 page_top_margin_mm = 5.0
 page_bottom_margin_mm = 5.0
@@ -48,32 +53,33 @@ single_stamp_threshold_pct = 0.5
         "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, currency, context, mint_condition, unused, used, letter_fdc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)";
     let base_params = rusqlite::params![
         "TestCountry", // country
-        series_name, // series
-        1900i32, // year
-        "", // month
-        0i32, // month_num
-        "", // day
-        "1", // sg_number
-        "", // type
-        "", // denomination
-        "Black", // color
-        "desc", // description
-        "", // stamps_issued
-        "", // image_path
-        "", // remote_image_url
-        "", // original_image_url
-        "", // watermark
-        "", // design
-        "", // engraving
-        "", // perforation
-        "", // currency
-        "", // context
-        "", // mint_condition
-        "", // unused
-        "", // used
-        "" // letter_fdc
+        series_name,   // series
+        1900i32,       // year
+        "",            // month
+        0i32,          // month_num
+        "",            // day
+        "1",           // sg_number
+        "",            // type
+        "",            // denomination
+        "Black",       // color
+        "desc",        // description
+        "",            // stamps_issued
+        "",            // image_path
+        "",            // remote_image_url
+        "",            // original_image_url
+        "",            // watermark
+        "",            // design
+        "",            // engraving
+        "",            // perforation
+        "",            // currency
+        "",            // context
+        "",            // mint_condition
+        "",            // unused
+        "",            // used
+        ""             // letter_fdc
     ];
-    conn.execute(insert_sql, base_params).expect("insert stamp1");
+    conn.execute(insert_sql, base_params)
+        .expect("insert stamp1");
     // second stamp: same params except sg_number
     let insert_sql2 =
         "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, currency, context, mint_condition, unused, used, letter_fdc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)";
@@ -116,16 +122,31 @@ single_stamp_threshold_pct = 0.5
         "TestAlbum",
         None::<fn(usize)>,
         None,
-        None
+        None,
     );
 
     // Restore cwd
     std::env::set_current_dir(orig_cwd).expect("restore cwd");
 
-    // Read the generated file and verify it contains a forced page 2 header with PAGE_START followed by ROW_START_ES
-    let out_file = td_path.join("Albums").join("TestAlbum").join("TestAlbum.txt");
-    let mut s = String::new();
-    fs::File::open(&out_file).expect("open output").read_to_string(&mut s).expect("read output");
+    // Read the generated file (filename may include inferred years) and verify it contains a forced page 2 header with PAGE_START followed by ROW_START_ES
+    let album_dir = td_path.join("Albums").join("TestAlbum");
+    let mut found_content = None;
+    if let Ok(entries) = std::fs::read_dir(&album_dir) {
+        for ent in entries.filter_map(|e| e.ok()) {
+            let fname = ent.file_name().to_string_lossy().to_string();
+            if fname.ends_with(".txt") {
+                let mut s = String::new();
+                if fs::File::open(ent.path())
+                    .and_then(|mut f| f.read_to_string(&mut s))
+                    .is_ok()
+                {
+                    found_content = Some(s);
+                    break;
+                }
+            }
+        }
+    }
+    let s = found_content.expect("no generated .txt file found in album dir");
 
     // Look for the Page 2 marker and ensure the sequence exists
     let page2_seq = "### Page 2 ###\nPAGE_START\nROW_START_ES";

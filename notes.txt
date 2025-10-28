@@ -1,5 +1,14 @@
 To do list
 
+
+this next phase is completly new phase for the importtation and eventual use in the creation of the albul easy stamp page.
+
+
+
+
+
+
+
 Need to update the stamp_heading with new config.toml value for "HN", "10" and "SG"
 
 let _ = writeln!(output, "STAMP_HEADING(HN 10 \"SG : {}\")", sgnum);
@@ -27,6 +36,8 @@ this is the current code:
     );
 
 
+
+
 logic it if --start-year 1960 and --end-year 1970 the format would be:
 
 ALBUM_PAGES_HEADER (HN 10 C "Switzerland - 1960 - 1970")
@@ -49,3 +60,26 @@ update :  the stamp image when not avaiable to create a placeholder with stamp n
 
 update : get wikipedia up and running again.
 
+72	Switzerland	
+                       
+                      1962  
+                      Pro Juventute - The 50th Anniversary  
+                  	1962	December	12	1	757	ADC	100+20 (C)	multicoloured		1763950	2.32	-	2.32	-	USD	images/757-0757-b.jpg	https://www.stampworld.com/media/catalogue/Switzerland/Postage-stamps/0757-b.jpg	0757-b.jpg	350	263	None	Edy Renggli	Courvoisier. S.A	11	1. December
+                       
+                      WM: None
+                      
+                      
+                      Sheetsize: 50
+                      
+                      
+                      Design: Edy Renggli.
+                      
+                      
+                      Engraving: Courvoisier. S.A.
+                       
+                      
+                      Perforation: 11¾	switzerland|
+                       
+                      1962  
+                      Pro Juventute - The 50th Anniversary  
+                  |757

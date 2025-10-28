@@ -1,7 +1,7 @@
 // Minimal, self-contained DB utilities moved out of the main crate.
-use rusqlite::{params, Connection, Result};
-use regex::Regex;
 use log::{debug, error};
+use regex::Regex;
+use rusqlite::{params, Connection, Result};
 
 #[derive(Debug, Clone)]
 pub struct StampStub {
@@ -50,18 +50,40 @@ pub fn get_all_series(conn: &Connection) -> Result<Vec<String>> {
 fn leading_int(s: &str) -> Option<i64> {
     let mut digits = String::new();
     for ch in s.chars() {
-        if ch.is_ascii_digit() { digits.push(ch); } else { break; }
+        if ch.is_ascii_digit() {
+            digits.push(ch);
+        } else {
+            break;
+        }
     }
-    if digits.is_empty() { None } else { digits.parse::<i64>().ok() }
+    if digits.is_empty() {
+        None
+    } else {
+        digits.parse::<i64>().ok()
+    }
 }
 
 fn suffix_key(s: &str) -> String {
     let mut chars = s.chars();
     while let Some(c) = chars.clone().next() {
-        if c.is_ascii_digit() { chars.next(); } else { break; }
+        if c.is_ascii_digit() {
+            chars.next();
+        } else {
+            break;
+        }
     }
     let rem: String = chars.collect();
-    rem.chars().map(|c| if c.is_ascii_alphabetic() { c.to_ascii_lowercase() } else if c == '*' { '~' } else { c.to_ascii_lowercase() }).collect()
+    rem.chars()
+        .map(|c| {
+            if c.is_ascii_alphabetic() {
+                c.to_ascii_lowercase()
+            } else if c == '*' {
+                '~'
+            } else {
+                c.to_ascii_lowercase()
+            }
+        })
+        .collect()
 }
 
 // Format stamps_issued into thousands-separated form like "3,890,589".
@@ -69,18 +91,22 @@ fn suffix_key(s: &str) -> String {
 // from the right. If no digits are found, returns the original trimmed input.
 fn format_stamps_issued(s: &str) -> String {
     let t = s.trim();
-    if t.is_empty() { return String::new(); }
+    if t.is_empty() {
+        return String::new();
+    }
 
     // Remove surrounding parentheses
     let mut v = t.to_string();
     if v.starts_with('(') && v.ends_with(')') {
-        v = v[1..v.len()-1].to_string();
+        v = v[1..v.len() - 1].to_string();
     }
 
     // Remove any chars except digits, dot, comma
     let re_keep = Regex::new(r"[^0-9\.,]").unwrap();
     v = re_keep.replace_all(&v, "").to_string();
-    if v.is_empty() { return String::new(); }
+    if v.is_empty() {
+        return String::new();
+    }
 
     // Determine decimal separator using heuristics:
     // - If both '.' and ',' present: the last-occurring separator is the decimal separator.
@@ -91,8 +117,17 @@ fn format_stamps_issued(s: &str) -> String {
     let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
         let last_dot = v.rfind('.').unwrap();
         let last_comma = v.rfind(',').unwrap();
-        if last_dot > last_comma { (v[..last_dot].to_string(), Some(v[last_dot+1..].to_string())) }
-        else { (v[..last_comma].to_string(), Some(v[last_comma+1..].to_string())) }
+        if last_dot > last_comma {
+            (
+                v[..last_dot].to_string(),
+                Some(v[last_dot + 1..].to_string()),
+            )
+        } else {
+            (
+                v[..last_comma].to_string(),
+                Some(v[last_comma + 1..].to_string()),
+            )
+        }
     } else if dot_count > 0 {
         if dot_count > 1 {
             // multiple dots -> treat as thousands separators
@@ -100,7 +135,11 @@ fn format_stamps_issued(s: &str) -> String {
         } else {
             let idx = v.rfind('.').unwrap();
             let right_len = v.len() - idx - 1;
-            if right_len == 3 { (v.replace('.', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+            if right_len == 3 {
+                (v.replace('.', ""), None)
+            } else {
+                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
+            }
         }
     } else if comma_count > 0 {
         if comma_count > 1 {
@@ -109,7 +148,11 @@ fn format_stamps_issued(s: &str) -> String {
         } else {
             let idx = v.rfind(',').unwrap();
             let right_len = v.len() - idx - 1;
-            if right_len == 3 { (v.replace(',', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+            if right_len == 3 {
+                (v.replace(',', ""), None)
+            } else {
+                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
+            }
         }
     } else {
         (v.clone(), None)
@@ -169,17 +212,29 @@ mod tests {
 pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
     v.sort_by(|a, b| {
         let year_cmp = a.year.cmp(&b.year);
-        if year_cmp != std::cmp::Ordering::Equal { return year_cmp; }
+        if year_cmp != std::cmp::Ordering::Equal {
+            return year_cmp;
+        }
         match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
             (Some(ai), Some(bi)) => {
                 let cmp = ai.cmp(&bi);
-                if cmp != std::cmp::Ordering::Equal { return cmp; }
+                if cmp != std::cmp::Ordering::Equal {
+                    return cmp;
+                }
                 let a_suf = suffix_key(&a.sg_number);
                 let b_suf = suffix_key(&b.sg_number);
                 let a_empty = a_suf.is_empty();
                 let b_empty = b_suf.is_empty();
-                if a_empty != b_empty { return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater }; }
-                a_suf.cmp(&b_suf).then_with(|| a.sg_number.cmp(&b.sg_number))
+                if a_empty != b_empty {
+                    return if a_empty {
+                        std::cmp::Ordering::Less
+                    } else {
+                        std::cmp::Ordering::Greater
+                    };
+                }
+                a_suf
+                    .cmp(&b_suf)
+                    .then_with(|| a.sg_number.cmp(&b.sg_number))
             }
             (Some(_), None) => std::cmp::Ordering::Less,
             (None, Some(_)) => std::cmp::Ordering::Greater,
@@ -227,7 +282,9 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 multi_perf: false,
             })
         })?;
-        for s in rows { result.push(s?); }
+        for s in rows {
+            result.push(s?);
+        }
     } else {
         let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
         let rows = stmt.query_map([series, year], |row| {
@@ -265,7 +322,9 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 multi_perf: false,
             })
         })?;
-        for s in rows { result.push(s?); }
+        for s in rows {
+            result.push(s?);
+        }
     }
     sort_stampstubs_inplace(&mut result);
     Ok(result)
@@ -322,7 +381,9 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     let mut stmt = conn.prepare("PRAGMA table_info('stamps')")?;
     let cols = stmt.query_map([], |row| Ok(row.get::<_, String>(1)?))?;
     let mut existing: Vec<String> = Vec::new();
-    for c in cols { existing.push(c?); }
+    for c in cols {
+        existing.push(c?);
+    }
 
     conn.execute_batch("BEGIN IMMEDIATE;")?;
     if !existing.iter().any(|c| c == "image_width_px") {
@@ -356,22 +417,30 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
 
         if let Some(re) = re_design {
             if let Some(cap) = re.captures(&combined) {
-                if let Some(m) = cap.get(1) { design = m.as_str().trim().to_string(); }
+                if let Some(m) = cap.get(1) {
+                    design = m.as_str().trim().to_string();
+                }
             }
         }
         if let Some(re) = re_engr {
             if let Some(cap) = re.captures(&combined) {
-                if let Some(m) = cap.get(1) { engraving = m.as_str().trim().to_string(); }
+                if let Some(m) = cap.get(1) {
+                    engraving = m.as_str().trim().to_string();
+                }
             }
         }
         if let Some(re) = re_perf {
             if let Some(cap) = re.captures(&combined) {
-                if let Some(m) = cap.get(1) { perforation = m.as_str().trim().to_string(); }
+                if let Some(m) = cap.get(1) {
+                    perforation = m.as_str().trim().to_string();
+                }
             }
         }
         if let Some(re) = re_wm {
             if let Some(cap) = re.captures(&combined) {
-                if let Some(m) = cap.get(1) { watermark = m.as_str().trim().to_string(); }
+                if let Some(m) = cap.get(1) {
+                    watermark = m.as_str().trim().to_string();
+                }
             }
         }
 
@@ -380,16 +449,31 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
 
     fn normalize_currency_token_inner(s: &str) -> String {
         let t = s.trim();
-        if t.is_empty() { return String::new(); }
+        if t.is_empty() {
+            return String::new();
+        }
         let low = t.to_lowercase();
-        if low == "sell" || low == "usd" || low == "$" || low == "us$" || low.contains("usd") || low.contains("us$") { return "USD".to_string(); }
-        if low == "eur" || low.contains("€") { return "EUR".to_string(); }
-        if low == "gbp" || low.contains("£") { return "GBP".to_string(); }
+        if low == "sell"
+            || low == "usd"
+            || low == "$"
+            || low == "us$"
+            || low.contains("usd")
+            || low.contains("us$")
+        {
+            return "USD".to_string();
+        }
+        if low == "eur" || low.contains("€") {
+            return "EUR".to_string();
+        }
+        if low == "gbp" || low.contains("£") {
+            return "GBP".to_string();
+        }
         t.to_uppercase()
     }
 
     // Scan rows and find suspects
-    let mut stmt = conn.prepare("SELECT id, design, engraving, perforation, context, currency FROM stamps")?;
+    let mut stmt =
+        conn.prepare("SELECT id, design, engraving, perforation, context, currency FROM stamps")?;
     let mut rows = stmt.query([])?;
     let mut updates: Vec<(i64, String, String, String, String, String)> = Vec::new();
     while let Ok(Some(r)) = rows.next() {
@@ -402,14 +486,26 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
 
         let suspect = |s: &str| {
             let low = s.to_lowercase();
-            low.contains("design:") || low.contains("engraving:") || low.contains("perforation:") || s.contains('\n') || s.contains('\r')
+            low.contains("design:")
+                || low.contains("engraving:")
+                || low.contains("perforation:")
+                || s.contains('\n')
+                || s.contains('\r')
         };
         if suspect(&design) || suspect(&engraving) || suspect(&perforation) {
             let mut details: Vec<String> = Vec::new();
-            if !context.trim().is_empty() { details.push(context.clone()); }
-            if !design.trim().is_empty() { details.push(design.clone()); }
-            if !engraving.trim().is_empty() { details.push(engraving.clone()); }
-            if !perforation.trim().is_empty() { details.push(perforation.clone()); }
+            if !context.trim().is_empty() {
+                details.push(context.clone());
+            }
+            if !design.trim().is_empty() {
+                details.push(design.clone());
+            }
+            if !engraving.trim().is_empty() {
+                details.push(engraving.clone());
+            }
+            if !perforation.trim().is_empty() {
+                details.push(perforation.clone());
+            }
             let (wm_new, design_new, engr_new, perf_new) = extract_block_metadata_local(&details);
             let currency_new = normalize_currency_token_inner(&currency);
             updates.push((id, wm_new, design_new, engr_new, perf_new, currency_new));
@@ -422,13 +518,15 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
         let row: (String, String, String, String, String) = conn.query_row(
             "SELECT watermark, design, engraving, perforation, currency FROM stamps WHERE id = ?1",
             params![id],
-            |r| Ok((
-                r.get::<_, Option<String>>(0)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(2)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(4)?.unwrap_or_default(),
-            )),
+            |r| {
+                Ok((
+                    r.get::<_, Option<String>>(0)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                ))
+            },
         )?;
         let combined = vec![row.0.clone(), row.1.clone(), row.2.clone(), row.3.clone()];
         let (wm_new, design_new, engr_new, perf_new) = extract_block_metadata_local(&combined);
@@ -436,16 +534,34 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
 
         let mut set_clauses: Vec<String> = Vec::new();
         let mut values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-        if !wm_new.is_empty() { set_clauses.push("watermark = ?".to_string()); values.push(Box::new(wm_new)); }
-        if !design_new.is_empty() { set_clauses.push("design = ?".to_string()); values.push(Box::new(design_new)); }
-        if !engr_new.is_empty() { set_clauses.push("engraving = ?".to_string()); values.push(Box::new(engr_new)); }
-        if !perf_new.is_empty() { set_clauses.push("perforation = ?".to_string()); values.push(Box::new(perf_new)); }
-        if !currency_new.is_empty() { set_clauses.push("currency = ?".to_string()); values.push(Box::new(currency_new)); }
+        if !wm_new.is_empty() {
+            set_clauses.push("watermark = ?".to_string());
+            values.push(Box::new(wm_new));
+        }
+        if !design_new.is_empty() {
+            set_clauses.push("design = ?".to_string());
+            values.push(Box::new(design_new));
+        }
+        if !engr_new.is_empty() {
+            set_clauses.push("engraving = ?".to_string());
+            values.push(Box::new(engr_new));
+        }
+        if !perf_new.is_empty() {
+            set_clauses.push("perforation = ?".to_string());
+            values.push(Box::new(perf_new));
+        }
+        if !currency_new.is_empty() {
+            set_clauses.push("currency = ?".to_string());
+            values.push(Box::new(currency_new));
+        }
 
         if !set_clauses.is_empty() {
             let sql = format!("UPDATE stamps SET {} WHERE id = ?", set_clauses.join(", "));
             values.push(Box::new(id));
-            let refs: Vec<&dyn rusqlite::ToSql> = values.iter().map(|b| &**b as &dyn rusqlite::ToSql).collect();
+            let refs: Vec<&dyn rusqlite::ToSql> = values
+                .iter()
+                .map(|b| &**b as &dyn rusqlite::ToSql)
+                .collect();
             if let Ok(rows) = conn.execute(&sql, rusqlite::params_from_iter(refs)) {
                 updated_count += rows as i64;
             }
@@ -453,7 +569,10 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
     }
 
     conn.execute_batch("COMMIT;")?;
-    debug!("Completed migration: fix block metadata; updated {} rows", updated_count);
+    debug!(
+        "Completed migration: fix block metadata; updated {} rows",
+        updated_count
+    );
     Ok(())
 }
 
@@ -487,17 +606,52 @@ pub fn insert_stamp(
 ) -> Result<bool> {
     let mut stamps_issued_normalized = stamps_issued.trim().to_string();
     if stamps_issued_normalized.starts_with('(') && stamps_issued_normalized.ends_with(')') {
-        stamps_issued_normalized = stamps_issued_normalized[1..stamps_issued_normalized.len()-1].to_string();
+        stamps_issued_normalized =
+            stamps_issued_normalized[1..stamps_issued_normalized.len() - 1].to_string();
     }
     let re_non = Regex::new(r"[^0-9\.,]").unwrap();
-    stamps_issued_normalized = re_non.replace_all(&stamps_issued_normalized, "").to_string();
+    stamps_issued_normalized = re_non
+        .replace_all(&stamps_issued_normalized, "")
+        .to_string();
     if stamps_issued_normalized.contains('.') && !stamps_issued_normalized.contains(',') {
         stamps_issued_normalized = stamps_issued_normalized.replace('.', ",");
     }
 
     let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
-    let (count, existing_image_path, existing_remote_url, existing_description, existing_stamps_issued, existing_mint_condition, existing_unused, existing_used, existing_letter_fdc, existing_currency, existing_watermark, existing_design, existing_engraving, existing_perforation, existing_context): (i64, String, String, String, String, String, String, String, String, String, String, String, String, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
+    let (
+        count,
+        existing_image_path,
+        existing_remote_url,
+        existing_description,
+        existing_stamps_issued,
+        existing_mint_condition,
+        existing_unused,
+        existing_used,
+        existing_letter_fdc,
+        existing_currency,
+        existing_watermark,
+        existing_design,
+        existing_engraving,
+        existing_perforation,
+        existing_context,
+    ): (
+        i64,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    ) = stmt.query_row(params![country, series, sg_number], |row| {
         Ok((
             row.get(0)?,
             row.get(1).unwrap_or(String::new()),
@@ -521,25 +675,53 @@ pub fn insert_stamp(
         // trace removed
         let is_empty = |s: &str| s.trim().is_empty();
         let mut needs_update = false;
-        let has_new_remote_url = !remote_image_url.trim().is_empty() && remote_image_url != existing_remote_url;
-        if has_new_remote_url { needs_update = true; }
+        let has_new_remote_url =
+            !remote_image_url.trim().is_empty() && remote_image_url != existing_remote_url;
+        if has_new_remote_url {
+            needs_update = true;
+        }
         if !image_path.trim().is_empty() {
-            if is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image") {
+            if is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image")
+            {
                 needs_update = true;
             }
         }
-        if is_empty(&existing_description) && !description.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_stamps_issued) && !stamps_issued.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_mint_condition) && !mint_condition.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_unused) && !unused.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_used) && !used.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_letter_fdc) && !letter_fdc.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_currency) && !currency.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_watermark) && !watermark.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_design) && !design.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_engraving) && !engraving.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_perforation) && !perforation.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_context) && !context.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_description) && !description.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_stamps_issued) && !stamps_issued.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_mint_condition) && !mint_condition.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_unused) && !unused.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_used) && !used.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_letter_fdc) && !letter_fdc.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_currency) && !currency.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_watermark) && !watermark.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_design) && !design.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_engraving) && !engraving.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_perforation) && !perforation.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_context) && !context.trim().is_empty() {
+            needs_update = true;
+        }
 
         if needs_update {
             // trace removed
@@ -562,21 +744,43 @@ pub fn insert_stamp(
                 WHERE country = ?16 AND series = ?17 AND sg_number = ?18";
 
             let params_vec = params![
-                image_path, remote_image_url, original_image_url,
-                description, stamps_issued_normalized, mint_condition, unused, used, letter_fdc, currency,
-                watermark, design, engraving, perforation, context,
-                country, series, sg_number
+                image_path,
+                remote_image_url,
+                original_image_url,
+                description,
+                stamps_issued_normalized,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                watermark,
+                design,
+                engraving,
+                perforation,
+                context,
+                country,
+                series,
+                sg_number
             ];
             match conn.execute(update_sql, params_vec) {
                 Ok(rows) => {
                     if rows > 0 {
-                        debug!("Updated existing stamp metadata/image for {} | {} | {} (rows={})", country, series, sg_number, rows);
+                        debug!(
+                            "Updated existing stamp metadata/image for {} | {} | {} (rows={})",
+                            country, series, sg_number, rows
+                        );
                         return Ok(true);
                     } else {
                         // trace removed
                     }
                 }
-                Err(e) => { error!("DB update error for {} {} {}: {}", country, series, sg_number, e); }
+                Err(e) => {
+                    error!(
+                        "DB update error for {} {} {}: {}",
+                        country, series, sg_number, e
+                    );
+                }
             }
         }
 
@@ -646,15 +850,44 @@ pub fn insert_stamp(
         design.to_string(),
         engraving.to_string(),
         perforation.to_string(),
-        context.to_string()
+        context.to_string(),
     ];
     // trace removed
     // trace removed
     let mut attempts = 0;
     loop {
         attempts += 1;
-        match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context]) {
-                Ok(_) => {
+        match conn.execute(
+            sql,
+            params![
+                country,
+                series,
+                year,
+                month_clean,
+                month_num,
+                day,
+                sg_number,
+                type_,
+                denomination,
+                color,
+                description,
+                stamps_issued,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                image_path,
+                remote_image_url,
+                original_image_url,
+                watermark,
+                design,
+                engraving,
+                perforation,
+                context
+            ],
+        ) {
+            Ok(_) => {
                 debug!("Insert succeeded on attempt {}", attempts);
                 let last_id = conn.last_insert_rowid();
                 debug!("Last insert rowid: {}", last_id);
@@ -663,7 +896,10 @@ pub fn insert_stamp(
             Err(e) => {
                 error!("Insert failed on attempt {}: {}", attempts, e);
                 if attempts >= 2 {
-                    error!("Giving up after {} attempts. Params: {:?}", attempts, params_vec);
+                    error!(
+                        "Giving up after {} attempts. Params: {:?}",
+                        attempts, params_vec
+                    );
                     break;
                 } else {
                     // retrying insert
@@ -674,24 +910,43 @@ pub fn insert_stamp(
     Ok(true)
 }
 
-pub fn get_stamps_by_country_series(conn: &Connection, country: &str, series: &str) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {
+pub fn get_stamps_by_country_series(
+    conn: &Connection,
+    country: &str,
+    series: &str,
+) -> Result<
+    Vec<(
+        i32,
+        String,
+        String,
+        i32,
+        String,
+        i32,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    )>,
+> {
     let mut stmt = conn.prepare(
         "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
     )?;
     let stamp_iter = stmt.query_map(params![country, series], |row| {
         Ok((
-            row.get(0)?, // id
-            row.get(1)?, // country
-            row.get(2)?, // series
-            row.get(3)?, // year
-            row.get(4)?, // month
-            row.get::<_, i32>(5)?, // month_num
-            row.get(6)?, // day
+            row.get(0)?,              // id
+            row.get(1)?,              // country
+            row.get(2)?,              // series
+            row.get(3)?,              // year
+            row.get(4)?,              // month
+            row.get::<_, i32>(5)?,    // month_num
+            row.get(6)?,              // day
             row.get::<_, String>(7)?, // description
-            row.get(8)?, // image_path
-            row.get(9)?, // remote_image_url
-            row.get(10)?, // perforation
-            row.get(11)? // context
+            row.get(8)?,              // image_path
+            row.get(9)?,              // remote_image_url
+            row.get(10)?,             // perforation
+            row.get(11)?,             // context
         ))
     })?;
     let mut results = Vec::new();

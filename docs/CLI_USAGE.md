@@ -1,7 +1,3 @@
-# CLI Usage — Stamp Album Generator
-
-When running the Stamp Album Generator during development or automated runs please use the canonical CLI. The output must be identical whether the program is run in "scrape mode" using `--source` or in "db-only/output" mode by providing `--db-path`.
-
 Stamp Album Generator
 
 Usage: stamp_album_gen2 [OPTIONS]
@@ -22,7 +18,7 @@ Options:
       --end-year <END_YEAR>
           [default: 2025]
       --overwrite-album
-
+          
       --overwrite-images
           
       --max-pages <MAX_PAGES>
@@ -35,6 +31,3 @@ Options:
           Print help
   -V, --version
           Print version
-
-
-

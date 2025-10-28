@@ -34,7 +34,11 @@ fn description_extraction_prefers_td6_with_fallback() {
         } else {
             String::new()
         };
-        assert!(description.contains("100th Anniversary"), "description did not contain expected text, got: '{}'", description);
+        assert!(
+            description.contains("100th Anniversary"),
+            "description did not contain expected text, got: '{}'",
+            description
+        );
         found = true;
     }
     assert!(found, "no stamp_tr row found in test HTML");

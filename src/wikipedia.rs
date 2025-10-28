@@ -5,13 +5,19 @@ use std::path::Path;
 
 /// Fetch a short extract for a given topic from Wikipedia's REST API and save it
 /// to the album directory as wiki_summary.txt. Returns Ok(path) on success.
-pub fn fetch_and_save_summary(topic: &str, album_dir: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn fetch_and_save_summary(
+    topic: &str,
+    album_dir: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     let client = Client::builder().user_agent("StampAlbumGen2/1.0").build()?;
     // Simple Wikipedia REST summary endpoint. Topic needs percent-encoding for path.
     // Wikipedia page titles use underscores for spaces and are case-sensitive;
     // for a simple heuristic replace spaces with underscores.
     let topic_enc = topic.replace(' ', "_");
-    let url = format!("https://en.wikipedia.org/api/rest_v1/page/summary/{}", topic_enc);
+    let url = format!(
+        "https://en.wikipedia.org/api/rest_v1/page/summary/{}",
+        topic_enc
+    );
     info!("Fetching Wikipedia summary for '{}' -> {}", topic, url);
     let resp = client.get(&url).send()?;
     if !resp.status().is_success() {

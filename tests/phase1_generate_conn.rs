@@ -1,7 +1,7 @@
+use rusqlite::{params, Connection};
 use std::env;
 use std::fs;
 use tempfile::tempdir;
-use rusqlite::{Connection, params};
 
 /// Integration test for Phase 1: verify `generate_album_output_conn` works with
 /// a live `rusqlite::Connection` by creating an in-memory DB and checking that
@@ -49,7 +49,8 @@ fn phase1_generate_with_in_memory_conn() {
             image_width_px INTEGER,
             image_height_px INTEGER
         );",
-    ).expect("create table");
+    )
+    .expect("create table");
 
     // Insert a single non-null row for every column that get_stamps_by_series
     // expects as a String; use conservative placeholder values.
@@ -89,10 +90,20 @@ fn phase1_generate_with_in_memory_conn() {
     stamp_album_gen2::file_utils::set_db_path_from_cli("Albums/TestAlbum/TestAlbum.db");
 
     // Call the conn-taking API; this should write Albums/TestAlbum/TestAlbum-1900-2000.txt
-    stamp_album_gen2::album_globals::generate_album_output_conn(&conn, "TestAlbum", None::<fn(usize)>, Some(1900), Some(2000));
+    stamp_album_gen2::album_globals::generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        None::<fn(usize)>,
+        Some(1900),
+        Some(2000),
+    );
 
     let output_path = tmp.path().join("Albums/TestAlbum/TestAlbum-1900-2000.txt");
-    assert!(output_path.exists(), "expected output file at {}", output_path.display());
+    assert!(
+        output_path.exists(),
+        "expected output file at {}",
+        output_path.display()
+    );
 
     // Restore working directory
     env::set_current_dir(orig_dir).expect("restore cwd");

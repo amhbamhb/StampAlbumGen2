@@ -1,5 +1,7 @@
+use lazy_static::lazy_static;
 use std::fs;
 use std::io::Read;
+use std::sync::Mutex;
 use tempfile::tempdir;
 
 // Regression test: ensure a header+row that would otherwise overlap the footer
@@ -7,6 +9,10 @@ use tempfile::tempdir;
 // provides a lightweight guard to prevent regressions to the `page_fit` logic.
 #[test]
 fn page_fit_regression_for_conservative_buffer() {
+    lazy_static! {
+        static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
+    }
+    let _lock = TEST_CWD_MUTEX.lock().unwrap();
     // Create tempdir and small config to make usable height small
     let td = tempdir().expect("tempdir");
     let td_path = td.path();
@@ -97,13 +103,39 @@ page_fit_conservative_buffer_mm = 11.0
     // Run generation from tempdir so load_config picks our config
     let orig = std::env::current_dir().expect("cwd");
     std::env::set_current_dir(&td_path).expect("chdir");
-    stamp_album_gen2::album_globals::generate_album_output(&db_path_str, "RegTestAlbum", None::<fn(usize)>, None, None);
+    stamp_album_gen2::album_globals::generate_album_output(
+        &db_path_str,
+        "RegTestAlbum",
+        None::<fn(usize)>,
+        None,
+        None,
+    );
     std::env::set_current_dir(orig).expect("restore cwd");
 
-    // Verify output contains forced page 2 sequence
-    let out_file = td_path.join("Albums").join("RegTestAlbum").join("RegTestAlbum.txt");
-    let mut s = String::new();
-    fs::File::open(&out_file).expect("open output").read_to_string(&mut s).expect("read output");
+    // Verify output contains forced page 2 sequence. The generator may include inferred years in the filename,
+    // so locate any .txt in the album dir and inspect it.
+    let album_dir = td_path.join("Albums").join("RegTestAlbum");
+    let mut found_content = None;
+    if let Ok(entries) = std::fs::read_dir(&album_dir) {
+        for ent in entries.filter_map(|e| e.ok()) {
+            let fname = ent.file_name().to_string_lossy().to_string();
+            if fname.ends_with(".txt") {
+                let mut s = String::new();
+                if fs::File::open(ent.path())
+                    .and_then(|mut f| f.read_to_string(&mut s))
+                    .is_ok()
+                {
+                    found_content = Some(s);
+                    break;
+                }
+            }
+        }
+    }
+    let s = found_content.expect("no generated .txt file found in album dir");
     let page2_seq = "### Page 2 ###\nPAGE_START\nROW_START_ES";
-    assert!(s.contains(page2_seq), "expected forced page 2 with PAGE_START + ROW_START_ES, got:\n{}", s);
+    assert!(
+        s.contains(page2_seq),
+        "expected forced page 2 with PAGE_START + ROW_START_ES, got:\n{}",
+        s
+    );
 }

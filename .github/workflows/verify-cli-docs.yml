@@ -1,0 +1,36 @@
+name: Verify CLI docs
+
+on:
+  push:
+    branches: [ main, master, '**' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  verify-cli-docs:
+    name: Verify CLI docs match generated help
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Build
+        run: cargo build --locked
+
+      - name: Capture CLI help
+        run: cargo run -- --help > help.txt
+
+      - name: Compare help to docs/CLI_USAGE.md
+        run: |
+          set -e
+          if ! diff -u docs/CLI_USAGE.md help.txt; then
+            echo "CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:\n  cargo run -- --help > docs/CLI_USAGE.md"
+            exit 1
+          fi

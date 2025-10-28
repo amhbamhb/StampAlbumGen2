@@ -21,5 +21,5 @@ pub use state::*;
 
 // Provide access to album generation helpers
 pub use crate::album_globals::generate_album_output;
-pub use crate::album_utils::load_stamps_from_db;
 pub use crate::album_globals::write_globals;
+pub use crate::album_utils::load_stamps_from_db;

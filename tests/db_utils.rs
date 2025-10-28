@@ -1,5 +1,7 @@
-use stamp_album_gen2::db_utils::{sort_stampstubs_inplace, StampStub, insert_stamp, migrate_fix_block_metadata};
 use rusqlite::Connection;
+use stamp_album_gen2::db_utils::{
+    insert_stamp, migrate_fix_block_metadata, sort_stampstubs_inplace, StampStub,
+};
 
 fn make_stub(sg: &str, year: i32) -> StampStub {
     StampStub {
@@ -88,15 +90,52 @@ fn test_insert_stamp_backfill() {
             uniq_key TEXT
         )",
         [],
-    ).unwrap();
+    )
+    .unwrap();
 
     conn.execute("INSERT INTO stamps (country, series, sg_number, description, uniq_key) VALUES (?1,?2,?3,?4,?5)", rusqlite::params!["X","S","1","Existing desc","x|s|1"]).unwrap();
 
-    let res = insert_stamp(&conn, "X", "S", 1900, "Jan", "1", "1", "1", "Type", "Denom", "Color", "New Desc", "1.234", "Mint", "Unused", "Used", "Letter", "USD", "images/1.jpg", "https://example.com/1.jpg", "orig.jpg", "WM", "Design", "Engr", "12", "Context");
+    let res = insert_stamp(
+        &conn,
+        "X",
+        "S",
+        1900,
+        "Jan",
+        "1",
+        "1",
+        "1",
+        "Type",
+        "Denom",
+        "Color",
+        "New Desc",
+        "1.234",
+        "Mint",
+        "Unused",
+        "Used",
+        "Letter",
+        "USD",
+        "images/1.jpg",
+        "https://example.com/1.jpg",
+        "orig.jpg",
+        "WM",
+        "Design",
+        "Engr",
+        "12",
+        "Context",
+    );
     assert!(res.is_ok());
 
     let mut stmt = conn.prepare("SELECT description, stamps_issued, image_path, remote_image_url FROM stamps WHERE country=?1 AND series=?2 AND sg_number=?3").unwrap();
-    let row = stmt.query_row(rusqlite::params!["X","S","1"], |r| Ok((r.get::<_,String>(0)?, r.get::<_,String>(1)?, r.get::<_,String>(2)?, r.get::<_,String>(3)?))).unwrap();
+    let row = stmt
+        .query_row(rusqlite::params!["X", "S", "1"], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, String>(2)?,
+                r.get::<_, String>(3)?,
+            ))
+        })
+        .unwrap();
     assert_eq!(row.0, "Existing desc");
     assert_eq!(row.1, "1,234");
     assert_eq!(row.2, "images/1.jpg");
@@ -139,24 +178,46 @@ fn test_migrate_fix_block_metadata_basic() {
             uniq_key TEXT
         )",
         [],
-    ).unwrap();
+    )
+    .unwrap();
 
-    let bad_block = "Design: Herman Herbert Schwartz\nEngraving: Herman Herbert Schwartz\nPerforation: 12";
+    let bad_block =
+        "Design: Herman Herbert Schwartz\nEngraving: Herman Herbert Schwartz\nPerforation: 12";
     conn.execute("INSERT INTO stamps (country, series, sg_number, design, engraving, perforation, context, currency, uniq_key) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9)",
         rusqlite::params!["Canada","S","183", bad_block, bad_block, bad_block, bad_block, "Sell", "canada|s|183"]).unwrap();
 
     let res = migrate_fix_block_metadata(&conn);
     assert!(res.is_ok());
 
-    let row: (Option<String>, Option<String>, Option<String>, Option<String>) = conn.query_row(
-        "SELECT watermark, design, engraving, perforation FROM stamps WHERE sg_number = '183'",
-        [],
-        |r| Ok((r.get::<_, Option<String>>(0)?, r.get::<_, Option<String>>(1)?, r.get::<_, Option<String>>(2)?, r.get::<_, Option<String>>(3)?)),
-    ).unwrap();
+    let row: (
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    ) = conn
+        .query_row(
+            "SELECT watermark, design, engraving, perforation FROM stamps WHERE sg_number = '183'",
+            [],
+            |r| {
+                Ok((
+                    r.get::<_, Option<String>>(0)?,
+                    r.get::<_, Option<String>>(1)?,
+                    r.get::<_, Option<String>>(2)?,
+                    r.get::<_, Option<String>>(3)?,
+                ))
+            },
+        )
+        .unwrap();
     assert_eq!(row.1.unwrap_or_default(), "Herman Herbert Schwartz");
     assert_eq!(row.2.unwrap_or_default(), "Herman Herbert Schwartz");
     assert_eq!(row.3.unwrap_or_default(), "12");
 
-    let cur: String = conn.query_row("SELECT currency FROM stamps WHERE sg_number = '183'", [], |r| r.get(0)).unwrap();
+    let cur: String = conn
+        .query_row(
+            "SELECT currency FROM stamps WHERE sg_number = '183'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
     assert_eq!(cur, "USD");
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::{Path, PathBuf};
 use std::io::{self};
+use std::path::{Path, PathBuf};
 
 use reqwest::blocking::Client;
 
@@ -60,7 +60,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
         if p.exists() {
             if let Ok(contents) = fs::read_to_string(p) {
                 if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(&contents) {
-                    return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+                    return j
+                        .into_iter()
+                        .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+                        .collect();
                 }
             }
         }
@@ -78,7 +81,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
         let prefer_dirs: Vec<PathBuf> = vec![
             PathBuf::from("flags"),
             // exe parent
-            std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())).unwrap_or_else(|| PathBuf::from("flags")),
+            std::env::current_exe()
+                .ok()
+                .and_then(|e| e.parent().map(|p| p.to_path_buf()))
+                .unwrap_or_else(|| PathBuf::from("flags")),
             // build manifest
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
         ];
@@ -102,7 +108,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
             }
         }
 
-        return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+        return j
+            .into_iter()
+            .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+            .collect();
     }
 
     default_flag_map()
@@ -232,7 +241,11 @@ pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std
 
 /// Convenience: try to find a flag for the provided country name and copy it into the given album images dir
 /// If no match, return Err so callers can fallback to placeholder creation.
-pub fn copy_flag_for_album(country: &str, album_images_dir: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn copy_flag_for_album(
+    country: &str,
+    album_images_dir: &str,
+    size: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     if let Some(code) = country_to_code(country) {
         let downloaded = ensure_flag_image(&code, size)?;
         let dest = Path::new(album_images_dir).join("flag_placeholder.png");

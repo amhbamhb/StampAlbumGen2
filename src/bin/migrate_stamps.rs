@@ -1,14 +1,23 @@
-use std::path::Path;
 use chrono::Local;
 use std::fs;
+use std::path::Path;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Require the DB path as the first argument to avoid hard-coded values
-    let db_path = std::env::args().nth(1).expect("Usage: migrate_stamps <db_path>");
+    let db_path = std::env::args()
+        .nth(1)
+        .expect("Usage: migrate_stamps <db_path>");
 
     // Remove any existing backup files matching the pattern (keep only one backup)
-    let parent = Path::new(&db_path).parent().ok_or("DB path has no parent")?.to_path_buf();
-    let file_name = Path::new(&db_path).file_name().and_then(|s| s.to_str()).ok_or("Invalid DB path filename")?.to_string();
+    let parent = Path::new(&db_path)
+        .parent()
+        .ok_or("DB path has no parent")?
+        .to_path_buf();
+    let file_name = Path::new(&db_path)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .ok_or("Invalid DB path filename")?
+        .to_string();
     let bak_prefix = format!("{}.bak", file_name);
     for entry in fs::read_dir(&parent)? {
         let entry = entry?;

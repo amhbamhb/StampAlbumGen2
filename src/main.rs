@@ -1,12 +1,12 @@
 // Main entry point for StampAlbumGen2
 
-use clap::Parser;
 use clap::CommandFactory;
-use strsim::jaro_winkler;
-use stamp_album_gen2::types::OSType;
-use flexi_logger::{Logger, FileSpec};
-use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
+use clap::Parser;
+use flexi_logger::{FileSpec, Logger};
 use log::info;
+use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
+use stamp_album_gen2::types::OSType;
+use strsim::jaro_winkler;
 
 fn get_operating_system_type() -> OSType {
     let os = std::env::consts::OS;
@@ -19,7 +19,12 @@ fn get_operating_system_type() -> OSType {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "stamp_album_gen2", author, version, about = "Stamp Album Generator")]
+#[command(
+    name = "stamp_album_gen2",
+    author,
+    version,
+    about = "Stamp Album Generator"
+)]
 struct Cli {
     /// Source type: stampworld, touchstamps, extractfile, colnectexport
     #[arg(long, default_value = "stampworld")]
@@ -102,7 +107,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Validate year range early: start_year must not be greater than end_year.
     if cli.start_year > cli.end_year {
-        eprintln!("Invalid year range: --start-year ({}) is greater than --end-year ({}).", cli.start_year, cli.end_year);
+        eprintln!(
+            "Invalid year range: --start-year ({}) is greater than --end-year ({}).",
+            cli.start_year, cli.end_year
+        );
         std::process::exit(1);
     }
 
@@ -123,7 +131,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // via the environment (RUST_LOG) for one-off trace captures during
     // debugging, while keeping a safe default to avoid runaway logs.
     Logger::try_with_env_or_str("stamp_album_gen2=debug,html5ever=warn,reqwest=warn")?
-        .log_to_file(FileSpec::default().directory("Logs").basename(&basename).suffix("log"))
+        .log_to_file(
+            FileSpec::default()
+                .directory("Logs")
+                .basename(&basename)
+                .suffix("log"),
+        )
         .duplicate_to_stderr(flexi_logger::Duplicate::All)
         .start()?;
 
@@ -141,7 +154,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Use an "effective" source variable that may be auto-corrected below when
     // the user passes --yes. This avoids mutating the parsed `cli` struct.
     let mut effective_source = cli.source.to_lowercase();
-    if !known_sources.iter().any(|s| s == &effective_source.as_str()) {
+    if !known_sources
+        .iter()
+        .any(|s| s == &effective_source.as_str())
+    {
         // Compute fuzzy similarity scores to suggest the best matches (Jaro-Winkler)
         let provided = effective_source.as_str();
         let mut scored: Vec<(&str, f64)> = known_sources
@@ -166,7 +182,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     // interactive (likely running in a script), do not accept.
                     if atty::is(atty::Stream::Stdin) && atty::is(atty::Stream::Stdout) {
                         use std::io::{self, Write};
-                        eprint!("Top suggestion is '{}' with score={:.3}. Accept? [y/N]: ", best, score);
+                        eprint!(
+                            "Top suggestion is '{}' with score={:.3}. Accept? [y/N]: ",
+                            best, score
+                        );
                         io::stdout().flush().ok();
                         let mut input = String::new();
                         if let Ok(_) = io::stdin().read_line(&mut input) {
@@ -182,9 +201,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // If we still don't recognize the source (no auto-accept or score low),
         // print suggestions and exit with help.
-        if !known_sources.iter().any(|s| s == &effective_source.as_str()) {
+        if !known_sources
+            .iter()
+            .any(|s| s == &effective_source.as_str())
+        {
             // Prepare a human-friendly top-3 list with numeric Jaro-Winkler scores.
-            let mut top3: Vec<(&str, f64)> = scored.iter().take(3).map(|(s, score)| (*s, *score)).collect();
+            let mut top3: Vec<(&str, f64)> = scored
+                .iter()
+                .take(3)
+                .map(|(s, score)| (*s, *score))
+                .collect();
             // Filter low scores and keep only those > 0.0 (we'll control messaging)
             top3.retain(|(_, score)| *score > 0.0);
 
@@ -194,7 +220,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 for (name, score) in top3.iter() {
                     eprintln!("  - {} (score={:.3})", name, score);
                 }
-                eprintln!("(Suggestions computed using Jaro–Winkler similarity; higher is better.)");
+                eprintln!(
+                    "(Suggestions computed using Jaro–Winkler similarity; higher is better.)"
+                );
             } else {
                 eprintln!("Valid sources are: {}", known_sources.join(", "));
             }
@@ -217,7 +245,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Some(parent) = std::path::Path::new(&db_path).parent() {
             if !parent.exists() {
                 if let Err(e) = std::fs::create_dir_all(parent) {
-                    eprintln!("Failed to create parent directory for DB '{}': {}", parent.display(), e);
+                    eprintln!(
+                        "Failed to create parent directory for DB '{}': {}",
+                        parent.display(),
+                        e
+                    );
                     std::process::exit(1);
                 }
             }
@@ -244,14 +276,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("  - File permissions prevent opening the file");
                 eprintln!("  - Path points to a directory rather than a file");
                 eprintln!("Possible fixes:");
-                eprintln!("  - Check the file: 'file {}' or try 'sqlite3 {} .dump' to inspect", db_path, db_path);
-                eprintln!("  - Remove or move the corrupt file so the program can create a new DB: rm {}", db_path);
+                eprintln!(
+                    "  - Check the file: 'file {}' or try 'sqlite3 {} .dump' to inspect",
+                    db_path, db_path
+                );
+                eprintln!(
+                    "  - Remove or move the corrupt file so the program can create a new DB: rm {}",
+                    db_path
+                );
                 eprintln!("  - Ensure the path is correct and you have read/write permissions");
                 std::process::exit(1);
             }
         };
         let album_name = cli.album_name.unwrap_or_else(|| "Album".to_string());
-        stamp_album_gen2::album_globals::generate_album_output_conn(&conn, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+        stamp_album_gen2::album_globals::generate_album_output_conn(
+            &conn,
+            &album_name,
+            None::<fn(usize)>,
+            Some(cli.start_year),
+            Some(cli.end_year),
+        );
     } else if effective_source == "stampworld" {
         // Scrape mode
         // Require site_name for scraping. If the caller explicitly passed
@@ -273,7 +317,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else if let Some(a) = cli.album_name.clone() {
             a.clone()
         } else {
-            eprintln!("You started the program in scraping mode but did not provide the site name.");
+            eprintln!(
+                "You started the program in scraping mode but did not provide the site name."
+            );
             eprintln!("Please provide the site using --site-name (for example: --site-name 'Great-Britain') or supply --album-name so the program can infer the site.");
             eprintln!("If you're not sure what to put, here's the full help text:\n");
             Cli::command().print_help()?;
@@ -324,67 +370,99 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 if use_main_slug {
                     format!("https://www.stampworld.com/en/stamps/{}/?page=", encoded)
                 } else {
-                    format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, cli.start_year, cli.end_year)
+                    format!(
+                        "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
+                        encoded, cli.start_year, cli.end_year
+                    )
                 }
             } else {
                 // Minimal percent-encoding for common problematic characters
                 // that appear in StampWorld site names (space, '!' and '/').
                 let encoded_site = encode(&site_name);
                 if use_main_slug {
-                    format!("https://www.stampworld.com/en/stamps/{}/?page=", encoded_site)
+                    format!(
+                        "https://www.stampworld.com/en/stamps/{}/?page=",
+                        encoded_site
+                    )
                 } else {
                     format!(
                         "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                        encoded_site,
-                        cli.start_year,
-                        cli.end_year
+                        encoded_site, cli.start_year, cli.end_year
                     )
                 }
             }
         };
         // Load full config (so flag/wiki toggles are available)
-    let cfg_file = stamp_album_gen2::config::load_config("config.toml");
+        let cfg_file = stamp_album_gen2::config::load_config("config.toml");
 
         // Compose the DB path early and set it for the collector so both scraper
-    // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
-    let db_path = format!("{}/{}.db", cfg.album_directory, album_name.replace('/', "-"));
-    stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
-    println!("DEBUG: collector DB path set to {}", db_path);
+        // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
+        let db_path = format!(
+            "{}/{}.db",
+            cfg.album_directory,
+            album_name.replace('/', "-")
+        );
+        stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
+        println!("DEBUG: collector DB path set to {}", db_path);
 
-    let pages = cfg.collect_stampworld_data(&base_url, cli.overwrite_images, None::<&dyn Fn(usize)>, cli.max_pages, cli.stop_after_no_hits);
-    println!("Scrape produced {} stamp lines", pages.len());
+        let pages = cfg.collect_stampworld_data(
+            &base_url,
+            cli.overwrite_images,
+            None::<&dyn Fn(usize)>,
+            cli.max_pages,
+            cli.stop_after_no_hits,
+        );
+        println!("Scrape produced {} stamp lines", pages.len());
 
-    // After scraping, generate album output from the same DB
-    // Open the DB that the collector used and call the conn-taking API so
-    // both scraper and generator share the same connection lifecycle.
-    match stamp_album_gen2::db_utils::init_db(&db_path) {
-        Ok(conn) => {
-            // Attempt to copy a flag into the album images dir if enabled in config
-            let print_flag = cfg_file.print_flag_cover.unwrap_or(true);
-            if print_flag {
-                let album_images = cfg.images_directory.clone();
-                match stamp_album_gen2::flagdb::copy_flag_for_album(&site_name, &album_images, "w320") {
-                    Ok(p) => info!("Copied flag into album images: {}", p),
-                    Err(e) => info!("No flag found for '{}' or download failed; continuing. error={}", site_name, e),
+        // After scraping, generate album output from the same DB
+        // Open the DB that the collector used and call the conn-taking API so
+        // both scraper and generator share the same connection lifecycle.
+        match stamp_album_gen2::db_utils::init_db(&db_path) {
+            Ok(conn) => {
+                // Attempt to copy a flag into the album images dir if enabled in config
+                let print_flag = cfg_file.print_flag_cover.unwrap_or(true);
+                if print_flag {
+                    let album_images = cfg.images_directory.clone();
+                    match stamp_album_gen2::flagdb::copy_flag_for_album(
+                        &site_name,
+                        &album_images,
+                        "w320",
+                    ) {
+                        Ok(p) => info!("Copied flag into album images: {}", p),
+                        Err(e) => info!(
+                            "No flag found for '{}' or download failed; continuing. error={}",
+                            site_name, e
+                        ),
+                    }
                 }
-            }
-            // Optional: fetch Wikipedia summary if requested by config
-            let fetch_wiki = cfg_file.fetch_wikipedia.unwrap_or(false);
-            if fetch_wiki {
-                let album_dir = cfg.album_directory.clone();
-                match stamp_album_gen2::wikipedia::fetch_and_save_summary(&site_name, &album_dir) {
-                    Ok(p) => info!("Saved Wikipedia summary to {}", p),
-                    Err(e) => info!("Wikipedia fetch failed for {}: {}", site_name, e),
+                // Optional: fetch Wikipedia summary if requested by config
+                let fetch_wiki = cfg_file.fetch_wikipedia.unwrap_or(false);
+                if fetch_wiki {
+                    let album_dir = cfg.album_directory.clone();
+                    match stamp_album_gen2::wikipedia::fetch_and_save_summary(
+                        &site_name, &album_dir,
+                    ) {
+                        Ok(p) => info!("Saved Wikipedia summary to {}", p),
+                        Err(e) => info!("Wikipedia fetch failed for {}: {}", site_name, e),
+                    }
                 }
-            }
 
-            stamp_album_gen2::album_globals::generate_album_output_conn(&conn, &album_name, None::<fn(usize)>, Some(cli.start_year), Some(cli.end_year));
+                stamp_album_gen2::album_globals::generate_album_output_conn(
+                    &conn,
+                    &album_name,
+                    None::<fn(usize)>,
+                    Some(cli.start_year),
+                    Some(cli.end_year),
+                );
+            }
+            Err(e) => {
+                eprintln!(
+                    "Failed to open database for generation '{}': {}",
+                    db_path, e
+                );
+                std::process::exit(1);
+            }
         }
-        Err(e) => {
-            eprintln!("Failed to open database for generation '{}': {}", db_path, e);
-            std::process::exit(1);
-        }
-    }
     } else {
         // No db_path and not stampworld: require db_path
         eprintln!("You requested a source other than 'stampworld' but did not provide a database path to use.");

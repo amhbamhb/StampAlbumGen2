@@ -1,7 +1,7 @@
-use std::fs;
+use rusqlite::{params, Connection};
 use std::env;
+use std::fs;
 use tempfile::tempdir;
-use rusqlite::{Connection, params};
 
 /// Test that the generated series header includes a formatted date line when
 /// the DB row contains year/month/day and the config enables `include_date`.
@@ -45,7 +45,8 @@ fn test_series_header_includes_date() {
             ,image_width_px INTEGER,
             image_height_px INTEGER
         );",
-    ).expect("create table");
+    )
+    .expect("create table");
 
     // Insert a single stamp with a full date
     conn.execute(
@@ -84,16 +85,30 @@ fn test_series_header_includes_date() {
     stamp_album_gen2::file_utils::set_db_path_from_cli(db_path.to_str().unwrap());
 
     // Generate album output for a wide year range so the stamp is included
-    stamp_album_gen2::album_globals::generate_album_output_conn(&conn, "TestAlbum", None::<fn(usize)>, Some(1900), Some(2000));
+    stamp_album_gen2::album_globals::generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        None::<fn(usize)>,
+        Some(1900),
+        Some(2000),
+    );
 
     let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1900-2000.txt");
-    assert!(output_file.exists(), "Expected output file to exist: {}", output_file.display());
+    assert!(
+        output_file.exists(),
+        "Expected output file to exist: {}",
+        output_file.display()
+    );
 
     let contents = fs::read_to_string(&output_file).expect("read output");
 
     // The default date_format is 'commas' and include_date defaults to true,
     // so we expect to find the date string "January 1, 1950" in the header
-    assert!(contents.contains("January 1, 1950"), "Expected header to contain formatted date; got:\n{}", contents);
+    assert!(
+        contents.contains("January 1, 1950"),
+        "Expected header to contain formatted date; got:\n{}",
+        contents
+    );
 
     env::set_current_dir(orig_cwd).expect("restore cwd");
 }

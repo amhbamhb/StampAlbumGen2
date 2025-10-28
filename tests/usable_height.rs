@@ -25,5 +25,10 @@ fn custom_padding_and_margins() {
     let h = compute_usable_height(&cfg);
     // expected = 300 -15 -20 - (1+0.5+0.0+4) -10 -5 = 300 -35 -5.5 -10 -5 = 244.5
     let expected = 244.5_f64;
-    assert!((h - expected).abs() < 0.01, "usable height {} != expected {}", h, expected);
+    assert!(
+        (h - expected).abs() < 0.01,
+        "usable height {} != expected {}",
+        h,
+        expected
+    );
 }

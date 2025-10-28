@@ -1,6 +1,6 @@
+use log::{debug, info};
 use serde::Deserialize;
 use std::fs;
-use log::{ info, debug };
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct HeaderFormatting {
@@ -370,11 +370,10 @@ pub fn load_config(path: &str) -> Config {
                     // into `Config` picks them up. This handles malformed or
                     // legacy configs that put page/layout keys inside
                     // `[header_formatting]`.
-                    if
-                        let Some(hf_table) = value
-                            .get("header_formatting")
-                            .and_then(|v| v.as_table())
-                            .cloned()
+                    if let Some(hf_table) = value
+                        .get("header_formatting")
+                        .and_then(|v| v.as_table())
+                        .cloned()
                     {
                         // Only promote keys that are missing from top-level. We cloned
                         // the header_formatting table above so we don't hold an immutable
@@ -391,57 +390,45 @@ pub fn load_config(path: &str) -> Config {
                     // Now serialize the possibly-modified `Value` back to TOML
                     // and deserialize into the strongly-typed `Config`.
                     match toml::to_string(&value) {
-                        Ok(s) =>
-                            match toml::from_str::<Config>(&s) {
-                                Ok(mut cfg) => {
-                                    // If the file places the include_* toggles inside the
-                                    // `[header_formatting]` table (common), ensure those
-                                    // values are propagated into the top-level `Config` fields
-                                    // when the top-level ones are not present.
-                                    if let Some(hf) = cfg.header_formatting.clone() {
-                                        cfg.include_design = cfg.include_design.or(
-                                            hf.include_design
-                                        );
-                                        cfg.include_engraving = cfg.include_engraving.or(
-                                            hf.include_engraving
-                                        );
-                                        cfg.include_watermark = cfg.include_watermark.or(
-                                            hf.include_watermark
-                                        );
-                                        cfg.include_perforation = cfg.include_perforation.or(
-                                            hf.include_perforation
-                                        );
-                                        cfg.include_catalog_numbers =
-                                            cfg.include_catalog_numbers.or(
-                                                hf.include_catalog_numbers
-                                            );
-                                        cfg.include_series = cfg.include_series.or(
-                                            hf.include_series
-                                        );
-                                        cfg.include_country = cfg.include_country.or(
-                                            hf.include_country
-                                        );
-                                        cfg.include_date = cfg.include_date.or(hf.include_date);
-                                        cfg.print_flag_cover = cfg.print_flag_cover.or(
-                                            hf.print_flag_cover
-                                        );
-                                        // header_formatting currently does not include the detailed
-                                        // diagnostics toggle; leave it as-is when present at top-level.
-                                    }
-
-                                    info!("Loaded config from {}", candidate.display());
-                                    debug!("Parsed Config struct: {:?}", cfg);
-                                    return cfg;
+                        Ok(s) => match toml::from_str::<Config>(&s) {
+                            Ok(mut cfg) => {
+                                // If the file places the include_* toggles inside the
+                                // `[header_formatting]` table (common), ensure those
+                                // values are propagated into the top-level `Config` fields
+                                // when the top-level ones are not present.
+                                if let Some(hf) = cfg.header_formatting.clone() {
+                                    cfg.include_design = cfg.include_design.or(hf.include_design);
+                                    cfg.include_engraving =
+                                        cfg.include_engraving.or(hf.include_engraving);
+                                    cfg.include_watermark =
+                                        cfg.include_watermark.or(hf.include_watermark);
+                                    cfg.include_perforation =
+                                        cfg.include_perforation.or(hf.include_perforation);
+                                    cfg.include_catalog_numbers =
+                                        cfg.include_catalog_numbers.or(hf.include_catalog_numbers);
+                                    cfg.include_series = cfg.include_series.or(hf.include_series);
+                                    cfg.include_country =
+                                        cfg.include_country.or(hf.include_country);
+                                    cfg.include_date = cfg.include_date.or(hf.include_date);
+                                    cfg.print_flag_cover =
+                                        cfg.print_flag_cover.or(hf.print_flag_cover);
+                                    // header_formatting currently does not include the detailed
+                                    // diagnostics toggle; leave it as-is when present at top-level.
                                 }
-                                Err(e) => {
-                                    println!(
+
+                                info!("Loaded config from {}", candidate.display());
+                                debug!("Parsed Config struct: {:?}", cfg);
+                                return cfg;
+                            }
+                            Err(e) => {
+                                println!(
                                         "[WARN] Failed to deserialize merged config from {}: {} -- using defaults",
                                         candidate.display(),
                                         e
                                     );
-                                    break;
-                                }
+                                break;
                             }
+                        },
                         Err(e) => {
                             println!(
                                 "[WARN] Failed to serialize merged toml::Value for {}: {} -- using defaults",

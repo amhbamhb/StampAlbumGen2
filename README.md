@@ -272,45 +272,15 @@ stamp-album-gen2/
 ```
 
 ## Contributing
+For the authoritative and up-to-date CLI option list, see `docs/CLI_USAGE.md` which is generated from the program's clap help output.
 
-1. Fork
-2. Branch
-3. Add tests for behaviour changes
-4. Open a merge request
+To refresh the CLI docs locally:
 
-## License
+```bash
+cargo run -- --help > docs/CLI_USAGE.md
+```
 
-MIT
-This will execute just the ignored integration tests and will only perform network access when `FLAGDB_INTEGRATION=1` is set.
-
-## 📊 Stamp Dimension System
-
-### Embedded Reference System
-
-- Uses compiled-in B4-s.jpg reference image
-- Eliminates external file dependencies
-- Automatic fallback to default ratios if embedded image fails
-
-## 🏗️ Project Structure
-
-```text
-stamp-album-gen2/
-├── src/
-│   ├── main.rs                    # Application entry point
-│   ├── lib.rs                     # Library exports
-│   ├── album_globals.rs           # Core album generation logic
-│   ├── image_utils.rs             # Image processing utilities
-│   ├── image_downloader.rs        # Image downloading functionality
-│   ├── db_utils.rs                # Database utilities
-│   ├── file_utils.rs              # File handling utilities
-│   ├── config.rs                  # Configuration management
-│   ├── types.rs                   # Type definitions
-│   ├── commands_file_generator.rs # Command file generation
-│   ├── placeholder_image.rs       # Placeholder image handling
-│   ├── B4-s.jpg                   # Embedded reference image
-│   ├── data_sources/
-│   │   └── mod.rs                 # Data source modules
-│   └── stampworld/
+If you'd like, I can also consolidate the README to include only a short usage snippet and link to `docs/CLI_USAGE.md` for the full option list.
 ├── Albums/                        # Album databases and images
 ├── Archive/                       # Archived source files
 ├── docs/                          # Documentation files
@@ -408,7 +378,10 @@ Options:
       --catalog-name  CATALOG_NAME 
           Catalog name (e.g. 'SG', 'Michel') [default: SG]
       --overwrite-album
-          Overwrite existing album text files
+          When set, overwrite existing album text files in place. When omitted (the default), if the
+          target album file already exists the generator will create a new file and append a datetime
+          suffix before the extension (for example: `Album.created-YYYYMMDD-HHMMSS.txt`) so the
+          original is preserved.
       --overwrite-images
           Overwrite existing image files
       --start-year  START_YEAR 
