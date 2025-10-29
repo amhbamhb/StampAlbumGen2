@@ -61,18 +61,15 @@ impl ImageStatus {
 
 /// Operating system type enumeration
 #[derive(Debug, Clone, PartialEq)]
+#[derive(Default)]
 pub enum OSType {
     Windows,
     MacOS,
     Linux,
+    #[default]
     Unknown,
 }
 
-impl Default for OSType {
-    fn default() -> Self {
-        OSType::Unknown
-    }
-}
 
 /// Gets the current operating system type
 pub fn get_os_type() -> OSType {
@@ -86,6 +83,7 @@ pub fn get_os_type() -> OSType {
 
 /// Struct representing page header information for AlbumEasy output
 #[derive(Debug, Clone, PartialEq)]
+#[derive(Default)]
 pub struct PageHeaderInfo {
     pub year: i32,
     pub month: String,
@@ -98,18 +96,3 @@ pub struct PageHeaderInfo {
     pub currency: String,
 }
 
-impl Default for PageHeaderInfo {
-    fn default() -> Self {
-        Self {
-            year: 0,
-            month: String::new(),
-            day: String::new(),
-            series: String::new(),
-            perforation: String::new(),
-            design: String::new(),
-            engraving: String::new(),
-            watermark: String::new(),
-            currency: String::new(),
-        }
-    }
-}

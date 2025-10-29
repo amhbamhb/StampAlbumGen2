@@ -119,7 +119,7 @@ fn draw_text(
     let glyph_width = glyphs
         .iter()
         .rev()
-        .filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x as i32))
+        .filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x))
         .next()
         .unwrap_or(0);
     let total_width = glyph_width;

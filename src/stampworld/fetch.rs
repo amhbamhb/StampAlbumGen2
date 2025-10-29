@@ -18,6 +18,12 @@ pub struct ReqwestFetcher {
     client: Client,
 }
 
+impl Default for ReqwestFetcher {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ReqwestFetcher {
     /// Build a standard client used by the site collector (60s timeout).
     pub fn new() -> Self {

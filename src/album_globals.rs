@@ -96,6 +96,12 @@ pub struct GenericAttrs {
 }
 
 // Inline unit tests moved to integration tests under `tests/`.
+impl Default for GenericAttrs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GenericAttrs {
     pub fn new() -> Self {
         Self {
@@ -168,7 +174,7 @@ pub fn compute_usable_height(cfg: &crate::config::Config) -> f64 {
         - bottom_margin
         - total_border
         - usable_height_padding
-        - pages_spacing_v) as f64
+        - pages_spacing_v)
 }
 
 pub fn new_series<W: std::io::Write>(
@@ -315,7 +321,7 @@ pub fn generate_album_output_conn<F>(
     mut page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) -> ()
+)
 where
     F: FnMut(usize),
 {
@@ -488,20 +494,20 @@ where
 
     let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
     let series_order_slice = series_order.as_deref();
-    let series_list = get_all_series(&conn, series_order_slice).expect("Failed to get series");
+    let series_list = get_all_series(conn, series_order_slice).expect("Failed to get series");
     // We've emitted page 1 above; start counter at 1
     let mut page_counter = 1usize;
     let mut current_height = 0.0f64;
     let mut rows_on_page = 0;
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
-    let filtered_series: Vec<String> = series_list.iter().map(|s| s.clone()).collect();
+    let filtered_series: Vec<String> = series_list.iter().cloned().collect();
     let _series_count = filtered_series.len();
     for (_series_idx, series) in filtered_series.iter().enumerate() {
         if let Some(cb) = page_callback.as_mut() {
             cb(page_counter);
         }
         // Example: Load stamps as Vec<Stamp> with generic attributes
-        let mut stamps = get_stamps_by_series(&conn, &series, "0").expect("Failed to get stamps");
+        let mut stamps = get_stamps_by_series(conn, series, "0").expect("Failed to get stamps");
         // Apply inclusive year filtering if start/end years were provided.
         // The generator receives Optional start/end from the CLI. If present,
         // filter stamps to the inclusive range [start_year, end_year].
@@ -668,7 +674,7 @@ where
                     let safe = text.replace('"', "\\\"");
                     header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                 }
-                let first_stamp = stamp_rows.get(0).and_then(|row| row.get(0));
+                let first_stamp = stamp_rows.first().and_then(|row| row.first());
                 if let Some(stamp) = first_stamp {
                     // Optionally include a date line in the header (from DB year/month/day)
                     if config.include_date.unwrap_or(true) {
@@ -690,7 +696,7 @@ where
                                 .map(|s| s.trim())
                                 .unwrap_or("0");
                             if let Ok(mn) = month_num.parse::<usize>() {
-                                if mn >= 1 && mn <= 12 {
+                                if (1..=12).contains(&mn) {
                                     MONTH_NAMES[mn].to_string()
                                 } else {
                                     "".to_string()
@@ -727,12 +733,10 @@ where
                                 } else if !month.is_empty() {
                                     date_text = month.clone();
                                 }
-                            } else {
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} {}", month, day);
-                                } else if !month.is_empty() {
-                                    date_text = month.clone();
-                                }
+                            } else if !month.is_empty() && !day.is_empty() {
+                                date_text = format!("{} {}", month, day);
+                            } else if !month.is_empty() {
+                                date_text = month.clone();
                             }
                         }
                         if !date_text.is_empty() {
@@ -1050,7 +1054,7 @@ where
                 let next_series_name = &filtered_series[_series_idx + 1];
                 // Load stamps of the next series
                 let next_stamps =
-                    get_stamps_by_series(&conn, next_series_name, "0").unwrap_or_default();
+                    get_stamps_by_series(conn, next_series_name, "0").unwrap_or_default();
                 // Build header lines for the next series similarly to above
                 let mut next_header_lines_vec: Vec<(String, f64)> = Vec::new();
                 let next_name_line = clean_text(next_series_name.trim())
@@ -1063,7 +1067,7 @@ where
                     next_header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                 }
                 // attempt to pull watermark/design from first stamp if present
-                if let Some(next_first_stamp) = next_stamps.get(0) {
+                if let Some(next_first_stamp) = next_stamps.first() {
                     let watermark = clean_text(next_first_stamp.watermark.trim())
                         .replace("\n", " ")
                         .replace("  ", " ");
@@ -1093,7 +1097,7 @@ where
                 if !nr.is_empty() {
                     next_rows.push(nr);
                 }
-                if let Some(first_row) = next_rows.get(0) {
+                if let Some(first_row) = next_rows.first() {
                     for stamp in first_row {
                         let image_path = stamp.image_path.trim();
                         let full_image_path =
@@ -1619,7 +1623,7 @@ pub fn generate_album_output<F>(
     page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) -> ()
+)
 where
     F: FnMut(usize),
 {

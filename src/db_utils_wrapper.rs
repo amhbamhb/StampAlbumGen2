@@ -113,7 +113,7 @@ pub fn get_all_series(
                 let mut stmt = conn.prepare(
                     "SELECT series FROM stamps GROUP BY series ORDER BY MIN(CAST(sg_number AS INTEGER)) ASC",
                 )?;
-                let rows = stmt.query_map([], |r| Ok(r.get::<_, String>(0)?))?;
+                let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
                 let mut res = Vec::new();
                 for s in rows {
                     res.push(s?);
@@ -124,7 +124,7 @@ pub fn get_all_series(
                 let mut stmt = conn.prepare(
                     "SELECT series FROM stamps GROUP BY series ORDER BY MIN(CAST(sg_number AS INTEGER)) DESC",
                 )?;
-                let rows = stmt.query_map([], |r| Ok(r.get::<_, String>(0)?))?;
+                let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
                 let mut res = Vec::new();
                 for s in rows {
                     res.push(s?);

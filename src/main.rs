@@ -101,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("If you're unsure, the full help below has all options available :\n");
         // Print clap-generated help
         Cli::command().print_help()?;
-        println!("");
+        println!();
         std::process::exit(1);
     }
 
@@ -151,7 +151,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // (do not perform a scrape). Otherwise, when source == "stampworld" run
     // the scraper; for other source values require --db-path. If the source
     // value looks unknown, suggest similar known values to help the end user.
-    let known_sources = vec!["stampworld", "touchstamps", "extractfile", "colnectexport"];
+    let known_sources = ["stampworld", "touchstamps", "extractfile", "colnectexport"];
     // Use an "effective" source variable that may be auto-corrected below when
     // the user passes --yes. This avoids mutating the parsed `cli` struct.
     let mut effective_source = cli.source.to_lowercase();
@@ -189,7 +189,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         );
                         io::stdout().flush().ok();
                         let mut input = String::new();
-                        if let Ok(_) = io::stdin().read_line(&mut input) {
+                        if io::stdin().read_line(&mut input).is_ok() {
                             let resp = input.trim().to_lowercase();
                             if resp == "y" || resp == "yes" {
                                 effective_source = best.to_string();
@@ -234,7 +234,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("  stamp_album_gen2 --source stampworld --site-name 'Great-Britain' --album-name 'Great Britain' --start-year 1900 --end-year 1950\n");
             eprintln!("Full help is shown below:\n");
             Cli::command().print_help()?;
-            println!("");
+            println!();
             std::process::exit(1);
         }
     }
@@ -324,7 +324,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Please provide the site using --site-name (for example: --site-name 'Great-Britain') or supply --album-name so the program can infer the site.");
             eprintln!("If you're not sure what to put, here's the full help text:\n");
             Cli::command().print_help()?;
-            println!("");
+            println!();
             std::process::exit(1);
         };
         let album_name = cli.album_name.unwrap_or_else(|| site_name.clone());
@@ -470,7 +470,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("For non-scraping sources please provide --db-path and --album-name so the program can generate the album output from your existing database.");
         eprintln!("Full help is shown below:\n");
         Cli::command().print_help()?;
-        println!("");
+        println!();
         std::process::exit(1);
     }
 

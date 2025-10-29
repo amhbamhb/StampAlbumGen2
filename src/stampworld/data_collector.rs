@@ -357,7 +357,7 @@ pub fn collect_stampworld_data_with_fetcher(
                 // used a <th> for the catalog number, include it first; otherwise
                 // assume the first <td> is the catalog number.
                 let mut row_cells: Vec<String> = Vec::new();
-                if let Some(th_row) = ths.get(0) {
+                if let Some(th_row) = ths.first() {
                     row_cells.push(th_row.text().collect::<String>().trim().to_string());
                     for td in &tds {
                         row_cells.push(td.text().collect::<String>().trim().to_string());
@@ -391,8 +391,7 @@ pub fn collect_stampworld_data_with_fetcher(
                     }
                 }
 
-                let sg_number = row_cells
-                    .get(0)
+                let sg_number = row_cells.first()
                     .map(|s| s.trim().to_string())
                     .unwrap_or_default();
                 // Pull a couple of fields early so grouped-range handling can
@@ -402,14 +401,14 @@ pub fn collect_stampworld_data_with_fetcher(
                 // or alternate layouts. Stamps issued is usually one column
                 // after the description (index 7) when present.
                 let description = if row_cells.len() > 6 {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(5).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(5).cloned().unwrap_or_default()
                 };
                 let _stamps_issued = if row_cells.len() > 7 {
-                    row_cells.get(7).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(7).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 };
                 // Handle grouped-range tokens like "1067-1068": expand into
                 // placeholders if the config requests it. We compute stamp_year
@@ -436,10 +435,7 @@ pub fn collect_stampworld_data_with_fetcher(
                     // Normalize common Unicode hyphen variants to ASCII
                     let mut norm = sg_number.clone();
                     norm = norm
-                        .replace('\u{2011}', "-")
-                        .replace('\u{2013}', "-")
-                        .replace('\u{2012}', "-")
-                        .replace('\u{2010}', "-");
+                        .replace(['\u{2011}', '\u{2013}', '\u{2012}', '\u{2010}'], "-");
                     if emit_row_diag {
                         info!(
                             "Encountered grouped-range token='{}' (normalized='{}')",
@@ -560,7 +556,7 @@ pub fn collect_stampworld_data_with_fetcher(
                                                         // Build row_cells
                                                         let mut row_cells2: Vec<String> =
                                                             Vec::new();
-                                                        if let Some(th_row) = ths2.get(0) {
+                                                        if let Some(th_row) = ths2.first() {
                                                             row_cells2.push(
                                                                 th_row
                                                                     .text()
@@ -590,32 +586,26 @@ pub fn collect_stampworld_data_with_fetcher(
                                                             continue;
                                                         }
                                                         // Map fields (reuse same indices as main parsing)
-                                                        let sg_number_f = row_cells2
-                                                            .get(0)
+                                                        let sg_number_f = row_cells2.first()
                                                             .map(|s| s.trim().to_string())
                                                             .unwrap_or_default();
                                                         let type_f = row_cells2
-                                                            .get(1)
-                                                            .map(|s| s.clone())
+                                                            .get(1).cloned()
                                                             .unwrap_or_default();
                                                         let denomination_f = row_cells2
-                                                            .get(2)
-                                                            .map(|s| s.clone())
+                                                            .get(2).cloned()
                                                             .unwrap_or_default();
                                                         let color_f = row_cells2
-                                                            .get(4)
-                                                            .map(|s| s.clone())
+                                                            .get(4).cloned()
                                                             .unwrap_or_default();
                                                         let description_f = if row_cells2.len() > 6
                                                         {
                                                             row_cells2
-                                                                .get(6)
-                                                                .map(|s| s.clone())
+                                                                .get(6).cloned()
                                                                 .unwrap_or_default()
                                                         } else {
                                                             row_cells2
-                                                                .get(5)
-                                                                .map(|s| s.clone())
+                                                                .get(5).cloned()
                                                                 .unwrap_or_default()
                                                         };
                                                         // Extract month/day heuristics per-line
@@ -655,20 +645,20 @@ pub fn collect_stampworld_data_with_fetcher(
                                                             &denomination_f,
                                                             &color_f,
                                                             &description_f,
-                                                            &String::new(), // stamps_issued
-                                                            &String::new(), // mint_condition
-                                                            &String::new(), // unused
-                                                            &String::new(), // used
-                                                            &String::new(), // letter_fdc
-                                                            &String::new(), // currency
-                                                            &String::new(), // image_path
-                                                            &String::new(), // remote_image_url
-                                                            &String::new(), // original_image_url
-                                                            &String::new(), // watermark
-                                                            &String::new(), // design
-                                                            &String::new(), // engraving
-                                                            &String::new(), // perforation
-                                                            &String::new(), // context
+                                                            "", // stamps_issued
+                                                            "", // mint_condition
+                                                            "", // unused
+                                                            "", // used
+                                                            "", // letter_fdc
+                                                            "", // currency
+                                                            "", // image_path
+                                                            "", // remote_image_url
+                                                            "", // original_image_url
+                                                            "", // watermark
+                                                            "", // design
+                                                            "", // engraving
+                                                            "", // perforation
+                                                            "", // context
                                                         ) {
                                                             Ok(inserted) => {
                                                                 if inserted {
@@ -802,19 +792,19 @@ pub fn collect_stampworld_data_with_fetcher(
                 // layout (when a <th> is present) is: [sg, type, denom, img?, color, desc, stamps_issued]
                 // When no <th> and sg is in the first td the positions are the same
                 // (sg at index 0). Use safe getters to avoid panics on short rows.
-                let type_ = row_cells.get(1).map(|s| s.clone()).unwrap_or_default();
-                let denomination = row_cells.get(2).map(|s| s.clone()).unwrap_or_default();
-                let color = row_cells.get(4).map(|s| s.clone()).unwrap_or_default();
+                let type_ = row_cells.get(1).cloned().unwrap_or_default();
+                let denomination = row_cells.get(2).cloned().unwrap_or_default();
+                let color = row_cells.get(4).cloned().unwrap_or_default();
                 // Observed real pages commonly place description at index 6 (0=sg), so prefer that when available.
                 let description = if row_cells.len() > 6 {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(5).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(5).cloned().unwrap_or_default()
                 };
                 let stamps_issued = if row_cells.len() > 7 {
-                    row_cells.get(7).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(7).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 };
 
                 // Prefer images scoped inside the row
@@ -843,13 +833,12 @@ pub fn collect_stampworld_data_with_fetcher(
                 }
 
                 // Fallback to global images by order
-                if selected_image_url.is_empty() {
-                    if image_idx < global_images.len() {
+                if selected_image_url.is_empty()
+                    && image_idx < global_images.len() {
                         selected_image_url = global_images[image_idx].0.clone();
                         _selected_alt = global_images[image_idx].1.clone();
                         image_idx += 1;
                     }
-                }
 
                 // Determine stamp year: prefer explicit per-row values, else fallback to block_year_int
                 let mut stamp_year = block_year_int;
@@ -928,7 +917,7 @@ pub fn collect_stampworld_data_with_fetcher(
                     if image_res.exists {
                         // create per-row filename to reduce accidental reuse
                         let sanitized_sg = crate::album_utils::sanitize_filename(
-                            &sg_number.replace('\u{2011}', "-").replace('\u{2013}', "-"),
+                            &sg_number.replace(['\u{2011}', '\u{2013}'], "-"),
                         );
                         let target_name = format!("{}-{}", sanitized_sg, image_res.filename);
                         let downloaded_path =

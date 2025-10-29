@@ -222,8 +222,8 @@ pub fn ensure_flag_image_with_fetcher(
             target_dir = cand;
         }
     }
-    if !target_dir.exists() {
-        if fs::create_dir_all(&target_dir).is_err() {
+    if !target_dir.exists()
+        && fs::create_dir_all(&target_dir).is_err() {
             if let Ok(exe) = std::env::current_exe() {
                 if let Some(parent) = exe.parent() {
                     let alt = parent.join("flags");
@@ -233,7 +233,6 @@ pub fn ensure_flag_image_with_fetcher(
                 }
             }
         }
-    }
 
     let filepath = target_dir.join(&filename);
 
