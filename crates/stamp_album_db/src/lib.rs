@@ -89,7 +89,7 @@ fn suffix_key(s: &str) -> String {
 // Format stamps_issued into thousands-separated form like "3,890,589".
 // This strips any non-digit characters and then inserts commas every 3 digits
 // from the right. If no digits are found, returns the original trimmed input.
-fn format_stamps_issued(s: &str) -> String {
+pub fn format_stamps_issued(s: &str) -> String {
     let t = s.trim();
     if t.is_empty() {
         return String::new();
@@ -206,6 +206,42 @@ mod tests {
         assert_eq!(format_stamps_issued("1,234.56"), "1,234.56");
         assert_eq!(format_stamps_issued("1.234,56"), "1,234.56");
         assert_eq!(format_stamps_issued("(1.234,56)"), "1,234.56");
+    }
+
+    #[test]
+    fn test_insert_placeholder() {
+        // Use the crate's init_db so the table exists in the same connection
+        let conn = super::init_db(":memory:").unwrap();
+        // insert placeholder
+        let inserted = super::insert_stamp_placeholder(&conn, "X", "S", 1970, "1").unwrap();
+        assert!(inserted);
+        // second insert should return false (already exists)
+        let inserted2 = super::insert_stamp_placeholder(&conn, "X", "S", 1970, "1").unwrap();
+        assert!(!inserted2);
+    }
+}
+
+/// Insert a minimal placeholder stamp row when a real stamp is missing.
+/// Returns Ok(true) if an insert occurred, Ok(false) if the row exists.
+pub fn insert_stamp_placeholder(
+    conn: &Connection,
+    country: &str,
+    series: &str,
+    year: i32,
+    sg_number: &str,
+) -> Result<bool> {
+    let exists: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3",
+        params![country, series, sg_number],
+        |r| r.get(0),
+    )?;
+    if exists > 0 {
+        return Ok(false);
+    }
+    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '')";
+    match conn.execute(sql, params![country, series, year, sg_number]) {
+        Ok(_) => Ok(true),
+        Err(e) => Err(e),
     }
 }
 

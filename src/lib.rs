@@ -23,6 +23,7 @@ pub mod types;
 // db utilities moved to `stamp_album_db` crate in Phase 2; keep a compatibility shim
 pub mod album_globals;
 pub mod album_utils;
+#[path = "db_utils_wrapper.rs"]
 pub mod db_utils;
 pub mod image_downloader;
 pub mod sample_images;

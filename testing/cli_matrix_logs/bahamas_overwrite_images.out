@@ -1,7 +1,0 @@
-error: unexpected argument '--overwrite_images' found
-
-  tip: a similar argument exists: '--overwrite-images'
-
-Usage: stamp_album_gen2 --source <SOURCE> --site-name <SITE_NAME> --start-year <START_YEAR> --end-year <END_YEAR> --overwrite-images
-
-For more information, try '--help'.

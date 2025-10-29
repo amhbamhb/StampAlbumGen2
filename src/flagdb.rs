@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fs;
-use std::io::{self};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use reqwest::blocking::Client;
+use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 
 /// Small local flag DB: map lowercase country name -> ISO alpha-2 code
 /// We'll initialize it with a compact set and allow loading from a JSON file
@@ -165,6 +165,18 @@ pub fn country_to_code(country: &str) -> Option<String> {
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
 pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
+    // Backwards-compatible wrapper that uses the default ReqwestFetcher.
+    let fetcher = ReqwestFetcher::new();
+    ensure_flag_image_with_fetcher(alpha2, size, &fetcher)
+}
+
+/// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
+/// size example: "w80" or "w320". Returns path to downloaded file on success.
+pub fn ensure_flag_image_with_fetcher(
+    alpha2: &str,
+    size: &str,
+    fetcher: &dyn Fetcher,
+) -> Result<String, Box<dyn std::error::Error>> {
     let alpha = alpha2.to_lowercase();
     let filename = format!("{}-{}.png", alpha, size);
 
@@ -228,14 +240,12 @@ pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std
     // Build URL: https://flagcdn.com/[size]/[code].png where size is like w40 (width px)
     let url = format!("https://flagcdn.com/{}/{}.png", size, alpha);
 
-    let client = Client::builder().user_agent("StampAlbumGen2/1.0").build()?;
-    let resp = client.get(&url).send()?;
-    if !resp.status().is_success() {
-        return Err(format!("Failed to fetch {}: status {}", url, resp.status()).into());
-    }
+    // Use the injected fetcher to retrieve the bytes. The Fetcher implementation
+    // is responsible for user-agent, timeouts and retry policy.
+    let (_status, _headers, content_bytes) = fetcher.fetch_bytes(&url)?;
     let mut out = fs::File::create(&filepath)?;
-    let content = resp.bytes()?;
-    io::copy(&mut content.as_ref(), &mut out)?;
+    // Write the downloaded bytes directly to the file
+    out.write_all(&content_bytes)?;
     Ok(filepath.to_string_lossy().to_string())
 }
 

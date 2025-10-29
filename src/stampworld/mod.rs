@@ -13,6 +13,8 @@
 //! for unified processing across all data sources.
 
 pub mod data_collector;
+pub mod parser;
+pub mod fetch;
 pub mod state;
 
 // Re-export the main functions for easy access

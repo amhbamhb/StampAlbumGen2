@@ -1,6 +1,7 @@
-use stamp_album_gen2::stampworld::data_collector::{
-    dedupe_details, extract_block_metadata, normalize_stamps_issued, DAY_MONTH_RE,
+use stamp_album_gen2::stampworld::parser::{
+    dedupe_details, extract_block_metadata, normalize_stamps_issued,
 };
+use stamp_album_gen2::stampworld::data_collector::DAY_MONTH_RE;
 
 #[test]
 fn test_normalize_stamps_issued_basic() {

@@ -30,38 +30,24 @@ pub fn download_image(
     }
 
     // Build a small client that looks like a browser to reduce anti-bot responses
-    let mut default_headers = reqwest::header::HeaderMap::new();
-    default_headers.insert(
-        reqwest::header::USER_AGENT,
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36".parse().unwrap(),
-    );
-    default_headers.insert(
-        reqwest::header::REFERER,
-        "https://www.google.com/".parse().unwrap(),
-    );
-
-    let client = reqwest::blocking::Client::builder()
-        .default_headers(default_headers)
-        .redirect(reqwest::redirect::Policy::limited(10))
-        .timeout(Duration::from_secs(30))
-        .build()?;
-
-    let resp = match client.get(url).send() {
-        Ok(r) => r,
+    // Use the centralized fetch image client and fetch_bytes helper so tests
+    // can inject a fake fetcher if needed.
+    let client = crate::stampworld::fetch::build_image_client();
+    let (status, headers, bytes) = match crate::stampworld::fetch::fetch_bytes(&client, url) {
+        Ok((s, h, b)) => (s, h, b),
         Err(e) => {
             warn!("[DOWNLOAD_FAIL] sg={} url={} error=failed_request:{}", sg, url, e);
             return Err(Box::new(e));
         }
     };
 
-    let status = resp.status();
     if !status.is_success() {
         warn!("[DOWNLOAD_FAIL] sg={} url={} error=status:{}", sg, url, status.as_u16());
         return Err(format!("HTTP status {}", status.as_u16()).into());
     }
 
     // Check content-type header to avoid saving HTML error pages
-    if let Some(ct) = resp.headers().get(reqwest::header::CONTENT_TYPE) {
+    if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE) {
         if let Ok(ct_str) = ct.to_str() {
             if !ct_str.starts_with("image/") {
                 warn!(
@@ -72,14 +58,6 @@ pub fn download_image(
             }
         }
     }
-
-    let bytes = match resp.bytes() {
-        Ok(b) => b,
-        Err(e) => {
-            warn!("[DOWNLOAD_FAIL] sg={} url={} error=read_bytes:{}", sg, url, e);
-            return Err(Box::new(e));
-        }
-    };
 
     // Validate bytes decode as an image before writing to disk
     if image::load_from_memory(&bytes).is_err() {

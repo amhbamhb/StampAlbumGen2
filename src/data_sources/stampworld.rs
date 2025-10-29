@@ -18,7 +18,8 @@ pub fn collect_stampworld_data(
     let all_stamp_data = Vec::new();
     let mut done = false;
     let mut page_num = 1;
-    let client = reqwest::blocking::Client::new();
+    // Use centralized fetch client for consistency
+    let client = crate::stampworld::fetch::ReqwestFetcher::new();
     let reached_end_year = false;
 
     // Initialize SQLite database in the album directory for the country
@@ -29,21 +30,14 @@ pub fn collect_stampworld_data(
     while !done {
         let url = format!("{}{}", base_url, page_num);
     debug!("Fetching Stampworld page: {}", url);
-        let resp = match client.get(&url).timeout(std::time::Duration::from_secs(60)).send() {
-            Ok(r) => r,
+        let (status, body) = match client.fetch_text(&url) {
+            Ok((s, b)) => (s, b),
             Err(e) => {
                 if page_num == 1 {
-                    error!("Please check that you have entered the correct site country name");
+                    error!("Please check that you have entered the correct site country name: {}", e);
                 } else {
                     error!("Problem retrieving web page: {}", e);
                 }
-                std::process::exit(1);
-            }
-        };
-        let body = match resp.text() {
-            Ok(b) => b,
-            Err(e) => {
-                error!("Problem retrieving web page text: {}", e);
                 std::process::exit(1);
             }
         };
