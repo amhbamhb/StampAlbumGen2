@@ -84,7 +84,11 @@ pub fn collect_stampworld_data_with_fetcher(
             return Some(d);
         }
         // If path begins with "images/", drop that prefix and join with images_directory
-        let rest = if p.starts_with("images/") { &p["images/".len()..] } else { p };
+        let rest = if p.starts_with("images/") {
+            &p["images/".len()..]
+        } else {
+            p
+        };
         let alt = format!("{}/{}", images_directory.trim_end_matches('/'), rest);
         crate::image_utils::get_image_dimensions(alt)
     };
@@ -531,15 +535,16 @@ pub fn collect_stampworld_data_with_fetcher(
                                                 "Attempting detail fetch for {} -> {}",
                                                 s, detail_url
                                             );
-                                            if let Ok((_status, text)) = fetcher.fetch_text(&detail_url) {
+                                            if let Ok((_status, text)) =
+                                                fetcher.fetch_text(&detail_url)
+                                            {
                                                 let doc = Html::parse_document(&text);
                                                 // Search table rows and try to find the row containing this sg_number anchor/id
-                                                let trs: Vec<_> = doc.select(&table_selector).collect();
+                                                let trs: Vec<_> =
+                                                    doc.select(&table_selector).collect();
                                                 for tr_doc in trs.into_iter() {
                                                     // Quick check: does this tr contain an anchor or id for this sg number?
-                                                    if tr_doc
-                                                        .html()
-                                                        .contains(&format!("a_s_{}", s))
+                                                    if tr_doc.html().contains(&format!("a_s_{}", s))
                                                         || tr_doc
                                                             .text()
                                                             .collect::<String>()
@@ -548,44 +553,94 @@ pub fn collect_stampworld_data_with_fetcher(
                                                         // Reconstruct flattened row_cells similar to main parsing
                                                         let td_sel = Selector::parse("td").unwrap();
                                                         let th_sel = Selector::parse("th").unwrap();
-                                                        let ths2: Vec<_> = tr_doc.select(&th_sel).collect();
-                                                        let tds2: Vec<_> = tr_doc.select(&td_sel).collect();
+                                                        let ths2: Vec<_> =
+                                                            tr_doc.select(&th_sel).collect();
+                                                        let tds2: Vec<_> =
+                                                            tr_doc.select(&td_sel).collect();
                                                         // Build row_cells
-                                                        let mut row_cells2: Vec<String> = Vec::new();
+                                                        let mut row_cells2: Vec<String> =
+                                                            Vec::new();
                                                         if let Some(th_row) = ths2.get(0) {
-                                                            row_cells2.push(th_row.text().collect::<String>().trim().to_string());
+                                                            row_cells2.push(
+                                                                th_row
+                                                                    .text()
+                                                                    .collect::<String>()
+                                                                    .trim()
+                                                                    .to_string(),
+                                                            );
                                                             for td in &tds2 {
-                                                                row_cells2.push(td.text().collect::<String>().trim().to_string());
+                                                                row_cells2.push(
+                                                                    td.text()
+                                                                        .collect::<String>()
+                                                                        .trim()
+                                                                        .to_string(),
+                                                                );
                                                             }
                                                         } else {
                                                             for td in &tds2 {
-                                                                row_cells2.push(td.text().collect::<String>().trim().to_string());
+                                                                row_cells2.push(
+                                                                    td.text()
+                                                                        .collect::<String>()
+                                                                        .trim()
+                                                                        .to_string(),
+                                                                );
                                                             }
                                                         }
                                                         if row_cells2.is_empty() {
                                                             continue;
                                                         }
                                                         // Map fields (reuse same indices as main parsing)
-                                                        let sg_number_f = row_cells2.get(0).map(|s| s.trim().to_string()).unwrap_or_default();
-                                                        let type_f = row_cells2.get(1).map(|s| s.clone()).unwrap_or_default();
-                                                        let denomination_f = row_cells2.get(2).map(|s| s.clone()).unwrap_or_default();
-                                                        let color_f = row_cells2.get(4).map(|s| s.clone()).unwrap_or_default();
-                                                        let description_f = if row_cells2.len() > 6 {
-                                                            row_cells2.get(6).map(|s| s.clone()).unwrap_or_default()
+                                                        let sg_number_f = row_cells2
+                                                            .get(0)
+                                                            .map(|s| s.trim().to_string())
+                                                            .unwrap_or_default();
+                                                        let type_f = row_cells2
+                                                            .get(1)
+                                                            .map(|s| s.clone())
+                                                            .unwrap_or_default();
+                                                        let denomination_f = row_cells2
+                                                            .get(2)
+                                                            .map(|s| s.clone())
+                                                            .unwrap_or_default();
+                                                        let color_f = row_cells2
+                                                            .get(4)
+                                                            .map(|s| s.clone())
+                                                            .unwrap_or_default();
+                                                        let description_f = if row_cells2.len() > 6
+                                                        {
+                                                            row_cells2
+                                                                .get(6)
+                                                                .map(|s| s.clone())
+                                                                .unwrap_or_default()
                                                         } else {
-                                                            row_cells2.get(5).map(|s| s.clone()).unwrap_or_default()
+                                                            row_cells2
+                                                                .get(5)
+                                                                .map(|s| s.clone())
+                                                                .unwrap_or_default()
                                                         };
                                                         // Extract month/day heuristics per-line
                                                         let mut month_f = String::new();
                                                         let mut day_f = String::new();
                                                         for line in row_cells2.join(" \n").lines() {
-                                                            if let Some(cap) = DAY_MONTH_RE.captures(line) {
-                                                                day_f = cap.get(1).map_or("", |m| m.as_str()).to_string();
-                                                                month_f = cap.get(2).map_or("", |m| m.as_str()).to_string();
+                                                            if let Some(cap) =
+                                                                DAY_MONTH_RE.captures(line)
+                                                            {
+                                                                day_f = cap
+                                                                    .get(1)
+                                                                    .map_or("", |m| m.as_str())
+                                                                    .to_string();
+                                                                month_f = cap
+                                                                    .get(2)
+                                                                    .map_or("", |m| m.as_str())
+                                                                    .to_string();
                                                                 break;
                                                             }
                                                         }
-                                                        let month_num_f = if month_f.is_empty() { "0".to_string() } else { month_number(&month_f) };
+                                                        let month_num_f = if month_f.is_empty() {
+                                                            "0".to_string()
+                                                        } else {
+                                                            month_number(&month_f)
+                                                        };
                                                         // Call centralized insert
                                                         match crate::db_utils::insert_stamp(
                                                             &conn,
@@ -620,7 +675,8 @@ pub fn collect_stampworld_data_with_fetcher(
                                                                     if emit_row_diag {
                                                                         info!("Detail-fetch inserted stamp {} {}", series_desc, sg_number_f);
                                                                     }
-                                                                    seen_stamps.insert(keyp.clone());
+                                                                    seen_stamps
+                                                                        .insert(keyp.clone());
                                                                     new_stamps_this_page += 1;
                                                                     all_stamp_data.push(format!("STAMP;{};{};{};{};{};{};{}", stamp_year, month_f, day_f, series_desc, sg_number_f, type_f, description_f));
                                                                     did_insert = true;
@@ -638,7 +694,10 @@ pub fn collect_stampworld_data_with_fetcher(
                                                     continue;
                                                 }
                                             } else {
-                                                debug!("Detail fetch error for {}: {}", detail_url, "fetch failed");
+                                                debug!(
+                                                    "Detail fetch error for {}: {}",
+                                                    detail_url, "fetch failed"
+                                                );
                                             }
                                         }
 
@@ -1128,7 +1187,9 @@ pub fn collect_stampworld_data_with_fetcher(
                             all_stamp_data.push(stamp_line);
                             // Persist image pixel dimensions when available (read from local file if present)
                             if !local_image_path.is_empty() {
-                                if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
+                                if let Some((w_px, h_px)) =
+                                    resolve_get_dimensions(&local_image_path)
+                                {
                                     let w = Some(w_px as i32);
                                     let h = Some(h_px as i32);
                                     if let Err(e) = crate::db_utils::update_image_dimensions(
@@ -1198,7 +1259,9 @@ pub fn collect_stampworld_data_with_fetcher(
                                         all_stamp_data.push(stamp_line);
                                         // Persist image pixel dimensions when available (read from local file if present)
                                         if !local_image_path.is_empty() {
-                                            if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
+                                            if let Some((w_px, h_px)) =
+                                                resolve_get_dimensions(&local_image_path)
+                                            {
                                                 let w = Some(w_px as i32);
                                                 let h = Some(h_px as i32);
                                                 if let Err(e) =

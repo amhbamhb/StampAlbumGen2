@@ -3,11 +3,11 @@
 //! This module provides functionality to download stamp images from remote URLs
 //! when they are missing from the local filesystem.
 
+use log::{debug, info, warn};
 use reqwest;
 use std::fs;
 use std::path::Path;
 use std::time::Duration;
-use log::{debug, info, warn};
 
 /// Downloads an image from a remote URL to the local filesystem
 ///
@@ -22,7 +22,12 @@ pub fn download_image(
     local_path: &Path,
     sg: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("[DOWNLOAD_ATTEMPT] sg={} url={} -> {}", sg, url, local_path.display());
+    debug!(
+        "[DOWNLOAD_ATTEMPT] sg={} url={} -> {}",
+        sg,
+        url,
+        local_path.display()
+    );
 
     // Create the directory if it doesn't exist
     if let Some(parent) = local_path.parent() {
@@ -36,13 +41,21 @@ pub fn download_image(
     let (status, headers, bytes) = match crate::stampworld::fetch::fetch_bytes(&client, url) {
         Ok((s, h, b)) => (s, h, b),
         Err(e) => {
-            warn!("[DOWNLOAD_FAIL] sg={} url={} error=failed_request:{}", sg, url, e);
+            warn!(
+                "[DOWNLOAD_FAIL] sg={} url={} error=failed_request:{}",
+                sg, url, e
+            );
             return Err(Box::new(e));
         }
     };
 
     if !status.is_success() {
-        warn!("[DOWNLOAD_FAIL] sg={} url={} error=status:{}", sg, url, status.as_u16());
+        warn!(
+            "[DOWNLOAD_FAIL] sg={} url={} error=status:{}",
+            sg,
+            url,
+            status.as_u16()
+        );
         return Err(format!("HTTP status {}", status.as_u16()).into());
     }
 
@@ -72,7 +85,10 @@ pub fn download_image(
 
     // Save to file
     if let Err(e) = fs::write(local_path, &bytes) {
-        warn!("[DOWNLOAD_FAIL] sg={} url={} error=write_file:{}", sg, url, e);
+        warn!(
+            "[DOWNLOAD_FAIL] sg={} url={} error=write_file:{}",
+            sg, url, e
+        );
         return Err(Box::new(e));
     }
 
@@ -135,7 +151,10 @@ pub fn download_stamp_image_if_missing(
             }
         }
         Err(e) => {
-            warn!("[DOWNLOAD_FAIL_FINAL] sg={} url={} error={}", sg, remote_url, e);
+            warn!(
+                "[DOWNLOAD_FAIL_FINAL] sg={} url={} error={}",
+                sg, remote_url, e
+            );
             Err(e)
         }
     }
@@ -184,7 +203,10 @@ pub fn download_missing_stamp_images(
                         downloaded_count += 1;
                     }
                     Err(e) => {
-                        warn!("Failed to download image for stamp {}: {}", stamp.sg_number, e);
+                        warn!(
+                            "Failed to download image for stamp {}: {}",
+                            stamp.sg_number, e
+                        );
                     }
                 }
             }
@@ -192,7 +214,10 @@ pub fn download_missing_stamp_images(
     }
 
     if total_missing > 0 {
-        info!("Downloaded {}/{} missing images", downloaded_count, total_missing);
+        info!(
+            "Downloaded {}/{} missing images",
+            downloaded_count, total_missing
+        );
     } else {
         info!("All images are already available locally");
     }

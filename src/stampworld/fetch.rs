@@ -10,10 +10,7 @@ pub trait Fetcher {
     fn fetch_text(&self, url: &str) -> Result<(StatusCode, String), reqwest::Error>;
 
     /// Fetch raw bytes for a URL, returning (status, headers, bytes).
-    fn fetch_bytes(
-        &self,
-        url: &str,
-    ) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error>;
+    fn fetch_bytes(&self, url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error>;
 }
 
 /// Default Reqwest-based fetcher implementation.
@@ -93,7 +90,10 @@ pub fn fetch_text(client: &Client, url: &str) -> Result<(StatusCode, String), re
     Ok((status, body))
 }
 
-pub fn fetch_bytes(client: &Client, url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
+pub fn fetch_bytes(
+    client: &Client,
+    url: &str,
+) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
     let resp = client.get(url).send()?;
     let status = resp.status();
     let headers = resp.headers().clone();

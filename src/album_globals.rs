@@ -478,7 +478,7 @@ where
     let border_spacing = config.page_border_spacing.unwrap_or(3.0) as f64;
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
     // debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
-        // page_height, top_margin, bottom_margin, total_border, usable_height);
+    // page_height, top_margin, bottom_margin, total_border, usable_height);
     // Font and spacing from AlbumEasy settings
     // Local layout estimates (we use configured values above where available)
     let _stamp_box_height = 24.0; // Estimate: typical stamp box height (unused default)
@@ -921,7 +921,7 @@ where
                 let conservative_buffer = 11.0; // mm buffer to avoid edge cases (footer + safety)
                 let conservative_needed = total_header_and_row_height + conservative_buffer;
                 // debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
-                    // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
+                // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
                 // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
                 let force_new_page = current_height + conservative_needed > usable_height;
                 // Diagnostic: write page-fit numbers to the output so we can inspect why
@@ -1031,7 +1031,7 @@ where
                 let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
                 let total_height = adj_est_height + image_spacing + text_height + stamp_heading_h;
                 // debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
-                    // image_path, est_height_mm, text_lines, text_height, total_height);
+                // image_path, est_height_mm, text_lines, text_height, total_height);
                 if total_height > max_row_height {
                     max_row_height = total_height;
                 }

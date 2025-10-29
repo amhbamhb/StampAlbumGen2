@@ -1,7 +1,7 @@
+use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 use log::info;
 use std::fs;
 use std::path::Path;
-use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 
 /// Fetch a short extract for a given topic from Wikipedia's REST API and save it
 /// to the album directory as wiki_summary.txt. Returns Ok(path) on success.
