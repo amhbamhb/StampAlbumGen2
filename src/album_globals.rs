@@ -5,7 +5,7 @@ use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use rusqlite::Connection;
 // ImageStatus and OSType not needed in this module today
 use crate::album_utils::clean_text;
-use log::{debug, warn};
+use log::warn;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;

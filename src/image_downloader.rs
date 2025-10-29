@@ -7,7 +7,6 @@ use log::{debug, info, warn};
 use reqwest;
 use std::fs;
 use std::path::Path;
-use std::time::Duration;
 
 /// Downloads an image from a remote URL to the local filesystem
 ///
