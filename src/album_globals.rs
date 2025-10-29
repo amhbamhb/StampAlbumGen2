@@ -169,12 +169,12 @@ pub fn compute_usable_height(cfg: &crate::config::Config) -> f64 {
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
     let usable_height_padding = cfg.usable_height_padding_mm.unwrap_or(6.0) as f64;
     let pages_spacing_v = cfg.album_pages_spacing_v.unwrap_or(0.0) as f64;
-    (page_height
+    page_height
         - top_margin
         - bottom_margin
         - total_border
         - usable_height_padding
-        - pages_spacing_v)
+        - pages_spacing_v
 }
 
 pub fn new_series<W: std::io::Write>(
@@ -500,7 +500,7 @@ where
     let mut current_height = 0.0f64;
     let mut rows_on_page = 0;
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
-    let filtered_series: Vec<String> = series_list.iter().cloned().collect();
+    let filtered_series: Vec<String> = series_list.to_vec();
     let _series_count = filtered_series.len();
     for (_series_idx, series) in filtered_series.iter().enumerate() {
         if let Some(cb) = page_callback.as_mut() {
