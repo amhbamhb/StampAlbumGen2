@@ -4,6 +4,7 @@
 //! including path management, file operations, and configuration loading.
 
 use crate::types::ALBUM_DB_PATH;
+use log::debug;
 
 /// Sets the database path from CLI arguments
 pub fn set_db_path_from_cli(path: &str) {
@@ -71,7 +72,7 @@ pub fn get_image_path_or_placeholder(album_name: &str, image_path: &str) -> Stri
     if image_exists(album_name, image_path) {
         image_path.to_string()
     } else {
-        println!("[DEBUG] Image {} not found, using placeholder", image_path);
+        debug!("Image {} not found, using placeholder", image_path);
         "images/no_image_placeholder.png".to_string()
     }
 }

@@ -1,5 +1,5 @@
-use std::fs;
 use std::env;
+use std::fs;
 use std::path::Path;
 
 #[test]
@@ -7,7 +7,11 @@ fn test_load_example_config_roundtrip() {
     // Locate the repo root relative to the workspace (we assume tests run from repo root)
     let repo_root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let example = repo_root.join("config_full_example.toml");
-    assert!(example.exists(), "example config not found: {}", example.display());
+    assert!(
+        example.exists(),
+        "example config not found: {}",
+        example.display()
+    );
 
     // Create a tempdir and copy the file as config.toml so load_config finds it
     let td = tempfile::tempdir().expect("tempdir");

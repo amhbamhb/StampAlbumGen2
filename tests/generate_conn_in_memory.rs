@@ -1,7 +1,7 @@
-use std::fs;
+use rusqlite::{params, Connection};
 use std::env;
+use std::fs;
 use tempfile::tempdir;
-use rusqlite::{Connection, params};
 
 /// Clean integration test: create an in-memory DB, insert one stamp row, call
 /// the conn-taking generator API and assert an output file is written under a
@@ -46,7 +46,8 @@ fn test_generate_conn_in_memory_clean() {
             ,image_width_px INTEGER,
             image_height_px INTEGER
         );",
-    ).expect("create table");
+    )
+    .expect("create table");
 
     conn.execute(
         "INSERT INTO stamps (year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc)
@@ -83,10 +84,20 @@ fn test_generate_conn_in_memory_clean() {
     let db_path = tmp.path().join("Albums/TestAlbum/TestAlbum.db");
     stamp_album_gen2::file_utils::set_db_path_from_cli(db_path.to_str().unwrap());
 
-    stamp_album_gen2::album_globals::generate_album_output_conn(&conn, "TestAlbum", None::<fn(usize)>, Some(1900), Some(2000));
+    stamp_album_gen2::album_globals::generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        None::<fn(usize)>,
+        Some(1900),
+        Some(2000),
+    );
 
     let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1900-2000.txt");
-    assert!(output_file.exists(), "Expected output file to exist: {}", output_file.display());
+    assert!(
+        output_file.exists(),
+        "Expected output file to exist: {}",
+        output_file.display()
+    );
 
     env::set_current_dir(orig_cwd).expect("restore cwd");
 }

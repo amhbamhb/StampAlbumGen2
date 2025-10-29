@@ -56,7 +56,7 @@
 /// ```
 pub fn get_scaling_for_series(series: &str) -> (f64, f64) {
     match series.chars().next() {
-        Some('L') | Some('O') => (1.25, 2.45),  // L-series: Large registration stamps
+        Some('L') | Some('O') => (1.25, 2.45), // L-series: Large registration stamps
         Some('M') => (1.15, 1.45),             // M-series: Medium definitive stamps
         Some('N') => (1.10, 1.40),             // N-series: Small definitive stamps
         Some('R') => (0.97, 1.68),             // R-series: Standard pre-1970 stamps

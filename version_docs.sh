@@ -212,6 +212,23 @@ update_instructions "$NEW_VERSION" "$DATE"
 update_readme "$NEW_VERSION" "$DATE"
 update_release_notes "$NEW_VERSION" "$DATE"
 
+# Regenerate CLI_USAGE.md from the built binary so docs reflect latest CLI
+generate_cli_docs() {
+    echo "Regenerating CLI_USAGE.md from binary help output..."
+    if command -v cargo >/dev/null 2>&1; then
+        # Prefer building quietly then running help to avoid noisy output in CI
+        if cargo build --quiet; then
+            cargo run -- --help > docs/CLI_USAGE.md || echo "Warning: failed to run binary to generate CLI docs"
+        else
+            echo "Warning: cargo build failed — skipping CLI docs regeneration"
+        fi
+    else
+        echo "cargo not available in PATH — skipping CLI docs regeneration"
+    fi
+}
+
+generate_cli_docs
+
 echo ""
 echo "=== Version Update Complete ==="
 echo "Updated to version: $NEW_VERSION"

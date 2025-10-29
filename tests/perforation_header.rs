@@ -1,7 +1,7 @@
-use std::fs;
+use rusqlite::{params, Connection};
 use std::env;
+use std::fs;
 use tempfile::tempdir;
-use rusqlite::{Connection, params};
 
 /// Test that the generator emits a 'Perforation:' header line when the
 /// `perforation` column is populated in the DB and include_perforation is enabled.
@@ -44,7 +44,8 @@ fn test_perforation_column_emitted() {
             image_width_px INTEGER,
             image_height_px INTEGER
         );",
-    ).expect("create table");
+    )
+    .expect("create table");
 
     conn.execute(
         "INSERT INTO stamps (year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc)
@@ -80,14 +81,28 @@ fn test_perforation_column_emitted() {
     let db_path = tmp.path().join("Albums/TestAlbum/TestAlbum.db");
     stamp_album_gen2::file_utils::set_db_path_from_cli(db_path.to_str().unwrap());
 
-    stamp_album_gen2::album_globals::generate_album_output_conn(&conn, "TestAlbum", None::<fn(usize)>, Some(1974), Some(1974));
+    stamp_album_gen2::album_globals::generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        None::<fn(usize)>,
+        Some(1974),
+        Some(1974),
+    );
 
     let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1974-1974.txt");
-    assert!(output_file.exists(), "Expected output file to exist: {}", output_file.display());
+    assert!(
+        output_file.exists(),
+        "Expected output file to exist: {}",
+        output_file.display()
+    );
 
     let contents = fs::read_to_string(&output_file).expect("read output");
 
-    assert!(contents.contains("Perforation: 11"), "Expected Perforation line in header; got:\n{}", contents);
+    assert!(
+        contents.contains("Perforation: 11"),
+        "Expected Perforation line in header; got:\n{}",
+        contents
+    );
 
     env::set_current_dir(orig_cwd).expect("restore cwd");
 }

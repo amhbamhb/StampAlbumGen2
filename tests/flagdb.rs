@@ -1,4 +1,4 @@
-use stamp_album_gen2::flagdb::{default_flag_map, country_to_code};
+use stamp_album_gen2::flagdb::{country_to_code, default_flag_map};
 
 #[test]
 fn test_load_builtin_map() {

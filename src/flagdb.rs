@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::io::{self};
 
-use reqwest::blocking::Client;
+use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 
 /// Small local flag DB: map lowercase country name -> ISO alpha-2 code
 /// We'll initialize it with a compact set and allow loading from a JSON file
@@ -60,7 +60,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
         if p.exists() {
             if let Ok(contents) = fs::read_to_string(p) {
                 if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(&contents) {
-                    return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+                    return j
+                        .into_iter()
+                        .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+                        .collect();
                 }
             }
         }
@@ -78,7 +81,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
         let prefer_dirs: Vec<PathBuf> = vec![
             PathBuf::from("flags"),
             // exe parent
-            std::env::current_exe().ok().and_then(|e| e.parent().map(|p| p.to_path_buf())).unwrap_or_else(|| PathBuf::from("flags")),
+            std::env::current_exe()
+                .ok()
+                .and_then(|e| e.parent().map(|p| p.to_path_buf()))
+                .unwrap_or_else(|| PathBuf::from("flags")),
             // build manifest
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
         ];
@@ -102,7 +108,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
             }
         }
 
-        return j.into_iter().map(|(k, v)| (k.to_lowercase(), v.to_lowercase())).collect();
+        return j
+            .into_iter()
+            .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+            .collect();
     }
 
     default_flag_map()
@@ -156,6 +165,18 @@ pub fn country_to_code(country: &str) -> Option<String> {
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
 pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
+    // Backwards-compatible wrapper that uses the default ReqwestFetcher.
+    let fetcher = ReqwestFetcher::new();
+    ensure_flag_image_with_fetcher(alpha2, size, &fetcher)
+}
+
+/// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
+/// size example: "w80" or "w320". Returns path to downloaded file on success.
+pub fn ensure_flag_image_with_fetcher(
+    alpha2: &str,
+    size: &str,
+    fetcher: &dyn Fetcher,
+) -> Result<String, Box<dyn std::error::Error>> {
     let alpha = alpha2.to_lowercase();
     let filename = format!("{}-{}.png", alpha, size);
 
@@ -219,20 +240,22 @@ pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std
     // Build URL: https://flagcdn.com/[size]/[code].png where size is like w40 (width px)
     let url = format!("https://flagcdn.com/{}/{}.png", size, alpha);
 
-    let client = Client::builder().user_agent("StampAlbumGen2/1.0").build()?;
-    let resp = client.get(&url).send()?;
-    if !resp.status().is_success() {
-        return Err(format!("Failed to fetch {}: status {}", url, resp.status()).into());
-    }
+    // Use the injected fetcher to retrieve the bytes. The Fetcher implementation
+    // is responsible for user-agent, timeouts and retry policy.
+    let (_status, _headers, content_bytes) = fetcher.fetch_bytes(&url)?;
     let mut out = fs::File::create(&filepath)?;
-    let content = resp.bytes()?;
-    io::copy(&mut content.as_ref(), &mut out)?;
+    // Write the downloaded bytes directly to the file
+    out.write_all(&content_bytes)?;
     Ok(filepath.to_string_lossy().to_string())
 }
 
 /// Convenience: try to find a flag for the provided country name and copy it into the given album images dir
 /// If no match, return Err so callers can fallback to placeholder creation.
-pub fn copy_flag_for_album(country: &str, album_images_dir: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn copy_flag_for_album(
+    country: &str,
+    album_images_dir: &str,
+    size: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     if let Some(code) = country_to_code(country) {
         let downloaded = ensure_flag_image(&code, size)?;
         let dest = Path::new(album_images_dir).join("flag_placeholder.png");

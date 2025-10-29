@@ -89,9 +89,16 @@ pub fn calc_mm_per_pixel_embedded(real_width_mm: f32, real_height_mm: f32) -> Op
 /// # Returns
 ///
 /// Option containing (width_mm, height_mm) or None if image loading fails
-pub fn estimate_real_dimensions(image_path: &str, mm_per_pixel_w: f32, mm_per_pixel_h: f32) -> Option<(f32, f32)> {
+pub fn estimate_real_dimensions(
+    image_path: &str,
+    mm_per_pixel_w: f32,
+    mm_per_pixel_h: f32,
+) -> Option<(f32, f32)> {
     if let Some((px_width, px_height)) = get_image_dimensions(image_path) {
-        Some((px_width as f32 * mm_per_pixel_w, px_height as f32 * mm_per_pixel_h))
+        Some((
+            px_width as f32 * mm_per_pixel_w,
+            px_height as f32 * mm_per_pixel_h,
+        ))
     } else {
         None
     }
@@ -115,5 +122,3 @@ pub fn get_image_dimensions<P: AsRef<Path>>(path: P) -> Option<(u32, u32)> {
         Err(_) => None,
     }
 }
-
-

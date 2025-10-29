@@ -1,252 +1,210 @@
-#![allow(dead_code)]
-// Returns a list of distinct series names (ordered by series name)
-pub fn get_all_series(conn: &rusqlite::Connection, series_order: Option<&str>) -> rusqlite::Result<Vec<String>> {
-    // Collect distinct series and pick a representative stamp for each series
-    // using the existing stamp sorting rules. Then sort series according to
-    // their representative stamp so series ordering matches stamp ordering
-    // (keeps series together and orders by date/sg_number as requested).
-    let mut stmt = conn.prepare("SELECT DISTINCT series FROM stamps")?;
-    let series_iter = stmt.query_map([], |row| Ok(row.get::<_, String>(0)?))?;
-    let mut temp: Vec<(String, Option<StampStub>)> = Vec::new();
-    for s in series_iter {
-        let s_name = s?;
-        // Fetch stamps for this series (get_stamps_by_series will sort the stamps)
-        let stamps = match get_stamps_by_series(conn, &s_name, "0") {
-            Ok(mut v) => {
-                if v.is_empty() { None } else { Some(v.remove(0)) }
-            }
-            Err(_) => None,
-        };
-        temp.push((s_name, stamps));
-    }
+//! Thin compatibility wrapper for DB helpers.
+//!
+//! This file delegates heavy DB operations to `crates/stamp_album_db` while
+//! preserving a small compatibility surface used by the rest of the main
+//! crate. The goal is a minimal, compile-safe change for the first refactor
+//! step.
 
-    #[cfg(test)]
-    {
-        println!("[dbg get_all_series] before sort temp: {:?}", temp.iter().map(|(n, s)| (n.clone(), s.as_ref().map(|st| st.sg_number.clone()))).collect::<Vec<_>>());
-    }
+pub use stamp_album_db::StampStub;
+use rusqlite::{Connection, Result};
 
-    // Helper that compares optional representative stamps; None sorts after Some
-    fn cmp_opt(a: &Option<StampStub>, b: &Option<StampStub>) -> std::cmp::Ordering {
-        match (a, b) {
-            (Some(sa), Some(sb)) => compare_stampstubs(sa, sb),
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => std::cmp::Ordering::Equal,
-        }
-    }
-
-    // Extracted sorting into helper so tests can exercise ordering modes.
-    fn sort_series_temp(temp: &mut Vec<(String, Option<StampStub>)>, series_order: Option<&str>) {
-        // Support suffixes like 'desc' to request descending order, e.g. 'first_sg_desc'
-        let raw_mode = series_order.unwrap_or("first_date").to_string();
-        let mode_lc = raw_mode.to_lowercase();
-        let desc = mode_lc.contains("desc");
-        // normalize base mode by removing common separators and the 'desc' token
-        let mut base_mode = mode_lc.replace("desc", "").replace(":", "").replace("-", "_");
-        base_mode = base_mode.trim_matches(|c: char| c == '_' || c == ' ').to_string();
-
-        // Debug: print representative SGs before sorting (helpful for tests)
-        
-
-        match base_mode.as_str() {
-            "alpha" => temp.sort_by(|(a_name, _), (b_name, _)| a_name.cmp(b_name)),
-            "first_sg" => {
-                // Build a temporary vector of keys to sort deterministically.
-                // Key: (numeric_prefix_or_max, suffix_key, year, month_num, day, series_name)
-                let mut keyed: Vec<(
-                    (i64, String, i32, i32, String, String),
-                    (String, Option<StampStub>)
-                )> = temp
-                    .drain(..)
-                    .map(|(name, rep)| {
-                        let key = if let Some(ref s) = rep {
-                            let num = leading_int(&s.sg_number).unwrap_or(i64::MAX);
-                            let suf = suffix_key(&s.sg_number);
-                            (num, suf, s.year, s.month_num, s.day.clone(), name.clone())
-                        } else {
-                            // None representative sorts after real reps: use MAX numeric
-                            (i64::MAX, String::new(), i32::MAX, i32::MAX, String::new(), name.clone())
-                        };
-                        (key, (name, rep))
-                    })
-                    .collect();
-                // println!("[dbg first_sg keys BEFORE sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
-                keyed.sort_by(|(ka, _), (kb, _)| ka.cmp(kb));
-                // println!("[dbg first_sg keys AFTER sort] {:?}", keyed.iter().map(|(k, pair)| (k.0, k.1.clone(), k.2, k.3, k.4.clone(), pair.0.clone())).collect::<Vec<_>>());
-                // Reconstruct temp in sorted order
-                temp.extend(keyed.into_iter().map(|(_, pair)| pair));
-            }
-            _ => temp.sort_by(|(a_name, a_rep), (b_name, b_rep)| {
-                let o = cmp_opt(a_rep, b_rep);
-                if o == std::cmp::Ordering::Equal {
-                    a_name.cmp(b_name)
-                } else {
-                    o
-                }
-            }),
-        }
-
-        if desc {
-            temp.reverse();
-        }
-    }
-
-    // Call the helper to sort 'temp' according to series_order
-    sort_series_temp(&mut temp, series_order);
-
-    Ok(temp.into_iter().map(|(name, _)| name).collect())
+/// Initialize DB using the DB crate implementation
+pub fn init_db(db_path: &str) -> Result<Connection> {
+    stamp_album_db::init_db(db_path)
 }
 
-// Update persisted image pixel dimensions for a given stamp row. Width/height are nullable.
-pub fn update_image_dimensions(conn: &rusqlite::Connection, country: &str, series: &str, sg_number: &str, width: Option<i32>, height: Option<i32>) -> rusqlite::Result<usize> {
+/// Run stamps table migration (delegates to DB crate)
+pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
+    stamp_album_db::migrate_stamps_table(conn)
+}
+
+/// Run block metadata migration (delegates to DB crate)
+pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
+    stamp_album_db::migrate_fix_block_metadata(conn)
+}
+
+/// Delegate insert_stamp to the DB crate (keeps same signature)
+pub fn insert_stamp(
+    conn: &Connection,
+    country: &str,
+    series: &str,
+    year: i32,
+    month: &str,
+    _month_num: &str,
+    day: &str,
+    sg_number: &str,
+    type_: &str,
+    denomination: &str,
+    color: &str,
+    description: &str,
+    stamps_issued: &str,
+    mint_condition: &str,
+    unused: &str,
+    used: &str,
+    letter_fdc: &str,
+    currency: &str,
+    image_path: &str,
+    remote_image_url: &str,
+    original_image_url: &str,
+    watermark: &str,
+    design: &str,
+    engraving: &str,
+    perforation: &str,
+    context: &str,
+) -> Result<bool> {
+    stamp_album_db::insert_stamp(
+        conn,
+        country,
+        series,
+        year,
+        month,
+        _month_num,
+        day,
+        sg_number,
+        type_,
+        denomination,
+        color,
+        description,
+        stamps_issued,
+        mint_condition,
+        unused,
+        used,
+        letter_fdc,
+        currency,
+        image_path,
+        remote_image_url,
+        original_image_url,
+        watermark,
+        design,
+        engraving,
+        perforation,
+        context,
+    )
+}
+
+/// Delegate get_stamps_by_series to crate
+pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Result<Vec<StampStub>> {
+    stamp_album_db::get_stamps_by_series(conn, series, year)
+}
+
+/// Delegate get_stamps_by_country_series to crate
+pub fn get_stamps_by_country_series(
+    conn: &Connection,
+    country: &str,
+    series: &str,
+) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {
+    stamp_album_db::get_stamps_by_country_series(conn, country, series)
+}
+
+/// Keep local implementation for formatting stamps_issued (was used widely)
+pub fn format_stamps_issued(s: &str) -> String {
+    // Ported from the original implementation to keep compatibility
+    let t = s.trim();
+    if t.is_empty() {
+        return String::new();
+    }
+
+    // Remove surrounding parentheses
+    let mut v = t.to_string();
+    if v.starts_with('(') && v.ends_with(')') {
+        v = v[1..v.len() - 1].to_string();
+    }
+
+    // Keep only digits, dot, comma
+    let re_keep = regex::Regex::new(r"[^0-9\.,]").unwrap();
+    v = re_keep.replace_all(&v, "").to_string();
+    if v.is_empty() {
+        return String::new();
+    }
+
+    // Determine decimal separator using heuristics:
+    let dot_count = v.matches('.').count();
+    let comma_count = v.matches(',').count();
+    let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
+        let last_dot = v.rfind('.').unwrap();
+        let last_comma = v.rfind(',').unwrap();
+        if last_dot > last_comma {
+            (
+                v[..last_dot].to_string(),
+                Some(v[last_dot + 1..].to_string()),
+            )
+        } else {
+            (
+                v[..last_comma].to_string(),
+                Some(v[last_comma + 1..].to_string()),
+            )
+        }
+    } else if dot_count > 0 {
+        if dot_count > 1 {
+            (v.replace('.', ""), None)
+        } else {
+            let idx = v.rfind('.').unwrap();
+            let right_len = v.len() - idx - 1;
+            if right_len == 3 {
+                (v.replace('.', ""), None)
+            } else {
+                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
+            }
+        }
+    } else if comma_count > 0 {
+        if comma_count > 1 {
+            (v.replace(',', ""), None)
+        } else {
+            let idx = v.rfind(',').unwrap();
+            let right_len = v.len() - idx - 1;
+            if right_len == 3 {
+                (v.replace(',', ""), None)
+            } else {
+                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
+            }
+        }
+    } else {
+        (v.clone(), None)
+    };
+
+    let re_digits = regex::Regex::new(r"\D").unwrap();
+    let int_digits = re_digits.replace_all(&int_part, "").to_string();
+    if int_digits.is_empty() {
+        return String::new();
+    }
+
+    let rev: Vec<char> = int_digits.chars().rev().collect();
+    let mut grouped = String::new();
+    for (i, c) in rev.iter().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            grouped.push(',');
+        }
+        grouped.push(*c);
+    }
+    let int_fmt: String = grouped.chars().rev().collect();
+
+    if let Some(frac_raw) = frac_part_opt {
+        let frac_digits = re_digits.replace_all(&frac_raw, "").to_string();
+        if frac_digits.is_empty() {
+            return int_fmt;
+        }
+        return format!("{}.{}", int_fmt, frac_digits);
+    }
+
+    int_fmt
+}
+
+/// Keep the sort helper available by delegating to the crate implementation
+pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
+    stamp_album_db::sort_stampstubs_inplace(v)
+}
+
+/// Lightweight update_image_dimensions kept here (simple SQL update)
+pub fn update_image_dimensions(
+    conn: &rusqlite::Connection,
+    country: &str,
+    series: &str,
+    sg_number: &str,
+    width: Option<i32>,
+    height: Option<i32>,
+) -> rusqlite::Result<usize> {
     let sql = "UPDATE stamps SET image_width_px = ?1, image_height_px = ?2 WHERE country = ?3 AND series = ?4 AND sg_number = ?5";
     conn.execute(sql, rusqlite::params![width, height, country, series, sg_number])
-}
-
-// Compare two StampStub records using the same rules as sort_stampstubs_inplace.
-pub fn compare_stampstubs(a: &StampStub, b: &StampStub) -> std::cmp::Ordering {
-    // Year, then month_num, then day
-    let year_cmp = a.year.cmp(&b.year);
-    if year_cmp != std::cmp::Ordering::Equal {
-        return year_cmp;
-    }
-    let month_cmp = a.month_num.cmp(&b.month_num);
-    if month_cmp != std::cmp::Ordering::Equal {
-        return month_cmp;
-    }
-    let day_cmp = a.day.cmp(&b.day);
-    if day_cmp != std::cmp::Ordering::Equal {
-        return day_cmp;
-    }
-    match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
-        (Some(ai), Some(bi)) => {
-            let cmp = ai.cmp(&bi);
-            if cmp != std::cmp::Ordering::Equal {
-                return cmp;
-            }
-            let a_suf = suffix_key(&a.sg_number);
-            let b_suf = suffix_key(&b.sg_number);
-            let a_empty = a_suf.is_empty();
-            let b_empty = b_suf.is_empty();
-            if a_empty != b_empty {
-                return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
-            }
-            a_suf.cmp(&b_suf).then_with(|| a.sg_number.cmp(&b.sg_number))
-        }
-        (Some(_), None) => std::cmp::Ordering::Less,
-        (None, Some(_)) => std::cmp::Ordering::Greater,
-        (None, None) => a.sg_number.cmp(&b.sg_number),
-    }
-}
-
-// Helper: extract leading integer prefix from sg_number
-fn leading_int(s: &str) -> Option<i64> {
-    let s = s.trim();
-    let mut digits = String::new();
-    for ch in s.chars() {
-        if ch.is_ascii_digit() {
-            digits.push(ch);
-        } else {
-            break;
-        }
-    }
-    if digits.is_empty() {
-        None
-    } else {
-        digits.parse::<i64>().ok()
-    }
-}
-
-// Create a suffix key that normalizes letters to lower-case and maps
-// punctuation like '*' to a high-sort char so letters sort before '*'.
-fn suffix_key(s: &str) -> String {
-    let s = s.trim();
-    // drop leading digits
-    let mut chars = s.chars();
-    while let Some(c) = chars.clone().next() {
-        if c.is_ascii_digit() {
-            chars.next();
-        } else {
-            break;
-        }
-    }
-    let rem: String = chars.collect();
-    rem.chars()
-        .map(|c| {
-            if c.is_ascii_alphabetic() {
-                c.to_ascii_lowercase()
-            } else if c == '*' {
-                '~' // map '*' to a high char so it sorts after letters
-            } else {
-                // keep other characters but normalize to lowercase where applicable
-                c.to_ascii_lowercase()
-            }
-        })
-        .collect()
-}
-
-// Compare two SG number strings in a numeric-aware way using the same
-// leading-int + suffix_key rules used elsewhere. Returns Ordering.
-fn compare_sg_numbers(a: &str, b: &str) -> std::cmp::Ordering {
-    match (leading_int(a), leading_int(b)) {
-        (Some(ai), Some(bi)) => {
-            let cmp = ai.cmp(&bi);
-            if cmp != std::cmp::Ordering::Equal {
-                return cmp;
-            }
-            let a_suf = suffix_key(a);
-            let b_suf = suffix_key(b);
-            let a_empty = a_suf.is_empty();
-            let b_empty = b_suf.is_empty();
-            if a_empty != b_empty {
-                return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
-            }
-            a_suf.cmp(&b_suf).then_with(|| a.cmp(b))
-        }
-        (Some(_), None) => std::cmp::Ordering::Less,
-        (None, Some(_)) => std::cmp::Ordering::Greater,
-        (None, None) => a.cmp(b),
-    }
-}
-
-// Public helper so tests can call the same sorting logic without requiring DB IO
-pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
-    v.sort_by(|a, b| {
-        // Compare by year, then month number, then day to ensure date-ordered stamps
-        let year_cmp = a.year.cmp(&b.year);
-        if year_cmp != std::cmp::Ordering::Equal {
-            return year_cmp;
-        }
-        let month_cmp = a.month_num.cmp(&b.month_num);
-        if month_cmp != std::cmp::Ordering::Equal {
-            return month_cmp;
-        }
-        let day_cmp = a.day.cmp(&b.day);
-        if day_cmp != std::cmp::Ordering::Equal {
-            return day_cmp;
-        }
-        match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
-            (Some(ai), Some(bi)) => {
-                let cmp = ai.cmp(&bi);
-                if cmp != std::cmp::Ordering::Equal {
-                    return cmp;
-                }
-                // same numeric prefix: compare suffix keys, empty suffix sorts first
-                let a_suf = suffix_key(&a.sg_number);
-                let b_suf = suffix_key(&b.sg_number);
-                let a_empty = a_suf.is_empty();
-                let b_empty = b_suf.is_empty();
-                if a_empty != b_empty {
-                    return if a_empty { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater };
-                }
-                // tie-breaker: compare normalized suffix then full string
-                a_suf.cmp(&b_suf).then_with(|| a.sg_number.cmp(&b.sg_number))
-            }
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => a.sg_number.cmp(&b.sg_number),
-        }
-    });
 }
 
 #[derive(Debug)]
@@ -263,18 +221,22 @@ pub struct SeriesStub {
 // Output uses comma for thousands and dot for decimal separator, e.g. "1,234.56".
 pub fn format_stamps_issued(s: &str) -> String {
     let t = s.trim();
-    if t.is_empty() { return String::new(); }
+    if t.is_empty() {
+        return String::new();
+    }
 
     // Remove surrounding parentheses
     let mut v = t.to_string();
     if v.starts_with('(') && v.ends_with(')') {
-        v = v[1..v.len()-1].to_string();
+        v = v[1..v.len() - 1].to_string();
     }
 
     // Keep only digits, dot, comma
     let re_keep = Regex::new(r"[^0-9\.,]").unwrap();
     v = re_keep.replace_all(&v, "").to_string();
-    if v.is_empty() { return String::new(); }
+    if v.is_empty() {
+        return String::new();
+    }
 
     // Determine decimal separator using heuristics:
     // - If both '.' and ',' present: the last-occurring separator is the decimal separator.
@@ -285,8 +247,17 @@ pub fn format_stamps_issued(s: &str) -> String {
     let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
         let last_dot = v.rfind('.').unwrap();
         let last_comma = v.rfind(',').unwrap();
-        if last_dot > last_comma { (v[..last_dot].to_string(), Some(v[last_dot+1..].to_string())) }
-        else { (v[..last_comma].to_string(), Some(v[last_comma+1..].to_string())) }
+        if last_dot > last_comma {
+            (
+                v[..last_dot].to_string(),
+                Some(v[last_dot + 1..].to_string()),
+            )
+        } else {
+            (
+                v[..last_comma].to_string(),
+                Some(v[last_comma + 1..].to_string()),
+            )
+        }
     } else if dot_count > 0 {
         if dot_count > 1 {
             // multiple dots -> treat as thousands separators
@@ -294,7 +265,11 @@ pub fn format_stamps_issued(s: &str) -> String {
         } else {
             let idx = v.rfind('.').unwrap();
             let right_len = v.len() - idx - 1;
-            if right_len == 3 { (v.replace('.', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+            if right_len == 3 {
+                (v.replace('.', ""), None)
+            } else {
+                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
+            }
         }
     } else if comma_count > 0 {
         if comma_count > 1 {
@@ -303,7 +278,11 @@ pub fn format_stamps_issued(s: &str) -> String {
         } else {
             let idx = v.rfind(',').unwrap();
             let right_len = v.len() - idx - 1;
-            if right_len == 3 { (v.replace(',', ""), None) } else { (v[..idx].to_string(), Some(v[idx+1..].to_string())) }
+            if right_len == 3 {
+                (v.replace(',', ""), None)
+            } else {
+                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
+            }
         }
     } else {
         (v.clone(), None)
@@ -311,19 +290,25 @@ pub fn format_stamps_issued(s: &str) -> String {
 
     let re_digits = Regex::new(r"\D").unwrap();
     let int_digits = re_digits.replace_all(&int_part, "").to_string();
-    if int_digits.is_empty() { return String::new(); }
+    if int_digits.is_empty() {
+        return String::new();
+    }
 
     let rev: Vec<char> = int_digits.chars().rev().collect();
     let mut grouped = String::new();
     for (i, c) in rev.iter().enumerate() {
-        if i > 0 && i % 3 == 0 { grouped.push(','); }
+        if i > 0 && i % 3 == 0 {
+            grouped.push(',');
+        }
         grouped.push(*c);
     }
     let int_fmt: String = grouped.chars().rev().collect();
 
     if let Some(frac_raw) = frac_part_opt {
         let frac_digits = re_digits.replace_all(&frac_raw, "").to_string();
-        if frac_digits.is_empty() { return int_fmt; }
+        if frac_digits.is_empty() {
+            return int_fmt;
+        }
         return format!("{}.{}", int_fmt, frac_digits);
     }
 
@@ -331,86 +316,100 @@ pub fn format_stamps_issued(s: &str) -> String {
 }
 
 // Returns a list of stamps for a given series and year
-pub fn get_stamps_by_series(conn: &rusqlite::Connection, series: &str, year: &str) -> rusqlite::Result<Vec<StampStub>> {
+pub fn get_stamps_by_series(
+    conn: &rusqlite::Connection,
+    series: &str,
+    year: &str,
+) -> rusqlite::Result<Vec<StampStub>> {
     // Decide which query to run and collect rows into a Vec<StampStub>
     let mut result: Vec<StampStub> = Vec::new();
     if year.trim().is_empty() || year == "0" {
-    let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
-    // Note: we expect image_width_px and image_height_px to be present in the table; if not, the PRAGMA-based migration
-    // should have added them. Use named retrieval below when mapping rows.
-        let rows = stmt.query_map([series], |row| -> std::result::Result<StampStub, rusqlite::Error> {
+        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
+        // Note: we expect image_width_px and image_height_px to be present in the table; if not, the PRAGMA-based migration
+        // should have added them. Use named retrieval below when mapping rows.
+        let rows = stmt.query_map(
+            [series],
+            |row| -> std::result::Result<StampStub, rusqlite::Error> {
                 Ok(StampStub {
-                year: row.get::<_, i32>(0)?,
-                month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                month_num: row.get::<_, i32>(2)?,
-                day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                stamp_type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                denomination: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
-                color: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
-                description: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                desc: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                catalog_num: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                stamps_issued: crate::db_utils::format_stamps_issued(&row.get::<_, Option<String>>(9)?.unwrap_or_default()),
-                image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
-                remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
-                original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
-                watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
-                design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
-                engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
-                perforation: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
-                series: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
-                currency: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
-                context: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
-                mint_condition: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
-                unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
-                used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
-                letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
-                image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
-                image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
-                multi_perf: false,
-            })
-        })?;
+                    year: row.get::<_, i32>(0)?,
+                    month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    month_num: row.get::<_, i32>(2)?,
+                    day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                    sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                    r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    stamp_type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    denomination: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                    color: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
+                    description: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                    desc: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                    catalog_num: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                    stamps_issued: crate::db_utils::format_stamps_issued(
+                        &row.get::<_, Option<String>>(9)?.unwrap_or_default(),
+                    ),
+                    image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
+                    remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
+                    original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
+                    watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
+                    design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
+                    engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
+                    perforation: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
+                    series: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
+                    currency: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+                    context: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
+                    mint_condition: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
+                    unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
+                    used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
+                    letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+                    image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
+                    image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
+                    multi_perf: false,
+                })
+            },
+        )?;
         for s in rows {
             result.push(s?);
         }
     } else {
-    let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
-        let rows = stmt.query_map([series, year], |row| -> std::result::Result<StampStub, rusqlite::Error> {
+        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
+        let rows = stmt.query_map(
+            [series, year],
+            |row| -> std::result::Result<StampStub, rusqlite::Error> {
                 Ok(StampStub {
-                year: row.get::<_, i32>(0)?,
-                month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                month_num: row.get::<_, i32>(2)?,
-                day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                stamp_type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                denomination: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
-                color: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
-                description: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                desc: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                catalog_num: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                stamps_issued: crate::db_utils::format_stamps_issued(&row.get::<_, Option<String>>(9)?.unwrap_or_default()),
-                image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
-                remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
-                original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
-                watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
-                design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
-                engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
-                perforation: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
-                series: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
-                currency: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
-                context: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
-                mint_condition: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
-                unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
-                used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
-                letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
-                image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
-                image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
-                multi_perf: false,
-            })
-        })?;
+                    year: row.get::<_, i32>(0)?,
+                    month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    month_num: row.get::<_, i32>(2)?,
+                    day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                    sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                    r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    stamp_type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                    denomination: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                    color: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
+                    description: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                    desc: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                    catalog_num: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                    stamps_issued: crate::db_utils::format_stamps_issued(
+                        &row.get::<_, Option<String>>(9)?.unwrap_or_default(),
+                    ),
+                    image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
+                    remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
+                    original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
+                    watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
+                    design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
+                    engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
+                    perforation: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
+                    series: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
+                    currency: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+                    context: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
+                    mint_condition: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
+                    unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
+                    used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
+                    letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+                    image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
+                    image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
+                    multi_perf: false,
+                })
+            },
+        )?;
         for s in rows {
             result.push(s?);
         }
@@ -456,9 +455,9 @@ pub struct StampStub {
     pub context: String,
     pub multi_perf: bool,
 }
-use rusqlite::{params, Connection, Result};
-use regex::Regex;
 use log::{debug, error, info};
+use regex::Regex;
+use rusqlite::{params, Connection, Result};
 
 // Robust migration helper: recreate `stamps` table with canonical schema while preserving data.
 pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
@@ -490,10 +489,10 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
         "currency TEXT",
         "image_path TEXT",
         "remote_image_url TEXT",
-    "original_image_url TEXT",
-    "image_width_px INTEGER",
-    "image_height_px INTEGER",
-    "watermark TEXT",
+        "original_image_url TEXT",
+        "image_width_px INTEGER",
+        "image_height_px INTEGER",
+        "watermark TEXT",
         "design TEXT",
         "engraving TEXT",
         "perforation TEXT",
@@ -503,15 +502,42 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
 
     // Also keep a simple list of desired column NAMES for matching existing columns.
     let desired_col_names = vec![
-        "id", "country", "series", "year", "month", "month_num", "day",
-        "sg_number", "type", "denomination", "color", "description",
-        "stamps_issued", "mint_condition", "unused", "used", "letter_fdc",
-        "currency", "image_path", "remote_image_url", "original_image_url",
-        "image_width_px", "image_height_px", "watermark", "design", "engraving", "perforation", "context", "uniq_key",
+        "id",
+        "country",
+        "series",
+        "year",
+        "month",
+        "month_num",
+        "day",
+        "sg_number",
+        "type",
+        "denomination",
+        "color",
+        "description",
+        "stamps_issued",
+        "mint_condition",
+        "unused",
+        "used",
+        "letter_fdc",
+        "currency",
+        "image_path",
+        "remote_image_url",
+        "original_image_url",
+        "image_width_px",
+        "image_height_px",
+        "watermark",
+        "design",
+        "engraving",
+        "perforation",
+        "context",
+        "uniq_key",
     ];
 
     // Create new table
-    let create_sql = format!("CREATE TABLE IF NOT EXISTS stamps_new ({})", desired_cols.join(","));
+    let create_sql = format!(
+        "CREATE TABLE IF NOT EXISTS stamps_new ({})",
+        desired_cols.join(",")
+    );
     conn.execute(&create_sql, [])?;
 
     // Get existing columns from old table
@@ -525,7 +551,11 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     debug!("Existing stamps columns: {:?}", existing_cols);
     // Determine which columns we can copy
     // Determine which columns exist in both the old table and our desired schema
-    let common_cols: Vec<String> = existing_cols.iter().filter(|c| desired_col_names.contains(&c.as_str())).cloned().collect();
+    let common_cols: Vec<String> = existing_cols
+        .iter()
+        .filter(|c| desired_col_names.contains(&c.as_str()))
+        .cloned()
+        .collect();
     // always include id if present and available
     let copy_cols = if existing_cols.contains(&"id".to_string()) {
         // ensure id is first
@@ -548,7 +578,10 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
 
     if !copy_cols.is_empty() {
         let cols_list = copy_cols.join(",");
-        let insert_sql = format!("INSERT INTO stamps_new ({0}) SELECT {0} FROM stamps", cols_list);
+        let insert_sql = format!(
+            "INSERT INTO stamps_new ({0}) SELECT {0} FROM stamps",
+            cols_list
+        );
         conn.execute(&insert_sql, [])?;
         debug!("Data copied into stamps_new");
     }
@@ -571,10 +604,16 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     // Check for duplicates on uniq_key
     let dup_groups: i64 = conn.query_row("SELECT COUNT(*) FROM (SELECT uniq_key FROM stamps_new GROUP BY uniq_key HAVING COUNT(*) > 1)", [], |r| r.get(0))?;
     if dup_groups == 0 {
-        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps_new(uniq_key)", [])?;
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps_new(uniq_key)",
+            [],
+        )?;
         debug!("Created UNIQUE index on stamps_new.uniq_key");
     } else {
-        error!("Migration found {} duplicate uniq_key groups. UNIQUE index not created.", dup_groups);
+        error!(
+            "Migration found {} duplicate uniq_key groups. UNIQUE index not created.",
+            dup_groups
+        );
     }
 
     // Drop old table and rename
@@ -599,16 +638,31 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
     // Small helper: normalize currency tokens similarly to the collector
     fn normalize_currency_token_inner(s: &str) -> String {
         let t = s.trim();
-        if t.is_empty() { return String::new(); }
+        if t.is_empty() {
+            return String::new();
+        }
         let low = t.to_lowercase();
-        if low == "sell" || low == "usd" || low == "$" || low == "us$" || low.contains("usd") || low.contains("us$") { return "USD".to_string(); }
-        if low == "eur" || low.contains("€") { return "EUR".to_string(); }
-        if low == "gbp" || low.contains("£") { return "GBP".to_string(); }
+        if low == "sell"
+            || low == "usd"
+            || low == "$"
+            || low == "us$"
+            || low.contains("usd")
+            || low.contains("us$")
+        {
+            return "USD".to_string();
+        }
+        if low == "eur" || low.contains("€") {
+            return "EUR".to_string();
+        }
+        if low == "gbp" || low.contains("£") {
+            return "GBP".to_string();
+        }
         t.to_uppercase()
     }
 
     // Find candidate rows: those where design/engraving/perforation contain labels
-    let mut stmt = conn.prepare("SELECT id, design, engraving, perforation, context, currency FROM stamps")?;
+    let mut stmt =
+        conn.prepare("SELECT id, design, engraving, perforation, context, currency FROM stamps")?;
     let mut rows = stmt.query([])?;
     let mut updates: Vec<(i64, String, String, String, String, String)> = Vec::new();
     while let Ok(Some(r)) = rows.next() {
@@ -623,17 +677,30 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
         // 'Design:' or 'Engraving:' or 'Perforation:' or contain newlines, treat as suspect
         let suspect = |s: &str| {
             let low = s.to_lowercase();
-            low.contains("design:") || low.contains("engraving:") || low.contains("perforation:") || s.contains('\n') || s.contains('\r')
+            low.contains("design:")
+                || low.contains("engraving:")
+                || low.contains("perforation:")
+                || s.contains('\n')
+                || s.contains('\r')
         };
-    if suspect(&design) || suspect(&engraving) || suspect(&perforation) {
+        if suspect(&design) || suspect(&engraving) || suspect(&perforation) {
             // Build a details vector by splitting context plus the fields to give the parser enough material
             let mut details: Vec<String> = Vec::new();
-            if !context.trim().is_empty() { details.push(context.clone()); }
-            if !design.trim().is_empty() { details.push(design.clone()); }
-            if !engraving.trim().is_empty() { details.push(engraving.clone()); }
-            if !perforation.trim().is_empty() { details.push(perforation.clone()); }
+            if !context.trim().is_empty() {
+                details.push(context.clone());
+            }
+            if !design.trim().is_empty() {
+                details.push(design.clone());
+            }
+            if !engraving.trim().is_empty() {
+                details.push(engraving.clone());
+            }
+            if !perforation.trim().is_empty() {
+                details.push(perforation.clone());
+            }
             // Call the collector helper (it's pub(crate) so available in the crate)
-            let (wm_new, design_new, engr_new, perf_new) = crate::stampworld::data_collector::extract_block_metadata(&details);
+            let (wm_new, design_new, engr_new, perf_new) =
+                crate::stampworld::data_collector::extract_block_metadata(&details);
             let currency_new = normalize_currency_token_inner(&currency);
             updates.push((id, wm_new, design_new, engr_new, perf_new, currency_new));
         }
@@ -647,32 +714,53 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
         let row: (String, String, String, String, String) = conn.query_row(
             "SELECT watermark, design, engraving, perforation, currency FROM stamps WHERE id = ?1",
             params![id],
-            |r| Ok((
-                r.get::<_, Option<String>>(0)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(2)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                r.get::<_, Option<String>>(4)?.unwrap_or_default(),
-            )),
+            |r| {
+                Ok((
+                    r.get::<_, Option<String>>(0)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                    r.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                ))
+            },
         )?;
         let combined = vec![row.0.clone(), row.1.clone(), row.2.clone(), row.3.clone()];
-        let (wm_new, design_new, engr_new, perf_new) = crate::stampworld::data_collector::extract_block_metadata(&combined);
+        let (wm_new, design_new, engr_new, perf_new) =
+            crate::stampworld::data_collector::extract_block_metadata(&combined);
         let currency_new = normalize_currency_token_inner(&row.4);
 
         // Build update statement and params
         let mut set_clauses: Vec<String> = Vec::new();
         let mut values: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-        if !wm_new.is_empty() { set_clauses.push("watermark = ?".to_string()); values.push(Box::new(wm_new)); }
-        if !design_new.is_empty() { set_clauses.push("design = ?".to_string()); values.push(Box::new(design_new)); }
-        if !engr_new.is_empty() { set_clauses.push("engraving = ?".to_string()); values.push(Box::new(engr_new)); }
-        if !perf_new.is_empty() { set_clauses.push("perforation = ?".to_string()); values.push(Box::new(perf_new)); }
-        if !currency_new.is_empty() { set_clauses.push("currency = ?".to_string()); values.push(Box::new(currency_new)); }
+        if !wm_new.is_empty() {
+            set_clauses.push("watermark = ?".to_string());
+            values.push(Box::new(wm_new));
+        }
+        if !design_new.is_empty() {
+            set_clauses.push("design = ?".to_string());
+            values.push(Box::new(design_new));
+        }
+        if !engr_new.is_empty() {
+            set_clauses.push("engraving = ?".to_string());
+            values.push(Box::new(engr_new));
+        }
+        if !perf_new.is_empty() {
+            set_clauses.push("perforation = ?".to_string());
+            values.push(Box::new(perf_new));
+        }
+        if !currency_new.is_empty() {
+            set_clauses.push("currency = ?".to_string());
+            values.push(Box::new(currency_new));
+        }
 
         if !set_clauses.is_empty() {
             let sql = format!("UPDATE stamps SET {} WHERE id = ?", set_clauses.join(", "));
             values.push(Box::new(id));
             // Create a slice of &dyn ToSql
-            let refs: Vec<&dyn rusqlite::ToSql> = values.iter().map(|b| &**b as &dyn rusqlite::ToSql).collect();
+            let refs: Vec<&dyn rusqlite::ToSql> = values
+                .iter()
+                .map(|b| &**b as &dyn rusqlite::ToSql)
+                .collect();
             if let Ok(rows) = conn.execute(&sql, rusqlite::params_from_iter(refs)) {
                 updated_count += rows as i64;
             }
@@ -680,7 +768,10 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
     }
 
     conn.execute_batch("COMMIT;")?;
-    info!("Migration fixed block metadata; updated {} row(s)", updated_count);
+    info!(
+        "Migration fixed block metadata; updated {} row(s)",
+        updated_count
+    );
     debug!("Completed migration: fix block metadata and normalize currency");
     Ok(())
 }
@@ -690,7 +781,11 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     if let Some(parent) = std::path::Path::new(db_path).parent() {
         if !parent.as_os_str().is_empty() {
             if let Err(e) = std::fs::create_dir_all(parent) {
-                error!("Failed to create parent directory for DB {}: {}", parent.display(), e);
+                error!(
+                    "Failed to create parent directory for DB {}: {}",
+                    parent.display(),
+                    e
+                );
                 // Continue and attempt to open the DB - the original behaviour was to fail here;
                 // returning the error from Connection::open will surface the problem to callers.
             }
@@ -698,10 +793,19 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     }
     let conn = Connection::open(db_path)?;
     // Log the path opened and some filesystem metadata to help debug DB path mismatches
-    let canonical = std::fs::canonicalize(db_path).unwrap_or_else(|_| std::path::PathBuf::from(db_path));
-    debug!("Opened database at {} (canonical: {})", db_path, canonical.display());
+    let canonical =
+        std::fs::canonicalize(db_path).unwrap_or_else(|_| std::path::PathBuf::from(db_path));
+    debug!(
+        "Opened database at {} (canonical: {})",
+        db_path,
+        canonical.display()
+    );
     match std::fs::metadata(&canonical) {
-        Ok(md) => debug!("Database file exists. size={} bytes, readonly={}", md.len(), md.permissions().readonly()),
+        Ok(md) => debug!(
+            "Database file exists. size={} bytes, readonly={}",
+            md.len(),
+            md.permissions().readonly()
+        ),
         Err(_) => debug!("Database file does not exist yet: {}", canonical.display()),
     }
     // Always create the table first
@@ -766,13 +870,19 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 col_names.push(name.clone());
                 col_count += 1;
             }
-            debug!("Stamps table columns before possible migration: {:?} (count: {})", col_names, col_count);
+            debug!(
+                "Stamps table columns before possible migration: {:?} (count: {})",
+                col_names, col_count
+            );
         }
     }
     // Expected columns (including uniq_key). We've added image_width_px and image_height_px so the expected count increases by 2.
     let expected_col_count = 29;
     if col_count > 0 && col_count != expected_col_count {
-        debug!("Stamps table column count ({}) does not match expected ({}). Running safe migration.", col_count, expected_col_count);
+        debug!(
+            "Stamps table column count ({}) does not match expected ({}). Running safe migration.",
+            col_count, expected_col_count
+        );
         match migrate_stamps_table(&conn) {
             Ok(_) => debug!("Safe migration completed from init_db."),
             Err(e) => error!("Safe migration failed from init_db: {}", e),
@@ -781,7 +891,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     // Set this to true to enable debug output, false to disable
     const DEBUG: bool = true;
     if DEBUG {
-            debug!("Stamps table ensured.");
+        debug!("Stamps table ensured.");
     }
 
     // Migration: add a `uniq_key` column (if missing), backfill it with a
@@ -828,9 +938,15 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     ) {
         Ok(dup_groups) => {
             if dup_groups == 0 {
-                match conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps(uniq_key);", []) {
+                match conn.execute(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps(uniq_key);",
+                    [],
+                ) {
                     Ok(_) => debug!("Created UNIQUE index stamps_unique_uniq_key"),
-                    Err(e) => error!("Failed to create UNIQUE index stamps_unique_uniq_key: {}", e),
+                    Err(e) => error!(
+                        "Failed to create UNIQUE index stamps_unique_uniq_key: {}",
+                        e
+                    ),
                 }
             } else {
                 error!("Found {} duplicate uniq_key group(s). UNIQUE index not created. Please deduplicate rows before enabling this constraint.", dup_groups);
@@ -877,10 +993,13 @@ pub fn insert_stamp(
     // Normalize stamps_issued: if dots are used as thousand separators and no commas are present, replace them with commas
     let mut stamps_issued_normalized = stamps_issued.trim().to_string();
     if stamps_issued_normalized.starts_with('(') && stamps_issued_normalized.ends_with(')') {
-        stamps_issued_normalized = stamps_issued_normalized[1..stamps_issued_normalized.len()-1].to_string();
+        stamps_issued_normalized =
+            stamps_issued_normalized[1..stamps_issued_normalized.len() - 1].to_string();
     }
     let re_non = Regex::new(r"[^0-9\.,]").unwrap();
-    stamps_issued_normalized = re_non.replace_all(&stamps_issued_normalized, "").to_string();
+    stamps_issued_normalized = re_non
+        .replace_all(&stamps_issued_normalized, "")
+        .to_string();
     if stamps_issued_normalized.contains('.') && !stamps_issued_normalized.contains(',') {
         stamps_issued_normalized = stamps_issued_normalized.replace('.', ",");
     }
@@ -889,7 +1008,39 @@ pub fn insert_stamp(
     // or empty and where the caller provided a non-empty value.
     let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
-    let (count, existing_image_path, existing_remote_url, existing_description, existing_stamps_issued, existing_mint_condition, existing_unused, existing_used, existing_letter_fdc, existing_currency, existing_watermark, existing_design, existing_engraving, existing_perforation, existing_context): (i64, String, String, String, String, String, String, String, String, String, String, String, String, String, String) = stmt.query_row(params![country, series, sg_number], |row| {
+    let (
+        count,
+        existing_image_path,
+        existing_remote_url,
+        existing_description,
+        existing_stamps_issued,
+        existing_mint_condition,
+        existing_unused,
+        existing_used,
+        existing_letter_fdc,
+        existing_currency,
+        existing_watermark,
+        existing_design,
+        existing_engraving,
+        existing_perforation,
+        existing_context,
+    ): (
+        i64,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    ) = stmt.query_row(params![country, series, sg_number], |row| {
         Ok((
             row.get(0)?,
             row.get(1).unwrap_or(String::new()),
@@ -910,36 +1061,64 @@ pub fn insert_stamp(
     })?;
 
     if count > 0 {
-    // trace removed
+        // trace removed
         // Determine whether any of the provided values should be used to backfill
         // existing empty columns. We treat empty string and NULL as missing.
         let is_empty = |s: &str| s.trim().is_empty();
         let mut needs_update = false;
 
         // Remote URL or original filename
-        let has_new_remote_url = !remote_image_url.trim().is_empty() && remote_image_url != existing_remote_url;
-        if has_new_remote_url { needs_update = true; }
+        let has_new_remote_url =
+            !remote_image_url.trim().is_empty() && remote_image_url != existing_remote_url;
+        if has_new_remote_url {
+            needs_update = true;
+        }
 
         // Image path (only if existing image path is empty or placeholder)
         if !image_path.trim().is_empty() {
-            if is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image") {
+            if is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image")
+            {
                 needs_update = true;
             }
         }
 
         // Metadata fields: update only if existing value is empty and caller provided non-empty
-        if is_empty(&existing_description) && !description.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_stamps_issued) && !stamps_issued.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_mint_condition) && !mint_condition.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_unused) && !unused.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_used) && !used.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_letter_fdc) && !letter_fdc.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_currency) && !currency.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_watermark) && !watermark.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_design) && !design.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_engraving) && !engraving.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_perforation) && !perforation.trim().is_empty() { needs_update = true; }
-        if is_empty(&existing_context) && !context.trim().is_empty() { needs_update = true; }
+        if is_empty(&existing_description) && !description.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_stamps_issued) && !stamps_issued.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_mint_condition) && !mint_condition.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_unused) && !unused.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_used) && !used.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_letter_fdc) && !letter_fdc.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_currency) && !currency.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_watermark) && !watermark.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_design) && !design.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_engraving) && !engraving.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_perforation) && !perforation.trim().is_empty() {
+            needs_update = true;
+        }
+        if is_empty(&existing_context) && !context.trim().is_empty() {
+            needs_update = true;
+        }
 
         if needs_update {
             // trace removed
@@ -963,10 +1142,24 @@ pub fn insert_stamp(
                 WHERE country = ?16 AND series = ?17 AND sg_number = ?18";
 
             let params_vec = params![
-                image_path, remote_image_url, original_image_url,
-                description, stamps_issued_normalized, mint_condition, unused, used, letter_fdc, currency,
-                watermark, design, engraving, perforation, context,
-                country, series, sg_number
+                image_path,
+                remote_image_url,
+                original_image_url,
+                description,
+                stamps_issued_normalized,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                watermark,
+                design,
+                engraving,
+                perforation,
+                context,
+                country,
+                series,
+                sg_number
             ];
             match conn.execute(update_sql, params_vec) {
                 Ok(rows) => {
@@ -977,14 +1170,19 @@ pub fn insert_stamp(
                         // trace removed
                     }
                 }
-                Err(e) => { error!("DB update error for {} {} {}: {}", country, series, sg_number, e); }
+                Err(e) => {
+                    error!(
+                        "DB update error for {} {} {}: {}",
+                        country, series, sg_number, e
+                    );
+                }
             }
         }
 
-    // trace removed
+        // trace removed
         return Ok(false);
     }
-    
+
     // trace removed
     let month_clean = match month.trim().to_lowercase().as_str() {
         "wm" | "" => "",
@@ -1043,28 +1241,61 @@ pub fn insert_stamp(
         design.to_string(),
         engraving.to_string(),
         perforation.to_string(),
-        context.to_string()
+        context.to_string(),
     ];
     // trace removed
     let mut attempts = 0;
     loop {
         attempts += 1;
-    match conn.execute(sql, params![country, series, year, month_clean, month_num, day, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context]) {
-    // Arguments now match the new signature and DB columns
+        match conn.execute(
+            sql,
+            params![
+                country,
+                series,
+                year,
+                month_clean,
+                month_num,
+                day,
+                sg_number,
+                type_,
+                denomination,
+                color,
+                description,
+                stamps_issued,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                image_path,
+                remote_image_url,
+                original_image_url,
+                watermark,
+                design,
+                engraving,
+                perforation,
+                context
+            ],
+        ) {
+            // Arguments now match the new signature and DB columns
             Ok(_) => {
-                    // insert succeeded
-                    debug!("Last insert rowid: {}", conn.last_insert_rowid());
+                // insert succeeded
+                debug!("Last insert rowid: {}", conn.last_insert_rowid());
                 break;
             }
-                Err(e) => {
-                    error!("Insert failed on attempt {}: {}", attempts, e);
-        if attempts >= 2 {
-            error!("Giving up after {} attempts. Params: {:?}", attempts, params_vec);
+            Err(e) => {
+                error!("Insert failed on attempt {}: {}", attempts, e);
+                if attempts >= 2 {
+                    error!(
+                        "Giving up after {} attempts. Params: {:?}",
+                        attempts, params_vec
+                    );
                     break;
                 } else {
-            // retry
+                    // retry
                 }
-            }        }
+            }
+        }
     }
     // If we reach here, insert was attempted and we assume it succeeded above; return true to indicate an insert occurred
     Ok(true)
@@ -1089,7 +1320,10 @@ pub fn insert_stamp_placeholder(
         |r| r.get(0),
     )?;
     if exists > 0 {
-        debug!("Placeholder not inserted because row exists: {}|{}|{}", country, series, sg_number);
+        debug!(
+            "Placeholder not inserted because row exists: {}|{}|{}",
+            country, series, sg_number
+        );
         return Ok(false);
     }
     // Insert with a minimal non-NULL `type` so consumers (album generator)
@@ -1098,34 +1332,59 @@ pub fn insert_stamp_placeholder(
     let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '')";
     match conn.execute(sql, params![country, series, year, sg_number]) {
         Ok(_) => {
-            debug!("Inserted placeholder for {}|{}|{}", country, series, sg_number);
+            debug!(
+                "Inserted placeholder for {}|{}|{}",
+                country, series, sg_number
+            );
             Ok(true)
         }
         Err(e) => {
-            error!("Failed to insert placeholder {}|{}|{}: {}", country, series, sg_number, e);
+            error!(
+                "Failed to insert placeholder {}|{}|{}: {}",
+                country, series, sg_number, e
+            );
             Err(e)
         }
     }
 }
 
-pub fn get_stamps_by_country_series(conn: &Connection, country: &str, series: &str) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {
+pub fn get_stamps_by_country_series(
+    conn: &Connection,
+    country: &str,
+    series: &str,
+) -> Result<
+    Vec<(
+        i32,
+        String,
+        String,
+        i32,
+        String,
+        i32,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    )>,
+> {
     let mut stmt = conn.prepare(
         "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
     )?;
     let stamp_iter = stmt.query_map(params![country, series], |row| {
         Ok((
-            row.get(0)?, // id
-            row.get(1)?, // country
-            row.get(2)?, // series
-            row.get(3)?, // year
-            row.get(4)?, // month
-            row.get::<_, i32>(5)?, // month_num
-            row.get(6)?, // day
+            row.get(0)?,              // id
+            row.get(1)?,              // country
+            row.get(2)?,              // series
+            row.get(3)?,              // year
+            row.get(4)?,              // month
+            row.get::<_, i32>(5)?,    // month_num
+            row.get(6)?,              // day
             row.get::<_, String>(7)?, // description
-            row.get(8)?, // image_path
-            row.get(9)?, // remote_image_url
-            row.get(10)?, // perforation
-            row.get(11)? // context
+            row.get(8)?,              // image_path
+            row.get(9)?,              // remote_image_url
+            row.get(10)?,             // perforation
+            row.get(11)?,             // context
         ))
     })?;
     let mut results = Vec::new();

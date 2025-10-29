@@ -4,10 +4,11 @@
 //! This module generates placeholder images for stamps that don't have associated images.
 
 use image::{ImageBuffer, Rgba};
-use std::path::Path;
-use rusttype::{Font, Scale, point};
+use rusttype::{point, Font, Scale};
+use log::{info, error};
 use std::fs::File;
 use std::io::Read;
+use std::path::Path;
 
 /// Try to load a TTF font from a list of likely locations (system fonts or project fonts).
 /// Returns a loaded `rusttype::Font` on success, or `None` if no font could be found.
@@ -67,7 +68,15 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
 }
 
 /// Draw anti-aliased text centered at (center_x, center_y) using rusttype.
-fn draw_text(img: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, text: &str, center_x: i32, center_y: i32, font_size: f32, color: Rgba<u8>, font_override: Option<&str>) {
+fn draw_text(
+    img: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
+    text: &str,
+    center_x: i32,
+    center_y: i32,
+    font_size: f32,
+    color: Rgba<u8>,
+    font_override: Option<&str>,
+) {
     // Load font (cached per-call). If missing, fall back to simple rectangle drawing per character.
     let font = match load_fallback_font(font_override) {
         Some(f) => f,
@@ -85,7 +94,11 @@ fn draw_text(img: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, text: &str, center_x: i32
                         if yy == 0 || yy == char_height - 1 || xx == 0 || xx == char_width - 1 {
                             let px = x + xx;
                             let py = start_y + yy;
-                            if px >= 0 && py >= 0 && (px as u32) < img.width() && (py as u32) < img.height() {
+                            if px >= 0
+                                && py >= 0
+                                && (px as u32) < img.width()
+                                && (py as u32) < img.height()
+                            {
                                 img.put_pixel(px as u32, py as u32, color);
                             }
                         }
@@ -100,8 +113,15 @@ fn draw_text(img: &mut ImageBuffer<Rgba<u8>, Vec<u8>>, text: &str, center_x: i32
 
     // Measure text width
     let v_metrics = font.v_metrics(scale);
-    let glyphs: Vec<_> = font.layout(text, scale, point(0.0, 0.0 + v_metrics.ascent)).collect();
-    let glyph_width = glyphs.iter().rev().filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x as i32)).next().unwrap_or(0);
+    let glyphs: Vec<_> = font
+        .layout(text, scale, point(0.0, 0.0 + v_metrics.ascent))
+        .collect();
+    let glyph_width = glyphs
+        .iter()
+        .rev()
+        .filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x as i32))
+        .next()
+        .unwrap_or(0);
     let total_width = glyph_width;
 
     // Starting point
@@ -164,7 +184,12 @@ pub struct PlaceholderOptions<'a> {
 }
 
 /// New API: generate with options. Keeps previous API behavior by calling this with None.
-pub fn generate_placeholder_image_with_options(width: u32, height: u32, output_path: &Path, options: Option<PlaceholderOptions>) -> Result<(), Box<dyn std::error::Error>> {
+pub fn generate_placeholder_image_with_options(
+    width: u32,
+    height: u32,
+    output_path: &Path,
+    options: Option<PlaceholderOptions>,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Create a new image buffer with white background
     let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(width, height);
 
@@ -184,11 +209,34 @@ pub fn generate_placeholder_image_with_options(width: u32, height: u32, output_p
     }
 
     // Get options or defaults
-    let opts = options.unwrap_or(PlaceholderOptions { font_path: None, title_size: 28.0, subtitle_size: 16.0, color: Rgba([80,80,80,255]), title: None, subtitle: None });
+    let opts = options.unwrap_or(PlaceholderOptions {
+        font_path: None,
+        title_size: 28.0,
+        subtitle_size: 16.0,
+        color: Rgba([80, 80, 80, 255]),
+        title: None,
+        subtitle: None,
+    });
 
     // Draw centered, clean text
-    draw_text(&mut img, "NO IMAGE", (width / 2) as i32, (height / 2 - 14) as i32, opts.title_size, opts.color, opts.font_path);
-    draw_text(&mut img, "AVAILABLE", (width / 2) as i32, (height / 2 + 18) as i32, opts.subtitle_size, opts.color, opts.font_path);
+    draw_text(
+        &mut img,
+        "NO IMAGE",
+        (width / 2) as i32,
+        (height / 2 - 14) as i32,
+        opts.title_size,
+        opts.color,
+        opts.font_path,
+    );
+    draw_text(
+        &mut img,
+        "AVAILABLE",
+        (width / 2) as i32,
+        (height / 2 + 18) as i32,
+        opts.subtitle_size,
+        opts.color,
+        opts.font_path,
+    );
 
     // Save the image
     img.save(output_path)?;
@@ -197,12 +245,18 @@ pub fn generate_placeholder_image_with_options(width: u32, height: u32, output_p
 }
 
 // Backwards-compatible wrapper
-pub fn generate_placeholder_image(width: u32, height: u32, output_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+pub fn generate_placeholder_image(
+    width: u32,
+    height: u32,
+    output_path: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     generate_placeholder_image_with_options(width, height, output_path, None)
 }
 
 /// Generates the default placeholder image if it doesn't exist
-pub fn ensure_placeholder_image_for_album(album_name: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn ensure_placeholder_image_for_album(
+    album_name: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize album directory name to match other modules (use hyphens for spaces)
     let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
     let placeholder_path = album_dir.join("images").join("no_image_placeholder.png");
@@ -212,11 +266,22 @@ pub fn ensure_placeholder_image_for_album(album_name: &str) -> Result<String, Bo
         // Create images directory if it doesn't exist
         std::fs::create_dir_all(placeholder_path.parent().unwrap())?;
 
-    // Generate the placeholder image using bundled font if available and album name as subtitle
-    let bundled = if Path::new("assets/fonts/DejaVuSans.ttf").exists() { Some("assets/fonts/DejaVuSans.ttf") } else { None };
-    let opts = PlaceholderOptions { font_path: bundled, title_size: 28.0, subtitle_size: 12.0, color: Rgba([80,80,80,255]), title: Some("NO IMAGE"), subtitle: Some(album_name) };
-    generate_placeholder_image_with_options(200, 150, &placeholder_path, Some(opts))?;
-    println!("[INFO] Generated placeholder image: {}", placeholder_path.display());
+        // Generate the placeholder image using bundled font if available and album name as subtitle
+        let bundled = if Path::new("assets/fonts/DejaVuSans.ttf").exists() {
+            Some("assets/fonts/DejaVuSans.ttf")
+        } else {
+            None
+        };
+        let opts = PlaceholderOptions {
+            font_path: bundled,
+            title_size: 28.0,
+            subtitle_size: 12.0,
+            color: Rgba([80, 80, 80, 255]),
+            title: Some("NO IMAGE"),
+            subtitle: Some(album_name),
+        };
+        generate_placeholder_image_with_options(200, 150, &placeholder_path, Some(opts))?;
+        info!("Generated placeholder image: {}", placeholder_path.display());
     }
 
     // Return relative path from the album directory
@@ -225,7 +290,11 @@ pub fn ensure_placeholder_image_for_album(album_name: &str) -> Result<String, Bo
 
 /// Generates a per-stamp placeholder image (includes SG number and year) inside the album images folder.
 /// Returns the relative path (from album dir) to the generated image, e.g. "images/no_image_SG1234_1967.png".
-pub fn ensure_placeholder_image_for_stamp(album_name: &str, sg_number: &str, year: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub fn ensure_placeholder_image_for_stamp(
+    album_name: &str,
+    sg_number: &str,
+    year: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize album directory name to match other modules (use hyphens for spaces)
     let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
     // sanitize sg_number for filename (replace slashes etc.)
@@ -238,14 +307,20 @@ pub fn ensure_placeholder_image_for_stamp(album_name: &str, sg_number: &str, yea
         std::fs::create_dir_all(placeholder_path.parent().unwrap())?;
 
         // Choose bundled font if available
-        let bundled = if Path::new("assets/fonts/DejaVuSans.ttf").exists() { Some("assets/fonts/DejaVuSans.ttf") } else { None };
+        let bundled = if Path::new("assets/fonts/DejaVuSans.ttf").exists() {
+            Some("assets/fonts/DejaVuSans.ttf")
+        } else {
+            None
+        };
 
         // Create a new image buffer with white background
         let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(300, 220);
-        for pixel in img.pixels_mut() { *pixel = Rgba([255,255,255,255]); }
+        for pixel in img.pixels_mut() {
+            *pixel = Rgba([255, 255, 255, 255]);
+        }
 
         // Draw a subtle border
-        let border_color = Rgba([200,200,200,255]);
+        let border_color = Rgba([200, 200, 200, 255]);
         let (width, height) = (img.width(), img.height());
         for x in 0..width {
             for y in 0..height {
@@ -257,24 +332,44 @@ pub fn ensure_placeholder_image_for_stamp(album_name: &str, sg_number: &str, yea
 
         // Title: SG {sg_number}
         let title = format!("SG {}", sg_number);
-        let subtitle = if year.is_empty() { "".to_string() } else { year.to_string() };
+        let subtitle = if year.is_empty() {
+            "".to_string()
+        } else {
+            year.to_string()
+        };
 
         // Draw texts centered (use subtle gray similar to samples/placeholder_b.png)
-        draw_text(&mut img, &title, (width / 2) as i32, (height / 2 - 20) as i32, 28.0, Rgba([90,90,90,255]), bundled);
+        draw_text(
+            &mut img,
+            &title,
+            (width / 2) as i32,
+            (height / 2 - 20) as i32,
+            28.0,
+            Rgba([90, 90, 90, 255]),
+            bundled,
+        );
         // Draw a thin separator line to add breathing room between title and subtitle
         let sep_y = (height / 2) as i32 + 2;
-        for x in 40..(width-40) {
+        for x in 40..(width - 40) {
             if sep_y >= 0 && (sep_y as u32) < height {
-                img.put_pixel(x, sep_y as u32, Rgba([220,220,220,255]));
+                img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
             }
         }
         if !subtitle.is_empty() {
-            draw_text(&mut img, &subtitle, (width / 2) as i32, (height / 2 + 18) as i32, 14.0, Rgba([90,90,90,255]), bundled);
+            draw_text(
+                &mut img,
+                &subtitle,
+                (width / 2) as i32,
+                (height / 2 + 18) as i32,
+                14.0,
+                Rgba([90, 90, 90, 255]),
+                bundled,
+            );
         }
 
         // Save
         img.save(&placeholder_path)?;
-        println!("[INFO] Generated per-stamp placeholder image: {}", placeholder_path.display());
+        info!("Generated per-stamp placeholder image: {}", placeholder_path.display());
     }
 
     // Return relative path from album dir
@@ -292,7 +387,7 @@ pub fn get_placeholder_image_path() -> String {
     match ensure_placeholder_image() {
         Ok(path) => path,
         Err(e) => {
-            eprintln!("Failed to create placeholder image: {}", e);
+        error!("Failed to create placeholder image: {}", e);
             // Fallback to a simple text-based path
             "images/no_image_placeholder.png".to_string()
         }

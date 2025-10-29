@@ -10,6 +10,16 @@ Archive/*
 examples/
 /examples/
 examples/*
+outputs
+outputs/*
+/output
+/output/*
+outputs2
+outputs2/*
+/#notes.txt*
+.#notes.txt*
+notes_backup.txt*
+
 
 # Ignore all .toml files except config.toml
 *.html

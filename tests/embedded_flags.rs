@@ -20,7 +20,10 @@ fn embedded_flags_writeback_and_load() {
     let m = stamp_album_gen2::flagdb::load_flag_map_from_fs();
 
     // Basic sanity: mapping must include 'switzerland' -> 'ch'
-    assert!(m.get("switzerland").map(|s| s == "ch").unwrap_or(false), "expected switzerland -> ch in map");
+    assert!(
+        m.get("switzerland").map(|s| s == "ch").unwrap_or(false),
+        "expected switzerland -> ch in map"
+    );
 
     // After calling, the flags/flag_codes.json should exist in at least one
     // of the candidate locations (cwd 'flags', build manifest 'flags', or

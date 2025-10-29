@@ -13,6 +13,8 @@
 //! for unified processing across all data sources.
 
 pub mod data_collector;
+pub mod parser;
+pub mod fetch;
 pub mod state;
 
 // Re-export the main functions for easy access
@@ -21,5 +23,5 @@ pub use state::*;
 
 // Provide access to album generation helpers
 pub use crate::album_globals::generate_album_output;
-pub use crate::album_utils::load_stamps_from_db;
 pub use crate::album_globals::write_globals;
+pub use crate::album_utils::load_stamps_from_db;
