@@ -11,6 +11,9 @@ pub static ALBUM_FILE_NAME: Mutex<String> = Mutex::new(String::new());
 /// Global album database path
 pub static ALBUM_DB_PATH: Mutex<String> = Mutex::new(String::new());
 
+/// Whether the current run requested album overwrites (set from CLI)
+pub static OVERWRITE_ALBUM: Mutex<bool> = Mutex::new(false);
+
 /// File separator for the current OS
 #[cfg(target_os = "windows")]
 pub static FILE_SEPARATOR: &str = "\\";

@@ -404,6 +404,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             album_name.replace('/', "-")
         );
         stamp_album_gen2::file_utils::set_db_path_from_cli(&db_path);
+        // Propagate the CLI overwrite flag into global state so generators
+        // can create backups when the user explicitly requested overwrites.
+        stamp_album_gen2::file_utils::set_overwrite_album_from_cli(cli.overwrite_album);
         println!("DEBUG: collector DB path set to {}", db_path);
 
         let pages = cfg.collect_stampworld_data(

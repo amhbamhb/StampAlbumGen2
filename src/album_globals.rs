@@ -5,7 +5,7 @@ use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use rusqlite::Connection;
 // ImageStatus and OSType not needed in this module today
 use crate::album_utils::clean_text;
-use log::warn;
+use log::{warn, info, error};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
@@ -446,8 +446,14 @@ where
         format!("{}.txt", album_name.replace(' ', "-"))
     };
     let output_path = album_dir.join(filename);
-    let mut output =
-        BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
+    // Write into a temporary file first to avoid truncating the canonical
+    // output file if generation yields no stamp lines. We will promote the
+    // temporary file into place only when it contains STAMP lines.
+    let tmp_name = format!("{}.tmp", output_path.file_name().and_then(|s| s.to_str()).unwrap_or("out"));
+    let tmp_path = output_path.with_file_name(tmp_name);
+    let mut output = BufWriter::new(
+        File::create(&tmp_path).unwrap_or_else(|e| panic!("Failed to create temp output file: {}", e)),
+    );
 
     // Write global album settings (pass DB connection and CLI year range so the header can include years)
     write_globals(
@@ -1607,6 +1613,81 @@ where
             current_height += total_row_height;
             rows_on_page += 1;
             row_idx += 1;
+        }
+    }
+
+    // Finalize: we've written to a temp file. Promote it into place only if it
+    // contains STAMP lines; otherwise remove the temp and leave existing file intact.
+    // This prevents accidental truncation when generation yields no stamps.
+    {
+        use std::fs;
+        match fs::read_to_string(&tmp_path) {
+            Ok(contents) => {
+                let stamp_count = contents.lines().filter(|l| l.starts_with("STAMP")).count();
+                if stamp_count == 0 {
+                    // If the user explicitly requested overwrite, create a backup
+                    // of the existing file even if generation produced no STAMP lines.
+                    if crate::file_utils::get_overwrite_album_from_cli() && output_path.exists() {
+                        use chrono::Local;
+                        if let Some(stem_os) = output_path.file_stem() {
+                            if let Some(stem) = stem_os.to_str() {
+                                let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                                let ext = output_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                let backup_name = if ext.is_empty() {
+                                    format!("{}.created-{}", stem, ts)
+                                } else {
+                                    format!("{}.created-{}.{}", stem, ts, ext)
+                                };
+                                let backup_path = output_path.with_file_name(backup_name);
+                                match fs::copy(&output_path, &backup_path) {
+                                    Ok(_) => info!("Created backup of existing file at {} (requested overwrite)", backup_path.display()),
+                                    Err(e) => error!("Failed to create backup before overwrite (requested) : {}", e),
+                                }
+                            }
+                        }
+                    }
+                    info!(
+                        "No stamp lines produced for {} ({}). Leaving existing file intact.",
+                        album_name,
+                        output_path.display()
+                    );
+                    let _ = fs::remove_file(&tmp_path);
+                } else {
+                    // Create a timestamped backup of the existing file if present
+                    if output_path.exists() {
+                        use chrono::Local;
+                        if let Some(stem_os) = output_path.file_stem() {
+                            if let Some(stem) = stem_os.to_str() {
+                                let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                                let ext = output_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                let backup_name = if ext.is_empty() {
+                                    format!("{}.created-{}", stem, ts)
+                                } else {
+                                    format!("{}.created-{}.{}", stem, ts, ext)
+                                };
+                                let backup_path = output_path.with_file_name(backup_name);
+                                match fs::copy(&output_path, &backup_path) {
+                                    Ok(_) => info!("Created backup of existing file at {}", backup_path.display()),
+                                    Err(e) => error!("Failed to create backup before overwrite: {}", e),
+                                }
+                            }
+                        }
+                    }
+                    // Atomically move temp into place
+                    match fs::rename(&tmp_path, &output_path) {
+                        Ok(_) => {
+                            info!("Successfully wrote album output to {} ({} stamps)", output_path.display(), stamp_count);
+                        }
+                        Err(e) => {
+                            error!("Failed to move temp output into place: {}", e);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Failed to read generated temp file {}: {}", tmp_path.display(), e);
+                let _ = fs::remove_file(&tmp_path);
+            }
         }
     }
 

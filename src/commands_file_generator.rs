@@ -591,6 +591,28 @@ impl CommandsFileGenerator {
                 // Intentionally overwrite the file in-place. No special handling needed;
                 // File::create below will truncate the existing file.
                 info!("Overwriting existing file {} as requested", path.display());
+                // Create a timestamped backup copy before overwriting so the original
+                // content is preserved as a versioned sibling (e.g. foo.created-YYYYMMDD-HHMMSS.txt).
+                // This gives users a recoverable copy even when they requested an overwrite.
+                use chrono::Local;
+                if let Some(parent) = path.parent() {
+                    if let Some(stem_os) = path.file_stem() {
+                        if let Some(stem) = stem_os.to_str() {
+                            let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                            let backup_name = if ext.is_empty() {
+                                format!("{}.created-{}", stem, ts)
+                            } else {
+                                format!("{}.created-{}.{}", stem, ts, ext)
+                            };
+                            let backup_path = parent.join(&backup_name);
+                            match std::fs::copy(path, &backup_path) {
+                                Ok(_) => info!("Created backup of existing file at {}", backup_path.display()),
+                                Err(e) => error!("Failed to create backup before overwrite: {}", e),
+                            }
+                        }
+                    }
+                }
                 // If the existing file is read-only, make it writable so we can truncate/overwrite it.
                 if let Ok(metadata) = std::fs::metadata(path) {
                     let mut perms = metadata.permissions();
@@ -633,6 +655,12 @@ impl CommandsFileGenerator {
                     }
                 }
             }
+        }
+
+        // If there is nothing to save, avoid overwriting or creating new files.
+        if data.is_empty() {
+            info!("No stamp data to save for {}; leaving any existing file intact", target_path.display());
+            return;
         }
 
         let file = File::create(&target_path);
