@@ -1585,29 +1585,82 @@ where
                         .join(" ")
                         .replace("\"", "'");
                     let _safe_img = image_path.replace("\"", "'");
-                    // let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
-                    let line = format!(
-                        "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
-                        emit_width, emit_height, left, centre, right
-                    );
 
-                    let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                    let sh_font = config
-                        .stamp_heading_font
-                        .clone()
-                        .unwrap_or_else(|| "HN".to_string());
-                    let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
-                    let sh_label = config
-                        .stamp_heading_label
-                        .clone()
-                        .unwrap_or_else(|| "SG".to_string());
-                    let _ = writeln!(
-                        output,
-                        "STAMP_HEADING({} {} \"{} : {}\")",
-                        sh_font, sh_size, sh_label, sgnum
-                    );
-                    let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
-                            clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
+                    // Try to generate a per-stamp placeholder image when the real image
+                    // is missing or points at a common placeholder. If generation fails
+                    // fall back to the textual "Image Not Available" box.
+                    let mut emitted_placeholder: Option<String> = None;
+                    // Determine if we should attempt to create a placeholder
+                    let should_generate = image_path.is_empty()
+                        || !Path::new(&full_image_path).exists()
+                        || image_path.starts_with("images/no_image");
+                    if should_generate {
+                        // Year from attributes (fallback to empty)
+                        let year_attr = stamp.attrs.get("year").unwrap_or(&"".to_string()).clone();
+                        let year_clean = clean_text(&year_attr);
+                        match crate::placeholder_image::ensure_placeholder_image_for_stamp(
+                            album_name,
+                            &sgnum,
+                            &year_clean,
+                        ) {
+                            Ok(rel_path) => {
+                                emitted_placeholder = Some(rel_path);
+                            }
+                            Err(e) => {
+                                error!(
+                                    "Failed to generate placeholder image for {} sg {}: {}",
+                                    album_name, sgnum, e
+                                );
+                            }
+                        }
+                    }
+
+                    if let Some(img_rel) = emitted_placeholder {
+                        // We have a generated placeholder; emit STAMP_ADD_IMG using it
+                        let line = format!(
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
+                            emit_width, emit_height, img_rel, left, centre, right
+                        );
+                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        let sh_font = config
+                            .stamp_heading_font
+                            .clone()
+                            .unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config
+                            .stamp_heading_label
+                            .clone()
+                            .unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(
+                            output,
+                            "STAMP_HEADING({} {} \"{} : {}\")",
+                            sh_font, sh_size, sh_label, sgnum
+                        );
+                    } else {
+                        // Could not create a placeholder; fall back to the textual box
+                        let line = format!(
+                            "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
+                            emit_width, emit_height, left, centre, right
+                        );
+
+                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        let sh_font = config
+                            .stamp_heading_font
+                            .clone()
+                            .unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config
+                            .stamp_heading_label
+                            .clone()
+                            .unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(
+                            output,
+                            "STAMP_HEADING({} {} \"{} : {}\")",
+                            sh_font, sh_size, sh_label, sgnum
+                        );
+                        let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
+                                clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
+                    }
                 }
             }
             current_height += total_row_height;

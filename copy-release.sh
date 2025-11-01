@@ -1,4 +1,7 @@
-# From the project root         
+# From the project root  
+cargo build --release
+# Then copy the binary to the target location
+
 cp ./target/release/stamp_album_gen2 "/media/ray/Lacie/Stamps/Stamps Albums/AlbumGen2/stamp_album_gen2"
 # Then in that directory re-run:
 cd "/media/ray/Lacie/Stamps/Stamps Albums/AlbumGen2"
