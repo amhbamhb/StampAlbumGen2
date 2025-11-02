@@ -5,7 +5,7 @@ use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use rusqlite::Connection;
 // ImageStatus and OSType not needed in this module today
 use crate::album_utils::clean_text;
-use log::{debug, warn};
+use log::{warn, info, error};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
@@ -96,6 +96,12 @@ pub struct GenericAttrs {
 }
 
 // Inline unit tests moved to integration tests under `tests/`.
+impl Default for GenericAttrs {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GenericAttrs {
     pub fn new() -> Self {
         Self {
@@ -163,12 +169,12 @@ pub fn compute_usable_height(cfg: &crate::config::Config) -> f64 {
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
     let usable_height_padding = cfg.usable_height_padding_mm.unwrap_or(6.0) as f64;
     let pages_spacing_v = cfg.album_pages_spacing_v.unwrap_or(0.0) as f64;
-    (page_height
+    page_height
         - top_margin
         - bottom_margin
         - total_border
         - usable_height_padding
-        - pages_spacing_v) as f64
+        - pages_spacing_v
 }
 
 pub fn new_series<W: std::io::Write>(
@@ -315,7 +321,7 @@ pub fn generate_album_output_conn<F>(
     mut page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) -> ()
+)
 where
     F: FnMut(usize),
 {
@@ -329,8 +335,8 @@ where
     let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(3.0) as f64;
     let row_font_spacing = config.row_font_spacing.unwrap_or(0.1) as f64;
     let _header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
-    let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
-    let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
+    let reference_width_mm = config.reference_width_mm.unwrap_or(25.0) as f64;
+    let reference_height_mm = config.reference_height_mm.unwrap_or(30.0) as f64;
     // Reference image path and measured size (dynamic by country)
     let _country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
     let _reference_image_path = format!("{}/BG1-s.jpg", _country_dir);
@@ -343,10 +349,10 @@ where
     // Only treat sizes under 10mm as implausibly small and trigger fallback.
     let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 10.0 || cfg_ref_h < 10.0 {
         warn!(
-            "Configured reference size {:.1}x{:.1}mm looks too small, falling back to 200x240mm",
+            "Configured reference size {:.1}x{:.1}mm looks too small, falling back to 25x30mm",
             cfg_ref_w, cfg_ref_h
         );
-        (200.0_f64, 240.0_f64)
+        (25.0_f64, 30.0_f64)
     } else {
         (cfg_ref_w, cfg_ref_h)
     };
@@ -440,8 +446,14 @@ where
         format!("{}.txt", album_name.replace(' ', "-"))
     };
     let output_path = album_dir.join(filename);
-    let mut output =
-        BufWriter::new(File::create(&output_path).expect("Failed to create output file"));
+    // Write into a temporary file first to avoid truncating the canonical
+    // output file if generation yields no stamp lines. We will promote the
+    // temporary file into place only when it contains STAMP lines.
+    let tmp_name = format!("{}.tmp", output_path.file_name().and_then(|s| s.to_str()).unwrap_or("out"));
+    let tmp_path = output_path.with_file_name(tmp_name);
+    let mut output = BufWriter::new(
+        File::create(&tmp_path).unwrap_or_else(|e| panic!("Failed to create temp output file: {}", e)),
+    );
 
     // Write global album settings (pass DB connection and CLI year range so the header can include years)
     write_globals(
@@ -478,7 +490,7 @@ where
     let border_spacing = config.page_border_spacing.unwrap_or(3.0) as f64;
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
     // debug!("[PAGE LAYOUT] page_height={:.2}, top_margin={:.2}, bottom_margin={:.2}, total_border={:.2}, usable_height={:.2}",
-        // page_height, top_margin, bottom_margin, total_border, usable_height);
+    // page_height, top_margin, bottom_margin, total_border, usable_height);
     // Font and spacing from AlbumEasy settings
     // Local layout estimates (we use configured values above where available)
     let _stamp_box_height = 24.0; // Estimate: typical stamp box height (unused default)
@@ -488,20 +500,20 @@ where
 
     let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
     let series_order_slice = series_order.as_deref();
-    let series_list = get_all_series(&conn, series_order_slice).expect("Failed to get series");
+    let series_list = get_all_series(conn, series_order_slice).expect("Failed to get series");
     // We've emitted page 1 above; start counter at 1
     let mut page_counter = 1usize;
     let mut current_height = 0.0f64;
     let mut rows_on_page = 0;
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
-    let filtered_series: Vec<String> = series_list.iter().map(|s| s.clone()).collect();
+    let filtered_series: Vec<String> = series_list.to_vec();
     let _series_count = filtered_series.len();
     for (_series_idx, series) in filtered_series.iter().enumerate() {
         if let Some(cb) = page_callback.as_mut() {
             cb(page_counter);
         }
         // Example: Load stamps as Vec<Stamp> with generic attributes
-        let mut stamps = get_stamps_by_series(&conn, &series, "0").expect("Failed to get stamps");
+        let mut stamps = get_stamps_by_series(conn, series, "0").expect("Failed to get stamps");
         // Apply inclusive year filtering if start/end years were provided.
         // The generator receives Optional start/end from the CLI. If present,
         // filter stamps to the inclusive range [start_year, end_year].
@@ -556,7 +568,8 @@ where
                 image_height_px: stamp.image_height_px,
             });
         }
-        // Group stamps into rows of 5
+        // Group stamps into rows (configurable max stamps per row)
+        let max_stamps_per_row = config.max_stamps_per_row.unwrap_or(5) as usize;
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
         let mut row: Vec<Stamp> = Vec::new();
         // let mut row_width = 0.0;
@@ -623,8 +636,8 @@ where
                     (w + 2.0 * stamp_box_adjust) + margin
                 })
                 .sum();
-            // If adding this stamp would exceed usable width or row has 5 stamps, start a new row before adding
-            if row.len() == 5 || row_width + est_width_mm + margin > usable_width {
+            // If adding this stamp would exceed usable width or row has max stamps, start a new row before adding
+            if row.len() >= max_stamps_per_row || row_width + est_width_mm + margin > usable_width {
                 if !row.is_empty() {
                     stamp_rows.push(row);
                 }
@@ -636,7 +649,7 @@ where
         if !row.is_empty() {
             stamp_rows.push(row);
         }
-
+        
         let mut header_written = false;
         // Buffer header lines so we only write them when we actually emit
         // the first row on the same page. This avoids leaving a header on a
@@ -668,7 +681,7 @@ where
                     let safe = text.replace('"', "\\\"");
                     header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                 }
-                let first_stamp = stamp_rows.get(0).and_then(|row| row.get(0));
+                let first_stamp = stamp_rows.first().and_then(|row| row.first());
                 if let Some(stamp) = first_stamp {
                     // Optionally include a date line in the header (from DB year/month/day)
                     if config.include_date.unwrap_or(true) {
@@ -690,7 +703,7 @@ where
                                 .map(|s| s.trim())
                                 .unwrap_or("0");
                             if let Ok(mn) = month_num.parse::<usize>() {
-                                if mn >= 1 && mn <= 12 {
+                                if (1..=12).contains(&mn) {
                                     MONTH_NAMES[mn].to_string()
                                 } else {
                                     "".to_string()
@@ -727,12 +740,10 @@ where
                                 } else if !month.is_empty() {
                                     date_text = month.clone();
                                 }
-                            } else {
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} {}", month, day);
-                                } else if !month.is_empty() {
-                                    date_text = month.clone();
-                                }
+                            } else if !month.is_empty() && !day.is_empty() {
+                                date_text = format!("{} {}", month, day);
+                            } else if !month.is_empty() {
+                                date_text = month.clone();
                             }
                         }
                         if !date_text.is_empty() {
@@ -921,7 +932,7 @@ where
                 let conservative_buffer = 11.0; // mm buffer to avoid edge cases (footer + safety)
                 let conservative_needed = total_header_and_row_height + conservative_buffer;
                 // debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
-                    // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
+                // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
                 // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
                 let force_new_page = current_height + conservative_needed > usable_height;
                 // Diagnostic: write page-fit numbers to the output so we can inspect why
@@ -1031,7 +1042,7 @@ where
                 let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
                 let total_height = adj_est_height + image_spacing + text_height + stamp_heading_h;
                 // debug!("[ROW HEIGHT] Stamp: image_path='{}', est_image_height_mm={:.2}, text_lines={}, text_height_mm={:.2}, total_row_height_mm={:.2}",
-                    // image_path, est_height_mm, text_lines, text_height, total_height);
+                // image_path, est_height_mm, text_lines, text_height, total_height);
                 if total_height > max_row_height {
                     max_row_height = total_height;
                 }
@@ -1050,7 +1061,7 @@ where
                 let next_series_name = &filtered_series[_series_idx + 1];
                 // Load stamps of the next series
                 let next_stamps =
-                    get_stamps_by_series(&conn, next_series_name, "0").unwrap_or_default();
+                    get_stamps_by_series(conn, next_series_name, "0").unwrap_or_default();
                 // Build header lines for the next series similarly to above
                 let mut next_header_lines_vec: Vec<(String, f64)> = Vec::new();
                 let next_name_line = clean_text(next_series_name.trim())
@@ -1063,7 +1074,7 @@ where
                     next_header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                 }
                 // attempt to pull watermark/design from first stamp if present
-                if let Some(next_first_stamp) = next_stamps.get(0) {
+                if let Some(next_first_stamp) = next_stamps.first() {
                     let watermark = clean_text(next_first_stamp.watermark.trim())
                         .replace("\n", " ")
                         .replace("  ", " ");
@@ -1080,11 +1091,11 @@ where
                 let next_vspace_after = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
                 // Estimate next series first row height: look at first row of stamps (group into row of up to 5)
                 let mut next_first_row_max = 0.0f64;
-                // group next_stamps into rows of 5 (StampStub from DB)
+                // group next_stamps into rows (configurable max stamps per row) 
                 let mut next_rows: Vec<Vec<crate::db_utils::StampStub>> = Vec::new();
                 let mut nr: Vec<crate::db_utils::StampStub> = Vec::new();
                 for s in next_stamps.into_iter() {
-                    if nr.len() == 5 {
+                    if nr.len() >= max_stamps_per_row {
                         next_rows.push(nr);
                         nr = Vec::new();
                     }
@@ -1093,7 +1104,7 @@ where
                 if !nr.is_empty() {
                     next_rows.push(nr);
                 }
-                if let Some(first_row) = next_rows.get(0) {
+                if let Some(first_row) = next_rows.first() {
                     for stamp in first_row {
                         let image_path = stamp.image_path.trim();
                         let full_image_path =
@@ -1282,7 +1293,7 @@ where
                 let pv_marker = config
                     .page_vspace_marker
                     .clone()
-                    .unwrap_or_else(|| "(6)".to_string());
+                    .unwrap_or_else(|| "6".to_string());
                 let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
                 current_height += v_before;
                 // header vspace written (diagnostics suppressed)
@@ -1294,7 +1305,7 @@ where
                 let pv_marker = config
                     .page_vspace_marker
                     .clone()
-                    .unwrap_or_else(|| "(6)".to_string());
+                    .unwrap_or_else(|| "6".to_string());
                 let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
                 current_height += v_after;
                 // header vspace after written (diagnostics suppressed)
@@ -1575,34 +1586,165 @@ where
                         .join(" ")
                         .replace("\"", "'");
                     let _safe_img = image_path.replace("\"", "'");
-                    // let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
-                    let line = format!(
-                        "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
-                        emit_width, emit_height, left, centre, right
-                    );
 
-                    let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
-                    let sh_font = config
-                        .stamp_heading_font
-                        .clone()
-                        .unwrap_or_else(|| "HN".to_string());
-                    let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
-                    let sh_label = config
-                        .stamp_heading_label
-                        .clone()
-                        .unwrap_or_else(|| "SG".to_string());
-                    let _ = writeln!(
-                        output,
-                        "STAMP_HEADING({} {} \"{} : {}\")",
-                        sh_font, sh_size, sh_label, sgnum
-                    );
-                    let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
-                            clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
+                    // Try to generate a per-stamp placeholder image when the real image
+                    // is missing or points at a common placeholder. If generation fails
+                    // fall back to the textual "Image Not Available" box.
+                    let mut emitted_placeholder: Option<String> = None;
+                    // Determine if we should attempt to create a placeholder
+                    let should_generate = image_path.is_empty()
+                        || !Path::new(&full_image_path).exists()
+                        || image_path.starts_with("images/no_image");
+                    if should_generate {
+                        // Year from attributes (fallback to empty)
+                        let year_attr = stamp.attrs.get("year").unwrap_or(&"".to_string()).clone();
+                        let year_clean = clean_text(&year_attr);
+                        match crate::placeholder_image::ensure_placeholder_image_for_stamp(
+                            album_name,
+                            &sgnum,
+                            &year_clean,
+                        ) {
+                            Ok(rel_path) => {
+                                emitted_placeholder = Some(rel_path);
+                            }
+                            Err(e) => {
+                                error!(
+                                    "Failed to generate placeholder image for {} sg {}: {}",
+                                    album_name, sgnum, e
+                                );
+                            }
+                        }
+                    }
+
+                    if let Some(img_rel) = emitted_placeholder {
+                        // We have a generated placeholder; emit STAMP_ADD_IMG using it
+                        let line = format!(
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
+                            emit_width, emit_height, img_rel, left, centre, right
+                        );
+                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        let sh_font = config
+                            .stamp_heading_font
+                            .clone()
+                            .unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config
+                            .stamp_heading_label
+                            .clone()
+                            .unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(
+                            output,
+                            "STAMP_HEADING({} {} \"{} : {}\")",
+                            sh_font, sh_size, sh_label, sgnum
+                        );
+                    } else {
+                        // Could not create a placeholder; fall back to the textual box
+                        let line = format!(
+                            "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
+                            emit_width, emit_height, left, centre, right
+                        );
+
+                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        let sh_font = config
+                            .stamp_heading_font
+                            .clone()
+                            .unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config
+                            .stamp_heading_label
+                            .clone()
+                            .unwrap_or_else(|| "SG".to_string());
+                        let _ = writeln!(
+                            output,
+                            "STAMP_HEADING({} {} \"{} : {}\")",
+                            sh_font, sh_size, sh_label, sgnum
+                        );
+                        let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
+                                clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
+                    }
                 }
             }
             current_height += total_row_height;
             rows_on_page += 1;
             row_idx += 1;
+        }
+    }
+
+    // Finalize: we've written to a temp file. Flush buffer and promote it into place only if it
+    // contains STAMP lines; otherwise remove the temp and leave existing file intact.
+    // This prevents accidental truncation when generation yields no stamps.
+    {
+        // Ensure buffered output is flushed before we read the temp file
+        let _ = output.flush();
+        use std::fs;
+        match fs::read_to_string(&tmp_path) {
+            Ok(contents) => {
+                let stamp_count = contents.lines().filter(|l| l.starts_with("STAMP")).count();
+                
+                if stamp_count == 0 {
+                    // If the user explicitly requested overwrite, create a backup
+                    // of the existing file even if generation produced no STAMP lines.
+                    if crate::file_utils::get_overwrite_album_from_cli() && output_path.exists() {
+                        use chrono::Local;
+                        if let Some(stem_os) = output_path.file_stem() {
+                            if let Some(stem) = stem_os.to_str() {
+                                let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                                let ext = output_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                let backup_name = if ext.is_empty() {
+                                    format!("{}.created-{}", stem, ts)
+                                } else {
+                                    format!("{}.created-{}.{}", stem, ts, ext)
+                                };
+                                let backup_path = output_path.with_file_name(backup_name);
+                                match fs::copy(&output_path, &backup_path) {
+                                    Ok(_) => info!("Created backup of existing file at {} (requested overwrite)", backup_path.display()),
+                                    Err(e) => error!("Failed to create backup before overwrite (requested) : {}", e),
+                                }
+                            }
+                        }
+                    }
+                    info!(
+                        "No stamp lines produced for {} ({}). Leaving existing file intact.",
+                        album_name,
+                        output_path.display()
+                    );
+                    let _ = fs::remove_file(&tmp_path);
+                } else {
+                    // Create a timestamped backup of the existing file if present
+                    if output_path.exists() {
+                        use chrono::Local;
+                        if let Some(stem_os) = output_path.file_stem() {
+                            if let Some(stem) = stem_os.to_str() {
+                                let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                                let ext = output_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                let backup_name = if ext.is_empty() {
+                                    format!("{}.created-{}", stem, ts)
+                                } else {
+                                    format!("{}.created-{}.{}", stem, ts, ext)
+                                };
+                                let backup_path = output_path.with_file_name(backup_name);
+                                match fs::copy(&output_path, &backup_path) {
+                                    Ok(_) => info!("Created backup of existing file at {}", backup_path.display()),
+                                    Err(e) => error!("Failed to create backup before overwrite: {}", e),
+                                }
+                            }
+                        }
+                    }
+                    // Atomically move temp into place
+                    match fs::rename(&tmp_path, &output_path) {
+                        Ok(_) => {
+                            info!("Successfully wrote album output to {} ({} stamps)", output_path.display(), stamp_count);
+                        }
+                        Err(e) => {
+                            error!("Failed to move temp output into place: {}", e);
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Failed to read generated temp file {}: {}", tmp_path.display(), e);
+                let _ = fs::remove_file(&tmp_path);
+            }
         }
     }
 
@@ -1619,7 +1761,7 @@ pub fn generate_album_output<F>(
     page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) -> ()
+)
 where
     F: FnMut(usize),
 {

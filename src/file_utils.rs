@@ -63,6 +63,18 @@ pub fn image_exists(album_name: &str, image_path: &str) -> bool {
     image_full_path.exists()
 }
 
+/// Set the overwrite-album flag (typically from CLI)
+pub fn set_overwrite_album_from_cli(flag: bool) {
+    use crate::types::OVERWRITE_ALBUM;
+    *OVERWRITE_ALBUM.lock().unwrap() = flag;
+}
+
+/// Get the overwrite-album flag
+pub fn get_overwrite_album_from_cli() -> bool {
+    use crate::types::OVERWRITE_ALBUM;
+    *OVERWRITE_ALBUM.lock().unwrap()
+}
+
 /// Gets the appropriate image path, using placeholder if the original doesn't exist
 pub fn get_image_path_or_placeholder(album_name: &str, image_path: &str) -> String {
     if image_path.is_empty() {

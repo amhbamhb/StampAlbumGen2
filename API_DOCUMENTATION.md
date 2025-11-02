@@ -76,7 +76,7 @@ Calculates mm-per-pixel ratio using the embedded B4-s.jpg reference image.
 
 **Reference Values:**
 
-- Standard reference: `(200.0, 240.0)` mm
+- Standard reference: `(25.0, 30.0)` mm
 - Returns: `(0.208, 0.107)` mm/px ratio
 
 #### `estimate_real_dimensions(image_path, mm_per_pixel_w, mm_per_pixel_h) -` Option`(f32, f32)``
@@ -165,8 +165,8 @@ pub struct StampStub {
 
 ```toml
 # Reference dimensions for mm-per-pixel calculations
-reference_width_mm = 200.0
-reference_height_mm = 240.0
+reference_width_mm = 25.0
+reference_height_mm = 30.0
 
 # Stamp box dimensions
 stamp_box_height = 30.0

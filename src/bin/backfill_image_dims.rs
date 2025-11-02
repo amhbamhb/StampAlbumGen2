@@ -1,5 +1,5 @@
-use log::{debug, error, info, warn};
 use flexi_logger::{Duplicate, FileSpec, Logger};
+use log::{debug, error, info, warn};
 use std::env;
 use std::path::{Path, PathBuf};
 
@@ -44,11 +44,21 @@ fn process_db(db_path: &Path, apply: bool) -> Result<usize, Box<dyn std::error::
         let series: String = r.get(1)?;
         let sg: String = r.get(2)?;
         let image_path: String = r.get(3)?;
-        debug!("Found NULL-dim row: {} | {} | {} -> {}", country, series, sg, image_path);
+        debug!(
+            "Found NULL-dim row: {} | {} | {} -> {}",
+            country, series, sg, image_path
+        );
         if let Some((w, h)) = resolve_dimensions(&images_dir, &image_path) {
             info!("Resolved {} -> {}x{}", image_path, w, h);
             if apply {
-                match stamp_album_gen2::db_utils::update_image_dimensions(&conn, &country, &series, &sg, Some(w as i32), Some(h as i32)) {
+                match stamp_album_gen2::db_utils::update_image_dimensions(
+                    &conn,
+                    &country,
+                    &series,
+                    &sg,
+                    Some(w as i32),
+                    Some(h as i32),
+                ) {
                     Ok(n) => {
                         debug!("DB update affected {} rows", n);
                         updated += 1;
@@ -58,10 +68,17 @@ fn process_db(db_path: &Path, apply: bool) -> Result<usize, Box<dyn std::error::
                     }
                 }
             } else {
-                info!("Dry-run: would update {}|{}|{} -> {}x{}", country, series, sg, w, h);
+                info!(
+                    "Dry-run: would update {}|{}|{} -> {}x{}",
+                    country, series, sg, w, h
+                );
             }
         } else {
-            warn!("Could not resolve image dimensions for {} (album images dir: {})", image_path, images_dir.display());
+            warn!(
+                "Could not resolve image dimensions for {} (album images dir: {})",
+                image_path,
+                images_dir.display()
+            );
         }
     }
     Ok(updated)
@@ -69,7 +86,10 @@ fn process_db(db_path: &Path, apply: bool) -> Result<usize, Box<dyn std::error::
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let prog = args.get(0).map(|s| s.as_str()).unwrap_or("backfill_image_dims");
+    let prog = args
+        .get(0)
+        .map(|s| s.as_str())
+        .unwrap_or("backfill_image_dims");
     if args.iter().any(|a| a == "--help" || a == "-h") {
         print_usage(prog);
         return;
@@ -95,7 +115,12 @@ fn main() {
     match Logger::try_with_env_or_str(std::env::var("RUST_LOG").as_deref().unwrap_or("info")) {
         Ok(l) => {
             if let Err(e) = l
-                .log_to_file(FileSpec::default().directory("Logs").basename(&basename).suffix("log"))
+                .log_to_file(
+                    FileSpec::default()
+                        .directory("Logs")
+                        .basename(&basename)
+                        .suffix("log"),
+                )
                 .duplicate_to_stderr(Duplicate::Error)
                 .start()
             {
@@ -105,7 +130,11 @@ fn main() {
         Err(e) => eprintln!("Logger init failed: {}", e),
     }
 
-    info!("Backfill runner starting (albums_dir={}, apply={})", albums_dir.display(), apply);
+    info!(
+        "Backfill runner starting (albums_dir={}, apply={})",
+        albums_dir.display(),
+        apply
+    );
 
     let mut total_updated = 0usize;
     if !albums_dir.exists() {
@@ -113,7 +142,9 @@ fn main() {
         std::process::exit(1);
     }
 
-    for entry in std::fs::read_dir(&albums_dir).unwrap_or_else(|_| panic!("Failed to read Albums dir {}", albums_dir.display())) {
+    for entry in std::fs::read_dir(&albums_dir)
+        .unwrap_or_else(|_| panic!("Failed to read Albums dir {}", albums_dir.display()))
+    {
         if let Ok(ent) = entry {
             let path = ent.path();
             if path.is_dir() {
@@ -126,7 +157,11 @@ fn main() {
                             Err(e) => error!("Error processing {}: {}", db_path.display(), e),
                         }
                     } else {
-                        debug!("No DB found for album {} at expected path {}", name, db_path.display());
+                        debug!(
+                            "No DB found for album {} at expected path {}",
+                            name,
+                            db_path.display()
+                        );
                     }
                 }
             }

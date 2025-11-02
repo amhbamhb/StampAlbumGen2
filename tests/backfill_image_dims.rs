@@ -1,6 +1,6 @@
+use rusqlite::params;
 use std::fs;
 use tempfile::tempdir;
-use rusqlite::params;
 
 #[test]
 fn backfill_image_dimensions_persists_to_db() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,7 +24,13 @@ fn backfill_image_dimensions_persists_to_db() -> Result<(), Box<dyn std::error::
 
     conn.execute(
         "INSERT INTO stamps (country, series, year, sg_number, image_path) VALUES (?1,?2,?3,?4,?5)",
-        params!["Switzerland", "TestSeries", 1976, "1063", "images/test_img.png"],
+        params![
+            "Switzerland",
+            "TestSeries",
+            1976,
+            "1063",
+            "images/test_img.png"
+        ],
     )?;
 
     // Verify dims are NULL initially
@@ -39,8 +45,16 @@ fn backfill_image_dimensions_persists_to_db() -> Result<(), Box<dyn std::error::
     let p = "images/test_img.png";
     let mut dims = stamp_album_gen2::image_utils::get_image_dimensions(p);
     if dims.is_none() {
-        let rest = if p.starts_with("images/") { &p["images/".len()..] } else { p };
-        let alt = format!("{}/{}", images_dir.to_str().unwrap().trim_end_matches('/'), rest);
+        let rest = if p.starts_with("images/") {
+            &p["images/".len()..]
+        } else {
+            p
+        };
+        let alt = format!(
+            "{}/{}",
+            images_dir.to_str().unwrap().trim_end_matches('/'),
+            rest
+        );
         dims = stamp_album_gen2::image_utils::get_image_dimensions(alt);
     }
     assert!(dims.is_some(), "test image dims could not be read");

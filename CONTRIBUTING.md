@@ -196,4 +196,53 @@ Thank you for contributing to StampAlbumGen2! Your efforts help make stamp album
 ---
 
 **Last Updated**: September 11, 2025</content>
+
+## 🏷️ Linking & closing GitLab issues from commits and merge requests
+
+You can reference and automatically close GitLab issues directly from commit messages or from a Merge Request (MR) description. Use one of the closing keywords (case-insensitive):
+
+- close(s)  
+- fix(es)  
+- resolve(s)
+
+Examples (copy-paste):
+
+- Close by commit (short):
+
+```bash
+git add crates/stamp_album_db/src/lib.rs
+git commit -m "Add NULL-safe DB mapping. Fixes #2"
+git push origin refactor/continue
+```
+
+- Close by commit (long message — preferred when you need detail):
+
+```bash
+git commit -m $'Add NULL-safe DB mapping and tests
+
+This ensures NULL image_path values are handled without panics.
+
+Closes #2'
+git push origin refactor/continue
+```
+
+- Close from MR description (visible to reviewers):
+
+When creating a Merge Request, put the keyword in the MR description, e.g.
+
+```
+Implements Fetcher abstraction and FakeFetcher for deterministic tests.
+
+Closes #2
+```
+
+Notes & tips:
+
+- The issue is closed automatically when the commit that contains the closing keyword is merged into the project's default branch (typically `main` or `master`). Pushing the commit to a feature branch does not close the issue until merge.
+- To reference issues in another project use the full path: `group/project#123` (e.g. `mygroup/stamp-albums#2`).
+- If you only want to reference an issue without closing it, use `Refs #2` or `Related to #2`.
+- You can close multiple issues in one commit/MR: `Closes #2, #5` or list each on its own line.
+- Prefer placing the closing note in the MR description for clarity; reviewers will see it immediately.
+
+If you want, we can add a small `CONTRIBUTING` subsection with a commit-msg template that reminds contributors to reference issues — say the word and I'll add it.
 <parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/CONTRIBUTING.md

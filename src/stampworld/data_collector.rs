@@ -84,7 +84,11 @@ pub fn collect_stampworld_data_with_fetcher(
             return Some(d);
         }
         // If path begins with "images/", drop that prefix and join with images_directory
-        let rest = if p.starts_with("images/") { &p["images/".len()..] } else { p };
+        let rest = if p.starts_with("images/") {
+            &p["images/".len()..]
+        } else {
+            p
+        };
         let alt = format!("{}/{}", images_directory.trim_end_matches('/'), rest);
         crate::image_utils::get_image_dimensions(alt)
     };
@@ -353,7 +357,7 @@ pub fn collect_stampworld_data_with_fetcher(
                 // used a <th> for the catalog number, include it first; otherwise
                 // assume the first <td> is the catalog number.
                 let mut row_cells: Vec<String> = Vec::new();
-                if let Some(th_row) = ths.get(0) {
+                if let Some(th_row) = ths.first() {
                     row_cells.push(th_row.text().collect::<String>().trim().to_string());
                     for td in &tds {
                         row_cells.push(td.text().collect::<String>().trim().to_string());
@@ -387,8 +391,7 @@ pub fn collect_stampworld_data_with_fetcher(
                     }
                 }
 
-                let sg_number = row_cells
-                    .get(0)
+                let sg_number = row_cells.first()
                     .map(|s| s.trim().to_string())
                     .unwrap_or_default();
                 // Pull a couple of fields early so grouped-range handling can
@@ -398,14 +401,14 @@ pub fn collect_stampworld_data_with_fetcher(
                 // or alternate layouts. Stamps issued is usually one column
                 // after the description (index 7) when present.
                 let description = if row_cells.len() > 6 {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(5).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(5).cloned().unwrap_or_default()
                 };
                 let _stamps_issued = if row_cells.len() > 7 {
-                    row_cells.get(7).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(7).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 };
                 // Handle grouped-range tokens like "1067-1068": expand into
                 // placeholders if the config requests it. We compute stamp_year
@@ -432,10 +435,7 @@ pub fn collect_stampworld_data_with_fetcher(
                     // Normalize common Unicode hyphen variants to ASCII
                     let mut norm = sg_number.clone();
                     norm = norm
-                        .replace('\u{2011}', "-")
-                        .replace('\u{2013}', "-")
-                        .replace('\u{2012}', "-")
-                        .replace('\u{2010}', "-");
+                        .replace(['\u{2011}', '\u{2013}', '\u{2012}', '\u{2010}'], "-");
                     if emit_row_diag {
                         info!(
                             "Encountered grouped-range token='{}' (normalized='{}')",
@@ -531,15 +531,16 @@ pub fn collect_stampworld_data_with_fetcher(
                                                 "Attempting detail fetch for {} -> {}",
                                                 s, detail_url
                                             );
-                                            if let Ok((_status, text)) = fetcher.fetch_text(&detail_url) {
+                                            if let Ok((_status, text)) =
+                                                fetcher.fetch_text(&detail_url)
+                                            {
                                                 let doc = Html::parse_document(&text);
                                                 // Search table rows and try to find the row containing this sg_number anchor/id
-                                                let trs: Vec<_> = doc.select(&table_selector).collect();
+                                                let trs: Vec<_> =
+                                                    doc.select(&table_selector).collect();
                                                 for tr_doc in trs.into_iter() {
                                                     // Quick check: does this tr contain an anchor or id for this sg number?
-                                                    if tr_doc
-                                                        .html()
-                                                        .contains(&format!("a_s_{}", s))
+                                                    if tr_doc.html().contains(&format!("a_s_{}", s))
                                                         || tr_doc
                                                             .text()
                                                             .collect::<String>()
@@ -548,44 +549,88 @@ pub fn collect_stampworld_data_with_fetcher(
                                                         // Reconstruct flattened row_cells similar to main parsing
                                                         let td_sel = Selector::parse("td").unwrap();
                                                         let th_sel = Selector::parse("th").unwrap();
-                                                        let ths2: Vec<_> = tr_doc.select(&th_sel).collect();
-                                                        let tds2: Vec<_> = tr_doc.select(&td_sel).collect();
+                                                        let ths2: Vec<_> =
+                                                            tr_doc.select(&th_sel).collect();
+                                                        let tds2: Vec<_> =
+                                                            tr_doc.select(&td_sel).collect();
                                                         // Build row_cells
-                                                        let mut row_cells2: Vec<String> = Vec::new();
-                                                        if let Some(th_row) = ths2.get(0) {
-                                                            row_cells2.push(th_row.text().collect::<String>().trim().to_string());
+                                                        let mut row_cells2: Vec<String> =
+                                                            Vec::new();
+                                                        if let Some(th_row) = ths2.first() {
+                                                            row_cells2.push(
+                                                                th_row
+                                                                    .text()
+                                                                    .collect::<String>()
+                                                                    .trim()
+                                                                    .to_string(),
+                                                            );
                                                             for td in &tds2 {
-                                                                row_cells2.push(td.text().collect::<String>().trim().to_string());
+                                                                row_cells2.push(
+                                                                    td.text()
+                                                                        .collect::<String>()
+                                                                        .trim()
+                                                                        .to_string(),
+                                                                );
                                                             }
                                                         } else {
                                                             for td in &tds2 {
-                                                                row_cells2.push(td.text().collect::<String>().trim().to_string());
+                                                                row_cells2.push(
+                                                                    td.text()
+                                                                        .collect::<String>()
+                                                                        .trim()
+                                                                        .to_string(),
+                                                                );
                                                             }
                                                         }
                                                         if row_cells2.is_empty() {
                                                             continue;
                                                         }
                                                         // Map fields (reuse same indices as main parsing)
-                                                        let sg_number_f = row_cells2.get(0).map(|s| s.trim().to_string()).unwrap_or_default();
-                                                        let type_f = row_cells2.get(1).map(|s| s.clone()).unwrap_or_default();
-                                                        let denomination_f = row_cells2.get(2).map(|s| s.clone()).unwrap_or_default();
-                                                        let color_f = row_cells2.get(4).map(|s| s.clone()).unwrap_or_default();
-                                                        let description_f = if row_cells2.len() > 6 {
-                                                            row_cells2.get(6).map(|s| s.clone()).unwrap_or_default()
+                                                        let sg_number_f = row_cells2.first()
+                                                            .map(|s| s.trim().to_string())
+                                                            .unwrap_or_default();
+                                                        let type_f = row_cells2
+                                                            .get(1).cloned()
+                                                            .unwrap_or_default();
+                                                        let denomination_f = row_cells2
+                                                            .get(2).cloned()
+                                                            .unwrap_or_default();
+                                                        let color_f = row_cells2
+                                                            .get(4).cloned()
+                                                            .unwrap_or_default();
+                                                        let description_f = if row_cells2.len() > 6
+                                                        {
+                                                            row_cells2
+                                                                .get(6).cloned()
+                                                                .unwrap_or_default()
                                                         } else {
-                                                            row_cells2.get(5).map(|s| s.clone()).unwrap_or_default()
+                                                            row_cells2
+                                                                .get(5).cloned()
+                                                                .unwrap_or_default()
                                                         };
                                                         // Extract month/day heuristics per-line
                                                         let mut month_f = String::new();
                                                         let mut day_f = String::new();
                                                         for line in row_cells2.join(" \n").lines() {
-                                                            if let Some(cap) = DAY_MONTH_RE.captures(line) {
-                                                                day_f = cap.get(1).map_or("", |m| m.as_str()).to_string();
-                                                                month_f = cap.get(2).map_or("", |m| m.as_str()).to_string();
+                                                            if let Some(cap) =
+                                                                DAY_MONTH_RE.captures(line)
+                                                            {
+                                                                day_f = cap
+                                                                    .get(1)
+                                                                    .map_or("", |m| m.as_str())
+                                                                    .to_string();
+                                                                month_f = cap
+                                                                    .get(2)
+                                                                    .map_or("", |m| m.as_str())
+                                                                    .to_string();
                                                                 break;
                                                             }
                                                         }
-                                                        let month_num_f = if month_f.is_empty() { "0".to_string() } else { month_number(&month_f) };
+                                                        let month_num_f = if month_f.is_empty() {
+                                                            "0".to_string()
+                                                        } else {
+                                                            month_number(&month_f)
+                                                        };
                                                         // Call centralized insert
                                                         match crate::db_utils::insert_stamp(
                                                             &conn,
@@ -600,27 +645,28 @@ pub fn collect_stampworld_data_with_fetcher(
                                                             &denomination_f,
                                                             &color_f,
                                                             &description_f,
-                                                            &String::new(), // stamps_issued
-                                                            &String::new(), // mint_condition
-                                                            &String::new(), // unused
-                                                            &String::new(), // used
-                                                            &String::new(), // letter_fdc
-                                                            &String::new(), // currency
-                                                            &String::new(), // image_path
-                                                            &String::new(), // remote_image_url
-                                                            &String::new(), // original_image_url
-                                                            &String::new(), // watermark
-                                                            &String::new(), // design
-                                                            &String::new(), // engraving
-                                                            &String::new(), // perforation
-                                                            &String::new(), // context
+                                                            "", // stamps_issued
+                                                            "", // mint_condition
+                                                            "", // unused
+                                                            "", // used
+                                                            "", // letter_fdc
+                                                            "", // currency
+                                                            "", // image_path
+                                                            "", // remote_image_url
+                                                            "", // original_image_url
+                                                            "", // watermark
+                                                            "", // design
+                                                            "", // engraving
+                                                            "", // perforation
+                                                            "", // context
                                                         ) {
                                                             Ok(inserted) => {
                                                                 if inserted {
                                                                     if emit_row_diag {
                                                                         info!("Detail-fetch inserted stamp {} {}", series_desc, sg_number_f);
                                                                     }
-                                                                    seen_stamps.insert(keyp.clone());
+                                                                    seen_stamps
+                                                                        .insert(keyp.clone());
                                                                     new_stamps_this_page += 1;
                                                                     all_stamp_data.push(format!("STAMP;{};{};{};{};{};{};{}", stamp_year, month_f, day_f, series_desc, sg_number_f, type_f, description_f));
                                                                     did_insert = true;
@@ -638,7 +684,10 @@ pub fn collect_stampworld_data_with_fetcher(
                                                     continue;
                                                 }
                                             } else {
-                                                debug!("Detail fetch error for {}: {}", detail_url, "fetch failed");
+                                                debug!(
+                                                    "Detail fetch error for {}: {}",
+                                                    detail_url, "fetch failed"
+                                                );
                                             }
                                         }
 
@@ -743,19 +792,19 @@ pub fn collect_stampworld_data_with_fetcher(
                 // layout (when a <th> is present) is: [sg, type, denom, img?, color, desc, stamps_issued]
                 // When no <th> and sg is in the first td the positions are the same
                 // (sg at index 0). Use safe getters to avoid panics on short rows.
-                let type_ = row_cells.get(1).map(|s| s.clone()).unwrap_or_default();
-                let denomination = row_cells.get(2).map(|s| s.clone()).unwrap_or_default();
-                let color = row_cells.get(4).map(|s| s.clone()).unwrap_or_default();
+                let type_ = row_cells.get(1).cloned().unwrap_or_default();
+                let denomination = row_cells.get(2).cloned().unwrap_or_default();
+                let color = row_cells.get(4).cloned().unwrap_or_default();
                 // Observed real pages commonly place description at index 6 (0=sg), so prefer that when available.
                 let description = if row_cells.len() > 6 {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(5).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(5).cloned().unwrap_or_default()
                 };
                 let stamps_issued = if row_cells.len() > 7 {
-                    row_cells.get(7).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(7).cloned().unwrap_or_default()
                 } else {
-                    row_cells.get(6).map(|s| s.clone()).unwrap_or_default()
+                    row_cells.get(6).cloned().unwrap_or_default()
                 };
 
                 // Prefer images scoped inside the row
@@ -784,13 +833,12 @@ pub fn collect_stampworld_data_with_fetcher(
                 }
 
                 // Fallback to global images by order
-                if selected_image_url.is_empty() {
-                    if image_idx < global_images.len() {
+                if selected_image_url.is_empty()
+                    && image_idx < global_images.len() {
                         selected_image_url = global_images[image_idx].0.clone();
                         _selected_alt = global_images[image_idx].1.clone();
                         image_idx += 1;
                     }
-                }
 
                 // Determine stamp year: prefer explicit per-row values, else fallback to block_year_int
                 let mut stamp_year = block_year_int;
@@ -869,7 +917,7 @@ pub fn collect_stampworld_data_with_fetcher(
                     if image_res.exists {
                         // create per-row filename to reduce accidental reuse
                         let sanitized_sg = crate::album_utils::sanitize_filename(
-                            &sg_number.replace('\u{2011}', "-").replace('\u{2013}', "-"),
+                            &sg_number.replace(['\u{2011}', '\u{2013}'], "-"),
                         );
                         let target_name = format!("{}-{}", sanitized_sg, image_res.filename);
                         let downloaded_path =
@@ -1128,7 +1176,9 @@ pub fn collect_stampworld_data_with_fetcher(
                             all_stamp_data.push(stamp_line);
                             // Persist image pixel dimensions when available (read from local file if present)
                             if !local_image_path.is_empty() {
-                                if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
+                                if let Some((w_px, h_px)) =
+                                    resolve_get_dimensions(&local_image_path)
+                                {
                                     let w = Some(w_px as i32);
                                     let h = Some(h_px as i32);
                                     if let Err(e) = crate::db_utils::update_image_dimensions(
@@ -1198,7 +1248,9 @@ pub fn collect_stampworld_data_with_fetcher(
                                         all_stamp_data.push(stamp_line);
                                         // Persist image pixel dimensions when available (read from local file if present)
                                         if !local_image_path.is_empty() {
-                                            if let Some((w_px, h_px)) = resolve_get_dimensions(&local_image_path) {
+                                            if let Some((w_px, h_px)) =
+                                                resolve_get_dimensions(&local_image_path)
+                                            {
                                                 let w = Some(w_px as i32);
                                                 let h = Some(h_px as i32);
                                                 if let Err(e) =

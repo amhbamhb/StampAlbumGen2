@@ -4,8 +4,8 @@
 //! This module generates placeholder images for stamps that don't have associated images.
 
 use image::{ImageBuffer, Rgba};
+use log::{error, info};
 use rusttype::{point, Font, Scale};
-use log::{info, error};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -119,7 +119,7 @@ fn draw_text(
     let glyph_width = glyphs
         .iter()
         .rev()
-        .filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x as i32))
+        .filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x))
         .next()
         .unwrap_or(0);
     let total_width = glyph_width;
@@ -281,7 +281,10 @@ pub fn ensure_placeholder_image_for_album(
             subtitle: Some(album_name),
         };
         generate_placeholder_image_with_options(200, 150, &placeholder_path, Some(opts))?;
-        info!("Generated placeholder image: {}", placeholder_path.display());
+        info!(
+            "Generated placeholder image: {}",
+            placeholder_path.display()
+        );
     }
 
     // Return relative path from the album directory
@@ -369,7 +372,10 @@ pub fn ensure_placeholder_image_for_stamp(
 
         // Save
         img.save(&placeholder_path)?;
-        info!("Generated per-stamp placeholder image: {}", placeholder_path.display());
+        info!(
+            "Generated per-stamp placeholder image: {}",
+            placeholder_path.display()
+        );
     }
 
     // Return relative path from album dir
@@ -387,7 +393,7 @@ pub fn get_placeholder_image_path() -> String {
     match ensure_placeholder_image() {
         Ok(path) => path,
         Err(e) => {
-        error!("Failed to create placeholder image: {}", e);
+            error!("Failed to create placeholder image: {}", e);
             // Fallback to a simple text-based path
             "images/no_image_placeholder.png".to_string()
         }

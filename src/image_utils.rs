@@ -18,7 +18,7 @@
 //! use stamp_album_gen2::image_utils::calc_mm_per_pixel_embedded;
 //!
 //! // Calculate mm-per-pixel ratio from embedded reference
-//! if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(200.0, 240.0) {
+//! if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(25.0, 30.0) {
 //!     println!("Reference ratio: {:.3} x {:.3} mm/px", mm_per_px_w, mm_per_px_h);
 //! }
 //! ```
@@ -58,9 +58,9 @@ static EMBEDDED_REFERENCE_IMAGE: &[u8] = include_bytes!("B4-s.jpg");
 /// # Examples
 ///
 /// ```rust
-/// // Calculate ratio for 200mm x 240mm reference
-/// let ratio = stamp_album_gen2::image_utils::calc_mm_per_pixel_embedded(200.0, 240.0);
-/// // Result: Some((0.208, 0.107)) for B4-s.jpg
+/// // Calculate ratio for 25mm x 30mm reference stamp
+/// let ratio = stamp_album_gen2::image_utils::calc_mm_per_pixel_embedded(25.0, 30.0);
+/// // Result: Some((0.026, 0.013)) for B4-s.jpg
 /// ```
 pub fn calc_mm_per_pixel_embedded(real_width_mm: f32, real_height_mm: f32) -> Option<(f32, f32)> {
     // Use embedded reference image directly

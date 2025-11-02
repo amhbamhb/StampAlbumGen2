@@ -35,12 +35,10 @@ fn download_to_path(url: &str, dest: &std::path::Path, _no_ssl_check: bool) -> R
                             let copy_res = io::copy(&mut resp, &mut tmp);
                             if let Err(e) = copy_res {
                                 last_err = Some(format!("io copy error: {}", e));
+                            } else if let Err(e) = tmp.persist(dest) {
+                                last_err = Some(format!("persist error: {}", e));
                             } else {
-                                if let Err(e) = tmp.persist(dest) {
-                                    last_err = Some(format!("persist error: {}", e));
-                                } else {
-                                    return Ok(());
-                                }
+                                return Ok(());
                             }
                         }
                         Err(e) => last_err = Some(format!("tempfile create error: {}", e)),
@@ -198,7 +196,7 @@ impl CommandsFileGenerator {
             )
         };
 
-        let raw_image_name = remote_url.split('/').last().unwrap_or("stampworld.jpg");
+        let raw_image_name = remote_url.split('/').next_back().unwrap_or("stampworld.jpg");
         // Normalize filename: strip an extra trailing "-s" before the extension so we don't end up with "-s-s.jpg"
         let mut image_name = sanitize_filename(raw_image_name);
         if image_name.to_lowercase().ends_with("-s.jpg") {
@@ -454,7 +452,7 @@ impl CommandsFileGenerator {
                     album_globals::new_year(&mut writer, year, None);
                     series_info = Some(self.get_series_info(data, idx, &width, &height));
                     count = series_info.as_ref().map_or(1, |s| s.count);
-                    multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
+                    multi_perf = series_info.as_ref().is_some_and(|s| s.multi_perf);
                     width = series_info
                         .as_ref()
                         .map_or("0".to_string(), |s| s.width.clone());
@@ -482,7 +480,7 @@ impl CommandsFileGenerator {
                 } else if series != prev_series || date != prev_date {
                     series_info = Some(self.get_series_info(data, idx, &width, &height));
                     count = series_info.as_ref().map_or(1, |s| s.count);
-                    multi_perf = series_info.as_ref().map_or(false, |s| s.multi_perf);
+                    multi_perf = series_info.as_ref().is_some_and(|s| s.multi_perf);
                     width = series_info
                         .as_ref()
                         .map_or("0".to_string(), |s| s.width.clone());
@@ -517,7 +515,7 @@ impl CommandsFileGenerator {
                     stamp_height = height.clone();
                 }
                 let catalog_num = self.get_catalog_num(fields[15], true);
-                if catalog_num != ""
+                if !catalog_num.is_empty()
                     && catalog_num != "Unlisted"
                     && self.is_selected_format(fields[13])
                     && self.is_selected_emission(fields[14])
@@ -528,8 +526,8 @@ impl CommandsFileGenerator {
                         fields[6],
                         fields[7],
                         fields[8],
-                        self.fix_color(fields[9].into()),
-                        series_info.as_ref().map_or(false, |s| s.multi_perf),
+                        self.fix_color(fields[9]),
+                        series_info.as_ref().is_some_and(|s| s.multi_perf),
                         fields[12],
                         &stamp_width,
                         &stamp_height,
@@ -549,7 +547,7 @@ impl CommandsFileGenerator {
     pub fn write_globals<W: Write>(&self, _writer: &mut W) {
         let _cfg = crate::config::load_config("config.toml");
         // No DB connection or explicit year range available here: pass None values
-        let _ = crate::album_globals::write_globals(_writer, &self.album_name, None, None, None);
+        crate::album_globals::write_globals(_writer, &self.album_name, None, None, None);
     }
 
     /// Stub for is_selected_format helper
@@ -593,6 +591,28 @@ impl CommandsFileGenerator {
                 // Intentionally overwrite the file in-place. No special handling needed;
                 // File::create below will truncate the existing file.
                 info!("Overwriting existing file {} as requested", path.display());
+                // Create a timestamped backup copy before overwriting so the original
+                // content is preserved as a versioned sibling (e.g. foo.created-YYYYMMDD-HHMMSS.txt).
+                // This gives users a recoverable copy even when they requested an overwrite.
+                use chrono::Local;
+                if let Some(parent) = path.parent() {
+                    if let Some(stem_os) = path.file_stem() {
+                        if let Some(stem) = stem_os.to_str() {
+                            let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                            let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                            let backup_name = if ext.is_empty() {
+                                format!("{}.created-{}", stem, ts)
+                            } else {
+                                format!("{}.created-{}.{}", stem, ts, ext)
+                            };
+                            let backup_path = parent.join(&backup_name);
+                            match std::fs::copy(path, &backup_path) {
+                                Ok(_) => info!("Created backup of existing file at {}", backup_path.display()),
+                                Err(e) => error!("Failed to create backup before overwrite: {}", e),
+                            }
+                        }
+                    }
+                }
                 // If the existing file is read-only, make it writable so we can truncate/overwrite it.
                 if let Ok(metadata) = std::fs::metadata(path) {
                     let mut perms = metadata.permissions();
@@ -635,6 +655,12 @@ impl CommandsFileGenerator {
                     }
                 }
             }
+        }
+
+        // If there is nothing to save, avoid overwriting or creating new files.
+        if data.is_empty() {
+            info!("No stamp data to save for {}; leaving any existing file intact", target_path.display());
+            return;
         }
 
         let file = File::create(&target_path);
@@ -813,7 +839,7 @@ impl CommandsFileGenerator {
         match File::open(_file_path) {
             Ok(mut file) => {
                 let mut buf = [0u8; 4];
-                if let Err(_) = file.read_exact(&mut buf) {
+                if file.read_exact(&mut buf).is_err() {
                     valid = false;
                 } else {
                     // Java's -2555936 is 0xFFD8FFE0 (JPEG SOI + JFIF marker)

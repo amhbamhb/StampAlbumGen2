@@ -1,16 +1,22 @@
+use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
 use stamp_album_gen2::stampworld::fetch::ReqwestFetcher;
-use reqwest::StatusCode;
 
 struct FakeFetcher;
 
 impl Fetcher for FakeFetcher {
     fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         // Return an empty HTML document for any URL
-        Ok((StatusCode::OK, "<html><head></head><body></body></html>".to_string()))
+        Ok((
+            StatusCode::OK,
+            "<html><head></head><body></body></html>".to_string(),
+        ))
     }
 
-    fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
+    fn fetch_bytes(
+        &self,
+        _url: &str,
+    ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
         // Return 404/no bytes to signal missing image
         let headers = reqwest::header::HeaderMap::new();
         Ok((StatusCode::NOT_FOUND, headers, Vec::new()))
@@ -25,7 +31,9 @@ fn test_collect_with_fake_fetcher_returns_empty() {
     let site_name = "test-site";
     let images_directory = "/tmp/stamp_album_gen2_test_images";
     let month_number = |_: &str| "0".to_string();
-    let get_stampworld_image = |_url: &str, _overwrite: bool| stamp_album_gen2::types::ImageStatus::new("", false, 0, 0, "");
+    let get_stampworld_image = |_url: &str, _overwrite: bool| {
+        stamp_album_gen2::types::ImageStatus::new("", false, 0, 0, "")
+    };
     let base_url = "https://example.invalid/page=";
 
     // Use the fake fetcher which returns empty HTML for every request

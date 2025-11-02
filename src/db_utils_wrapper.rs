@@ -2,8 +2,8 @@
 //! `crates/stamp_album_db` while preserving a small compatibility surface for
 //! the main crate (so other modules can continue to call `crate::db_utils::*`).
 
-pub use stamp_album_db::StampStub;
 use rusqlite::{Connection, Result};
+pub use stamp_album_db::StampStub;
 
 /// Initialize DB using the DB crate implementation
 pub fn init_db(db_path: &str) -> Result<Connection> {
@@ -113,7 +113,7 @@ pub fn get_all_series(
                 let mut stmt = conn.prepare(
                     "SELECT series FROM stamps GROUP BY series ORDER BY MIN(CAST(sg_number AS INTEGER)) ASC",
                 )?;
-                let rows = stmt.query_map([], |r| Ok(r.get::<_, String>(0)?))?;
+                let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
                 let mut res = Vec::new();
                 for s in rows {
                     res.push(s?);
@@ -124,7 +124,7 @@ pub fn get_all_series(
                 let mut stmt = conn.prepare(
                     "SELECT series FROM stamps GROUP BY series ORDER BY MIN(CAST(sg_number AS INTEGER)) DESC",
                 )?;
-                let rows = stmt.query_map([], |r| Ok(r.get::<_, String>(0)?))?;
+                let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
                 let mut res = Vec::new();
                 for s in rows {
                     res.push(s?);
@@ -146,7 +146,22 @@ pub fn get_stamps_by_country_series(
     conn: &Connection,
     country: &str,
     series: &str,
-) -> Result<Vec<(i32, String, String, i32, String, i32, String, String, String, String, String, String)>> {
+) -> Result<
+    Vec<(
+        i32,
+        String,
+        String,
+        i32,
+        String,
+        i32,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    )>,
+> {
     stamp_album_db::get_stamps_by_country_series(conn, country, series)
 }
 
@@ -170,5 +185,8 @@ pub fn update_image_dimensions(
     height: Option<i32>,
 ) -> rusqlite::Result<usize> {
     let sql = "UPDATE stamps SET image_width_px = ?1, image_height_px = ?2 WHERE country = ?3 AND series = ?4 AND sg_number = ?5";
-    conn.execute(sql, rusqlite::params![width, height, country, series, sg_number])
+    conn.execute(
+        sql,
+        rusqlite::params![width, height, country, series, sg_number],
+    )
 }

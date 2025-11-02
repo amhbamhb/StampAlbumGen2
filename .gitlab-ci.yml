@@ -1,9 +1,111 @@
 stages:
+  - build
+  - lint
   - test
+  - tag
   - release
 
 variables:
-  CARGO_HOME: $CI_PROJECT_DIR/.cargo
+  # Keep a local CARGO_HOME in CI to avoid polluting global state
+  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
+  CARGO_TERM_COLOR: "always"
+  RUST_BACKTRACE: "1"
+
+default:
+  image: rust:1.72
+  before_script:
+    - rustup component add rustfmt --toolchain stable || true
+    - rustup component add clippy --toolchain stable || true
+
+cache:
+  key: "${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}"
+  paths:
+    - target/
+    - .cargo/registry/
+  policy: pull-push
+
+build:
+  stage: build
+  script:
+    - cargo build --workspace --verbose
+  artifacts:
+    when: always
+    paths:
+      - target/debug/stamp_album_gen2
+      - target/debug/backfill_image_dims
+      - target/debug/insert_test
+      - target/debug/migrate_stamps
+      - target/debug/migrate_fix_block_metadata
+    expire_in: 1 hour
+
+fmt:
+  stage: lint
+  script:
+    - cargo fmt --all -- --check
+  needs:
+    - build
+
+clippy:
+  stage: lint
+  script:
+    - cargo clippy --workspace -- -D warnings
+  needs:
+    - build
+
+test_workspace:
+  stage: test
+  image: rust:latest
+  script: |
+    rustc --version
+    cargo --version
+    cargo install cargo2junit --version 0.3.0 2>/dev/null || true
+    mkdir -p target
+    set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | tee target/cargo-json.log | cargo2junit > target/junit-report.xml || true
+    if [ ! -s target/junit-report.xml ] || grep -q "No test suite results were found" target/junit-report.xml 2>/dev/null || grep -q "<testsuites */>" target/junit-report.xml 2>/dev/null || ! grep -q "<testcase" target/junit-report.xml 2>/dev/null; then
+      python3 scripts/cargo_json_to_junit.py target/cargo-json.log target/junit-report.xml || true
+    fi
+  only:
+    - branches
+    - merge_requests
+  except:
+    - tags
+  artifacts:
+    when: always
+    paths:
+      - target/junit-report.xml
+    reports:
+      junit: target/junit-report.xml
+
+bump_version:
+  stage: tag
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache git
+  script: |
+    set -e
+    git fetch --tags --prune
+    LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+    echo "Latest tag: $LATEST_TAG"
+    IFS='.' read -r MAJ MIN PATCH <<< "$LATEST_TAG"
+    MAJ=${MAJ:-0}; MIN=${MIN:-0}; PATCH=${PATCH:-0}
+    PATCH=$((PATCH + 1))
+    NEW_TAG="${MAJ}.${MIN}.${PATCH}"
+    echo "Creating new tag: $NEW_TAG"
+    git tag -a "$NEW_TAG" -m "CI: bump version to $NEW_TAG"
+    if [ -n "${CI_JOB_TOKEN:-}" ]; then
+      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags
+    elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
+      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags
+    else
+      echo "No CI token available to push tags; skipping push"
+    fi
+  needs:
+    - build
+    - fmt
+    - clippy
+  only:
+    - branches
+  when: on_success
 
 release:
   stage: release
@@ -16,120 +118,86 @@ release:
     refs:
       - tags
   variables:
-    CI_COMMIT_MESSAGE: $CI_COMMIT_MESSAGE
-
+    CI_COMMIT_MESSAGE: "$CI_COMMIT_MESSAGE"
   before_script:
     - apt-get update -qq && apt-get install -y -qq git
     - rustc --version
     - cargo --version
-
-  script:
-    - |
-      # Check if this is a conventional commit
-      if ! echo "$CI_COMMIT_MESSAGE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
-        echo "Not a conventional commit. Skipping automated release."
-        exit 0
-      fi
-      echo "Starting automated release process..."
-      export CURRENT_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-      echo "Current version: $CURRENT_VERSION"
-      if git log --oneline -n 20 | grep -q "feat:"; then
-        export VERSION_TYPE="minor"
-      elif git log --oneline -n 20 | grep -q "fix:"; then
-        export VERSION_TYPE="patch"
-      elif git log --oneline -n 20 | grep -q "BREAKING CHANGE"; then
-        export VERSION_TYPE="major"
+  script: |
+    if ! echo "$CI_COMMIT_MESSAGE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
+      echo "Not a conventional commit. Skipping automated release."
+      exit 0
+    fi
+    echo "Starting automated release process..."
+    export CURRENT_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+    echo "Current version: $CURRENT_VERSION"
+    if git log --oneline -n 20 | grep -q "feat:"; then
+      export VERSION_TYPE="minor"
+    elif git log --oneline -n 20 | grep -q "fix:"; then
+      export VERSION_TYPE="patch"
+    elif git log --oneline -n 20 | grep -q "BREAKING CHANGE"; then
+      export VERSION_TYPE="major"
+    else
+      export VERSION_TYPE="patch"
+    fi
+    MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
+    MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
+    PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+    case $VERSION_TYPE in
+      "major")
+        NEW_VERSION="$((MAJOR + 1)).0.0"
+        ;;
+      "minor")
+        NEW_VERSION="$MAJ.$((MINOR + 1)).0"
+        ;;
+      "patch")
+        NEW_VERSION="$MAJ.$MINOR.$((PATCH + 1))"
+        ;;
+    esac
+    export NEW_VERSION=$NEW_VERSION
+    echo "New version: $CURRENT_VERSION -> $NEW_VERSION"
+    sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+    DATE=$(date +%Y-%m-%d)
+    sed -i "s/Version: [0-9]\+\.[0-9]\+\.[0-9]\+/Version: $NEW_VERSION/" README.md || true
+    sed -i "s/Last Updated: [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/Last Updated: $DATE/" README.md || true
+    sed -i "s/\*\*Version\*\*: [0-9]\+\.[0-9]\+\.[0-9]\+/\*\*Version\*\*: $NEW_VERSION/" README.md || true
+    sed -i "s/\*\*Release Date\*\*: [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/\*\*Release Date\*\*: $DATE/" README.md || true
+    git config --global user.name "GitLab CI/CD"
+    git config --global user.email "gitlab-ci@gitlab.com"
+    git add Cargo.toml README.md || true
+    if git diff --cached --quiet; then
+      echo "No changes to commit"
+    else
+      git commit -m "chore: bump version to $NEW_VERSION"
+      if [ -n "${CI_JOB_TOKEN:-}" ]; then
+        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME}
       else
-        export VERSION_TYPE="patch"
+        git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME}
       fi
-      echo "Version bump type: $VERSION_TYPE"
-      MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
-      MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
-      PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
+    fi
+    RELEASE_NOTES="## Release $NEW_VERSION
+    ### Changes
+    $(git log --oneline --pretty=format:\"- %s\" HEAD~1..HEAD)
+    ### Version Bump
+    - **Type**: $VERSION_TYPE
+    - **Previous**: $CURRENT_VERSION
+    - **New**: $NEW_VERSION
+    ### Automated Release
+    This release was automatically created by the CI/CD pipeline based on conventional commits."
+    curl --header 'Content-Type: application/json' \
+         --header "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" \
+         --data "{\"name\": \"Release $NEW_VERSION\", \"tag_name\": \"v$NEW_VERSION\", \"description\": \"$RELEASE_NOTES\", \"ref\": \"${CI_COMMIT_SHA}\"}" \
+         --request POST ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases || true
+    git tag "v$NEW_VERSION" || true
+    if [ -n "${CI_JOB_TOKEN:-}" ]; then
+      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || true
+    else
+      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || true
+    fi
 
-      case $VERSION_TYPE in
-        "major")
-          NEW_VERSION="$((MAJOR + 1)).0.0"
-          ;;
-        "minor")
-          NEW_VERSION="$MAJOR.$((MINOR + 1)).0"
-          ;;
-        "patch")
-          NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
-          ;;
-      esac
-
-      export NEW_VERSION=$NEW_VERSION
-      echo "New version: $CURRENT_VERSION -> $NEW_VERSION"
-      echo "Updating version to $NEW_VERSION..."
-      sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
-      DATE=$(date +%Y-%m-%d)
-      sed -i "s/Version: [0-9]\+\.[0-9]\+\.[0-9]\+/Version: $NEW_VERSION/" README.md
-      sed -i "s/Last Updated: [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/Last Updated: $DATE/" README.md
-      sed -i "s/\*\*Version\*\*: [0-9]\+\.[0-9]\+\.[0-9]\+/\*\*Version\*\*: $NEW_VERSION/" README.md
-      sed -i "s/\*\*Release Date\*\*: [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/\*\*Release Date\*\*: $DATE/" README.md
-      git config --global user.name "GitLab CI/CD"
-      git config --global user.email "gitlab-ci@gitlab.com"
-      git add Cargo.toml README.md
-      if git diff --cached --quiet; then
-        echo "No changes to commit"
-      else
-        git commit -m "chore: bump version to $NEW_VERSION"
-        git push https://oauth2:${GITLAB_ACCESS_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git HEAD:${CI_COMMIT_REF_NAME}
-      fi
-      RELEASE_NOTES="## Release $NEW_VERSION
-
-      ### Changes
-      $(git log --oneline --pretty=format:\"- %s\" HEAD~1..HEAD)
-
-      ### Version Bump
-      - **Type**: $VERSION_TYPE
-      - **Previous**: $CURRENT_VERSION
-      - **New**: $NEW_VERSION
-
-      ### Automated Release
-      This release was automatically created by the CI/CD pipeline based on conventional commits."
-
-      curl --header 'Content-Type: application/json' \
-           --header "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" \
-           --data "{\"name\": \"Release $NEW_VERSION\", \"tag_name\": \"v$NEW_VERSION\", \"description\": \"$RELEASE_NOTES\", \"ref\": \"${CI_COMMIT_SHA}\"}" \
-           --request POST ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases
-      git tag "v$NEW_VERSION"
-      git push https://oauth2:${GITLAB_ACCESS_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git "v$NEW_VERSION"
-
-# Manual release trigger
 manual_release:
   stage: release
   image: rust:latest
   when: manual
   script:
     - echo "Manual release triggered"
-
-# Add a lightweight test stage for merge requests / branches
-test_workspace:
-  stage: test
-  image: rust:latest
-  script: |
-    rustc --version
-    cargo --version
-    # Try to install cargo2junit if available; suppress stderr to avoid noisy logs when registry/package isn't present.
-    cargo install cargo2junit --version 0.3.0 2>/dev/null || true
-    mkdir -p target
-    # Capture cargo's JSON stream to a file. Try cargo2junit first; if it doesn't produce a junit file, use the fallback python converter.
-    set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | tee target/cargo-json.log | cargo2junit > target/junit-report.xml || true
-    if [ ! -s target/junit-report.xml ] || grep -q "No test suite results were found" target/junit-report.xml 2>/dev/null || grep -q "<testsuites */>" target/junit-report.xml 2>/dev/null || ! grep -q "<testcase" target/junit-report.xml 2>/dev/null; then
-      echo "cargo2junit didn't produce results (or produced empty report); running fallback converter"
-      python3 scripts/cargo_json_to_junit.py target/cargo-json.log target/junit-report.xml || true
-    fi
-  only:
-    - branches
-    - merge_requests
-  except:
-    - tags
-  artifacts:
-    when: always
-    paths:
-      - target/debug
-      - target/junit-report.xml
-    reports:
-      junit: target/junit-report.xml

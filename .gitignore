@@ -20,6 +20,10 @@ outputs2/*
 .#notes.txt*
 notes_backup.txt*
 
+demo_outputs/
+demo_outputs/*
+
+
 
 # Ignore all .toml files except config.toml
 *.html
@@ -98,3 +102,4 @@ Cargo.lock
 
 # VS Code tasks
 .vscode/tasks.json
+demo_outputs/bleeding_risk_scenario.pdf
