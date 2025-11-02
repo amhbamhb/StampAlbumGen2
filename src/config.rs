@@ -108,6 +108,7 @@ pub struct Config {
     pub header_vspace_after_mm: Option<f32>,
     pub text_line_height_mm: Option<f32>,
     pub image_spacing_mm: Option<f32>,
+    pub max_stamps_per_row: Option<u32>,
     pub album_stamp_img_new_setting_w_mm: Option<f32>,
     pub album_stamp_img_new_setting_h_mm: Option<f32>,
     pub album_stamp_img_new_setting_preserve_aspect: Option<bool>,

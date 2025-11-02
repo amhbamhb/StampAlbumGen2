@@ -400,8 +400,8 @@ Edit `config.toml` to customize behavior:
 
 ```toml
 # Stamp dimension settings
-reference_width_mm = 200.0
-reference_height_mm = 240.0
+reference_width_mm = 25.0
+reference_height_mm = 30.0
 
 # Global album settings
 stamp_box_height = 30.0

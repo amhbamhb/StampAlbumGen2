@@ -11,8 +11,8 @@ row_font_spacing = 5.0
 header_font_spacing = 3.0
 
 # --- Reference Page Size ---
-reference_width_mm = 200.0
-reference_height_mm = 240.0
+reference_width_mm = 25.0
+reference_height_mm = 30.0
 
 # --- Page layout ---
 album_page_width_mm = 216.0

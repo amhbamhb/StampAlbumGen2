@@ -335,8 +335,8 @@ where
     let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(3.0) as f64;
     let row_font_spacing = config.row_font_spacing.unwrap_or(0.1) as f64;
     let _header_font_spacing = config.header_font_spacing.unwrap_or(3.0) as f64;
-    let reference_width_mm = config.reference_width_mm.unwrap_or(200.0) as f64;
-    let reference_height_mm = config.reference_height_mm.unwrap_or(240.0) as f64;
+    let reference_width_mm = config.reference_width_mm.unwrap_or(25.0) as f64;
+    let reference_height_mm = config.reference_height_mm.unwrap_or(30.0) as f64;
     // Reference image path and measured size (dynamic by country)
     let _country_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
     let _reference_image_path = format!("{}/BG1-s.jpg", _country_dir);
@@ -349,10 +349,10 @@ where
     // Only treat sizes under 10mm as implausibly small and trigger fallback.
     let (ref_w_mm, ref_h_mm) = if cfg_ref_w < 10.0 || cfg_ref_h < 10.0 {
         warn!(
-            "Configured reference size {:.1}x{:.1}mm looks too small, falling back to 200x240mm",
+            "Configured reference size {:.1}x{:.1}mm looks too small, falling back to 25x30mm",
             cfg_ref_w, cfg_ref_h
         );
-        (200.0_f64, 240.0_f64)
+        (25.0_f64, 30.0_f64)
     } else {
         (cfg_ref_w, cfg_ref_h)
     };
@@ -568,7 +568,8 @@ where
                 image_height_px: stamp.image_height_px,
             });
         }
-        // Group stamps into rows of 5
+        // Group stamps into rows (configurable max stamps per row)
+        let max_stamps_per_row = config.max_stamps_per_row.unwrap_or(5) as usize;
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
         let mut row: Vec<Stamp> = Vec::new();
         // let mut row_width = 0.0;
@@ -635,8 +636,8 @@ where
                     (w + 2.0 * stamp_box_adjust) + margin
                 })
                 .sum();
-            // If adding this stamp would exceed usable width or row has 5 stamps, start a new row before adding
-            if row.len() == 5 || row_width + est_width_mm + margin > usable_width {
+            // If adding this stamp would exceed usable width or row has max stamps, start a new row before adding
+            if row.len() >= max_stamps_per_row || row_width + est_width_mm + margin > usable_width {
                 if !row.is_empty() {
                     stamp_rows.push(row);
                 }
@@ -648,7 +649,7 @@ where
         if !row.is_empty() {
             stamp_rows.push(row);
         }
-
+        
         let mut header_written = false;
         // Buffer header lines so we only write them when we actually emit
         // the first row on the same page. This avoids leaving a header on a
@@ -1090,11 +1091,11 @@ where
                 let next_vspace_after = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
                 // Estimate next series first row height: look at first row of stamps (group into row of up to 5)
                 let mut next_first_row_max = 0.0f64;
-                // group next_stamps into rows of 5 (StampStub from DB)
+                // group next_stamps into rows (configurable max stamps per row) 
                 let mut next_rows: Vec<Vec<crate::db_utils::StampStub>> = Vec::new();
                 let mut nr: Vec<crate::db_utils::StampStub> = Vec::new();
                 for s in next_stamps.into_iter() {
-                    if nr.len() == 5 {
+                    if nr.len() >= max_stamps_per_row {
                         next_rows.push(nr);
                         nr = Vec::new();
                     }
@@ -1292,7 +1293,7 @@ where
                 let pv_marker = config
                     .page_vspace_marker
                     .clone()
-                    .unwrap_or_else(|| "(6)".to_string());
+                    .unwrap_or_else(|| "6".to_string());
                 let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
                 current_height += v_before;
                 // header vspace written (diagnostics suppressed)
@@ -1304,7 +1305,7 @@ where
                 let pv_marker = config
                     .page_vspace_marker
                     .clone()
-                    .unwrap_or_else(|| "(6)".to_string());
+                    .unwrap_or_else(|| "6".to_string());
                 let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
                 current_height += v_after;
                 // header vspace after written (diagnostics suppressed)
@@ -1669,14 +1670,17 @@ where
         }
     }
 
-    // Finalize: we've written to a temp file. Promote it into place only if it
+    // Finalize: we've written to a temp file. Flush buffer and promote it into place only if it
     // contains STAMP lines; otherwise remove the temp and leave existing file intact.
     // This prevents accidental truncation when generation yields no stamps.
     {
+        // Ensure buffered output is flushed before we read the temp file
+        let _ = output.flush();
         use std::fs;
         match fs::read_to_string(&tmp_path) {
             Ok(contents) => {
                 let stamp_count = contents.lines().filter(|l| l.starts_with("STAMP")).count();
+                
                 if stamp_count == 0 {
                     // If the user explicitly requested overwrite, create a backup
                     // of the existing file even if generation produced no STAMP lines.

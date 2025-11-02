@@ -15,11 +15,11 @@ row_font_spacing = 5.0
 # Vertical spacing for header text (mm)
 header_font_spacing = 3.0
 
-# --- Reference Page Size ---
-# Reference width of the album page (mm)
-reference_width_mm = 200.0
-# Reference height of the album page (mm)
-reference_height_mm = 240.0
+# --- Reference Stamp Size ---
+# Reference width of the stamp size (mm)
+reference_width_mm = 25.0
+# Reference height of the stamp size (mm)
+reference_height_mm = 30.0
 
 # --- Additional Options ---
 # Add more configuration options below as needed.
