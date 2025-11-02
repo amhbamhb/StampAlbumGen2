@@ -21,8 +21,8 @@ cache:
   key: "${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}"
   paths:
     - target/
-    - ~/.cargo/registry/
-    - ~/.cargo/git/
+    - .cargo/registry/
+    - .cargo/git/
 
 build:
   stage: build
