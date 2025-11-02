@@ -22,7 +22,7 @@ cache:
   paths:
     - target/
     - .cargo/registry/
-    - .cargo/git/
+  policy: pull-push
 
 build:
   stage: build
@@ -31,7 +31,11 @@ build:
   artifacts:
     when: always
     paths:
-      - target/
+      - target/debug/stamp_album_gen2
+      - target/debug/backfill_image_dims
+      - target/debug/insert_test
+      - target/debug/migrate_stamps
+      - target/debug/migrate_fix_block_metadata
     expire_in: 1 hour
 
 fmt:
@@ -68,7 +72,6 @@ test_workspace:
   artifacts:
     when: always
     paths:
-      - target/debug
       - target/junit-report.xml
     reports:
       junit: target/junit-report.xml
