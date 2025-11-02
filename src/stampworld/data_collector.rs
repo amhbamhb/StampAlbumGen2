@@ -391,7 +391,8 @@ pub fn collect_stampworld_data_with_fetcher(
                     }
                 }
 
-                let sg_number = row_cells.first()
+                let sg_number = row_cells
+                    .first()
                     .map(|s| s.trim().to_string())
                     .unwrap_or_default();
                 // Pull a couple of fields early so grouped-range handling can
@@ -434,8 +435,7 @@ pub fn collect_stampworld_data_with_fetcher(
 
                     // Normalize common Unicode hyphen variants to ASCII
                     let mut norm = sg_number.clone();
-                    norm = norm
-                        .replace(['\u{2011}', '\u{2013}', '\u{2012}', '\u{2010}'], "-");
+                    norm = norm.replace(['\u{2011}', '\u{2013}', '\u{2012}', '\u{2010}'], "-");
                     if emit_row_diag {
                         info!(
                             "Encountered grouped-range token='{}' (normalized='{}')",
@@ -586,26 +586,32 @@ pub fn collect_stampworld_data_with_fetcher(
                                                             continue;
                                                         }
                                                         // Map fields (reuse same indices as main parsing)
-                                                        let sg_number_f = row_cells2.first()
+                                                        let sg_number_f = row_cells2
+                                                            .first()
                                                             .map(|s| s.trim().to_string())
                                                             .unwrap_or_default();
                                                         let type_f = row_cells2
-                                                            .get(1).cloned()
+                                                            .get(1)
+                                                            .cloned()
                                                             .unwrap_or_default();
                                                         let denomination_f = row_cells2
-                                                            .get(2).cloned()
+                                                            .get(2)
+                                                            .cloned()
                                                             .unwrap_or_default();
                                                         let color_f = row_cells2
-                                                            .get(4).cloned()
+                                                            .get(4)
+                                                            .cloned()
                                                             .unwrap_or_default();
                                                         let description_f = if row_cells2.len() > 6
                                                         {
                                                             row_cells2
-                                                                .get(6).cloned()
+                                                                .get(6)
+                                                                .cloned()
                                                                 .unwrap_or_default()
                                                         } else {
                                                             row_cells2
-                                                                .get(5).cloned()
+                                                                .get(5)
+                                                                .cloned()
                                                                 .unwrap_or_default()
                                                         };
                                                         // Extract month/day heuristics per-line
@@ -833,12 +839,11 @@ pub fn collect_stampworld_data_with_fetcher(
                 }
 
                 // Fallback to global images by order
-                if selected_image_url.is_empty()
-                    && image_idx < global_images.len() {
-                        selected_image_url = global_images[image_idx].0.clone();
-                        _selected_alt = global_images[image_idx].1.clone();
-                        image_idx += 1;
-                    }
+                if selected_image_url.is_empty() && image_idx < global_images.len() {
+                    selected_image_url = global_images[image_idx].0.clone();
+                    _selected_alt = global_images[image_idx].1.clone();
+                    image_idx += 1;
+                }
 
                 // Determine stamp year: prefer explicit per-row values, else fallback to block_year_int
                 let mut stamp_year = block_year_int;

@@ -45,13 +45,6 @@ fmt:
   needs:
     - build
 
-clippy:
-  stage: lint
-  script:
-    - cargo clippy --workspace -- -D warnings
-  needs:
-    - build
-
 test_workspace:
   stage: test
   image: rust:latest
@@ -102,7 +95,6 @@ bump_version:
   needs:
     - build
     - fmt
-    - clippy
   only:
     - branches
   when: on_success

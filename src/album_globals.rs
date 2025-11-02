@@ -5,7 +5,7 @@ use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use rusqlite::Connection;
 // ImageStatus and OSType not needed in this module today
 use crate::album_utils::clean_text;
-use log::{warn, info, error};
+use log::{error, info, warn};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
@@ -321,8 +321,7 @@ pub fn generate_album_output_conn<F>(
     mut page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-)
-where
+) where
     F: FnMut(usize),
 {
     // Use the start_year/end_year passed to this function (may be None)
@@ -449,10 +448,17 @@ where
     // Write into a temporary file first to avoid truncating the canonical
     // output file if generation yields no stamp lines. We will promote the
     // temporary file into place only when it contains STAMP lines.
-    let tmp_name = format!("{}.tmp", output_path.file_name().and_then(|s| s.to_str()).unwrap_or("out"));
+    let tmp_name = format!(
+        "{}.tmp",
+        output_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("out")
+    );
     let tmp_path = output_path.with_file_name(tmp_name);
     let mut output = BufWriter::new(
-        File::create(&tmp_path).unwrap_or_else(|e| panic!("Failed to create temp output file: {}", e)),
+        File::create(&tmp_path)
+            .unwrap_or_else(|e| panic!("Failed to create temp output file: {}", e)),
     );
 
     // Write global album settings (pass DB connection and CLI year range so the header can include years)
@@ -649,7 +655,7 @@ where
         if !row.is_empty() {
             stamp_rows.push(row);
         }
-        
+
         let mut header_written = false;
         // Buffer header lines so we only write them when we actually emit
         // the first row on the same page. This avoids leaving a header on a
@@ -1091,7 +1097,7 @@ where
                 let next_vspace_after = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
                 // Estimate next series first row height: look at first row of stamps (group into row of up to 5)
                 let mut next_first_row_max = 0.0f64;
-                // group next_stamps into rows (configurable max stamps per row) 
+                // group next_stamps into rows (configurable max stamps per row)
                 let mut next_rows: Vec<Vec<crate::db_utils::StampStub>> = Vec::new();
                 let mut nr: Vec<crate::db_utils::StampStub> = Vec::new();
                 for s in next_stamps.into_iter() {
@@ -1680,7 +1686,7 @@ where
         match fs::read_to_string(&tmp_path) {
             Ok(contents) => {
                 let stamp_count = contents.lines().filter(|l| l.starts_with("STAMP")).count();
-                
+
                 if stamp_count == 0 {
                     // If the user explicitly requested overwrite, create a backup
                     // of the existing file even if generation produced no STAMP lines.
@@ -1689,7 +1695,10 @@ where
                         if let Some(stem_os) = output_path.file_stem() {
                             if let Some(stem) = stem_os.to_str() {
                                 let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
-                                let ext = output_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                let ext = output_path
+                                    .extension()
+                                    .and_then(|e| e.to_str())
+                                    .unwrap_or("");
                                 let backup_name = if ext.is_empty() {
                                     format!("{}.created-{}", stem, ts)
                                 } else {
@@ -1716,7 +1725,10 @@ where
                         if let Some(stem_os) = output_path.file_stem() {
                             if let Some(stem) = stem_os.to_str() {
                                 let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
-                                let ext = output_path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                                let ext = output_path
+                                    .extension()
+                                    .and_then(|e| e.to_str())
+                                    .unwrap_or("");
                                 let backup_name = if ext.is_empty() {
                                     format!("{}.created-{}", stem, ts)
                                 } else {
@@ -1724,8 +1736,13 @@ where
                                 };
                                 let backup_path = output_path.with_file_name(backup_name);
                                 match fs::copy(&output_path, &backup_path) {
-                                    Ok(_) => info!("Created backup of existing file at {}", backup_path.display()),
-                                    Err(e) => error!("Failed to create backup before overwrite: {}", e),
+                                    Ok(_) => info!(
+                                        "Created backup of existing file at {}",
+                                        backup_path.display()
+                                    ),
+                                    Err(e) => {
+                                        error!("Failed to create backup before overwrite: {}", e)
+                                    }
                                 }
                             }
                         }
@@ -1733,7 +1750,11 @@ where
                     // Atomically move temp into place
                     match fs::rename(&tmp_path, &output_path) {
                         Ok(_) => {
-                            info!("Successfully wrote album output to {} ({} stamps)", output_path.display(), stamp_count);
+                            info!(
+                                "Successfully wrote album output to {} ({} stamps)",
+                                output_path.display(),
+                                stamp_count
+                            );
                         }
                         Err(e) => {
                             error!("Failed to move temp output into place: {}", e);
@@ -1742,7 +1763,11 @@ where
                 }
             }
             Err(e) => {
-                error!("Failed to read generated temp file {}: {}", tmp_path.display(), e);
+                error!(
+                    "Failed to read generated temp file {}: {}",
+                    tmp_path.display(),
+                    e
+                );
                 let _ = fs::remove_file(&tmp_path);
             }
         }
@@ -1761,8 +1786,7 @@ pub fn generate_album_output<F>(
     page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-)
-where
+) where
     F: FnMut(usize),
 {
     let conn = init_db(db_path).expect("Failed to open database");

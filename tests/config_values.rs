@@ -1,8 +1,8 @@
 use stamp_album_gen2::album_globals::generate_album_output_conn;
 use stamp_album_gen2::file_utils;
 use std::env;
-use tempfile::tempdir;
 use std::fs;
+use tempfile::tempdir;
 
 fn write_config(dir: &std::path::Path, contents: &str) {
     let p = dir.join("config.toml");
@@ -13,7 +13,14 @@ fn write_config(dir: &std::path::Path, contents: &str) {
 fn make_test_db(db_path: &str) {
     let conn = stamp_album_gen2::db_utils::init_db(db_path).expect("init db");
     // insert a minimal placeholder stamp row
-    stamp_album_gen2::db_utils::insert_stamp_placeholder(&conn, "TestAlbum", "Test Series", 1970, "1").expect("insert placeholder");
+    stamp_album_gen2::db_utils::insert_stamp_placeholder(
+        &conn,
+        "TestAlbum",
+        "Test Series",
+        1970,
+        "1",
+    )
+    .expect("insert placeholder");
 }
 
 fn read_stamp_heading_size(output_txt: &std::path::Path) -> Option<i32> {
@@ -56,8 +63,18 @@ fn test_stamp_heading_size_changes_output() {
     write_config(td.path(), cfg1);
 
     let conn = stamp_album_gen2::db_utils::init_db(&db_str).expect("open db");
-    generate_album_output_conn(&conn, "TestAlbum", Option::<fn(usize)>::None, Some(1970), Some(1970));
-    let out1 = td.path().join("Albums").join("TestAlbum").join("TestAlbum-1970-1970.txt");
+    generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        Option::<fn(usize)>::None,
+        Some(1970),
+        Some(1970),
+    );
+    let out1 = td
+        .path()
+        .join("Albums")
+        .join("TestAlbum")
+        .join("TestAlbum-1970-1970.txt");
     let sz1 = read_stamp_heading_size(&out1).expect("found heading size in output");
 
     // Second config: heading size 20
@@ -67,11 +84,24 @@ fn test_stamp_heading_size_changes_output() {
 
     // Re-run generator (same DB)
     let conn2 = stamp_album_gen2::db_utils::init_db(&db_str).expect("open db2");
-    generate_album_output_conn(&conn2, "TestAlbum", Option::<fn(usize)>::None, Some(1970), Some(1970));
-    let out2 = td.path().join("Albums").join("TestAlbum").join("TestAlbum-1970-1970.txt");
+    generate_album_output_conn(
+        &conn2,
+        "TestAlbum",
+        Option::<fn(usize)>::None,
+        Some(1970),
+        Some(1970),
+    );
+    let out2 = td
+        .path()
+        .join("Albums")
+        .join("TestAlbum")
+        .join("TestAlbum-1970-1970.txt");
     let sz2 = read_stamp_heading_size(&out2).expect("found heading size in output 2");
 
-    assert_ne!(sz1, sz2, "changing stamp_heading_size should change emitted heading size");
+    assert_ne!(
+        sz1, sz2,
+        "changing stamp_heading_size should change emitted heading size"
+    );
 
     // Restore cwd
     env::set_current_dir(orig).expect("restore cwd");

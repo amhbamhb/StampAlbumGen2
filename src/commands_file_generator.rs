@@ -196,7 +196,10 @@ impl CommandsFileGenerator {
             )
         };
 
-        let raw_image_name = remote_url.split('/').next_back().unwrap_or("stampworld.jpg");
+        let raw_image_name = remote_url
+            .split('/')
+            .next_back()
+            .unwrap_or("stampworld.jpg");
         // Normalize filename: strip an extra trailing "-s" before the extension so we don't end up with "-s-s.jpg"
         let mut image_name = sanitize_filename(raw_image_name);
         if image_name.to_lowercase().ends_with("-s.jpg") {
@@ -607,7 +610,10 @@ impl CommandsFileGenerator {
                             };
                             let backup_path = parent.join(&backup_name);
                             match std::fs::copy(path, &backup_path) {
-                                Ok(_) => info!("Created backup of existing file at {}", backup_path.display()),
+                                Ok(_) => info!(
+                                    "Created backup of existing file at {}",
+                                    backup_path.display()
+                                ),
                                 Err(e) => error!("Failed to create backup before overwrite: {}", e),
                             }
                         }
@@ -659,7 +665,10 @@ impl CommandsFileGenerator {
 
         // If there is nothing to save, avoid overwriting or creating new files.
         if data.is_empty() {
-            info!("No stamp data to save for {}; leaving any existing file intact", target_path.display());
+            info!(
+                "No stamp data to save for {}; leaving any existing file intact",
+                target_path.display()
+            );
             return;
         }
 

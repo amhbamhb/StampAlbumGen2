@@ -1,9 +1,9 @@
 use stamp_album_gen2::album_globals::generate_album_output_conn;
-use stamp_album_gen2::file_utils;
 use stamp_album_gen2::db_utils;
-use tempfile::tempdir;
+use stamp_album_gen2::file_utils;
 use std::env;
 use std::fs;
+use tempfile::tempdir;
 
 fn write_config(dir: &std::path::Path, contents: &str) {
     let p = dir.join("config.toml");
@@ -25,8 +25,8 @@ fn read_stamp_heading_label(output_txt: &std::path::Path) -> Option<String> {
         if line.starts_with("STAMP_HEADING(") {
             // Look for the quoted label inside the parentheses
             if let Some(start) = line.find('"') {
-                if let Some(end) = line[start+1..].find('"') {
-                    return Some(line[start+1..start+1+end].to_string());
+                if let Some(end) = line[start + 1..].find('"') {
+                    return Some(line[start + 1..start + 1 + end].to_string());
                 }
             }
         }
@@ -53,8 +53,18 @@ fn test_stamp_heading_label_changes_output() {
     write_config(td.path(), cfg1);
 
     let conn = db_utils::init_db(&db_str).expect("open db");
-    generate_album_output_conn(&conn, "TestAlbum", Option::<fn(usize)>::None, Some(1970), Some(1970));
-    let out1 = td.path().join("Albums").join("TestAlbum").join("TestAlbum-1970-1970.txt");
+    generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        Option::<fn(usize)>::None,
+        Some(1970),
+        Some(1970),
+    );
+    let out1 = td
+        .path()
+        .join("Albums")
+        .join("TestAlbum")
+        .join("TestAlbum-1970-1970.txt");
     let lbl1 = read_stamp_heading_label(&out1).expect("found heading label in output");
 
     // Second config: label NEWLBL
@@ -62,11 +72,24 @@ fn test_stamp_heading_label_changes_output() {
     write_config(td.path(), cfg2);
 
     let conn2 = db_utils::init_db(&db_str).expect("open db2");
-    generate_album_output_conn(&conn2, "TestAlbum", Option::<fn(usize)>::None, Some(1970), Some(1970));
-    let out2 = td.path().join("Albums").join("TestAlbum").join("TestAlbum-1970-1970.txt");
+    generate_album_output_conn(
+        &conn2,
+        "TestAlbum",
+        Option::<fn(usize)>::None,
+        Some(1970),
+        Some(1970),
+    );
+    let out2 = td
+        .path()
+        .join("Albums")
+        .join("TestAlbum")
+        .join("TestAlbum-1970-1970.txt");
     let lbl2 = read_stamp_heading_label(&out2).expect("found heading label in output 2");
 
-    assert_ne!(lbl1, lbl2, "changing stamp_heading_label should change emitted heading label");
+    assert_ne!(
+        lbl1, lbl2,
+        "changing stamp_heading_label should change emitted heading label"
+    );
 
     env::set_current_dir(orig).expect("restore cwd");
 }

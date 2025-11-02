@@ -815,16 +815,15 @@ pub fn calculate_stamp_dimensions(
                             }
                         }
                     }
-                } else if parts.len() >= 2
-                    && parts[0].contains('x') {
-                        if let Some((dxs, dys)) = parts[0].split_once('x') {
-                            if let (Ok(dx), Ok(dy)) = (dxs.parse::<f32>(), dys.parse::<f32>()) {
-                                dpi_x_opt = Some(dx);
-                                dpi_y_opt = Some(dy);
-                                unit_opt = Some(parts[1]);
-                            }
+                } else if parts.len() >= 2 && parts[0].contains('x') {
+                    if let Some((dxs, dys)) = parts[0].split_once('x') {
+                        if let (Ok(dx), Ok(dy)) = (dxs.parse::<f32>(), dys.parse::<f32>()) {
+                            dpi_x_opt = Some(dx);
+                            dpi_y_opt = Some(dy);
+                            unit_opt = Some(parts[1]);
                         }
                     }
+                }
 
                 if let (Some(dpi_x), Some(dpi_y), Some(unit)) = (dpi_x_opt, dpi_y_opt, unit_opt) {
                     let (mm_per_px_w_dpi, mm_per_px_h_dpi) = if unit.to_lowercase().contains("inch")
