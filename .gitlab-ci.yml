@@ -27,15 +27,15 @@ cache:
 build:
   stage: build
   script:
-    - cargo build --workspace --verbose
+    - cargo build --workspace --release --verbose
   artifacts:
     when: always
     paths:
-      - target/debug/stamp_album_gen2
-      - target/debug/backfill_image_dims
-      - target/debug/insert_test
-      - target/debug/migrate_stamps
-      - target/debug/migrate_fix_block_metadata
+      - target/release/stamp_album_gen2
+      - target/release/backfill_image_dims
+      - target/release/insert_test
+      - target/release/migrate_stamps
+      - target/release/migrate_fix_block_metadata
     expire_in: 1 hour
 
 fmt:
