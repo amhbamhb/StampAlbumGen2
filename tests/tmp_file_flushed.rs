@@ -1,9 +1,9 @@
 use stamp_album_gen2::album_globals::generate_album_output_conn;
-use stamp_album_gen2::file_utils;
 use stamp_album_gen2::db_utils;
-use tempfile::tempdir;
+use stamp_album_gen2::file_utils;
 use std::env;
 use std::fs;
+use tempfile::tempdir;
 
 fn write_config(dir: &std::path::Path, contents: &str) {
     let p = dir.join("config.toml");
@@ -36,13 +36,31 @@ fn test_temp_file_flush_and_output_non_empty() {
     write_config(td.path(), cfg);
 
     let conn = db_utils::init_db(&db_str).expect("open db");
-    generate_album_output_conn(&conn, "TestAlbum", Option::<fn(usize)>::None, Some(1970), Some(1970));
+    generate_album_output_conn(
+        &conn,
+        "TestAlbum",
+        Option::<fn(usize)>::None,
+        Some(1970),
+        Some(1970),
+    );
 
-    let out = td.path().join("Albums").join("TestAlbum").join("TestAlbum-1970-1970.txt");
-    assert!(out.exists(), "Expected output file to exist: {}", out.display());
+    let out = td
+        .path()
+        .join("Albums")
+        .join("TestAlbum")
+        .join("TestAlbum-1970-1970.txt");
+    assert!(
+        out.exists(),
+        "Expected output file to exist: {}",
+        out.display()
+    );
     let s = fs::read_to_string(&out).expect("read output");
     // At least one STAMP_* line should be present
-    assert!(s.lines().any(|l| l.starts_with("STAMP")), "Expected STAMP lines in output but file was:\n{}", s);
+    assert!(
+        s.lines().any(|l| l.starts_with("STAMP")),
+        "Expected STAMP lines in output but file was:\n{}",
+        s
+    );
 
     env::set_current_dir(orig).expect("restore cwd");
 }

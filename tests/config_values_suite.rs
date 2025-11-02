@@ -1,9 +1,9 @@
 use stamp_album_gen2::album_globals::generate_album_output_conn;
-use stamp_album_gen2::file_utils;
 use stamp_album_gen2::db_utils;
-use tempfile::tempdir;
+use stamp_album_gen2::file_utils;
 use std::env;
 use std::fs;
+use tempfile::tempdir;
 
 fn write_config(dir: &std::path::Path, contents: &str) {
     let p = dir.join("config.toml");
@@ -24,9 +24,32 @@ fn make_test_db_multi(db_path: &str) {
     for (country, series, year, sg, img) in cases {
         // Use insert_stamp with fake image paths to prevent placeholder generation
         let result = db_utils::insert_stamp(
-            &conn, country, series, year, "1", "1", "1", sg, "stamp", "1p", "red",
-            "description", "100", "mint", "1", "1", "fdc", "£", 
-            img, "", "", "", "", "", "", ""
+            &conn,
+            country,
+            series,
+            year,
+            "1",
+            "1",
+            "1",
+            sg,
+            "stamp",
+            "1p",
+            "red",
+            "description",
+            "100",
+            "mint",
+            "1",
+            "1",
+            "fdc",
+            "£",
+            img,
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
         );
         if result.is_err() {
             // Fallback to placeholder if insert_stamp fails
@@ -82,7 +105,12 @@ fn config_values_suite_iterates_and_changes_output() {
 
     for (name, album, cfg1, cfg2) in cases {
         // First config
-        println!("[CASE START] {} album={} cfg1={}", name, album, cfg1.replace('\n', "\\n"));
+        println!(
+            "[CASE START] {} album={} cfg1={}",
+            name,
+            album,
+            cfg1.replace('\n', "\\n")
+        );
         write_config(td.path(), cfg1);
         let conn = db_utils::init_db(&db_str).expect("open db");
         println!("[GENERATE] before generate album={} (cfg1)", album);
@@ -98,16 +126,40 @@ fn config_values_suite_iterates_and_changes_output() {
             _ => "unknown",
         };
         if let Ok(stamps_for_series) = db_utils::get_stamps_by_series(&conn, series_name, "0") {
-            println!("[DBG] album='{}' series='{}' has {} stamps", album, series_name, stamps_for_series.len());
+            println!(
+                "[DBG] album='{}' series='{}' has {} stamps",
+                album,
+                series_name,
+                stamps_for_series.len()
+            );
         }
 
-        generate_album_output_conn(&conn, album, Option::<fn(usize)>::None, Some(1974), Some(1975));
+        generate_album_output_conn(
+            &conn,
+            album,
+            Option::<fn(usize)>::None,
+            Some(1974),
+            Some(1975),
+        );
         println!("[GENERATE] after generate album={} (cfg1)", album);
-        let out1 = td.path().join("Albums").join(album).join(format!("{}-1974-1975.txt", album.replace(' ', "-")));
+        let out1 = td
+            .path()
+            .join("Albums")
+            .join(album)
+            .join(format!("{}-1974-1975.txt", album.replace(' ', "-")));
         // fallback filename when generator uses single-album name
-        let fallback1 = td.path().join("Albums").join(album).join(format!("{}.txt", album.replace(' ', "-")));
+        let fallback1 = td
+            .path()
+            .join("Albums")
+            .join(album)
+            .join(format!("{}.txt", album.replace(' ', "-")));
         let path1 = if out1.exists() { out1 } else { fallback1 };
-        assert!(path1.exists(), "output missing for case {} cfg1: {}", name, path1.display());
+        assert!(
+            path1.exists(),
+            "output missing for case {} cfg1: {}",
+            name,
+            path1.display()
+        );
         let s1 = fs::read_to_string(&path1).expect("read out1");
 
         // Second config
@@ -119,37 +171,90 @@ fn config_values_suite_iterates_and_changes_output() {
             println!("[DBG] all_series(conn2)={:?}", all_series2);
         }
         let series_name2 = match album {
-            "Switzerland" => "Series S", 
+            "Switzerland" => "Series S",
             "Canada" => "Series C",
             _ => "unknown",
         };
         if let Ok(stamps_for_series2) = db_utils::get_stamps_by_series(&conn2, series_name2, "0") {
-            println!("[DBG] album(conn2)='{}' series='{}' has {} stamps", album, series_name2, stamps_for_series2.len());
+            println!(
+                "[DBG] album(conn2)='{}' series='{}' has {} stamps",
+                album,
+                series_name2,
+                stamps_for_series2.len()
+            );
         }
 
-        generate_album_output_conn(&conn2, album, Option::<fn(usize)>::None, Some(1974), Some(1975));
+        generate_album_output_conn(
+            &conn2,
+            album,
+            Option::<fn(usize)>::None,
+            Some(1974),
+            Some(1975),
+        );
         println!("[GENERATE] after generate album={} (cfg2)", album);
-        let out2 = td.path().join("Albums").join(album).join(format!("{}-1974-1975.txt", album.replace(' ', "-")));
-        let fallback2 = td.path().join("Albums").join(album).join(format!("{}.txt", album.replace(' ', "-")));
+        let out2 = td
+            .path()
+            .join("Albums")
+            .join(album)
+            .join(format!("{}-1974-1975.txt", album.replace(' ', "-")));
+        let fallback2 = td
+            .path()
+            .join("Albums")
+            .join(album)
+            .join(format!("{}.txt", album.replace(' ', "-")));
         let path2 = if out2.exists() { out2 } else { fallback2 };
-        assert!(path2.exists(), "output missing for case {} cfg2: {}", name, path2.display());
+        assert!(
+            path2.exists(),
+            "output missing for case {} cfg2: {}",
+            name,
+            path2.display()
+        );
         let s2 = fs::read_to_string(&path2).expect("read out2");
 
         println!("[CASE END] {} album={} - compare outputs", name, album);
         // Basic check: outputs differ
-        assert_ne!(s1, s2, "Expected outputs to differ for config {} ({} vs {})", name, cfg1, cfg2);
+        assert_ne!(
+            s1, s2,
+            "Expected outputs to differ for config {} ({} vs {})",
+            name, cfg1, cfg2
+        );
     }
 
     // Optionally create a full output for a chosen album for manual AlbumEasy testing.
     // We'll generate for Switzerland and leave the file in tempdir; the test prints its path.
     let conn_full = db_utils::init_db(&db_str).expect("open db full");
     write_config(td.path(), "stamp_heading_size = 12\n");
-    generate_album_output_conn(&conn_full, "Switzerland", Option::<fn(usize)>::None, Some(1974), Some(1975));
-    let full_path = td.path().join("Albums").join("Switzerland").join("Switzerland-1974-1975.txt");
-    let fallback_full = td.path().join("Albums").join("Switzerland").join("Switzerland.txt");
-    let final_full = if full_path.exists() { full_path } else { fallback_full };
-    println!("Full output for manual AlbumEasy test: {}", final_full.display());
-    assert!(final_full.exists(), "Expected full output to exist: {}", final_full.display());
+    generate_album_output_conn(
+        &conn_full,
+        "Switzerland",
+        Option::<fn(usize)>::None,
+        Some(1974),
+        Some(1975),
+    );
+    let full_path = td
+        .path()
+        .join("Albums")
+        .join("Switzerland")
+        .join("Switzerland-1974-1975.txt");
+    let fallback_full = td
+        .path()
+        .join("Albums")
+        .join("Switzerland")
+        .join("Switzerland.txt");
+    let final_full = if full_path.exists() {
+        full_path
+    } else {
+        fallback_full
+    };
+    println!(
+        "Full output for manual AlbumEasy test: {}",
+        final_full.display()
+    );
+    assert!(
+        final_full.exists(),
+        "Expected full output to exist: {}",
+        final_full.display()
+    );
 
     env::set_current_dir(orig).expect("restore cwd");
 }

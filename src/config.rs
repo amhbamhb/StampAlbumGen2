@@ -24,8 +24,7 @@ pub struct HeaderFormatting {
     pub header_spacing: Option<f32>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-#[derive(Default)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
     pub reference_width_mm: Option<f32>,
     pub reference_height_mm: Option<f32>,
@@ -209,7 +208,6 @@ pub struct Config {
     // dimensions (useful when `force_dpi` is set and you want physical sizes).
     pub preserve_real_image_size: Option<bool>,
 }
-
 
 pub fn load_config(path: &str) -> Config {
     // Try to find the config file starting at the current working directory
