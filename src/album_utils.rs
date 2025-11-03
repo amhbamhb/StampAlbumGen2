@@ -108,13 +108,14 @@ pub fn sanitize_filename(filename: &str) -> String {
 }
 
 /// Writes global album settings to the provided writer
+/// Returns the number of pages created (for sequential page numbering)
 pub fn write_globals<W: Write>(
     writer: &mut W,
     album_name: &str,
     conn_opt: Option<&rusqlite::Connection>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) {
+) -> usize {
     // Get current date/time and user information using chrono (cross-platform)
     // Use UTC for the canonical generated timestamp and Local for the host localtime
     use chrono::{Local, Utc};
@@ -193,6 +194,9 @@ pub fn write_globals<W: Write>(
     let cfg_include_wikipedia = cfg
         .include_wikipedia_content
         .unwrap_or(cfg.fetch_wikipedia.unwrap_or(false));
+
+    // Track page count for sequential numbering
+    let mut page_counter = 0usize;
     let cfg_allow_single_large = cfg.allow_single_large_stamp_per_page.unwrap_or(true);
     let cfg_preserve_aspect = cfg.preserve_aspect.unwrap_or(img_preserve);
     let cfg_emit_placeholder_diags = cfg.emit_placeholder_diagnostics.unwrap_or(false);
@@ -495,6 +499,16 @@ pub fn write_globals<W: Write>(
     // using the `flagdb` helper. If a flag image cannot be found or downloaded,
     // still emit a textual cover so the album begins with a title page.
     if cfg_print_flag_cover {
+        page_counter += 1; // Flag cover is a page
+
+        // Add descriptive page header for flag cover
+        let _ = writeln!(
+            writer,
+            "################################################################################"
+        );
+        let _ = writeln!(writer, "### Page {} ###", page_counter);
+        let _ = writeln!(writer, "### {} Flag ###", album_name);
+        let _ = writeln!(writer, "PAGE_START");
         // Write a simple cover block after the standard globals so it appears
         // below the STAMP_BOXES_SIZE_ADJUST section as requested.
         let album_images_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
@@ -517,13 +531,12 @@ pub fn write_globals<W: Write>(
             }
         }
 
-        // Emit a cover page header
+        // Emit a cover page header (page header already added above)
         let _ = writeln!(
             writer,
             "################################################################################"
         );
         let _ = writeln!(writer, "### {} ###", album_name);
-        let _ = writeln!(writer, "PAGE_START");
         // Ensure cover pages also begin with a row start so the layout is initialized
         if cfg_row_start_es {
             let rs_font = cfg
@@ -537,6 +550,10 @@ pub fn write_globals<W: Write>(
                 writer,
                 "ROW_START_ES ({} {} {:.1} {:.1})",
                 rs_font, rs_size as i32, rs_spacing, rs_vspace
+            );
+            let _ = writeln!(
+                writer,
+                "################################################################################"
             );
         }
         // If we have a flag image, emit it as a large image entry on the cover.
@@ -638,7 +655,81 @@ pub fn write_globals<W: Write>(
             writer,
             "################################################################################"
         );
+
+        // Add Wikipedia content section if enabled
+        if cfg_include_wikipedia {
+            page_counter = add_wikipedia_section(writer, album_name, &cfg, page_counter);
+        }
     }
+
+    page_counter // Return the total number of pages created
+}
+
+/// Adds a Wikipedia content section to the album
+/// Returns the updated page counter
+fn add_wikipedia_section<W: Write>(
+    writer: &mut W,
+    album_name: &str,
+    cfg: &crate::config::Config,
+    mut page_counter: usize,
+) -> usize {
+    let cache_db_path = cfg
+        .wikipedia_cache_db_path
+        .as_deref()
+        .unwrap_or("wikipedia_cache.db");
+
+    match crate::wikipedia::get_cached_wikipedia_content(album_name, cache_db_path) {
+        Ok(Some(content)) => {
+            page_counter += 1; // Wikipedia content is a page
+
+            // Start Wikipedia section with descriptive page header
+
+            let _ = writeln!(writer, "### Page {} ###", page_counter);
+            let _ = writeln!(writer, "### Wikipedia Content ###");
+            let _ = writeln!(writer, "PAGE_START");
+
+            // Add row start if configured
+            if cfg.row_start_es_enabled.unwrap_or(true) {
+                let rs_font = cfg
+                    .row_start_es_font
+                    .clone()
+                    .unwrap_or_else(|| "HN".to_string());
+                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                let _ = writeln!(
+                    writer,
+                    "ROW_START_ES ({} {} {:.1} {:.1})",
+                    rs_font, rs_size as i32, rs_spacing, rs_vspace
+                );
+                let _ = writeln!(writer, "################################################################################");
+            }
+
+            // Generate formatted Wikipedia content
+            let wiki_lines = crate::wikipedia::format_wikipedia_content_for_album(&content, cfg);
+            for line in wiki_lines {
+                let _ = writeln!(writer, "{}", line);
+            }
+
+            // Add separator after Wikipedia section
+            let _ = writeln!(
+                writer,
+                "################################################################################"
+            );
+        }
+        Ok(None) => {
+            // No Wikipedia content found - this is normal, just continue
+        }
+        Err(e) => {
+            // Log error but don't fail the album generation
+            eprintln!(
+                "Warning: Failed to retrieve Wikipedia content for '{}': {}",
+                album_name, e
+            );
+        }
+    }
+
+    page_counter // Return the updated page counter
 }
 
 /// Calculates appropriate stamp box dimensions based on image dimensions

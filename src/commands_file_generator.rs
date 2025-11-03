@@ -398,7 +398,7 @@ impl CommandsFileGenerator {
             }
         };
         let mut writer = BufWriter::new(file);
-        self.write_globals(&mut writer);
+        let _page_count = self.write_globals(&mut writer);
         let mut prev_year = String::new();
         let mut prev_series = String::new();
         let mut prev_date = String::new();
@@ -547,10 +547,10 @@ impl CommandsFileGenerator {
         self.snooze(500);
     }
     /// Stub for write_globals helper
-    pub fn write_globals<W: Write>(&self, _writer: &mut W) {
+    pub fn write_globals<W: Write>(&self, _writer: &mut W) -> usize {
         let _cfg = crate::config::load_config("config.toml");
         // No DB connection or explicit year range available here: pass None values
-        crate::album_globals::write_globals(_writer, &self.album_name, None, None, None);
+        crate::album_globals::write_globals(_writer, &self.album_name, None, None, None)
     }
 
     /// Stub for is_selected_format helper

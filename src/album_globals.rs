@@ -150,10 +150,10 @@ pub fn write_globals<W: std::io::Write>(
     conn_opt: Option<&Connection>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) {
+) -> usize {
     // Use the canonical globals writer from `album_utils` so all callers get the
     // same header block. The user-supplied album header is implemented there.
-    crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year);
+    crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year)
 }
 
 /// Compute usable height (mm) given a Config. This mirrors the logic used
@@ -462,7 +462,7 @@ pub fn generate_album_output_conn<F>(
     );
 
     // Write global album settings (pass DB connection and CLI year range so the header can include years)
-    write_globals(
+    let pages_from_globals = write_globals(
         &mut output,
         album_name,
         Some(conn),
@@ -470,8 +470,11 @@ pub fn generate_album_output_conn<F>(
         passed_end_year,
     );
 
-    // Emit a single leading page header for Page 1
-    let _ = writeln!(output, "### Page 1 ###");
+    // Start page counter after the globals section
+    let starting_page_number = pages_from_globals + 1;
+
+    // Emit page header for first stamp page
+    let _ = writeln!(output, "### Page {} - Stamps ###", starting_page_number);
     let _ = writeln!(output, "PAGE_START");
     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -507,8 +510,8 @@ pub fn generate_album_output_conn<F>(
     let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
     let series_order_slice = series_order.as_deref();
     let series_list = get_all_series(conn, series_order_slice).expect("Failed to get series");
-    // We've emitted page 1 above; start counter at 1
-    let mut page_counter = 1usize;
+    // Initialize page counter from the starting page (after globals pages)
+    let mut page_counter = starting_page_number;
     let mut current_height = 0.0f64;
     let mut rows_on_page = 0;
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
@@ -858,6 +861,7 @@ pub fn generate_album_output_conn<F>(
                         header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                     }
                 }
+
                 let header_block_height: f64 = header_lines_vec.iter().map(|(_, h)| *h).sum();
                 let vspace_before_header = config.header_vspace_before_mm.unwrap_or(8.0) as f64;
                 let vspace_after_header = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
@@ -973,7 +977,7 @@ pub fn generate_album_output_conn<F>(
                     if page_counter > 1 {
                         let _ = writeln!(output, "\n################################################################################");
                     }
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1169,7 +1173,7 @@ pub fn generate_album_output_conn<F>(
                 if current_height + total_row_height + next_conservative_needed > usable_height {
                     page_counter += 1;
                     let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1206,7 +1210,7 @@ pub fn generate_album_output_conn<F>(
                     if rows_on_page != 0 && !(allow_single && percent_of_usable >= threshold) {
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
                         let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1220,7 +1224,7 @@ pub fn generate_album_output_conn<F>(
                         // single-row page: start a fresh page and let it emit.
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
                         let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1236,7 +1240,7 @@ pub fn generate_album_output_conn<F>(
                     // Start new page and repeat header then re-check on next loop
                     page_counter += 1;
                     let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1268,7 +1272,7 @@ pub fn generate_album_output_conn<F>(
                     if rows_on_page != 0 {
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
                         let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1283,7 +1287,7 @@ pub fn generate_album_output_conn<F>(
                     // Normal case: header+row would overflow current page; force a new page now
                     page_counter += 1;
                     let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 

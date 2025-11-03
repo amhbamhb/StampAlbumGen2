@@ -51,7 +51,7 @@ struct Cli {
     start_year: i32,
 
     // Default end-year set at compile time to the current year via build.rs -> BUILD_YEAR
-    #[arg(long, default_value = env!("BUILD_YEAR") )]
+    #[arg(long, default_value = env!("BUILD_YEAR"))]
     end_year: i32,
 
     #[arg(long, default_value_t = false)]
@@ -100,9 +100,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         || cli.max_pages != 0
         || cli.stop_after_no_hits != 3;
     if !user_provided_any {
-        eprintln!("It looks like you didn't provide any command options. Here's a short guide to get started:");
-        eprintln!("  - To generate an album from an existing database: provide --db-path and --album-name");
-        eprintln!("  - To scrape data from StampWorld and generate an album: use --source stampworld --site-name <Site> --album-name <Album> --start-year <YYYY> --end-year <YYYY>");
+        eprintln!(
+            "It looks like you didn't provide any command options. Here's a short guide to get started:"
+        );
+        eprintln!(
+            "  - To generate an album from an existing database: provide --db-path and --album-name"
+        );
+        eprintln!(
+            "  - To scrape data from StampWorld and generate an album: use --source stampworld --site-name <Site> --album-name <Album> --start-year <YYYY> --end-year <YYYY>"
+        );
         eprintln!("If you're unsure, the full help below has all options available :\n");
         // Print clap-generated help
         Cli::command().print_help()?;
@@ -236,7 +242,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("  # Generate from an existing DB (db-only):");
             eprintln!("  stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada");
             eprintln!("\n  # Scrape StampWorld and generate album (scrape-only):");
-            eprintln!("  stamp_album_gen2 --source stampworld --site-name 'Great-Britain' --album-name 'Great Britain' --start-year 1900 --end-year 1950\n");
+            eprintln!(
+                "  stamp_album_gen2 --source stampworld --site-name 'Great-Britain' --album-name 'Great Britain' --start-year 1900 --end-year 1950\n"
+            );
             eprintln!("Full help is shown below:\n");
             Cli::command().print_help()?;
             println!();
@@ -349,7 +357,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!(
                 "You started the program in scraping mode but did not provide the site name."
             );
-            eprintln!("Please provide the site using --site-name (for example: --site-name 'Great-Britain') or supply --album-name so the program can infer the site.");
+            eprintln!(
+                "Please provide the site using --site-name (for example: --site-name 'Great-Britain') or supply --album-name so the program can infer the site."
+            );
             eprintln!("If you're not sure what to put, here's the full help text:\n");
             Cli::command().print_help()?;
             println!();
@@ -361,7 +371,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "📋 Setting up scrape: {} → {} ({}..{})",
             site_name, album_name, cli.start_year, cli.end_year
         ));
-        println!("Starting StampWorld scrape for site='{}' album='{}' years={}..{} overwrite_images={} overwrite_album={}", site_name, album_name, cli.start_year, cli.end_year, cli.overwrite_images, cli.overwrite_album);
+        progress.set_message(
+            &format!(
+                "Starting StampWorld scrape for site='{}' album='{}' years={}..{} overwrite_images={} overwrite_album={}",
+                site_name,
+                album_name,
+                cli.start_year,
+                cli.end_year,
+                cli.overwrite_images,
+                cli.overwrite_album
+            )
+        );
 
         // Build a CommandsFileGenerator and invoke the collector
         progress.set_message("⚙️ Configuring data collector...");
@@ -443,7 +463,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Propagate the CLI overwrite flag into global state so generators
         // can create backups when the user explicitly requested overwrites.
         stamp_album_gen2::file_utils::set_overwrite_album_from_cli(cli.overwrite_album);
-        println!("DEBUG: collector DB path set to {}", db_path);
+        progress.set_message(&format!("Stamp Database path set to {}", db_path));
 
         progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
         let pages = cfg.collect_stampworld_data(
@@ -454,10 +474,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             cli.stop_after_no_hits,
         );
         progress.set_message(&format!(
-            "✅ Scraping complete! Found {} stamp entries",
+            "✅ Scraping complete! Found {} new stamp entries from web page(s).",
             pages.len()
         ));
-        println!("Scrape produced {} stamp lines", pages.len());
+        // println!("Scrape added {} new stamp(s)", pages.len());
 
         // After scraping, generate album output from the same DB
         // Open the DB that the collector used and call the conn-taking API so
@@ -483,14 +503,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
                 // Optional: fetch Wikipedia summary if requested by config
-                let fetch_wiki = cfg_file.fetch_wikipedia.unwrap_or(false);
+                let fetch_wiki = cfg_file
+                    .fetch_wikipedia
+                    .unwrap_or_else(|| cfg_file.include_wikipedia_content.unwrap_or(false));
                 if fetch_wiki {
                     progress.set_message("📚 Fetching Wikipedia content...");
-                    let album_dir = cfg.album_directory.clone();
-                    match stamp_album_gen2::wikipedia::fetch_and_save_summary(
-                        &site_name, &album_dir,
+                    let cache_db_path = cfg_file
+                        .wikipedia_cache_db_path
+                        .as_deref()
+                        .unwrap_or("wikipedia_cache.db");
+                    let fetcher = stamp_album_gen2::stampworld::fetch::ReqwestFetcher::new();
+                    match stamp_album_gen2::wikipedia::fetch_and_cache_wikipedia_content(
+                        &site_name,
+                        cache_db_path,
+                        &fetcher,
                     ) {
-                        Ok(p) => info!("Saved Wikipedia summary to {}", p),
+                        Ok(_) => info!("Cached Wikipedia content for '{}'", site_name),
                         Err(e) => info!("Wikipedia fetch failed for {}: {}", site_name, e),
                     }
                 }
@@ -520,8 +548,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     } else {
         // No db_path and not stampworld: require db_path
-        eprintln!("You requested a source other than 'stampworld' but did not provide a database path to use.");
-        eprintln!("For non-scraping sources please provide --db-path and --album-name so the program can generate the album output from your existing database.");
+        eprintln!(
+            "You requested a source other than 'stampworld' but did not provide a database path to use."
+        );
+        eprintln!(
+            "For non-scraping sources please provide --db-path and --album-name so the program can generate the album output from your existing database."
+        );
         eprintln!("Full help is shown below:\n");
         Cli::command().print_help()?;
         println!();

@@ -48,6 +48,9 @@ impl ProgressIndicator {
             return;
         }
 
+        // TEMPORARY: Print each message on a new line for testing order
+        println!("🔄 {}", message);
+
         if let (Ok(pb_opt), Ok(mut step)) = (self.pb.lock(), self.current_step.lock()) {
             *step = message.to_string();
             if let Some(pb) = pb_opt.as_ref() {
@@ -67,6 +70,9 @@ impl ProgressIndicator {
             return;
         }
 
+        // TEMPORARY: Print final success message on new line
+        println!("✅ {}", message);
+
         if let Ok(pb_opt) = self.pb.lock() {
             if let Some(pb) = pb_opt.as_ref() {
                 pb.finish_with_message(format!("✅ {}", message));
@@ -79,6 +85,9 @@ impl ProgressIndicator {
         if !self.enabled {
             return;
         }
+
+        // TEMPORARY: Print error message on new line
+        println!("❌ {}", message);
 
         if let Ok(pb_opt) = self.pb.lock() {
             if let Some(pb) = pb_opt.as_ref() {

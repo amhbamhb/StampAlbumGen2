@@ -211,6 +211,25 @@ pub struct Config {
     // Progress indicator settings
     // When true, show spinning progress indicator with current operation status
     pub show_progress_indicator: Option<bool>,
+
+    // Wikipedia content configuration
+    // Path to Wikipedia cache database
+    pub wikipedia_cache_db_path: Option<String>,
+    // Wikipedia content font settings
+    pub content_wiki_font: Option<String>,
+    pub content_wiki_font_size: Option<u32>,
+    pub content_wiki_max_lines_per_page: Option<u32>,
+    pub content_wiki_estimated_chars_per_line: Option<usize>,
+    // Wikipedia paragraph formatting
+    pub wikipedia_paragraph_font: Option<String>,
+    pub wikipedia_paragraph_font_size: Option<u32>,
+    pub wikipedia_paragraph_alignment: Option<String>,
+    pub wikipedia_paragraph_padding: Option<f32>,
+    pub wikipedia_paragraph_vspace: Option<f32>,
+    pub wikipedia_paragraph_right_padding: Option<f32>,
+    // Wikipedia section title formatting
+    pub wikipedia_section_title_font: Option<String>,
+    pub wikipedia_section_title_font_size: Option<u32>,
 }
 
 pub fn load_config(path: &str) -> Config {
