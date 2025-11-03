@@ -27,15 +27,15 @@ cache:
 build:
   stage: build
   script:
-    - cargo build --workspace --release --verbose
+    - cargo build --bin stamp_album_gen2 --release --verbose
   artifacts:
     when: always
     paths:
-      - target/release/stamp_album_gen2
-      - target/release/backfill_image_dims
-      - target/release/insert_test
-      - target/release/migrate_stamps
-      - target/release/migrate_fix_block_metadata
+      - stamp_album_gen2
+      - README.md
+      - RELEASE_NOTES.md
+      - config.toml
+      - config_full_example.toml
     expire_in: 1 hour
 
 fmt:
