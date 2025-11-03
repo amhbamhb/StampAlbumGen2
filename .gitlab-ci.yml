@@ -31,7 +31,7 @@ build:
   artifacts:
     when: always
     paths:
-      - stamp_album_gen2
+      - target/release/stamp_album_gen2
       - README.md
       - RELEASE_NOTES.md
       - config.toml
