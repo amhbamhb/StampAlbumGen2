@@ -28,15 +28,49 @@ build:
   stage: build
   script:
     - cargo build --bin stamp_album_gen2 --release --verbose
+    # Get version from Cargo.toml for artifact naming
+    - export VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+    - export BUILD_DATE=$(date +%Y%m%d_%H%M)
+    - echo "Building version $VERSION at $BUILD_DATE"
+    # Create versioned directory structure
+    - mkdir -p artifacts/stamp_album_gen2_v${VERSION}_${BUILD_DATE}
+    - cp target/release/stamp_album_gen2 artifacts/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
+    - cp README.md RELEASE_NOTES.md config.toml config_full_example.toml artifacts/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
+    # Create a "latest" symlink for easy access
+    - ln -sf stamp_album_gen2_v${VERSION}_${BUILD_DATE} artifacts/latest
   artifacts:
     when: always
+    name: "stamp_album_gen2_v${VERSION}_${BUILD_DATE}"
     paths:
-      - target/release/stamp_album_gen2
-      - README.md
-      - RELEASE_NOTES.md
-      - config.toml
-      - config_full_example.toml
-    expire_in: 1 hour
+      - artifacts/
+    expire_in: 30 days  # Keep artifacts for 30 days instead of 1 hour
+
+deploy_latest:
+  stage: release
+  script:
+    - export VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+    - export BUILD_DATE=$(date +%Y%m%d_%H%M)
+    - echo "Deploying stamp_album_gen2 v${VERSION} to permanent storage"
+    # Create deployment directory structure
+    - mkdir -p /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}
+    - cp target/release/stamp_album_gen2 /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
+    - cp README.md RELEASE_NOTES.md config.toml config_full_example.toml /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
+    # Server deployment - uncomment when permissions are set up:
+    - sudo mkdir -p /home/admin/stamp_gen/versions
+    - sudo cp -r /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE} /home/admin/stamp_gen/versions/
+    - sudo ln -sf /home/admin/stamp_gen/versions/stamp_album_gen2_v${VERSION}_${BUILD_DATE} /home/admin/stamp_gen/latest
+    - sudo chown -R admin:admin /home/admin/stamp_gen/
+    - echo "Successfully deployed to /home/admin/stamp_gen/versions/"
+    - echo "Version is ${VERSION}"
+    - echo "Build date is ${BUILD_DATE}"
+    - echo "Files prepared in /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/"
+  needs:
+    - build
+    - fmt
+  only:
+    - main
+    - master
+  when: on_success
 
 fmt:
   stage: lint
