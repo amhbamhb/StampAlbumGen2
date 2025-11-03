@@ -1,21 +1,35 @@
 # Code Formatting Guide
 
-This project now includes automated code formatting to prevent CI failures.
+This project includes automated code formatting to prevent CI failures with **strict enforcement**.
 
-## Quick Start
+## How It Works
 
-### Before Every Commit (Automatic)
+### 🛡️ Triple Protection System
 
-The pre-commit hook will automatically run `cargo fmt` before each commit. If formatting changes are needed, the commit will be blocked and you'll need to:
+1. **Pre-commit Hook**: Blocks commits with formatting issues
+2. **Pre-push Hook**: Blocks pushes with formatting/compilation issues  
+3. **CI Pipeline**: Final server-side formatting verification
 
-1. Review the formatting changes
-2. Run `git add .` to stage them
-3. Commit again
+### ✅ Before Every Commit (Automatic)
 
-### Manual Formatting
+The pre-commit hook checks formatting **without modifying files**. If formatting is needed:
 
+1. Commit is blocked with clear error messages
+2. Run `./format-and-check.sh` to fix issues
+3. Add and commit the formatted changes
+
+### ✅ Before Every Push (Automatic)
+
+The pre-push hook does final verification:
+- Formatting check
+- Compilation check
+- Blocks push if any issues found
+
+## Manual Commands
+
+### Safe Formatting Script
 ```bash
-# Format all code
+# Recommended: Format and verify everything
 ./format-and-check.sh
 
 # Or just format without extra checks
