@@ -112,9 +112,13 @@ fn test_parameter_usage_consistency() {
         .count();
 
     // Width and height should be used the same number of times in album_globals.rs
-    assert_eq!(w_mm_usage, h_mm_usage, 
-               "Width and height parameters should be used equally in album_globals.rs. Found w_mm: {}, h_mm: {}", 
-               w_mm_usage, h_mm_usage);
+    assert_eq!(
+        w_mm_usage,
+        h_mm_usage,
+        "Width and height parameters should be used equally in album_globals.rs. Found w_mm: {}, h_mm: {}",
+        w_mm_usage,
+        h_mm_usage
+    );
 
     // There should be at least 4 uses of each (the locations we fixed)
     assert!(
