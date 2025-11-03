@@ -328,8 +328,8 @@ image_spacing_mm = 5.0
 # ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)
 ############################################
 
-album_stamp_img_new_setting_w_mm = 3.0
-album_stamp_img_new_setting_h_mm = 3.0
+album_stamp_img_new_setting_w_mm = 6.0
+album_stamp_img_new_setting_h_mm = 6.0
 album_stamp_img_new_setting_preserve_aspect = true
 
 # How series should be ordered when generating albums: "first_date" | "first_sg" | "alpha"| "first_sg_desc"

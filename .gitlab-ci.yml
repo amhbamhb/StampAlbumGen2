@@ -84,12 +84,17 @@ bump_version:
     NEW_TAG="${MAJ}.${MIN}.${PATCH}"
     echo "Creating new tag: $NEW_TAG"
     git tag -a "$NEW_TAG" -m "CI: bump version to $NEW_TAG"
+    echo "Tag created locally: $NEW_TAG"
+    # Try to push tags, but don't fail if we don't have permission
     if [ -n "${CI_JOB_TOKEN:-}" ]; then
-      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags
+      echo "Attempting to push tags using CI_JOB_TOKEN..."
+      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags || echo "Warning: Failed to push tags with CI_JOB_TOKEN (may lack permissions)"
     elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
-      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags
+      echo "Attempting to push tags using GITLAB_ACCESS_TOKEN..."
+      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags || echo "Warning: Failed to push tags with GITLAB_ACCESS_TOKEN"
     else
       echo "No CI token available to push tags; skipping push"
+      echo "To enable automatic tag pushing, set up a GITLAB_ACCESS_TOKEN with write_repository permissions"
     fi
   needs:
     - build
@@ -160,10 +165,11 @@ release:
       echo "No changes to commit"
     else
       git commit -m "chore: bump version to $NEW_VERSION"
+      echo "Attempting to push version bump commit..."
       if [ -n "${CI_JOB_TOKEN:-}" ]; then
-        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME}
+        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with CI_JOB_TOKEN"
       else
-        git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME}
+        git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with GITLAB_ACCESS_TOKEN"
       fi
     fi
     RELEASE_NOTES="## Release $NEW_VERSION
@@ -180,10 +186,11 @@ release:
          --data "{\"name\": \"Release $NEW_VERSION\", \"tag_name\": \"v$NEW_VERSION\", \"description\": \"$RELEASE_NOTES\", \"ref\": \"${CI_COMMIT_SHA}\"}" \
          --request POST ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases || true
     git tag "v$NEW_VERSION" || true
+    echo "Attempting to push tag v$NEW_VERSION..."
     if [ -n "${CI_JOB_TOKEN:-}" ]; then
-      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || true
+      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || echo "Warning: Failed to push tag with CI_JOB_TOKEN"
     else
-      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || true
+      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || echo "Warning: Failed to push tag with GITLAB_ACCESS_TOKEN"
     fi
 
 manual_release:

@@ -867,6 +867,7 @@ pub fn generate_album_output_conn<F>(
                 let font_height = config.text_line_height_mm.unwrap_or(3.0) as f64;
                 let image_spacing = config.image_spacing_mm.unwrap_or(2.0) as f64;
                 // Additional per-image adjustments from ALBUM_STAMP_IMG_NEW_SETTING
+                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
                 let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
                 for stamp in stamps_in_row {
                     let image_path = stamp.image_path.trim();
@@ -993,6 +994,7 @@ pub fn generate_album_output_conn<F>(
             let mut max_row_height = 0.0f64;
             let font_height = config.text_line_height_mm.unwrap_or(3.0) as f64; // TN 10 font spacing (mm)
             let image_spacing = config.image_spacing_mm.unwrap_or(2.0) as f64; // space below image (mm)
+            let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
             let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
             // Match the conservative estimate above when computing per-row heights
             let stamp_heading_h = config.header_font_spacing.unwrap_or(3.0) as f64
@@ -1095,6 +1097,9 @@ pub fn generate_album_output_conn<F>(
                     next_header_lines_vec.iter().map(|(_, h)| *h).sum();
                 let next_vspace_before = config.header_vspace_before_mm.unwrap_or(8.0) as f64;
                 let next_vspace_after = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
+                // Additional per-image adjustments from ALBUM_STAMP_IMG_NEW_SETTING
+                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
+                let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
                 // Estimate next series first row height: look at first row of stamps (group into row of up to 5)
                 let mut next_first_row_max = 0.0f64;
                 // group next_stamps into rows (configurable max stamps per row)
@@ -1140,7 +1145,7 @@ pub fn generate_album_output_conn<F>(
                         let text_lines = 1usize; // conservative minimal estimate
                         let text_height = (text_lines as f64) * header_font_h;
                         let adj_est_height = est_height_mm
-                            + config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64
+                            + img_new_h
                             + 2.0 * stamp_box_adjust;
                         let total_height = adj_est_height
                             + config.image_spacing_mm.unwrap_or(2.0) as f64
@@ -1354,8 +1359,8 @@ pub fn generate_album_output_conn<F>(
                     est_height_mm *= scale;
                 }
                 // Apply ALBUM_STAMP_IMG_NEW_SETTING adjustments to width/height (additive)
-                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
-                let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
+                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(6.0) as f64;
+                let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(6.0) as f64;
                 est_width_mm += img_new_w;
                 est_height_mm += img_new_h;
                 // Debug: emit detailed per-stamp sizing diagnostics when debug logging enabled
