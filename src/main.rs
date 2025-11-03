@@ -5,6 +5,7 @@ use clap::Parser;
 use flexi_logger::{FileSpec, Logger};
 use log::info;
 use stamp_album_gen2::commands_file_generator::CommandsFileGenerator;
+use stamp_album_gen2::progress::ProgressIndicator;
 use stamp_album_gen2::types::OSType;
 use strsim::jaro_winkler;
 
@@ -76,6 +77,10 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse CLI but handle common user errors with friendlier messages.
     let cli = Cli::parse();
+
+    // Load config early to check for progress indicator setting
+    let config = stamp_album_gen2::config::load_config("config.toml");
+    let show_progress = config.show_progress_indicator.unwrap_or(true);
 
     // NOTE: avoid noisy debug printing in normal runs.
 
@@ -241,11 +246,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if cli.db_path.is_some() {
         // Output-only mode: use the provided db_path and album_name
+        let progress = ProgressIndicator::new_with_config(show_progress);
+        progress.set_message("🔍 Initializing database mode...");
+
         let db_path = cli.db_path.unwrap();
+        progress.set_message(&format!("📁 Checking database path: {}", db_path));
+
         // Ensure parent directory exists and attempt to create the DB file if missing
         if let Some(parent) = std::path::Path::new(&db_path).parent() {
             if !parent.exists() {
+                progress.set_message(&format!(
+                    "📁 Creating parent directory: {}",
+                    parent.display()
+                ));
                 if let Err(e) = std::fs::create_dir_all(parent) {
+                    progress
+                        .finish_with_error(&format!("Failed to create parent directory: {}", e));
                     eprintln!(
                         "Failed to create parent directory for DB '{}': {}",
                         parent.display(),
@@ -256,9 +272,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         if !std::path::Path::new(&db_path).exists() {
+            progress.set_message("📝 Creating new database file...");
             match std::fs::File::create(&db_path) {
                 Ok(_) => (),
                 Err(e) => {
+                    progress.finish_with_error(&format!("Failed to create DB file: {}", e));
                     eprintln!("Failed to create DB file '{}': {}", db_path, e);
                     std::process::exit(1);
                 }
@@ -268,9 +286,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // Try opening the DB now to detect corrupt/non-sqlite files early and
         // provide a friendly message with suggestions rather than panicking later.
         // Open the database once and hand a reference to the generator.
+        progress.set_message("🔗 Opening database connection...");
         let conn = match stamp_album_gen2::db_utils::init_db(&db_path) {
             Ok(c) => c,
             Err(e) => {
+                progress.finish_with_error(&format!("Database connection failed: {}", e));
                 eprintln!("Failed to open database '{}': {}", db_path, e);
                 eprintln!("Possible causes:");
                 eprintln!("  - The file is not a SQLite database or is corrupted");
@@ -290,6 +310,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
         let album_name = cli.album_name.unwrap_or_else(|| "Album".to_string());
+        progress.set_message(&format!("📖 Generating album output for: {}", album_name));
+
         stamp_album_gen2::album_globals::generate_album_output_conn(
             &conn,
             &album_name,
@@ -297,8 +319,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(cli.start_year),
             Some(cli.end_year),
         );
+
+        progress.finish_with_message(&format!("Album '{}' generated successfully!", album_name));
     } else if effective_source == "stampworld" {
         // Scrape mode
+        let progress = ProgressIndicator::new_with_config(show_progress);
+        progress.set_message("🌐 Preparing StampWorld scraping mode...");
+
         // Require site_name for scraping. If the caller explicitly passed
         // --site-name but set it to the literal value 'stampworld' (the
         // default/source name), prefer the provided --album-name when
@@ -318,6 +345,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         } else if let Some(a) = cli.album_name.clone() {
             a.clone()
         } else {
+            progress.finish_with_error("Missing site name for scraping");
             eprintln!(
                 "You started the program in scraping mode but did not provide the site name."
             );
@@ -329,9 +357,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         };
         let album_name = cli.album_name.unwrap_or_else(|| site_name.clone());
 
+        progress.set_message(&format!(
+            "📋 Setting up scrape: {} → {} ({}..{})",
+            site_name, album_name, cli.start_year, cli.end_year
+        ));
         println!("Starting StampWorld scrape for site='{}' album='{}' years={}..{} overwrite_images={} overwrite_album={}", site_name, album_name, cli.start_year, cli.end_year, cli.overwrite_images, cli.overwrite_album);
 
         // Build a CommandsFileGenerator and invoke the collector
+        progress.set_message("⚙️ Configuring data collector...");
         let mut cfg = CommandsFileGenerator::new();
         cfg.site_name = site_name.clone();
         cfg.images_directory = format!("Albums/{}/images", album_name.replace(' ', "-"));
@@ -345,6 +378,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // StampWorld listing URL that includes the Postage stamps year-range
         // so the collector can append a page number. Example produced:
         // https://www.stampworld.com/en/stamps/Bahamas/Postage%20stamps/1859-1863?page=
+        progress.set_message("🔗 Building StampWorld URL...");
         let base_url = if let Some(b) = &cli.base_url {
             b.clone()
         } else {
@@ -394,10 +428,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         };
         // Load full config (so flag/wiki toggles are available)
+        progress.set_message("⚙️ Loading configuration file...");
         let cfg_file = stamp_album_gen2::config::load_config("config.toml");
 
         // Compose the DB path early and set it for the collector so both scraper
         // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
+        progress.set_message("💾 Setting up database path...");
         let db_path = format!(
             "{}/{}.db",
             cfg.album_directory,
@@ -409,6 +445,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         stamp_album_gen2::file_utils::set_overwrite_album_from_cli(cli.overwrite_album);
         println!("DEBUG: collector DB path set to {}", db_path);
 
+        progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
         let pages = cfg.collect_stampworld_data(
             &base_url,
             cli.overwrite_images,
@@ -416,16 +453,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             cli.max_pages,
             cli.stop_after_no_hits,
         );
+        progress.set_message(&format!(
+            "✅ Scraping complete! Found {} stamp entries",
+            pages.len()
+        ));
         println!("Scrape produced {} stamp lines", pages.len());
 
         // After scraping, generate album output from the same DB
         // Open the DB that the collector used and call the conn-taking API so
         // both scraper and generator share the same connection lifecycle.
+        progress.set_message("🔗 Opening database for album generation...");
         match stamp_album_gen2::db_utils::init_db(&db_path) {
             Ok(conn) => {
                 // Attempt to copy a flag into the album images dir if enabled in config
                 let print_flag = cfg_file.print_flag_cover.unwrap_or(true);
                 if print_flag {
+                    progress.set_message("🏳️ Downloading country flag...");
                     let album_images = cfg.images_directory.clone();
                     match stamp_album_gen2::flagdb::copy_flag_for_album(
                         &site_name,
@@ -442,6 +485,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Optional: fetch Wikipedia summary if requested by config
                 let fetch_wiki = cfg_file.fetch_wikipedia.unwrap_or(false);
                 if fetch_wiki {
+                    progress.set_message("📚 Fetching Wikipedia content...");
                     let album_dir = cfg.album_directory.clone();
                     match stamp_album_gen2::wikipedia::fetch_and_save_summary(
                         &site_name, &album_dir,
@@ -451,6 +495,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
+                progress.set_message(&format!("📖 Generating album output for: {}", album_name));
                 stamp_album_gen2::album_globals::generate_album_output_conn(
                     &conn,
                     &album_name,
@@ -458,8 +503,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Some(cli.start_year),
                     Some(cli.end_year),
                 );
+
+                progress.finish_with_message(&format!(
+                    "Album '{}' completed successfully! 🎉",
+                    album_name
+                ));
             }
             Err(e) => {
+                progress.finish_with_error(&format!("Database connection failed: {}", e));
                 eprintln!(
                     "Failed to open database for generation '{}': {}",
                     db_path, e

@@ -1,5 +1,6 @@
 pub mod config;
 pub mod flagdb;
+pub mod progress;
 pub mod wikipedia;
 pub use crate::config::{load_slug_overrides, Config, HeaderFormatting};
 // Main library file for StampAlbumGen2

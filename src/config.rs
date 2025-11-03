@@ -207,6 +207,10 @@ pub struct Config {
     // This allows emitted STAMP_ADD_IMG boxes to reflect real-world mm
     // dimensions (useful when `force_dpi` is set and you want physical sizes).
     pub preserve_real_image_size: Option<bool>,
+
+    // Progress indicator settings
+    // When true, show spinning progress indicator with current operation status
+    pub show_progress_indicator: Option<bool>,
 }
 
 pub fn load_config(path: &str) -> Config {

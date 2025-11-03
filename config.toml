@@ -575,4 +575,12 @@ flag_cover_text_only_title_scale = 1.0
 # Vertical space after the text-only cover title (mm)
 flag_cover_text_only_vspace_after = 18.0
 
+############################################
+# --- Progress indicator settings ---
+# Controls the spinning progress indicator that shows current operation status
+############################################
+
+# Enable/disable the progress indicator (true/false)
+show_progress_indicator = true
+
 

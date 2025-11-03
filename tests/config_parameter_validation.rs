@@ -126,6 +126,7 @@ fn test_config_bool_parameter_validation() {
         "allow_single_large_stamp_per_page",
         "album_pages_footer_number_enabled",
         "album_stamp_img_new_setting_preserve_aspect",
+        "show_progress_indicator",
     ];
 
     for param_name in bool_params {
