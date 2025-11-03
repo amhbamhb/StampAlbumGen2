@@ -1144,9 +1144,7 @@ pub fn generate_album_output_conn<F>(
                         };
                         let text_lines = 1usize; // conservative minimal estimate
                         let text_height = (text_lines as f64) * header_font_h;
-                        let adj_est_height = est_height_mm
-                            + img_new_h
-                            + 2.0 * stamp_box_adjust;
+                        let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
                         let total_height = adj_est_height
                             + config.image_spacing_mm.unwrap_or(2.0) as f64
                             + text_height;
