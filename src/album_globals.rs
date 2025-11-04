@@ -315,13 +315,15 @@ pub fn add_stamp<W: std::io::Write>(
 
 /// Main entry point for AlbumEasy output generation.
 /// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
+/// Returns the path to the generated output file.
 pub fn generate_album_output_conn<F>(
     conn: &Connection,
     album_name: &str,
     mut page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) where
+) -> std::path::PathBuf
+where
     F: FnMut(usize),
 {
     // Use the start_year/end_year passed to this function (may be None)
@@ -1780,6 +1782,8 @@ pub fn generate_album_output_conn<F>(
         }
     }
 
+    output_path // Return the output file path
+
     // End of generate_album_output inner scope: use shared clean_text from album_utils
 }
 
@@ -1787,15 +1791,17 @@ pub fn generate_album_output_conn<F>(
 /// connection-based implementation. This keeps existing callers (tests and
 /// other modules) working while allowing callers that already hold a
 /// Connection to use the more efficient conn-based variant.
+/// Returns the path to the generated output file.
 pub fn generate_album_output<F>(
     db_path: &str,
     album_name: &str,
     page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) where
+) -> std::path::PathBuf
+where
     F: FnMut(usize),
 {
     let conn = init_db(db_path).expect("Failed to open database");
-    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year);
+    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year)
 }

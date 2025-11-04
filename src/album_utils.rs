@@ -198,7 +198,10 @@ pub fn write_globals<W: Write>(
     // Track page count for sequential numbering
     let mut page_counter = 0usize;
     let cfg_allow_single_large = cfg.allow_single_large_stamp_per_page.unwrap_or(true);
-    let cfg_preserve_aspect = cfg.preserve_aspect.unwrap_or(img_preserve);
+    let cfg_preserve_aspect = cfg
+        .preserve_aspect
+        .or(cfg.album_stamp_img_aspect_ratio)
+        .unwrap_or(img_preserve);
     let cfg_emit_placeholder_diags = cfg.emit_placeholder_diagnostics.unwrap_or(false);
     let cfg_detailed_page_fit = cfg
         .detailed_page_fit

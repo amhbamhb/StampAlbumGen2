@@ -320,7 +320,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let album_name = cli.album_name.unwrap_or_else(|| "Album".to_string());
         progress.set_message(&format!("📖 Generating album output for: {}", album_name));
 
-        stamp_album_gen2::album_globals::generate_album_output_conn(
+        let output_path = stamp_album_gen2::album_globals::generate_album_output_conn(
             &conn,
             &album_name,
             None::<fn(usize)>,
@@ -328,7 +328,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Some(cli.end_year),
         );
 
-        progress.finish_with_message(&format!("Album '{}' generated successfully!", album_name));
+        progress.finish_with_message(&format!(
+            "Album '{}' generated successfully! 📄 File: {}",
+            album_name,
+            output_path.display()
+        ));
     } else if effective_source == "stampworld" {
         // Scrape mode
         let progress = ProgressIndicator::new_with_config(show_progress);
@@ -524,7 +528,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
 
                 progress.set_message(&format!("📖 Generating album output for: {}", album_name));
-                stamp_album_gen2::album_globals::generate_album_output_conn(
+                let output_path = stamp_album_gen2::album_globals::generate_album_output_conn(
                     &conn,
                     &album_name,
                     None::<fn(usize)>,
@@ -533,8 +537,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 );
 
                 progress.finish_with_message(&format!(
-                    "Album '{}' completed successfully! 🎉",
-                    album_name
+                    "Album '{}' completed successfully! 🎉 📄 File: {}",
+                    album_name,
+                    output_path.display()
                 ));
             }
             Err(e) => {
