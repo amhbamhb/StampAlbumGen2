@@ -57,6 +57,23 @@ impl ReqwestFetcher {
         Self { client }
     }
 
+    /// Build a client tuned for API calls (includes User-Agent header).
+    pub fn new_for_api() -> Self {
+        let mut default_headers = HeaderMap::new();
+        default_headers.insert(
+            reqwest::header::USER_AGENT,
+            "StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)".parse().unwrap(),
+        );
+
+        let client = reqwest::blocking::Client::builder()
+            .default_headers(default_headers)
+            .timeout(std::time::Duration::from_secs(60))
+            .build()
+            .expect("Failed to build API reqwest client");
+
+        Self { client }
+    }
+
     /// Convenience: return an owned Client if callers need it directly.
     pub fn client(&self) -> &Client {
         &self.client

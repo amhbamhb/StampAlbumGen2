@@ -201,7 +201,10 @@ content_wiki_max_lines_per_page = 5
 content_wiki_estimated_chars_per_line = 250
 
 
-wikipedia_cache_db_path = "wikipedia_cache.db"
+wikipedia_cache_db_path = "Albums/Switzerland/wikipedia_cache.db"
+
+# Enable fetching of Wikipedia/Grokipedia content
+fetch_wikipedia = true
 
 
 ############################################
