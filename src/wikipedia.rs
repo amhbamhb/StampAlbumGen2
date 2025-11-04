@@ -29,8 +29,14 @@ pub fn fetch_and_cache_content(
     cache_db_path: &str,
     fetcher: &dyn Fetcher,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("DEBUG: fetch_and_cache_content called with topic='{}', db='{}'", topic, cache_db_path);
-    info!("Starting fetch_and_cache_content for topic: '{}', db: '{}'", topic, cache_db_path);
+    println!(
+        "DEBUG: fetch_and_cache_content called with topic='{}', db='{}'",
+        topic, cache_db_path
+    );
+    info!(
+        "Starting fetch_and_cache_content for topic: '{}', db: '{}'",
+        topic, cache_db_path
+    );
 
     // Create cache database if it doesn't exist
     let conn = Connection::open(cache_db_path)?;
@@ -81,7 +87,10 @@ pub fn fetch_and_cache_content(
     // Try Grokipedia first
     match fetch_grokipedia_content(topic, fetcher) {
         Ok(content) => {
-            info!("Grokipedia fetch successful, content length: {}", content.len());
+            info!(
+                "Grokipedia fetch successful, content length: {}",
+                content.len()
+            );
             // Store Grokipedia content
             let result = conn.execute(
                 "INSERT OR REPLACE INTO wikipedia_content (topic, content, source) VALUES (?1, ?2, ?3)",
@@ -99,7 +108,10 @@ pub fn fetch_and_cache_content(
             }
         }
         Err(e) => {
-            info!("Grokipedia fetch failed for '{}': {}, trying Wikipedia", topic, e);
+            info!(
+                "Grokipedia fetch failed for '{}': {}, trying Wikipedia",
+                topic, e
+            );
         }
     }
 
@@ -108,7 +120,10 @@ pub fn fetch_and_cache_content(
     // Fall back to Wikipedia
     match fetch_wikipedia_content(topic, fetcher) {
         Ok(content) => {
-            info!("Wikipedia fetch successful, content length: {}", content.len());
+            info!(
+                "Wikipedia fetch successful, content length: {}",
+                content.len()
+            );
             // Store Wikipedia content
             let result = conn.execute(
                 "INSERT OR REPLACE INTO wikipedia_content (topic, content, source) VALUES (?1, ?2, ?3)",
@@ -133,7 +148,10 @@ pub fn fetch_and_cache_content(
 }
 
 /// Fetch content from Grokipedia
-fn fetch_grokipedia_content(topic: &str, fetcher: &dyn Fetcher) -> Result<String, Box<dyn std::error::Error>> {
+fn fetch_grokipedia_content(
+    topic: &str,
+    fetcher: &dyn Fetcher,
+) -> Result<String, Box<dyn std::error::Error>> {
     let topic_enc = topic.replace(' ', "_");
     let url = format!(
         "https://grokipedia.com/page/Postage_stamps_and_postal_history_of_{}",
@@ -157,7 +175,10 @@ fn fetch_grokipedia_content(topic: &str, fetcher: &dyn Fetcher) -> Result<String
 }
 
 /// Fetch content from Wikipedia (full page with sections)
-fn fetch_wikipedia_content(topic: &str, fetcher: &dyn Fetcher) -> Result<String, Box<dyn std::error::Error>> {
+fn fetch_wikipedia_content(
+    topic: &str,
+    fetcher: &dyn Fetcher,
+) -> Result<String, Box<dyn std::error::Error>> {
     let topic_enc = topic.replace(' ', "_");
     let url = format!(
         "https://en.wikipedia.org/w/api.php?action=parse&page=Postage_stamps_and_postal_history_of_{}&format=json&prop=text",
@@ -171,7 +192,12 @@ fn fetch_wikipedia_content(topic: &str, fetcher: &dyn Fetcher) -> Result<String,
     }
 
     let j: serde_json::Value = serde_json::from_str(&body)?;
-    if let Some(text) = j.get("parse").and_then(|p| p.get("text")).and_then(|t| t.get("*")).and_then(|v| v.as_str()) {
+    if let Some(text) = j
+        .get("parse")
+        .and_then(|p| p.get("text"))
+        .and_then(|t| t.get("*"))
+        .and_then(|v| v.as_str())
+    {
         // Parse HTML and extract clean text content with sections
         parse_wikipedia_html(text)
     } else {
@@ -193,7 +219,12 @@ fn parse_grokipedia_html(html: &str) -> Result<String, Box<dyn std::error::Error
 
         for element in article.select(&paragraph_selector) {
             let tag_name = element.value().name();
-            let text = element.text().collect::<Vec<_>>().join(" ").trim().to_string();
+            let text = element
+                .text()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .trim()
+                .to_string();
 
             if !text.is_empty() {
                 // Add section headers for h1-h6
@@ -228,7 +259,12 @@ fn parse_wikipedia_html(html: &str) -> Result<String, Box<dyn std::error::Error>
 
         for element in content_div.select(&section_selector) {
             let tag_name = element.value().name();
-            let text = element.text().collect::<Vec<_>>().join(" ").trim().to_string();
+            let text = element
+                .text()
+                .collect::<Vec<_>>()
+                .join(" ")
+                .trim()
+                .to_string();
 
             // Skip empty elements and references
             if text.is_empty() || text.starts_with('[') && text.ends_with(']') {
@@ -265,9 +301,13 @@ pub fn get_cached_content(
 ) -> Result<Option<(String, ContentSource)>, Box<dyn std::error::Error>> {
     let conn = Connection::open(cache_db_path)?;
 
-    let mut stmt = conn.prepare("SELECT content, source FROM wikipedia_content WHERE topic = ?1")?;
+    let mut stmt =
+        conn.prepare("SELECT content, source FROM wikipedia_content WHERE topic = ?1")?;
     let result: Result<(String, String), rusqlite::Error> = stmt.query_row(params![topic], |row| {
-        Ok((row.get(0)?, row.get(1).unwrap_or_else(|_| "wikipedia".to_string())))
+        Ok((
+            row.get(0)?,
+            row.get(1).unwrap_or_else(|_| "wikipedia".to_string()),
+        ))
     });
 
     match result {
@@ -285,18 +325,28 @@ pub fn get_cached_content(
 }
 
 /// Generate AlbumEasy PAGE_TEXT_PARAGRAPH commands for content
-pub fn format_content_for_album(content: &str, source: &ContentSource, config: &Config) -> Vec<String> {
+pub fn format_content_for_album(
+    content: &str,
+    source: &ContentSource,
+    config: &Config,
+) -> Vec<String> {
     let mut lines = Vec::new();
 
     // Get configuration values with defaults
     let paragraph_font = config.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
     let paragraph_font_size = config.wikipedia_paragraph_font_size.unwrap_or(12);
-    let paragraph_alignment = config.wikipedia_paragraph_alignment.as_deref().unwrap_or("JUSTIFIED");
+    let paragraph_alignment = config
+        .wikipedia_paragraph_alignment
+        .as_deref()
+        .unwrap_or("JUSTIFIED");
     let paragraph_padding = config.wikipedia_paragraph_padding.unwrap_or(10.0);
     let paragraph_vspace = config.wikipedia_paragraph_vspace.unwrap_or(5.0);
     let paragraph_right_padding = config.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
-    let section_title_font = config.wikipedia_section_title_font.as_deref().unwrap_or("HB");
+    let section_title_font = config
+        .wikipedia_section_title_font
+        .as_deref()
+        .unwrap_or("HB");
     let section_title_font_size = config.wikipedia_section_title_font_size.unwrap_or(14);
 
     // Add section header indicating source
@@ -346,8 +396,12 @@ pub fn format_content_for_album(content: &str, source: &ContentSource, config: &
                 // Start paragraph with formatting
                 lines.push(format!(
                     "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                    paragraph_font, paragraph_font_size, paragraph_alignment,
-                    paragraph_padding, paragraph_vspace, paragraph_right_padding
+                    paragraph_font,
+                    paragraph_font_size,
+                    paragraph_alignment,
+                    paragraph_padding,
+                    paragraph_vspace,
+                    paragraph_right_padding
                 ));
 
                 // Add the paragraph content, escaping quotes

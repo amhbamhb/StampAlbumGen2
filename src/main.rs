@@ -516,13 +516,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         .wikipedia_cache_db_path
                         .as_deref()
                         .unwrap_or("wikipedia_cache.db");
-                    let fetcher = stamp_album_gen2::stampworld::fetch::ReqwestFetcher::new_for_api();
+                    let fetcher =
+                        stamp_album_gen2::stampworld::fetch::ReqwestFetcher::new_for_api();
                     match stamp_album_gen2::wikipedia::fetch_and_cache_content(
                         &site_name,
                         cache_db_path,
                         &fetcher,
                     ) {
-                        Ok(_) => info!("✅ Successfully cached Wikipedia content for '{}'", site_name),
+                        Ok(_) => info!(
+                            "✅ Successfully cached Wikipedia content for '{}'",
+                            site_name
+                        ),
                         Err(e) => {
                             info!("❌ Wikipedia fetch failed for {}: {}", site_name, e);
                             // Log the full error for debugging

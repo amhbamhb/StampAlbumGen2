@@ -62,7 +62,9 @@ impl ReqwestFetcher {
         let mut default_headers = HeaderMap::new();
         default_headers.insert(
             reqwest::header::USER_AGENT,
-            "StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)".parse().unwrap(),
+            "StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)"
+                .parse()
+                .unwrap(),
         );
 
         let client = reqwest::blocking::Client::builder()

@@ -12,9 +12,9 @@
 //! - `calculate_stamp_dimensions`: Calculates appropriate stamp dimensions based on series
 //! - `load_stamps_from_db`: Loads stamp data from SQLite database
 
+use log::info;
 use regex::Regex;
 use std::io::Write;
-use log::info;
 // Use image utilities to measure actual image dimensions where possible
 use crate::flagdb;
 use crate::image_utils::{
@@ -731,7 +731,8 @@ fn add_wikipedia_section<W: Write>(
             for section in content_sections {
                 match section {
                     ContentSection::Header(header_text) => {
-                        let header_height = crate::wikipedia::estimate_header_height(&header_text, cfg);
+                        let header_height =
+                            crate::wikipedia::estimate_header_height(&header_text, cfg);
 
                         // Check if header fits on current page
                         if current_page_height + header_height > usable_height {
@@ -763,15 +764,21 @@ fn add_wikipedia_section<W: Write>(
                         }
 
                         // Add header
-                        let section_title_font = cfg.wikipedia_section_title_font.as_deref().unwrap_or("HB");
-                        let section_title_font_size = cfg.wikipedia_section_title_font_size.unwrap_or(14);
-                        let _ = writeln!(writer, "PAGE_TEXT ({} {} \"{}\" 3.0)",
-                                       section_title_font, section_title_font_size, header_text);
+                        let section_title_font =
+                            cfg.wikipedia_section_title_font.as_deref().unwrap_or("HB");
+                        let section_title_font_size =
+                            cfg.wikipedia_section_title_font_size.unwrap_or(14);
+                        let _ = writeln!(
+                            writer,
+                            "PAGE_TEXT ({} {} \"{}\" 3.0)",
+                            section_title_font, section_title_font_size, header_text
+                        );
 
                         current_page_height += header_height;
                     }
                     ContentSection::Paragraph(paragraph_text) => {
-                        let paragraph_height = crate::wikipedia::estimate_text_height(&paragraph_text, cfg);
+                        let paragraph_height =
+                            crate::wikipedia::estimate_text_height(&paragraph_text, cfg);
 
                         // Check if paragraph fits on current page
                         if current_page_height + paragraph_height > usable_height {
@@ -779,21 +786,39 @@ fn add_wikipedia_section<W: Write>(
                             if paragraph_height > usable_height {
                                 // Split long paragraph across pages
                                 let remaining_height = usable_height - current_page_height;
-                                let (first_part, rest) = split_paragraph_at_height(&paragraph_text, remaining_height, cfg);
+                                let (first_part, rest) = split_paragraph_at_height(
+                                    &paragraph_text,
+                                    remaining_height,
+                                    cfg,
+                                );
 
                                 if !first_part.is_empty() {
                                     // Add first part to current page
-                                    let paragraph_font = cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                                    let paragraph_font_size = cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                                    let paragraph_alignment = cfg.wikipedia_paragraph_alignment.as_deref().unwrap_or("JUSTIFIED");
-                                    let paragraph_padding = cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                                    let paragraph_vspace = cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                                    let paragraph_right_padding = cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
+                                    let paragraph_font =
+                                        cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
+                                    let paragraph_font_size =
+                                        cfg.wikipedia_paragraph_font_size.unwrap_or(12);
+                                    let paragraph_alignment = cfg
+                                        .wikipedia_paragraph_alignment
+                                        .as_deref()
+                                        .unwrap_or("JUSTIFIED");
+                                    let paragraph_padding =
+                                        cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
+                                    let paragraph_vspace =
+                                        cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
+                                    let paragraph_right_padding =
+                                        cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
-                                    let _ = writeln!(writer,
+                                    let _ = writeln!(
+                                        writer,
                                         "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                        paragraph_font, paragraph_font_size, paragraph_alignment,
-                                        paragraph_padding, paragraph_vspace, paragraph_right_padding);
+                                        paragraph_font,
+                                        paragraph_font_size,
+                                        paragraph_alignment,
+                                        paragraph_padding,
+                                        paragraph_vspace,
+                                        paragraph_right_padding
+                                    );
                                     let escaped_content = first_part.replace('"', "\\\"");
                                     let _ = writeln!(writer, "{}", escaped_content);
                                     let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
@@ -804,7 +829,8 @@ fn add_wikipedia_section<W: Write>(
                                 current_page_height = 0.0;
 
                                 let _ = writeln!(writer, "### Page {} ###", page_counter);
-                                let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
+                                let _ =
+                                    writeln!(writer, "### {} Content (continued) ###", source_name);
                                 let _ = writeln!(writer, "PAGE_START");
 
                                 // Re-add row start on new page
@@ -827,22 +853,37 @@ fn add_wikipedia_section<W: Write>(
 
                                 // Continue with rest of paragraph on new page
                                 if !rest.is_empty() {
-                                    let paragraph_font = cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                                    let paragraph_font_size = cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                                    let paragraph_alignment = cfg.wikipedia_paragraph_alignment.as_deref().unwrap_or("JUSTIFIED");
-                                    let paragraph_padding = cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                                    let paragraph_vspace = cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                                    let paragraph_right_padding = cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
+                                    let paragraph_font =
+                                        cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
+                                    let paragraph_font_size =
+                                        cfg.wikipedia_paragraph_font_size.unwrap_or(12);
+                                    let paragraph_alignment = cfg
+                                        .wikipedia_paragraph_alignment
+                                        .as_deref()
+                                        .unwrap_or("JUSTIFIED");
+                                    let paragraph_padding =
+                                        cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
+                                    let paragraph_vspace =
+                                        cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
+                                    let paragraph_right_padding =
+                                        cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
-                                    let _ = writeln!(writer,
+                                    let _ = writeln!(
+                                        writer,
                                         "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                        paragraph_font, paragraph_font_size, paragraph_alignment,
-                                        paragraph_padding, paragraph_vspace, paragraph_right_padding);
+                                        paragraph_font,
+                                        paragraph_font_size,
+                                        paragraph_alignment,
+                                        paragraph_padding,
+                                        paragraph_vspace,
+                                        paragraph_right_padding
+                                    );
                                     let escaped_content = rest.replace('"', "\\\"");
                                     let _ = writeln!(writer, "{}", escaped_content);
                                     let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
 
-                                    current_page_height += crate::wikipedia::estimate_text_height(&rest, cfg);
+                                    current_page_height +=
+                                        crate::wikipedia::estimate_text_height(&rest, cfg);
                                 }
                             } else {
                                 // Paragraph fits on next page - start new page
@@ -850,7 +891,8 @@ fn add_wikipedia_section<W: Write>(
                                 current_page_height = 0.0;
 
                                 let _ = writeln!(writer, "### Page {} ###", page_counter);
-                                let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
+                                let _ =
+                                    writeln!(writer, "### {} Content (continued) ###", source_name);
                                 let _ = writeln!(writer, "PAGE_START");
 
                                 // Re-add row start on new page
@@ -872,17 +914,31 @@ fn add_wikipedia_section<W: Write>(
                                 }
 
                                 // Add paragraph to new page
-                                let paragraph_font = cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                                let paragraph_font_size = cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                                let paragraph_alignment = cfg.wikipedia_paragraph_alignment.as_deref().unwrap_or("JUSTIFIED");
-                                let paragraph_padding = cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                                let paragraph_vspace = cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                                let paragraph_right_padding = cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
+                                let paragraph_font =
+                                    cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
+                                let paragraph_font_size =
+                                    cfg.wikipedia_paragraph_font_size.unwrap_or(12);
+                                let paragraph_alignment = cfg
+                                    .wikipedia_paragraph_alignment
+                                    .as_deref()
+                                    .unwrap_or("JUSTIFIED");
+                                let paragraph_padding =
+                                    cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
+                                let paragraph_vspace =
+                                    cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
+                                let paragraph_right_padding =
+                                    cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
-                                let _ = writeln!(writer,
+                                let _ = writeln!(
+                                    writer,
                                     "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                    paragraph_font, paragraph_font_size, paragraph_alignment,
-                                    paragraph_padding, paragraph_vspace, paragraph_right_padding);
+                                    paragraph_font,
+                                    paragraph_font_size,
+                                    paragraph_alignment,
+                                    paragraph_padding,
+                                    paragraph_vspace,
+                                    paragraph_right_padding
+                                );
                                 let escaped_content = paragraph_text.replace('"', "\\\"");
                                 let _ = writeln!(writer, "{}", escaped_content);
                                 let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
@@ -891,17 +947,29 @@ fn add_wikipedia_section<W: Write>(
                             }
                         } else {
                             // Paragraph fits on current page
-                            let paragraph_font = cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                            let paragraph_font_size = cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                            let paragraph_alignment = cfg.wikipedia_paragraph_alignment.as_deref().unwrap_or("JUSTIFIED");
+                            let paragraph_font =
+                                cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
+                            let paragraph_font_size =
+                                cfg.wikipedia_paragraph_font_size.unwrap_or(12);
+                            let paragraph_alignment = cfg
+                                .wikipedia_paragraph_alignment
+                                .as_deref()
+                                .unwrap_or("JUSTIFIED");
                             let paragraph_padding = cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
                             let paragraph_vspace = cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                            let paragraph_right_padding = cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
+                            let paragraph_right_padding =
+                                cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
-                            let _ = writeln!(writer,
+                            let _ = writeln!(
+                                writer,
                                 "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                paragraph_font, paragraph_font_size, paragraph_alignment,
-                                paragraph_padding, paragraph_vspace, paragraph_right_padding);
+                                paragraph_font,
+                                paragraph_font_size,
+                                paragraph_alignment,
+                                paragraph_padding,
+                                paragraph_vspace,
+                                paragraph_right_padding
+                            );
                             let escaped_content = paragraph_text.replace('"', "\\\"");
                             let _ = writeln!(writer, "{}", escaped_content);
                             let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
@@ -976,7 +1044,11 @@ fn parse_content_into_sections(content: &str) -> Vec<ContentSection> {
 }
 
 /// Split a paragraph at a specific height limit, returning (first_part, remaining_part)
-fn split_paragraph_at_height(paragraph: &str, max_height: f64, config: &crate::config::Config) -> (String, String) {
+fn split_paragraph_at_height(
+    paragraph: &str,
+    max_height: f64,
+    config: &crate::config::Config,
+) -> (String, String) {
     let text_line_height = config.text_line_height_mm.unwrap_or(2.6) as f64;
     let page_width = config.album_page_width_mm.unwrap_or(216.0) as f64;
     let paragraph_font_size = config.wikipedia_paragraph_font_size.unwrap_or(12) as f64;
