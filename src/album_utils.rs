@@ -686,7 +686,12 @@ fn add_wikipedia_section<W: Write>(
         Ok(Some((content, source))) => {
             // Calculate usable page height (accounting for margins, borders, etc.)
             let usable_height = crate::album_globals::compute_usable_height(cfg);
-            let mut current_page_height = 0.0;
+            // Use a very conservative height for pagination to prevent any overflow
+            let pagination_height = usable_height * 0.75; // 25% safety margin
+            info!(
+                "Wikipedia pagination: usable_height={:.1}, pagination_height={:.1}",
+                usable_height, pagination_height
+            );
 
             // Start first page
             page_counter += 1;
@@ -702,7 +707,7 @@ fn add_wikipedia_section<W: Write>(
             let _ = writeln!(writer, "PAGE_START");
 
             // Add row start if configured and account for its height
-            let row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
+            let _row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
                 let rs_font = cfg
                     .row_start_es_font
                     .clone()
@@ -723,230 +728,71 @@ fn add_wikipedia_section<W: Write>(
                 0.0
             };
 
-            current_page_height += row_start_height;
-
             // Parse content into sections and paragraphs for pagination
             let content_sections = parse_content_into_sections(&content);
 
-            for section in content_sections {
-                match section {
+            // Measure heights of all sections/paragraphs
+            let heights: Vec<f64> = content_sections
+                .iter()
+                .map(|section| match section {
                     ContentSection::Header(header_text) => {
-                        let header_height =
-                            crate::wikipedia::estimate_header_height(&header_text, cfg);
-
-                        // Check if header fits on current page
-                        if current_page_height + header_height > usable_height {
-                            // Start new page
-                            page_counter += 1;
-                            current_page_height = 0.0;
-
-                            let _ = writeln!(writer, "### Page {} ###", page_counter);
-                            let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
-                            let _ = writeln!(writer, "PAGE_START");
-
-                            // Re-add row start on new page
-                            if cfg.row_start_es_enabled.unwrap_or(true) {
-                                let rs_font = cfg
-                                    .row_start_es_font
-                                    .clone()
-                                    .unwrap_or_else(|| "HN".to_string());
-                                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                                let _ = writeln!(
-                                    writer,
-                                    "ROW_START_ES ({} {} {:.1} {:.1})",
-                                    rs_font, rs_size as i32, rs_spacing, rs_vspace
-                                );
-                                let _ = writeln!(writer, "################################################################################");
-                                current_page_height += rs_vspace as f64 + 5.0;
-                            }
-                        }
-
-                        // Add header
-                        let section_title_font =
-                            cfg.wikipedia_section_title_font.as_deref().unwrap_or("HB");
-                        let section_title_font_size =
-                            cfg.wikipedia_section_title_font_size.unwrap_or(14);
-                        let _ = writeln!(
-                            writer,
-                            "PAGE_TEXT ({} {} \"{}\" 3.0)",
-                            section_title_font, section_title_font_size, header_text
-                        );
-
-                        current_page_height += header_height;
+                        crate::wikipedia::estimate_header_height(header_text, cfg)
                     }
                     ContentSection::Paragraph(paragraph_text) => {
-                        let paragraph_height =
-                            crate::wikipedia::estimate_text_height(&paragraph_text, cfg);
+                        crate::wikipedia::estimate_text_height(paragraph_text, cfg)
+                    }
+                })
+                .collect();
 
-                        // Check if paragraph fits on current page
-                        if current_page_height + paragraph_height > usable_height {
-                            // If paragraph is too long for a single page, we need to split it
-                            if paragraph_height > usable_height {
-                                // Split long paragraph across pages
-                                let remaining_height = usable_height - current_page_height;
-                                let (first_part, rest) = split_paragraph_at_height(
-                                    &paragraph_text,
-                                    remaining_height,
-                                    cfg,
-                                );
+            // Create balanced pages
+            let balanced_pages =
+                create_balanced_pages(&content_sections, &heights, pagination_height, cfg);
 
-                                if !first_part.is_empty() {
-                                    // Add first part to current page
-                                    let paragraph_font =
-                                        cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                                    let paragraph_font_size =
-                                        cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                                    let paragraph_alignment = cfg
-                                        .wikipedia_paragraph_alignment
-                                        .as_deref()
-                                        .unwrap_or("JUSTIFIED");
-                                    let paragraph_padding =
-                                        cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                                    let paragraph_vspace =
-                                        cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                                    let paragraph_right_padding =
-                                        cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
+            // Debug logging
+            let total_content_height: f64 = heights.iter().sum();
+            info!("Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, pagination_height={:.1}, usable_height={:.1}",
+                  content_sections.len(), balanced_pages.len(), total_content_height, pagination_height, usable_height);
 
-                                    let _ = writeln!(
-                                        writer,
-                                        "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                        paragraph_font,
-                                        paragraph_font_size,
-                                        paragraph_alignment,
-                                        paragraph_padding,
-                                        paragraph_vspace,
-                                        paragraph_right_padding
-                                    );
-                                    let escaped_content = first_part.replace('"', "\\\"");
-                                    let _ = writeln!(writer, "{}", escaped_content);
-                                    let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
-                                }
+            for (page_index, page_sections) in balanced_pages.iter().enumerate() {
+                if page_index > 0 {
+                    // Add page separator between pages
+                    let _ = writeln!(
+                        writer,
+                        "################################################################################"
+                    );
+                    // Start new page
+                    let _ = writeln!(writer, "PAGE_START");
+                    page_counter += 1;
+                    let _ = writeln!(writer, "### Page {} ###", page_counter);
+                    let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
+                }
 
-                                // Start new page for remaining content
-                                page_counter += 1;
-                                current_page_height = 0.0;
+                // For Wikipedia content, skip vertical centering to prevent overflow
+                // The pagination algorithm already tries to balance content distribution
+                // Adding centering space can push content off the bottom of pages
+                let final_centering_vspace = 0.0;
+                info!(
+                    "Wikipedia page {}: content_height={:.1}, centering_space={:.1}",
+                    page_index,
+                    page_sections.iter().map(|&idx| heights[idx]).sum::<f64>(),
+                    final_centering_vspace
+                );
 
-                                let _ = writeln!(writer, "### Page {} ###", page_counter);
-                                let _ =
-                                    writeln!(writer, "### {} Content (continued) ###", source_name);
-                                let _ = writeln!(writer, "PAGE_START");
-
-                                // Re-add row start on new page
-                                if cfg.row_start_es_enabled.unwrap_or(true) {
-                                    let rs_font = cfg
-                                        .row_start_es_font
-                                        .clone()
-                                        .unwrap_or_else(|| "HN".to_string());
-                                    let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                                    let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                                    let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                                    let _ = writeln!(
-                                        writer,
-                                        "ROW_START_ES ({} {} {:.1} {:.1})",
-                                        rs_font, rs_size as i32, rs_spacing, rs_vspace
-                                    );
-                                    let _ = writeln!(writer, "################################################################################");
-                                    current_page_height += rs_vspace as f64 + 5.0;
-                                }
-
-                                // Continue with rest of paragraph on new page
-                                if !rest.is_empty() {
-                                    let paragraph_font =
-                                        cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                                    let paragraph_font_size =
-                                        cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                                    let paragraph_alignment = cfg
-                                        .wikipedia_paragraph_alignment
-                                        .as_deref()
-                                        .unwrap_or("JUSTIFIED");
-                                    let paragraph_padding =
-                                        cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                                    let paragraph_vspace =
-                                        cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                                    let paragraph_right_padding =
-                                        cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
-
-                                    let _ = writeln!(
-                                        writer,
-                                        "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                        paragraph_font,
-                                        paragraph_font_size,
-                                        paragraph_alignment,
-                                        paragraph_padding,
-                                        paragraph_vspace,
-                                        paragraph_right_padding
-                                    );
-                                    let escaped_content = rest.replace('"', "\\\"");
-                                    let _ = writeln!(writer, "{}", escaped_content);
-                                    let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
-
-                                    current_page_height +=
-                                        crate::wikipedia::estimate_text_height(&rest, cfg);
-                                }
-                            } else {
-                                // Paragraph fits on next page - start new page
-                                page_counter += 1;
-                                current_page_height = 0.0;
-
-                                let _ = writeln!(writer, "### Page {} ###", page_counter);
-                                let _ =
-                                    writeln!(writer, "### {} Content (continued) ###", source_name);
-                                let _ = writeln!(writer, "PAGE_START");
-
-                                // Re-add row start on new page
-                                if cfg.row_start_es_enabled.unwrap_or(true) {
-                                    let rs_font = cfg
-                                        .row_start_es_font
-                                        .clone()
-                                        .unwrap_or_else(|| "HN".to_string());
-                                    let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                                    let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                                    let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                                    let _ = writeln!(
-                                        writer,
-                                        "ROW_START_ES ({} {} {:.1} {:.1})",
-                                        rs_font, rs_size as i32, rs_spacing, rs_vspace
-                                    );
-                                    let _ = writeln!(writer, "################################################################################");
-                                    current_page_height += rs_vspace as f64 + 5.0;
-                                }
-
-                                // Add paragraph to new page
-                                let paragraph_font =
-                                    cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
-                                let paragraph_font_size =
-                                    cfg.wikipedia_paragraph_font_size.unwrap_or(12);
-                                let paragraph_alignment = cfg
-                                    .wikipedia_paragraph_alignment
-                                    .as_deref()
-                                    .unwrap_or("JUSTIFIED");
-                                let paragraph_padding =
-                                    cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                                let paragraph_vspace =
-                                    cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
-                                let paragraph_right_padding =
-                                    cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
-
-                                let _ = writeln!(
-                                    writer,
-                                    "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
-                                    paragraph_font,
-                                    paragraph_font_size,
-                                    paragraph_alignment,
-                                    paragraph_padding,
-                                    paragraph_vspace,
-                                    paragraph_right_padding
-                                );
-                                let escaped_content = paragraph_text.replace('"', "\\\"");
-                                let _ = writeln!(writer, "{}", escaped_content);
-                                let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
-
-                                current_page_height += paragraph_height;
-                            }
-                        } else {
-                            // Paragraph fits on current page
+                // Emit each section in the balanced page
+                for &section_index in page_sections {
+                    match &content_sections[section_index] {
+                        ContentSection::Header(header_text) => {
+                            let section_title_font =
+                                cfg.wikipedia_section_title_font.as_deref().unwrap_or("HB");
+                            let section_title_font_size =
+                                cfg.wikipedia_section_title_font_size.unwrap_or(14);
+                            let _ = writeln!(
+                                writer,
+                                "PAGE_TEXT ({} {} \"{}\" 3.0)",
+                                section_title_font, section_title_font_size, header_text
+                            );
+                        }
+                        ContentSection::Paragraph(paragraph_text) => {
                             let paragraph_font =
                                 cfg.wikipedia_paragraph_font.as_deref().unwrap_or("HN");
                             let paragraph_font_size =
@@ -973,8 +819,6 @@ fn add_wikipedia_section<W: Write>(
                             let escaped_content = paragraph_text.replace('"', "\\\"");
                             let _ = writeln!(writer, "{}", escaped_content);
                             let _ = writeln!(writer, "PAGE_TEXT_PARAGRAPH_END");
-
-                            current_page_height += paragraph_height;
                         }
                     }
                 }
@@ -1043,61 +887,118 @@ fn parse_content_into_sections(content: &str) -> Vec<ContentSection> {
     sections
 }
 
-/// Split a paragraph at a specific height limit, returning (first_part, remaining_part)
-fn split_paragraph_at_height(
-    paragraph: &str,
-    max_height: f64,
-    config: &crate::config::Config,
-) -> (String, String) {
-    let text_line_height = config.text_line_height_mm.unwrap_or(2.6) as f64;
-    let page_width = config.album_page_width_mm.unwrap_or(216.0) as f64;
-    let paragraph_font_size = config.wikipedia_paragraph_font_size.unwrap_or(12) as f64;
-    let chars_per_line = (page_width / (paragraph_font_size * 0.6)).floor() as usize;
-
-    // Estimate how many lines we can fit in the remaining height
-    let max_lines = (max_height / text_line_height).floor() as usize;
-    if max_lines == 0 {
-        return (String::new(), paragraph.to_string());
+/// Create balanced pages by distributing content more evenly across pages
+/// This prevents orphaned content and optimizes page utilization
+fn create_balanced_pages(
+    sections: &[ContentSection],
+    heights: &[f64],
+    usable_height: f64,
+    _cfg: &crate::config::Config,
+) -> Vec<Vec<usize>> {
+    if sections.is_empty() {
+        return Vec::new();
     }
 
-    // Split paragraph into words and build lines
-    let words: Vec<&str> = paragraph.split_whitespace().collect();
-    let mut current_line = String::new();
-    let mut lines_used = 0;
-    let mut word_index = 0;
+    // Start with greedy approach but enforce usable_height constraint strictly
+    let mut pages = Vec::new();
+    let mut current_page = Vec::new();
+    let mut current_page_height = 0.0;
+    let mut section_index = 0;
 
-    // Build lines until we reach the height limit
-    while word_index < words.len() && lines_used < max_lines {
-        let test_line = if current_line.is_empty() {
-            words[word_index].to_string()
-        } else {
-            format!("{} {}", current_line, words[word_index])
-        };
+    while section_index < sections.len() {
+        let section_height = heights[section_index];
 
-        if test_line.len() <= chars_per_line {
-            current_line = test_line;
-            word_index += 1;
-        } else {
-            // Line is full, start new line
-            lines_used += 1;
-            if lines_used >= max_lines {
-                break;
+        // If adding this section would exceed the page height, start a new page
+        if current_page_height + section_height > usable_height {
+            // If current page has content, finish it and start new page
+            if !current_page.is_empty() {
+                pages.push(current_page);
+                current_page = Vec::new();
+                current_page_height = 0.0;
+            } else {
+                // Edge case: single section is too tall for a page
+                // This shouldn't happen with normal content, but handle it
+                current_page.push(section_index);
+                pages.push(current_page);
+                current_page = Vec::new();
+                section_index += 1;
+                continue;
             }
-            current_line = words[word_index].to_string();
-            word_index += 1;
         }
+
+        // Add section to current page
+        current_page.push(section_index);
+        current_page_height += section_height;
+        section_index += 1;
     }
 
-    // If we used all words, return the whole paragraph as first part
-    if word_index >= words.len() {
-        return (paragraph.to_string(), String::new());
+    // Add final page if it has content
+    if !current_page.is_empty() {
+        pages.push(current_page);
     }
 
-    // Split at the current word index
-    let first_part = words[..word_index].join(" ");
-    let remaining_part = words[word_index..].join(" ");
+    // Now try to balance the pages better by moving content between pages
+    // This is optional optimization - only if we have multiple pages
+    if pages.len() > 1 {
+        balance_pages(&mut pages, heights, usable_height);
+    }
 
-    (first_part, remaining_part)
+    info!(
+        "Created {} pages for content with total height {:.1}",
+        pages.len(),
+        heights.iter().sum::<f64>()
+    );
+
+    pages
+}
+
+/// Helper function to balance content between existing pages
+/// This tries to move content from over-full pages to under-full pages
+fn balance_pages(pages: &mut Vec<Vec<usize>>, heights: &[f64], usable_height: f64) {
+    // Calculate current page heights
+    let mut page_heights: Vec<f64> = pages
+        .iter()
+        .map(|page| page.iter().map(|&idx| heights[idx]).sum())
+        .collect();
+
+    // Find pages that are significantly under-utilized
+    let _avg_height = page_heights.iter().sum::<f64>() / page_heights.len() as f64;
+
+    // Try to move content from the last page to earlier under-utilized pages
+    let mut i = 0;
+    while i < pages.len() - 1 {
+        let current_height = page_heights[i];
+
+        // If this page has room and the next page exists
+        if current_height < usable_height * 0.9 && i + 1 < pages.len() {
+            let next_page_idx = i + 1;
+            let next_height = page_heights[next_page_idx];
+
+            // Try to move the first item from next page to current page
+            if !pages[next_page_idx].is_empty() {
+                let item_to_move = pages[next_page_idx][0];
+                let item_height = heights[item_to_move];
+
+                // Check if moving this item would keep both pages under usable_height
+                if current_height + item_height <= usable_height
+                    && next_height - item_height <= usable_height
+                {
+                    // Move the item
+                    let moved_item = pages[next_page_idx].remove(0);
+                    pages[i].push(moved_item);
+
+                    // Update heights
+                    page_heights[i] += item_height;
+                    page_heights[next_page_idx] -= item_height;
+
+                    // If we moved an item, stay on this page to see if we can move more
+                    continue;
+                }
+            }
+        }
+
+        i += 1;
+    }
 }
 
 /// Calculates appropriate stamp box dimensions based on image dimensions

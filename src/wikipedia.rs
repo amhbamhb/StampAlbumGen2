@@ -519,11 +519,13 @@ pub fn estimate_text_height(text: &str, config: &Config) -> f64 {
     let paragraph_vspace = config.wikipedia_paragraph_vspace.unwrap_or(5.0) as f64;
     let num_paragraphs = text.lines().filter(|l| !l.trim().is_empty()).count() as f64;
 
-    // Calculate total height
+    // Calculate total height with conservative multiplier
     let text_height = (total_lines as f64) * text_line_height;
     let spacing_height = num_paragraphs * paragraph_vspace;
+    let total_estimated_height = text_height + spacing_height;
 
-    text_height + spacing_height
+    // Add 20% buffer for estimation errors
+    total_estimated_height * 1.2
 }
 
 /// Estimate the height of a section header
@@ -532,5 +534,8 @@ pub fn estimate_header_height(header_text: &str, config: &Config) -> f64 {
 
     // Headers typically take 1-2 lines with some extra spacing
     let header_lines = ((header_text.len() as f64) / 40.0).ceil() as f64; // Rough estimate
-    header_lines * text_line_height * 1.2 // 20% extra for header spacing
+    let estimated_height = header_lines * text_line_height * 1.2; // 20% extra for header spacing
+
+    // Add 30% buffer for headers (they can be more variable)
+    estimated_height * 1.3
 }
