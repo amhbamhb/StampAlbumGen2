@@ -636,41 +636,58 @@ fn add_wikipedia_section<W: Write>(
                 })
                 .collect();
 
-            // Compute total estimated content height and derive a sensible per-page
-            // pagination target so pages are used efficiently. This avoids forcing
-            // too many short pages when content is small and avoids excessive
-            // vertical padding.
+            // Compute total estimated content height
             let total_content_height: f64 = heights.iter().sum();
-            let pages_needed = if total_content_height <= 0.0 {
-                1
-            } else {
-                // Minimum pages required if we filled each page up to usable_height
-                (total_content_height / usable_height).ceil() as usize
-            };
 
-            // Per-page target: distribute the content evenly across the needed pages,
-            // but never exceed the usable_height.
-            let pagination_height = if pages_needed == 0 {
-                usable_height
-            } else {
-                (total_content_height / (pages_needed as f64)).min(usable_height)
-            };
+            // Choose pagination strategy (balanced, conservative, no_balance)
+            let pagination_strategy = cfg
+                .wikipedia_pagination_strategy
+                .as_deref()
+                .unwrap_or("balanced");
 
-            // If content is small compared to a page, use usable_height so we can
-            // center or flow naturally instead of squeezing everything to top.
-            let pagination_height = if total_content_height < usable_height * 0.9 {
-                usable_height
-            } else {
-                pagination_height
-            };
+            // Determine per-page pagination target and page division according to strategy
+            let balanced_pages = match pagination_strategy {
+                "conservative" => {
+                    // Use a conservative fraction of usable height (defaults to 0.75)
+                    let frac = cfg
+                        .wikipedia_pagination_conservative_fraction
+                        .unwrap_or(0.75_f32) as f64;
+                    let page_target = (usable_height * frac).max(10.0);
+                    // Greedy pagination using the conservative target
+                    create_greedy_pages(&content_sections, &heights, page_target)
+                }
+                "no_balance" => {
+                    // Pure greedy filling up to usable_height; do not attempt balancing
+                    create_greedy_pages(&content_sections, &heights, usable_height)
+                }
+                _ => {
+                    // Default: balanced distribution based on total content height
+                    let pages_needed = if total_content_height <= 0.0 {
+                        1
+                    } else {
+                        (total_content_height / usable_height).ceil() as usize
+                    };
 
-            // Create balanced pages using the computed per-page target
-            let balanced_pages =
-                create_balanced_pages(&content_sections, &heights, pagination_height, cfg);
+                    // Per-page target: distribute content evenly but never exceed usable_height
+                    let mut pagination_height = if pages_needed == 0 {
+                        usable_height
+                    } else {
+                        (total_content_height / (pages_needed as f64)).min(usable_height)
+                    };
+
+                    // If content is small compared to a page, use usable_height so
+                    // centering/flow look natural.
+                    if total_content_height < usable_height * 0.9 {
+                        pagination_height = usable_height;
+                    }
+
+                    create_balanced_pages(&content_sections, &heights, pagination_height, cfg)
+                }
+            };
 
             // Debug logging
-            info!("Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, pagination_height={:.1}, usable_height={:.1}",
-            content_sections.len(), balanced_pages.len(), total_content_height, pagination_height, usable_height);
+            info!("Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, usable_height={:.1}, strategy={}",
+                  content_sections.len(), balanced_pages.len(), total_content_height, usable_height, pagination_strategy);
 
             for (page_index, page_sections) in balanced_pages.iter().enumerate() {
                 if page_index > 0 {
@@ -686,16 +703,26 @@ fn add_wikipedia_section<W: Write>(
                     let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
                 }
 
-                // For Wikipedia content, skip vertical centering to prevent overflow
-                // The pagination algorithm already tries to balance content distribution
-                // Adding centering space can push content off the bottom of pages
-                let final_centering_vspace = 0.0;
+                // Optionally center content vertically on the page by distributing
+                // leftover space as top padding. Controlled by config.wikipedia_center_content.
+                let page_content_height: f64 = page_sections.iter().map(|&idx| heights[idx]).sum();
+                let mut final_centering_vspace = 0.0;
+                if cfg.wikipedia_center_content.unwrap_or(true) {
+                    let leftover = usable_height - page_content_height;
+                    if leftover > 0.5 {
+                        final_centering_vspace = leftover / 2.0;
+                    }
+                }
+
                 info!(
                     "Wikipedia page {}: content_height={:.1}, centering_space={:.1}",
-                    page_index,
-                    page_sections.iter().map(|&idx| heights[idx]).sum::<f64>(),
-                    final_centering_vspace
+                    page_index, page_content_height, final_centering_vspace
                 );
+
+                // Emit a PAGE_VSPACE to provide top padding if centering is requested
+                if final_centering_vspace > 0.0 {
+                    let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", final_centering_vspace);
+                }
 
                 // Emit each section in the balanced page
                 for &section_index in page_sections {
@@ -868,6 +895,41 @@ fn create_balanced_pages(
         heights.iter().sum::<f64>()
     );
 
+    pages
+}
+
+/// Create pages greedily without attempting to rebalance across pages.
+fn create_greedy_pages(
+    sections: &[ContentSection],
+    heights: &[f64],
+    usable_height: f64,
+) -> Vec<Vec<usize>> {
+    let mut pages = Vec::new();
+    let mut current_page = Vec::new();
+    let mut current_page_height = 0.0;
+    let mut idx = 0;
+
+    while idx < sections.len() {
+        let h = heights[idx];
+        if current_page_height + h > usable_height {
+            if !current_page.is_empty() {
+                pages.push(current_page);
+                current_page = Vec::new();
+                current_page_height = 0.0;
+            } else {
+                // single section larger than page: place it alone
+                pages.push(vec![idx]);
+                idx += 1;
+                continue;
+            }
+        }
+        current_page.push(idx);
+        current_page_height += h;
+        idx += 1;
+    }
+    if !current_page.is_empty() {
+        pages.push(current_page);
+    }
     pages
 }
 

@@ -154,6 +154,48 @@ median_width_cap_4 = 30.0
 # page_text_right_size = 10.0
 # page_text_right_vspace = 1.0
 
+# --- Wikipedia / Grokipedia content formatting ---
+# Controls for how scraped Wikipedia/Grokipedia paragraphs are formatted
+# when included in the album. These are optional; sensible defaults are
+# applied when omitted. Tuning these helps avoid large top/bottom gaps and
+# excessive per-paragraph spacing.
+#
+# - wikipedia_paragraph_font: AlbumEasy font code for paragraphs (default HN)
+# - wikipedia_paragraph_font_size: font size used for paragraph text (default 12)
+# - wikipedia_paragraph_alignment: LEFT, RIGHT, CENTRE, JUSTIFIED (default JUSTIFIED)
+# - wikipedia_paragraph_padding: left padding (mm) applied in PAGE_TEXT_PARAGRAPH_START (default 10.0)
+# - wikipedia_paragraph_right_padding: right padding (mm) applied (default 10.0)
+# - wikipedia_paragraph_vspace: explicit vertical space (mm) after each paragraph.
+#     If omitted, the generator computes a reasonable default using:
+#         vspace = wikipedia_paragraph_vspace_multiplier * paragraph_font_size
+#     where `wikipedia_paragraph_vspace_multiplier` defaults to 0.25 (tune 0.15..0.35).
+# - wikipedia_paragraph_vspace_multiplier: multiplier used when vspace is not set.
+#     Typical values: 0.15 (tight), 0.25 (balanced), 0.35 (airy).
+#
+# Pagination options:
+# - wikipedia_pagination_strategy: controls how content is divided across pages.
+#     Valid values:
+#       "balanced"     -> distribute total content evenly across pages (default)
+#       "conservative" -> use a conservative fraction of usable page height per page (defaults to 0.75)
+#       "no_balance"   -> greedy fill up to usable page height (no additional balancing)
+# - wikipedia_pagination_conservative_fraction: when using conservative strategy, the fraction
+#     of usable_height to use per page (default 0.75).
+# - wikipedia_center_content: if true the generator will distribute leftover vertical space
+#     as top padding to center page content chunks (default true). Set false to always top-align.
+#
+# Example settings (copy into your config.toml to override defaults):
+# wikipedia_paragraph_font = "HN"
+# wikipedia_paragraph_font_size = 12
+# wikipedia_paragraph_alignment = "JUSTIFIED"
+# wikipedia_paragraph_padding = 10.0
+# wikipedia_paragraph_right_padding = 10.0
+# # leave paragraph vspace unset to use multiplier-based default
+# #wikipedia_paragraph_vspace = 5.0
+# wikipedia_paragraph_vspace_multiplier = 0.25
+# wikipedia_pagination_strategy = "balanced"
+# wikipedia_pagination_conservative_fraction = 0.75
+# wikipedia_center_content = true
+
 # --- Stamp heading formatting ---
 # Controls the small heading line emitted directly above each stamp box. The
 # generator emits a `STAMP_HEADING(<FONT> <SIZE> "<LABEL> : <SGNUM>")` line

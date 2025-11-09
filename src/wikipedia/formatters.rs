@@ -19,11 +19,18 @@ pub fn format_content_for_album(
     let paragraph_padding = config.wikipedia_paragraph_padding.unwrap_or(10.0);
     // Compute a default paragraph vspace that scales with the paragraph font size
     // if the config value is not explicitly set. This reduces excessive spacing
-    // for smaller fonts and increases it for larger fonts.
+    // for smaller fonts and increases it for larger fonts. If a multiplier is
+    // provided in config use that, otherwise fall back to 0.25.
     let paragraph_vspace = config.wikipedia_paragraph_vspace.unwrap_or_else(|| {
-        // Rough heuristic: ~0.25 * font size (in mm) gives reasonable spacing
-        (paragraph_font_size as f32) * 0.25
+        // Heuristic: multiplier * font size (in mm)
+        let multiplier = config
+            .wikipedia_paragraph_vspace_multiplier
+            .unwrap_or(0.25_f32);
+        (paragraph_font_size as f32) * multiplier
     });
+
+    // The following line is added to clarify the use of the multiplier
+    // The multiplier can be tuned via `wikipedia_paragraph_vspace_multiplier` (typical range 0.15..0.35).
     let paragraph_right_padding = config.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
     let section_title_font = config
