@@ -228,7 +228,15 @@ pub struct Config {
     pub wikipedia_paragraph_alignment: Option<String>,
     pub wikipedia_paragraph_padding: Option<f32>,
     pub wikipedia_paragraph_vspace: Option<f32>,
+    // Multiplier used to compute paragraph vspace when explicit vspace is not set
+    pub wikipedia_paragraph_vspace_multiplier: Option<f32>,
     pub wikipedia_paragraph_right_padding: Option<f32>,
+    // Pagination strategy for Wikipedia content: "balanced" | "conservative" | "no_balance"
+    pub wikipedia_pagination_strategy: Option<String>,
+    // If true, distribute leftover vertical space as top padding to center content on page
+    pub wikipedia_center_content: Option<bool>,
+    // Conservative pagination fraction (used by conservative strategy). e.g., 0.75
+    pub wikipedia_pagination_conservative_fraction: Option<f32>,
     // Wikipedia section title formatting
     pub wikipedia_section_title_font: Option<String>,
     pub wikipedia_section_title_font_size: Option<u32>,
@@ -344,14 +352,20 @@ impl Config {
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
             content_wiki_font_size: Some(12),
-            content_wiki_max_lines_per_page: Some(5),
-            content_wiki_estimated_chars_per_line: Some(250),
+            // Prefer automatic estimation by default; allow users to override
+            // with explicit caps only when necessary.
+            content_wiki_max_lines_per_page: None,
+            content_wiki_estimated_chars_per_line: None,
             wikipedia_paragraph_font: Some("HN".to_string()),
             wikipedia_paragraph_font_size: Some(12),
             wikipedia_paragraph_alignment: Some("JUSTIFIED".to_string()),
             wikipedia_paragraph_padding: Some(10.0),
             wikipedia_paragraph_vspace: Some(5.0),
+            wikipedia_paragraph_vspace_multiplier: Some(0.25),
             wikipedia_paragraph_right_padding: Some(10.0),
+            wikipedia_pagination_strategy: Some("balanced".to_string()),
+            wikipedia_center_content: Some(true),
+            wikipedia_pagination_conservative_fraction: Some(0.75),
             wikipedia_section_title_font: Some("HB".to_string()),
             wikipedia_section_title_font_size: Some(14),
             // All other fields remain None (not set in defaults)

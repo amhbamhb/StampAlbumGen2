@@ -196,6 +196,14 @@ median_width_cap_4 = 30.0
 # wikipedia_pagination_conservative_fraction = 0.75
 # wikipedia_center_content = true
 
+# The generator now auto-estimates per-page line/char capacity based on page
+# width and paragraph font size. Manual overrides exist but are usually not
+# needed. If you previously used `content_wiki_max_lines_per_page` or
+# `content_wiki_estimated_chars_per_line` you can leave them unset to allow
+# automatic calculation. Example manual overrides (optional):
+# content_wiki_max_lines_per_page = 10
+# content_wiki_estimated_chars_per_line = 250
+
 # --- Stamp heading formatting ---
 # Controls the small heading line emitted directly above each stamp box. The
 # generator emits a `STAMP_HEADING(<FONT> <SIZE> "<LABEL> : <SGNUM>")` line
