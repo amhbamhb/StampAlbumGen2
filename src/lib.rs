@@ -1,6 +1,10 @@
+pub mod cli;
 pub mod config;
 pub mod flagdb;
+pub mod modes;
 pub mod progress;
+pub mod setup;
+pub mod validation;
 pub mod wikipedia;
 pub use crate::config::{load_slug_overrides, Config, HeaderFormatting};
 // Main library file for StampAlbumGen2
@@ -19,12 +23,11 @@ pub mod stampworld;
 // pub mod stamp_dimensions;
 pub mod file_utils;
 // pub mod text_utils;
-pub mod placeholder_image;
-pub mod types;
-// db utilities moved to `stamp_album_db` crate in Phase 2; keep a compatibility shim
 pub mod album_globals;
 pub mod album_utils;
-#[path = "db_utils_wrapper.rs"]
+pub mod placeholder_image;
+pub mod types;
+// db utilities refactored into modular structure
 pub mod db_utils;
 pub mod image_downloader;
 pub mod sample_images;

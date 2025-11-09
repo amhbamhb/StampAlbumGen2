@@ -16,10 +16,9 @@ fn help_shows_options() {
 #[test]
 fn no_args_prints_guidance_and_help() {
     let mut cmd = Command::cargo_bin("stamp_album_gen2").unwrap();
-    // With the crate's default CLI values (start_year != 0) the program enters
-    // scrape mode and will report the missing --site-name / --album-name message.
+    // With no arguments, the program now prints guidance and help
     cmd.assert().failure().stderr(predicate::str::contains(
-        "You started the program in scraping mode but did not provide the site name.",
+        "It looks like you didn't provide any command options. Here's a short guide to get started:",
     ));
 }
 

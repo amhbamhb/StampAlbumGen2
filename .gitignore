@@ -19,7 +19,9 @@ outputs2/*
 /#notes.txt*
 .#notes.txt*
 notes_backup.txt*
-
+examples/*
+examples/
+/examples/*
 demo_outputs/
 demo_outputs/*
 

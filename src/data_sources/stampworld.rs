@@ -8,7 +8,7 @@ pub fn collect_stampworld_data(
     _site_name: &str,
     _images_directory: &str,
     month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, bool) -> ImageStatus,
+    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
     base_url: &str,
     start_year: i32,
     end_year: i32,
@@ -204,7 +204,7 @@ pub fn collect_stampworld_data(
                             debug!("[stampworld] Skipping image download: image_url is empty");
                         } else if stamp_year >= start_year && stamp_year <= end_year {
                             debug!("[stampworld] Attempting image download: image_url='{}'", image_url);
-                            let image_status = get_stampworld_image(&image_url, overwrite);
+                            let image_status = get_stampworld_image(&image_url, &crate::album_utils::sanitize_filename(&sg_number), overwrite);
                             debug!("[stampworld] Image download result: {:?}", image_status);
                         } else {
                             debug!("[stampworld] Skipping image download: stamp_year {} not in range {}-{}", stamp_year, start_year, end_year);

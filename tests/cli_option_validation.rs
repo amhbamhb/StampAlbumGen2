@@ -345,7 +345,8 @@ fn test_cli_error_message_quality() {
     println!("  ✓ Unrecognized source error provides good guidance");
 
     // Test missing site-name error message
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&["--source", "stampworld"]);
+    let (exit_code, _stdout, stderr) =
+        run_cli_with_args(&["--source", "stampworld", "--start-year", "1900"]);
     assert!(
         stderr.contains("site name"),
         "Should identify missing site name"

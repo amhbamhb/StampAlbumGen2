@@ -69,9 +69,9 @@ album_stamp_img_new_setting_preserve_aspect = false
 /// Test to verify that the ALBUM_STAMP_IMG_NEW_SETTING command is correctly formatted
 #[test]
 fn test_album_stamp_img_new_setting_command_format() {
-    // Read the album_utils.rs file to check command formatting
-    let album_utils_content =
-        fs::read_to_string("src/album_utils.rs").expect("Failed to read album_utils.rs");
+    // Read the album_utils/globals.rs file to check command formatting
+    let album_utils_content = fs::read_to_string("src/album_utils/globals.rs")
+        .expect("Failed to read album_utils/globals.rs");
 
     // Check that the command format uses all three parameters
     assert!(
@@ -90,7 +90,7 @@ fn test_album_stamp_img_new_setting_command_format() {
     );
     assert!(
         album_utils_content
-            .contains("img_preserve = cfg.album_stamp_img_new_setting_preserve_aspect"),
+            .contains("img_preserve = cfg\n        .album_stamp_img_new_setting_preserve_aspect"),
         "Preserve aspect should be extracted from config"
     );
 
@@ -100,8 +100,8 @@ fn test_album_stamp_img_new_setting_command_format() {
 /// Test to verify the parameter usage pattern is consistent across the codebase
 #[test]
 fn test_parameter_usage_consistency() {
-    let album_globals_content =
-        fs::read_to_string("src/album_globals.rs").expect("Failed to read album_globals.rs");
+    let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
+        .expect("Failed to read album_globals/generator.rs");
 
     // Count all usages of each parameter
     let w_mm_usage = album_globals_content
@@ -141,10 +141,10 @@ fn test_parameter_usage_consistency() {
 /// Test to verify that default values are consistent between config definition and usage
 #[test]
 fn test_default_values_consistency() {
-    let album_globals_content =
-        fs::read_to_string("src/album_globals.rs").expect("Failed to read album_globals.rs");
-    let album_utils_content =
-        fs::read_to_string("src/album_utils.rs").expect("Failed to read album_utils.rs");
+    let album_globals_content = fs::read_to_string("src/album_globals/globals.rs")
+        .expect("Failed to read album_globals/globals.rs");
+    let album_utils_content = fs::read_to_string("src/album_utils/globals.rs")
+        .expect("Failed to read album_utils/globals.rs");
 
     // Check that default values are used consistently
     // In layout calculations, 0.0 is used as default (no additional adjustment)
@@ -175,8 +175,8 @@ fn test_default_values_consistency() {
 /// Test to verify that the changes we made solve the original issue
 #[test]
 fn test_issue_resolution() {
-    let album_globals_content =
-        fs::read_to_string("src/album_globals.rs").expect("Failed to read album_globals.rs");
+    let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
+        .expect("Failed to read album_globals/generator.rs");
 
     // These are the specific lines that were missing width parameter usage
     let problematic_patterns = [

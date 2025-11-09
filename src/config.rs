@@ -360,6 +360,53 @@ impl Config {
     }
 }
 
+/// Detects duplicate keys in TOML content by parsing line by line
+/// Returns a vector of duplicate key names if any are found
+fn detect_duplicate_keys(content: &str) -> Option<Vec<String>> {
+    use std::collections::HashMap;
+
+    let mut key_counts: HashMap<String, usize> = HashMap::new();
+    let mut duplicates: Vec<String> = Vec::new();
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Skip comments and empty lines
+        if trimmed.starts_with('#') || trimmed.is_empty() {
+            continue;
+        }
+
+        // Look for key = value patterns (basic detection)
+        if let Some(key_end) = trimmed.find('=') {
+            let key = trimmed[..key_end].trim();
+
+            // Skip if key contains brackets (array/table syntax)
+            if key.contains('[') || key.contains(']') {
+                continue;
+            }
+
+            // Remove quotes if present
+            let clean_key = key.trim_matches('"').trim_matches('\'');
+
+            *key_counts.entry(clean_key.to_string()).or_insert(0) += 1;
+        }
+    }
+
+    // Collect keys that appear more than once
+    for (key, count) in key_counts {
+        if count > 1 {
+            duplicates.push(key);
+        }
+    }
+
+    if duplicates.is_empty() {
+        None
+    } else {
+        duplicates.sort();
+        Some(duplicates)
+    }
+}
+
 pub fn load_config(path: &str) -> Config {
     // Try to find the config file starting at the current working directory
     // and searching upward through parent directories. This ensures that
@@ -406,6 +453,19 @@ pub fn load_config(path: &str) -> Config {
                 "Config file content (first 200 chars): {}",
                 content.chars().take(200).collect::<String>()
             );
+
+            // Check for duplicate keys in the TOML content
+            if let Some(duplicates) = detect_duplicate_keys(&content) {
+                eprintln!(
+                    "WARNING: Config file '{}' contains duplicate keys:",
+                    candidate.display()
+                );
+                for key in duplicates {
+                    eprintln!("  - '{}' appears multiple times", key);
+                }
+                eprintln!("The last value for each duplicate key will be used.");
+                eprintln!("Consider removing the duplicate entries to clean up your config file.");
+            }
 
             // First parse into a generic toml::Value to inspect raw mapping
             if let Ok(_value) = toml::from_str::<toml::Value>(&content) {

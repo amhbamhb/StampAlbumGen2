@@ -13,10 +13,10 @@ use tempfile::TempDir;
 fn test_album_stamp_img_new_setting_parameter_usage() {
     // Read the source files to check parameter usage
     let config_rs = fs::read_to_string("src/config.rs").expect("Failed to read config.rs");
-    let album_globals_rs =
-        fs::read_to_string("src/album_globals.rs").expect("Failed to read album_globals.rs");
-    let album_utils_rs =
-        fs::read_to_string("src/album_utils.rs").expect("Failed to read album_utils.rs");
+    let album_globals_rs = fs::read_to_string("src/album_globals/generator.rs")
+        .expect("Failed to read album_globals/generator.rs");
+    let album_utils_rs = fs::read_to_string("src/album_utils/globals.rs")
+        .expect("Failed to read album_utils/globals.rs");
 
     // Verify all three parameters are defined in config.rs
     assert!(
@@ -90,8 +90,8 @@ fn test_album_stamp_img_new_setting_parameter_usage() {
 /// Test to identify specific lines where width parameter is missing
 #[test]
 fn test_identify_missing_width_usage() {
-    let album_globals_rs =
-        fs::read_to_string("src/album_globals.rs").expect("Failed to read album_globals.rs");
+    let album_globals_rs = fs::read_to_string("src/album_globals/generator.rs")
+        .expect("Failed to read album_globals/generator.rs");
     let lines: Vec<&str> = album_globals_rs.lines().collect();
 
     let mut missing_width_lines = Vec::new();
@@ -130,8 +130,8 @@ fn test_identify_missing_width_usage() {
 /// Test to verify the ALBUM_STAMP_IMG_NEW_SETTING command generation includes all parameters
 #[test]
 fn test_album_stamp_img_new_setting_command_generation() {
-    let album_utils_rs =
-        fs::read_to_string("src/album_utils.rs").expect("Failed to read album_utils.rs");
+    let album_utils_rs = fs::read_to_string("src/album_utils/globals.rs")
+        .expect("Failed to read album_utils/globals.rs");
 
     // Check that the command format includes width, height, and preserve_aspect
     assert!(
@@ -149,8 +149,9 @@ fn test_album_stamp_img_new_setting_command_generation() {
         "Height should be extracted from config"
     );
     assert!(
-        album_utils_rs
-            .contains("let img_preserve = cfg.album_stamp_img_new_setting_preserve_aspect"),
+        album_utils_rs.contains(
+            "let img_preserve = cfg\n        .album_stamp_img_new_setting_preserve_aspect"
+        ),
         "Preserve aspect should be extracted from config"
     );
 }
