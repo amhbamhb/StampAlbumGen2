@@ -689,6 +689,27 @@ fn add_wikipedia_section<W: Write>(
             info!("Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, usable_height={:.1}, strategy={}",
                   content_sections.len(), balanced_pages.len(), total_content_height, usable_height, pagination_strategy);
 
+            // If requested, emit per-page metrics to stdout for external tuning tools.
+            // Controlled by environment variable WIKI_PAGE_DEBUG.
+            if std::env::var("WIKI_PAGE_DEBUG").is_ok() {
+                for (pi, page_secs) in balanced_pages.iter().enumerate() {
+                    let content_height: f64 = page_secs.iter().map(|&idx| heights[idx]).sum();
+                    let percent = if usable_height > 0.0 {
+                        (content_height / usable_height) * 100.0
+                    } else {
+                        0.0
+                    };
+                    println!(
+                        "WIKI_PAGE_METRICS page={} usable_height={:.1} content_height={:.1} percent_used={:.1} strategy={}",
+                        pi + 1,
+                        usable_height,
+                        content_height,
+                        percent,
+                        pagination_strategy
+                    );
+                }
+            }
+
             for (page_index, page_sections) in balanced_pages.iter().enumerate() {
                 if page_index > 0 {
                     // Add page separator between pages

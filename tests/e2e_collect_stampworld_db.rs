@@ -76,7 +76,7 @@ fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     let separator = "@";
     let site_name = "ExampleSeries"; // used as country identifier in DB
     let month_number = |_: &str| "1".to_string();
-    let get_stampworld_image = |_url: &str, _overwrite: bool| {
+    let get_stampworld_image = |_url: &str, _desired: &str, _overwrite: bool| {
         stamp_album_gen2::types::ImageStatus::new("", false, 0, 0, "")
     };
     let base_url = "https://example.test/page=";
