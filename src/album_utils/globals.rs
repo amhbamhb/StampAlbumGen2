@@ -579,12 +579,11 @@ fn add_wikipedia_section<W: Write>(
         Ok(Some((content, source))) => {
             // Calculate usable page height (accounting for margins, borders, etc.)
             let usable_height = crate::album_globals::compute_usable_height(cfg);
-            // Use a very conservative height for pagination to prevent any overflow
-            let pagination_height = usable_height * 0.75; // 25% safety margin
-            info!(
-                "Wikipedia pagination: usable_height={:.1}, pagination_height={:.1}",
-                usable_height, pagination_height
-            );
+
+            // We'll compute a per-page target height based on the total estimated
+            // content height so pages are balanced and we avoid an arbitrary large
+            // safety margin that wastes space (previously a fixed 25% margin).
+            info!("Wikipedia pagination: usable_height={:.1}", usable_height);
 
             // Start first page
             page_counter += 1;
@@ -637,14 +636,41 @@ fn add_wikipedia_section<W: Write>(
                 })
                 .collect();
 
-            // Create balanced pages
+            // Compute total estimated content height and derive a sensible per-page
+            // pagination target so pages are used efficiently. This avoids forcing
+            // too many short pages when content is small and avoids excessive
+            // vertical padding.
+            let total_content_height: f64 = heights.iter().sum();
+            let pages_needed = if total_content_height <= 0.0 {
+                1
+            } else {
+                // Minimum pages required if we filled each page up to usable_height
+                (total_content_height / usable_height).ceil() as usize
+            };
+
+            // Per-page target: distribute the content evenly across the needed pages,
+            // but never exceed the usable_height.
+            let pagination_height = if pages_needed == 0 {
+                usable_height
+            } else {
+                (total_content_height / (pages_needed as f64)).min(usable_height)
+            };
+
+            // If content is small compared to a page, use usable_height so we can
+            // center or flow naturally instead of squeezing everything to top.
+            let pagination_height = if total_content_height < usable_height * 0.9 {
+                usable_height
+            } else {
+                pagination_height
+            };
+
+            // Create balanced pages using the computed per-page target
             let balanced_pages =
                 create_balanced_pages(&content_sections, &heights, pagination_height, cfg);
 
             // Debug logging
-            let total_content_height: f64 = heights.iter().sum();
             info!("Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, pagination_height={:.1}, usable_height={:.1}",
-                  content_sections.len(), balanced_pages.len(), total_content_height, pagination_height, usable_height);
+            content_sections.len(), balanced_pages.len(), total_content_height, pagination_height, usable_height);
 
             for (page_index, page_sections) in balanced_pages.iter().enumerate() {
                 if page_index > 0 {

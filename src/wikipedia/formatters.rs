@@ -17,7 +17,13 @@ pub fn format_content_for_album(
         .as_deref()
         .unwrap_or("JUSTIFIED");
     let paragraph_padding = config.wikipedia_paragraph_padding.unwrap_or(10.0);
-    let paragraph_vspace = config.wikipedia_paragraph_vspace.unwrap_or(5.0);
+    // Compute a default paragraph vspace that scales with the paragraph font size
+    // if the config value is not explicitly set. This reduces excessive spacing
+    // for smaller fonts and increases it for larger fonts.
+    let paragraph_vspace = config.wikipedia_paragraph_vspace.unwrap_or_else(|| {
+        // Rough heuristic: ~0.25 * font size (in mm) gives reasonable spacing
+        (paragraph_font_size as f32) * 0.25
+    });
     let paragraph_right_padding = config.wikipedia_paragraph_right_padding.unwrap_or(10.0);
 
     let section_title_font = config
@@ -70,7 +76,8 @@ pub fn format_content_for_album(
             if !paragraph_lines.is_empty() {
                 let paragraph_text = paragraph_lines.join(" ");
 
-                // Start paragraph with formatting
+                // Start paragraph with formatting. Use the computed paragraph_vspace
+                // which scales sensibly with font size when not explicitly configured.
                 lines.push(format!(
                     "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
                     paragraph_font,
