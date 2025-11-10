@@ -1005,18 +1005,25 @@ pub fn load_config(path: &str) -> Config {
                                 }
 
                                 info!("Loaded config from {}", candidate.display());
-                                debug!("Parsed Config struct: {:?}", cfg);
-
-                                // Debug log color configuration values to help troubleshoot
-                                debug!("Color config values:");
-                                debug!("  color_album_border: {:?}", cfg.color_album_border);
+                                // Avoid dumping the entire `Config` struct into the logs
+                                // (it can be large). Emit a small summary instead.
+                                // Compute a stable 'include_wikipedia' summary from the
+                                // possibly-optional fields to avoid referencing a
+                                // non-existent field directly.
+                                let cfg_include_wikipedia = cfg
+                                    .include_wikipedia_content
+                                    .unwrap_or(cfg.fetch_wikipedia.unwrap_or(false));
                                 debug!(
-                                    "  color_stamp_background: {:?}",
-                                    cfg.color_stamp_background
+                                    "Parsed Config (summary): page_size={:?}x{:?} include_wikipedia={:?}",
+                                    cfg.album_page_width_mm,
+                                    cfg.album_page_height_mm,
+                                    cfg_include_wikipedia
                                 );
+
+                                // Debug log a few targeted color configuration values to help troubleshoot
                                 debug!(
-                                    "  album_stamp_img_aspect_ratio: {:?}",
-                                    cfg.album_stamp_img_aspect_ratio
+                                    "Color config values: album_border={:?} stamp_background={:?}",
+                                    cfg.color_album_border, cfg.color_stamp_background
                                 );
 
                                 return cfg;

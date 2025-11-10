@@ -27,7 +27,25 @@ impl Default for ReqwestFetcher {
 impl ReqwestFetcher {
     /// Build a standard client used by the site collector (60s timeout).
     pub fn new() -> Self {
+        // Use a browser-like User-Agent and reasonable redirect policy so
+        // StampWorld pages return the same content a browser / curl would.
+        let mut default_headers = HeaderMap::new();
+        default_headers.insert(
+            reqwest::header::USER_AGENT,
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+                .parse()
+                .unwrap(),
+        );
+        default_headers.insert(
+            reqwest::header::ACCEPT,
+            "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+                .parse()
+                .unwrap(),
+        );
+
         let client = reqwest::blocking::Client::builder()
+            .default_headers(default_headers)
+            .redirect(reqwest::redirect::Policy::limited(10))
             .timeout(std::time::Duration::from_secs(60))
             .build()
             .expect("Failed to build reqwest client");

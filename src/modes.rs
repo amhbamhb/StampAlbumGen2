@@ -74,6 +74,18 @@ pub fn run_database_mode(
         .unwrap_or_else(|| "Album".to_string());
     progress.set_message(&format!("📖 Generating album output for: {}", album_name));
 
+    // Temporary unconditional marker to help automated runs detect that
+    // we've reached the album-generation step and to print the env flags
+    // relevant to wiki metric emission. This is intentionally a stdout
+    // println! so it will appear in captured logs even if the logger
+    // is configured to write to files.
+    println!(
+        "FORCE_WIKI_PAGE_METRICS_RUN album={} WIKI_PAGE_DEBUG={} FORCE_WIKI_PAGE_METRICS={}",
+        album_name,
+        std::env::var("WIKI_PAGE_DEBUG").unwrap_or_else(|_| "".to_string()),
+        std::env::var("FORCE_WIKI_PAGE_METRICS").unwrap_or_else(|_| "".to_string())
+    );
+
     let output_path = crate::album_globals::generate_album_output_conn(
         &conn,
         &album_name,
@@ -232,6 +244,8 @@ pub fn run_scraping_mode(
         None::<&dyn Fn(usize)>,
         cli.max_pages,
         cli.stop_after_no_hits,
+        cli.start_year,
+        cli.end_year,
     );
     match pages {
         Ok(pages) => {

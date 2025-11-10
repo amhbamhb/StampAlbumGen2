@@ -132,6 +132,8 @@ impl CommandsFileGenerator {
         page_callback: Option<&dyn Fn(usize)>,
         max_pages: i32,
         stop_after_no_hits: i32,
+        start_year: i32,
+        end_year: i32,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         use crate::commands_file_generator::data_collection::collect_stampworld_data;
         use crate::types::ImageStatus;
@@ -182,8 +184,8 @@ impl CommandsFileGenerator {
             &month_number_fn,
             &downloader,
             base_url,
-            self.year.parse().unwrap_or(1972),
-            self.year.parse().unwrap_or(1972),
+            start_year,
+            end_year,
             overwrite_images,
             page_callback,
             max_pages,

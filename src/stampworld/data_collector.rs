@@ -146,6 +146,15 @@ pub fn collect_stampworld_data_with_fetcher(
                 break;
             }
         };
+        // Extra stdout-level diagnostics to ensure automated runs capture
+        // the fetch result even when logging is redirected. These lines are
+        // intentionally printed to stdout so CI or wrappers can see them.
+        println!(
+            "[STAMPWORLD DEBUG] Fetched URL: {} status={} bytes={}",
+            url,
+            status.as_u16(),
+            body.len()
+        );
         // Log short HTTP response info to help diagnose site errors (info-level to avoid huge debug dumps)
         // info!("HTTP status for {} -> {}", url, status);
         // If page 1 returns 404, prepare and/or consume deterministic
@@ -227,8 +236,20 @@ pub fn collect_stampworld_data_with_fetcher(
             content_blocks.len(),
             page_num
         );
+        println!(
+            "[STAMPWORLD DEBUG] Found {} content blocks on page {}",
+            content_blocks.len(),
+            page_num
+        );
 
         for (block_idx, content_div) in content_blocks.into_iter().enumerate() {
+            // Print a small snippet of the block HTML to help diagnose why
+            // row selectors may not match in certain environments.
+            let block_html_snippet: String = content_div.html().chars().take(500).collect();
+            println!(
+                "[STAMPWORLD DEBUG] Block {} HTML snippet: {}",
+                block_idx, block_html_snippet
+            );
             // Extract block-level details
             let p_selector = Selector::parse("p").unwrap();
             let mut details_vec: Vec<String> = Vec::new();
@@ -356,11 +377,20 @@ pub fn collect_stampworld_data_with_fetcher(
                 block_idx,
                 rows.len()
             );
+            println!(
+                "[STAMPWORLD DEBUG] Block {} has {} table rows matching selector",
+                block_idx,
+                rows.len()
+            );
             if !rows.is_empty() {
                 // Log a short snippet of the first row to help diagnose selector mismatches
                 let sample_html = rows[0].inner_html();
                 let sample_snippet: String = sample_html.chars().take(300).collect();
                 debug!("Block {} first row snippet: {}", block_idx, sample_snippet);
+                println!(
+                    "[STAMPWORLD DEBUG] Block {} first row snippet: {}",
+                    block_idx, sample_snippet
+                );
             }
             for (ridx, tr) in rows.into_iter().enumerate() {
                 // Basic row parsing: build a flattened row_cells vector so we can

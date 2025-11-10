@@ -1,5 +1,5 @@
 use crate::types::OSType;
-use flexi_logger::{FileSpec, Logger};
+use flexi_logger::{Cleanup, Criterion, FileSpec, Logger, Naming};
 
 /// Setup errors that can occur during environment setup
 #[derive(Debug)]
@@ -54,18 +54,25 @@ pub fn setup_logging() -> Result<(), SetupError> {
     let ts = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
     let basename = format!("stamp_album_gen2-{}", ts);
 
-    // Use a conservative default filter that keeps this crate at `debug` but
+    // Use a conservative default filter that keeps this crate at `info` but
     // silences noisy external crates (html5ever, reqwest). Allow overriding
     // via the environment (RUST_LOG) for one-off trace captures during
     // debugging, while keeping a safe default to avoid runaway logs.
-    Logger::try_with_env_or_str("stamp_album_gen2=debug,html5ever=warn,reqwest=warn")?
+    // Also enable size-based rotation so logs cannot grow indefinitely.
+    Logger::try_with_env_or_str("stamp_album_gen2=info,html5ever=warn,reqwest=warn")?
         .log_to_file(
             FileSpec::default()
                 .directory("Logs")
                 .basename(&basename)
                 .suffix("log"),
         )
-        // Only duplicate errors to stderr by default so debug/info go to the log file only
+        // Rotate files when they reach ~10 MiB and keep the last 5 files.
+        .rotate(
+            Criterion::Size(10 * 1024 * 1024),
+            Naming::Timestamps,
+            Cleanup::KeepLogFiles(5),
+        )
+        // Only duplicate errors to stderr by default so info/debug go to the log file only
         .duplicate_to_stderr(flexi_logger::Duplicate::Error)
         .start()
         .map_err(SetupError::LoggerInitialization)?;
