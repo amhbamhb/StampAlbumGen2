@@ -5,6 +5,7 @@
 pub mod database;
 pub mod fetchers;
 pub mod formatters;
+pub mod ingest;
 pub mod legacy;
 pub mod models;
 pub mod parsers;
@@ -14,6 +15,7 @@ pub mod utils;
 pub use database::{fetch_and_cache_content, get_cached_content};
 pub use fetchers::{fetch_grokipedia_content, fetch_wikipedia_content};
 pub use formatters::{format_content_for_album, format_wikipedia_content_for_album};
+pub use ingest::ingest_wikipedia_to_db;
 pub use legacy::{
     fetch_and_cache_wikipedia_content, fetch_and_save_summary, fetch_and_save_summary_with_fetcher,
     get_cached_wikipedia_content,

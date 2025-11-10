@@ -254,6 +254,42 @@ pub fn run_scraping_mode(
                 pages.len()
             ));
 
+            // If no pages/stamps were found, optionally try to ingest cached
+            // Wikipedia/Grokipedia content into the album DB so the first
+            // generation can produce something usable. This implements the
+            // "Wikipedia-as-fallback" behavior: only run when the collector
+            // returned zero results.
+            if pages.len() == 0 {
+                let fetch_wiki = cfg_file
+                    .fetch_wikipedia
+                    .unwrap_or_else(|| cfg_file.include_wikipedia_content.unwrap_or(false));
+                if fetch_wiki {
+                    progress.set_message("ℹ️ No stamps found in scraping; attempting Wikipedia->DB ingest fallback...");
+                    let cache_db_path = cfg_file
+                        .wikipedia_cache_db_path
+                        .as_deref()
+                        .unwrap_or("wikipedia_cache.db");
+                    // Call ingest with a conservative max entries to avoid huge imports
+                    match crate::wikipedia::ingest_wikipedia_to_db(
+                        &site_name,
+                        cache_db_path,
+                        &db_path,
+                        12,
+                    ) {
+                        Ok(inserted) => {
+                            progress.set_message(&format!(
+                                "🔁 Wikipedia ingest inserted {} placeholder rows",
+                                inserted
+                            ));
+                        }
+                        Err(e) => {
+                            progress.set_message("⚠️ Wikipedia ingest failed");
+                            eprintln!("Wikipedia ingest error: {}", e);
+                        }
+                    }
+                }
+            }
+
             // After scraping, generate album output from the same DB
             // Open the DB that the collector used and call the conn-taking API so
             // both scraper and generator share the same connection lifecycle.
