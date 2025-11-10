@@ -1076,27 +1076,57 @@ pub fn load_config(path: &str) -> Config {
         debug!("  - {}", p.display());
     }
 
-    // If no config file was found, create one with defaults
+    // If no config file was found, create one with the canonical template
+    // Preference order when creating a base `config.toml`:
+    // 1. If a `config_template.toml` exists in the current working dir, copy it verbatim
+    //    (preserves comments and human-friendly documentation).
+    // 2. Otherwise fall back to serializing `Config::with_defaults()` (machine-friendly).
+    //
+    // IMPORTANT MAINTAINER NOTE / COPILOT: When you add/remove configuration
+    // keys you MUST keep these three things in sync:
+    //  - the `Config` struct and its `with_defaults()` implementation,
+    //  - the `config_template.toml` human-readable template, and
+    //  - this default-creation logic (so created files contain the template where possible).
+    //
+    // This comment serves as the canonical reminder for automated assistants and
+    // maintainers to update all three places whenever configuration changes.
     if let Ok(cwd) = std::env::current_dir() {
         let default_config_path = cwd.join(path);
-        let defaults = Config::with_defaults();
-        match toml::to_string(&defaults) {
-            Ok(content) => {
-                if let Err(e) = fs::write(&default_config_path, content) {
-                    log::warn!(
-                        "Failed to create default config file at {}: {}",
-                        default_config_path.display(),
-                        e
-                    );
-                } else {
-                    log::info!(
-                        "Created new config file with default values at {}",
-                        default_config_path.display()
-                    );
-                }
+        let template_path = cwd.join("config_template.toml");
+
+        if template_path.exists() {
+            match fs::copy(&template_path, &default_config_path) {
+                Ok(_) => log::info!(
+                    "Created new config file from template at {}",
+                    default_config_path.display()
+                ),
+                Err(e) => log::warn!(
+                    "Failed to copy config_template.toml to {}: {}",
+                    default_config_path.display(),
+                    e
+                ),
             }
-            Err(e) => {
-                log::warn!("Failed to serialize default config: {}", e);
+        } else {
+            // Fallback to serializing the defaults (no human-friendly comments)
+            let defaults = Config::with_defaults();
+            match toml::to_string(&defaults) {
+                Ok(content) => {
+                    if let Err(e) = fs::write(&default_config_path, content) {
+                        log::warn!(
+                            "Failed to create default config file at {}: {}",
+                            default_config_path.display(),
+                            e
+                        );
+                    } else {
+                        log::info!(
+                            "Created new config file with default values at {}",
+                            default_config_path.display()
+                        );
+                    }
+                }
+                Err(e) => {
+                    log::warn!("Failed to serialize default config: {}", e);
+                }
             }
         }
     }
