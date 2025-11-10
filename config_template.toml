@@ -35,9 +35,29 @@ max_rows_per_page = 5                # Maximum rows per page
 packing_horizontal_safety_mm = 2.0   # Safety gap left/right of each stamp (mm)
 packing_vertical_safety_mm = 2.0     # Safety gap above/below each stamp (mm)
 
+
+############################################
+# Standard font size for stamp headings (HN value)
+# here is list of posible font:
+############################################
+
+# CN = Courier
+# CB = Courier Bold
+# CI = Courier Italic
+# CS = Courier Bold-Italic
+# HN = Times Roman
+# TB = Times Roman Bold
+# TI = Times Roman Italic
+# TS = Times Roman Bold-Italic
+# HN = Helvetica
+# HB = Helvetica Bold
+# HI = Helvetica Italic
+# HS = Helvetica Bold-Italic
+
 ###################################
 # Fonts and Header/Footer
 ###################################
+
 
 # Font and page title settings. Fonts are referenced by short codes used
 # by the renderer (for example: HN = Helvetica Neue, TN = Times New Roman).
