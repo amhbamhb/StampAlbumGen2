@@ -422,11 +422,16 @@ fn detect_duplicate_keys(content: &str) -> Option<Vec<String>> {
 }
 
 pub fn load_config(path: &str) -> Config {
-    // Try to find the config file starting at the current working directory
-    // and searching upward through parent directories. This ensures that
-    // running the binary from a subdirectory (e.g. Albums/Canada) will still
-    // pick up the project's top-level `config.toml`.
-    let try_paths = {
+    // If the caller provided an absolute path, only try that exact file.
+    // This is useful for tests which create a temporary config file and want
+    // to parse it without changing the process-wide current working directory.
+    let try_paths = if std::path::Path::new(path).is_absolute() {
+        vec![std::path::PathBuf::from(path)]
+    } else {
+        // Try to find the config file starting at the current working directory
+        // and searching upward through parent directories. This ensures that
+        // running the binary from a subdirectory (e.g. Albums/Canada) will still
+        // pick up the project's top-level `config.toml`.
         let mut paths = Vec::new();
 
         // First, try paths relative to current working directory

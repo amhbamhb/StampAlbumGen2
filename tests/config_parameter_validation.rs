@@ -48,11 +48,11 @@ fn make_minimal_test_db(db_path: &str) {
 }
 
 fn load_config_from_tempdir(dir: &std::path::Path) -> Config {
-    let orig_cwd = env::current_dir().expect("Failed to get current directory");
-    env::set_current_dir(dir).expect("Failed to change directory");
-    let config = load_config("config.toml");
-    env::set_current_dir(orig_cwd).expect("Failed to restore directory");
-    config
+    // Avoid changing the process-wide current directory to prevent races
+    // when tests run in parallel. Instead, pass an absolute path to
+    // load_config; the loader will handle absolute paths directly.
+    let config_path = dir.join("config.toml");
+    load_config(config_path.to_str().expect("Invalid temp path"))
 }
 
 #[test]

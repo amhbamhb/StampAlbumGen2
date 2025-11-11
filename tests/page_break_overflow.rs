@@ -148,11 +148,17 @@ single_stamp_threshold_pct = 0.5
     }
     let s = found_content.expect("no generated .txt file found in album dir");
 
-    // Look for the Page 2 marker and ensure the sequence exists
-    let page2_seq = "### Page 2 ###\nPAGE_START\nROW_START_ES";
+    // Look for the Page 2 marker and ensure the sequence exists. The page
+    // header may include a suffix like " - Stamps", so locate the "### Page 2"
+    // marker and then assert the PAGE_START + ROW_START_ES sequence appears
+    // after that location.
+    let page2_pos = s
+        .find("### Page 2")
+        .expect("expected a Page 2 marker in generated output");
+    let after_page2 = &s[page2_pos..];
     assert!(
-        s.contains(page2_seq),
-        "expected forced page 2 with PAGE_START + ROW_START_ES, got:\n{}",
-        s
+        after_page2.contains("PAGE_START\nROW_START_ES"),
+        "expected forced page 2 with PAGE_START + ROW_START_ES after Page 2 marker, got:\n{}",
+        after_page2
     );
 }

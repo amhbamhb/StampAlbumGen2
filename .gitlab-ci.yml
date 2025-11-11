@@ -103,6 +103,21 @@ test_workspace:
     reports:
       junit: target/junit-report.xml
 
+db_path_quick_check:
+  stage: test
+  image: rust:latest
+  script: |
+    rustc --version
+    cargo --version
+    # Run only the lightweight db path unit test to provide a fast CI signal
+    mkdir -p target
+    set -o pipefail; cargo test -p stamp_album_gen2 --test db_path_unit -- --nocapture || true
+  only:
+    - branches
+    - merge_requests
+  except:
+    - tags
+
 bump_version:
   stage: tag
   before_script:

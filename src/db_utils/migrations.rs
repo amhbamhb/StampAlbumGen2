@@ -182,10 +182,15 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
     conn.execute_batch("BEGIN IMMEDIATE;")?;
 
     // Small helper: normalize currency tokens similarly to the collector
-    fn normalize_currency_token_inner(s: &str) -> String {
+    // Return Some(normalized_currency) for recognized currency-like tokens,
+    // otherwise return None. Previously this helper returned the uppercased
+    // input for unrecognized tokens which caused nearly every non-empty
+    // block line to be misclassified as a currency because the returned
+    // string differed from the original. Using Option prevents that.
+    fn normalize_currency_token_inner(s: &str) -> Option<String> {
         let t = s.trim();
         if t.is_empty() {
-            return String::new();
+            return None;
         }
         let low = t.to_lowercase();
         if low == "sell"
@@ -197,30 +202,34 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
             || low.contains("dollar")
             || low.contains("cent")
         {
-            "USD".to_string()
+            Some("USD".to_string())
         } else if low == "gbp"
             || low == "£"
             || low == "pound"
             || low.contains("pound")
             || low.contains("gbp")
         {
-            "GBP".to_string()
+            Some("GBP".to_string())
         } else if low == "eur"
             || low == "€"
             || low == "euro"
             || low.contains("euro")
             || low.contains("eur")
         {
-            "EUR".to_string()
+            Some("EUR".to_string())
         } else {
-            t.to_uppercase()
+            None
         }
     }
 
-    // Process rows where context looks like it contains block metadata
-    // Look for rows where design/engraving/perforation are empty but context is not
+    // Process rows where block metadata may be embedded. We select rows where
+    // either the `context` is non-empty (collector often stored blocks there)
+    // or any of the design/engraving/perforation columns look like they
+    // contain a labelled block (contain a ':' character). This covers cases
+    // where earlier collectors accidentally wrote the whole block into one
+    // column (e.g. "Design: X\nEngraving: Y\nPerforation: Z").
     let mut stmt = conn.prepare(
-        "SELECT id, context, design, engraving, perforation, currency FROM stamps WHERE (design = '' OR design IS NULL) AND (engraving = '' OR engraving IS NULL) AND (perforation = '' OR perforation IS NULL) AND context != '' AND context IS NOT NULL"
+        "SELECT id, context, design, engraving, perforation, currency FROM stamps WHERE (context != '' AND context IS NOT NULL) OR (design LIKE '%:%') OR (engraving LIKE '%:%') OR (perforation LIKE '%:%')"
     )?;
     let mut rows = stmt.query([])?;
     let mut updates = 0;
@@ -232,22 +241,58 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
         let existing_perforation: String = row.get(4)?;
         let existing_currency: String = row.get(5)?;
 
-        // Use the collector's extract_block_metadata logic
-        // This is a simplified version - the real implementation is in the collector
-        let parts: Vec<&str> = context.split('|').collect();
+        // Consolidate potential sources of the block text. Prefer `context`
+        // when available because it's the canonical place collectors stored
+        // block text, but also include the other fields in case the block was
+        // accidentally stored there.
+        let mut combined = String::new();
+        if !context.trim().is_empty() {
+            combined.push_str(&context);
+        }
+        if !existing_design.trim().is_empty() {
+            if !combined.is_empty() {
+                combined.push('|');
+            }
+            combined.push_str(&existing_design);
+        }
+        if !existing_engraving.trim().is_empty() {
+            if !combined.is_empty() {
+                combined.push('|');
+            }
+            combined.push_str(&existing_engraving);
+        }
+        if !existing_perforation.trim().is_empty() {
+            if !combined.is_empty() {
+                combined.push('|');
+            }
+            combined.push_str(&existing_perforation);
+        }
+
+        // Split the combined block on pipe and newlines so each labelled line
+        // becomes an individual part we can classify. Collect into owned
+        // Strings to avoid borrowing from a temporary created by `replace`.
+        let parts: Vec<String> = combined
+            .replace('\r', "")
+            .split(|c| c == '|' || c == '\n')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
         let mut design = String::new();
         let mut engraving = String::new();
         let mut perforation = String::new();
         let mut currency = String::new();
 
-        for part in parts {
-            let p = part.trim();
+        for part in parts.iter() {
+            let p = part.as_str().trim();
             if p.is_empty() {
                 continue;
             }
             // Check if it looks like currency
-            let norm_curr = normalize_currency_token_inner(p);
-            if !norm_curr.is_empty() && norm_curr != p {
+            // Only treat the part as a currency when the helper recognizes it
+            // as a known currency token (e.g. "sell" -> "USD"). This avoids
+            // misclassifying generic labelled lines like "Design: X" as
+            // currency due to case-normalization differences.
+            if let Some(norm_curr) = normalize_currency_token_inner(p) {
                 currency = norm_curr;
                 continue;
             }
@@ -258,7 +303,13 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
                     .all(|c| c.is_numeric() || c == '×' || c == '.' || c == ' ')
             {
                 if perforation.is_empty() {
-                    perforation = p.to_string();
+                    // If the part contains a colon like "Perforation: 12" prefer
+                    // the RHS after the colon.
+                    if let Some(idx) = p.find(':') {
+                        perforation = p[idx + 1..].trim().to_string();
+                    } else {
+                        perforation = p.to_string();
+                    }
                 }
                 continue;
             }
@@ -268,25 +319,78 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
                 || p.to_lowercase().contains("recess")
             {
                 if engraving.is_empty() {
-                    engraving = p.to_string();
+                    if let Some(idx) = p.find(':') {
+                        engraving = p[idx + 1..].trim().to_string();
+                    } else {
+                        engraving = p.to_string();
+                    }
                 }
                 continue;
             }
             // Assume it's design if we haven't categorized it
             if design.is_empty() {
-                design = p.to_string();
+                if let Some(idx) = p.find(':') {
+                    design = p[idx + 1..].trim().to_string();
+                } else {
+                    design = p.to_string();
+                }
             }
         }
 
-        // Only update if we found something and the fields are actually empty
-        if (!design.is_empty() && existing_design.is_empty())
-            || (!engraving.is_empty() && existing_engraving.is_empty())
-            || (!perforation.is_empty() && existing_perforation.is_empty())
-            || (!currency.is_empty() && existing_currency.is_empty())
-        {
+        // Decide whether to replace fields. We will replace design/engraving/
+        // perforation when the existing value looks like a concatenated block
+        // (contains ':' or newlines) or is empty. For currency, normalize even
+        // if a token was present (e.g. "Sell" -> "USD").
+        let replace_design = (!design.is_empty())
+            && (existing_design.is_empty()
+                || existing_design.contains(':')
+                || existing_design.contains('\n')
+                || existing_design.trim() == context.trim());
+        let replace_engraving = (!engraving.is_empty())
+            && (existing_engraving.is_empty()
+                || existing_engraving.contains(':')
+                || existing_engraving.contains('\n')
+                || existing_engraving.trim() == context.trim());
+        let replace_perforation = (!perforation.is_empty())
+            && (existing_perforation.is_empty()
+                || existing_perforation.contains(':')
+                || existing_perforation.contains('\n')
+                || existing_perforation.trim() == context.trim());
+
+        // For currency: prefer an explicitly-extracted token from the block parts
+        // if available; otherwise, attempt to normalize an existing currency
+        // value (e.g. "Sell" -> "USD"). If neither yields a recognized token
+        // preserve the existing value.
+        let new_currency = if !currency.is_empty() {
+            currency.clone()
+        } else if let Some(norm) = normalize_currency_token_inner(&existing_currency) {
+            norm
+        } else {
+            existing_currency.clone()
+        };
+
+        let replace_currency = new_currency.to_lowercase() != existing_currency.to_lowercase();
+
+        let new_design = if replace_design {
+            design
+        } else {
+            existing_design
+        };
+        let new_engraving = if replace_engraving {
+            engraving
+        } else {
+            existing_engraving
+        };
+        let new_perforation = if replace_perforation {
+            perforation
+        } else {
+            existing_perforation
+        };
+
+        if replace_design || replace_engraving || replace_perforation || replace_currency {
             conn.execute(
                 "UPDATE stamps SET design = ?, engraving = ?, perforation = ?, currency = ? WHERE id = ?",
-                params![design, engraving, perforation, currency, id],
+                params![new_design, new_engraving, new_perforation, new_currency, id],
             )?;
             updates += 1;
         }
