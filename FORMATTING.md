@@ -18,6 +18,22 @@ The pre-commit hook checks formatting **without modifying files**. If formatting
 2. Run `./format-and-check.sh` to fix issues
 3. Add and commit the formatted changes
 
+Additionally, we strongly recommend running the project's test-suite before committing
+to catch regressions early. A small pre-commit checklist you can run locally is:
+
+```bash
+# Format, run quick checks and then run the test suite
+./format-and-check.sh
+cargo test --all
+```
+
+If you prefer a single command that does both (format + tests):
+
+```bash
+# Run formatter and then all tests
+./format-and-check.sh && cargo test --all
+```
+
 ### ✅ Before Every Push (Automatic)
 
 The pre-push hook does final verification:
@@ -34,6 +50,9 @@ The pre-push hook does final verification:
 
 # Or just format without extra checks
 cargo fmt --all
+
+# Run the full test-suite (recommended before commits)
+cargo test --all
 ```
 
 ### Checking Format (CI-style)

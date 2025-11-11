@@ -3,6 +3,10 @@
 
 set -e  # Exit on any error
 
+# Default timeout for running the test-suite (seconds). Can be overridden by
+# setting TEST_TIMEOUT in the environment when invoking the script.
+TEST_TIMEOUT=${TEST_TIMEOUT:-600}
+
 echo "� Checking current formatting status..."
 
 # First check if formatting is needed
@@ -40,6 +44,29 @@ if ! cargo check --quiet; then
 fi
 
 echo "✅ Code compiles successfully"
+echo ""
+echo "🧪 Running test-suite (this may take a while)..."
+
+# Prefer GNU `timeout` to bound the total runtime so developers don't get
+# stuck on a single hanging test during a pre-commit check. If `timeout` is
+# not available, fall back to running tests directly.
+if command -v timeout >/dev/null 2>&1; then
+    echo "⏱️  Running tests with timeout=${TEST_TIMEOUT}s (set TEST_TIMEOUT to override)"
+    if ! timeout --preserve-status ${TEST_TIMEOUT}s cargo test --all; then
+        echo "❌ Tests failed or timed out. Inspect the output above."
+        echo "If a specific test is hanging, run it individually to debug, e.g."
+        echo "  cargo test test_cli_special_characters_and_edge_cases --test cli_option_validation -- --nocapture"
+        exit 1
+    fi
+else
+    echo "⚠️  'timeout' command not found; running tests without a hard timeout."
+    if ! cargo test --all; then
+        echo "❌ Some tests failed. Please fix failures before committing."
+        exit 1
+    fi
+fi
+
+echo "✅ All tests passed"
 echo ""
 echo "🎯 Ready to commit! Your code is properly formatted and compiles."
 echo ""

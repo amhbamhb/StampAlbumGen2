@@ -56,7 +56,30 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         run_database_mode(&cli, show_progress)?;
     } else if effective_source == "stampworld" {
         // Scraping mode
-        run_scraping_mode(&cli, show_progress)?;
+        // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
+        // network operations, but we must still validate required CLI
+        // options (like --site-name) and print the same helpful error
+        // messages as the real scraping path would. If SKIP_NETWORK_SCRAPE
+        // is set we will perform validation but skip executing the network
+        // heavy `run_scraping_mode`.
+        if std::env::var("SKIP_NETWORK_SCRAPE").is_ok() {
+            // Mirror the missing site-name handling from `run_scraping_mode`
+            if cli.site_name.is_none() && cli.album_name.is_none() {
+                eprintln!(
+                    "You started the program in scraping mode but did not provide the site name."
+                );
+                eprintln!(
+                    "Please provide the site using --site-name (for example: --site-name 'Great-Britain') or supply --album-name so the program can infer the site."
+                );
+                eprintln!("If you're not sure what to put, here's the full help text:\n");
+                Cli::command().print_help()?;
+                println!();
+                std::process::exit(1);
+            }
+            println!("Skipping StampWorld scraping because SKIP_NETWORK_SCRAPE is set");
+        } else {
+            run_scraping_mode(&cli, show_progress)?;
+        }
     } else {
         // No db_path and not stampworld: require db_path
         eprintln!(

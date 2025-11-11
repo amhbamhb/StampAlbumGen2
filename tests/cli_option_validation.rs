@@ -9,6 +9,9 @@ use tempfile::tempdir;
 fn run_cli_with_args(args: &[&str]) -> (i32, String, String) {
     let output = Command::new("target/debug/stamp_album_gen2")
         .args(args)
+        // Make the spawned binary avoid network-heavy scraping during tests.
+        // The binary checks for this env var and will skip the scraping step.
+        .env("SKIP_NETWORK_SCRAPE", "1")
         .output()
         .expect("Failed to execute CLI");
 
