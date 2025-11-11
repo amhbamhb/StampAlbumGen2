@@ -1,7 +1,31 @@
+use crate::config::Config;
 use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
-use log::info;
+use crate::wikipedia::database;
+use crate::wikipedia::formatters;
+use crate::wikipedia::models::ContentSource;
 use std::fs;
 use std::path::Path;
+
+/// Legacy function for backwards compatibility
+pub fn fetch_and_cache_wikipedia_content(
+    topic: &str,
+    cache_db_path: &str,
+    fetcher: &dyn Fetcher,
+) -> Result<(), Box<dyn std::error::Error>> {
+    database::fetch_and_cache_content(topic, cache_db_path, fetcher)
+}
+
+/// Legacy function for backwards compatibility
+pub fn get_cached_wikipedia_content(
+    topic: &str,
+    cache_db_path: &str,
+) -> Result<Option<String>, Box<dyn std::error::Error>> {
+    match database::get_cached_content(topic, cache_db_path) {
+        Ok(Some((content, _))) => Ok(Some(content)),
+        Ok(None) => Ok(None),
+        Err(e) => Err(e),
+    }
+}
 
 /// Fetch a short extract for a given topic from Wikipedia's REST API and save it
 /// to the album directory as wiki_summary.txt. Returns Ok(path) on success.
@@ -11,7 +35,7 @@ pub fn fetch_and_save_summary(
     topic: &str,
     album_dir: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let fetcher = ReqwestFetcher::new();
+    let fetcher = ReqwestFetcher::new_for_api();
     fetch_and_save_summary_with_fetcher(topic, album_dir, &fetcher)
 }
 
@@ -30,7 +54,7 @@ pub fn fetch_and_save_summary_with_fetcher(
         "https://en.wikipedia.org/api/rest_v1/page/summary/{}",
         topic_enc
     );
-    info!("Fetching Wikipedia summary for '{}' -> {}", topic, url);
+    log::info!("Fetching Wikipedia summary for '{}' -> {}", topic, url);
 
     let (status, body) = fetcher.fetch_text(&url)?;
     if !status.is_success() {

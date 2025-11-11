@@ -3,12 +3,184 @@
 //!
 //! This module generates placeholder images for stamps that don't have associated images.
 
+use crate::image_utils::calc_mm_per_pixel_embedded;
 use image::{ImageBuffer, Rgba};
 use log::{error, info};
 use rusttype::{point, Font, Scale};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+
+/// Compute a simple perceptual luminance from an sRGB color (0..255 each).
+/// Returns a linear luminance in range 0.0..1.0 approximated by ITU-R BT.709 weights.
+pub fn luminance(color: Rgba<u8>) -> f32 {
+    let r = color[0] as f32 / 255.0;
+    let g = color[1] as f32 / 255.0;
+    let b = color[2] as f32 / 255.0;
+    // Use gamma-corrected linear approximation: convert sRGB -> linear
+    let lin = |c: f32| {
+        if c <= 0.04045 {
+            c / 12.92
+        } else {
+            ((c + 0.055) / 1.055).powf(2.4)
+        }
+    };
+    let lr = lin(r);
+    let lg = lin(g);
+    let lb = lin(b);
+    // Rec. 709 luminance weights
+    0.2126 * lr + 0.7152 * lg + 0.0722 * lb
+}
+
+/// Return true if the color is considered "dark" and would benefit from a light
+/// background and dark text for contrast.
+pub fn is_color_dark(color: Rgba<u8>) -> bool {
+    // Luminance threshold chosen so that mid-gray (approx 0.5 sRGB) is considered light.
+    luminance(color) < 0.45
+}
+
+/// Return a contrasting opaque color (Rgba<u8>) for the provided color.
+/// For dark inputs this returns white, for light inputs black. This is intentionally
+/// simple and deterministic; callers can refine it later to use more subtle contrasts.
+pub fn contrasting_color(color: Rgba<u8>) -> Rgba<u8> {
+    if is_color_dark(color) {
+        Rgba([255, 255, 255, 255])
+    } else {
+        Rgba([0, 0, 0, 255])
+    }
+}
+
+/// Compute a placeholder pixel size for a given series identifier.
+/// Uses `sample_images::get_scaling_for_series` to scale from a base pixel size.
+pub fn compute_placeholder_size_for_series(series: &str) -> (u32, u32) {
+    // Prefer physical mm->px sizing using embedded reference if available.
+    // Map series identifier to an expected physical stamp size (mm).
+    let (target_mm_w, target_mm_h) = match series.chars().next() {
+        Some('L') | Some('O') => (49.0_f64, 21.0_f64),
+        Some('M') => (31.1_f64, 24.1_f64),
+        Some('N') => (26.1_f64, 21.0_f64),
+        Some('R') => (38.0_f64, 25.0_f64),
+        Some('S') => (38.0_f64, 25.0_f64),
+        Some('T') | Some('U') => (25.0_f64, 24.0_f64),
+        _ => (22.0_f64, 18.0_f64),
+    };
+
+    // Ask image_utils for the mm-per-pixel ratio using the embedded reference.
+    // Use the same default reference that other modules use when none is configured.
+    // Use the same embedded-reference calibration values used elsewhere in the project
+    // (see `album_utils::dimensions::REF_W_MM/REF_H_MM`) for consistent mm->px conversions.
+    const REF_W_MM_CAL: f32 = 23.42;
+    const REF_H_MM_CAL: f32 = 25.93;
+    if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(REF_W_MM_CAL, REF_H_MM_CAL)
+    {
+        // mm_per_px_* are f32; convert and compute pixel dims
+        let px_w = (target_mm_w as f32 / mm_per_px_w).round() as u32;
+        let px_h = (target_mm_h as f32 / mm_per_px_h).round() as u32;
+        // Keep sensible minimums
+        return (px_w.max(50), px_h.max(40));
+    }
+
+    // Fallback: legacy pixel-scaling from base pixels
+    let base_w = 300.0_f64;
+    let base_h = 220.0_f64;
+    let (w_scale, h_scale) = crate::sample_images::get_scaling_for_series(series);
+    let w = (base_w * w_scale).round() as u32;
+    let h = (base_h * h_scale).round() as u32;
+    (w.max(50), h.max(40))
+}
+
+/// High-level helper: generate a per-stamp placeholder image using the provided stamp background
+/// color (the color of the source stamp). The generator will choose an image background that
+/// contrasts with the stamp background (so dark stamps get a light placeholder and vice versa),
+/// then choose the text color to contrast with the image background.
+///
+/// `series_hint` may be provided to size the placeholder more like a real stamp from that series.
+pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
+    album_name: &str,
+    sg_number: &str,
+    year: &str,
+    stamp_bg_color: Option<Rgba<u8>>,
+    series_hint: Option<&str>,
+    out_path: P,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let out = out_path.as_ref();
+
+    // Determine size
+    let (w, h) = if let Some(s) = series_hint {
+        compute_placeholder_size_for_series(s)
+    } else {
+        (300u32, 220u32)
+    };
+
+    // Determine image background and text colors based on stamp background.
+    let stamp_bg = stamp_bg_color.unwrap_or(Rgba([255, 255, 255, 255]));
+    let image_bg = contrasting_color(stamp_bg); // white for dark stamp, black for light stamp
+    let text_color = contrasting_color(image_bg);
+
+    // Create image and fill with image_bg
+    let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(w, h);
+    for pixel in img.pixels_mut() {
+        *pixel = image_bg;
+    }
+
+    // Border: choose a border color that slightly contrasts with background
+    let border_color = if is_color_dark(image_bg) {
+        Rgba([200, 200, 200, 255])
+    } else {
+        Rgba([80, 80, 80, 255])
+    };
+    for x in 0..w {
+        for y in 0..h {
+            if x < 2 || x >= w - 2 || y < 2 || y >= h - 2 {
+                img.put_pixel(x, y, border_color);
+            }
+        }
+    }
+
+    // Draw title and subtitle centered
+    let title = format!("SG {}", sg_number);
+    let subtitle = if year.is_empty() {
+        "".to_string()
+    } else {
+        year.to_string()
+    };
+
+    draw_text(
+        &mut img,
+        &title,
+        (w / 2) as i32,
+        (h / 2 - 20) as i32,
+        28.0,
+        text_color,
+        None,
+    );
+    // Draw separator
+    let sep_y = (h / 2) as i32 + 2;
+    for x in 40..(w.saturating_sub(40)) {
+        if sep_y >= 0 && (sep_y as u32) < h {
+            img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+        }
+    }
+    if !subtitle.is_empty() {
+        draw_text(
+            &mut img,
+            &subtitle,
+            (w / 2) as i32,
+            (h / 2 + 18) as i32,
+            14.0,
+            text_color,
+            None,
+        );
+    }
+
+    // Ensure directory exists
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+
+    img.save(out)?;
+    Ok(())
+}
 
 /// Try to load a TTF font from a list of likely locations (system fonts or project fonts).
 /// Returns a loaded `rusttype::Font` on success, or `None` if no font could be found.

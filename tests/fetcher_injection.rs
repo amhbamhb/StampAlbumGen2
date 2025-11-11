@@ -31,7 +31,7 @@ fn test_collect_with_fake_fetcher_returns_empty() {
     let site_name = "test-site";
     let images_directory = "/tmp/stamp_album_gen2_test_images";
     let month_number = |_: &str| "0".to_string();
-    let get_stampworld_image = |_url: &str, _overwrite: bool| {
+    let get_stampworld_image = |_url: &str, _desired: &str, _overwrite: bool| {
         stamp_album_gen2::types::ImageStatus::new("", false, 0, 0, "")
     };
     let base_url = "https://example.invalid/page=";

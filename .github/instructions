@@ -1,6 +1,6 @@
 # Stamp Album Generator - Instructions
-# Version: 0.23.0
-# Last Updated: 2025-10-24
+# Version: 1.2.0
+# Last Updated: 2025-11-10
 # Previous Versions: docs/versions/instructions_2025-09-18_v1.md
 
 # Best Practices
@@ -13,13 +13,11 @@
 - Commit changes frequently with clear messages.
 - Use descriptive names for files and directories.
 - Review and test your code before pushing.
-- Keep Readme and documentation up to date.
-
-# Location of Help
-- Refer to the README.md in the project root for setup and usage.
-- Check the `/docs` directory for detailed guides.
-- The main Album guide is available at [Album Guide](docs/AlbumEasy_4.2.1.pdf).
-- For Rust-specific questions, visit [The Rust Book](https://doc.rust-lang.org/book/).
+ - When adding, removing or renaming configuration keys, ALWAYS update all of the following:
+	 1) the `Config` struct (and its `with_defaults()` implementation) in `src/config.rs`
+	 2) the `config_template.toml` file (human-friendly template with comments)
+	 3) the default-creation logic in `src/config.rs` which copies `config_template.toml` when
+			`config.toml` is absent. This ensures runtime defaults, templates and generated files stay in sync.
 - Use GitLab Issues for project-related questions.
 
 # Git repository Structure

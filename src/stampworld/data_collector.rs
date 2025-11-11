@@ -34,7 +34,7 @@ pub fn collect_stampworld_data_with_fetcher(
     site_name: &str,
     images_directory: &str,
     month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, bool) -> ImageStatus,
+    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
     base_url: &str,
     start_year: i32,
     end_year: i32,
@@ -43,7 +43,7 @@ pub fn collect_stampworld_data_with_fetcher(
     max_pages: i32,
     stop_after_no_hits: i32,
 ) -> Vec<String> {
-    debug!(
+    info!(
         "collect_stampworld_data called for {} base_url={} range={}..{}",
         site_name, base_url, start_year, end_year
     );
@@ -56,13 +56,19 @@ pub fn collect_stampworld_data_with_fetcher(
     // Use the injected fetcher for network requests. Call sites that do not
     // pass a fetcher can use the wrapper `collect_stampworld_data` below.
 
-    // Initialize DB (per previous behavior: DB under images dir parent)
+    // Initialize DB: prefer album-scoped DB name (parent folder basename),
+    // falling back to the country/site-based name if we can't determine it.
+    // Previously this used the site name which produced `Albums/<Album>/Switzerland.db`.
+    // For per-album runs we want `Albums/<Album>/<Album>.db` so the generator and
+    // collector operate on the same file.
+    let images_parent = images_directory.replace("/images", "");
     let country_db_name = site_name.replace("/", "-");
-    let db_path = format!(
-        "{}/{}.db",
-        images_directory.replace("/images", ""),
-        country_db_name
-    );
+    let album_basename = std::path::Path::new(&images_parent)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| country_db_name.clone());
+    let db_path = format!("{}/{}.db", images_parent, album_basename);
     let conn = match crate::db_utils::init_db(&db_path) {
         Ok(c) => c,
         Err(e) => {
@@ -70,6 +76,9 @@ pub fn collect_stampworld_data_with_fetcher(
             return Vec::new();
         }
     };
+    // Log the DB path we opened so it's straightforward to confirm the
+    // scraper and manual sqlite queries target the same file.
+    info!("Using DB at: {}", db_path);
 
     // Helper to resolve a stored `local_image_path` (which is typically
     // a relative value like "images/foo.jpg") into an actual filesystem
@@ -137,6 +146,15 @@ pub fn collect_stampworld_data_with_fetcher(
                 break;
             }
         };
+        // Extra stdout-level diagnostics to ensure automated runs capture
+        // the fetch result even when logging is redirected. These lines are
+        // intentionally printed to stdout so CI or wrappers can see them.
+        // println!(
+        //     "[STAMPWORLD DEBUG] Fetched URL: {} status={} bytes={}",
+        //     url,
+        //     status.as_u16(),
+        //     body.len()
+        // );
         // Log short HTTP response info to help diagnose site errors (info-level to avoid huge debug dumps)
         // info!("HTTP status for {} -> {}", url, status);
         // If page 1 returns 404, prepare and/or consume deterministic
@@ -218,8 +236,20 @@ pub fn collect_stampworld_data_with_fetcher(
             content_blocks.len(),
             page_num
         );
+        // println!(
+        //     "[STAMPWORLD DEBUG] Found {} content blocks on page {}",
+        //     content_blocks.len(),
+        //     page_num
+        // );
 
         for (block_idx, content_div) in content_blocks.into_iter().enumerate() {
+            // Print a small snippet of the block HTML to help diagnose why
+            // row selectors may not match in certain environments.
+            let block_html_snippet: String = content_div.html().chars().take(500).collect();
+            // println!(
+            //     "[STAMPWORLD DEBUG] Block {} HTML snippet: {}",
+            //     block_idx, block_html_snippet
+            // );
             // Extract block-level details
             let p_selector = Selector::parse("p").unwrap();
             let mut details_vec: Vec<String> = Vec::new();
@@ -239,6 +269,7 @@ pub fn collect_stampworld_data_with_fetcher(
             if let Some(header_a) = content_div.select(&table_header_selector).next() {
                 let text = header_a.text().collect::<String>();
                 series_desc = text.clone();
+                debug!("Extracted series_desc from header: '{}'", series_desc);
                 if let Some(caps) = Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?")
                     .unwrap()
                     .captures(&text)
@@ -341,7 +372,26 @@ pub fn collect_stampworld_data_with_fetcher(
             // Associate images with specific rows first
             let mut image_idx = 0usize;
             let rows: Vec<_> = content_div.select(&table_selector).collect();
-            // info!("Block {} has {} table rows matching selector", block_idx, rows.len());
+            info!(
+                "Block {} has {} table rows matching selector",
+                block_idx,
+                rows.len()
+            );
+            // println!(
+            //     "[STAMPWORLD DEBUG] Block {} has {} table rows matching selector",
+            //     block_idx,
+            //     rows.len()
+            // );
+            if !rows.is_empty() {
+                // Log a short snippet of the first row to help diagnose selector mismatches
+                let sample_html = rows[0].inner_html();
+                let sample_snippet: String = sample_html.chars().take(300).collect();
+                debug!("Block {} first row snippet: {}", block_idx, sample_snippet);
+                // println!(
+                //     "[STAMPWORLD DEBUG] Block {} first row snippet: {}",
+                //     block_idx, sample_snippet
+                // );
+            }
             for (ridx, tr) in rows.into_iter().enumerate() {
                 // Basic row parsing: build a flattened row_cells vector so we can
                 // handle tables where the catalog number is either in a <th>
@@ -395,6 +445,11 @@ pub fn collect_stampworld_data_with_fetcher(
                     .first()
                     .map(|s| s.trim().to_string())
                     .unwrap_or_default();
+                debug!(
+                    "Processing row with sg_number: '{}', cells: {}",
+                    sg_number,
+                    row_cells.len()
+                );
                 // Pull a couple of fields early so grouped-range handling can
                 // inspect the description cell for a year fallback. Observed
                 // pages commonly have the description at index 6 (0=sg), so
@@ -893,11 +948,19 @@ pub fn collect_stampworld_data_with_fetcher(
                 }
 
                 // Build unique key and dedupe in-run
-                let series_name = if !series_desc.is_empty() {
+                let mut series_name = if !series_desc.is_empty() {
                     series_desc.clone()
                 } else {
                     description.clone()
                 };
+                if series_name.is_empty() {
+                    series_name = site_name.to_string();
+                    debug!("Using site_name as fallback: '{}'", series_name);
+                }
+                debug!(
+                    "series_name set to: '{}' (series_desc: '{}', description: '{}')",
+                    series_name, series_desc, description
+                );
                 let key = format!("{}||{}||{}", site_name, series_name, sg_number);
                 if seen_stamps.contains(&key) {
                     if emit_row_diag {
@@ -913,8 +976,15 @@ pub fn collect_stampworld_data_with_fetcher(
                 let mut remote_image_url = String::new();
                 let mut original_image_url = String::new();
                 if !selected_image_url.is_empty() {
-                    // Use downloader closure; it may accept an id or full URL
-                    let image_res = get_stampworld_image(&selected_image_url, overwrite_images);
+                    // Use downloader closure; it may accept an id (sg) or full URL
+                    // Pass the sanitized sg_number so the downloader can produce a
+                    // deterministic per-row filename (avoids duplicates and makes
+                    // filenames predictable).
+                    let sanitized_sg = crate::album_utils::sanitize_filename(
+                        &sg_number.replace(['\u{2011}', '\u{2013}'], "-"),
+                    );
+                    let image_res =
+                        get_stampworld_image(&selected_image_url, &sanitized_sg, overwrite_images);
                     debug!(
                         "Downloader returned: exists={} filename='{}'",
                         image_res.exists, image_res.filename
@@ -924,6 +994,15 @@ pub fn collect_stampworld_data_with_fetcher(
                         let sanitized_sg = crate::album_utils::sanitize_filename(
                             &sg_number.replace(['\u{2011}', '\u{2013}'], "-"),
                         );
+                        // If the downloader didn't provide a filename, fall back to the
+                        // last path segment of the remote URL so we still record an
+                        // original filename for display purposes.
+                        let fallback_filename = selected_image_url
+                            .rsplit('/')
+                            .next()
+                            .and_then(|s| s.split('?').next())
+                            .unwrap_or("image.jpg")
+                            .to_string();
                         let target_name = format!("{}-{}", sanitized_sg, image_res.filename);
                         let downloaded_path =
                             format!("{}/{}", images_directory, image_res.filename);
@@ -951,7 +1030,11 @@ pub fn collect_stampworld_data_with_fetcher(
                             local_image_path = format!("images/{}", target_name);
                         }
                         remote_image_url = selected_image_url.clone();
-                        original_image_url = image_res.filename.clone();
+                        original_image_url = if image_res.filename.trim().is_empty() {
+                            fallback_filename.clone()
+                        } else {
+                            image_res.filename.clone()
+                        };
                     }
                 }
 
@@ -1140,8 +1223,8 @@ pub fn collect_stampworld_data_with_fetcher(
                 let stamps_issued_norm = normalize_stamps_issued(&stamps_issued);
 
                 // Call DB insert following the existing callers' parameter order
-                // info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
-                //     site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
+                info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
+                    site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
                 let res = crate::db_utils::insert_stamp(
                     &conn,
                     site_name,
@@ -1169,6 +1252,13 @@ pub fn collect_stampworld_data_with_fetcher(
                     &engraving,
                     &perforation,
                     &cleaned_context_details,
+                );
+                // Diagnostic: log the raw result from the DB layer so we can see
+                // whether the call inserted/updated (Ok(true)), was a no-op
+                // (Ok(false)), or returned an error (Err).
+                info!(
+                    "db_utils::insert_stamp result for {}|{}|{} => {:?}",
+                    site_name, series_name, sg_number, res
                 );
                 match res {
                     Ok(inserted) => {
@@ -1375,7 +1465,7 @@ pub fn collect_stampworld_data(
     site_name: &str,
     images_directory: &str,
     month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, bool) -> ImageStatus,
+    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
     base_url: &str,
     start_year: i32,
     end_year: i32,
@@ -1384,6 +1474,7 @@ pub fn collect_stampworld_data(
     max_pages: i32,
     stop_after_no_hits: i32,
 ) -> Vec<String> {
+    info!("stampworld::collect_stampworld_data wrapper invoked");
     let fetcher = crate::stampworld::fetch::ReqwestFetcher::new();
     collect_stampworld_data_with_fetcher(
         &fetcher,

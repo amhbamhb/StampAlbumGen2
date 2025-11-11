@@ -71,12 +71,30 @@ fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     let fetcher = FakeFetcher::new(fixture);
 
     // A brief sanity check (kept minimal): ensure config can be loaded from the tempdir
-    let _cfg = stamp_album_gen2::config::load_config("config.toml");
+    let cfg = stamp_album_gen2::config::load_config("config.toml");
+    // Assert the test config was actually parsed; if not, emit helpful diagnostics
+    if cfg.expand_grouped_ranges.as_deref() != Some("placeholders") {
+        // Print cwd and directory listing to help debug why load_config didn't pick up the file
+        let cwd = std::env::current_dir().unwrap();
+        let mut entries = Vec::new();
+        if let Ok(read) = std::fs::read_dir(&cwd) {
+            for e in read.flatten() {
+                if let Ok(fname) = e.file_name().into_string() {
+                    entries.push(fname);
+                }
+            }
+        }
+        panic!(
+            "Test config not loaded as expected. cwd={} files={:?}",
+            cwd.display(),
+            entries
+        );
+    }
     let mut sequencer: i32 = 0;
     let separator = "@";
     let site_name = "ExampleSeries"; // used as country identifier in DB
     let month_number = |_: &str| "1".to_string();
-    let get_stampworld_image = |_url: &str, _overwrite: bool| {
+    let get_stampworld_image = |_url: &str, _desired: &str, _overwrite: bool| {
         stamp_album_gen2::types::ImageStatus::new("", false, 0, 0, "")
     };
     let base_url = "https://example.test/page=";
@@ -116,9 +134,15 @@ fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     );
 
     // Now open the DB the collector created and assert two rows exist for the series
-    // Collector builds DB path by dropping "/images" from images_dir and appending "{site_name}.db"
+    // Collector builds DB path by dropping "/images" from images_dir and appending "{album_basename}.db"
+    // where album_basename is the basename of the images parent folder (fallback to site_name if missing).
     let db_parent = images_dir_str.replace("/images", "");
-    let db_path = format!("{}/{}.db", db_parent, site_name.replace('/', "-"));
+    let album_basename = std::path::Path::new(&db_parent)
+        .file_name()
+        .and_then(|s| s.to_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| site_name.replace('/', "-"));
+    let db_path = format!("{}/{}.db", db_parent, album_basename);
 
     // We expect the collector to have created the DB file under the images parent.
 

@@ -132,10 +132,15 @@ page_fit_conservative_buffer_mm = 11.0
         }
     }
     let s = found_content.expect("no generated .txt file found in album dir");
-    let page2_seq = "### Page 2 ###\nPAGE_START\nROW_START_ES";
+    // Locate the Page 2 marker and assert the PAGE_START + ROW_START_ES sequence
+    // appears after it (tolerant to header suffixes like " - Stamps").
+    let page2_pos = s
+        .find("### Page 2")
+        .expect("expected a Page 2 marker in generated output");
+    let after_page2 = &s[page2_pos..];
     assert!(
-        s.contains(page2_seq),
-        "expected forced page 2 with PAGE_START + ROW_START_ES, got:\n{}",
-        s
+        after_page2.contains("PAGE_START\nROW_START_ES"),
+        "expected forced page 2 with PAGE_START + ROW_START_ES after Page 2 marker, got:\n{}",
+        after_page2
     );
 }

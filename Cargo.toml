@@ -40,7 +40,7 @@ tempfile = "3.6"
 
 [package]
 name = "stamp_album_gen2"
-version = "0.23.0"
+version = "1.2.0"
 edition = "2021"
 default-run = "stamp_album_gen2"
 

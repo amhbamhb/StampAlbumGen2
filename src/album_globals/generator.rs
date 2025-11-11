@@ -1,312 +1,17 @@
-// AlbumEasy output and layout logic
+use super::constants::MONTH_NAMES;
+use super::globals::{compute_usable_height, write_globals};
+use super::helpers::build_page_text_template;
+use super::helpers::emit_row_start_es;
+use super::structs::{GenericAttrs, Stamp};
+use crate::album_utils::clean_text;
 use crate::config::load_config;
 use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
-use rusqlite::Connection;
-// ImageStatus and OSType not needed in this module today
-use crate::album_utils::clean_text;
 use log::{error, info, warn};
+use rusqlite::Connection;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
-
-// Helper: emit a standardized ROW_START_ES line using configured values (or sensible defaults)
-// Accept an Option<&Config> so callers that don't have access to the loaded
-// config (for example `new_row`) can still emit a conservative default.
-fn emit_row_start_es(
-    output: &mut dyn Write,
-    config_opt: Option<&crate::config::Config>,
-) -> std::io::Result<()> {
-    let (rs_font, rs_size, rs_spacing, rs_vspace) = if let Some(cfg) = config_opt {
-        (
-            cfg.row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string()),
-            cfg.row_start_es_size.unwrap_or(6.0),
-            cfg.row_start_es_spacing.unwrap_or(0.1),
-            cfg.row_start_es_vspace.unwrap_or(5.0),
-        )
-    } else {
-        ("HN".to_string(), 6.0_f32, 0.1_f32, 5.0_f32)
-    };
-    writeln!(
-        output,
-        "ROW_START_ES ({} {} {:.1} {:.1})",
-        rs_font, rs_size as i32, rs_spacing, rs_vspace
-    )
-}
-
-// Build a PAGE_TEXT template string for the requested kind. The generator
-// supports a full-template override (e.g. `page_text_centre_format`) or a
-// set of per-field values (font/size/vspace) that are combined into a
-// template when present. `kind` may be "left", "centre" or "right".
-fn build_page_text_template(cfg: &crate::config::Config, kind: &str) -> String {
-    match kind {
-        "centre" => {
-            if let Some(t) = cfg.page_text_centre_format.clone() {
-                return t;
-            }
-            let font = cfg
-                .page_text_centre_font
-                .clone()
-                .unwrap_or_else(|| "TN".to_string());
-            let size = cfg.page_text_centre_size.unwrap_or(8.0) as i32;
-            let vspace = cfg.page_text_centre_vspace.unwrap_or(1.0_f32);
-            // Construct the template with a literal `{}` placeholder for later replacement.
-            let head = format!("PAGE_TEXT_CENTRE ({} {} \"", font, size);
-            let tail = format!("\" {:.1})", vspace);
-            head + "{}" + &tail
-        }
-        "right" => {
-            if let Some(t) = cfg.page_text_right_format.clone() {
-                return t;
-            }
-            let font = cfg
-                .page_text_right_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let size = cfg.page_text_right_size.unwrap_or(10.0) as i32;
-            let vspace = cfg.page_text_right_vspace.unwrap_or(1.0_f32);
-            let head = format!("PAGE_TEXT_RIGHT ({} {} \"", font, size);
-            let tail = format!("\" {:.1})", vspace);
-            head + "{}" + &tail
-        }
-        _ => {
-            // Default: left-aligned
-            if let Some(t) = cfg.page_text_format.clone() {
-                return t;
-            }
-            let font = cfg
-                .page_text_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let size = cfg.page_text_size.unwrap_or(10.0) as i32;
-            let vspace = cfg.page_text_vspace.unwrap_or(1.0_f32);
-            let head = format!("PAGE_TEXT ({} {} \"", font, size);
-            let tail = format!("\" {:.1})", vspace);
-            head + "{}" + &tail
-        }
-    }
-}
-
-// Define or import Stamp and GenericAttrs
-#[derive(Debug, Clone, PartialEq)]
-pub struct GenericAttrs {
-    attrs: std::collections::HashMap<String, String>,
-}
-
-// Inline unit tests moved to integration tests under `tests/`.
-impl Default for GenericAttrs {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl GenericAttrs {
-    pub fn new() -> Self {
-        Self {
-            attrs: std::collections::HashMap::new(),
-        }
-    }
-    // End of file: add missing closing brace for module
-    pub fn set(&mut self, key: &str, value: &str) {
-        self.attrs.insert(key.to_string(), value.to_string());
-    }
-    pub fn get(&self, key: &str) -> Option<&String> {
-        self.attrs.get(key)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Stamp {
-    pub attrs: GenericAttrs,
-    pub image_path: String,
-    pub image_width_px: Option<i32>,
-    pub image_height_px: Option<i32>,
-}
-
-// Top-level definitions for cross-module use
-pub const MONTH_NAMES: [&str; 13] = [
-    "?????",
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-];
-
-// Use shared ImageStatus and OSType from `types.rs`
-
-pub fn write_globals<W: std::io::Write>(
-    writer: &mut W,
-    album_name: &str,
-    conn_opt: Option<&Connection>,
-    start_year: Option<i32>,
-    end_year: Option<i32>,
-) {
-    // Use the canonical globals writer from `album_utils` so all callers get the
-    // same header block. The user-supplied album header is implemented there.
-    crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year);
-}
-
-/// Compute usable height (mm) given a Config. This mirrors the logic used
-/// inside `generate_album_output` and is exposed for unit testing.
-pub fn compute_usable_height(cfg: &crate::config::Config) -> f64 {
-    let page_height = cfg.album_page_height_mm.unwrap_or(279.4) as f64;
-    let top_margin = cfg.page_top_margin_mm.unwrap_or(10.0) as f64;
-    let bottom_margin = cfg.page_bottom_margin_mm.unwrap_or(10.0) as f64;
-    let border_outer = cfg.page_border_outer.unwrap_or(0.5) as f64;
-    let border_inner1 = cfg.page_border_inner1.unwrap_or(0.1) as f64;
-    let border_inner2 = cfg.page_border_inner2.unwrap_or(0.0) as f64;
-    let border_spacing = cfg.page_border_spacing.unwrap_or(3.0) as f64;
-    let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
-    let usable_height_padding = cfg.usable_height_padding_mm.unwrap_or(6.0) as f64;
-    let pages_spacing_v = cfg.album_pages_spacing_v.unwrap_or(0.0) as f64;
-    page_height
-        - top_margin
-        - bottom_margin
-        - total_border
-        - usable_height_padding
-        - pages_spacing_v
-}
-
-pub fn new_series<W: std::io::Write>(
-    writer: &mut W,
-    series_name: &str,
-    year: &str,
-    month: &str,
-    day: &str,
-    stamps_in_series: i32,
-    is_perforated: bool,
-    perforation: &str,
-    rows_written: &mut i32,
-    stamps_written: &mut i32,
-    used_width: &mut i32,
-    used_height: &mut i32,
-    max_row_height: &mut i32,
-) {
-    let _ = writeln!(
-        writer,
-        "SERIES {} {} {} {} {} {} {}",
-        series_name, year, month, day, stamps_in_series, is_perforated, perforation
-    );
-    new_page(
-        writer,
-        rows_written,
-        stamps_written,
-        used_width,
-        used_height,
-        max_row_height,
-    );
-}
-
-/// Writes a new page header and resets counters
-pub fn new_page<W: std::io::Write>(
-    writer: &mut W,
-    rows_written: &mut i32,
-    stamps_written: &mut i32,
-    used_width: &mut i32,
-    used_height: &mut i32,
-    max_row_height: &mut i32,
-) {
-    let _ = writeln!(
-        writer,
-        "################################################################################"
-    );
-    let _ = writeln!(writer, "PAGE_START");
-    let _ = writeln!(
-        writer,
-        "################################################################################"
-    );
-    *rows_written = 0;
-    *stamps_written = 0;
-    *used_width = 0;
-    *used_height = 14;
-    *max_row_height = 0;
-}
-
-/// Writes a new year header. Accept an optional `Config` so callers that have
-/// access to loaded configuration can provide a custom PAGE_TEXT_CENTRE template.
-pub fn new_year<W: std::io::Write>(
-    writer: &mut W,
-    year: &str,
-    config_opt: Option<&crate::config::Config>,
-) {
-    let tmpl = if let Some(cfg) = config_opt {
-        build_page_text_template(cfg, "centre")
-    } else {
-        "PAGE_TEXT_CENTRE (TN 8 \"{}\" 1.0)".to_string()
-    };
-    let safe = year.replace('"', "\\\"");
-    let _ = writeln!(writer, "{}", tmpl.replace("{}", &safe));
-}
-
-/// Writes a new row, handles page breaks, and updates counters
-pub fn new_row<W: std::io::Write>(
-    writer: &mut W,
-    year: &str,
-    rows_written: &mut i32,
-    stamps_written: &mut i32,
-    used_width: &mut i32,
-    used_height: &mut i32,
-    max_row_height: &mut i32,
-) {
-    // Increase used_height by the height of the previous row before checking for a new page
-    *used_height += *max_row_height;
-    // Use conservative constants only as a fallback; the real usable height is computed
-    // in generate_album_output using config values. Here we guard against absurd values.
-    if *used_height + 43.0 as i32 > 245 {
-        new_page(
-            writer,
-            rows_written,
-            stamps_written,
-            used_width,
-            used_height,
-            max_row_height,
-        );
-        // new_year without a Config falls back to the default template
-        new_year(writer, year, None);
-    }
-    // Write a conservative default ROW_START_ES using the provided writer.
-    // (This function does not have access to the loaded `Config`, so call
-    // the helper with `None` to use built-in sensible defaults.)
-    let _ = emit_row_start_es(writer, None);
-
-    *rows_written += 1;
-    *stamps_written = 0;
-    *used_width = 0;
-    // Do NOT add max_row_height again here; it was already added above
-    *max_row_height = 0;
-}
-
-/// Writes a stamp entry (stub implementation)
-pub fn add_stamp<W: std::io::Write>(
-    writer: &mut W,
-    year: &str,
-    field1: &str,
-    field2: &str,
-    field3: &str,
-    color: String,
-    multi_perf: bool,
-    desc: &str,
-    width: &str,
-    height: &str,
-    catalog_num: &str,
-    field4: &str,
-) {
-    let _ = writeln!(
-        writer,
-        "STAMP {} {} {} {} {} {} {} {} {} {} {}",
-        year, field1, field2, field3, color, multi_perf, desc, width, height, catalog_num, field4
-    );
-}
 
 // AlbumEasy Output Generation
 // ===================// This section contains the main entry point and helpers for generating AlbumEasy output.
@@ -315,13 +20,15 @@ pub fn add_stamp<W: std::io::Write>(
 
 /// Main entry point for AlbumEasy output generation.
 /// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
+/// Returns the path to the generated output file.
 pub fn generate_album_output_conn<F>(
     conn: &Connection,
     album_name: &str,
     mut page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) where
+) -> std::path::PathBuf
+where
     F: FnMut(usize),
 {
     // Use the start_year/end_year passed to this function (may be None)
@@ -462,7 +169,7 @@ pub fn generate_album_output_conn<F>(
     );
 
     // Write global album settings (pass DB connection and CLI year range so the header can include years)
-    write_globals(
+    let pages_from_globals = write_globals(
         &mut output,
         album_name,
         Some(conn),
@@ -470,8 +177,11 @@ pub fn generate_album_output_conn<F>(
         passed_end_year,
     );
 
-    // Emit a single leading page header for Page 1
-    let _ = writeln!(output, "### Page 1 ###");
+    // Start page counter after the globals section
+    let starting_page_number = pages_from_globals + 1;
+
+    // Emit page header for first stamp page
+    let _ = writeln!(output, "### Page {} - Stamps ###", starting_page_number);
     let _ = writeln!(output, "PAGE_START");
     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -507,8 +217,8 @@ pub fn generate_album_output_conn<F>(
     let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
     let series_order_slice = series_order.as_deref();
     let series_list = get_all_series(conn, series_order_slice).expect("Failed to get series");
-    // We've emitted page 1 above; start counter at 1
-    let mut page_counter = 1usize;
+    // Initialize page counter from the starting page (after globals pages)
+    let mut page_counter = starting_page_number;
     let mut current_height = 0.0f64;
     let mut rows_on_page = 0;
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
@@ -858,6 +568,7 @@ pub fn generate_album_output_conn<F>(
                         header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                     }
                 }
+
                 let header_block_height: f64 = header_lines_vec.iter().map(|(_, h)| *h).sum();
                 let vspace_before_header = config.header_vspace_before_mm.unwrap_or(8.0) as f64;
                 let vspace_after_header = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
@@ -867,6 +578,7 @@ pub fn generate_album_output_conn<F>(
                 let font_height = config.text_line_height_mm.unwrap_or(3.0) as f64;
                 let image_spacing = config.image_spacing_mm.unwrap_or(2.0) as f64;
                 // Additional per-image adjustments from ALBUM_STAMP_IMG_NEW_SETTING
+                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
                 let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
                 for stamp in stamps_in_row {
                     let image_path = stamp.image_path.trim();
@@ -972,7 +684,7 @@ pub fn generate_album_output_conn<F>(
                     if page_counter > 1 {
                         let _ = writeln!(output, "\n################################################################################");
                     }
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -993,6 +705,7 @@ pub fn generate_album_output_conn<F>(
             let mut max_row_height = 0.0f64;
             let font_height = config.text_line_height_mm.unwrap_or(3.0) as f64; // TN 10 font spacing (mm)
             let image_spacing = config.image_spacing_mm.unwrap_or(2.0) as f64; // space below image (mm)
+            let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
             let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
             // Match the conservative estimate above when computing per-row heights
             let stamp_heading_h = config.header_font_spacing.unwrap_or(3.0) as f64
@@ -1095,6 +808,9 @@ pub fn generate_album_output_conn<F>(
                     next_header_lines_vec.iter().map(|(_, h)| *h).sum();
                 let next_vspace_before = config.header_vspace_before_mm.unwrap_or(8.0) as f64;
                 let next_vspace_after = config.header_vspace_after_mm.unwrap_or(12.5) as f64;
+                // Additional per-image adjustments from ALBUM_STAMP_IMG_NEW_SETTING
+                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
+                let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
                 // Estimate next series first row height: look at first row of stamps (group into row of up to 5)
                 let mut next_first_row_max = 0.0f64;
                 // group next_stamps into rows (configurable max stamps per row)
@@ -1139,9 +855,7 @@ pub fn generate_album_output_conn<F>(
                         };
                         let text_lines = 1usize; // conservative minimal estimate
                         let text_height = (text_lines as f64) * header_font_h;
-                        let adj_est_height = est_height_mm
-                            + config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64
-                            + 2.0 * stamp_box_adjust;
+                        let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
                         let total_height = adj_est_height
                             + config.image_spacing_mm.unwrap_or(2.0) as f64
                             + text_height;
@@ -1166,7 +880,7 @@ pub fn generate_album_output_conn<F>(
                 if current_height + total_row_height + next_conservative_needed > usable_height {
                     page_counter += 1;
                     let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1203,7 +917,7 @@ pub fn generate_album_output_conn<F>(
                     if rows_on_page != 0 && !(allow_single && percent_of_usable >= threshold) {
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
                         let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1217,7 +931,7 @@ pub fn generate_album_output_conn<F>(
                         // single-row page: start a fresh page and let it emit.
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
                         let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1233,7 +947,7 @@ pub fn generate_album_output_conn<F>(
                     // Start new page and repeat header then re-check on next loop
                     page_counter += 1;
                     let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1265,7 +979,7 @@ pub fn generate_album_output_conn<F>(
                     if rows_on_page != 0 {
                         page_counter += 1;
                         let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} ###", page_counter);
+                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                         let _ = writeln!(output, "PAGE_START");
                         let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1280,7 +994,7 @@ pub fn generate_album_output_conn<F>(
                     // Normal case: header+row would overflow current page; force a new page now
                     page_counter += 1;
                     let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} ###", page_counter);
+                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
                     let _ = writeln!(output, "PAGE_START");
                     let _ = emit_row_start_es(&mut output, Some(&config));
 
@@ -1354,8 +1068,8 @@ pub fn generate_album_output_conn<F>(
                     est_height_mm *= scale;
                 }
                 // Apply ALBUM_STAMP_IMG_NEW_SETTING adjustments to width/height (additive)
-                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0) as f64;
-                let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0) as f64;
+                let img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(6.0) as f64;
+                let img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(6.0) as f64;
                 est_width_mm += img_new_w;
                 est_height_mm += img_new_h;
                 // Debug: emit detailed per-stamp sizing diagnostics when debug logging enabled
@@ -1773,6 +1487,8 @@ pub fn generate_album_output_conn<F>(
         }
     }
 
+    output_path // Return the output file path
+
     // End of generate_album_output inner scope: use shared clean_text from album_utils
 }
 
@@ -1780,15 +1496,17 @@ pub fn generate_album_output_conn<F>(
 /// connection-based implementation. This keeps existing callers (tests and
 /// other modules) working while allowing callers that already hold a
 /// Connection to use the more efficient conn-based variant.
+/// Returns the path to the generated output file.
 pub fn generate_album_output<F>(
     db_path: &str,
     album_name: &str,
     page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
-) where
+) -> std::path::PathBuf
+where
     F: FnMut(usize),
 {
     let conn = init_db(db_path).expect("Failed to open database");
-    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year);
+    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year)
 }
