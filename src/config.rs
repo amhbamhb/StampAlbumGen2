@@ -970,19 +970,19 @@ pub fn load_config(path: &str) -> Config {
                                 }
 
                                 if has_missing {
-                                    // Write back the updated config with defaults added
-                                    match toml::to_string(&cfg) {
-                                        Ok(updated_content) => {
-                                            if let Err(e) = fs::write(candidate, updated_content) {
-                                                log::warn!("Failed to write updated config with defaults to {}: {}", candidate.display(), e);
-                                            } else {
-                                                log::info!("Added missing config fields with default values to {}", candidate.display());
-                                            }
-                                        }
-                                        Err(e) => {
-                                            log::warn!("Failed to serialize updated config: {}", e);
-                                        }
-                                    }
+                                    // Do NOT modify the user's existing config file automatically.
+                                    // Previously the code would write missing default fields back
+                                    // into the file which could overwrite comments or user edits.
+                                    // Instead, log an informational message so the user can
+                                    // choose to update the file manually or run a dedicated
+                                    // initialization/upgrade command if desired.
+                                    log::info!(
+                                        "Config file {} is missing some fields. Defaults will be used at runtime but the file will not be modified.",
+                                        candidate.display()
+                                    );
+                                    log::debug!(
+                                        "Missing fields were detected and would have been added automatically in older versions. To write defaults back into the file, run the configuration initializer or edit the file manually."
+                                    );
                                 }
 
                                 // If the file places the include_* toggles inside the
@@ -1099,7 +1099,14 @@ pub fn load_config(path: &str) -> Config {
         let default_config_path = cwd.join(path);
         let template_path = cwd.join("config_template.toml");
 
-        if template_path.exists() {
+        // Never overwrite an existing config file. If the default path already exists,
+        // log and skip creation. This prevents accidental overwrites of user edits.
+        if default_config_path.exists() {
+            log::info!(
+                "Config file already exists at {}; not creating or overwriting",
+                default_config_path.display()
+            );
+        } else if template_path.exists() {
             match fs::copy(&template_path, &default_config_path) {
                 Ok(_) => log::info!(
                     "Created new config file from template at {}",
