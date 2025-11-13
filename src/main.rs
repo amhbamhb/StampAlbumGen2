@@ -15,6 +15,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse CLI arguments
     let cli = Cli::parse();
 
+    // If requested, initialize (or force-initialize) the config file and exit.
+    if cli.init_config {
+        // This will create config.toml from config_template.toml if present,
+        // or serialize defaults. When force_init_config is true it will
+        // overwrite an existing file after creating a timestamped backup.
+        match config::create_config_from_template("config.toml", cli.force_init_config) {
+            Ok(_) => {
+                println!("Configuration file created/updated at 'config.toml'.");
+                std::process::exit(0);
+            }
+            Err(e) => {
+                eprintln!("Failed to create config file: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
     // Load config early to check for progress indicator setting
     let config = config::load_config("config.toml");
     let show_progress = config.show_progress_indicator.unwrap_or(true);

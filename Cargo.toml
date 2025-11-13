@@ -37,6 +37,7 @@ atty = "0.2"
 assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.6"
+serial_test = "0.5"
 
 [package]
 name = "stamp_album_gen2"

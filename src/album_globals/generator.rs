@@ -288,6 +288,34 @@ where
         let max_stamps_per_row = config.max_stamps_per_row.unwrap_or(5) as usize;
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
         let mut row: Vec<Stamp> = Vec::new();
+        // Compute a series-average estimated size (mm) from available images in this series.
+        // This helps placeholders and missing-image stamps adopt the same size as their
+        // series peers instead of falling back to the global reference size.
+        let mut series_widths_mm: Vec<f64> = Vec::new();
+        let mut series_heights_mm: Vec<f64> = Vec::new();
+        for s in stamp_objs.iter() {
+            let image_path = s.image_path.trim();
+            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+                series_widths_mm.push((w_px as f64) * (mm_per_pixel_w as f64));
+                series_heights_mm.push((h_px as f64) * (mm_per_pixel_h as f64));
+            } else if let Some((w_mm, h_mm)) =
+                estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+            {
+                series_widths_mm.push(w_mm as f64);
+                series_heights_mm.push(h_mm as f64);
+            }
+        }
+        let series_avg_w_mm = if !series_widths_mm.is_empty() {
+            Some(series_widths_mm.iter().sum::<f64>() / series_widths_mm.len() as f64)
+        } else {
+            None
+        };
+        let series_avg_h_mm = if !series_heights_mm.is_empty() {
+            Some(series_heights_mm.iter().sum::<f64>() / series_heights_mm.len() as f64)
+        } else {
+            None
+        };
         // let mut row_width = 0.0;
         for stamp in stamp_objs.into_iter() {
             let image_path = stamp.image_path.trim();
@@ -1054,7 +1082,10 @@ where
                 } else {
                     estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
                         .map(|(w, h)| (w as f64, h as f64))
-                        .unwrap_or((reference_width_mm as f64, reference_height_mm as f64))
+                        .unwrap_or((
+                            series_avg_w_mm.unwrap_or(reference_width_mm as f64),
+                            series_avg_h_mm.unwrap_or(reference_height_mm as f64),
+                        ))
                 };
                 // If the estimated image height is larger than the configured
                 // stamp box height, scale the image down proportionally.
@@ -1319,10 +1350,97 @@ where
                         // Year from attributes (fallback to empty)
                         let year_attr = stamp.attrs.get("year").unwrap_or(&"".to_string()).clone();
                         let year_clean = clean_text(&year_attr);
-                        match crate::placeholder_image::ensure_placeholder_image_for_stamp(
+                        // Determine a better target size for the placeholder. Prefer the
+                        // current emitted dimensions, but if this stamp lacks image
+                        // dimensions try to use neighbouring stamps on the same row as
+                        // a second-level fallback so the placeholder visually matches
+                        // its neighbours.
+                        let mut target_w_mm = emit_width;
+                        let mut target_h_mm = emit_height;
+                        // If this stamp has no explicit image pixel dimensions,
+                        // attempt to compute an average from neighbours in the row.
+                        if stamp.image_width_px.is_none() && stamp.image_height_px.is_none() {
+                            let mut neigh_w_sum = 0.0f64;
+                            let mut neigh_h_sum = 0.0f64;
+                            let mut neigh_count = 0u32;
+                            // stamps_in_row is available in this scope and refers to the
+                            // vector of stamps in the current row; iterate to collect
+                            // neighbor sizes when available.
+                            for neigh in stamps_in_row.iter() {
+                                // skip self
+                                let neigh_sg = neigh
+                                    .attrs
+                                    .get("sg_number")
+                                    .unwrap_or(&"".to_string())
+                                    .clone();
+                                if neigh_sg
+                                    == stamp
+                                        .attrs
+                                        .get("sg_number")
+                                        .unwrap_or(&"".to_string())
+                                        .clone()
+                                {
+                                    continue;
+                                }
+                                // prefer DB-stored pixel dims
+                                if let (Some(nw_px), Some(nh_px)) =
+                                    (neigh.image_width_px, neigh.image_height_px)
+                                {
+                                    let mut nh = (nh_px as f64) * (mm_per_pixel_h as f64);
+                                    if !preserve_real && nh > stamp_box_height {
+                                        nh = stamp_box_height;
+                                    }
+                                    let nw = (nw_px as f64) * (mm_per_pixel_w as f64);
+                                    neigh_w_sum += nw;
+                                    neigh_h_sum += nh;
+                                    neigh_count += 1;
+                                } else {
+                                    // try to estimate from actual image file if present
+                                    let neigh_img = neigh.image_path.trim();
+                                    let neigh_full = format!(
+                                        "Albums/{}/{}",
+                                        album_name.replace(' ', "-"),
+                                        neigh_img
+                                    );
+                                    if let Some((wmm, hmm)) = estimate_real_dimensions(
+                                        &neigh_full,
+                                        mm_per_pixel_w,
+                                        mm_per_pixel_h,
+                                    ) {
+                                        let mut nh = hmm as f64;
+                                        if !preserve_real && nh > stamp_box_height {
+                                            nh = stamp_box_height;
+                                        }
+                                        neigh_w_sum += wmm as f64;
+                                        neigh_h_sum += nh;
+                                        neigh_count += 1;
+                                    }
+                                }
+                            }
+                            if neigh_count > 0 {
+                                // Neighbour sums are based on the raw image physical
+                                // dimensions (mm). The emitted stamp box includes the
+                                // per-side `stamp_box_adjust` margin (added twice,
+                                // once per side) so include that here so the
+                                // placeholder is generated at the same printed
+                                // dimensions as neighbouring stamps.
+                                let neigh_w_mm = neigh_w_sum / (neigh_count as f64);
+                                let neigh_h_mm = neigh_h_sum / (neigh_count as f64);
+                                target_w_mm = neigh_w_mm + 2.0 * stamp_box_adjust;
+                                target_h_mm = neigh_h_mm + 2.0 * stamp_box_adjust;
+                            }
+                        }
+
+                        match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
                             album_name,
                             &sgnum,
                             &year_clean,
+                            Some(series),
+                            None,
+                            Some(target_w_mm),
+                            Some(target_h_mm),
+                            Some(mm_per_pixel_w),
+                            Some(mm_per_pixel_h),
                         ) {
                             Ok(rel_path) => {
                                 emitted_placeholder = Some(rel_path);
