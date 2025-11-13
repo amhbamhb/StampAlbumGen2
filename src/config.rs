@@ -127,6 +127,12 @@ pub struct Config {
     // Emit extra diagnostics related to placeholder expansion
     pub emit_placeholder_diagnostics: Option<bool>,
 
+    // When true (default), placeholders generated with explicit mm/mm_per_px
+    // mappings will be recreated/overwritten to ensure pixel dimensions match
+    // emitted mm box sizes. When false, existing placeholder files will be
+    // preserved if their pixel dimensions match the desired size.
+    pub placeholder_always_overwrite: Option<bool>,
+
     // Backwards-compatible alias for detailed_page_fit_diagnostics
     pub detailed_page_fit: Option<bool>,
 
@@ -372,6 +378,50 @@ impl Config {
             ..Default::default()
         }
     }
+}
+
+/// Create or update the canonical config file from the template or defaults.
+/// If `force` is false and the target file exists, this function will return
+/// Ok(()) without modifying the file. If `force` is true and the file exists,
+/// the existing file will be renamed to a timestamped backup before writing.
+pub fn create_config_from_template(
+    path: &str,
+    force: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let cwd = std::env::current_dir()?;
+    let target = cwd.join(path);
+    let template = cwd.join("config_template.toml");
+
+    if target.exists() && !force {
+        // Do not overwrite by default
+        println!("Config file '{}' already exists; not overwriting (use --force-init-config to overwrite).", target.display());
+        return Ok(());
+    }
+
+    // If target exists and force is true, back it up first
+    if target.exists() && force {
+        let ts = chrono::Utc::now().format("%Y%m%dT%H%M%SZ").to_string();
+        let backup_name = format!("{}.bak.{}", target.display(), ts);
+        fs::copy(&target, &backup_name)?;
+        println!("Backed up existing config to {}", backup_name);
+    }
+
+    if template.exists() {
+        fs::copy(&template, &target)?;
+        println!(
+            "Copied template {} -> {}",
+            template.display(),
+            target.display()
+        );
+    } else {
+        // Fallback: serialize defaults
+        let defaults = Config::with_defaults();
+        let content = toml::to_string_pretty(&defaults)?;
+        fs::write(&target, content)?;
+        println!("Wrote default config to {}", target.display());
+    }
+
+    Ok(())
 }
 
 /// Detects duplicate keys in TOML content by parsing line by line
