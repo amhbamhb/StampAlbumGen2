@@ -116,6 +116,16 @@ For a minimal starting point use `config_template.toml`. When experimenting
 with more advanced options prefer `config_full_example.toml` which contains
 the superset of keys used by the project and example values.
 
+### Placeholder overwrite behavior
+
+- `placeholder_always_overwrite` (bool, default: true) — Controls how the
+    generator treats placeholder images when exact mm -> px mappings are
+    available. When true, placeholders generated with explicit mm/mm_per_px
+    mappings are recreated/overwritten so their pixel dimensions exactly match
+    the emitted `STAMP_ADD_IMG` box sizes. When false, the generator will
+    preserve existing placeholder files if their pixel dimensions already match
+    the desired size. See `config_full_example.toml` for an example entry.
+
 New configuration groups (added in recent releases):
 
 - album_pages_*: tune AlbumEasy header/footer output. Example keys:
