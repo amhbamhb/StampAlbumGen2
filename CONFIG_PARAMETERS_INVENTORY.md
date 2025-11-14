@@ -184,6 +184,7 @@
 | `detailed_page_fit_diagnostics` | bool | false | Emit detailed PAGE_FIT diagnostics |
 | `detailed_page_fit` | bool | false | Legacy alias for above |
 | `emit_placeholder_diagnostics` | bool | false | Emit placeholder expansion diagnostics |
+| `placeholder_always_overwrite` | bool | true | When true, placeholders generated with explicit mm/mm_per_px mappings will be recreated/overwritten so their pixel dimensions exactly match emitted STAMP_ADD_IMG box sizes. Set to false to preserve existing files where pixel dimensions already match the desired size. |
 
 ### Data Collection & Processing
 
