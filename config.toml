@@ -27,7 +27,7 @@ stamp_box_height = 36.0              # Height allocated per stamp box (mm)
 # Fine-tune packing/adjustment. `stamp_box_adjust` can be negative to
 # slightly shrink the reserved box if your stamps are slightly smaller
 # than the nominal size.
-stamp_box_adjust = -1.5
+stamp_box_adjust = -2.5
 
 # Packing limits: control how many stamps/rows the generator will try
 # to place on a single row/page. Reduce if pages feel cramped.
@@ -293,6 +293,8 @@ page_text_right_vspace = 1.0
 ###################################
 # Misc
 ###################################
+
+placeholder_always_overwrite = true
 
 # Miscellaneous flags used by tooling and the renderer.
 show_progress_indicator = true

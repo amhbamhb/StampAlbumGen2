@@ -618,14 +618,20 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
     // when an explicit mm->px mapping was provided, always regenerate the
     // placeholder to ensure it exactly matches the emitted box semantics and
     // any textual or styling updates.
+    // If explicit mm->px mapping was provided we MUST produce a placeholder
+    // with the requested pixel dimensions so layout and diagnostics remain
+    // consistent. Always recreate when explicit mapping is present. Otherwise
+    // respect existing files unless their dimensions differ from desired.
     let mut need_create = true;
     if placeholder_path.exists() {
-        if explicit_mapping && placeholder_overwrite {
-            // Honor the config: when explicit mapping was provided and the
-            // config requests overwrite, recreate the placeholder.
+        if explicit_mapping {
+            // Always recreate to guarantee exact pixel dimensions for the
+            // explicit mapping case (user requested it in generator).
             log::info!(
-                "Placeholder {} will be recreated because explicit mm/mm_per_px were provided and config requests overwrite",
-                placeholder_path.display()
+                "Placeholder {} will be recreated to match explicit mm->px mapping {}x{} px",
+                placeholder_path.display(),
+                desired_px_w,
+                desired_px_h
             );
             need_create = true;
         } else {
@@ -709,16 +715,52 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
         }
 
         img.save(&placeholder_path)?;
+        // Verify saved image dimensions match the requested pixel size. If
+        // they do not, attempt one more time and then return an error so
+        // callers are aware.
+        match image::open(&placeholder_path) {
+            Ok(saved) => {
+                let (sw, sh) = saved.dimensions();
+                if sw != px_w || sh != px_h {
+                    // Try a second write using the higher-level generator to be safe
+                    log::warn!("Saved placeholder {} has size {}x{} px but expected {}x{} px — attempting rewrite", placeholder_path.display(), sw, sh, px_w, px_h);
+                    // Re-generate explicitly via the options API which is known
+                    // to produce exact buffer sizes.
+                    let _ = generate_placeholder_image_with_options(
+                        px_w,
+                        px_h,
+                        &placeholder_path,
+                        None,
+                    )?;
+                    // Re-open and check again
+                    if let Ok(reopen) = image::open(&placeholder_path) {
+                        let (rw, rh) = reopen.dimensions();
+                        if rw != px_w || rh != px_h {
+                            return Err(format!("Failed to write placeholder {} at requested size {}x{} px (wrote {}x{} px)", placeholder_path.display(), px_w, px_h, rw, rh).into());
+                        }
+                    } else {
+                        return Err(format!(
+                            "Failed to verify placeholder image after rewrite: {}",
+                            placeholder_path.display()
+                        )
+                        .into());
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(format!(
+                    "Failed to read back placeholder image {}: {}",
+                    placeholder_path.display(),
+                    e
+                )
+                .into());
+            }
+        }
         info!(
             "Generated per-stamp placeholder image: {} ({}x{} px)",
             placeholder_path.display(),
             px_w,
             px_h
-        );
-
-        info!(
-            "Generated per-stamp placeholder image with hint: {}",
-            placeholder_path.display()
         );
     }
 

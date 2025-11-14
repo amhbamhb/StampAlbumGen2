@@ -1,5 +1,19 @@
 // Main entry point for StampAlbumGen2
 
+// use tracing::{info, error, warn, instrument};
+// use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+// // Setup once at startup
+// pub fn init_logging() {
+//     tracing_subscriber::registry()
+//         .with(
+//             tracing_subscriber::EnvFilter::try_from_default_env()
+//                 .unwrap_or_else(|_| "info".into())
+//         )
+//         .with(tracing_subscriber::fmt::layer().json())
+//         .init();
+// }
+
 use clap::{CommandFactory, Parser};
 use stamp_album_gen2::{
     cli::Cli,

@@ -5,7 +5,7 @@ use super::helpers::emit_row_start_es;
 use super::structs::{GenericAttrs, Stamp};
 use crate::album_utils::clean_text;
 use crate::config::load_config;
-use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
+use crate::db_utils::{get_all_series, get_stamps_by_series, init_db, update_image_dimensions};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use log::{error, info, warn};
 use rusqlite::Connection;
@@ -282,6 +282,8 @@ where
                 image_path: stamp.image_path.clone(),
                 image_width_px: stamp.image_width_px,
                 image_height_px: stamp.image_height_px,
+                est_width_mm: None,
+                est_height_mm: None,
             });
         }
         // Group stamps into rows (configurable max stamps per row)
@@ -293,10 +295,10 @@ where
         // series peers instead of falling back to the global reference size.
         let mut series_widths_mm: Vec<f64> = Vec::new();
         let mut series_heights_mm: Vec<f64> = Vec::new();
-        for s in stamp_objs.iter() {
-            let image_path = s.image_path.trim();
+        for stamp in stamp_objs.iter() {
+            let image_path = stamp.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+            if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
                 series_widths_mm.push((w_px as f64) * (mm_per_pixel_w as f64));
                 series_heights_mm.push((h_px as f64) * (mm_per_pixel_h as f64));
             } else if let Some((w_mm, h_mm)) =
@@ -316,33 +318,158 @@ where
         } else {
             None
         };
+        // -------------------------
+        // Pre-pass: compute final estimated physical sizes (mm) for every stamp
+        // in this series. This ensures placeholders are generated now and
+        // layout uses the final sizes rather than seeing stale or missing
+        // dimensions during the single-pass layout.
+        // -------------------------
+        for s in stamp_objs.iter_mut() {
+            let image_path = s.image_path.trim();
+            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            // Prefer DB-stored pixel dimensions if available; otherwise fall back
+            // to on-disk image estimation or series-average, finally reference size.
+            // Track where the estimated size came from for diagnostics
+            let mut est_source = "unknown";
+            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+                let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
+                let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
+                s.est_width_mm = Some(w_mm);
+                s.est_height_mm = Some(h_mm);
+                est_source = "db_pixels";
+            } else if let Some((w_mm, h_mm)) =
+                estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+            {
+                let mut w = w_mm as f64;
+                let mut h = h_mm as f64;
+                if !preserve_real && h > stamp_box_height {
+                    let scale = stamp_box_height / h;
+                    w *= scale;
+                    h *= scale;
+                }
+                s.est_width_mm = Some(w);
+                s.est_height_mm = Some(h);
+                est_source = "image_estimate";
+            } else if let (Some(avg_w), Some(avg_h)) = (series_avg_w_mm, series_avg_h_mm) {
+                s.est_width_mm = Some(avg_w);
+                s.est_height_mm = Some(avg_h);
+                est_source = "series_average";
+            } else {
+                s.est_width_mm = Some(reference_width_mm as f64);
+                s.est_height_mm = Some(reference_height_mm as f64);
+                est_source = "reference";
+            }
+
+            // Emit a compact per-stamp diagnostic so we can trace where the
+            // estimated mm sizes came from and what placeholder pixel sizes
+            // (if any) were created. This helps debug mismatches between
+            // series-declared sizes and actual placeholders.
+            let diag_sg = s
+                .attrs
+                .get("sg_number")
+                .unwrap_or(&"".to_string())
+                .replace('"', "'");
+            let diag_img_path = s.image_path.replace('"', "'");
+            let diag_w_mm = s.est_width_mm.unwrap_or(reference_width_mm as f64);
+            let diag_h_mm = s.est_height_mm.unwrap_or(reference_height_mm as f64);
+            // If pixel dims are present (placeholders set them later), print them too.
+            let diag_px_w = s.image_width_px.unwrap_or(0);
+            let diag_px_h = s.image_height_px.unwrap_or(0);
+            let _ = writeln!(output, "# STAMP_DIAG sg=\"{}\" source=\"{}\" est_w_mm=\"{:.2}\" est_h_mm=\"{:.2}\" px=\"{}x{}\" img=\"{}\"",
+                diag_sg, est_source, diag_w_mm, diag_h_mm, diag_px_w, diag_px_h, diag_img_path);
+
+            // If the stamp has no image and therefore no stored pixel dims, create
+            // a placeholder now using the emit box size (est + 2*stamp_box_adjust)
+            // so future layout sees consistent sizes.
+            if s.image_width_px.is_none() {
+                // When generating a placeholder, create an image sized to the
+                // base image area only (no per-side stamp_box_adjust). The
+                // emitted STAMP_ADD_IMG box will add `2 * stamp_box_adjust`
+                // later when computing the printed box size. Using the base
+                // image dimensions for the placeholder keeps the placeholder
+                // pixel dimensions consistent with real images and avoids
+                // embedding the layout padding into the image itself.
+                let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
+                let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
+                let target_w_mm = base_w; // image-only width (mm)
+                let target_h_mm = base_h; // image-only height (mm)
+                match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
+                    album_name,
+                    s.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or(""),
+                    s.attrs.get("year").map(|s| s.as_str()).unwrap_or(""),
+                    Some(series),
+                    None,
+                    Some(target_w_mm),
+                    Some(target_h_mm),
+                    Some(mm_per_pixel_w),
+                    Some(mm_per_pixel_h),
+                ) {
+                    Ok(rel) => {
+                        // Replace image_path with generated placeholder relative path
+                        s.image_path = rel;
+                        // Populate pixel dims with the image-only pixel size
+                        // (do NOT include stamp_box_adjust here).
+                        let px_w = (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
+                        let px_h = (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
+                        s.image_width_px = Some(px_w);
+                        s.image_height_px = Some(px_h);
+                        // Persist placeholder pixel dims to the DB so future runs
+                        // (or other tools) can rely on the stored values.
+                        if px_w > 0 && px_h > 0 {
+                            let sg_str = s.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
+                            if let Err(e) = update_image_dimensions(
+                                conn,
+                                album_name,
+                                series,
+                                sg_str,
+                                Some(px_w),
+                                Some(px_h),
+                            ) {
+                                log::error!(
+                                    "Failed to update DB image dims for {} sg {}: {}",
+                                    album_name,
+                                    sg_str,
+                                    e
+                                );
+                            }
+                        }
+                        // Emit an updated diagnostic that includes the placeholder
+                        // pixel dimensions and relative image path so callers can
+                        // verify the on-disk placeholder matches the estimate.
+                        let upd_sg = s
+                            .attrs
+                            .get("sg_number")
+                            .unwrap_or(&"".to_string())
+                            .replace('"', "'");
+                        let upd_img = s.image_path.replace('"', "'");
+                        let upd_px_w = s.image_width_px.unwrap_or(0);
+                        let upd_px_h = s.image_height_px.unwrap_or(0);
+                        let _ = writeln!(
+                            output,
+                            "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\"",
+                            upd_sg, upd_px_w, upd_px_h, upd_img
+                        );
+                    }
+                    Err(e) => {
+                        log::error!(
+                            "Failed to create placeholder for {} sg {}: {}",
+                            album_name,
+                            s.attrs.get("sg_number").unwrap_or(&"".to_string()),
+                            e
+                        );
+                    }
+                }
+            }
+        }
+
+        // Now perform layout using the finalized est_* values
         // let mut row_width = 0.0;
         for stamp in stamp_objs.into_iter() {
             let image_path = stamp.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-            // Prefer DB-stored pixel dimensions if available; otherwise fall back to image-based estimation
-            let (est_width_mm, _) =
-                if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
-                    (
-                        ((w_px as f64) * (mm_per_pixel_w as f64)),
-                        ((h_px as f64) * (mm_per_pixel_h as f64)),
-                    )
-                } else if let Some((w_mm, h_mm)) =
-                    estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
-                {
-                    let mut w = w_mm as f64;
-                    let mut h = h_mm as f64;
-                    // If the measured height is larger than the configured stamp box height
-                    // shrink the image proportionally so it fits within stamp_box_height
-                    if !preserve_real && h > stamp_box_height {
-                        let scale = stamp_box_height / h;
-                        w *= scale;
-                        h *= scale;
-                    }
-                    (w, h)
-                } else {
-                    (reference_width_mm as f64, reference_height_mm as f64)
-                };
+            // Use the est_width_mm precomputed in the pre-pass (should always be present)
+            let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
+            let _est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
             let margin = 2.0f64; // margin between stamps (mm)
                                  // Page width and left/right margins come from config when present
             let page_width = config.album_page_width_mm.unwrap_or(216.0) as f64; // default US Letter
@@ -380,8 +507,12 @@ where
                     (w + 2.0 * stamp_box_adjust) + margin
                 })
                 .sum();
-            // If adding this stamp would exceed usable width or row has max stamps, start a new row before adding
-            if row.len() >= max_stamps_per_row || row_width + est_width_mm + margin > usable_width {
+            // If adding this stamp would exceed usable width or row has max stamps, start a new row before adding.
+            // Note: `row_width` already includes the per-stamp `2.0 * stamp_box_adjust` offset for existing
+            // stamps. Ensure we include the same adjustment when considering the new stamp so the width
+            // check is consistent and prevents placing an oversized placeholder into the row.
+            let new_stamp_total = (est_width_mm + 2.0 * stamp_box_adjust) + margin;
+            if row.len() >= max_stamps_per_row || row_width + new_stamp_total > usable_width {
                 if !row.is_empty() {
                     stamp_rows.push(row);
                 }
@@ -1355,8 +1486,16 @@ where
                         // dimensions try to use neighbouring stamps on the same row as
                         // a second-level fallback so the placeholder visually matches
                         // its neighbours.
-                        let mut target_w_mm = emit_width;
-                        let mut target_h_mm = emit_height;
+                        // Default target for placeholder creation: the image-only
+                        // estimated width/height (do NOT include the per-side
+                        // `stamp_box_adjust` here). If neighbours are used as a
+                        // fallback, use their raw image mm values (not the
+                        // emitted box size) so placeholders match neighbour
+                        // image areas rather than the printed box padding.
+                        let mut target_w_mm =
+                            stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
+                        let mut target_h_mm =
+                            stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
                         // If this stamp has no explicit image pixel dimensions,
                         // attempt to compute an average from neighbours in the row.
                         if stamp.image_width_px.is_none() && stamp.image_height_px.is_none() {
@@ -1426,8 +1565,9 @@ where
                                 // dimensions as neighbouring stamps.
                                 let neigh_w_mm = neigh_w_sum / (neigh_count as f64);
                                 let neigh_h_mm = neigh_h_sum / (neigh_count as f64);
-                                target_w_mm = neigh_w_mm + 2.0 * stamp_box_adjust;
-                                target_h_mm = neigh_h_mm + 2.0 * stamp_box_adjust;
+                                // Use neighbour image-only sizes (no stamp_box_adjust)
+                                target_w_mm = neigh_w_mm;
+                                target_h_mm = neigh_h_mm;
                             }
                         }
 
@@ -1443,7 +1583,36 @@ where
                             Some(mm_per_pixel_h),
                         ) {
                             Ok(rel_path) => {
-                                emitted_placeholder = Some(rel_path);
+                                emitted_placeholder = Some(rel_path.clone());
+                                // Emit diagnostic for placeholder created during layout pass
+                                let ph_px_w =
+                                    (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
+                                let ph_px_h =
+                                    (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
+                                let ph_sg = sgnum.replace('"', "'");
+                                let ph_img = rel_path.replace('"', "'");
+                                let _ = writeln!(output, "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\" target_mm=\"{:.2}x{:.2}\" source=\"layout_gen\"",
+                                        ph_sg, ph_px_w, ph_px_h, ph_img, target_w_mm, target_h_mm);
+                                // Persist placeholder pixel dims to the DB so future runs
+                                // can reuse the measured dimensions.
+                                if ph_px_w > 0 && ph_px_h > 0 {
+                                    let _sg_ref = sgnum.as_str();
+                                    if let Err(e) = update_image_dimensions(
+                                        conn,
+                                        album_name,
+                                        series,
+                                        _sg_ref,
+                                        Some(ph_px_w),
+                                        Some(ph_px_h),
+                                    ) {
+                                        log::error!(
+                                            "Failed to update DB image dims for {} sg {}: {}",
+                                            album_name,
+                                            _sg_ref,
+                                            e
+                                        );
+                                    }
+                                }
                             }
                             Err(e) => {
                                 error!(
