@@ -31,10 +31,24 @@ stamp_box_adjust = -2.5
 
 # Packing limits: control how many stamps/rows the generator will try
 # to place on a single row/page. Reduce if pages feel cramped.
-max_stamps_per_row = 5               # Maximum stamps horizontally per row
+max_stamps_per_row = 3               # Maximum stamps horizontally per row
 max_rows_per_page = 5                # Maximum rows per page
-packing_horizontal_safety_mm = 2.0   # Safety gap left/right of each stamp (mm)
+packing_horizontal_safety_mm = 5.0   # Safety gap left/right of each stamp (mm)
 packing_vertical_safety_mm = 2.0     # Safety gap above/below each stamp (mm)
+series_row_gap_mm = 0.0              # Per-series inter-row gap (mm). Set to None/omit to disable.
+
+# Centering & diagnostics
+# When true the generator will emit a prototype `PAGE_HSPACE (X)` line
+# before rows to indicate an intended left-offset (in mm) that would
+# center the row in the printable area. This is a renderer-facing
+# prototype feature — enable only if your renderer supports horizontal offsets.
+enable_row_centering = true
+
+# When true the generator emits a `# ROW_META ...` diagnostic comment
+# before each row containing: number of stamps, computed row width (mm),
+# usable width (mm), extra space and computed left offset. Useful to tune
+# packing and centering without changing rendering.
+show_stamps_per_row = true
 
 
 ############################################
@@ -307,3 +321,8 @@ show_progress_indicator = true
 # `crate::config::load_config("config.toml")` to ensure defaults are
 # populated and documented values are available.
 
+
+# ---- Computed values (auto-updated) ----
+# Computed: recommended stamps per row (mm math)
+computed_stamps_per_row = 3
+# Computed: average_emit_width_mm = 36.98

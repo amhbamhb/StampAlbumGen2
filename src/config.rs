@@ -107,6 +107,11 @@ pub struct Config {
     pub header_vspace_after_mm: Option<f32>,
     pub text_line_height_mm: Option<f32>,
     pub image_spacing_mm: Option<f32>,
+    // Optional per-series inter-row gap (mm). When set, this value will be
+    // applied between rows inside a series before distributing any leftover
+    // vertical space to top/between-series/bottom gaps. If None, no explicit
+    // per-row gap is applied (legacy behavior).
+    pub series_row_gap_mm: Option<f32>,
     pub max_stamps_per_row: Option<u32>,
     pub album_stamp_img_new_setting_w_mm: Option<f32>,
     pub album_stamp_img_new_setting_h_mm: Option<f32>,
@@ -145,6 +150,14 @@ pub struct Config {
     // safety paddings during packing to avoid visual overlap.
     pub packing_horizontal_safety_mm: Option<f32>,
     pub packing_vertical_safety_mm: Option<f32>,
+    // When true, emit a PAGE_HSPACE line before rows to indicate an intended
+    // horizontal left offset to center the row. This is a prototype helper
+    // for renderers that can honor per-row horizontal offsets. Default: false
+    pub enable_row_centering: Option<bool>,
+    // When true, emit a compact ROW_META diagnostic comment before each row
+    // showing the number of stamps, computed row width and available usable
+    // width. This helps tune packing/centering without changing rendering.
+    pub show_stamps_per_row: Option<bool>,
 
     // Color customization keys (string names understood by the generator)
     pub color_album_border: Option<String>,
@@ -304,15 +317,18 @@ impl Config {
             header_vspace_after_mm: Some(1.0),
             text_line_height_mm: Some(2.6),
             image_spacing_mm: Some(5.0),
-            max_stamps_per_row: Some(5),
+            series_row_gap_mm: None,
+            max_stamps_per_row: Some(3),
             album_stamp_img_new_setting_w_mm: Some(6.0),
             album_stamp_img_new_setting_h_mm: Some(6.0),
             album_stamp_img_new_setting_preserve_aspect: Some(true),
             print_flag_cover: Some(true),
             include_wikipedia_content: Some(true),
             album_stamp_img_aspect_ratio: Some(true),
-            packing_horizontal_safety_mm: Some(2.0),
+            packing_horizontal_safety_mm: Some(5.0),
             packing_vertical_safety_mm: Some(2.0),
+            enable_row_centering: Some(false),
+            show_stamps_per_row: Some(false),
             color_album_border: Some("darkblue".to_string()),
             color_album_footer: Some("darkblue".to_string()),
             color_album_header: Some("darkblue".to_string()),

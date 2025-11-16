@@ -96,7 +96,7 @@ pub fn compute_placeholder_size_for_series(series: &str) -> (u32, u32) {
 ///
 /// `series_hint` may be provided to size the placeholder more like a real stamp from that series.
 pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
-    album_name: &str,
+    _album_name: &str,
     sg_number: &str,
     year: &str,
     stamp_bg_color: Option<Rgba<u8>>,
@@ -180,6 +180,35 @@ pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
 
     img.save(out)?;
     Ok(())
+}
+
+/// Generate a fully-transparent spacer PNG of the requested pixel size and
+/// write it into the album images folder. Returns the relative path
+/// (e.g. `images/row_spacer_p1_r2.png`) on success.
+pub fn generate_transparent_spacer(
+    album_name: &str,
+    page: usize,
+    row: usize,
+    px_w: u32,
+    px_h: u32,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let rel = format!("images/row_spacer_p{}_r{}.png", page, row);
+    let out_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), rel);
+    let out = std::path::Path::new(&out_path);
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    // Ensure at least 1x1 pixels
+    let w = px_w.max(1);
+    let h = px_h.max(1);
+    let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(w, h);
+    // Fill with fully transparent pixels
+    let clear = Rgba([0u8, 0u8, 0u8, 0u8]);
+    for pixel in img.pixels_mut() {
+        *pixel = clear;
+    }
+    img.save(out)?;
+    Ok(rel)
 }
 
 /// Try to load a TTF font from a list of likely locations (system fonts or project fonts).
@@ -610,7 +639,7 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
     // Load config to see if the user wants placeholders to always be
     // overwritten when explicit mm/mm_per_px mappings are provided.
     let cfg = crate::config::load_config("config.toml");
-    let placeholder_overwrite = cfg.placeholder_always_overwrite.unwrap_or(true);
+    let _placeholder_overwrite = cfg.placeholder_always_overwrite.unwrap_or(true);
 
     // If the placeholder already exists but its pixel dimensions do not match
     // the desired dimensions (e.g., created by an earlier run), overwrite it so
