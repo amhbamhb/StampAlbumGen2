@@ -27,14 +27,28 @@ stamp_box_height = 36.0              # Height allocated per stamp box (mm)
 # Fine-tune packing/adjustment. `stamp_box_adjust` can be negative to
 # slightly shrink the reserved box if your stamps are slightly smaller
 # than the nominal size.
-stamp_box_adjust = -3.5
+stamp_box_adjust = -2.5
 
 # Packing limits: control how many stamps/rows the generator will try
 # to place on a single row/page. Reduce if pages feel cramped.
-max_stamps_per_row = 5               # Maximum stamps horizontally per row
+max_stamps_per_row = 3               # Maximum stamps horizontally per row
 max_rows_per_page = 5                # Maximum rows per page
-packing_horizontal_safety_mm = 2.0   # Safety gap left/right of each stamp (mm)
+packing_horizontal_safety_mm = 5.0   # Safety gap left/right of each stamp (mm)
 packing_vertical_safety_mm = 2.0     # Safety gap above/below each stamp (mm)
+series_row_gap_mm = 0.0              # Per-series inter-row gap (mm). Set to None/omit to disable.
+
+# Centering & diagnostics
+# When true the generator will emit a prototype `PAGE_HSPACE (X)` line
+# before rows to indicate an intended left-offset (in mm) that would
+# center the row in the printable area. This is a renderer-facing
+# prototype feature — enable only if your renderer supports horizontal offsets.
+enable_row_centering = true
+
+# When true the generator emits a `# ROW_META ...` diagnostic comment
+# before each row containing: number of stamps, computed row width (mm),
+# usable width (mm), extra space and computed left offset. Useful to tune
+# packing and centering without changing rendering.
+show_stamps_per_row = true
 
 
 ############################################
@@ -201,12 +215,12 @@ flag_cover_text_only_vspace_after = 18.0
 # If `fetch_wikipedia` is true the program will attempt to fetch and cache
 # Wikipedia / Grokipedia content for the album topic. If false, cached
 # content (if present) may still be used depending on other flags.
-fetch_wikipedia = true
+fetch_wikipedia = false
 
 # When true, include any cached Wikipedia/Grokipedia content in the album
 # output (formatted into album pages). This is separate from `fetch_wikipedia`
 # to allow using previously-cached content without network activity.
-include_wikipedia_content = true
+include_wikipedia_content = false
 
 # Where to store the cached Wikipedia content (SQLite DB path).
 wikipedia_cache_db_path = "wikipedia_cache.db"
@@ -257,7 +271,7 @@ wikipedia_pagination_conservative_fraction = 0.75
 
 # If true, center small wiki sections vertically on the page to avoid
 # large empty bottom margins when content is small compared to the page.
-wikipedia_center_content = false
+wikipedia_center_content = true
 
 ###################################
 # Image & DPI
@@ -294,6 +308,8 @@ page_text_right_vspace = 1.0
 # Misc
 ###################################
 
+placeholder_always_overwrite = true
+
 # Miscellaneous flags used by tooling and the renderer.
 show_progress_indicator = true
 
@@ -305,3 +321,8 @@ show_progress_indicator = true
 # `crate::config::load_config("config.toml")` to ensure defaults are
 # populated and documented values are available.
 
+
+# ---- Computed values (auto-updated) ----
+# Computed: recommended stamps per row (mm math)
+computed_stamps_per_row = 3
+# Computed: average_emit_width_mm = 36.98

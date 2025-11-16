@@ -27,6 +27,10 @@ Options:
           Stop scraping after this many consecutive pages that yielded zero matching stamps (default 3) [default: 3]
   -y, --yes
           When source appears misspelled, accept the top suggestion automatically (useful in scripts). This is the same as answering 'yes' to a prompt
+      --init-config
+          Create a `config.toml` from the bundled template (or defaults) and exit. Use --init-config --force-init-config to overwrite an existing file (with backup)
+      --force-init-config
+          When used with --init-config, force overwriting an existing config.toml after creating a timestamped backup. Default: false
   -h, --help
           Print help
   -V, --version

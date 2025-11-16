@@ -54,4 +54,14 @@ pub struct Cli {
     /// (useful in scripts). This is the same as answering 'yes' to a prompt.
     #[arg(long = "yes", short = 'y', default_value_t = false)]
     pub accept_top_suggestion: bool,
+
+    /// Create a `config.toml` from the bundled template (or defaults) and exit.
+    /// Use --init-config --force-init-config to overwrite an existing file (with backup).
+    #[arg(long, default_value_t = false)]
+    pub init_config: bool,
+
+    /// When used with --init-config, force overwriting an existing config.toml
+    /// after creating a timestamped backup. Default: false
+    #[arg(long = "force-init-config", default_value_t = false)]
+    pub force_init_config: bool,
 }

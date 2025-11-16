@@ -1,4 +1,4 @@
-# Stamp Album Generator v1.2.0
+# Stamp Album Generator v1.3.0
 
 
 
@@ -35,7 +35,7 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v1.2.0
+# Stamp Album Generator v1.3.0
 
 Version: 0.11.0 | Last Updated: 2025-09-25
 
@@ -65,10 +65,10 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 📦 Installation
 
 # Generate from an existing DB (output-only behavior is triggered by passing --db-path)
-# Stamp Album Generator v1.2.0
+# Stamp Album Generator v1.3.0
 
-**Version**: 1.2.0
-**Release Date**: 2025-11-10
+**Version**: 1.3.0
+**Release Date**: 2025-11-15
 
 A compact, up-to-date README for development and contributors. This file
 focuses on practical usage, configuration pointers, and best practices for
@@ -115,6 +115,16 @@ Key areas:
 For a minimal starting point use `config_template.toml`. When experimenting
 with more advanced options prefer `config_full_example.toml` which contains
 the superset of keys used by the project and example values.
+
+### Placeholder overwrite behavior
+
+- `placeholder_always_overwrite` (bool, default: true) — Controls how the
+    generator treats placeholder images when exact mm -> px mappings are
+    available. When true, placeholders generated with explicit mm/mm_per_px
+    mappings are recreated/overwritten so their pixel dimensions exactly match
+    the emitted `STAMP_ADD_IMG` box sizes. When false, the generator will
+    preserve existing placeholder files if their pixel dimensions already match
+    the desired size. See `config_full_example.toml` for an example entry.
 
 New configuration groups (added in recent releases):
 
@@ -298,8 +308,8 @@ If you'd like, I can also consolidate the README to include only a short usage s
 └── *.log                          # Log files
 ```
 
-**Version**: 1.2.0
-**Release Date**: 2025-11-10
+**Version**: 1.3.0
+**Release Date**: 2025-11-15
 
 
 ## 🔧 Development
@@ -777,7 +787,7 @@ and stop-after-no-hits heuristic to avoid over-downloading:
     --stop-after-no-hits 3 --max-pages 0
 ```
 
-**Release Date**: 2025-11-10
+**Release Date**: 2025-11-15
 **Build**: Release (optimized)
 **Platform**: Linux x86-64 /content 
 `filePath`: README.md

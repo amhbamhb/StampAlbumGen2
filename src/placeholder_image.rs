@@ -4,7 +4,7 @@
 //! This module generates placeholder images for stamps that don't have associated images.
 
 use crate::image_utils::calc_mm_per_pixel_embedded;
-use image::{ImageBuffer, Rgba};
+use image::{GenericImageView, ImageBuffer, Rgba};
 use log::{error, info};
 use rusttype::{point, Font, Scale};
 use std::fs::File;
@@ -66,16 +66,16 @@ pub fn compute_placeholder_size_for_series(series: &str) -> (u32, u32) {
     };
 
     // Ask image_utils for the mm-per-pixel ratio using the embedded reference.
-    // Use the same default reference that other modules use when none is configured.
-    // Use the same embedded-reference calibration values used elsewhere in the project
-    // (see `album_utils::dimensions::REF_W_MM/REF_H_MM`) for consistent mm->px conversions.
-    const REF_W_MM_CAL: f32 = 23.42;
-    const REF_H_MM_CAL: f32 = 25.93;
-    if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(REF_W_MM_CAL, REF_H_MM_CAL)
-    {
+    // Try to use the same reference size as the album generator's config so the
+    // mm->px mapping matches the values used when emitting stamp boxes.
+    let cfg = crate::config::load_config("config.toml");
+    let ref_w_mm = cfg.reference_width_mm.unwrap_or(25.0_f32);
+    let ref_h_mm = cfg.reference_height_mm.unwrap_or(30.0_f32);
+    if let Some((mm_per_px_w, mm_per_px_h)) = calc_mm_per_pixel_embedded(ref_w_mm, ref_h_mm) {
         // mm_per_px_* are f32; convert and compute pixel dims
         let px_w = (target_mm_w as f32 / mm_per_px_w).round() as u32;
         let px_h = (target_mm_h as f32 / mm_per_px_h).round() as u32;
+        log::debug!("compute_placeholder_size_for_series: series='{}' target_mm=({:.2},{:.2}) mm_per_px=({:.6},{:.6}) -> px=({},{})", series, target_mm_w, target_mm_h, mm_per_px_w, mm_per_px_h, px_w, px_h);
         // Keep sensible minimums
         return (px_w.max(50), px_h.max(40));
     }
@@ -96,7 +96,7 @@ pub fn compute_placeholder_size_for_series(series: &str) -> (u32, u32) {
 ///
 /// `series_hint` may be provided to size the placeholder more like a real stamp from that series.
 pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
-    album_name: &str,
+    _album_name: &str,
     sg_number: &str,
     year: &str,
     stamp_bg_color: Option<Rgba<u8>>,
@@ -180,6 +180,35 @@ pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
 
     img.save(out)?;
     Ok(())
+}
+
+/// Generate a fully-transparent spacer PNG of the requested pixel size and
+/// write it into the album images folder. Returns the relative path
+/// (e.g. `images/row_spacer_p1_r2.png`) on success.
+pub fn generate_transparent_spacer(
+    album_name: &str,
+    page: usize,
+    row: usize,
+    px_w: u32,
+    px_h: u32,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let rel = format!("images/row_spacer_p{}_r{}.png", page, row);
+    let out_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), rel);
+    let out = std::path::Path::new(&out_path);
+    if let Some(parent) = out.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    // Ensure at least 1x1 pixels
+    let w = px_w.max(1);
+    let h = px_h.max(1);
+    let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(w, h);
+    // Fill with fully transparent pixels
+    let clear = Rgba([0u8, 0u8, 0u8, 0u8]);
+    for pixel in img.pixels_mut() {
+        *pixel = clear;
+    }
+    img.save(out)?;
+    Ok(rel)
 }
 
 /// Try to load a TTF font from a list of likely locations (system fonts or project fonts).
@@ -547,6 +576,220 @@ pub fn ensure_placeholder_image_for_stamp(
         info!(
             "Generated per-stamp placeholder image: {}",
             placeholder_path.display()
+        );
+    }
+
+    // Return relative path from album dir
+    Ok(format!("images/{}", filename))
+}
+
+/// New: ensure placeholder for a stamp but accept a series hint and optional
+/// stamp background color so the generated placeholder can match the series
+/// sizing and contrast. Backwards-compatible callers can continue to call
+/// `ensure_placeholder_image_for_stamp` which delegates to this with None hints.
+pub fn ensure_placeholder_image_for_stamp_with_hint(
+    album_name: &str,
+    sg_number: &str,
+    year: &str,
+    series_hint: Option<&str>,
+    stamp_bg_color: Option<Rgba<u8>>,
+    // If provided, target_mm_* and mm_per_px_* will be used to compute an exact
+    // pixel size so the generated placeholder, when converted by the album
+    // mm-per-pixel ratio, matches the emitted mm dimensions. If omitted we
+    // fall back to series-based pixel sizing.
+    target_mm_w: Option<f64>,
+    target_mm_h: Option<f64>,
+    mm_per_px_w: Option<f32>,
+    mm_per_px_h: Option<f32>,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // Normalize album directory name to match other modules (use hyphens for spaces)
+    let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
+    // sanitize sg_number for filename (replace slashes etc.)
+    let safe_sg = sg_number.replace(|c: char| !c.is_alphanumeric(), "_");
+    let safe_year = if year.is_empty() { "unknown" } else { year };
+    let filename = format!("no_image_{}_{}.png", safe_sg, safe_year);
+    let placeholder_path = album_dir.join("images").join(&filename);
+
+    // Ensure parent dir exists even if file already exists (we may overwrite)
+    std::fs::create_dir_all(placeholder_path.parent().unwrap())?;
+
+    // Determine desired pixel dimensions. Prefer explicit target mm -> px mapping
+    // using the provided mm_per_px values so the placeholder's reported
+    // mm size matches the emitted box exactly. Otherwise fall back to
+    // series-aware sizing.
+    let explicit_mapping = target_mm_w.is_some()
+        && target_mm_h.is_some()
+        && mm_per_px_w.is_some()
+        && mm_per_px_h.is_some();
+
+    let (desired_px_w, desired_px_h) = if explicit_mapping {
+        let tw = target_mm_w.unwrap();
+        let th = target_mm_h.unwrap();
+        let mmw = mm_per_px_w.unwrap();
+        let mmh = mm_per_px_h.unwrap();
+        let w = (tw as f32 / mmw).round() as u32;
+        let h = (th as f32 / mmh).round() as u32;
+        (w.max(50), h.max(40))
+    } else if let Some(s) = series_hint {
+        compute_placeholder_size_for_series(s)
+    } else {
+        (300u32, 220u32)
+    };
+
+    // Load config to see if the user wants placeholders to always be
+    // overwritten when explicit mm/mm_per_px mappings are provided.
+    let cfg = crate::config::load_config("config.toml");
+    let _placeholder_overwrite = cfg.placeholder_always_overwrite.unwrap_or(true);
+
+    // If the placeholder already exists but its pixel dimensions do not match
+    // the desired dimensions (e.g., created by an earlier run), overwrite it so
+    // the placeholder pixel size corresponds to the emitted mm box. Additionally,
+    // when an explicit mm->px mapping was provided, always regenerate the
+    // placeholder to ensure it exactly matches the emitted box semantics and
+    // any textual or styling updates.
+    // If explicit mm->px mapping was provided we MUST produce a placeholder
+    // with the requested pixel dimensions so layout and diagnostics remain
+    // consistent. Always recreate when explicit mapping is present. Otherwise
+    // respect existing files unless their dimensions differ from desired.
+    let mut need_create = true;
+    if placeholder_path.exists() {
+        if explicit_mapping {
+            // Always recreate to guarantee exact pixel dimensions for the
+            // explicit mapping case (user requested it in generator).
+            log::info!(
+                "Placeholder {} will be recreated to match explicit mm->px mapping {}x{} px",
+                placeholder_path.display(),
+                desired_px_w,
+                desired_px_h
+            );
+            need_create = true;
+        } else {
+            // Try to read actual dimensions; if reading fails we'll recreate.
+            if let Ok(img_existing) = image::open(&placeholder_path) {
+                let (aw, ah) = img_existing.dimensions();
+                if aw == desired_px_w && ah == desired_px_h {
+                    need_create = false;
+                } else {
+                    // log the mismatch and proceed to recreate
+                    log::info!("Placeholder {} exists with size {}x{} px but desired is {}x{} px; recreating", placeholder_path.display(), aw, ah, desired_px_w, desired_px_h);
+                }
+            }
+        }
+    }
+
+    if need_create {
+        // Determine bundled font path if available
+        let bundled = if Path::new("assets/fonts/DejaVuSans.ttf").exists() {
+            Some("assets/fonts/DejaVuSans.ttf")
+        } else {
+            None
+        };
+
+        let px_w = desired_px_w;
+        let px_h = desired_px_h;
+
+        let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(px_w, px_h);
+        for pixel in img.pixels_mut() {
+            *pixel = stamp_bg_color
+                .map(|c| contrasting_color(c))
+                .unwrap_or(Rgba([255, 255, 255, 255]));
+        }
+
+        // Draw border
+        let border_color = if is_color_dark(img.get_pixel(0, 0).to_owned()) {
+            Rgba([200, 200, 200, 255])
+        } else {
+            Rgba([80, 80, 80, 255])
+        };
+        for x in 0..px_w {
+            for y in 0..px_h {
+                if x < 2 || x >= px_w - 2 || y < 2 || y >= px_h - 2 {
+                    img.put_pixel(x, y, border_color);
+                }
+            }
+        }
+
+        // Title/subtitle
+        let title = format!("SG {}", sg_number);
+        let subtitle = if year.is_empty() {
+            "".to_string()
+        } else {
+            year.to_string()
+        };
+        draw_text(
+            &mut img,
+            &title,
+            (px_w / 2) as i32,
+            (px_h / 2 - 20) as i32,
+            28.0,
+            Rgba([90, 90, 90, 255]),
+            bundled,
+        );
+        let sep_y = (px_h / 2) as i32 + 2;
+        for x in 40..(px_w.saturating_sub(40)) {
+            if sep_y >= 0 && (sep_y as u32) < px_h {
+                img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+            }
+        }
+        if !subtitle.is_empty() {
+            draw_text(
+                &mut img,
+                &subtitle,
+                (px_w / 2) as i32,
+                (px_h / 2 + 18) as i32,
+                14.0,
+                Rgba([90, 90, 90, 255]),
+                bundled,
+            );
+        }
+
+        img.save(&placeholder_path)?;
+        // Verify saved image dimensions match the requested pixel size. If
+        // they do not, attempt one more time and then return an error so
+        // callers are aware.
+        match image::open(&placeholder_path) {
+            Ok(saved) => {
+                let (sw, sh) = saved.dimensions();
+                if sw != px_w || sh != px_h {
+                    // Try a second write using the higher-level generator to be safe
+                    log::warn!("Saved placeholder {} has size {}x{} px but expected {}x{} px — attempting rewrite", placeholder_path.display(), sw, sh, px_w, px_h);
+                    // Re-generate explicitly via the options API which is known
+                    // to produce exact buffer sizes.
+                    let _ = generate_placeholder_image_with_options(
+                        px_w,
+                        px_h,
+                        &placeholder_path,
+                        None,
+                    )?;
+                    // Re-open and check again
+                    if let Ok(reopen) = image::open(&placeholder_path) {
+                        let (rw, rh) = reopen.dimensions();
+                        if rw != px_w || rh != px_h {
+                            return Err(format!("Failed to write placeholder {} at requested size {}x{} px (wrote {}x{} px)", placeholder_path.display(), px_w, px_h, rw, rh).into());
+                        }
+                    } else {
+                        return Err(format!(
+                            "Failed to verify placeholder image after rewrite: {}",
+                            placeholder_path.display()
+                        )
+                        .into());
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(format!(
+                    "Failed to read back placeholder image {}: {}",
+                    placeholder_path.display(),
+                    e
+                )
+                .into());
+            }
+        }
+        info!(
+            "Generated per-stamp placeholder image: {} ({}x{} px)",
+            placeholder_path.display(),
+            px_w,
+            px_h
         );
     }
 

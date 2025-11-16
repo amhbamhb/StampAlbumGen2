@@ -82,9 +82,16 @@ pub fn new_row<W: std::io::Write>(
 ) {
     // Increase used_height by the height of the previous row before checking for a new page
     *used_height += *max_row_height;
-    // Use conservative constants only as a fallback; the real usable height is computed
-    // in generate_album_output using config values. Here we guard against absurd values.
-    if *used_height + 43.0 as i32 > 245 {
+    // Load configuration and compute the real usable height so page breaks
+    // reflect current settings (margins, borders, padding, etc.). Fall back
+    // to conservative defaults when config keys are missing.
+    let cfg = crate::config::load_config("config.toml");
+    let usable_height = crate::album_globals::globals::compute_usable_height(&cfg);
+    // Conservative buffer (mm) reserved at bottom of page to avoid footer bleed
+    let conservative_buffer = cfg.page_fit_conservative_buffer_mm.unwrap_or(2.0) as f64;
+
+    let used_h = (*used_height + *max_row_height) as f64;
+    if used_h + conservative_buffer > usable_height {
         new_page(
             writer,
             rows_written,
@@ -93,13 +100,13 @@ pub fn new_row<W: std::io::Write>(
             used_height,
             max_row_height,
         );
-        // new_year without a Config falls back to the default template
-        new_year(writer, year, None);
+        // Emit the year header using the loaded config so templates/spacing are accurate
+        new_year(writer, year, Some(&cfg));
     }
-    // Write a conservative default ROW_START_ES using the provided writer.
-    // (This function does not have access to the loaded `Config`, so call
-    // the helper with `None` to use built-in sensible defaults.)
-    let _ = emit_row_start_es(writer, None);
+
+    // Write ROW_START_ES using the loaded config so the emitted vspace and
+    // spacing match the current configuration.
+    let _ = emit_row_start_es(writer, Some(&cfg));
 
     *rows_written += 1;
     *stamps_written = 0;

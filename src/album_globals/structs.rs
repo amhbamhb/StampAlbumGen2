@@ -32,4 +32,9 @@ pub struct Stamp {
     pub image_path: String,
     pub image_width_px: Option<i32>,
     pub image_height_px: Option<i32>,
+    // Estimated physical size (millimetres) used for layout. These are
+    // populated in a pre-pass so layout decisions use final sizes even when
+    // placeholders are generated during the run.
+    pub est_width_mm: Option<f64>,
+    pub est_height_mm: Option<f64>,
 }
