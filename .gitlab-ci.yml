@@ -1,7 +1,7 @@
 stages:
-  - build
   - lint
   - test
+  - build
   - tag
   - release
 
@@ -76,8 +76,9 @@ fmt:
   stage: lint
   script:
     - cargo fmt --all -- --check
-  needs:
-    - build
+  # fmt is a lint-stage job and should not depend on build. Stage ordering
+  # (lint -> test -> build) will ensure fmt runs before build. Remove
+  # explicit needs to avoid forcing unnecessary ordering.
 
 test_workspace:
   stage: test
