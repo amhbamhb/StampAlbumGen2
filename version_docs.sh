@@ -292,7 +292,59 @@ if [ "$DO_GIT" = true ]; then
 
     # Create tag if it doesn't exist
     TAG_NAME="v$NEW_VERSION"
-    if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+    # Attempt to ensure the tag we'll create is unique.
+    # If a tag matching v<NEW_VERSION> already exists locally or on the remote,
+    # increment the patch number until we find a free one. Update Cargo.toml
+    # and other docs for each bumped version and commit the change.
+    REMOTE=${REMOTE:-origin}
+    # Only attempt remote checks if the remote exists/configured
+    REMOTE_CHECK=false
+    if git remote get-url "$REMOTE" >/dev/null 2>&1; then
+        REMOTE_CHECK=true
+    fi
+
+    ATTEMPTS=0
+    MAX_ATTEMPTS=50
+    while true; do
+        TAG_NAME="v$NEW_VERSION"
+        EXISTS_LOCAL=false
+        EXISTS_REMOTE=false
+        if git rev-parse --verify "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            EXISTS_LOCAL=true
+        fi
+        if [ "$REMOTE_CHECK" = true ]; then
+            if git ls-remote --exit-code --tags "$REMOTE" "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+                EXISTS_REMOTE=true
+            fi
+        fi
+
+        if [ "$EXISTS_LOCAL" = false ] && [ "$EXISTS_REMOTE" = false ]; then
+            echo "Tag $TAG_NAME is available."
+            break
+        fi
+
+        echo "Tag $TAG_NAME already exists (local=$EXISTS_LOCAL remote=$EXISTS_REMOTE). Incrementing patch..."
+        NEW_VERSION=$(increment_version "$NEW_VERSION" "patch")
+        echo "New candidate version: $NEW_VERSION"
+
+        # Update Cargo.toml and docs for the new version
+        update_cargo_toml "$NEW_VERSION"
+        update_instructions "$NEW_VERSION" "$DATE" || true
+        update_readme "$NEW_VERSION" "$DATE" || true
+        update_release_notes "$NEW_VERSION" "$DATE" || true
+
+        git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md || true
+        git commit -m "chore(release): bump version to $NEW_VERSION" --no-verify || echo "No changes to commit"
+
+        ATTEMPTS=$((ATTEMPTS + 1))
+        if [ $ATTEMPTS -ge $MAX_ATTEMPTS ]; then
+            echo "Error: reached maximum attempts ($MAX_ATTEMPTS) while searching for free tag" >&2
+            exit 2
+        fi
+    done
+
+    # Create the tag now that we have a free version
+    if git rev-parse --verify "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
         echo "Tag $TAG_NAME already exists — skipping tag creation"
     else
         git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
@@ -301,6 +353,34 @@ if [ "$DO_GIT" = true ]; then
 
     if [ "$DO_PUSH" = true ]; then
         echo "Pushing commit and tag to origin..."
-        git push --follow-tags || git push && git push --tags
+        # Try to push with available tokens; fall back to default git push
+        if [ -n "${CI_JOB_TOKEN:-}" ]; then
+            git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: failed to push commit with CI_JOB_TOKEN"
+            git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "refs/tags/$TAG_NAME" || echo "Warning: failed to push tag with CI_JOB_TOKEN"
+        elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
+            git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: failed to push commit with GITLAB_ACCESS_TOKEN"
+            git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "refs/tags/$TAG_NAME" || echo "Warning: failed to push tag with GITLAB_ACCESS_TOKEN"
+        else
+            git push --follow-tags || echo "Warning: failed to push commit (no CI token provided)"
+            git push "$REMOTE" "refs/tags/$TAG_NAME" || echo "Warning: failed to push tag (no CI token provided)"
+        fi
+    fi
+
+    if [ "$DO_PUSH" = true ]; then
+        echo "Pushing commit and tag..."
+        # Prefer CI tokens when available so script works in CI and locally
+        if [ -n "${CI_JOB_TOKEN:-}" ]; then
+            echo "Pushing using CI_JOB_TOKEN..."
+            git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --follow-tags || echo "Warning: Failed to push commit with CI_JOB_TOKEN"
+            git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "refs/tags/$TAG_NAME" || echo "Warning: Failed to push tag with CI_JOB_TOKEN"
+        elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
+            echo "Pushing using GITLAB_ACCESS_TOKEN..."
+            git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --follow-tags || echo "Warning: Failed to push commit with GITLAB_ACCESS_TOKEN"
+            git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "refs/tags/$TAG_NAME" || echo "Warning: Failed to push tag with GITLAB_ACCESS_TOKEN"
+        else
+            # Fall back to normal push; this will prompt for credentials if required
+            git push --follow-tags || echo "Warning: Failed to push commit (no token provided)"
+            git push "$REMOTE" "refs/tags/$TAG_NAME" || echo "Warning: Failed to push tag (no token provided)"
+        fi
     fi
 fi

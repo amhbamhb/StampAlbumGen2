@@ -118,33 +118,130 @@ db_path_quick_check:
   except:
     - tags
 
+version_consistency:
+  stage: test
+  image: rust:latest
+  script: |
+    set -e
+    # Ensure we have tags available
+    git fetch --tags --prune
+    LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+    if [ -z "$LATEST_TAG" ]; then
+      echo "No tags found; skipping version consistency check"
+      exit 0
+    fi
+    STRIPPED=${LATEST_TAG#v}
+    CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+    echo "Cargo.toml: $CARGO_VERSION, latest tag: $STRIPPED"
+    if [ "$CARGO_VERSION" != "$STRIPPED" ]; then
+      echo "Version mismatch: Cargo.toml ($CARGO_VERSION) != latest tag ($STRIPPED)" >&2
+      exit 1
+    fi
+    echo "Version consistency check passed: $CARGO_VERSION"
+  only:
+    - branches
+    - merge_requests
+  except:
+    - tags
+
+tag_collision_check:
+  stage: test
+  image: rust:latest
+  script: |
+    set -e
+    # Check whether the current Cargo.toml version already exists as a v-tag on the remote
+    git fetch --tags --prune
+    CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
+    TAG_NAME="v${CARGO_VERSION}"
+    echo "Checking for existing tag: $TAG_NAME"
+    if git ls-remote --exit-code --tags origin "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+      echo "Tag collision: tag $TAG_NAME already exists on remote origin" >&2
+      exit 1
+    fi
+    echo "No tag collision detected for $TAG_NAME"
+  only:
+    - merge_requests
+  except:
+    - tags
+
 bump_version:
   stage: tag
   before_script:
-    - apt-get update -qq && apt-get install -y -qq git
+    - git --version || true
   script: |
     set -e
     git fetch --tags --prune
     LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
     echo "Latest tag: $LATEST_TAG"
-    IFS='.' read -r MAJ MIN PATCH <<< "$LATEST_TAG"
+    # Normalize by stripping a leading 'v' if present, then parse numbers
+    STRIPPED_TAG=${LATEST_TAG#v}
+    IFS='.' read -r MAJ MIN PATCH <<< "$STRIPPED_TAG"
     MAJ=${MAJ:-0}; MIN=${MIN:-0}; PATCH=${PATCH:-0}
     PATCH=$((PATCH + 1))
-    NEW_TAG="${MAJ}.${MIN}.${PATCH}"
-    echo "Creating new tag: $NEW_TAG"
-    git tag -a "$NEW_TAG" -m "CI: bump version to $NEW_TAG"
-    echo "Tag created locally: $NEW_TAG"
-    # Try to push tags, but don't fail if we don't have permission
+    NEW_VERSION="${MAJ}.${MIN}.${PATCH}"
+    TAG_NAME="v${NEW_VERSION}"
+    echo "New version: $NEW_VERSION -> tag: $TAG_NAME"
+
+    # Update Cargo.toml so the project file and tag stay in sync
+    echo "Updating Cargo.toml to version $NEW_VERSION"
+    sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml || true
+
+    # Stage and commit Cargo.toml change if any, using CI credentials when available
+    git config --global user.name "GitLab CI/CD"
+    git config --global user.email "gitlab-ci@gitlab.com"
+    git add Cargo.toml || true
+    if git diff --cached --quiet; then
+      echo "No changes to commit for Cargo.toml"
+    else
+      git commit -m "chore: bump version to $NEW_VERSION" || echo "Warning: commit failed"
+      # Try to push the commit back to the branch (may fail if CI token lacks permissions)
+      if [ -n "${CI_JOB_TOKEN:-}" ]; then
+        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with CI_JOB_TOKEN"
+      elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
+        git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with GITLAB_ACCESS_TOKEN"
+      else
+        echo "No CI token available to push commit; commit remains local"
+      fi
+    fi
+
+    # Create the tag if it doesn't already exist
+    echo "Creating tag: $TAG_NAME"
+    if git rev-parse --verify "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+      echo "Tag $TAG_NAME already exists; skipping creation."
+    else
+      git tag -a "$TAG_NAME" -m "CI: bump version to $TAG_NAME"
+      echo "Tag created locally: $TAG_NAME"
+    fi
+
+    # Push the tag if we have a token; otherwise skip pushing tags
     if [ -n "${CI_JOB_TOKEN:-}" ]; then
-      echo "Attempting to push tags using CI_JOB_TOKEN..."
-      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags || echo "Warning: Failed to push tags with CI_JOB_TOKEN (may lack permissions)"
+      echo "Attempting to push tag using CI_JOB_TOKEN..."
+      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "$TAG_NAME" || echo "Warning: Failed to push tag with CI_JOB_TOKEN (may lack permissions)"
     elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
-      echo "Attempting to push tags using GITLAB_ACCESS_TOKEN..."
-      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" --tags || echo "Warning: Failed to push tags with GITLAB_ACCESS_TOKEN"
+      echo "Attempting to push tag using GITLAB_ACCESS_TOKEN..."
+      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "$TAG_NAME" || echo "Warning: Failed to push tag with GITLAB_ACCESS_TOKEN"
     else
       echo "No CI token available to push tags; skipping push"
       echo "To enable automatic tag pushing, set up a GITLAB_ACCESS_TOKEN with write_repository permissions"
     fi
+  needs:
+    - build
+    - fmt
+  only:
+    - branches
+  when: on_success
+
+run_version_docs:
+  stage: tag
+  image: rust:latest
+  before_script:
+    - git --version || true
+    - chmod +x ./version_docs.sh || true
+  script: |
+    set -e
+    # Run the canonical version bump script. This will attempt to commit and push
+    # using CI tokens when available. Run non-interactively.
+    ./version_docs.sh patch --git --push --yes
   needs:
     - build
     - fmt
@@ -165,7 +262,7 @@ release:
   variables:
     CI_COMMIT_MESSAGE: "$CI_COMMIT_MESSAGE"
   before_script:
-    - apt-get update -qq && apt-get install -y -qq git
+    - git --version || true
     - rustc --version
     - cargo --version
   script: |

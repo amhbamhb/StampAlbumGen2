@@ -1,8 +1,5 @@
 [workspace]
-members = [
-    "crates/stamp_album_db",
-    "."
-]
+members = ["crates/stamp_album_db", "."]
 
 [profile.release]
 opt-level = 3
