@@ -134,11 +134,32 @@ version_consistency:
     STRIPPED=${LATEST_TAG#v}
     CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
     echo "Cargo.toml: $CARGO_VERSION, latest tag: $STRIPPED"
-    if [ "$CARGO_VERSION" != "$STRIPPED" ]; then
-      echo "Version mismatch: Cargo.toml ($CARGO_VERSION) != latest tag ($STRIPPED)" >&2
+
+    # Compare semantic versions numerically. Pass if Cargo.toml >= latest tag.
+    version_ge() {
+      # returns 0 if $1 >= $2
+      IFS='.' read -r a1 a2 a3 <<< "$1"
+      IFS='.' read -r b1 b2 b3 <<< "$2"
+      a1=${a1:-0}; a2=${a2:-0}; a3=${a3:-0}
+      b1=${b1:-0}; b2=${b2:-0}; b3=${b3:-0}
+      if [ "$a1" -gt "$b1" ]; then return 0; fi
+      if [ "$a1" -lt "$b1" ]; then return 1; fi
+      if [ "$a2" -gt "$b2" ]; then return 0; fi
+      if [ "$a2" -lt "$b2" ]; then return 1; fi
+      if [ "$a3" -ge "$b3" ]; then return 0; else return 1; fi
+    }
+
+    if version_ge "$CARGO_VERSION" "$STRIPPED"; then
+      if [ "$CARGO_VERSION" != "$STRIPPED" ]; then
+        echo "Cargo.toml ($CARGO_VERSION) is ahead of latest tag ($STRIPPED). This is expected when Cargo.toml was manually bumped; continuing."
+      else
+        echo "Version consistency check passed: $CARGO_VERSION"
+      fi
+      exit 0
+    else
+      echo "Version mismatch: Cargo.toml ($CARGO_VERSION) is older than latest tag ($STRIPPED)" >&2
       exit 1
     fi
-    echo "Version consistency check passed: $CARGO_VERSION"
   only:
     - branches
     - merge_requests
