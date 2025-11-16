@@ -176,9 +176,49 @@ fi
 # Get current version
 CURRENT_VERSION=$(get_current_version)
 echo "Current version: $CURRENT_VERSION"
+# Also read latest tag (if any) and pick the higher of Cargo.toml vs tag as the base
+LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
+STRIPPED_TAG=${LATEST_TAG#v}
+echo "Latest tag (raw): $LATEST_TAG -> stripped: $STRIPPED_TAG"
+
+# normalize version to three numeric parts
+normalize() {
+    local v=$1
+    local a b c
+    a=$(echo "$v" | cut -d. -f1)
+    b=$(echo "$v" | cut -d. -f2)
+    c=$(echo "$v" | cut -d. -f3)
+    a=${a:-0}; b=${b:-0}; c=${c:-0}
+    echo "$a.$b.$c"
+}
+
+norm_cargo=$(normalize "$CURRENT_VERSION")
+norm_tag=$(normalize "$STRIPPED_TAG")
+
+# compare versions numerically: return 0 if v1 >= v2
+version_ge() {
+    local v1=$(normalize "$1")
+    local v2=$(normalize "$2")
+    IFS='.' read -r a1 b1 c1 <<< "$v1"
+    IFS='.' read -r a2 b2 c2 <<< "$v2"
+    if [ "$a1" -gt "$a2" ]; then return 0; fi
+    if [ "$a1" -lt "$a2" ]; then return 1; fi
+    if [ "$b1" -gt "$b2" ]; then return 0; fi
+    if [ "$b1" -lt "$b2" ]; then return 1; fi
+    if [ "$c1" -ge "$c2" ]; then return 0; else return 1; fi
+}
+
+# Use the higher of Cargo.toml and latest tag as base
+if version_ge "$norm_cargo" "$norm_tag"; then
+    BASE_VERSION="$norm_cargo"
+else
+    BASE_VERSION="$norm_tag"
+fi
+
+echo "Base version chosen: $BASE_VERSION"
 
 # Calculate new version
-NEW_VERSION=$(increment_version "$CURRENT_VERSION" "$VERSION_TYPE")
+NEW_VERSION=$(increment_version "$BASE_VERSION" "$VERSION_TYPE")
 echo "New version: $NEW_VERSION"
 echo ""
 
