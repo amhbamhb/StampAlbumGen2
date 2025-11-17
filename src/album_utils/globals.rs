@@ -485,39 +485,41 @@ pub fn write_globals<W: Write>(
             Err(_) => {}
         }
 
-        // Emit a cover page header (page header already added above)
-        let _ = writeln!(
-            writer,
-            "################################################################################"
-        );
-        let _ = writeln!(writer, "### {} ###", album_name);
-        // Ensure cover pages also begin with a row start so the layout is initialized
-        if cfg_row_start_es {
-            let rs_font = cfg
-                .row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(
-                writer,
-                "ROW_START_ES ({} {} {:.1} {:.1})",
-                rs_font, rs_size as i32, rs_spacing, rs_vspace
-            );
-            let _ = writeln!(
-                writer,
-                "################################################################################"
-            );
+        // If flag and coat refer to the same image path, avoid showing both
+        // on the cover (this can happen if a flag isn't available and the
+        // coat file was used as a fallback). Prefer showing the coat only.
+        if let (Some(coat_p), Some(flag_p)) = (coat_path_opt.as_ref(), flag_path_opt.as_ref()) {
+            if coat_p == flag_p {
+                flag_path_opt = None;
+            }
         }
 
+        // Row starts before specific cover elements (coat, flag, name)
+        // are emitted inside each element's handling below so we don't
+        // need to emit a blanket ROW_START_ES here.
+
         // Decide element order. Support cfg.flag_cover_elements as an ordered list of values: "coat", "flag", "name".
-        let elements: Vec<String> = cfg
+        let raw_elements: Vec<String> = cfg
             .flag_cover_elements
             .clone()
             .unwrap_or_else(|| vec!["coat".to_string(), "flag".to_string(), "name".to_string()]);
 
+        // Deduplicate while preserving order so repeated entries in the config
+        // (or accidental duplicates) don't cause duplicate output on the cover.
+        use std::collections::HashSet;
+        let mut seen: HashSet<String> = HashSet::new();
+        let mut elements: Vec<String> = Vec::new();
+        for e in raw_elements.into_iter() {
+            if !seen.contains(&e) {
+                seen.insert(e.clone());
+                elements.push(e);
+            }
+        }
+
+        // Did we obtain any images to show?
         let any_present = coat_path_opt.is_some() || flag_path_opt.is_some();
+        // Track whether the configured element order already includes a name entry
+        let name_included = elements.iter().any(|e| e.as_str() == "name");
         let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
         let after_vspace_default = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
 
@@ -529,47 +531,83 @@ pub fn write_globals<W: Write>(
             match elem.as_str() {
                 "coat" => {
                     if let Some(cp) = coat_path_opt.as_ref() {
-                        let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(40.0);
-                        let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(40.0);
+                        // Emit a row start before the coat (large vertical element)
+                        if cfg_row_start_es {
+                            let rs_font = cfg
+                                .row_start_es_font
+                                .clone()
+                                .unwrap_or_else(|| "HN".to_string());
+                            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                            let _ = writeln!(
+                                writer,
+                                "ROW_START_ES ({} {} {:.1} {:.1})",
+                                rs_font, rs_size as i32, rs_spacing, rs_vspace
+                            );
+                        }
+                        // White background for the coat area
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(white)");
+                        // Use configurable coat dimensions from config, default 80x100
+                        let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(80.0);
+                        let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(100.0);
                         let _ = writeln!(writer, "# Coat of arms for album (if available)");
                         let _ = writeln!(
                             writer,
                             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
                             coat_w, coat_h, cp
                         );
+                        // Small vertical gap after coat
                         let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", 6.0);
                     }
                 }
                 "flag" => {
                     if let Some(fp) = flag_path_opt.as_ref() {
+                        // Emit a small-row_start before the flag (HN 1 as requested)
+                        if cfg_row_start_es {
+                            let rs_font = cfg
+                                .row_start_es_font
+                                .clone()
+                                .unwrap_or_else(|| "HN".to_string());
+                            // Use a tiny font size 1 as requested
+                            let rs_size = 1.0;
+                            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                            let _ = writeln!(
+                                writer,
+                                "ROW_START_ES ({} {} {:.1} {:.1})",
+                                rs_font, rs_size as i32, rs_spacing, rs_vspace
+                            );
+                        }
+                        let _ = writeln!(writer, "# Cover flag image for album");
                         let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
                         let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
-                        let _ = writeln!(writer, "# Cover flag image for album");
-                        let flag_cover_background_color = cfg
-                            .flag_cover_background_color
-                            .clone()
-                            .unwrap_or_else(|| "white".to_string());
-                        let _ = writeln!(
-                            writer,
-                            "COLOR_STAMP_BACKGROUND({})",
-                            flag_cover_background_color
-                        );
                         let _ = writeln!(
                             writer,
                             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
                             img_w, img_h, fp
                         );
-                        let _ = writeln!(
-                            writer,
-                            "COLOR_STAMP_BACKGROUND({})",
-                            cfg.color_stamp_background
-                                .clone()
-                                .unwrap_or_else(|| "white".to_string())
-                        );
+                        // Set stamp background back to black as requested after the flag
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(black)");
+                        // Vertical gap after flag controlled by config
                         let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace_default);
                     }
                 }
                 "name" => {
+                    if cfg_row_start_es {
+                        let rs_font = cfg
+                            .row_start_es_font
+                            .clone()
+                            .unwrap_or_else(|| "HN".to_string());
+                        let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                        let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                        let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                        let _ = writeln!(
+                            writer,
+                            "ROW_START_ES ({} {} {:.1} {:.1})",
+                            rs_font, rs_size as i32, rs_spacing, rs_vspace
+                        );
+                    }
                     let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
                     let _ = writeln!(
                         writer,
@@ -611,33 +649,37 @@ pub fn write_globals<W: Write>(
             );
             let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
         } else {
-            // Text-only cover: large centered title
-            let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
-            let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
-            let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
-            let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
+            // Images were present. Only emit a centered title if the
+            // configured element order did not already include a "name"
+            // element. This avoids printing the name twice.
+            if !name_included {
+                let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
+                let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
+                let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
 
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
-            let rs_font = cfg
-                .row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(
-                writer,
-                "ROW_START_ES ({} {} {:.1} {:.1})",
-                rs_font, rs_size as i32, rs_spacing, rs_vspace
-            );
-            let _ = writeln!(
-                writer,
-                "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
-                title_size as i32,
-                album_name.replace("\\n", " ")
-            );
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+                let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+                let rs_font = cfg
+                    .row_start_es_font
+                    .clone()
+                    .unwrap_or_else(|| "HN".to_string());
+                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
+                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
+                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
+                let _ = writeln!(
+                    writer,
+                    "ROW_START_ES ({} {} {:.1} {:.1})",
+                    rs_font, rs_size as i32, rs_spacing, rs_vspace
+                );
+                let _ = writeln!(
+                    writer,
+                    "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
+                    title_size as i32,
+                    album_name.replace("\\n", " ")
+                );
+                let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+            }
         }
+
         // After cover, emit a page separator so normal globals follow
         let _ = writeln!(
             writer,
