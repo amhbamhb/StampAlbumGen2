@@ -174,6 +174,13 @@ pub struct Config {
     pub flag_cover_img_h_mm: Option<f32>,
     pub flag_cover_page_vspace_top: Option<f32>,
     pub flag_cover_image_vspace_after: Option<f32>,
+    // Order and optional elements for the flag cover page. Example in config.toml:
+    // flag_cover_elements = ["coat", "flag", "name"]
+    // If omitted, the default order is ["coat","flag","name"].
+    pub flag_cover_elements: Option<Vec<String>>,
+    // Optional size for the coat of arms image on the cover (mm)
+    pub flag_cover_coat_img_w_mm: Option<f32>,
+    pub flag_cover_coat_img_h_mm: Option<f32>,
     pub flag_cover_image_title_font: Option<String>,
     pub flag_cover_image_title_size: Option<f32>,
     pub flag_cover_image_title_scale: Option<f32>,

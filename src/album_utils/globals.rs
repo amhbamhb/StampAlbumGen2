@@ -455,11 +455,11 @@ pub fn write_globals<W: Write>(
         // Write a simple cover block after the standard globals so it appears
         // below the STAMP_BOXES_SIZE_ADJUST section as requested.
         let album_images_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-        // Try to fetch/copy a flag image (size w320). If this fails we ignore the error.
+        // Try to fetch/copy a flag image (size w320) and coat of arms. If these fail we ignore the error.
         let mut flag_path_opt: Option<String> = None;
+        let mut coat_path_opt: Option<String> = None;
         match crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
             Ok(p) => {
-                // convert to relative path under album dir if possible
                 if let Some(fname) = std::path::Path::new(&p)
                     .file_name()
                     .and_then(|s| s.to_str())
@@ -469,9 +469,20 @@ pub fn write_globals<W: Write>(
                     flag_path_opt = Some(p);
                 }
             }
-            Err(_) => {
-                // no flag available; proceed with textual cover only
+            Err(_) => {}
+        }
+        match crate::flagdb::copy_coa_for_album(album_name, &album_images_dir) {
+            Ok(p) => {
+                if let Some(fname) = std::path::Path::new(&p)
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                {
+                    coat_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    coat_path_opt = Some(p);
+                }
             }
+            Err(_) => {}
         }
 
         // Emit a cover page header (page header already added above)
@@ -499,19 +510,87 @@ pub fn write_globals<W: Write>(
                 "################################################################################"
             );
         }
-        // If we have a flag image, emit it as a large image entry on the cover.
-        if let Some(fp) = flag_path_opt.as_ref() {
-            // Use flag_cover_* config values if provided, otherwise fall back to
-            // the previously hard-coded numbers so behavior is unchanged.
-            let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
-            let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
-            let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
-            let after_vspace = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
 
-            // Emit a large image placeholder (AlbumEasy consumer will scale)
+        // Decide element order. Support cfg.flag_cover_elements as an ordered list of values: "coat", "flag", "name".
+        let elements: Vec<String> = cfg
+            .flag_cover_elements
+            .clone()
+            .unwrap_or_else(|| vec!["coat".to_string(), "flag".to_string(), "name".to_string()]);
+
+        let any_present = coat_path_opt.is_some() || flag_path_opt.is_some();
+        let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
+        let after_vspace_default = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
+
+        if any_present {
             let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+        }
 
-            // Use configured ROW_START_ES params for cover image block
+        for elem in elements.iter() {
+            match elem.as_str() {
+                "coat" => {
+                    if let Some(cp) = coat_path_opt.as_ref() {
+                        let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(40.0);
+                        let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(40.0);
+                        let _ = writeln!(writer, "# Coat of arms for album (if available)");
+                        let _ = writeln!(
+                            writer,
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
+                            coat_w, coat_h, cp
+                        );
+                        let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", 6.0);
+                    }
+                }
+                "flag" => {
+                    if let Some(fp) = flag_path_opt.as_ref() {
+                        let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
+                        let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
+                        let _ = writeln!(writer, "# Cover flag image for album");
+                        let flag_cover_background_color = cfg
+                            .flag_cover_background_color
+                            .clone()
+                            .unwrap_or_else(|| "white".to_string());
+                        let _ = writeln!(
+                            writer,
+                            "COLOR_STAMP_BACKGROUND({})",
+                            flag_cover_background_color
+                        );
+                        let _ = writeln!(
+                            writer,
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
+                            img_w, img_h, fp
+                        );
+                        let _ = writeln!(
+                            writer,
+                            "COLOR_STAMP_BACKGROUND({})",
+                            cfg.color_stamp_background
+                                .clone()
+                                .unwrap_or_else(|| "white".to_string())
+                        );
+                        let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace_default);
+                    }
+                }
+                "name" => {
+                    let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
+                    let _ = writeln!(
+                        writer,
+                        "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
+                        title_size as i32,
+                        album_name.replace("\\n", " ")
+                    );
+                }
+                _ => {}
+            }
+        }
+
+        // If nothing was present, fall back to the previous text-only cover behavior
+        if !any_present {
+            // Text-only cover: large centered title
+            let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
+            let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
+            let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
+            let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
+
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
             let rs_font = cfg
                 .row_start_es_font
                 .clone()
@@ -524,47 +603,13 @@ pub fn write_globals<W: Write>(
                 "ROW_START_ES ({} {} {:.1} {:.1})",
                 rs_font, rs_size as i32, rs_spacing, rs_vspace
             );
-            let _ = writeln!(writer, "# Cover flag image for album");
-            let flag_cover_background_color = cfg
-                .flag_cover_background_color
-                .clone()
-                .unwrap_or_else(|| "white".to_string());
-            let _ = writeln!(
-                writer,
-                "COLOR_STAMP_BACKGROUND({})",
-                flag_cover_background_color
-            );
-            let _ = writeln!(writer, "# Change background for flag if needed");
-
-            let _ = writeln!(
-                writer,
-                "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
-                img_w, img_h, fp
-            );
-            let _ = writeln!(
-                writer,
-                "# Change the color background back to default after flag"
-            );
-            let _ = writeln!(
-                writer,
-                "COLOR_STAMP_BACKGROUND({})",
-                cfg.color_stamp_background
-                    .clone()
-                    .unwrap_or_else(|| "white".to_string())
-            );
-
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
-
-            // Title parameters for image cover
-            let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
-            // scale is not directly used by AlbumEasy; keep for downstream consumers
-            let _title_scale = cfg.flag_cover_image_title_scale.unwrap_or(1.0);
             let _ = writeln!(
                 writer,
                 "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
                 title_size as i32,
                 album_name.replace("\\n", " ")
             );
+            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
         } else {
             // Text-only cover: large centered title
             let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);

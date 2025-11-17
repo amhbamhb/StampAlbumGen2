@@ -82,6 +82,8 @@ Notes and recommendations
 - Avoid force-updating remote tags unless you have a strict policy and approvals; force-updates are dangerous for downstream consumers.
 - Keep `version_docs.sh` as the canonical script for local/manual bumps; CI contains a small bump implementation too but both now follow the same normalization rules.
 
+- Version-consistency behavior note: The CI `version_consistency` job was made tolerant so that a repository version in `Cargo.toml` that is ahead of the latest remote tag (for example when a developer manually bumped the file) will not fail the pipeline. The job will only fail when `Cargo.toml` is older than the latest tag (a real inconsistency). This avoids spurious failures on feature branches while still catching cases where the project file lags behind released tags. If you prefer strict equality on release branches (e.g., `main`/`master`), we can enforce an exact-match check for those protected refs.
+
 Questions or customizations
 
 - If you want the pipeline to always pick the next free patch number automatically (even across race conditions), we can add an optimistic lock step or use the GitLab API to create release and handle conflicts explicitly.

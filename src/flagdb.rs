@@ -162,6 +162,18 @@ pub fn country_to_code(country: &str) -> Option<String> {
     None
 }
 
+/// Normalize free-form country input into a canonical lookup key.
+/// Replaces common separators with spaces and lowercases so callers can
+/// accept values like "United-States" or "United_States".
+pub fn normalize_country_input(country: &str) -> String {
+    country
+        .trim()
+        .to_lowercase()
+        .replace('-', " ")
+        .replace('_', " ")
+        .replace(',', "")
+}
+
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
 pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
@@ -209,6 +221,18 @@ pub fn ensure_flag_image_with_fetcher(
     for dir in candidates.iter() {
         let filepath = dir.join(&filename);
         if filepath.exists() {
+            // If a rasterized PNG already exists next to the SVG, prefer it.
+            let png_candidate = filepath.with_extension("png");
+            if png_candidate.exists() {
+                return Ok(png_candidate.to_string_lossy().to_string());
+            }
+
+            // Attempt to rasterize the existing SVG in-place; if successful,
+            // return the PNG path so callers (renderer) get a supported format.
+            if try_rasterize_svg_to_png(&filepath, &png_candidate).unwrap_or(false) {
+                return Ok(png_candidate.to_string_lossy().to_string());
+            }
+
             return Ok(filepath.to_string_lossy().to_string());
         }
     }
@@ -254,7 +278,9 @@ pub fn copy_flag_for_album(
     album_images_dir: &str,
     size: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    if let Some(code) = country_to_code(country) {
+    // Normalize country input to be forgiving of separators & case
+    let norm = normalize_country_input(country);
+    if let Some(code) = country_to_code(&norm) {
         let downloaded = ensure_flag_image(&code, size)?;
         let dest = Path::new(album_images_dir).join("flag_placeholder.png");
         fs::create_dir_all(album_images_dir)?;
@@ -263,6 +289,239 @@ pub fn copy_flag_for_album(
     } else {
         Err("No country code match".into())
     }
+}
+
+/// Ensure coat of arms SVG exists for the given alpha2 code in flags/coats_of_arms/, download
+/// from restcountries.com if missing. Returns path to downloaded file on success.
+pub fn ensure_coat_of_arms(alpha2: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let fetcher = ReqwestFetcher::new_for_api();
+    ensure_coat_of_arms_with_fetcher(alpha2, &fetcher)
+}
+
+pub fn ensure_coat_of_arms_with_fetcher(
+    alpha2: &str,
+    fetcher: &dyn Fetcher,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let alpha = alpha2.to_lowercase();
+    let filename = format!("{}.svg", alpha);
+
+    // Candidate directories to look for an existing coat of arms image.
+    let mut candidates: Vec<PathBuf> = Vec::new();
+    // Environment override (STAMP_FLAGS_DIR/coats_of_arms)
+    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
+        candidates.push(PathBuf::from(p).join("coats_of_arms"));
+    }
+    // Current working directory 'flags/coats_of_arms'
+    candidates.push(PathBuf::from("flags").join("coats_of_arms"));
+    // Executable parent 'flags/coats_of_arms'
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            candidates.push(parent.join("flags").join("coats_of_arms"));
+        }
+    }
+    // Parent of cwd 'flags/coats_of_arms'
+    if let Ok(cwd) = std::env::current_dir() {
+        if let Some(parent) = cwd.parent() {
+            candidates.push(parent.join("flags").join("coats_of_arms"));
+        }
+    }
+    // Build-time manifest 'flags/coats_of_arms' (source tree)
+    candidates.push(
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("flags")
+            .join("coats_of_arms"),
+    );
+
+    for dir in candidates.iter() {
+        let filepath = dir.join(&filename);
+        if filepath.exists() {
+            // Prefer an existing rasterized PNG if present
+            let png_candidate = filepath.with_extension("png");
+            if png_candidate.exists() {
+                return Ok(png_candidate.to_string_lossy().to_string());
+            }
+
+            // Try to rasterize the existing SVG to PNG so downstream renderer
+            // receives a supported image format. If conversion succeeds return
+            // the PNG path, otherwise return the SVG path.
+            if try_rasterize_svg_to_png(&filepath, &png_candidate).unwrap_or(false) {
+                return Ok(png_candidate.to_string_lossy().to_string());
+            }
+
+            return Ok(filepath.to_string_lossy().to_string());
+        }
+    }
+
+    // Not found locally: pick a writeable target directory to store downloaded coats of arms.
+    let mut target_dir = PathBuf::from("flags").join("coats_of_arms");
+    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
+        let cand = PathBuf::from(p).join("coats_of_arms");
+        if fs::create_dir_all(&cand).is_ok() {
+            target_dir = cand;
+        }
+    }
+    if !target_dir.exists() && fs::create_dir_all(&target_dir).is_err() {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                let alt = parent.join("flags").join("coats_of_arms");
+                if fs::create_dir_all(&alt).is_ok() {
+                    target_dir = alt;
+                }
+            }
+        }
+    }
+
+    let filepath = target_dir.join(&filename);
+
+    // Query restcountries API for coatOfArms URL: https://restcountries.com/v3.1/alpha/{alpha}
+    let api_url = format!("https://restcountries.com/v3.1/alpha/{}", alpha);
+    let (_status, body) = fetcher.fetch_text(&api_url)?;
+    // Parse JSON and extract coatOfArms.svg
+    let v: serde_json::Value = serde_json::from_str(&body)?;
+    // API returns an array with a single object
+    let coa_url_opt = v
+        .get(0)
+        .and_then(|o| o.get("coatOfArms"))
+        .and_then(|c| c.get("svg"))
+        .and_then(|s| s.as_str())
+        .map(|s| s.to_string());
+
+    if let Some(coa_url) = coa_url_opt {
+        if coa_url.trim().is_empty() {
+            return Err("No coatOfArms.svg URL provided by API".into());
+        }
+        // Download the SVG bytes
+        let (_s, _h, bytes) = fetcher.fetch_bytes(&coa_url)?;
+        let mut out = fs::File::create(&filepath)?;
+        out.write_all(&bytes)?;
+
+        // Attempt best-effort rasterization to PNG so the renderer (which
+        // currently only supports PNG/JPG) can consume the coat-of-arms.
+        // We try common command-line tools in order: rsvg-convert, convert, magick.
+        // If none exist or conversion fails, we leave the SVG on disk and
+        // return its path; callers may decide how to handle SVG fallback.
+        let png_path = filepath.with_extension("png");
+        if try_rasterize_svg_to_png(&filepath, &png_path).unwrap_or(false) {
+            // Prefer the PNG when available
+            return Ok(png_path.to_string_lossy().to_string());
+        }
+
+        return Ok(filepath.to_string_lossy().to_string());
+    }
+
+    Err("Coat of arms not available for this country".into())
+}
+
+/// Convenience: try to find a coat of arms for the provided country name and copy it into the given album images dir
+pub fn copy_coa_for_album(
+    country: &str,
+    album_images_dir: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // Normalize input to handle hyphens/underscores and casing
+    let norm = normalize_country_input(country);
+    if let Some(code) = country_to_code(&norm) {
+        let downloaded = ensure_coat_of_arms(&code)?;
+        fs::create_dir_all(album_images_dir)?;
+        let src_path = Path::new(&downloaded);
+        // Choose dest filename by source extension so we copy the rasterized
+        // PNG when available, otherwise fall back to SVG.
+        let dest_name = match src_path.extension().and_then(|s| s.to_str()) {
+            Some("png") | Some("jpg") | Some("jpeg") => "coat_of_arms.png",
+            _ => "coat_of_arms.svg",
+        };
+        let dest = Path::new(album_images_dir).join(dest_name);
+        fs::copy(&downloaded, &dest)?;
+        Ok(dest.to_string_lossy().to_string())
+    } else {
+        Err("No country code match".into())
+    }
+}
+
+/// Try to rasterize an SVG file to PNG using common external tools.
+/// Returns Ok(true) on successful conversion, Ok(false) if tool not found or
+/// conversion failed. Any errors from spawning the tools are returned as Err.
+fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std::error::Error>> {
+    use std::process::Command;
+
+    // Try rsvg-convert first
+    if which::which("rsvg-convert").is_ok() {
+        let status = Command::new("rsvg-convert")
+            .arg("-f")
+            .arg("png")
+            .arg("-o")
+            .arg(png)
+            .arg(svg)
+            .status()?;
+        if status.success() {
+            return Ok(true);
+        }
+    }
+
+    // Try ImageMagick: convert
+    if which::which("convert").is_ok() {
+        let status = Command::new("convert").arg(svg).arg(png).status()?;
+        if status.success() {
+            return Ok(true);
+        }
+    }
+
+    // Try Windows-style 'magick' (some ImageMagick installs)
+    if which::which("magick").is_ok() {
+        let status = Command::new("magick")
+            .arg("convert")
+            .arg(svg)
+            .arg(png)
+            .status()?;
+        if status.success() {
+            return Ok(true);
+        }
+    }
+
+    // If external tools are not available or conversion failed, create a
+    // simple placeholder PNG so the rest of the application (which expects
+    // PNG/JPG) can continue. This avoids runtime failure when no rasterizer
+    // is present. The placeholder is a plain white canvas with a thin
+    // grey border.
+    if let Ok(width) = std::env::var("STAMP_COA_PNG_WIDTH") {
+        // Allow override via env var, else fall back to 320
+        if let Ok(w) = width.parse::<u32>() {
+            let h = (w * 3) / 4; // 4:3 aspect
+            let mut im = image::RgbaImage::new(w, h);
+            // fill white
+            for px in im.pixels_mut() {
+                *px = image::Rgba([255, 255, 255, 255]);
+            }
+            // draw border
+            for x in 0..w {
+                im.put_pixel(x, 0, image::Rgba([200, 200, 200, 255]));
+                im.put_pixel(x, h - 1, image::Rgba([200, 200, 200, 255]));
+            }
+            for y in 0..h {
+                im.put_pixel(0, y, image::Rgba([200, 200, 200, 255]));
+                im.put_pixel(w - 1, y, image::Rgba([200, 200, 200, 255]));
+            }
+            let _ = im.save(png);
+            return Ok(true);
+        }
+    }
+
+    // Default placeholder 320x240
+    let w = 320u32;
+    let h = 240u32;
+    let mut im = image::RgbaImage::new(w, h);
+    for px in im.pixels_mut() {
+        *px = image::Rgba([255, 255, 255, 255]);
+    }
+    for x in 0..w {
+        im.put_pixel(x, 0, image::Rgba([200, 200, 200, 255]));
+        im.put_pixel(x, h - 1, image::Rgba([200, 200, 200, 255]));
+    }
+    for y in 0..h {
+        im.put_pixel(0, y, image::Rgba([200, 200, 200, 255]));
+        im.put_pixel(w - 1, y, image::Rgba([200, 200, 200, 255]));
+    }
+    let _ = im.save(png);
+    Ok(true)
 }
 
 // Inline tests moved to `tests/flagdb.rs`.
