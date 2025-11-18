@@ -561,7 +561,9 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
             final_img.save(png)?;
             Ok(true)
         })() {
-            Ok(true) => return Ok(true),
+            Ok(true) => {
+                return Ok(true);
+            }
             Ok(false) => { /* continue to fallback methods */ }
             Err(e) => {
                 // If resvg path failed, continue to try external tools below.
@@ -577,13 +579,13 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
     if which::which("rsvg-convert").is_ok() {
         // Attempt to determine a target and upscale similar to the resvg path.
         if let Ok(svg_bytes) = std::fs::read(svg) {
-            if let Ok(tree) = {
+            if let Ok(tree) = ({
                 let mut opt = usvg::Options::default();
                 if let Some(parent) = svg.parent() {
                     opt.resources_dir = Some(parent.to_path_buf());
                 }
                 usvg::Tree::from_data(&svg_bytes, &opt)
-            } {
+            }) {
                 let svg_w = tree.size.width();
                 let svg_h = tree.size.height();
                 if svg_w > 0.0 && svg_h > 0.0 {
@@ -711,3 +713,38 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
 }
 
 // Inline tests moved to `tests/flagdb.rs`.
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    #[test]
+    fn test_try_rasterize_svg_to_png_roundtrip() {
+        // Create a minimal SVG file and a target PNG path in a temp dir.
+        let dir = tempdir().expect("tempdir");
+        let svg_path = dir.path().join("test_coa.svg");
+        let png_path = dir.path().join("test_coa.png");
+
+        let svg_content = r#"<?xml version='1.0' encoding='UTF-8'?>
+<svg xmlns='http://www.w3.org/2000/svg' width='200' height='160'>
+    <rect width='200' height='160' fill='#ffffff'/>
+    <circle cx='100' cy='80' r='60' fill='#008000' />
+    <text x='100' y='85' font-size='24' text-anchor='middle' fill='#ffffff'>CA</text>
+</svg>"#;
+
+        let mut f = std::fs::File::create(&svg_path).expect("create svg");
+        f.write_all(svg_content.as_bytes()).expect("write svg");
+
+        // Ensure the function returns Ok(true) and the PNG is created.
+        let res = try_rasterize_svg_to_png(&svg_path, &png_path).expect("rasterize result");
+        assert!(res, "rasterizer should return true");
+        assert!(png_path.exists(), "png output should exist");
+
+        // Basic sanity: image crate can open it and has non-zero dimensions
+        let img = image::open(&png_path).expect("open png");
+        let (w, h) = img.dimensions();
+        assert!(w > 0 && h > 0, "output image has non-zero dimensions");
+    }
+}
