@@ -12,6 +12,7 @@ use rusqlite::Connection;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use crate::album_globals::generator_new::layout as layout;
 
 // AlbumEasy Output Generation
 // ===================// This section contains the main entry point and helpers for generating AlbumEasy output.
@@ -198,14 +199,7 @@ where
     let starting_page_number = pages_from_globals + 1;
 
     // Emit page header for first stamp page
-    let _ = writeln!(output, "### Page {} - Stamps ###", starting_page_number);
-    let _ = writeln!(output, "PAGE_START");
-    let _ = emit_row_start_es(&mut output, Some(&config));
-
-    let _ = writeln!(
-        output,
-        "################################################################################"
-    );
+    let _ = crate::album_globals::generator_new::layout::write_stamp_page_header(&mut output, starting_page_number, &config);
     // Compute usable height via shared helper (centralizes margins/borders/padding)
     let usable_height = compute_usable_height(&config);
     // Allow a configurable conservative buffer (mm) to reserve footer/decoration space.
@@ -966,16 +960,9 @@ where
                 // syntax issues during the merge. We keep the simpler
                 // conservative page-fit check instead.
                 if force_new_page {
-                    // start a new page: increment counter and emit header
-                    page_counter += 1;
-                    if page_counter > 1 {
-                        let _ = writeln!(output, "\n################################################################################");
-                    }
-                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                    let _ = writeln!(output, "PAGE_START");
-                    let _ = emit_row_start_es(&mut output, Some(&config));
+                    // start a new page using the centralized layout helper
+                    let _ = crate::album_globals::generator_new::layout::start_stamp_page(&mut output, &mut page_counter, &config);
 
-                    let _ = writeln!(output, "################################################################################");
                     current_height = 0.0;
                     rows_on_page = 0;
                     // debug!("Forced page break before header and first row");
@@ -1188,14 +1175,9 @@ where
                     next_total_header_and_row_height + conservative_buffer;
                 // If emitting this row then the next series' header+first-row won't fit,
                 // force a page break now so the next series can start cleanly.
-                if current_height + total_row_height + next_conservative_needed > usable_height {
-                    page_counter += 1;
-                    let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                    let _ = writeln!(output, "PAGE_START");
-                    let _ = emit_row_start_es(&mut output, Some(&config));
+                    if current_height + total_row_height + next_conservative_needed > usable_height {
+                    let _ = crate::album_globals::generator_new::layout::start_stamp_page(&mut output, &mut page_counter, &config);
 
-                    let _ = writeln!(output, "################################################################################");
                     current_height = 0.0;
                     header_written = false;
                     rows_on_page = 0;
@@ -1227,12 +1209,10 @@ where
                     let percent_of_usable = total_row_height / effective_usable;
                     if rows_on_page != 0 && !(allow_single && percent_of_usable >= threshold) {
                         page_counter += 1;
-                        let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                        let _ = writeln!(output, "PAGE_START");
-                        let _ = emit_row_start_es(&mut output, Some(&config));
-
-                        let _ = writeln!(output, "################################################################################");
+                        // use the new layout helper which expects a mutable page counter
+                        let mut pc = page_counter;
+                        let _ = layout::start_stamp_page(&mut output, &mut pc, &config);
+                        page_counter = pc;
                         current_height = 0.0;
                         header_written = false;
                         rows_on_page = 0;
@@ -1241,12 +1221,10 @@ where
                         // We will allow the oversized row to be emitted as a
                         // single-row page: start a fresh page and let it emit.
                         page_counter += 1;
-                        let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                        let _ = writeln!(output, "PAGE_START");
-                        let _ = emit_row_start_es(&mut output, Some(&config));
+                        let mut pc = page_counter;
+                        let _ = layout::start_stamp_page(&mut output, &mut pc, &config);
+                        page_counter = pc;
 
-                        let _ = writeln!(output, "################################################################################");
                         current_height = 0.0;
                         header_written = false;
                         rows_on_page = 0;
@@ -1256,13 +1234,9 @@ where
                     // infinite loop of empty page headers.
                 } else {
                     // Start new page and repeat header then re-check on next loop
-                    page_counter += 1;
-                    let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                    let _ = writeln!(output, "PAGE_START");
-                    let _ = emit_row_start_es(&mut output, Some(&config));
-
-                    let _ = writeln!(output, "################################################################################");
+                    // Centralize page header emission through the layout helper so
+                    // future refactors only need to update one place.
+                    let _ = layout::start_stamp_page(&mut output, &mut page_counter, &config);
                     current_height = 0.0;
                     header_written = false;
                     rows_on_page = 0;
@@ -1290,13 +1264,10 @@ where
                 // content can be emitted there; otherwise allow emission.
                 if needed_if_emitted > usable_height {
                     if rows_on_page != 0 {
-                        page_counter += 1;
-                        let _ = writeln!(output, "\n################################################################################");
-                        let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                        let _ = writeln!(output, "PAGE_START");
-                        let _ = emit_row_start_es(&mut output, Some(&config));
-
-                        let _ = writeln!(output, "################################################################################");
+                        // Start a fresh stamp page using the centralized layout helper.
+                        // `start_stamp_page` will increment the page counter and
+                        // emit the standard header and separators.
+                        let _ = layout::start_stamp_page(&mut output, &mut page_counter, &config);
                         current_height = 0.0;
                         header_written = false;
                         rows_on_page = 0;
@@ -1305,13 +1276,9 @@ where
                     }
                 } else if current_height + needed_if_emitted > usable_height {
                     // Normal case: header+row would overflow current page; force a new page now
-                    page_counter += 1;
-                    let _ = writeln!(output, "\n################################################################################");
-                    let _ = writeln!(output, "### Page {} - Stamps ###", page_counter);
-                    let _ = writeln!(output, "PAGE_START");
-                    let _ = emit_row_start_es(&mut output, Some(&config));
-
-                    let _ = writeln!(output, "################################################################################");
+                    // Use the centralized helper which increments the page counter
+                    // and emits the standard header/separators and ROW_START_ES.
+                    let _ = layout::start_stamp_page(&mut output, &mut page_counter, &config);
                     current_height = 0.0;
                     header_written = false;
                     rows_on_page = 0;
@@ -1321,13 +1288,13 @@ where
             }
             // If we have a pending header, write it now (we are about to
             // emit the first row for this series on the current page).
-            if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
+                if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
                 // Use configurable marker so tests/tools can detect the vspace
                 let pv_marker = config
                     .page_vspace_marker
                     .clone()
                     .unwrap_or_else(|| "6".to_string());
-                let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
+                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(&mut output, &pv_marker);
                 current_height += v_before;
                 // header vspace written (diagnostics suppressed)
                 for (line, h) in pending_lines {
@@ -1339,7 +1306,7 @@ where
                     .page_vspace_marker
                     .clone()
                     .unwrap_or_else(|| "6".to_string());
-                let _ = writeln!(output, "PAGE_VSPACE ({})", pv_marker);
+                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(&mut output, &pv_marker);
                 current_height += v_after;
                 // header vspace after written (diagnostics suppressed)
                 header_written = true;
@@ -2243,11 +2210,7 @@ fn center_tmp_pages(
                     // Only emit a top gap when we are not suppressing it
                     // due to an explicit header (see effective_base_gaps).
                     if gap_mm > 0.0 && !(series_count == 0 && has_page_header) {
-                        let s = if gap_mm.fract().abs() < 0.001 {
-                            format!("PAGE_VSPACE ({:.0})", gap_mm)
-                        } else {
-                            format!("PAGE_VSPACE ({:.1})", gap_mm)
-                        };
+                        let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
                         out_lines.push(s);
                     }
                     continue;
@@ -2263,11 +2226,7 @@ fn center_tmp_pages(
                 if trimmed.starts_with("ROW_START_ES") {
                     if let Some(first_row_idx) = all_row_indices.first() {
                         if j != *first_row_idx && per_row_gap > 0.0 {
-                            let s = if per_row_gap.fract().abs() < 0.001 {
-                                format!("PAGE_VSPACE ({:.0})", per_row_gap)
-                            } else {
-                                format!("PAGE_VSPACE ({:.1})", per_row_gap)
-                            };
+                            let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(per_row_gap);
                             out_lines.push(s);
                         }
                     }
@@ -2277,11 +2236,7 @@ fn center_tmp_pages(
                     if series_row_indices.contains(&j) {
                         if let Some(pos) = series_row_indices.iter().position(|&x| x == j) {
                             if pos > 0 && gap_mm > 0.0 {
-                                let s = if gap_mm.fract().abs() < 0.001 {
-                                    format!("PAGE_VSPACE ({:.0})", gap_mm)
-                                } else {
-                                    format!("PAGE_VSPACE ({:.1})", gap_mm)
-                                };
+                                let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
                                 out_lines.push(s);
                             }
                         }
@@ -2295,11 +2250,7 @@ fn center_tmp_pages(
             // so the extra space is used symmetrically (top + bottom +
             // any between-series gaps).
             if gap_mm > 0.0 {
-                let s = if gap_mm.fract().abs() < 0.001 {
-                    format!("PAGE_VSPACE ({:.0})", gap_mm)
-                } else {
-                    format!("PAGE_VSPACE ({:.1})", gap_mm)
-                };
+                let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
                 out_lines.push(s);
             }
         } else {

@@ -1,6 +1,7 @@
 use crate::wikipedia::ContentSource;
 use log::info;
 use std::io::Write;
+use crate::album_globals::generator_new::layout as layout;
 
 /// Writes global AlbumEasy header information to the output stream
 pub fn write_globals<W: Write>(
@@ -386,22 +387,11 @@ pub fn write_globals<W: Write>(
         let trimmed = line.trim();
         if trimmed.starts_with("PAGE_") {
             if !last_was_page_start {
-                let _ = writeln!(writer, "PAGE_START");
+                let _ = layout::write_page_start(writer);
                 // Ensure page sections begin with a row start when enabled
                 if cfg_row_start_es {
-                    // Emit ROW_START_ES using config params
-                    let rs_font = cfg
-                        .row_start_es_font
-                        .clone()
-                        .unwrap_or_else(|| "HN".to_string());
-                    let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                    let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                    let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                    let _ = writeln!(
-                        writer,
-                        "ROW_START_ES ({} {} {:.1} {:.1})",
-                        rs_font, rs_size as i32, rs_spacing, rs_vspace
-                    );
+                    // Use centralized helper to emit ROW_START_ES
+                    let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                 }
                 last_was_page_start = true;
             }
@@ -412,21 +402,10 @@ pub fn write_globals<W: Write>(
 
         // If the line itself is an explicit PAGE_START, write it and set the flag
         if trimmed == "PAGE_START" {
-            let _ = writeln!(writer, "{}", line);
+            let _ = layout::write_page_start(writer);
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
             if cfg_row_start_es {
-                let rs_font = cfg
-                    .row_start_es_font
-                    .clone()
-                    .unwrap_or_else(|| "HN".to_string());
-                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = writeln!(
-                    writer,
-                    "ROW_START_ES ({} {} {:.1} {:.1})",
-                    rs_font, rs_size as i32, rs_spacing, rs_vspace
-                );
+                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
             }
             last_was_page_start = true;
             continue;
@@ -451,7 +430,7 @@ pub fn write_globals<W: Write>(
         );
         let _ = writeln!(writer, "### Page {} ###", page_counter);
         let _ = writeln!(writer, "### {} Flag ###", album_name);
-        let _ = writeln!(writer, "PAGE_START");
+        let _ = layout::write_page_start(writer);
         // Write a simple cover block after the standard globals so it appears
         // below the STAMP_BOXES_SIZE_ADJUST section as requested.
         let album_images_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
@@ -524,7 +503,7 @@ pub fn write_globals<W: Write>(
         let after_vspace_default = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
 
         if any_present {
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+            let _ = layout::write_page_vspace(writer, top_vspace as f64);
         }
 
         for elem in elements.iter() {
@@ -533,18 +512,7 @@ pub fn write_globals<W: Write>(
                     if let Some(cp) = coat_path_opt.as_ref() {
                         // Emit a row start before the coat (large vertical element)
                         if cfg_row_start_es {
-                            let rs_font = cfg
-                                .row_start_es_font
-                                .clone()
-                                .unwrap_or_else(|| "HN".to_string());
-                            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                            let _ = writeln!(
-                                writer,
-                                "ROW_START_ES ({} {} {:.1} {:.1})",
-                                rs_font, rs_size as i32, rs_spacing, rs_vspace
-                            );
+                            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                         }
                         // White background for the coat area
                         let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(white)");
@@ -558,26 +526,14 @@ pub fn write_globals<W: Write>(
                             coat_w, coat_h, cp
                         );
                         // Small vertical gap after coat
-                        let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", 6.0);
+                        let _ = layout::write_page_vspace(writer, 6.0_f64);
                     }
                 }
                 "flag" => {
                     if let Some(fp) = flag_path_opt.as_ref() {
                         // Emit a small-row_start before the flag (HN 1 as requested)
                         if cfg_row_start_es {
-                            let rs_font = cfg
-                                .row_start_es_font
-                                .clone()
-                                .unwrap_or_else(|| "HN".to_string());
-                            // Use a tiny font size 1 as requested
-                            let rs_size = 1.0;
-                            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                            let _ = writeln!(
-                                writer,
-                                "ROW_START_ES ({} {} {:.1} {:.1})",
-                                rs_font, rs_size as i32, rs_spacing, rs_vspace
-                            );
+                            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                         }
                         let _ = writeln!(writer, "# Cover flag image for album");
                         let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
@@ -590,23 +546,12 @@ pub fn write_globals<W: Write>(
                         // Set stamp background back to black as requested after the flag
                         let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(black)");
                         // Vertical gap after flag controlled by config
-                        let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace_default);
+                        let _ = layout::write_page_vspace(writer, after_vspace_default as f64);
                     }
                 }
                 "name" => {
                     if cfg_row_start_es {
-                        let rs_font = cfg
-                            .row_start_es_font
-                            .clone()
-                            .unwrap_or_else(|| "HN".to_string());
-                        let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                        let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                        let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                        let _ = writeln!(
-                            writer,
-                            "ROW_START_ES ({} {} {:.1} {:.1})",
-                            rs_font, rs_size as i32, rs_spacing, rs_vspace
-                        );
+                        let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                     }
                     let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
                     let _ = writeln!(
@@ -628,26 +573,15 @@ pub fn write_globals<W: Write>(
             let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
             let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
 
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
-            let rs_font = cfg
-                .row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(
-                writer,
-                "ROW_START_ES ({} {} {:.1} {:.1})",
-                rs_font, rs_size as i32, rs_spacing, rs_vspace
-            );
+            let _ = layout::write_page_vspace(writer, top_vspace as f64);
+            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
             let _ = writeln!(
                 writer,
                 "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
                 title_size as i32,
                 album_name.replace("\\n", " ")
             );
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+            let _ = layout::write_page_vspace(writer, after_vspace as f64);
         } else {
             // Images were present. Only emit a centered title if the
             // configured element order did not already include a "name"
@@ -657,26 +591,15 @@ pub fn write_globals<W: Write>(
                 let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
                 let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
 
-                let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
-                let rs_font = cfg
-                    .row_start_es_font
-                    .clone()
-                    .unwrap_or_else(|| "HN".to_string());
-                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = writeln!(
-                    writer,
-                    "ROW_START_ES ({} {} {:.1} {:.1})",
-                    rs_font, rs_size as i32, rs_spacing, rs_vspace
-                );
+                let _ = layout::write_page_vspace(writer, top_vspace as f64);
+                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                 let _ = writeln!(
                     writer,
                     "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
                     title_size as i32,
                     album_name.replace("\\n", " ")
                 );
-                let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+                let _ = layout::write_page_vspace(writer, after_vspace as f64);
             }
         }
 
@@ -732,22 +655,12 @@ fn add_wikipedia_section<W: Write>(
 
             let _ = writeln!(writer, "### Page {} ###", page_counter);
             let _ = writeln!(writer, "### {} Content ###", source_name);
-            let _ = writeln!(writer, "PAGE_START");
+            let _ = layout::write_page_start(writer);
 
             // Add row start if configured and account for its height
             let _row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
-                let rs_font = cfg
-                    .row_start_es_font
-                    .clone()
-                    .unwrap_or_else(|| "HN".to_string());
-                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
                 let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = writeln!(
-                    writer,
-                    "ROW_START_ES ({} {} {:.1} {:.1})",
-                    rs_font, rs_size as i32, rs_spacing, rs_vspace
-                );
+                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                 let _ = writeln!(writer, "################################################################################");
 
                 // Estimate height of row start (rough approximation)
@@ -951,7 +864,7 @@ fn add_wikipedia_section<W: Write>(
                         "################################################################################"
                     );
                     // Start new page
-                    let _ = writeln!(writer, "PAGE_START");
+                    let _ = layout::write_page_start(writer);
                     page_counter += 1;
                     let _ = writeln!(writer, "### Page {} ###", page_counter);
                     let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
@@ -975,7 +888,7 @@ fn add_wikipedia_section<W: Write>(
 
                 // Emit a PAGE_VSPACE to provide top padding if centering is requested
                 if final_centering_vspace > 0.0 {
-                    let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", final_centering_vspace);
+                    let _ = layout::write_page_vspace(writer, final_centering_vspace);
                 }
 
                 // Emit each section in the balanced page
