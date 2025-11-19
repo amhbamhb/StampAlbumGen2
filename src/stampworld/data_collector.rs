@@ -245,7 +245,7 @@ pub fn collect_stampworld_data_with_fetcher(
         for (block_idx, content_div) in content_blocks.into_iter().enumerate() {
             // Print a small snippet of the block HTML to help diagnose why
             // row selectors may not match in certain environments.
-            let block_html_snippet: String = content_div.html().chars().take(500).collect();
+            let _block_html_snippet: String = content_div.html().chars().take(500).collect();
             // println!(
             //     "[STAMPWORLD DEBUG] Block {} HTML snippet: {}",
             //     block_idx, block_html_snippet

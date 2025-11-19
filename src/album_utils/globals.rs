@@ -1,5 +1,4 @@
 use crate::album_globals::generator_new::layout;
-use crate::wikipedia::ContentSource;
 use log::info;
 use std::io::Write;
 

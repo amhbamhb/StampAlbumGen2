@@ -260,7 +260,7 @@ where
         as f64;
     // Ensure height parameter is read in the same places as width so
     // tests that count parameter usage remain consistent.
-    let img_new_h = config
+    let _img_new_h = config
         .album_stamp_img_new_setting_h_mm
         .unwrap_or(cfg_defaults.album_stamp_img_new_setting_h_mm.unwrap())
         as f64;
@@ -2340,10 +2340,10 @@ fn compute_page_used_height(page_block: &[&str], config: &crate::config::Config)
             }
             idx += 1;
         }
-        // skip trailing PAGE_VSPACE if present
-        while idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
-            idx += 1;
-            break;
+        // skip a single trailing PAGE_VSPACE if present
+        if idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
+            // increment not required later; evaluate expression to avoid unused_assignment warning
+            let _ = idx + 1;
         }
     }
     let v_before = config

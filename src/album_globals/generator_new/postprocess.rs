@@ -5,6 +5,7 @@ use std::path::Path;
 /// content is vertically centered where possible. This is a best-effort
 /// purely-generator-side adjustment that uses conservative estimates of
 /// header and row heights (matching the generator heuristics).
+#[allow(dead_code)]
 pub fn center_tmp_pages(
     tmp_path: &Path,
     config: &crate::config::Config,
@@ -293,6 +294,7 @@ pub fn center_tmp_pages(
 }
 
 /// Conservative per-page height estimator matching generator heuristics.
+#[allow(dead_code, unused_assignments)]
 pub fn compute_page_used_height(page_block: &[&str], config: &crate::config::Config) -> f64 {
     // Use canonical defaults so all fallbacks come from `Config::with_defaults()`.
     let defaults = crate::config::Config::with_defaults();

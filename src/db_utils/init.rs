@@ -3,7 +3,7 @@
 //! This module contains functions for initializing and setting up the database.
 
 use log::{debug, error};
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result};
 
 /// Initialize the database connection and ensure the stamps table exists.
 ///
