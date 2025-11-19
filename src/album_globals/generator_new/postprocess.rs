@@ -232,7 +232,9 @@ pub fn center_tmp_pages(
                     // Only emit a top gap when we are not suppressing it
                     // due to an explicit header (see effective_base_gaps).
                     if gap_mm > 0.0 && !(series_count == 0 && has_page_header) {
-                        let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
+                        let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(
+                            gap_mm,
+                        );
                         out_lines.push(s);
                     }
                     continue;
@@ -248,7 +250,10 @@ pub fn center_tmp_pages(
                 if trimmed.starts_with("ROW_START_ES") {
                     if let Some(first_row_idx) = all_row_indices.first() {
                         if j != *first_row_idx && per_row_gap > 0.0 {
-                            let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(per_row_gap);
+                            let s =
+                                crate::album_globals::generator_new::layout::format_page_vspace_mm(
+                                    per_row_gap,
+                                );
                             out_lines.push(s);
                         }
                     }
@@ -328,7 +333,10 @@ pub fn compute_page_used_height(page_block: &[&str], config: &crate::config::Con
         // count header text lines until next PAGE_VSPACE or ROW_START_ES
         while idx < page_block.len() {
             let l = page_block[idx].trim();
-            if l.starts_with("PAGE_VSPACE") || l.starts_with("ROW_START_ES") || l.starts_with("# ROW_META") {
+            if l.starts_with("PAGE_VSPACE")
+                || l.starts_with("ROW_START_ES")
+                || l.starts_with("# ROW_META")
+            {
                 break;
             }
             if l.starts_with("PAGE_TEXT_") {

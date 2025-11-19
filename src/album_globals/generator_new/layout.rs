@@ -60,24 +60,38 @@ pub fn write_page_fit_diagnostic<W: Write>(
 }
 
 /// Write the standard stamp-page header for a given page number.
-pub fn write_stamp_page_header<W: Write>(out: &mut W, page_number: usize, config: &crate::config::Config) -> std::io::Result<()> {
+pub fn write_stamp_page_header<W: Write>(
+    out: &mut W,
+    page_number: usize,
+    config: &crate::config::Config,
+) -> std::io::Result<()> {
     writeln!(out, "### Page {} - Stamps ###", page_number)?;
     writeln!(out, "PAGE_START")?;
     // Emit the ROW_START_ES marker using the shared helper so formatting stays consistent.
     // Use the local helper inside `generator_new` so the refactor can proceed
     // without touching the original top-level helpers module.
     super::helpers::emit_row_start_es(out, Some(config))?;
-    writeln!(out, "################################################################################")?;
+    writeln!(
+        out,
+        "################################################################################"
+    )?;
     Ok(())
 }
 
 /// Increment the page counter and write the standard stamp-page header.
 /// This mirrors the common pattern in the original generator while keeping
 /// the emission logic in one place for easier refactoring.
-pub fn start_stamp_page<W: Write>(out: &mut W, page_counter: &mut usize, config: &crate::config::Config) -> std::io::Result<()> {
+pub fn start_stamp_page<W: Write>(
+    out: &mut W,
+    page_counter: &mut usize,
+    config: &crate::config::Config,
+) -> std::io::Result<()> {
     *page_counter += 1;
     if *page_counter > 1 {
-        writeln!(out, "\n################################################################################")?;
+        writeln!(
+            out,
+            "\n################################################################################"
+        )?;
     }
     write_stamp_page_header(out, *page_counter, config)
 }

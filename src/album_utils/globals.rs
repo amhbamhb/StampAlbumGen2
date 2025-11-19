@@ -1,7 +1,7 @@
+use crate::album_globals::generator_new::layout;
 use crate::wikipedia::ContentSource;
 use log::info;
 use std::io::Write;
-use crate::album_globals::generator_new::layout as layout;
 
 /// Writes global AlbumEasy header information to the output stream
 pub fn write_globals<W: Write>(
@@ -512,7 +512,10 @@ pub fn write_globals<W: Write>(
                     if let Some(cp) = coat_path_opt.as_ref() {
                         // Emit a row start before the coat (large vertical element)
                         if cfg_row_start_es {
-                            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                            let _ = crate::album_globals::helpers::emit_row_start_es(
+                                writer,
+                                Some(&cfg),
+                            );
                         }
                         // White background for the coat area
                         let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(white)");
@@ -533,7 +536,10 @@ pub fn write_globals<W: Write>(
                     if let Some(fp) = flag_path_opt.as_ref() {
                         // Emit a small-row_start before the flag (HN 1 as requested)
                         if cfg_row_start_es {
-                            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                            let _ = crate::album_globals::helpers::emit_row_start_es(
+                                writer,
+                                Some(&cfg),
+                            );
                         }
                         let _ = writeln!(writer, "# Cover flag image for album");
                         let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
@@ -551,7 +557,8 @@ pub fn write_globals<W: Write>(
                 }
                 "name" => {
                     if cfg_row_start_es {
-                        let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                        let _ =
+                            crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                     }
                     let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
                     let _ = writeln!(

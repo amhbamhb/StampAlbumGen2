@@ -3,11 +3,11 @@
 // `generator.rs` to ease future moves; unused ones cause warnings while the
 // implementation is still being migrated. Keep only what's required here.
 pub mod helpers;
-use rusqlite::Connection;
 use log::warn;
+use rusqlite::Connection;
 
-mod postprocess;
 pub mod layout;
+mod postprocess;
 
 /// Main entry point for AlbumEasy output generation.
 pub fn generate_album_output_conn<F>(
@@ -29,17 +29,17 @@ where
     // refactored copy already present under `generator/mod.rs`.)
     // The real implementation lives below; for now forward to the file-local
     // helper to keep the public API stable.
-    
+
     // NOTE: For the purpose of this automated refactor step the detailed
     // implementation is kept in `generator/mod.rs` and will be moved here
     // by the next patch if required. To avoid duplicating large blocks
     // in this change set the function body is a stub that calls through
     // into the module-level function of the same name when available.
-    
+
     // Fallback: open a connection and call original if necessary.
     // This simple path keeps tests runnable while we incrementally move
     // pieces of the implementation into smaller files inside generator_new.
-    
+
     // Reuse the init_db path as a compatibility fallback
     let album_dir = std::path::PathBuf::from(format!("Albums/{}", album_name.replace(' ', "-")));
     if let Err(e) = std::fs::create_dir_all(&album_dir) {

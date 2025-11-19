@@ -26,46 +26,50 @@ use rusqlite::Connection;
 // refactored function produced no usable output (this keeps tests and
 // callers working while `generator_new` is incrementally completed).
 pub fn generate_album_output_conn<F>(
-	conn: &Connection,
-	album_name: &str,
-	page_callback: Option<F>,
-	start_year: Option<i32>,
-	end_year: Option<i32>,
+    conn: &Connection,
+    album_name: &str,
+    page_callback: Option<F>,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
 ) -> std::path::PathBuf
 where
-	F: FnMut(usize),
+    F: FnMut(usize),
 {
-	// Call refactored implementation without moving the caller's callback.
-	let path = generator_new::generate_album_output_conn::<fn(usize)>(conn, album_name, None, start_year, end_year);
-	if path.exists() {
-		if let Ok(meta) = std::fs::metadata(&path) {
-			if meta.len() > 0 {
-				return path;
-			}
-		}
-	}
-	// Fallback to original implementation
-	generator::generate_album_output_conn(conn, album_name, page_callback, start_year, end_year)
+    // Call refactored implementation without moving the caller's callback.
+    let path = generator_new::generate_album_output_conn::<fn(usize)>(
+        conn, album_name, None, start_year, end_year,
+    );
+    if path.exists() {
+        if let Ok(meta) = std::fs::metadata(&path) {
+            if meta.len() > 0 {
+                return path;
+            }
+        }
+    }
+    // Fallback to original implementation
+    generator::generate_album_output_conn(conn, album_name, page_callback, start_year, end_year)
 }
 
 pub fn generate_album_output<F>(
-	db_path: &str,
-	album_name: &str,
-	page_callback: Option<F>,
-	start_year: Option<i32>,
-	end_year: Option<i32>,
+    db_path: &str,
+    album_name: &str,
+    page_callback: Option<F>,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
 ) -> std::path::PathBuf
 where
-	F: FnMut(usize),
+    F: FnMut(usize),
 {
-	// Call refactored implementation without moving the caller's callback.
-	let path = generator_new::generate_album_output::<fn(usize)>(db_path, album_name, None, start_year, end_year);
-	if path.exists() {
-		if let Ok(meta) = std::fs::metadata(&path) {
-			if meta.len() > 0 {
-				return path;
-			}
-		}
-	}
-	generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year)
+    // Call refactored implementation without moving the caller's callback.
+    let path = generator_new::generate_album_output::<fn(usize)>(
+        db_path, album_name, None, start_year, end_year,
+    );
+    if path.exists() {
+        if let Ok(meta) = std::fs::metadata(&path) {
+            if meta.len() > 0 {
+                return path;
+            }
+        }
+    }
+    generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year)
 }

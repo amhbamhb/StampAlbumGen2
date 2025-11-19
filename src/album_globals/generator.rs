@@ -3,6 +3,7 @@ use super::globals::{compute_usable_height, write_globals};
 use super::helpers::build_page_text_template;
 use super::helpers::emit_row_start_es;
 use super::structs::{GenericAttrs, Stamp};
+use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
 use crate::config::load_config;
 use crate::db_utils::{get_all_series, get_stamps_by_series, init_db, update_image_dimensions};
@@ -12,7 +13,6 @@ use rusqlite::Connection;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
-use crate::album_globals::generator_new::layout as layout;
 
 // AlbumEasy Output Generation
 // ===================// This section contains the main entry point and helpers for generating AlbumEasy output.
@@ -199,7 +199,11 @@ where
     let starting_page_number = pages_from_globals + 1;
 
     // Emit page header for first stamp page
-    let _ = crate::album_globals::generator_new::layout::write_stamp_page_header(&mut output, starting_page_number, &config);
+    let _ = crate::album_globals::generator_new::layout::write_stamp_page_header(
+        &mut output,
+        starting_page_number,
+        &config,
+    );
     // Compute usable height via shared helper (centralizes margins/borders/padding)
     let usable_height = compute_usable_height(&config);
     // Allow a configurable conservative buffer (mm) to reserve footer/decoration space.
@@ -961,7 +965,11 @@ where
                 // conservative page-fit check instead.
                 if force_new_page {
                     // start a new page using the centralized layout helper
-                    let _ = crate::album_globals::generator_new::layout::start_stamp_page(&mut output, &mut page_counter, &config);
+                    let _ = crate::album_globals::generator_new::layout::start_stamp_page(
+                        &mut output,
+                        &mut page_counter,
+                        &config,
+                    );
 
                     current_height = 0.0;
                     rows_on_page = 0;
@@ -1175,8 +1183,12 @@ where
                     next_total_header_and_row_height + conservative_buffer;
                 // If emitting this row then the next series' header+first-row won't fit,
                 // force a page break now so the next series can start cleanly.
-                    if current_height + total_row_height + next_conservative_needed > usable_height {
-                    let _ = crate::album_globals::generator_new::layout::start_stamp_page(&mut output, &mut page_counter, &config);
+                if current_height + total_row_height + next_conservative_needed > usable_height {
+                    let _ = crate::album_globals::generator_new::layout::start_stamp_page(
+                        &mut output,
+                        &mut page_counter,
+                        &config,
+                    );
 
                     current_height = 0.0;
                     header_written = false;
@@ -1288,13 +1300,16 @@ where
             }
             // If we have a pending header, write it now (we are about to
             // emit the first row for this series on the current page).
-                if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
+            if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
                 // Use configurable marker so tests/tools can detect the vspace
                 let pv_marker = config
                     .page_vspace_marker
                     .clone()
                     .unwrap_or_else(|| "6".to_string());
-                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(&mut output, &pv_marker);
+                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(
+                    &mut output,
+                    &pv_marker,
+                );
                 current_height += v_before;
                 // header vspace written (diagnostics suppressed)
                 for (line, h) in pending_lines {
@@ -1306,7 +1321,10 @@ where
                     .page_vspace_marker
                     .clone()
                     .unwrap_or_else(|| "6".to_string());
-                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(&mut output, &pv_marker);
+                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(
+                    &mut output,
+                    &pv_marker,
+                );
                 current_height += v_after;
                 // header vspace after written (diagnostics suppressed)
                 header_written = true;
@@ -2210,7 +2228,9 @@ fn center_tmp_pages(
                     // Only emit a top gap when we are not suppressing it
                     // due to an explicit header (see effective_base_gaps).
                     if gap_mm > 0.0 && !(series_count == 0 && has_page_header) {
-                        let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
+                        let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(
+                            gap_mm,
+                        );
                         out_lines.push(s);
                     }
                     continue;
@@ -2226,7 +2246,10 @@ fn center_tmp_pages(
                 if trimmed.starts_with("ROW_START_ES") {
                     if let Some(first_row_idx) = all_row_indices.first() {
                         if j != *first_row_idx && per_row_gap > 0.0 {
-                            let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(per_row_gap);
+                            let s =
+                                crate::album_globals::generator_new::layout::format_page_vspace_mm(
+                                    per_row_gap,
+                                );
                             out_lines.push(s);
                         }
                     }
