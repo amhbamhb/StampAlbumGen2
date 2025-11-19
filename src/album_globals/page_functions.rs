@@ -1,3 +1,4 @@
+use super::generator_new::layout;
 use super::helpers::build_page_text_template;
 use super::helpers::emit_row_start_es;
 use crate::config::Config;
@@ -46,7 +47,7 @@ pub fn new_page<W: std::io::Write>(
         writer,
         "################################################################################"
     );
-    let _ = writeln!(writer, "PAGE_START");
+    let _ = layout::write_page_start(writer);
     let _ = writeln!(
         writer,
         "################################################################################"

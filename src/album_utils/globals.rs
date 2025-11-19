@@ -1,3 +1,4 @@
+use crate::album_globals::generator_new::layout;
 use crate::wikipedia::ContentSource;
 use log::info;
 use std::io::Write;
@@ -386,22 +387,11 @@ pub fn write_globals<W: Write>(
         let trimmed = line.trim();
         if trimmed.starts_with("PAGE_") {
             if !last_was_page_start {
-                let _ = writeln!(writer, "PAGE_START");
+                let _ = layout::write_page_start(writer);
                 // Ensure page sections begin with a row start when enabled
                 if cfg_row_start_es {
-                    // Emit ROW_START_ES using config params
-                    let rs_font = cfg
-                        .row_start_es_font
-                        .clone()
-                        .unwrap_or_else(|| "HN".to_string());
-                    let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                    let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                    let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                    let _ = writeln!(
-                        writer,
-                        "ROW_START_ES ({} {} {:.1} {:.1})",
-                        rs_font, rs_size as i32, rs_spacing, rs_vspace
-                    );
+                    // Use centralized helper to emit ROW_START_ES
+                    let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                 }
                 last_was_page_start = true;
             }
@@ -412,21 +402,10 @@ pub fn write_globals<W: Write>(
 
         // If the line itself is an explicit PAGE_START, write it and set the flag
         if trimmed == "PAGE_START" {
-            let _ = writeln!(writer, "{}", line);
+            let _ = layout::write_page_start(writer);
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
             if cfg_row_start_es {
-                let rs_font = cfg
-                    .row_start_es_font
-                    .clone()
-                    .unwrap_or_else(|| "HN".to_string());
-                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-                let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = writeln!(
-                    writer,
-                    "ROW_START_ES ({} {} {:.1} {:.1})",
-                    rs_font, rs_size as i32, rs_spacing, rs_vspace
-                );
+                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
             }
             last_was_page_start = true;
             continue;
@@ -451,15 +430,15 @@ pub fn write_globals<W: Write>(
         );
         let _ = writeln!(writer, "### Page {} ###", page_counter);
         let _ = writeln!(writer, "### {} Flag ###", album_name);
-        let _ = writeln!(writer, "PAGE_START");
+        let _ = layout::write_page_start(writer);
         // Write a simple cover block after the standard globals so it appears
         // below the STAMP_BOXES_SIZE_ADJUST section as requested.
         let album_images_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-        // Try to fetch/copy a flag image (size w320). If this fails we ignore the error.
+        // Try to fetch/copy a flag image (size w320) and coat of arms. If these fail we ignore the error.
         let mut flag_path_opt: Option<String> = None;
+        let mut coat_path_opt: Option<String> = None;
         match crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
             Ok(p) => {
-                // convert to relative path under album dir if possible
                 if let Some(fname) = std::path::Path::new(&p)
                     .file_name()
                     .and_then(|s| s.to_str())
@@ -469,130 +448,168 @@ pub fn write_globals<W: Write>(
                     flag_path_opt = Some(p);
                 }
             }
-            Err(_) => {
-                // no flag available; proceed with textual cover only
+            Err(_) => {}
+        }
+        match crate::flagdb::copy_coa_for_album(album_name, &album_images_dir) {
+            Ok(p) => {
+                if let Some(fname) = std::path::Path::new(&p)
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                {
+                    coat_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    coat_path_opt = Some(p);
+                }
+            }
+            Err(_) => {}
+        }
+
+        // If flag and coat refer to the same image path, avoid showing both
+        // on the cover (this can happen if a flag isn't available and the
+        // coat file was used as a fallback). Prefer showing the coat only.
+        if let (Some(coat_p), Some(flag_p)) = (coat_path_opt.as_ref(), flag_path_opt.as_ref()) {
+            if coat_p == flag_p {
+                flag_path_opt = None;
             }
         }
 
-        // Emit a cover page header (page header already added above)
-        let _ = writeln!(
-            writer,
-            "################################################################################"
-        );
-        let _ = writeln!(writer, "### {} ###", album_name);
-        // Ensure cover pages also begin with a row start so the layout is initialized
-        if cfg_row_start_es {
-            let rs_font = cfg
-                .row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(
-                writer,
-                "ROW_START_ES ({} {} {:.1} {:.1})",
-                rs_font, rs_size as i32, rs_spacing, rs_vspace
-            );
-            let _ = writeln!(
-                writer,
-                "################################################################################"
-            );
+        // Row starts before specific cover elements (coat, flag, name)
+        // are emitted inside each element's handling below so we don't
+        // need to emit a blanket ROW_START_ES here.
+
+        // Decide element order. Support cfg.flag_cover_elements as an ordered list of values: "coat", "flag", "name".
+        let raw_elements: Vec<String> = cfg
+            .flag_cover_elements
+            .clone()
+            .unwrap_or_else(|| vec!["coat".to_string(), "flag".to_string(), "name".to_string()]);
+
+        // Deduplicate while preserving order so repeated entries in the config
+        // (or accidental duplicates) don't cause duplicate output on the cover.
+        use std::collections::HashSet;
+        let mut seen: HashSet<String> = HashSet::new();
+        let mut elements: Vec<String> = Vec::new();
+        for e in raw_elements.into_iter() {
+            if !seen.contains(&e) {
+                seen.insert(e.clone());
+                elements.push(e);
+            }
         }
-        // If we have a flag image, emit it as a large image entry on the cover.
-        if let Some(fp) = flag_path_opt.as_ref() {
-            // Use flag_cover_* config values if provided, otherwise fall back to
-            // the previously hard-coded numbers so behavior is unchanged.
-            let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
-            let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
-            let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
-            let after_vspace = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
 
-            // Emit a large image placeholder (AlbumEasy consumer will scale)
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
+        // Did we obtain any images to show?
+        let any_present = coat_path_opt.is_some() || flag_path_opt.is_some();
+        // Track whether the configured element order already includes a name entry
+        let name_included = elements.iter().any(|e| e.as_str() == "name");
+        let top_vspace = cfg.flag_cover_page_vspace_top.unwrap_or(40.0);
+        let after_vspace_default = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
 
-            // Use configured ROW_START_ES params for cover image block
-            let rs_font = cfg
-                .row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(
-                writer,
-                "ROW_START_ES ({} {} {:.1} {:.1})",
-                rs_font, rs_size as i32, rs_spacing, rs_vspace
-            );
-            let _ = writeln!(writer, "# Cover flag image for album");
-            let flag_cover_background_color = cfg
-                .flag_cover_background_color
-                .clone()
-                .unwrap_or_else(|| "white".to_string());
-            let _ = writeln!(
-                writer,
-                "COLOR_STAMP_BACKGROUND({})",
-                flag_cover_background_color
-            );
-            let _ = writeln!(writer, "# Change background for flag if needed");
+        if any_present {
+            let _ = layout::write_page_vspace(writer, top_vspace as f64);
+        }
 
-            let _ = writeln!(
-                writer,
-                "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
-                img_w, img_h, fp
-            );
-            let _ = writeln!(
-                writer,
-                "# Change the color background back to default after flag"
-            );
-            let _ = writeln!(
-                writer,
-                "COLOR_STAMP_BACKGROUND({})",
-                cfg.color_stamp_background
-                    .clone()
-                    .unwrap_or_else(|| "white".to_string())
-            );
+        for elem in elements.iter() {
+            match elem.as_str() {
+                "coat" => {
+                    if let Some(cp) = coat_path_opt.as_ref() {
+                        // Emit a row start before the coat (large vertical element)
+                        if cfg_row_start_es {
+                            let _ = crate::album_globals::helpers::emit_row_start_es(
+                                writer,
+                                Some(&cfg),
+                            );
+                        }
+                        // White background for the coat area
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(white)");
+                        // Use configurable coat dimensions from config, default 80x100
+                        let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(80.0);
+                        let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(100.0);
+                        let _ = writeln!(writer, "# Coat of arms for album (if available)");
+                        let _ = writeln!(
+                            writer,
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
+                            coat_w, coat_h, cp
+                        );
+                        // Small vertical gap after coat
+                        let _ = layout::write_page_vspace(writer, 6.0_f64);
+                    }
+                }
+                "flag" => {
+                    if let Some(fp) = flag_path_opt.as_ref() {
+                        // Emit a small-row_start before the flag (HN 1 as requested)
+                        if cfg_row_start_es {
+                            let _ = crate::album_globals::helpers::emit_row_start_es(
+                                writer,
+                                Some(&cfg),
+                            );
+                        }
+                        let _ = writeln!(writer, "# Cover flag image for album");
+                        let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
+                        let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
+                        let _ = writeln!(
+                            writer,
+                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
+                            img_w, img_h, fp
+                        );
+                        // Set stamp background back to black as requested after the flag
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(black)");
+                        // Vertical gap after flag controlled by config
+                        let _ = layout::write_page_vspace(writer, after_vspace_default as f64);
+                    }
+                }
+                "name" => {
+                    if cfg_row_start_es {
+                        let _ =
+                            crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                    }
+                    let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
+                    let _ = writeln!(
+                        writer,
+                        "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
+                        title_size as i32,
+                        album_name.replace("\\n", " ")
+                    );
+                }
+                _ => {}
+            }
+        }
 
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
-
-            // Title parameters for image cover
-            let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
-            // scale is not directly used by AlbumEasy; keep for downstream consumers
-            let _title_scale = cfg.flag_cover_image_title_scale.unwrap_or(1.0);
-            let _ = writeln!(
-                writer,
-                "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
-                title_size as i32,
-                album_name.replace("\\n", " ")
-            );
-        } else {
+        // If nothing was present, fall back to the previous text-only cover behavior
+        if !any_present {
             // Text-only cover: large centered title
             let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
             let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
             let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
             let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
 
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", top_vspace);
-            let rs_font = cfg
-                .row_start_es_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
-            let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-            let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
-            let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-            let _ = writeln!(
-                writer,
-                "ROW_START_ES ({} {} {:.1} {:.1})",
-                rs_font, rs_size as i32, rs_spacing, rs_vspace
-            );
+            let _ = layout::write_page_vspace(writer, top_vspace as f64);
+            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
             let _ = writeln!(
                 writer,
                 "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
                 title_size as i32,
                 album_name.replace("\\n", " ")
             );
-            let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", after_vspace);
+            let _ = layout::write_page_vspace(writer, after_vspace as f64);
+        } else {
+            // Images were present. Only emit a centered title if the
+            // configured element order did not already include a "name"
+            // element. This avoids printing the name twice.
+            if !name_included {
+                let top_vspace = cfg.flag_cover_text_only_vspace_top.unwrap_or(24.0);
+                let after_vspace = cfg.flag_cover_text_only_vspace_after.unwrap_or(18.0);
+                let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
+
+                let _ = layout::write_page_vspace(writer, top_vspace as f64);
+                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                let _ = writeln!(
+                    writer,
+                    "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
+                    title_size as i32,
+                    album_name.replace("\\n", " ")
+                );
+                let _ = layout::write_page_vspace(writer, after_vspace as f64);
+            }
         }
+
         // After cover, emit a page separator so normal globals follow
         let _ = writeln!(
             writer,
@@ -645,22 +662,12 @@ fn add_wikipedia_section<W: Write>(
 
             let _ = writeln!(writer, "### Page {} ###", page_counter);
             let _ = writeln!(writer, "### {} Content ###", source_name);
-            let _ = writeln!(writer, "PAGE_START");
+            let _ = layout::write_page_start(writer);
 
             // Add row start if configured and account for its height
             let _row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
-                let rs_font = cfg
-                    .row_start_es_font
-                    .clone()
-                    .unwrap_or_else(|| "HN".to_string());
-                let rs_size = cfg.row_start_es_size.unwrap_or(6.0);
-                let rs_spacing = cfg.row_start_es_spacing.unwrap_or(0.1);
                 let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = writeln!(
-                    writer,
-                    "ROW_START_ES ({} {} {:.1} {:.1})",
-                    rs_font, rs_size as i32, rs_spacing, rs_vspace
-                );
+                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
                 let _ = writeln!(writer, "################################################################################");
 
                 // Estimate height of row start (rough approximation)
@@ -864,7 +871,7 @@ fn add_wikipedia_section<W: Write>(
                         "################################################################################"
                     );
                     // Start new page
-                    let _ = writeln!(writer, "PAGE_START");
+                    let _ = layout::write_page_start(writer);
                     page_counter += 1;
                     let _ = writeln!(writer, "### Page {} ###", page_counter);
                     let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
@@ -888,7 +895,7 @@ fn add_wikipedia_section<W: Write>(
 
                 // Emit a PAGE_VSPACE to provide top padding if centering is requested
                 if final_centering_vspace > 0.0 {
-                    let _ = writeln!(writer, "PAGE_VSPACE ({:.1})", final_centering_vspace);
+                    let _ = layout::write_page_vspace(writer, final_centering_vspace);
                 }
 
                 // Emit each section in the balanced page

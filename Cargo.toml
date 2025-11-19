@@ -29,6 +29,11 @@ httpmock = { version = "0.6", optional = true }
 once_cell = "1.21.3"
 strsim = "0.10"
 atty = "0.2"
+which = "4"
+# Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
+resvg = "0.29"
+usvg = "0.29"
+tiny-skia = "0.8"
 
 [dev-dependencies]
 assert_cmd = "2.0"
