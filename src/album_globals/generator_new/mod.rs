@@ -10,16 +10,12 @@ pub mod layout;
 mod postprocess;
 
 /// Main entry point for AlbumEasy output generation.
-pub fn generate_album_output_conn<F>(
+pub fn generate_album_output_conn(
     _conn: &Connection,
     album_name: &str,
-    mut _page_callback: Option<F>,
     _start_year: Option<i32>,
     _end_year: Option<i32>,
-) -> std::path::PathBuf
-where
-    F: FnMut(usize),
-{
+) -> std::path::PathBuf {
     // Delegate to the implementation that was copied from the refactor target.
     // The full implementation duplicates the logic present in the original
     // `generator.rs` and is intentionally verbose to avoid changing behavior
@@ -46,22 +42,23 @@ where
         warn!("Failed to create album dir {}: {}", album_dir.display(), e);
     }
     // Minimal safe output path creation to satisfy API contract
-    let output_path = album_dir.join(format!("{}.txt", album_name.replace(' ', "-")));
-    output_path
+    let _output_path = album_dir.join(format!("{}.txt", album_name.replace(' ', "-")));
+    // Currently the refactored implementation is a stub that does not
+    // produce a real output yet; return an empty path so callers will
+    // fall back to the original implementation in `generator`.
+    std::path::PathBuf::new()
 }
 
-pub fn generate_album_output<F>(
+pub fn generate_album_output(
     db_path: &str,
     album_name: &str,
-    _page_callback: Option<F>,
     _start_year: Option<i32>,
     _end_year: Option<i32>,
-) -> std::path::PathBuf
-where
-    F: FnMut(usize),
-{
+) -> std::path::PathBuf {
     // Note: `init_db` lives in the original module; keep the call here
     // when the refactor completes. For now we forward to the original
     // implementation to preserve behavior.
-    crate::album_globals::generator::generate_album_output(db_path, album_name, None, None, None)
+    // Not implemented yet in the refactor; return an empty path so the
+    // top-level wrapper falls back to the original implementation.
+    std::path::PathBuf::new()
 }
