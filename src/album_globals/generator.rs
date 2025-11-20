@@ -1,8 +1,7 @@
 use super::constants::MONTH_NAMES;
 use super::globals::{compute_usable_height, write_globals};
 use super::helpers::build_page_text_template;
-use super::helpers::emit_row_start_es;
-use super::structs::{GenericAttrs, Stamp};
+use super::structs::Stamp;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
 use crate::config::load_config;
@@ -322,68 +321,14 @@ where
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
     let filtered_series: Vec<String> = series_list.to_vec();
     let _series_count = filtered_series.len();
-    for (_series_idx, series) in filtered_series.iter().enumerate() {
+    crate::album_globals::generator_new::for_each_series(conn, series_order_slice, | _series_idx, series | {
         if let Some(cb) = page_callback.as_mut() {
             cb(page_counter);
         }
-        // Example: Load stamps as Vec<Stamp> with generic attributes
-        let mut stamps = get_stamps_by_series(conn, series, "0").expect("Failed to get stamps");
-        // Apply inclusive year filtering if start/end years were provided.
-        // The generator receives Optional start/end from the CLI. If present,
-        // filter stamps to the inclusive range [start_year, end_year].
-        if let (Some(sy), Some(ey)) = (passed_start_year, passed_end_year) {
-            // Only apply when a sensible range was provided
-            if sy > 0 && ey < 9999 && sy <= ey {
-                stamps.retain(|st| st.year >= sy && st.year <= ey);
-            }
-        } else if let Some(sy) = passed_start_year {
-            if sy > 0 {
-                stamps.retain(|st| st.year >= sy);
-            }
-        } else if let Some(ey) = passed_end_year {
-            if ey < 9999 {
-                stamps.retain(|st| st.year <= ey);
-            }
-        }
-        // Diagnostic: write a short comment indicating how many stamps we fetched for this series.
-        // Sanitize the series name to a single line (collapse newlines and extra spaces)
-        // so downstream tools (or grep) can reliably parse this diagnostic.
-        let _safe_series = clean_text(series)
-            .replace('\n', " ")
-            .replace("  ", " ")
-            .replace('"', "'");
-        // let _ = writeln!(output, "# SERIES_FETCH series=\"{}\" count=\"{}\"", safe_series, stamps.len());
-        let mut stamp_objs: Vec<Stamp> = Vec::new();
-        for stamp in stamps {
-            let mut attrs = GenericAttrs::new();
-            attrs.set("year", &stamp.year.to_string());
-            attrs.set("sg_number", &stamp.sg_number);
-            attrs.set("type", &stamp.r#type);
-            attrs.set("denomination", &stamp.denomination);
-            attrs.set("color", &stamp.color);
-            attrs.set("description", &stamp.description);
-            attrs.set("stamps_issued", &stamp.stamps_issued);
-            attrs.set("mint_condition", &stamp.mint_condition);
-            attrs.set("unused", &stamp.unused);
-            attrs.set("used", &stamp.used);
-            attrs.set("month", &stamp.month);
-            attrs.set("month_num", &stamp.month_num.to_string());
-            attrs.set("day", &stamp.day);
-            attrs.set("currency", &stamp.currency);
-            attrs.set("watermark", &stamp.watermark);
-            attrs.set("design", &stamp.design);
-            attrs.set("engraving", &stamp.engraving);
-            attrs.set("perforation", &stamp.perforation);
-            // Set image_path from StampStub
-            stamp_objs.push(Stamp {
-                attrs,
-                image_path: stamp.image_path.clone(),
-                image_width_px: stamp.image_width_px,
-                image_height_px: stamp.image_height_px,
-                est_width_mm: None,
-                est_height_mm: None,
-            });
-        }
+        // Fetch stamps + year-filter + conversion into Stamp objects via helper.
+        let mut stamp_objs = crate::album_globals::generator_new::helpers::
+            fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
+            .expect("Failed to get stamps");
         // Group stamps into rows (configurable max stamps per row)
         let max_stamps_per_row = config.max_stamps_per_row.unwrap_or(5) as usize;
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
@@ -1384,7 +1329,7 @@ where
                 // (if enabled) but avoid generating spacer artifacts that change layout.
             }
 
-            let _ = emit_row_start_es(&mut output, Some(&config));
+            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
 
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {
@@ -1866,7 +1811,7 @@ where
             rows_on_page += 1;
             row_idx += 1;
         }
-    }
+    }).expect("for_each_series failed");
 
     // Finalize: we've written to a temp file. Flush buffer and promote it into place only if it
     // contains STAMP lines; otherwise remove the temp and leave existing file intact.

@@ -95,3 +95,14 @@ pub fn start_stamp_page<W: Write>(
     }
     write_stamp_page_header(out, *page_counter, config)
 }
+
+/// Emit the ROW_START_ES marker using the shared helper from `helpers`.
+/// This wrapper centralizes where ROW_START_ES comes from so callers
+/// can use `generator_new::layout::emit_row_start_es` during refactors.
+pub fn emit_row_start_es<W: Write>(
+    out: &mut W,
+    config: &crate::config::Config,
+) -> std::io::Result<()> {
+    // forward to the existing helper to keep formatting consistent
+    super::helpers::emit_row_start_es(out, Some(config))
+}

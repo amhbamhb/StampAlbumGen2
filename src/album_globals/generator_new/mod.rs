@@ -5,6 +5,8 @@
 pub mod helpers;
 use log::warn;
 use rusqlite::Connection;
+use rusqlite::Result as SqlResult;
+use stamp_album_db;
 
 pub mod layout;
 mod postprocess;
@@ -51,6 +53,30 @@ where
     // produce a real output yet; return an empty path so callers will
     // fall back to the original implementation in `generator`.
     std::path::PathBuf::new()
+}
+
+/// Helper: return list of series from the database using existing wrapper.
+pub fn list_series(conn: &Connection, _order: Option<&str>) -> SqlResult<Vec<String>> {
+    // Delegate to the stamp_album_db crate which provides the canonical DB helpers.
+    // Note: ordering variants are currently handled by the wrapper; keep
+    // this helper minimal for now and preserve API shape.
+    stamp_album_db::get_all_series(conn)
+}
+
+/// Iterate series and invoke a callback for each series.
+///
+/// The callback receives the series index and the series name. This keeps the
+/// helper minimal and lets the caller fetch stamps or apply filtering as
+/// needed while we incrementally migrate the outer loop.
+pub fn for_each_series<F>(conn: &Connection, _order: Option<&str>, mut cb: F) -> SqlResult<()>
+where
+    F: FnMut(usize, &str),
+{
+    let series = stamp_album_db::get_all_series(conn)?;
+    for (i, s) in series.iter().enumerate() {
+        cb(i, s);
+    }
+    Ok(())
 }
 
 pub fn generate_album_output<F>(
