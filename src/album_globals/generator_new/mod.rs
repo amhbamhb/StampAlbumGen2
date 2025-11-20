@@ -9,6 +9,7 @@ use rusqlite::Result as SqlResult;
 use stamp_album_db;
 
 pub mod layout;
+pub mod emit;
 mod postprocess;
 
 /// Main entry point for AlbumEasy output generation.
@@ -56,7 +57,10 @@ where
 }
 
 /// Helper: return list of series from the database using existing wrapper.
-pub fn list_series(conn: &Connection, _order: Option<&str>) -> SqlResult<Vec<String>> {
+pub fn list_series(
+    conn: &Connection,
+    _order: Option<&str>,
+) -> SqlResult<Vec<String>> {
     // Delegate to the stamp_album_db crate which provides the canonical DB helpers.
     // Note: ordering variants are currently handled by the wrapper; keep
     // this helper minimal for now and preserve API shape.

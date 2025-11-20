@@ -106,3 +106,36 @@ pub fn emit_row_start_es<W: Write>(
     // forward to the existing helper to keep formatting consistent
     super::helpers::emit_row_start_es(out, Some(config))
 }
+
+/// Write a buffered header block: vspace before, the header lines, and vspace after.
+/// Returns the total vertical millimetre height consumed by the block.
+pub fn write_header_block<W: Write>(
+    out: &mut W,
+    pending_lines: &[(String, f64)],
+    v_before: f64,
+    v_after: f64,
+    _config: &crate::config::Config,
+) -> std::io::Result<f64> {
+    // Emit the leading vspace, header text lines, then trailing vspace.
+    // If the config requests a page_vspace_marker token, emit that
+    // instead of numeric PAGE_VSPACE values so the postprocessor can
+    // replace tokens with concrete values later.
+    if let Some(marker) = _config.page_vspace_marker.as_ref() {
+        write_page_vspace_marker(out, marker.as_str())?;
+    } else {
+        write_page_vspace(out, v_before)?;
+    }
+
+    for (line, _h) in pending_lines.iter() {
+        writeln!(out, "{}", line)?;
+    }
+
+    if let Some(marker) = _config.page_vspace_marker.as_ref() {
+        write_page_vspace_marker(out, marker.as_str())?;
+    } else {
+        write_page_vspace(out, v_after)?;
+    }
+
+    let text_height: f64 = pending_lines.iter().map(|(_, h)| *h).sum();
+    Ok(v_before + text_height + v_after)
+}

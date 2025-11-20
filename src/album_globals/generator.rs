@@ -1246,32 +1246,22 @@ where
             // If we have a pending header, write it now (we are about to
             // emit the first row for this series on the current page).
             if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
-                // Use configurable marker so tests/tools can detect the vspace
-                let pv_marker = config
-                    .page_vspace_marker
-                    .clone()
-                    .unwrap_or_else(|| "6".to_string());
-                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(
+                // Delegate header emission to layout helper which writes the
+                // page vspace markers and header lines and returns the
+                // total vertical millimetre height consumed.
+                match crate::album_globals::generator_new::layout::write_header_block(
                     &mut output,
-                    &pv_marker,
-                );
-                current_height += v_before;
-                // header vspace written (diagnostics suppressed)
-                for (line, h) in pending_lines {
-                    let _ = writeln!(output, "{}", line);
-                    current_height += h;
-                    // header line written (diagnostics suppressed)
+                    &pending_lines,
+                    v_before,
+                    v_after,
+                    &config,
+                ) {
+                    Ok(h) => current_height += h,
+                    Err(e) => {
+                        log::error!("Failed to write header block: {}", e);
+                        // Fallback: pretend no height was written so generation continues
+                    }
                 }
-                let pv_marker = config
-                    .page_vspace_marker
-                    .clone()
-                    .unwrap_or_else(|| "6".to_string());
-                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(
-                    &mut output,
-                    &pv_marker,
-                );
-                current_height += v_after;
-                // header vspace after written (diagnostics suppressed)
                 header_written = true;
             }
             // Build ROW_START_ES from parameterized config if provided, otherwise fall back to
@@ -1553,25 +1543,8 @@ where
                 let second_line = v_used.clone().unwrap_or_else(|| "".to_string());
                 let right = format!("{}\\n{}", first_line, second_line);
                 if !image_path.is_empty() && Path::new(&full_image_path).exists() {
-                    // Emit a lightweight diagnostic comment so we can later grep the
-                    // output file and verify stamps are actually being written to the
-                    // canonical Albums/{Album}/{Album}.txt file. Make sure the
-                    // comment is a single line by sanitizing newlines/extra spaces.
-                    let _safe_series = clean_text(series)
-                        .replace("\\n", " ")
-                        .split_whitespace()
-                        .collect::<Vec<&str>>()
-                        .join(" ")
-                        .replace("\"", "'");
-
-                    // let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
-                    // estimate_real_dimensions returns millimetres; emit mm directly
-                    let line = format!(
-                        "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-                        emit_width, emit_height, image_path, left, centre, right
-                    );
-
-                    let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                    // Delegate formatted emission to the centralized emitter
+                    // so formatting and escaping are consistent across call sites.
                     let sh_font = config
                         .stamp_heading_font
                         .clone()
@@ -1581,15 +1554,20 @@ where
                         .stamp_heading_label
                         .clone()
                         .unwrap_or_else(|| "SG".to_string());
-                    let _ = writeln!(
-                        output,
-                        "STAMP_HEADING({} {} \"{} : {}\")",
-                        sh_font, sh_size, sh_label, sgnum
+                    let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                        &mut output,
+                        true,
+                        image_path,
+                        emit_width,
+                        emit_height,
+                        &left,
+                        &centre,
+                        &right,
+                        &sh_font,
+                        sh_size,
+                        &sh_label,
+                        &sgnum,
                     );
-                    // Emit an immediate state line showing the stamp box that
-                    // was just written and the expected new current_height if
-                    // this were the tallest row on the page.
-                    // stamp emitted (diagnostics suppressed)
                 } else {
                     let _safe_series = clean_text(series)
                         .replace("\\n", " ")
@@ -1761,11 +1739,6 @@ where
 
                     if let Some(img_rel) = emitted_placeholder {
                         // We have a generated placeholder; emit STAMP_ADD_IMG using it
-                        let line = format!(
-                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-                            emit_width, emit_height, img_rel, left, centre, right
-                        );
-                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                         let sh_font = config
                             .stamp_heading_font
                             .clone()
@@ -1775,19 +1748,22 @@ where
                             .stamp_heading_label
                             .clone()
                             .unwrap_or_else(|| "SG".to_string());
-                        let _ = writeln!(
-                            output,
-                            "STAMP_HEADING({} {} \"{} : {}\")",
-                            sh_font, sh_size, sh_label, sgnum
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                            &mut output,
+                            true,
+                            &img_rel,
+                            emit_width,
+                            emit_height,
+                            &left,
+                            &centre,
+                            &right,
+                            &sh_font,
+                            sh_size,
+                            &sh_label,
+                            &sgnum,
                         );
                     } else {
                         // Could not create a placeholder; fall back to the textual box
-                        let line = format!(
-                            "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
-                            emit_width, emit_height, left, centre, right
-                        );
-
-                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                         let sh_font = config
                             .stamp_heading_font
                             .clone()
@@ -1797,10 +1773,19 @@ where
                             .stamp_heading_label
                             .clone()
                             .unwrap_or_else(|| "SG".to_string());
-                        let _ = writeln!(
-                            output,
-                            "STAMP_HEADING({} {} \"{} : {}\")",
-                            sh_font, sh_size, sh_label, sgnum
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                            &mut output,
+                            false,
+                            "Image\\nNot\\nAvailable",
+                            emit_width,
+                            emit_height,
+                            &left,
+                            &centre,
+                            &right,
+                            &sh_font,
+                            sh_size,
+                            &sh_label,
+                            &sgnum,
                         );
                         let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
                                 clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
