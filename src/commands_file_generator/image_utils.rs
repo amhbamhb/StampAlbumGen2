@@ -3,10 +3,8 @@
 //! This module contains functions for downloading images from various sources
 //! (Colnect, StampWorld, etc.) and handling image-related operations.
 
-use crate::album_utils::sanitize_filename;
 use crate::types::ImageStatus;
 use log::{debug, error};
-use std::io::Write;
 
 /// Represents series information including dimensions and perforation details.
 #[derive(Debug, Default)]

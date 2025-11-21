@@ -579,13 +579,13 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
     if which::which("rsvg-convert").is_ok() {
         // Attempt to determine a target and upscale similar to the resvg path.
         if let Ok(svg_bytes) = std::fs::read(svg) {
-            if let Ok(tree) = ({
+            if let Ok(tree) = {
                 let mut opt = usvg::Options::default();
                 if let Some(parent) = svg.parent() {
                     opt.resources_dir = Some(parent.to_path_buf());
                 }
                 usvg::Tree::from_data(&svg_bytes, &opt)
-            }) {
+            } {
                 let svg_w = tree.size.width();
                 let svg_h = tree.size.height();
                 if svg_w > 0.0 && svg_h > 0.0 {

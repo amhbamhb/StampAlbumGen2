@@ -36,7 +36,9 @@ where
     F: FnMut(usize),
 {
     // Call refactored implementation without moving the caller's callback.
-    let path = generator_new::generate_album_output_conn(conn, album_name, start_year, end_year);
+    let path = generator_new::generate_album_output_conn::<F>(
+        conn, album_name, None, start_year, end_year,
+    );
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {
@@ -59,7 +61,8 @@ where
     F: FnMut(usize),
 {
     // Call refactored implementation without moving the caller's callback.
-    let path = generator_new::generate_album_output(db_path, album_name, start_year, end_year);
+    let path =
+        generator_new::generate_album_output::<F>(db_path, album_name, None, start_year, end_year);
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {

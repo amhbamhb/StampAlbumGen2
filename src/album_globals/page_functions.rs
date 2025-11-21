@@ -2,7 +2,6 @@ use super::generator_new::layout;
 use super::helpers::build_page_text_template;
 use super::helpers::emit_row_start_es;
 use crate::config::Config;
-use std::io::Write;
 
 pub fn new_series<W: std::io::Write>(
     writer: &mut W,

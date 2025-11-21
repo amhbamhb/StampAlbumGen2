@@ -1,12 +1,11 @@
 use super::constants::MONTH_NAMES;
 use super::globals::{compute_usable_height, write_globals};
 use super::helpers::build_page_text_template;
-use super::helpers::emit_row_start_es;
-use super::structs::{GenericAttrs, Stamp};
+use super::structs::Stamp;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
 use crate::config::load_config;
-use crate::db_utils::{get_all_series, get_stamps_by_series, init_db, update_image_dimensions};
+use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use log::{error, info, warn};
 use rusqlite::Connection;
@@ -260,7 +259,7 @@ where
         as f64;
     // Ensure height parameter is read in the same places as width so
     // tests that count parameter usage remain consistent.
-    let img_new_h = config
+    let _img_new_h = config
         .album_stamp_img_new_setting_h_mm
         .unwrap_or(cfg_defaults.album_stamp_img_new_setting_h_mm.unwrap())
         as f64;
@@ -322,68 +321,14 @@ where
     // Treat series_list as Vec<String> (series names). We don't filter by year here.
     let filtered_series: Vec<String> = series_list.to_vec();
     let _series_count = filtered_series.len();
-    for (_series_idx, series) in filtered_series.iter().enumerate() {
+    crate::album_globals::generator_new::for_each_series(conn, series_order_slice, | _series_idx, series | {
         if let Some(cb) = page_callback.as_mut() {
             cb(page_counter);
         }
-        // Example: Load stamps as Vec<Stamp> with generic attributes
-        let mut stamps = get_stamps_by_series(conn, series, "0").expect("Failed to get stamps");
-        // Apply inclusive year filtering if start/end years were provided.
-        // The generator receives Optional start/end from the CLI. If present,
-        // filter stamps to the inclusive range [start_year, end_year].
-        if let (Some(sy), Some(ey)) = (passed_start_year, passed_end_year) {
-            // Only apply when a sensible range was provided
-            if sy > 0 && ey < 9999 && sy <= ey {
-                stamps.retain(|st| st.year >= sy && st.year <= ey);
-            }
-        } else if let Some(sy) = passed_start_year {
-            if sy > 0 {
-                stamps.retain(|st| st.year >= sy);
-            }
-        } else if let Some(ey) = passed_end_year {
-            if ey < 9999 {
-                stamps.retain(|st| st.year <= ey);
-            }
-        }
-        // Diagnostic: write a short comment indicating how many stamps we fetched for this series.
-        // Sanitize the series name to a single line (collapse newlines and extra spaces)
-        // so downstream tools (or grep) can reliably parse this diagnostic.
-        let _safe_series = clean_text(series)
-            .replace('\n', " ")
-            .replace("  ", " ")
-            .replace('"', "'");
-        // let _ = writeln!(output, "# SERIES_FETCH series=\"{}\" count=\"{}\"", safe_series, stamps.len());
-        let mut stamp_objs: Vec<Stamp> = Vec::new();
-        for stamp in stamps {
-            let mut attrs = GenericAttrs::new();
-            attrs.set("year", &stamp.year.to_string());
-            attrs.set("sg_number", &stamp.sg_number);
-            attrs.set("type", &stamp.r#type);
-            attrs.set("denomination", &stamp.denomination);
-            attrs.set("color", &stamp.color);
-            attrs.set("description", &stamp.description);
-            attrs.set("stamps_issued", &stamp.stamps_issued);
-            attrs.set("mint_condition", &stamp.mint_condition);
-            attrs.set("unused", &stamp.unused);
-            attrs.set("used", &stamp.used);
-            attrs.set("month", &stamp.month);
-            attrs.set("month_num", &stamp.month_num.to_string());
-            attrs.set("day", &stamp.day);
-            attrs.set("currency", &stamp.currency);
-            attrs.set("watermark", &stamp.watermark);
-            attrs.set("design", &stamp.design);
-            attrs.set("engraving", &stamp.engraving);
-            attrs.set("perforation", &stamp.perforation);
-            // Set image_path from StampStub
-            stamp_objs.push(Stamp {
-                attrs,
-                image_path: stamp.image_path.clone(),
-                image_width_px: stamp.image_width_px,
-                image_height_px: stamp.image_height_px,
-                est_width_mm: None,
-                est_height_mm: None,
-            });
-        }
+        // Fetch stamps + year-filter + conversion into Stamp objects via helper.
+        let mut stamp_objs = crate::album_globals::generator_new::helpers::
+            fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
+            .expect("Failed to get stamps");
         // Group stamps into rows (configurable max stamps per row)
         let max_stamps_per_row = config.max_stamps_per_row.unwrap_or(5) as usize;
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
@@ -474,89 +419,44 @@ where
             // If pixel dims are present (placeholders set them later), print them too.
             let diag_px_w = s.image_width_px.unwrap_or(0);
             let diag_px_h = s.image_height_px.unwrap_or(0);
-            let _ = writeln!(output, "# STAMP_DIAG sg=\"{}\" source=\"{}\" est_w_mm=\"{:.2}\" est_h_mm=\"{:.2}\" px=\"{}x{}\" img=\"{}\"",
-                diag_sg, est_source, diag_w_mm, diag_h_mm, diag_px_w, diag_px_h, diag_img_path);
+            let _ = crate::album_globals::generator_new::helpers::emit_stamp_diag(
+                &mut output,
+                &diag_sg,
+                est_source,
+                diag_w_mm,
+                diag_h_mm,
+                diag_px_w,
+                diag_px_h,
+                &diag_img_path,
+            );
 
             // If the stamp has no image and therefore no stored pixel dims, create
             // a placeholder now using the emit box size (est + 2*stamp_box_adjust)
             // so future layout sees consistent sizes.
             if s.image_width_px.is_none() {
-                // When generating a placeholder, create an image sized to the
-                // base image area only (no per-side stamp_box_adjust). The
-                // emitted STAMP_ADD_IMG box will add `2 * stamp_box_adjust`
-                // later when computing the printed box size. Using the base
-                // image dimensions for the placeholder keeps the placeholder
-                // pixel dimensions consistent with real images and avoids
-                // embedding the layout padding into the image itself.
                 let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
                 let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
                 let target_w_mm = base_w; // image-only width (mm)
                 let target_h_mm = base_h; // image-only height (mm)
-                match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
-                    album_name,
-                    s.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or(""),
-                    s.attrs.get("year").map(|s| s.as_str()).unwrap_or(""),
-                    Some(series),
-                    None,
-                    Some(target_w_mm),
-                    Some(target_h_mm),
-                    Some(mm_per_pixel_w),
-                    Some(mm_per_pixel_h),
-                ) {
-                    Ok(rel) => {
-                        // Replace image_path with generated placeholder relative path
-                        s.image_path = rel;
-                        // Populate pixel dims with the image-only pixel size
-                        // (do NOT include stamp_box_adjust here).
-                        let px_w = (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
-                        let px_h = (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
-                        s.image_width_px = Some(px_w);
-                        s.image_height_px = Some(px_h);
-                        // Persist placeholder pixel dims to the DB so future runs
-                        // (or other tools) can rely on the stored values.
-                        if px_w > 0 && px_h > 0 {
-                            let sg_str = s.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
-                            if let Err(e) = update_image_dimensions(
-                                conn,
-                                album_name,
-                                series,
-                                sg_str,
-                                Some(px_w),
-                                Some(px_h),
-                            ) {
-                                log::error!(
-                                    "Failed to update DB image dims for {} sg {}: {}",
-                                    album_name,
-                                    sg_str,
-                                    e
-                                );
-                            }
-                        }
-                        // Emit an updated diagnostic that includes the placeholder
-                        // pixel dimensions and relative image path so callers can
-                        // verify the on-disk placeholder matches the estimate.
-                        let upd_sg = s
-                            .attrs
-                            .get("sg_number")
-                            .unwrap_or(&"".to_string())
-                            .replace('"', "'");
-                        let upd_img = s.image_path.replace('"', "'");
-                        let upd_px_w = s.image_width_px.unwrap_or(0);
-                        let upd_px_h = s.image_height_px.unwrap_or(0);
-                        let _ = writeln!(
-                            output,
-                            "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\"",
-                            upd_sg, upd_px_w, upd_px_h, upd_img
-                        );
-                    }
-                    Err(e) => {
-                        log::error!(
-                            "Failed to create placeholder for {} sg {}: {}",
-                            album_name,
-                            s.attrs.get("sg_number").unwrap_or(&"".to_string()),
-                            e
-                        );
-                    }
+                let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                let year_str = s.attrs.get("year").map(|v| v.as_str()).unwrap_or("");
+                if let Some((rel, px_w, px_h)) =
+                    crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
+                        conn,
+                        album_name,
+                        series,
+                        sg_str,
+                        year_str,
+                        target_w_mm,
+                        target_h_mm,
+                        mm_per_pixel_w,
+                        mm_per_pixel_h,
+                        Some(&mut output),
+                    )
+                {
+                    s.image_path = rel;
+                    s.image_width_px = Some(px_w);
+                    s.image_height_px = Some(px_h);
                 }
             }
         }
@@ -1301,32 +1201,22 @@ where
             // If we have a pending header, write it now (we are about to
             // emit the first row for this series on the current page).
             if let Some((pending_lines, v_before, v_after)) = header_pending.take() {
-                // Use configurable marker so tests/tools can detect the vspace
-                let pv_marker = config
-                    .page_vspace_marker
-                    .clone()
-                    .unwrap_or_else(|| "6".to_string());
-                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(
+                // Delegate header emission to layout helper which writes the
+                // page vspace markers and header lines and returns the
+                // total vertical millimetre height consumed.
+                match crate::album_globals::generator_new::layout::write_header_block(
                     &mut output,
-                    &pv_marker,
-                );
-                current_height += v_before;
-                // header vspace written (diagnostics suppressed)
-                for (line, h) in pending_lines {
-                    let _ = writeln!(output, "{}", line);
-                    current_height += h;
-                    // header line written (diagnostics suppressed)
+                    &pending_lines,
+                    v_before,
+                    v_after,
+                    &config,
+                ) {
+                    Ok(h) => current_height += h,
+                    Err(e) => {
+                        log::error!("Failed to write header block: {}", e);
+                        // Fallback: pretend no height was written so generation continues
+                    }
                 }
-                let pv_marker = config
-                    .page_vspace_marker
-                    .clone()
-                    .unwrap_or_else(|| "6".to_string());
-                let _ = crate::album_globals::generator_new::layout::write_page_vspace_marker(
-                    &mut output,
-                    &pv_marker,
-                );
-                current_height += v_after;
-                // header vspace after written (diagnostics suppressed)
                 header_written = true;
             }
             // Build ROW_START_ES from parameterized config if provided, otherwise fall back to
@@ -1384,7 +1274,7 @@ where
                 // (if enabled) but avoid generating spacer artifacts that change layout.
             }
 
-            let _ = emit_row_start_es(&mut output, Some(&config));
+            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
 
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {
@@ -1608,25 +1498,8 @@ where
                 let second_line = v_used.clone().unwrap_or_else(|| "".to_string());
                 let right = format!("{}\\n{}", first_line, second_line);
                 if !image_path.is_empty() && Path::new(&full_image_path).exists() {
-                    // Emit a lightweight diagnostic comment so we can later grep the
-                    // output file and verify stamps are actually being written to the
-                    // canonical Albums/{Album}/{Album}.txt file. Make sure the
-                    // comment is a single line by sanitizing newlines/extra spaces.
-                    let _safe_series = clean_text(series)
-                        .replace("\\n", " ")
-                        .split_whitespace()
-                        .collect::<Vec<&str>>()
-                        .join(" ")
-                        .replace("\"", "'");
-
-                    // let _ = writeln!(output, "# EMIT_STAMP series=\"{}\" sg=\"{}\" img=\"{}\"", safe_series, safe_sg, safe_img);
-                    // estimate_real_dimensions returns millimetres; emit mm directly
-                    let line = format!(
-                        "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-                        emit_width, emit_height, image_path, left, centre, right
-                    );
-
-                    let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                    // Delegate formatted emission to the centralized emitter
+                    // so formatting and escaping are consistent across call sites.
                     let sh_font = config
                         .stamp_heading_font
                         .clone()
@@ -1636,15 +1509,20 @@ where
                         .stamp_heading_label
                         .clone()
                         .unwrap_or_else(|| "SG".to_string());
-                    let _ = writeln!(
-                        output,
-                        "STAMP_HEADING({} {} \"{} : {}\")",
-                        sh_font, sh_size, sh_label, sgnum
+                    let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                        &mut output,
+                        true,
+                        image_path,
+                        emit_width,
+                        emit_height,
+                        &left,
+                        &centre,
+                        &right,
+                        &sh_font,
+                        sh_size,
+                        &sh_label,
+                        &sgnum,
                     );
-                    // Emit an immediate state line showing the stamp box that
-                    // was just written and the expected new current_height if
-                    // this were the tallest row on the page.
-                    // stamp emitted (diagnostics suppressed)
                 } else {
                     let _safe_series = clean_text(series)
                         .replace("\\n", " ")
@@ -1762,65 +1640,26 @@ where
                             }
                         }
 
-                        match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
-                            album_name,
-                            &sgnum,
-                            &year_clean,
-                            Some(series),
-                            None,
-                            Some(target_w_mm),
-                            Some(target_h_mm),
-                            Some(mm_per_pixel_w),
-                            Some(mm_per_pixel_h),
-                        ) {
-                            Ok(rel_path) => {
-                                emitted_placeholder = Some(rel_path.clone());
-                                // Emit diagnostic for placeholder created during layout pass
-                                let ph_px_w =
-                                    (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
-                                let ph_px_h =
-                                    (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
-                                let ph_sg = sgnum.replace('"', "'");
-                                let ph_img = rel_path.replace('"', "'");
-                                let _ = writeln!(output, "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\" target_mm=\"{:.2}x{:.2}\" source=\"layout_gen\"",
-                                        ph_sg, ph_px_w, ph_px_h, ph_img, target_w_mm, target_h_mm);
-                                // Persist placeholder pixel dims to the DB so future runs
-                                // can reuse the measured dimensions.
-                                if ph_px_w > 0 && ph_px_h > 0 {
-                                    let _sg_ref = sgnum.as_str();
-                                    if let Err(e) = update_image_dimensions(
-                                        conn,
-                                        album_name,
-                                        series,
-                                        _sg_ref,
-                                        Some(ph_px_w),
-                                        Some(ph_px_h),
-                                    ) {
-                                        log::error!(
-                                            "Failed to update DB image dims for {} sg {}: {}",
-                                            album_name,
-                                            _sg_ref,
-                                            e
-                                        );
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!(
-                                    "Failed to generate placeholder image for {} sg {}: {}",
-                                    album_name, sgnum, e
-                                );
-                            }
+                        if let Some((rel_path, _, _)) =
+                            crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
+                                conn,
+                                album_name,
+                                series,
+                                &sgnum,
+                                &year_clean,
+                                target_w_mm,
+                                target_h_mm,
+                                mm_per_pixel_w,
+                                mm_per_pixel_h,
+                                Some(&mut output),
+                            )
+                        {
+                            emitted_placeholder = Some(rel_path.clone());
                         }
                     }
 
                     if let Some(img_rel) = emitted_placeholder {
                         // We have a generated placeholder; emit STAMP_ADD_IMG using it
-                        let line = format!(
-                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-                            emit_width, emit_height, img_rel, left, centre, right
-                        );
-                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                         let sh_font = config
                             .stamp_heading_font
                             .clone()
@@ -1830,19 +1669,22 @@ where
                             .stamp_heading_label
                             .clone()
                             .unwrap_or_else(|| "SG".to_string());
-                        let _ = writeln!(
-                            output,
-                            "STAMP_HEADING({} {} \"{} : {}\")",
-                            sh_font, sh_size, sh_label, sgnum
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                            &mut output,
+                            true,
+                            &img_rel,
+                            emit_width,
+                            emit_height,
+                            &left,
+                            &centre,
+                            &right,
+                            &sh_font,
+                            sh_size,
+                            &sh_label,
+                            &sgnum,
                         );
                     } else {
                         // Could not create a placeholder; fall back to the textual box
-                        let line = format!(
-                            "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
-                            emit_width, emit_height, left, centre, right
-                        );
-
-                        let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
                         let sh_font = config
                             .stamp_heading_font
                             .clone()
@@ -1852,10 +1694,19 @@ where
                             .stamp_heading_label
                             .clone()
                             .unwrap_or_else(|| "SG".to_string());
-                        let _ = writeln!(
-                            output,
-                            "STAMP_HEADING({} {} \"{} : {}\")",
-                            sh_font, sh_size, sh_label, sgnum
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                            &mut output,
+                            false,
+                            "Image\\nNot\\nAvailable",
+                            emit_width,
+                            emit_height,
+                            &left,
+                            &centre,
+                            &right,
+                            &sh_font,
+                            sh_size,
+                            &sh_label,
+                            &sgnum,
                         );
                         let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
                                 clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
@@ -1866,7 +1717,7 @@ where
             rows_on_page += 1;
             row_idx += 1;
         }
-    }
+    }).expect("for_each_series failed");
 
     // Finalize: we've written to a temp file. Flush buffer and promote it into place only if it
     // contains STAMP lines; otherwise remove the temp and leave existing file intact.
@@ -2340,10 +2191,10 @@ fn compute_page_used_height(page_block: &[&str], config: &crate::config::Config)
             }
             idx += 1;
         }
-        // skip trailing PAGE_VSPACE if present
-        while idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
-            idx += 1;
-            break;
+        // skip a single trailing PAGE_VSPACE if present
+        if idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
+            // increment not required later; evaluate expression to avoid unused_assignment warning
+            let _ = idx + 1;
         }
     }
     let v_before = config
