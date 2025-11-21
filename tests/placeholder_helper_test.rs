@@ -73,7 +73,11 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
 
     // File should exist under Albums/<Album>/images/<rel_path>
     let expected_path = Path::new("Albums").join(album_name).join(&rel_path);
-    assert!(expected_path.exists(), "placeholder file should exist: {}", expected_path.display());
+    assert!(
+        expected_path.exists(),
+        "placeholder file should exist: {}",
+        expected_path.display()
+    );
 
     // Verify image pixel dimensions on disk match reported px_w/px_h
     let img = image::open(&expected_path).expect("open placeholder image");
@@ -91,8 +95,16 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
     let row = rows.next().expect("row present").expect("row ok");
     let db_w: Option<i32> = row.get(0).expect("get w");
     let db_h: Option<i32> = row.get(1).expect("get h");
-    assert_eq!(db_w.unwrap_or(0), px_w, "DB width should match computed px_w");
-    assert_eq!(db_h.unwrap_or(0), px_h, "DB height should match computed px_h");
+    assert_eq!(
+        db_w.unwrap_or(0),
+        px_w,
+        "DB width should match computed px_w"
+    );
+    assert_eq!(
+        db_h.unwrap_or(0),
+        px_h,
+        "DB height should match computed px_h"
+    );
 
     // Cleanup: tempdir will be removed automatically; CwdGuard restores cwd
 }

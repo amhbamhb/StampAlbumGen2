@@ -1257,8 +1257,7 @@ pub fn collect_stampworld_data_with_fetcher(
                                     &series_name,
                                     &sg_number,
                                     &local_image_path,
-                                )
-                                {
+                                ) {
                                     error!(
                                         "Failed to persist image dimensions for {} {} {}: {}",
                                         site_name, series_name, sg_number, e
@@ -1371,7 +1370,7 @@ pub fn collect_stampworld_data_with_fetcher(
                                                     debug!("Backfilled image dimensions for {} {} {} -> {}x{}", site_name, series_name, sg_number, w_px, h_px);
                                                 }
                                             }
-                                            
+
                                         }
                                     }
                                     Err(e) => {
