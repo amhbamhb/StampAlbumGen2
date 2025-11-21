@@ -93,3 +93,32 @@ pub fn emit_stamp<W: Write>(
     }
     Ok(())
 }
+
+/// Emit only an image stamp line (no `STAMP_HEADING`) with optional extra
+/// options appended (e.g. `NO_FRAME`). This is useful for cover/flag images
+/// where a heading should not be emitted.
+pub fn emit_image_only<W: Write>(
+    out: &mut W,
+    emit_width: f64,
+    emit_height: f64,
+    image_path: &str,
+    left: &str,
+    centre: &str,
+    right: &str,
+    options: Option<&str>,
+) -> std::io::Result<()> {
+    let mut line = format!(
+        "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\"",
+        emit_width, emit_height, image_path, left, centre, right
+    );
+    if let Some(opts) = options {
+        // append a space then the options token(s) and close paren
+        line.push(' ');
+        line.push_str(opts);
+        line.push(')');
+    } else {
+        line.push(')');
+    }
+    writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
+    Ok(())
+}

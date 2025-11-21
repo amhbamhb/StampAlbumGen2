@@ -5,7 +5,7 @@ use super::structs::Stamp;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
 use crate::config::load_config;
-use crate::db_utils::{get_all_series, get_stamps_by_series, init_db, update_image_dimensions};
+use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use log::{error, info, warn};
 use rusqlite::Connection;
@@ -419,89 +419,44 @@ where
             // If pixel dims are present (placeholders set them later), print them too.
             let diag_px_w = s.image_width_px.unwrap_or(0);
             let diag_px_h = s.image_height_px.unwrap_or(0);
-            let _ = writeln!(output, "# STAMP_DIAG sg=\"{}\" source=\"{}\" est_w_mm=\"{:.2}\" est_h_mm=\"{:.2}\" px=\"{}x{}\" img=\"{}\"",
-                diag_sg, est_source, diag_w_mm, diag_h_mm, diag_px_w, diag_px_h, diag_img_path);
+            let _ = crate::album_globals::generator_new::helpers::emit_stamp_diag(
+                &mut output,
+                &diag_sg,
+                est_source,
+                diag_w_mm,
+                diag_h_mm,
+                diag_px_w,
+                diag_px_h,
+                &diag_img_path,
+            );
 
             // If the stamp has no image and therefore no stored pixel dims, create
             // a placeholder now using the emit box size (est + 2*stamp_box_adjust)
             // so future layout sees consistent sizes.
             if s.image_width_px.is_none() {
-                // When generating a placeholder, create an image sized to the
-                // base image area only (no per-side stamp_box_adjust). The
-                // emitted STAMP_ADD_IMG box will add `2 * stamp_box_adjust`
-                // later when computing the printed box size. Using the base
-                // image dimensions for the placeholder keeps the placeholder
-                // pixel dimensions consistent with real images and avoids
-                // embedding the layout padding into the image itself.
                 let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
                 let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
                 let target_w_mm = base_w; // image-only width (mm)
                 let target_h_mm = base_h; // image-only height (mm)
-                match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
-                    album_name,
-                    s.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or(""),
-                    s.attrs.get("year").map(|s| s.as_str()).unwrap_or(""),
-                    Some(series),
-                    None,
-                    Some(target_w_mm),
-                    Some(target_h_mm),
-                    Some(mm_per_pixel_w),
-                    Some(mm_per_pixel_h),
-                ) {
-                    Ok(rel) => {
-                        // Replace image_path with generated placeholder relative path
-                        s.image_path = rel;
-                        // Populate pixel dims with the image-only pixel size
-                        // (do NOT include stamp_box_adjust here).
-                        let px_w = (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
-                        let px_h = (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
-                        s.image_width_px = Some(px_w);
-                        s.image_height_px = Some(px_h);
-                        // Persist placeholder pixel dims to the DB so future runs
-                        // (or other tools) can rely on the stored values.
-                        if px_w > 0 && px_h > 0 {
-                            let sg_str = s.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
-                            if let Err(e) = update_image_dimensions(
-                                conn,
-                                album_name,
-                                series,
-                                sg_str,
-                                Some(px_w),
-                                Some(px_h),
-                            ) {
-                                log::error!(
-                                    "Failed to update DB image dims for {} sg {}: {}",
-                                    album_name,
-                                    sg_str,
-                                    e
-                                );
-                            }
-                        }
-                        // Emit an updated diagnostic that includes the placeholder
-                        // pixel dimensions and relative image path so callers can
-                        // verify the on-disk placeholder matches the estimate.
-                        let upd_sg = s
-                            .attrs
-                            .get("sg_number")
-                            .unwrap_or(&"".to_string())
-                            .replace('"', "'");
-                        let upd_img = s.image_path.replace('"', "'");
-                        let upd_px_w = s.image_width_px.unwrap_or(0);
-                        let upd_px_h = s.image_height_px.unwrap_or(0);
-                        let _ = writeln!(
-                            output,
-                            "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\"",
-                            upd_sg, upd_px_w, upd_px_h, upd_img
-                        );
-                    }
-                    Err(e) => {
-                        log::error!(
-                            "Failed to create placeholder for {} sg {}: {}",
-                            album_name,
-                            s.attrs.get("sg_number").unwrap_or(&"".to_string()),
-                            e
-                        );
-                    }
+                let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                let year_str = s.attrs.get("year").map(|v| v.as_str()).unwrap_or("");
+                if let Some((rel, px_w, px_h)) =
+                    crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
+                        conn,
+                        album_name,
+                        series,
+                        sg_str,
+                        year_str,
+                        target_w_mm,
+                        target_h_mm,
+                        mm_per_pixel_w,
+                        mm_per_pixel_h,
+                        Some(&mut output),
+                    )
+                {
+                    s.image_path = rel;
+                    s.image_width_px = Some(px_w);
+                    s.image_height_px = Some(px_h);
                 }
             }
         }
@@ -1685,55 +1640,21 @@ where
                             }
                         }
 
-                        match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
-                            album_name,
-                            &sgnum,
-                            &year_clean,
-                            Some(series),
-                            None,
-                            Some(target_w_mm),
-                            Some(target_h_mm),
-                            Some(mm_per_pixel_w),
-                            Some(mm_per_pixel_h),
-                        ) {
-                            Ok(rel_path) => {
-                                emitted_placeholder = Some(rel_path.clone());
-                                // Emit diagnostic for placeholder created during layout pass
-                                let ph_px_w =
-                                    (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
-                                let ph_px_h =
-                                    (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
-                                let ph_sg = sgnum.replace('"', "'");
-                                let ph_img = rel_path.replace('"', "'");
-                                let _ = writeln!(output, "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\" target_mm=\"{:.2}x{:.2}\" source=\"layout_gen\"",
-                                        ph_sg, ph_px_w, ph_px_h, ph_img, target_w_mm, target_h_mm);
-                                // Persist placeholder pixel dims to the DB so future runs
-                                // can reuse the measured dimensions.
-                                if ph_px_w > 0 && ph_px_h > 0 {
-                                    let _sg_ref = sgnum.as_str();
-                                    if let Err(e) = update_image_dimensions(
-                                        conn,
-                                        album_name,
-                                        series,
-                                        _sg_ref,
-                                        Some(ph_px_w),
-                                        Some(ph_px_h),
-                                    ) {
-                                        log::error!(
-                                            "Failed to update DB image dims for {} sg {}: {}",
-                                            album_name,
-                                            _sg_ref,
-                                            e
-                                        );
-                                    }
-                                }
-                            }
-                            Err(e) => {
-                                error!(
-                                    "Failed to generate placeholder image for {} sg {}: {}",
-                                    album_name, sgnum, e
-                                );
-                            }
+                        if let Some((rel_path, _, _)) =
+                            crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
+                                conn,
+                                album_name,
+                                series,
+                                &sgnum,
+                                &year_clean,
+                                target_w_mm,
+                                target_h_mm,
+                                mm_per_pixel_w,
+                                mm_per_pixel_h,
+                                Some(&mut output),
+                            )
+                        {
+                            emitted_placeholder = Some(rel_path.clone());
                         }
                     }
 

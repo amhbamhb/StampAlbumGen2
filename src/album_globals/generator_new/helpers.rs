@@ -35,6 +35,31 @@ pub fn emit_row_start_es(
     )
 }
 
+/// Emit a concise per-stamp diagnostic line that mirrors the legacy generator
+/// output. Centralizing this helps keep `generator.rs` free of direct writes.
+pub fn emit_stamp_diag<W: Write>(
+    output: &mut W,
+    sg: &str,
+    source: &str,
+    est_w_mm: f64,
+    est_h_mm: f64,
+    px_w: i32,
+    px_h: i32,
+    img: &str,
+) -> std::io::Result<()> {
+    writeln!(
+        output,
+        "# STAMP_DIAG sg=\"{}\" source=\"{}\" est_w_mm=\"{:.2}\" est_h_mm=\"{:.2}\" px=\"{}x{}\" img=\"{}\"",
+        sg.replace('"', "'"),
+        source,
+        est_w_mm,
+        est_h_mm,
+        px_w,
+        px_h,
+        img.replace('"', "'")
+    )
+}
+
 pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {
     match kind {
         "centre" => {
@@ -271,4 +296,76 @@ pub fn estimate_and_ensure_placeholders(
     }
 
     Ok(())
+}
+
+/// Ensure a placeholder image exists for a single stamp and persist its
+/// pixel dimensions to the DB. Returns `Some((rel_path, px_w, px_h))` when
+/// a placeholder was created (or already exists and was returned by the
+/// placeholder generator); otherwise `None`.
+pub fn ensure_placeholder_for_stamp_and_update_db(
+    conn: &Connection,
+    album_name: &str,
+    series_name: &str,
+    sg_number: &str,
+    year: &str,
+    target_w_mm: f64,
+    target_h_mm: f64,
+    mm_per_pixel_w: f32,
+    mm_per_pixel_h: f32,
+    mut writer: Option<&mut dyn Write>,
+) -> Option<(String, i32, i32)> {
+    match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
+        album_name,
+        sg_number,
+        year,
+        Some(series_name),
+        None,
+        Some(target_w_mm),
+        Some(target_h_mm),
+        Some(mm_per_pixel_w),
+        Some(mm_per_pixel_h),
+    ) {
+        Ok(rel) => {
+            let px_w = (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
+            let px_h = (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
+            if px_w > 0 && px_h > 0 {
+                if let Err(e) = update_image_dimensions(
+                    conn,
+                    album_name,
+                    series_name,
+                    sg_number,
+                    Some(px_w),
+                    Some(px_h),
+                ) {
+                    log::error!(
+                        "Failed to update DB image dims for {} sg {}: {}",
+                        album_name,
+                        sg_number,
+                        e
+                    );
+                }
+            }
+            // If a writer was provided, emit the diagnostic line here so
+            // callers don't need to perform this side-effect themselves.
+            if let Some(ref mut w) = writer.as_mut() {
+                let ph_sg = sg_number.replace('"', "'");
+                let ph_img = rel.replace('"', "'");
+                let _ = writeln!(
+                    w,
+                    "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\" target_mm=\"{:.2}x{:.2}\" source=\"placeholder_helper\"",
+                    ph_sg, px_w, px_h, ph_img, target_w_mm, target_h_mm
+                );
+            }
+            Some((rel, px_w, px_h))
+        }
+        Err(e) => {
+            log::error!(
+                "Failed to create placeholder for {} sg {}: {}",
+                album_name,
+                sg_number,
+                e
+            );
+            None
+        }
+    }
 }
