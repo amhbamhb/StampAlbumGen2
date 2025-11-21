@@ -1,5 +1,4 @@
 use crate::album_globals::generator_new::layout;
-use crate::wikipedia::ContentSource;
 use log::info;
 use std::io::Write;
 
@@ -523,10 +522,15 @@ pub fn write_globals<W: Write>(
                         let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(80.0);
                         let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(100.0);
                         let _ = writeln!(writer, "# Coat of arms for album (if available)");
-                        let _ = writeln!(
+                        let _ = crate::album_globals::generator_new::emit::emit_image_only(
                             writer,
-                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
-                            coat_w, coat_h, cp
+                            coat_w as f64,
+                            coat_h as f64,
+                            cp,
+                            "",
+                            "",
+                            "",
+                            Some("NO_FRAME"),
                         );
                         // Small vertical gap after coat
                         let _ = layout::write_page_vspace(writer, 6.0_f64);
@@ -544,10 +548,15 @@ pub fn write_globals<W: Write>(
                         let _ = writeln!(writer, "# Cover flag image for album");
                         let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
                         let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
-                        let _ = writeln!(
+                        let _ = crate::album_globals::generator_new::emit::emit_image_only(
                             writer,
-                            "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\" NO_FRAME)",
-                            img_w, img_h, fp
+                            img_w as f64,
+                            img_h as f64,
+                            fp,
+                            "",
+                            "",
+                            "",
+                            Some("NO_FRAME"),
                         );
                         // Set stamp background back to black as requested after the flag
                         let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(black)");

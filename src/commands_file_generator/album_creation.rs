@@ -191,7 +191,7 @@ pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) -> usize {
 pub fn save_stamp_data<P: AsRef<std::path::Path>>(
     file_path: P,
     data: &[String],
-    source: &str,
+    _source: &str,
     overwrite_album: bool,
     data_source: &str,
 ) {

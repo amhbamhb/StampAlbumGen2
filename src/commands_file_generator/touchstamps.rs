@@ -132,7 +132,7 @@ pub fn get_touchstamps_stamps(
         all_stamp_data.extend(stamp_data);
     }
     // Save all data once at the end
-    let file_path = format!("{}_data.txt", album_name);
+    let _file_path = format!("{}_data.txt", album_name);
     // Note: This would need to be handled by the caller since we don't have access to save_stamp_data here
     // For now, we'll just return the data
     all_stamp_data

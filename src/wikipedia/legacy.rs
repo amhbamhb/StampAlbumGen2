@@ -1,8 +1,6 @@
-use crate::config::Config;
 use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 use crate::wikipedia::database;
-use crate::wikipedia::formatters;
-use crate::wikipedia::models::ContentSource;
+// legacy wrapper: keep imports minimal — remove unused ones to silence warnings
 use std::fs;
 use std::path::Path;
 
