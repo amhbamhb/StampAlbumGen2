@@ -102,7 +102,7 @@ row_start_es_enabled = true
 row_start_es_font = "HN"
 row_start_es_size = 6.0
 row_start_es_spacing = 0.1
-row_start_es_vspace = 5.0
+row_start_es_vspace = 8.0          # Increased from 5.0 to provide more space after row start header
 
 # When trying to fit content on a page, apply this conservative buffer
 # (mm) to avoid clipping or very tight layouts when rounding occurs.
@@ -215,12 +215,13 @@ flag_cover_text_only_vspace_after = 18.0
 # If `fetch_wikipedia` is true the program will attempt to fetch and cache
 # Wikipedia / Grokipedia content for the album topic. If false, cached
 # content (if present) may still be used depending on other flags.
-fetch_wikipedia = false
+# Grokipedia is preferred; if unavailable, falls back to Wikipedia.
+fetch_wikipedia = true
 
 # When true, include any cached Wikipedia/Grokipedia content in the album
 # output (formatted into album pages). This is separate from `fetch_wikipedia`
 # to allow using previously-cached content without network activity.
-include_wikipedia_content = false
+include_wikipedia_content = true
 
 # Where to store the cached Wikipedia content (SQLite DB path).
 wikipedia_cache_db_path = "wikipedia_cache.db"
@@ -251,27 +252,36 @@ expand_grouped_ranges = "placeholders"
 content_wiki_font = "HN"                  # Font used for larger wiki content blocks (body+headings)
 content_wiki_font_size = 12                # Default font size (pt) for content blocks
 wikipedia_paragraph_font = "HN"           # Font code used for paragraphs
-wikipedia_paragraph_font_size = 12         # Paragraph font size (pt)
+wikipedia_paragraph_font_size = 11         # Paragraph font size (pt) - reduced for better fit
 wikipedia_paragraph_alignment = "JUSTIFIED" # LEFT|RIGHT|CENTER|JUSTIFIED
-wikipedia_paragraph_padding = 10.0         # Left/right padding inside paragraph (mm)
-wikipedia_paragraph_right_padding = 10.0   # Right padding (mm)
+wikipedia_paragraph_padding = 8.0          # Left padding inside paragraph (mm) - increased for more side spacing
+wikipedia_paragraph_right_padding = 8.0    # Right padding (mm) - increased for more side spacing
+wikipedia_section_title_font = "HB"       # Font for section headers (bold)
+wikipedia_section_title_font_size = 13     # Section header font size (pt)
+wikipedia_section_title_spacing = 4.0      # Spacing after section header (mm) - increased for top margin
 
 # You can either set an explicit paragraph vertical gap in mm or rely on the
 # multiplier which scales relative to the paragraph font size. If you set
 # `wikipedia_paragraph_vspace` it overrides the multiplier.
-# wikipedia_paragraph_vspace = 5.0
-wikipedia_paragraph_vspace_multiplier = 0.18
+# wikipedia_paragraph_vspace = 5.0  # Uncomment to use fixed spacing instead of multiplier
+wikipedia_paragraph_vspace_multiplier = 0.18  # Spacing between paragraphs (18% of font size ≈ 2mm)
 
 # Pagination strategy determines how large wiki pages are split across
 # album pages. Choose `balanced` for even distribution, `conservative`
 # to use a reduced per-page target (to avoid crowding), or `no_balance`
 # for greedy filling.
 wikipedia_pagination_strategy = "balanced"
-wikipedia_pagination_conservative_fraction = 0.75
+wikipedia_pagination_conservative_fraction = 0.80  # Increased from 0.75 to use more of page
 
 # If true, center small wiki sections vertically on the page to avoid
 # large empty bottom margins when content is small compared to the page.
-wikipedia_center_content = true
+wikipedia_center_content = false
+
+# If true, use mathematical spacing calculation to maximize page fill.
+# When enabled, spacing between paragraphs and sections is calculated
+# based on page usage percentage (avoiding too much white space).
+# Config spacing values are ignored when this is true.
+wikipedia_use_math_spacing = true
 
 ###################################
 # Image & DPI

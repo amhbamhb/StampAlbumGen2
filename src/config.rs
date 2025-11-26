@@ -266,6 +266,8 @@ pub struct Config {
     // Wikipedia section title formatting
     pub wikipedia_section_title_font: Option<String>,
     pub wikipedia_section_title_font_size: Option<u32>,
+    pub wikipedia_section_title_spacing: Option<f64>,
+    pub wikipedia_use_math_spacing: Option<bool>,
 }
 
 impl Config {
@@ -389,14 +391,16 @@ impl Config {
             wikipedia_paragraph_font_size: Some(12),
             wikipedia_paragraph_alignment: Some("JUSTIFIED".to_string()),
             wikipedia_paragraph_padding: Some(10.0),
-            wikipedia_paragraph_vspace: Some(5.0),
-            wikipedia_paragraph_vspace_multiplier: Some(0.25),
+            wikipedia_paragraph_vspace: None, // Use multiplier instead of fixed value
+            wikipedia_paragraph_vspace_multiplier: Some(0.15), // 15% of font size
             wikipedia_paragraph_right_padding: Some(10.0),
             wikipedia_pagination_strategy: Some("balanced".to_string()),
             wikipedia_center_content: Some(true),
             wikipedia_pagination_conservative_fraction: Some(0.75),
             wikipedia_section_title_font: Some("HB".to_string()),
             wikipedia_section_title_font_size: Some(14),
+            wikipedia_section_title_spacing: Some(2.0),
+            wikipedia_use_math_spacing: Some(true),
             // All other fields remain None (not set in defaults)
             ..Default::default()
         }
@@ -1039,6 +1043,16 @@ pub fn load_config(path: &str) -> Config {
                                 if cfg.wikipedia_section_title_font_size.is_none() {
                                     cfg.wikipedia_section_title_font_size =
                                         defaults.wikipedia_section_title_font_size;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_section_title_spacing.is_none() {
+                                    cfg.wikipedia_section_title_spacing =
+                                        defaults.wikipedia_section_title_spacing;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_use_math_spacing.is_none() {
+                                    cfg.wikipedia_use_math_spacing =
+                                        defaults.wikipedia_use_math_spacing;
                                     has_missing = true;
                                 }
 

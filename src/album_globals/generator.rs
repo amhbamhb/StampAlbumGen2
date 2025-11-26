@@ -1928,6 +1928,20 @@ fn center_tmp_pages(
             continue;
         }
 
+        // If this page contains Wikipedia/Grokipedia content and centering is disabled in config,
+        // skip centering modifications to preserve top-aligned content layout
+        let has_wikipedia_header = page_block
+            .iter()
+            .any(|l| l.contains("Wikipedia Content") || l.contains("Grokipedia Content"));
+        let wikipedia_centering_enabled = config.wikipedia_center_content.unwrap_or(false);
+        if has_wikipedia_header && !wikipedia_centering_enabled {
+            // emit page block unchanged - Wikipedia pages should NOT be centered when disabled
+            for l in page_block.iter() {
+                out_lines.push(l.to_string());
+            }
+            continue;
+        }
+
         // Fallback: if no # PAGE_FIT markers, try to detect headers via PAGE_TEXT_* then ROW_START_ES
         if series_row_indices.is_empty() {
             for (idx, l) in page_block.iter().enumerate() {
