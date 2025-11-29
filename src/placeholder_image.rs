@@ -249,7 +249,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
         "/Library/Fonts/Arial.ttf",
-        "C:\\Windows\\Fonts\\arial.ttf",
+        "C:/Windows/Fonts/arial.ttf", // Windows accepts forward slashes
     ];
 
     for path in candidates.iter() {

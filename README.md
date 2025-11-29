@@ -1,4 +1,4 @@
-# Stamp Album Generator v1.3.0
+# Stamp Album Generator v1.4.0
 
 
 
@@ -35,11 +35,11 @@ cargo test
 ```
 
 For detailed documentation, see the `docs/` directory (automation setup, page-fit tuning, and advanced configuration).
-# Stamp Album Generator v1.3.0
+# Stamp Album Generator v1.4.0
 
-Version: 0.11.0 | Last Updated: 2025-09-25
+Version: 1.3.0 | Last Updated: 2025-11-29
 
-A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control.
+A high-performance Rust application for generating stamp album pages in AlbumEasy format from SQLite databases. Features embedded reference images and series-specific scaling for precise stamp dimension control. Now fully cross-platform compatible for Linux, Windows, and macOS.
 
 ## 🚀 Features
 
@@ -65,10 +65,10 @@ A high-performance Rust application for generating stamp album pages in AlbumEas
 ## 📦 Installation
 
 # Generate from an existing DB (output-only behavior is triggered by passing --db-path)
-# Stamp Album Generator v1.3.0
+# Stamp Album Generator v1.4.0
 
-**Version**: 1.3.0
-**Release Date**: 2025-11-15
+**Version**: 1.4.0
+**Release Date**: 2025-11-29
 
 A compact, up-to-date README for development and contributors. This file
 focuses on practical usage, configuration pointers, and best practices for
@@ -308,8 +308,8 @@ If you'd like, I can also consolidate the README to include only a short usage s
 └── *.log                          # Log files
 ```
 
-**Version**: 1.3.0
-**Release Date**: 2025-11-15
+**Version**: 1.4.0
+**Release Date**: 2025-11-29
 
 
 ## 🔧 Development
@@ -787,7 +787,7 @@ and stop-after-no-hits heuristic to avoid over-downloading:
     --stop-after-no-hits 3 --max-pages 0
 ```
 
-**Release Date**: 2025-11-15
+**Release Date**: 2025-11-29
 **Build**: Release (optimized)
 **Platform**: Linux x86-64 /content 
 `filePath`: README.md

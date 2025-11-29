@@ -69,16 +69,19 @@ fn month_number(_m: &str) -> String {
 }
 
 fn main() {
-    // Allow overriding HTML path via env var DEBUG_HTML_PATH; default to /tmp saved file
-    let html_path = env::var("DEBUG_HTML_PATH")
-        .unwrap_or_else(|_| "/tmp/stampworld_can_1848_1910_page1.html".to_string());
+    // Allow overriding HTML path via env var DEBUG_HTML_PATH; default to temp dir saved file
+    let html_path = env::var("DEBUG_HTML_PATH").unwrap_or_else(|_| {
+        let temp_path = std::env::temp_dir().join("stampworld_can_1848_1910_page1.html");
+        temp_path.to_string_lossy().to_string()
+    });
     println!("[debug] Using HTML path: {}", html_path);
 
     let fetcher = LocalFetcher::new_from_path(&html_path);
 
     // Use a temporary images directory so we don't write into Albums during debug
-    let images_dir = "/tmp/stampworld_debug_images/Canada/images";
-    let parent = Path::new(images_dir).parent().unwrap();
+    let images_dir_path = std::env::temp_dir().join("stampworld_debug_images/Canada/images");
+    let images_dir = images_dir_path.to_string_lossy().to_string();
+    let parent = images_dir_path.parent().unwrap();
     if !parent.exists() {
         let _ = fs::create_dir_all(parent);
     }
@@ -105,7 +108,7 @@ fn main() {
         &mut seq,
         "_",
         "Canada",
-        images_dir,
+        &images_dir,
         &month_number,
         &get_image,
         base_url,
@@ -122,5 +125,10 @@ fn main() {
         println!("[debug] line {}: {}", i + 1, line);
     }
 
-    println!("[debug] Finished debug run. Temporary DB placed under /tmp/stampworld_debug_images if inserts occurred.");
+    println!(
+        "[debug] Finished debug run. Temporary DB placed under {} if inserts occurred.",
+        std::env::temp_dir()
+            .join("stampworld_debug_images")
+            .display()
+    );
 }

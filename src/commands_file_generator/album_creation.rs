@@ -197,7 +197,6 @@ pub fn save_stamp_data<P: AsRef<std::path::Path>>(
 ) {
     use std::fs::{self, File};
     use std::io::{BufWriter, Write};
-    use std::os::unix::fs::PermissionsExt;
     let path = file_path.as_ref();
 
     // Decide how to handle an existing target file:
@@ -218,9 +217,9 @@ pub fn save_stamp_data<P: AsRef<std::path::Path>>(
                 #[cfg(unix)]
                 {
                     use std::os::unix::fs::PermissionsExt;
-                    let mut mode = perms.mode();
-                    mode |= 0o200; // owner write
-                    perms.set_mode(mode);
+                    let mode = perms.mode();
+                    let new_mode = mode | 0o200; // owner write
+                    perms.set_mode(new_mode);
                     if let Err(e) = std::fs::set_permissions(path, perms.clone()) {
                         error!("Failed to set file writable for overwrite: {}", e);
                     }
@@ -280,10 +279,22 @@ pub fn save_stamp_data<P: AsRef<std::path::Path>>(
                 error!("Unable to flush file: {}", e);
             }
             if let Ok(metadata) = fs::metadata(&target_path) {
-                let mut perms = metadata.permissions();
-                perms.set_mode(0o444); // read-only for all
-                if let Err(e) = fs::set_permissions(&target_path, perms) {
-                    error!("Unable to set file to read-only: {}", e);
+                // Set file to read-only on Unix systems
+                // On Windows, this is a no-op since permission model is different
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    let mut perms = metadata.permissions();
+                    perms.set_mode(0o444); // read-only for all
+                    if let Err(e) = fs::set_permissions(&target_path, perms) {
+                        error!("Unable to set file to read-only: {}", e);
+                    }
+                }
+                #[cfg(not(unix))]
+                {
+                    // On non-Unix systems (Windows), permission handling is automatic
+                    // and we don't need to explicitly set read-only mode
+                    let _ = metadata; // Suppress unused variable warning
                 }
             }
             info!("Successfully saved stamp data to {}", target_path.display());
