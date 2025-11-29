@@ -104,7 +104,7 @@ pub fn write_globals<W: Write>(
     // here with a baseline run marker and a no-wikipedia summary if applicable.
     if std::env::var("FORCE_WIKI_PAGE_METRICS").is_ok() {
         let safe_album = album_name.replace(' ', "_");
-        let metrics_path = format!("/tmp/forcemetrics_{}.runlog", safe_album);
+        let metrics_path = std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
         if let Ok(mut mf) = std::fs::File::create(&metrics_path) {
             let _ = writeln!(
                 mf,
@@ -870,7 +870,8 @@ fn add_wikipedia_section<W: Write>(
             // FORCE_WIKI_PAGE_METRICS to avoid accidental writes.
             if std::env::var("FORCE_WIKI_PAGE_METRICS").is_ok() {
                 let safe_album = album_name.replace(' ', "_");
-                let metrics_path = format!("/tmp/forcemetrics_{}.runlog", safe_album);
+                let metrics_path =
+                    std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
                 if let Ok(mut mf) = std::fs::File::create(&metrics_path) {
                     use std::io::Write;
                     let _ = writeln!(mf, "WIKI_PAGE_PAGINATION_SUMMARY album={} sections={} pages={} total_content_height={:.1} usable_height={:.1} strategy={}",
@@ -1051,7 +1052,8 @@ fn add_wikipedia_section<W: Write>(
             // result to parse.
             if std::env::var("FORCE_WIKI_PAGE_METRICS").is_ok() {
                 let safe_album = album_name.replace(' ', "_");
-                let metrics_path = format!("/tmp/forcemetrics_{}.runlog", safe_album);
+                let metrics_path =
+                    std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
                 if let Ok(mut mf) = std::fs::OpenOptions::new()
                     .append(true)
                     .create(true)
@@ -1267,7 +1269,7 @@ fn create_greedy_pages(
 
 /// Helper function to balance content between existing pages
 /// This tries to move content from over-full pages to under-full pages
-fn balance_pages(pages: &mut Vec<Vec<usize>>, heights: &[f64], usable_height: f64) {
+pub fn balance_pages(pages: &mut Vec<Vec<usize>>, heights: &[f64], usable_height: f64) {
     // Calculate current page heights
     let mut page_heights: Vec<f64> = pages
         .iter()
