@@ -370,18 +370,11 @@ where
         for s in stamp_objs.iter_mut() {
             let image_path = s.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-            // Prefer Colnect dimensions if available, then DB-stored pixel dimensions,
-            // otherwise fall back to on-disk image estimation or series-average, finally reference size.
+            // Prefer DB-stored pixel dimensions if available; otherwise fall back
+            // to on-disk image estimation or series-average, finally reference size.
             // Track where the estimated size came from for diagnostics
             let est_source: &str;
-            let colnect_w = s.attrs.get("colnect_width").and_then(|s| s.parse::<f64>().ok());
-            let colnect_h = s.attrs.get("colnect_height").and_then(|s| s.parse::<f64>().ok());
-
-            if let (Some(w), Some(h)) = (colnect_w, colnect_h) {
-                s.est_width_mm = Some(w);
-                s.est_height_mm = Some(h);
-                est_source = "colnect";
-            } else if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
                 let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
                 let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
                 s.est_width_mm = Some(w_mm);
@@ -1291,14 +1284,8 @@ where
                 let full_image_path =
                     format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
                 // Estimate and scale final emitted width/height to fit stamp_box_height and include stamp_box_adjust margins
-                // Prefer Colnect dimensions if available, then DB-stored pixel dims, otherwise attempt image-based estimation
-
-                let colnect_w = stamp.attrs.get("colnect_width").and_then(|s| s.parse::<f64>().ok());
-                let colnect_h = stamp.attrs.get("colnect_height").and_then(|s| s.parse::<f64>().ok());
-
-                let (mut est_width_mm, mut est_height_mm) = if let (Some(w), Some(h)) = (colnect_w, colnect_h) {
-                    (w, h)
-                } else if let (Some(w_px), Some(h_px)) =
+                // Prefer DB-stored pixel dims if present; otherwise attempt image-based estimation
+                let (mut est_width_mm, mut est_height_mm) = if let (Some(w_px), Some(h_px)) =
                     (stamp.image_width_px, stamp.image_height_px)
                 {
                     (

@@ -1,9 +1,9 @@
 use crate::album_globals::structs::{GenericAttrs, Stamp};
-use crate::colnect::db::get_colnect_info;
 use crate::config::Config;
 use crate::db_utils::get_stamps_by_series;
 use crate::db_utils::update_image_dimensions;
 use crate::image_utils::estimate_real_dimensions;
+use crate::colnect::db::get_colnect_info;
 use rusqlite::Connection;
 use rusqlite::Result as SqlResult;
 use std::io::Write;
@@ -151,53 +151,21 @@ pub fn fetch_and_filter_stamps(
 
         // Try to fetch Colnect info
         if let Ok(Some(colnect)) = get_colnect_info(conn, &stamp.sg_number) {
-            if let Some(v) = colnect.printing {
-                attrs.set("colnect_printing", &v);
-            }
-            if let Some(v) = colnect.paper {
-                attrs.set("colnect_paper", &v);
-            }
-            if let Some(v) = colnect.gum {
-                attrs.set("colnect_gum", &v);
-            }
-            if let Some(v) = colnect.themes {
-                attrs.set("colnect_themes", &v);
-            }
-            if let Some(v) = colnect.description {
-                attrs.set("colnect_description", &v);
-            }
-            if let Some(v) = colnect.issued_on {
-                attrs.set("colnect_issued_on", &v);
-            }
-            if let Some(v) = colnect.print_run {
-                attrs.set("colnect_print_run", &v);
-            }
-            if let Some(v) = colnect.face_value {
-                attrs.set("colnect_face_value", &v);
-            }
-            if let Some(v) = colnect.currency {
-                attrs.set("colnect_currency", &v);
-            }
-            if let Some(v) = colnect.colors {
-                attrs.set("colnect_colors", &v);
-            }
-            if let Some(v) = colnect.designers {
-                attrs.set("colnect_designers", &v);
-            }
-            if let Some(v) = colnect.printers {
-                attrs.set("colnect_printers", &v);
-            }
-            if let Some(v) = colnect.width {
-                attrs.set("colnect_width", &v);
-            }
-            if let Some(v) = colnect.height {
-                attrs.set("colnect_height", &v);
-            }
-
+            if let Some(v) = colnect.printing { attrs.set("colnect_printing", &v); }
+            if let Some(v) = colnect.paper { attrs.set("colnect_paper", &v); }
+            if let Some(v) = colnect.gum { attrs.set("colnect_gum", &v); }
+            if let Some(v) = colnect.themes { attrs.set("colnect_themes", &v); }
+            if let Some(v) = colnect.description { attrs.set("colnect_description", &v); }
+            if let Some(v) = colnect.issued_on { attrs.set("colnect_issued_on", &v); }
+            if let Some(v) = colnect.print_run { attrs.set("colnect_print_run", &v); }
+            if let Some(v) = colnect.face_value { attrs.set("colnect_face_value", &v); }
+            if let Some(v) = colnect.currency { attrs.set("colnect_currency", &v); }
+            if let Some(v) = colnect.colors { attrs.set("colnect_colors", &v); }
+            if let Some(v) = colnect.designers { attrs.set("colnect_designers", &v); }
+            if let Some(v) = colnect.printers { attrs.set("colnect_printers", &v); }
+            
             if !colnect.catalog_codes.is_empty() {
-                let codes_str = colnect
-                    .catalog_codes
-                    .iter()
+                let codes_str = colnect.catalog_codes.iter()
                     .map(|(k, v)| format!("{}: {}", k, v))
                     .collect::<Vec<_>>()
                     .join("  ");
@@ -289,6 +257,32 @@ pub fn estimate_and_ensure_placeholders(
             }
             s.est_width_mm = Some(w);
             s.est_height_mm = Some(h);
+
+            // We found the real image and got dimensions!
+            // Update the stamp object and DB so we don't generate a placeholder.
+            let px_w = (w_mm / mm_per_pixel_w).round() as i32;
+            let px_h = (h_mm / mm_per_pixel_h).round() as i32;
+            s.image_width_px = Some(px_w);
+            s.image_height_px = Some(px_h);
+
+            if px_w > 0 && px_h > 0 {
+                let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                if let Err(e) = update_image_dimensions(
+                    conn,
+                    album_name,
+                    series_name,
+                    sg_str,
+                    Some(px_w),
+                    Some(px_h),
+                ) {
+                    log::error!(
+                        "Failed to update DB image dims for {} sg {}: {}",
+                        album_name,
+                        sg_str,
+                        e
+                    );
+                }
+            }
         } else if let (Some(avg_w), Some(avg_h)) = (series_avg_w_mm, series_avg_h_mm) {
             s.est_width_mm = Some(avg_w);
             s.est_height_mm = Some(avg_h);

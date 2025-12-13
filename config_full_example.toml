@@ -49,7 +49,7 @@ include_catalog_numbers = true
 include_series = true
 include_country = true
 include_date = true
-print_flag_cover = true
+print_flag_cover = false
 
 # --- Stamp heading formatting ---
 # Emitted for each stamp as: STAMP_HEADING(<FONT> <SIZE> "<LABEL> : <SGNUM>")
@@ -62,7 +62,7 @@ stamp_heading_label = "SG"
 expand_grouped_ranges = "placeholders"
 
 # --- Other toggles ---
-detailed_page_fit_diagnostics = false
+detailed_page_fit_diagnostics = true
 fetch_wikipedia = false
 row_start_es_enabled = true
 max_rows_per_page = 4

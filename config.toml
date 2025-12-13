@@ -189,7 +189,7 @@ color_stamp_background = "black"
 # If `print_flag_cover` is true the renderer will attempt to copy a country
 # flag into the album images folder and print a cover image using the
 # dimensions below.
-print_flag_cover = true
+print_flag_cover = false
 flag_cover_img_w_mm = 160.0
 flag_cover_img_h_mm = 80.0
 flag_cover_page_vspace_top = 20.0
@@ -216,12 +216,12 @@ flag_cover_text_only_vspace_after = 18.0
 # Wikipedia / Grokipedia content for the album topic. If false, cached
 # content (if present) may still be used depending on other flags.
 # Grokipedia is preferred; if unavailable, falls back to Wikipedia.
-fetch_wikipedia = true
+fetch_wikipedia = false
 
 # When true, include any cached Wikipedia/Grokipedia content in the album
 # output (formatted into album pages). This is separate from `fetch_wikipedia`
 # to allow using previously-cached content without network activity.
-include_wikipedia_content = true
+include_wikipedia_content = false
 
 # Where to store the cached Wikipedia content (SQLite DB path).
 wikipedia_cache_db_path = "wikipedia_cache.db"
