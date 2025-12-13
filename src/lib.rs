@@ -6,6 +6,7 @@ pub mod progress;
 pub mod setup;
 pub mod validation;
 pub mod wikipedia;
+pub mod colnect;
 pub use crate::config::{load_slug_overrides, Config, HeaderFormatting};
 // Main library file for StampAlbumGen2
 // External crates

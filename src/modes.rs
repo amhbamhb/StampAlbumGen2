@@ -338,6 +338,20 @@ pub fn run_scraping_mode(
                         }
                     }
 
+                    // Ingest Colnect CSV if provided
+                    if let Some(csv_path) = &cli.colnect_csv {
+                        progress.set_message(&format!("📥 Ingesting Colnect CSV: {}", csv_path));
+                        match crate::colnect::parser::parse_csv(csv_path) {
+                            Ok(stamps) => {
+                                match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+                                    Ok(_) => info!("✅ Successfully ingested Colnect data"),
+                                    Err(e) => error!("❌ Failed to ingest Colnect data: {}", e),
+                                }
+                            }
+                            Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
+                        }
+                    }
+
                     progress
                         .set_message(&format!("📖 Generating album output for: {}", album_name));
                     let output_path = crate::album_globals::generate_album_output_conn(

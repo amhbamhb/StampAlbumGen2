@@ -64,4 +64,8 @@ pub struct Cli {
     /// after creating a timestamped backup. Default: false
     #[arg(long = "force-init-config", default_value_t = false)]
     pub force_init_config: bool,
+
+    /// Path to Colnect CSV file for ingestion
+    #[arg(long)]
+    pub colnect_csv: Option<String>,
 }

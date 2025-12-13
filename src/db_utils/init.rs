@@ -76,6 +76,39 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         )",
         [],
     )?;
+
+    // Create colnect_stamps table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS colnect_stamps (
+            id INTEGER PRIMARY KEY,
+            sg_number TEXT,
+            colnect_id TEXT UNIQUE,
+            catalog_codes TEXT,
+            width TEXT,
+            height TEXT,
+            printing TEXT,
+            paper TEXT,
+            gum TEXT,
+            themes TEXT,
+            colnect_link TEXT,
+            description TEXT,
+            issued_on TEXT,
+            print_run TEXT,
+            face_value TEXT,
+            currency TEXT,
+            colors TEXT,
+            designers TEXT,
+            printers TEXT
+        )",
+        [],
+    )?;
+
+    // Create index on sg_number for faster joins
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_colnect_stamps_sg_number ON colnect_stamps (sg_number)",
+        [],
+    )?;
+
     // Print column names and count after creation
     {
         let pragma = conn.prepare("PRAGMA table_info(stamps)");

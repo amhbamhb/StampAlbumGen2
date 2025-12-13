@@ -370,11 +370,19 @@ where
         for s in stamp_objs.iter_mut() {
             let image_path = s.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-            // Prefer DB-stored pixel dimensions if available; otherwise fall back
-            // to on-disk image estimation or series-average, finally reference size.
+            // Prefer Colnect dimensions if available, then DB-stored pixel dimensions,
+            // otherwise fall back to on-disk image estimation or series-average, finally reference size.
             // Track where the estimated size came from for diagnostics
             let est_source: &str;
-            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+            
+            let colnect_w = s.attrs.get("colnect_width").and_then(|s| s.parse::<f64>().ok());
+            let colnect_h = s.attrs.get("colnect_height").and_then(|s| s.parse::<f64>().ok());
+
+            if let (Some(w), Some(h)) = (colnect_w, colnect_h) {
+                s.est_width_mm = Some(w);
+                s.est_height_mm = Some(h);
+                est_source = "colnect";
+            } else if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
                 let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
                 let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
                 s.est_width_mm = Some(w_mm);
@@ -1284,8 +1292,14 @@ where
                 let full_image_path =
                     format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
                 // Estimate and scale final emitted width/height to fit stamp_box_height and include stamp_box_adjust margins
-                // Prefer DB-stored pixel dims if present; otherwise attempt image-based estimation
-                let (mut est_width_mm, mut est_height_mm) = if let (Some(w_px), Some(h_px)) =
+                // Prefer Colnect dimensions if available, then DB-stored pixel dims, otherwise attempt image-based estimation
+                
+                let colnect_w = stamp.attrs.get("colnect_width").and_then(|s| s.parse::<f64>().ok());
+                let colnect_h = stamp.attrs.get("colnect_height").and_then(|s| s.parse::<f64>().ok());
+
+                let (mut est_width_mm, mut est_height_mm) = if let (Some(w), Some(h)) = (colnect_w, colnect_h) {
+                    (w, h)
+                } else if let (Some(w_px), Some(h_px)) =
                     (stamp.image_width_px, stamp.image_height_px)
                 {
                     (
@@ -1445,11 +1459,27 @@ where
                 };
 
                 let wrapped_desc = wrap_words(&raw_description, chars_per_line);
-                // Build centre block: stamps_issued (one line), wrapped description (may be multi-line), then color
-                let centre = if wrapped_desc.is_empty() {
-                    format!("{}\\n{}", raw_stamps_issued, raw_color)
-                } else {
-                    format!("{}\\n{}\\n{}", raw_stamps_issued, wrapped_desc, raw_color)
+
+                // Append Colnect data
+                let mut colnect_parts = Vec::new();
+                if let Some(v) = stamp.attrs.get("colnect_description") { colnect_parts.push(format!("{}", v)); }
+                if let Some(v) = stamp.attrs.get("colnect_themes") { colnect_parts.push(format!("Themes: {}", v)); }
+                if let Some(v) = stamp.attrs.get("colnect_printing") { colnect_parts.push(format!("Printing: {}", v)); }
+                if let Some(v) = stamp.attrs.get("colnect_paper") { colnect_parts.push(format!("Paper: {}", v)); }
+                if let Some(v) = stamp.attrs.get("colnect_gum") { colnect_parts.push(format!("Gum: {}", v)); }
+                if let Some(v) = stamp.attrs.get("colnect_designers") { colnect_parts.push(format!("Designers: {}", v)); }
+                if let Some(v) = stamp.attrs.get("colnect_printers") { colnect_parts.push(format!("Printers: {}", v)); }
+                // Add other fields if needed
+
+                let colnect_text = colnect_parts.join("; ");
+                let wrapped_colnect = wrap_words(&colnect_text, chars_per_line);
+
+                // Build centre block: stamps_issued (one line), wrapped description (may be multi-line), colnect info, then color
+                let centre = match (wrapped_desc.is_empty(), wrapped_colnect.is_empty()) {
+                    (true, true) => format!("{}\\n{}", raw_stamps_issued, raw_color),
+                    (false, true) => format!("{}\\n{}\\n{}", raw_stamps_issued, wrapped_desc, raw_color),
+                    (true, false) => format!("{}\\n{}\\n{}", raw_stamps_issued, wrapped_colnect, raw_color),
+                    (false, false) => format!("{}\\n{}\\n{}\\n{}", raw_stamps_issued, wrapped_desc, wrapped_colnect, raw_color),
                 };
                 // Right: mint_condition (or unused), used, stamps_issued
                 let mint_raw = stamp
@@ -1460,7 +1490,10 @@ where
                     .to_string();
                 let _mint = clean_text(&mint_raw);
                 let _unused = clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string()));
-                let sgnum = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
+                let mut sgnum = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
+                if let Some(codes) = stamp.attrs.get("colnect_catalog_codes") {
+                     sgnum = format!("{}  {}", sgnum, codes);
+                }
                 let _safe_sg = left
                     .replace("\\n", " ")
                     .split_whitespace()
