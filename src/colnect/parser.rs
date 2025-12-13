@@ -93,7 +93,7 @@ pub fn parse_csv<P: AsRef<Path>>(path: P) -> Result<Vec<ColnectStamp>, Box<dyn E
     let mut rdr = csv::ReaderBuilder::new()
         .flexible(true)
         .from_reader(csv_content.as_bytes());
-    
+
     let mut stamps = Vec::new();
     for result in rdr.deserialize() {
         let record: ColnectStamp = result?;

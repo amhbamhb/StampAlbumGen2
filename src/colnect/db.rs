@@ -1,4 +1,4 @@
-use rusqlite::{Connection, Result, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, Result};
 
 #[derive(Debug, Clone)]
 pub struct ColnectInfo {
@@ -25,36 +25,39 @@ pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<Col
         "SELECT colnect_id, printing, paper, gum, themes, description, issued_on, print_run, face_value, currency, colors, designers, printers, width, height 
          FROM colnect_stamps WHERE sg_number = ?1"
     )?;
-    
-    let result = stmt.query_row([sg_number], |row| {
-        let colnect_id: String = row.get(0)?;
-        Ok((colnect_id, ColnectInfo {
-            printing: row.get(1)?,
-            paper: row.get(2)?,
-            gum: row.get(3)?,
-            themes: row.get(4)?,
-            description: row.get(5)?,
-            issued_on: row.get(6)?,
-            print_run: row.get(7)?,
-            face_value: row.get(8)?,
-            currency: row.get(9)?,
-            colors: row.get(10)?,
-            designers: row.get(11)?,
-            printers: row.get(12)?,
-            width: row.get(13)?,
-            height: row.get(14)?,
-            catalog_codes: Vec::new(),
-        }))
-    }).optional()?;
+
+    let result = stmt
+        .query_row([sg_number], |row| {
+            let colnect_id: String = row.get(0)?;
+            Ok((
+                colnect_id,
+                ColnectInfo {
+                    printing: row.get(1)?,
+                    paper: row.get(2)?,
+                    gum: row.get(3)?,
+                    themes: row.get(4)?,
+                    description: row.get(5)?,
+                    issued_on: row.get(6)?,
+                    print_run: row.get(7)?,
+                    face_value: row.get(8)?,
+                    currency: row.get(9)?,
+                    colors: row.get(10)?,
+                    designers: row.get(11)?,
+                    printers: row.get(12)?,
+                    width: row.get(13)?,
+                    height: row.get(14)?,
+                    catalog_codes: Vec::new(),
+                },
+            ))
+        })
+        .optional()?;
 
     if let Some((colnect_id, mut info)) = result {
         let mut code_stmt = conn.prepare(
-            "SELECT catalog_type, code FROM colnect_catalog_codes WHERE colnect_id = ?1"
+            "SELECT catalog_type, code FROM colnect_catalog_codes WHERE colnect_id = ?1",
         )?;
-        let codes = code_stmt.query_map([colnect_id], |row| {
-            Ok((row.get(0)?, row.get(1)?))
-        })?;
-        
+        let codes = code_stmt.query_map([colnect_id], |row| Ok((row.get(0)?, row.get(1)?)))?;
+
         for code in codes {
             info.catalog_codes.push(code?);
         }

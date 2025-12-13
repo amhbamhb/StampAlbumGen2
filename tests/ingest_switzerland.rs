@@ -1,5 +1,5 @@
-use stamp_album_gen2::colnect::parser::parse_csv;
 use stamp_album_gen2::colnect::ingest::ingest_colnect_data;
+use stamp_album_gen2::colnect::parser::parse_csv;
 use stamp_album_gen2::db_utils::init_db;
 use std::path::Path;
 
@@ -10,9 +10,9 @@ fn ingest_switzerland_1972() {
         println!("Skipping ingest: DB not found at {}", db_path);
         return;
     }
-    
+
     let conn = init_db(db_path).expect("init_db");
-    
+
     let csv_path = "en_stamps_csv_list_country_206-Switzerland_year_1972.csv";
     if !Path::new(csv_path).exists() {
         println!("Skipping ingest: CSV not found at {}", csv_path);

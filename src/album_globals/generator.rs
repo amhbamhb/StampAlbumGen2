@@ -374,7 +374,6 @@ where
             // otherwise fall back to on-disk image estimation or series-average, finally reference size.
             // Track where the estimated size came from for diagnostics
             let est_source: &str;
-            
             let colnect_w = s.attrs.get("colnect_width").and_then(|s| s.parse::<f64>().ok());
             let colnect_h = s.attrs.get("colnect_height").and_then(|s| s.parse::<f64>().ok());
 
@@ -1293,7 +1292,7 @@ where
                     format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
                 // Estimate and scale final emitted width/height to fit stamp_box_height and include stamp_box_adjust margins
                 // Prefer Colnect dimensions if available, then DB-stored pixel dims, otherwise attempt image-based estimation
-                
+
                 let colnect_w = stamp.attrs.get("colnect_width").and_then(|s| s.parse::<f64>().ok());
                 let colnect_h = stamp.attrs.get("colnect_height").and_then(|s| s.parse::<f64>().ok());
 
