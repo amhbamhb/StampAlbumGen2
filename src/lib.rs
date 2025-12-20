@@ -28,6 +28,7 @@ pub mod album_globals;
 pub mod album_utils;
 pub mod placeholder_image;
 pub mod types;
+pub mod us1847;
 // db utilities refactored into modular structure
 pub mod db_utils;
 pub mod image_downloader;

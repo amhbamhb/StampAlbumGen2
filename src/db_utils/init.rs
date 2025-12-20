@@ -224,5 +224,53 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         }
     }
 
+    // Create us1847_series table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS us1847_series (
+            id INTEGER PRIMARY KEY,
+            series_name TEXT,
+            series_url TEXT UNIQUE,
+            description TEXT,
+            printing_info TEXT,
+            tagging_info TEXT,
+            size_info TEXT
+        )",
+        [],
+    )?;
+
+    // Create us1847_stamps table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS us1847_stamps (
+            id INTEGER PRIMARY KEY,
+            series_id INTEGER,
+            denomination TEXT,
+            color TEXT,
+            designer TEXT,
+            vignette TEXT,
+            lettering TEXT,
+            description TEXT,
+            design_size TEXT,
+            image_url TEXT,
+            FOREIGN KEY(series_id) REFERENCES us1847_series(id)
+        )",
+        [],
+    )?;
+
+    // Create us1847_variations table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS us1847_variations (
+            id INTEGER PRIMARY KEY,
+            stamp_id INTEGER,
+            scott_number TEXT,
+            fdc_date TEXT,
+            printing_method TEXT,
+            perforation TEXT,
+            tagging TEXT,
+            collectible_varieties TEXT,
+            FOREIGN KEY(stamp_id) REFERENCES us1847_stamps(id)
+        )",
+        [],
+    )?;
+
     Ok(conn)
 }
