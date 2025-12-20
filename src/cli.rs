@@ -9,7 +9,7 @@ use clap::Parser;
     about = "Stamp Album Generator"
 )]
 pub struct Cli {
-    /// Source type: stampworld, touchstamps, extractfile, colnectexport
+    /// Source type: stampworld, touchstamps, extractfile, colnectexport, us1847
     #[arg(long, default_value = "stampworld")]
     pub source: String,
 

@@ -107,6 +107,7 @@ pub fn run_database_mode(
 pub fn run_scraping_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
+    source: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::commands_file_generator::CommandsFileGenerator;
     use log::{error, info};
@@ -169,15 +170,27 @@ pub fn run_scraping_mode(
     cfg.image_path = format!("Albums/{}/images", album_name);
     cfg.year = cli.start_year.to_string();
 
-    // Build base URL for stampworld pages.
-    // When the caller does not provide --base-url, construct the canonical
-    // StampWorld listing URL that includes the Postage stamps year-range
-    // so the collector can append a page number. Example produced:
-    // https://www.stampworld.com/en/stamps/Bahamas/Postage%20stamps/1859-1863?page=
-    progress.set_message("🔗 Building StampWorld URL...");
+    // Build base URL
+    progress.set_message(&format!(
+        "🔗 Building {} URL...",
+        if source == "us1847" {
+            "1847US"
+        } else {
+            "StampWorld"
+        }
+    ));
     let base_url = if let Some(b) = &cli.base_url {
         b.clone()
+    } else if source == "us1847" {
+        // For 1847us.com, require explicit base_url since each series has its own URL
+        progress.finish_with_error("Missing base URL for 1847US scraping");
+        eprintln!("For 1847US scraping, you must provide the specific series URL using --base-url");
+        eprintln!("Examples:");
+        eprintln!("  --base-url 'https://1847us.com/byyear/1955-year/'");
+        eprintln!("  --base-url 'https://1847us.com/1975identifier/'");
+        return Err("Missing base URL for 1847US scraping".into());
     } else {
+        // StampWorld URL construction logic...
         // Allow users to provide explicit overrides via `slug_overrides.toml`.
         // This file (looked up like `config.toml`) may contain a table
         // `[slug_overrides]` mapping the provided site_name to a canonical
@@ -238,15 +251,57 @@ pub fn run_scraping_mode(
     progress.set_message(&format!("Stamp Database path set to {}", db_path));
 
     progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
-    let pages = cfg.collect_stampworld_data(
-        &base_url,
-        cli.overwrite_images,
-        None::<&dyn Fn(usize)>,
-        cli.max_pages,
-        cli.stop_after_no_hits,
-        cli.start_year,
-        cli.end_year,
-    );
+    let pages = if source == "us1847" {
+        // For 1847us.com, we process a single URL directly
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(60))
+            .build()
+            .expect("Failed to build reqwest client");
+
+        // Initialize DB
+        let conn = match crate::db_utils::init_db(&db_path) {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Failed to initialize DB {}: {}", db_path, e);
+                return Err(e.into());
+            }
+        };
+
+        match crate::us1847::process_1847us_page(
+            &client,
+            &conn,
+            &base_url,
+            &site_name,
+            cli.start_year,
+            cli.end_year,
+        ) {
+            Ok(stamp_count) => {
+                progress.set_message(&format!(
+                    "✅ 1847US scraping complete! Found {} stamps.",
+                    stamp_count
+                ));
+                Ok(vec![format!(
+                    "Processed {} stamps from {}",
+                    stamp_count, base_url
+                )])
+            }
+            Err(e) => {
+                error!("Failed to process 1847us page {}: {}", base_url, e);
+                Err(e)
+            }
+        }
+    } else {
+        // Call StampWorld collector
+        cfg.collect_stampworld_data(
+            &base_url,
+            cli.overwrite_images,
+            None::<&dyn Fn(usize)>,
+            cli.max_pages,
+            cli.stop_after_no_hits,
+            cli.start_year,
+            cli.end_year,
+        )
+    };
     match pages {
         Ok(pages) => {
             progress.set_message(&format!(

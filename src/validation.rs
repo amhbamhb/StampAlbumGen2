@@ -86,7 +86,13 @@ pub fn validate_year_range(start_year: i32, end_year: i32) -> Result<(), Validat
 
 /// Validate source and return effective source (potentially auto-corrected)
 pub fn validate_source(cli: &crate::cli::Cli) -> Result<String, ValidationError> {
-    let known_sources = ["stampworld", "touchstamps", "extractfile", "colnectexport"];
+    let known_sources = [
+        "stampworld",
+        "touchstamps",
+        "extractfile",
+        "colnectexport",
+        "us1847",
+    ];
     let mut effective_source = cli.source.to_lowercase();
 
     if !known_sources
@@ -188,7 +194,7 @@ pub fn print_validation_error(error: &ValidationError) {
                     "(Suggestions computed using Jaro–Winkler similarity; higher is better.)"
                 );
             } else {
-                eprintln!("Valid sources are: stampworld, touchstamps, extractfile, colnectexport");
+                eprintln!("Valid sources are: stampworld, touchstamps, extractfile, colnectexport, us1847");
             }
             eprintln!("\nHere are quick examples you can copy-paste:");
             eprintln!("  # Generate from an existing DB (db-only):");
