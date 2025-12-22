@@ -274,6 +274,8 @@ pub fn run_scraping_mode(
             &site_name,
             cli.start_year,
             cli.end_year,
+            &cfg.image_path,
+            cli.overwrite_images,
         ) {
             Ok(stamp_count) => {
                 progress.set_message(&format!(

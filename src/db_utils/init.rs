@@ -231,6 +231,11 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             series_name TEXT,
             series_url TEXT UNIQUE,
             description TEXT,
+            president TEXT,
+            postmaster_general TEXT,
+            domestic_letter_rate TEXT,
+            postcard_rate TEXT,
+            airmail_rate TEXT,
             printing_info TEXT,
             tagging_info TEXT,
             size_info TEXT
@@ -243,30 +248,33 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         "CREATE TABLE IF NOT EXISTS us1847_stamps (
             id INTEGER PRIMARY KEY,
             series_id INTEGER,
+            scott_number TEXT,
             denomination TEXT,
-            color TEXT,
+            name TEXT,
+            place_issued TEXT,
+            issue_date TEXT,
+            quantity_issued TEXT,
             designer TEXT,
-            vignette TEXT,
-            lettering TEXT,
-            description TEXT,
-            design_size TEXT,
+            engraver TEXT,
             image_url TEXT,
-            FOREIGN KEY(series_id) REFERENCES us1847_series(id)
+            printer TEXT,
+            perforation TEXT,
+            printing_details TEXT,
+            description TEXT,
+            stamp_type TEXT,
+            FOREIGN KEY(series_id) REFERENCES us1847_series(id),
+            UNIQUE(scott_number)
         )",
         [],
     )?;
 
-    // Create us1847_variations table
+    // Create us1847_variations table (keeping for future use with varieties)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS us1847_variations (
             id INTEGER PRIMARY KEY,
             stamp_id INTEGER,
-            scott_number TEXT,
-            fdc_date TEXT,
-            printing_method TEXT,
-            perforation TEXT,
-            tagging TEXT,
-            collectible_varieties TEXT,
+            variation_type TEXT,
+            description TEXT,
             FOREIGN KEY(stamp_id) REFERENCES us1847_stamps(id)
         )",
         [],

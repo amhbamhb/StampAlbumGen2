@@ -36,6 +36,21 @@ where
     let passed_end_year = end_year;
     // Load config values from config.toml
     let config = load_config("config.toml");
+    // Check if this is a US1847 sourced album
+    let is_us1847 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='us1847_series'",
+            [],
+            |r| r.get::<_, i64>(0),
+        )
+        .unwrap_or(0)
+        > 0
+        && conn
+            .query_row("SELECT COUNT(*) FROM us1847_series", [], |r| {
+                r.get::<_, i64>(0)
+            })
+            .unwrap_or(0)
+            > 0;
     // Also obtain canonical defaults so we always fall back to the same
     // values the `Config::with_defaults()` helper exposes. This ensures
     // generator math always uses config-driven values (either user-set or
@@ -326,9 +341,10 @@ where
             cb(page_counter);
         }
         // Fetch stamps + year-filter + conversion into Stamp objects via helper.
-        let mut stamp_objs = crate::album_globals::generator_new::helpers::
+        let stamps_iter = crate::album_globals::generator_new::helpers::
             fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
             .expect("Failed to get stamps");
+        let mut stamps_vec = stamps_iter;
         // Group stamps into rows (configurable max stamps per row)
         let max_stamps_per_row = config.max_stamps_per_row.unwrap_or(5) as usize;
         let mut stamp_rows: Vec<Vec<Stamp>> = Vec::new();
@@ -338,7 +354,7 @@ where
         // series peers instead of falling back to the global reference size.
         let mut series_widths_mm: Vec<f64> = Vec::new();
         let mut series_heights_mm: Vec<f64> = Vec::new();
-        for stamp in stamp_objs.iter() {
+        for stamp in stamps_vec.iter() {
             let image_path = stamp.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
             if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
@@ -367,7 +383,7 @@ where
         // layout uses the final sizes rather than seeing stale or missing
         // dimensions during the single-pass layout.
         // -------------------------
-        for s in stamp_objs.iter_mut() {
+        for s in stamps_vec.iter_mut() {
             let image_path = s.image_path.trim();
             let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
             // Prefer DB-stored pixel dimensions if available; otherwise fall back
@@ -433,7 +449,9 @@ where
             // If the stamp has no image and therefore no stored pixel dims, create
             // a placeholder now using the emit box size (est + 2*stamp_box_adjust)
             // so future layout sees consistent sizes.
-            if s.image_width_px.is_none() {
+            let image_path = s.image_path.trim();
+            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            if s.image_width_px.is_none() && (image_path.is_empty() || !Path::new(&full_image_path).exists()) {
                 let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
                 let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
                 let target_w_mm = base_w; // image-only width (mm)
@@ -463,7 +481,7 @@ where
 
         // Now perform layout using the finalized est_* values
         // let mut row_width = 0.0;
-        for stamp in stamp_objs.into_iter() {
+        for stamp in stamps_vec.into_iter() {
             let image_path = stamp.image_path.trim();
             let _full_image_path =
                 format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
@@ -1517,31 +1535,85 @@ where
                 let second_line = v_used.clone().unwrap_or_else(|| "".to_string());
                 let right = format!("{}\\n{}", first_line, second_line);
                 if !image_path.is_empty() && Path::new(&full_image_path).exists() {
-                    // Delegate formatted emission to the centralized emitter
-                    // so formatting and escaping are consistent across call sites.
-                    let sh_font = config
-                        .stamp_heading_font
-                        .clone()
-                        .unwrap_or_else(|| "HN".to_string());
-                    let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
-                    let sh_label = config
-                        .stamp_heading_label
-                        .clone()
-                        .unwrap_or_else(|| "SG".to_string());
-                    let _ = crate::album_globals::generator_new::emit::emit_stamp(
-                        &mut output,
-                        true,
-                        image_path,
-                        emit_width,
-                        emit_height,
-                        &left,
-                        &centre,
-                        &right,
-                        &sh_font,
-                        sh_size,
-                        &sh_label,
-                        &sgnum,
-                    );
+                    let emit_type = "standard";
+                    if is_us1847 {
+                        if emit_type == "image" {
+                            // Emit image
+                            let line = format!(
+                                "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\")",
+                                emit_width, emit_height, image_path
+                            );
+                            let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        } else if emit_type == "scott" {
+                            // Emit Scott number as text
+                            let line = format!(
+                                "STAMP_ADD ({:.1} {:.1} \"{}\" \"HN\" \"12\" \"black\")",
+                                emit_width, 15.0, sgnum
+                            );
+                            let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        } else if emit_type == "info" {
+                            // Emit stamp info as text box
+                            let info = format!(
+                                "Denomination: {}\\nDescription: {}\\nColor: {}\\nIssued: {}",
+                                raw_left, wrapped_desc, raw_color, raw_stamps_issued
+                            );
+                            let line = format!(
+                                "STAMP_ADD ({:.1} {:.1} \"{}\" \"HN\" \"8\" \"black\")",
+                                emit_width, 40.0, info.replace("\n", "\\n").replace("\"", "'")
+                            );
+                            let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        } else if emit_type == "standard" {
+                            // Emit image
+                            let line = format!(
+                                "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"\" \"\" \"\")",
+                                emit_width, emit_height, image_path
+                            );
+                            let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                            // Emit Scott number as text
+                            let line = format!(
+                                "STAMP_ADD ({:.1} {:.1} \"{}\" \"HN\" \"12\" \"black\")",
+                                emit_width, 15.0, sgnum
+                            );
+                            let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                            // Emit stamp info as text box
+                            let info = format!(
+                                "Denomination: {}\\nDescription: {}\\nColor: {}\\nIssued: {}",
+                                raw_left, wrapped_desc, raw_color, raw_stamps_issued
+                            );
+                            let line = format!(
+                                "STAMP_ADD ({:.1} {:.1} \"{}\" \"HN\" \"8\" \"black\")",
+                                100.0, 40.0, info.replace("\n", "\\n").replace("\"", "'")
+                            );
+                            let _ = writeln!(output, "{}", line.replace("\r", "").replace("\n", "\\n"));
+                        }
+                    } else {
+                        // Standard formatting
+                        // Delegate formatted emission to the centralized emitter
+                        // so formatting and escaping are consistent across call sites.
+                        let sh_font = config
+                            .stamp_heading_font
+                            .clone()
+                            .unwrap_or_else(|| "HN".to_string());
+                        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+                        let sh_label = config
+                            .stamp_heading_label
+                            .clone()
+                            .unwrap_or_else(|| "SG".to_string());
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
+                            &mut output,
+                            true,
+                            image_path,
+                            emit_width,
+                            emit_height,
+                            &left,
+                            &centre,
+                            &right,
+                            &sh_font,
+                            sh_size,
+                            &sh_label,
+                            &sgnum,
+                        );
+                    }
                 } else {
                     let _safe_series = clean_text(series)
                         .replace("\\n", " ")
