@@ -238,7 +238,9 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             airmail_rate TEXT,
             printing_info TEXT,
             tagging_info TEXT,
-            size_info TEXT
+            size_info TEXT,
+            design_size_portrait TEXT,
+            design_size_landscape TEXT
         )",
         [],
     )?;
@@ -251,15 +253,22 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             scott_number TEXT,
             denomination TEXT,
             name TEXT,
+            color TEXT,
             place_issued TEXT,
             issue_date TEXT,
             quantity_issued TEXT,
             designer TEXT,
+            vignette TEXT,
+            frame TEXT,
+            lettering TEXT,
             engraver TEXT,
             image_url TEXT,
             printer TEXT,
             perforation TEXT,
             printing_details TEXT,
+            tagging TEXT,
+            collectible_varieties TEXT,
+            usage TEXT,
             description TEXT,
             stamp_type TEXT,
             FOREIGN KEY(series_id) REFERENCES us1847_series(id),
@@ -267,6 +276,10 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         )",
         [],
     )?;
+
+    // Add color column if it doesn't exist (for backward compatibility)
+    conn.execute("ALTER TABLE us1847_stamps ADD COLUMN color TEXT", []).ok();
+    conn.execute("UPDATE us1847_stamps SET color = '' WHERE color IS NULL", []).ok();
 
     // Create us1847_variations table (keeping for future use with varieties)
     conn.execute(

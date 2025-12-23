@@ -179,7 +179,7 @@ color_album_margin_txt = "darkblue"
 color_stamp_border = "black"
 color_stamp_heading = "black"
 color_stamp_text = "black"
-color_stamp_background = "black"
+color_stamp_background = "white"
 
 ###################################
 # Flags / Cover

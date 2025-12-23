@@ -10,15 +10,22 @@ struct StampInfo {
     scott_number: String,
     denomination: String,
     name: String,
+    color: String,
     place_issued: String,
     issue_date: String,
     quantity_issued: String,
     designer: String,
+    vignette: String,
+    frame: String,
+    lettering: String,
     engraver: String,
     image_url: String,
     printer: String,
     perforation: String,
     printing_details: String,
+    tagging: String,
+    collectible_varieties: String,
+    usage: String,
     description: String,
     stamp_type: String,
 }
@@ -63,6 +70,8 @@ pub fn process_1847us_page(
     let mut printing_info = String::new();
     let mut tagging_info = String::new();
     let mut size_info = String::new();
+    let mut design_size_portrait = String::new();
+    let mut design_size_landscape = String::new();
 
     // Look for paragraphs containing series info
     let p_selector = Selector::parse("p").unwrap();
@@ -135,6 +144,19 @@ pub fn process_1847us_page(
             tagging_info = text.trim().to_string();
         } else if lower.contains("size") || lower.contains("design size") {
             size_info = text.trim().to_string();
+            // Extract design sizes
+            if lower.contains("portrait stamps") {
+                let portrait_regex = Regex::new(r"Portrait Stamps:\s*([^·]+)").unwrap();
+                if let Some(cap) = portrait_regex.captures(&text) {
+                    design_size_portrait = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("").to_string();
+                }
+            }
+            if lower.contains("landscape stamps") {
+                let landscape_regex = Regex::new(r"Landscape Stamps:\s*([^·]+)").unwrap();
+                if let Some(cap) = landscape_regex.captures(&text) {
+                    design_size_landscape = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("").to_string();
+                }
+            }
         } else if series_description.is_empty()
             && text.len() > 50
             && !text.contains("President:")
@@ -147,8 +169,8 @@ pub fn process_1847us_page(
 
     // Insert or get series
     let series_id = conn.query_row(
-        "INSERT OR IGNORE INTO us1847_series (series_name, series_url, description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
-        rusqlite::params![series_title, url, series_description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info],
+        "INSERT OR IGNORE INTO us1847_series (series_name, series_url, description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+        rusqlite::params![series_title, url, series_description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape],
         |row| row.get::<_, i64>(0),
     ).unwrap_or_else(|_| {
         conn.query_row(
@@ -166,25 +188,32 @@ pub fn process_1847us_page(
 
     // Extract stamps from HTML tables
     let mut stamps_found = 0;
-    stamps_found += parse_html_tables(
-        client,
-        conn,
-        &document,
-        series_id,
-        &series_title,
-        _site_name,
-        _start_year,
-        _end_year,
-        image_path,
-        overwrite_images,
-    )?;
-    stamps_found += parse_stamp_lists(conn, &document, series_id, &series_title)?;
+
+    // Special handling for Liberty Issue page with table format
+    if url.contains("1954-liberty-issue") {
+        info!("Detected Liberty Issue page, using specialized parser");
+        stamps_found += parse_liberty_issue_stamp(&document, series_id, &series_title, conn, url)?;
+    } else {
+        stamps_found += parse_html_tables(
+            client,
+            conn,
+            &document,
+            series_id,
+            &series_title,
+            _site_name,
+            _start_year,
+            _end_year,
+            image_path,
+            overwrite_images,
+        )?;
+        stamps_found += parse_stamp_lists(conn, &document, series_id, &series_title)?;
+    }
 
     info!("Total stamps found: {}", stamps_found);
 
     // Download images for all stamps in this series
     if !image_path.is_empty() {
-        download_stamp_images(client, conn, series_id, image_path, overwrite_images)?;
+        download_stamp_images(client, conn, series_id, image_path, overwrite_images, url)?;
     }
 
     // Sync us1847 stamps to main stamps table
@@ -346,7 +375,6 @@ fn parse_html_tables(
                     let sibling_element = ElementRef::wrap(sibling).unwrap();
                     if sibling_element.value().name() == "p" {
                         let p_text = sibling_element.text().collect::<String>();
-                        let p_text = sibling_element.text().collect::<String>();
 
                         // First, check for "see also" link and process the linked page
                         if p_text.contains("see also") {
@@ -390,6 +418,9 @@ fn parse_html_tables(
                                     }
                                 }
                             }
+                            // if data_tds.len() == 8 && data_tds[1].text().collect::<String>().trim() == "Cat. #" {
+                            //     break;
+                            // }
                         }
 
                         // Also parse any stamps listed directly in this paragraph
@@ -553,15 +584,22 @@ fn parse_single_image_stamp(
         scott_number,
         denomination,
         name,
+        color: String::new(),
         place_issued: String::new(),
         issue_date: String::new(),
         quantity_issued: String::new(),
         designer: String::new(),
+        vignette: String::new(),
+        frame: String::new(),
+        lettering: String::new(),
         engraver: String::new(),
         image_url,
         printer: String::new(),
         perforation: String::new(),
         printing_details: String::new(),
+        tagging: String::new(),
+        collectible_varieties: String::new(),
+        usage: String::new(),
         description: String::new(),
         stamp_type: stamp_type.to_string(),
     })
@@ -762,10 +800,14 @@ fn parse_stamp_from_title_and_description(
         scott_number,
         denomination,
         name,
+        color: String::new(),
         place_issued,
         issue_date,
         quantity_issued,
         designer: String::new(), // Will be filled from commemoratives section
+        vignette: String::new(),
+        frame: String::new(),
+        lettering: String::new(),
         engraver: String::new(), // Will be filled from commemoratives section
         image_url,
         printer: printer.to_string(),
@@ -779,6 +821,9 @@ fn parse_stamp_from_title_and_description(
         } else {
             printing_details.to_string()
         },
+        tagging: String::new(),
+        collectible_varieties: String::new(),
+        usage: String::new(),
         description: description.to_string(),
         stamp_type: stamp_type.to_string(),
     })
@@ -811,21 +856,230 @@ fn parse_ordinary_stamp_line(line: &str) -> Option<StampInfo> {
             scott_number,
             denomination,
             name,
+            color: String::new(),
             place_issued: String::new(),
             issue_date,
             quantity_issued: String::new(),
             designer: String::new(), // Ordinary stamps may not have designer info
+            vignette: String::new(),
+            frame: String::new(),
+            lettering: String::new(),
             engraver: String::new(), // Ordinary stamps may not have engraver info
             image_url,
             printer: String::new(),
             perforation: String::new(),
             printing_details,
+            tagging: String::new(),
+            collectible_varieties: String::new(),
+            usage: String::new(),
             description: String::new(),
             stamp_type: "ordinary".to_string(),
         })
     } else {
         None
     }
+}
+
+fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str, conn: &Connection, _base_url: &str) -> Result<usize, Box<dyn Error>> {
+    let mut stamps_found = 0;
+
+    // Find the main table that contains all stamp information
+    let table_selector = Selector::parse("table").unwrap();
+    let main_table = document.select(&table_selector).find(|table| {
+        let cat_header_selector = Selector::parse("td").unwrap();
+        table.select(&cat_header_selector).any(|td| td.text().collect::<String>().contains("Cat. #"))
+    });
+
+    if let Some(table) = main_table {
+        println!("Found main Liberty Issue table, parsing sections");
+
+        let row_selector = Selector::parse("tr").unwrap();
+        let rows: Vec<ElementRef> = table.select(&row_selector).collect();
+
+        let mut i = 0;
+        while i < rows.len() {
+            let row = &rows[i];
+            let td_elements: Vec<ElementRef> = row.select(&Selector::parse("td").unwrap()).collect();
+
+            if td_elements.is_empty() {
+                i += 1;
+                continue;
+            }
+
+            // Check if this is a denomination row (colspan="8")
+            let first_td = &td_elements[0];
+            let colspan = first_td.value().attr("colspan").unwrap_or("");
+            if colspan == "8" {
+                // Parse denomination section
+                let denom_text = first_td.text().collect::<String>();
+                let parts: Vec<&str> = denom_text.split('·').collect();
+                
+                let mut denomination = String::new();
+                let mut color = String::new();
+                let mut designer = String::new();
+                let mut engraver = String::new();
+                let mut vignette = String::new();
+                let mut frame = String::new();
+                let mut lettering = String::new();
+
+                if parts.len() >= 2 {
+                    let denom_and_name = parts[0].trim();
+                    let color_part = parts[1].trim();
+
+                    let denom_parts: Vec<&str> = denom_and_name.split_whitespace().collect();
+                    if !denom_parts.is_empty() {
+                        denomination = denom_parts[0].to_string();
+                    }
+
+                    color = color_part.to_string();
+                }
+
+                // Parse additional fields
+                for part in &parts[2..] {
+                    let trimmed = part.trim();
+                    if let Some(colon) = trimmed.find(':') {
+                        let key = trimmed[..colon].trim();
+                        let value = &trimmed[colon + 1..].trim();
+                        match key {
+                            "Designer" | "Designers" => designer = value.to_string(),
+                            "Vignette" => vignette = value.to_string(),
+                            "Frame" => frame = value.to_string(),
+                            "Lettering" => lettering = value.to_string(),
+                            "Engraver" | "Engravers" => engraver = value.to_string(),
+                            _ => {}
+                        }
+                    }
+                }
+
+                // Extract actual image URL from the next row's <img> tag
+                let mut image_url = String::new();
+                i += 1;
+                
+                while i < rows.len() {
+                    let next_row = &rows[i];
+                    let next_tds: Vec<ElementRef> = next_row.select(&Selector::parse("td").unwrap()).collect();
+
+                    if !next_tds.is_empty() {
+                        // Check if first td contains an image
+                        let img_selector = Selector::parse("img").unwrap();
+                        if let Some(img_elem) = next_tds[0].select(&img_selector).next() {
+                            if let Some(src) = img_elem.value().attr("src") {
+                                image_url = if src.starts_with("http") {
+                                    src.to_string()
+                                } else if src.starts_with("//") {
+                                    format!("https:{}", src)
+                                } else {
+                                    format!("https://1847us.com{}", src)
+                                };
+                                println!("Extracted image URL for {}: {}", denomination, image_url);
+                            }
+                            // Found image row with header, now parse variations
+                            i += 1;
+                            break;
+                        }
+                    }
+                    i += 1;
+                }
+
+                // Parse all variation rows for this denomination
+                // Keep looping until we find a new denomination (colspan="8") or run out of rows
+                let mut found_new_denomination = false;
+                while i < rows.len() {
+                    let data_row = &rows[i];
+                    let data_tds: Vec<ElementRef> = data_row.select(&Selector::parse("td").unwrap()).collect();
+                    
+                    // Check ALL tds in this row for colspan="8"
+                    let has_colspan_8 = data_tds.iter().any(|td| {
+                        td.value().attr("colspan") == Some("8")
+                    });
+                    
+                    if has_colspan_8 {
+                        found_new_denomination = true;
+                        break;
+                    }
+
+                    if data_tds.is_empty() {
+                        i += 1;
+                        break;
+                    }
+
+                    // Check if this is a new denomination section (single td with colspan="8")
+                    if data_tds.len() == 1 {
+                        let next_colspan = data_tds[0].value().attr("colspan").unwrap_or("");
+                        if next_colspan == "8" {
+                            found_new_denomination = true;
+                            break; // Start of next denomination - don't increment i, so we process this row in next iteration
+                        }
+                    }
+
+                    // Parse stamp data row  - try to extract any row with a Scott number
+                    if !data_tds.is_empty() {
+                        let scott_text_str = data_tds[0].text().collect::<String>();
+                        let scott_text = scott_text_str.trim();
+
+                        // Check if this looks like a Scott number
+                        if !scott_text.is_empty() && scott_text.chars().next().unwrap_or(' ').is_ascii_digit() {
+                            let issue_date = data_tds.get(1).map(|td| td.text().collect::<String>()).unwrap_or_default();
+                            let printing_method = data_tds.get(2).map(|td| td.text().collect::<String>()).unwrap_or_default();
+                            let perforation = data_tds.get(3).map(|td| td.text().collect::<String>()).unwrap_or_default();
+                            let tagging = data_tds.get(4).map(|td| td.text().collect::<String>()).unwrap_or_default();
+                            let varieties = data_tds.get(5).map(|td| td.text().collect::<String>()).unwrap_or_default();
+                            let usage = data_tds.get(6).map(|td| td.text().collect::<String>()).unwrap_or_default();
+
+                            let stamp = StampInfo {
+                                scott_number: scott_text.to_string(),
+                                denomination: denomination.clone(),
+                                name: String::new(), // Name is from denomination section
+                                color: color.clone(),
+                                place_issued: String::new(),
+                                issue_date: issue_date.trim().to_string(),
+                                quantity_issued: String::new(),
+                                designer: designer.clone(),
+                                vignette: vignette.clone(),
+                                frame: frame.clone(),
+                                lettering: lettering.clone(),
+                                engraver: engraver.clone(),
+                                image_url: image_url.clone(),
+                                printer: String::new(),
+                                perforation: perforation.trim().to_string(),
+                                printing_details: printing_method.trim().to_string(),
+                                tagging: tagging.trim().to_string(),
+                                collectible_varieties: varieties.trim().to_string(),
+                                usage: usage.trim().to_string(),
+                                description: String::new(),
+                                stamp_type: "liberty_issue".to_string(),
+                            };
+
+                            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
+                                eprintln!("Failed to insert stamp {}: {}", scott_text, e);
+                            } else {
+                                stamps_found += 1;
+                            }
+                        } else if !scott_text.is_empty() && (scott_text.contains('¢') || scott_text.contains('$')) {
+                            // Detected start of new denomination section
+                            found_new_denomination = true;
+                            break;
+                        }
+                    }
+
+                    i += 1;
+                }
+                
+                // If we didn't find a new denomination, increment i for next iteration
+                // If we did find one, i is already pointing to it, so don't increment
+                if !found_new_denomination {
+                    i += 1;
+                }
+            } else {
+                i += 1;
+            }
+        }
+    } else {
+        println!("No main Liberty Issue table found with 'Cat. #' header");
+    }
+
+    println!("Total stamps parsed: {}", stamps_found);
+    Ok(stamps_found)
 }
 
 fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
@@ -857,15 +1111,22 @@ fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
             scott_number,
             denomination,
             name,
+            color: String::new(),
             place_issued: String::new(), // Will be updated from table data
             issue_date: String::new(),   // Will be updated from table data
             quantity_issued: String::new(), // Will be updated from table data
             designer,
+            vignette: String::new(),
+            frame: String::new(),
+            lettering: String::new(),
             engraver,
             image_url,
             printer: String::new(),     // Will be updated from section data
             perforation: String::new(), // Will be updated from section data
             printing_details: String::new(), // Will be updated from section data
+            tagging: String::new(),
+            collectible_varieties: String::new(),
+            usage: String::new(),
             description: String::new(),
             stamp_type: "commemorative".to_string(),
         })
@@ -895,27 +1156,41 @@ fn insert_stamp_if_not_exists(
         conn.execute(
             "UPDATE us1847_stamps SET
                 name = CASE WHEN name = '' THEN ? ELSE name END,
+                color = CASE WHEN color = '' THEN ? ELSE color END,
                 place_issued = CASE WHEN place_issued = '' THEN ? ELSE place_issued END,
                 issue_date = CASE WHEN issue_date = '' THEN ? ELSE issue_date END,
                 quantity_issued = CASE WHEN quantity_issued = '' THEN ? ELSE quantity_issued END,
                 designer = CASE WHEN designer = '' THEN ? ELSE designer END,
+                vignette = CASE WHEN vignette = '' THEN ? ELSE vignette END,
+                frame = CASE WHEN frame = '' THEN ? ELSE frame END,
+                lettering = CASE WHEN lettering = '' THEN ? ELSE lettering END,
                 engraver = CASE WHEN engraver = '' THEN ? ELSE engraver END,
                 printer = CASE WHEN printer = '' THEN ? ELSE printer END,
                 perforation = CASE WHEN perforation = '' THEN ? ELSE perforation END,
                 printing_details = CASE WHEN printing_details = '' THEN ? ELSE printing_details END,
+                tagging = CASE WHEN tagging = '' THEN ? ELSE tagging END,
+                collectible_varieties = CASE WHEN collectible_varieties = '' THEN ? ELSE collectible_varieties END,
+                usage = CASE WHEN usage = '' THEN ? ELSE usage END,
                 description = CASE WHEN description = '' THEN ? ELSE description END,
                 stamp_type = CASE WHEN stamp_type = '' THEN ? ELSE stamp_type END
              WHERE scott_number = ?",
             rusqlite::params![
                 &stamp.name,
+                &stamp.color,
                 &stamp.place_issued,
                 &stamp.issue_date,
                 &stamp.quantity_issued,
                 &stamp.designer,
+                &stamp.vignette,
+                &stamp.frame,
+                &stamp.lettering,
                 &stamp.engraver,
                 &stamp.printer,
                 &stamp.perforation,
                 &stamp.printing_details,
+                &stamp.tagging,
+                &stamp.collectible_varieties,
+                &stamp.usage,
                 &stamp.description,
                 &stamp.stamp_type,
                 &stamp.scott_number
@@ -925,24 +1200,31 @@ fn insert_stamp_if_not_exists(
         // Insert new stamp
         conn.execute(
             "INSERT INTO us1847_stamps (
-                series_id, scott_number, denomination, name, place_issued, issue_date,
-                quantity_issued, designer, engraver, image_url, printer, perforation,
-                printing_details, description, stamp_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                series_id, scott_number, denomination, name, color, place_issued, issue_date,
+                quantity_issued, designer, vignette, frame, lettering, engraver, image_url, printer, perforation,
+                printing_details, tagging, collectible_varieties, usage, description, stamp_type
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             rusqlite::params![
                 series_id,
                 &stamp.scott_number,
                 &stamp.denomination,
                 &stamp.name,
+                &stamp.color,
                 &stamp.place_issued,
                 &stamp.issue_date,
                 &stamp.quantity_issued,
                 &stamp.designer,
+                &stamp.vignette,
+                &stamp.frame,
+                &stamp.lettering,
                 &stamp.engraver,
                 &stamp.image_url,
                 &stamp.printer,
                 &stamp.perforation,
                 &stamp.printing_details,
+                &stamp.tagging,
+                &stamp.collectible_varieties,
+                &stamp.usage,
                 &stamp.description,
                 &stamp.stamp_type
             ],
@@ -959,10 +1241,10 @@ fn insert_stamp_if_not_exists(
     // Insert or replace into main stamps table
     conn.execute(
         "INSERT OR REPLACE INTO stamps (
-            country, series, year, month, month_num, day, sg_number, denomination, description,
+            country, series, year, month, month_num, day, sg_number, denomination, color, description,
             stamps_issued, remote_image_url, original_image_url, image_path, design, engraving, perforation,
             uniq_key
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         rusqlite::params![
             "United States", // country
             "1955", // series (use album name instead of full title)
@@ -972,6 +1254,7 @@ fn insert_stamp_if_not_exists(
             "", // day (empty string)
             &stamp.scott_number, // sg_number
             &stamp.denomination, // denomination
+            &stamp.color, // color
             &stamp.description, // description
             &stamp.quantity_issued, // stamps_issued
             &stamp.image_url, // remote_image_url
@@ -993,6 +1276,7 @@ fn download_stamp_images(
     series_id: i64,
     image_path: &str,
     overwrite_images: bool,
+    base_url: &str,
 ) -> Result<(), Box<dyn Error>> {
     use std::io::Write;
 
@@ -1024,7 +1308,7 @@ fn download_stamp_images(
         info!("Downloading image for {} from {}", scott_number, image_url);
 
         // Download the image
-        match client.get(&image_url).send() {
+        match client.get(&image_url).header("Referer", base_url).send() {
             Ok(resp) => {
                 if resp.status().is_success() {
                     match resp.bytes() {
@@ -1074,14 +1358,14 @@ fn download_stamp_images(
     Ok(())
 }
 
-fn sync_us1847_to_stamps(
+pub fn sync_us1847_to_stamps(
     conn: &Connection,
     series_id: i64,
     series_title: &str,
 ) -> Result<(), Box<dyn Error>> {
     // Query all stamps for this series
     let mut stmt = conn.prepare(
-        "SELECT scott_number, denomination, name, place_issued, issue_date, quantity_issued, designer, engraver, printer, perforation, printing_details, description, image_url FROM us1847_stamps WHERE series_id = ?"
+        "SELECT scott_number, denomination, name, place_issued, issue_date, quantity_issued, designer, engraver, printer, perforation, printing_details, description, image_url, color FROM us1847_stamps WHERE series_id = ?"
     )?;
     let stamp_iter = stmt.query_map([series_id], |row| {
         Ok((
@@ -1098,6 +1382,7 @@ fn sync_us1847_to_stamps(
             row.get::<_, String>(10)?, // printing_details
             row.get::<_, String>(11)?, // description
             row.get::<_, String>(12)?, // image_url
+            row.get::<_, String>(13)?, // color
         ))
     })?;
 
@@ -1116,6 +1401,7 @@ fn sync_us1847_to_stamps(
             _printing_details,
             description,
             image_url,
+            color,
         ) = stamp_result?;
 
         // Insert into main stamps table
@@ -1129,7 +1415,7 @@ fn sync_us1847_to_stamps(
         let day = "";
         let sg_number = scott_number.clone();
         let type_ = "Postage Stamp";
-        let color = ""; // Not available
+        let color = color; // From database
         let stamps_issued = quantity_issued;
         let mint_condition = "";
         let unused = "";
