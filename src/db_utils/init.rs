@@ -278,8 +278,13 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     )?;
 
     // Add color column if it doesn't exist (for backward compatibility)
-    conn.execute("ALTER TABLE us1847_stamps ADD COLUMN color TEXT", []).ok();
-    conn.execute("UPDATE us1847_stamps SET color = '' WHERE color IS NULL", []).ok();
+    conn.execute("ALTER TABLE us1847_stamps ADD COLUMN color TEXT", [])
+        .ok();
+    conn.execute(
+        "UPDATE us1847_stamps SET color = '' WHERE color IS NULL",
+        [],
+    )
+    .ok();
 
     // Create us1847_variations table (keeping for future use with varieties)
     conn.execute(

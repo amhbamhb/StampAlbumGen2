@@ -177,7 +177,14 @@ pub fn run_scraping_mode(
     cfg.year = cli.start_year.to_string();
 
     // Build base URL
-    progress.set_message(&format!("🔗 Building {} URL...", if source == "us1847" { "1847US" } else { "StampWorld" }));
+    progress.set_message(&format!(
+        "🔗 Building {} URL...",
+        if source == "us1847" {
+            "1847US"
+        } else {
+            "StampWorld"
+        }
+    ));
     let base_url = if let Some(b) = &cli.base_url {
         b.clone()
     } else if source == "us1847" {
@@ -266,10 +273,25 @@ pub fn run_scraping_mode(
             }
         };
 
-        match crate::us1847::collector::process_1847us_page(&client, &conn, &base_url, &site_name, cli.start_year, cli.end_year, &cfg.image_path, cli.overwrite_images) {
+        match crate::us1847::collector::process_1847us_page(
+            &client,
+            &conn,
+            &base_url,
+            &site_name,
+            cli.start_year,
+            cli.end_year,
+            &cfg.image_path,
+            cli.overwrite_images,
+        ) {
             Ok(stamp_count) => {
-                progress.set_message(&format!("✅ 1847US scraping complete! Found {} stamps.", stamp_count));
-                Ok(vec![format!("Processed {} stamps from {}", stamp_count, base_url)])
+                progress.set_message(&format!(
+                    "✅ 1847US scraping complete! Found {} stamps.",
+                    stamp_count
+                ));
+                Ok(vec![format!(
+                    "Processed {} stamps from {}",
+                    stamp_count, base_url
+                )])
             }
             Err(e) => {
                 error!("Failed to process 1847us page {}: {}", base_url, e);

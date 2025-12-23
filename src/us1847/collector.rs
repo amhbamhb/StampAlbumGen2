@@ -148,13 +148,21 @@ pub fn process_1847us_page(
             if lower.contains("portrait stamps") {
                 let portrait_regex = Regex::new(r"Portrait Stamps:\s*([^·]+)").unwrap();
                 if let Some(cap) = portrait_regex.captures(&text) {
-                    design_size_portrait = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("").to_string();
+                    design_size_portrait = cap
+                        .get(1)
+                        .map(|m| m.as_str().trim())
+                        .unwrap_or("")
+                        .to_string();
                 }
             }
             if lower.contains("landscape stamps") {
                 let landscape_regex = Regex::new(r"Landscape Stamps:\s*([^·]+)").unwrap();
                 if let Some(cap) = landscape_regex.captures(&text) {
-                    design_size_landscape = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("").to_string();
+                    design_size_landscape = cap
+                        .get(1)
+                        .map(|m| m.as_str().trim())
+                        .unwrap_or("")
+                        .to_string();
                 }
             }
         } else if series_description.is_empty()
@@ -880,14 +888,22 @@ fn parse_ordinary_stamp_line(line: &str) -> Option<StampInfo> {
     }
 }
 
-fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str, conn: &Connection, _base_url: &str) -> Result<usize, Box<dyn Error>> {
+fn parse_liberty_issue_stamp(
+    document: &Html,
+    series_id: i64,
+    series_title: &str,
+    conn: &Connection,
+    _base_url: &str,
+) -> Result<usize, Box<dyn Error>> {
     let mut stamps_found = 0;
 
     // Find the main table that contains all stamp information
     let table_selector = Selector::parse("table").unwrap();
     let main_table = document.select(&table_selector).find(|table| {
         let cat_header_selector = Selector::parse("td").unwrap();
-        table.select(&cat_header_selector).any(|td| td.text().collect::<String>().contains("Cat. #"))
+        table
+            .select(&cat_header_selector)
+            .any(|td| td.text().collect::<String>().contains("Cat. #"))
     });
 
     if let Some(table) = main_table {
@@ -899,7 +915,8 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
         let mut i = 0;
         while i < rows.len() {
             let row = &rows[i];
-            let td_elements: Vec<ElementRef> = row.select(&Selector::parse("td").unwrap()).collect();
+            let td_elements: Vec<ElementRef> =
+                row.select(&Selector::parse("td").unwrap()).collect();
 
             if td_elements.is_empty() {
                 i += 1;
@@ -913,7 +930,7 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
                 // Parse denomination section
                 let denom_text = first_td.text().collect::<String>();
                 let parts: Vec<&str> = denom_text.split('·').collect();
-                
+
                 let mut denomination = String::new();
                 let mut color = String::new();
                 let mut designer = String::new();
@@ -954,10 +971,11 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
                 // Extract actual image URL from the next row's <img> tag
                 let mut image_url = String::new();
                 i += 1;
-                
+
                 while i < rows.len() {
                     let next_row = &rows[i];
-                    let next_tds: Vec<ElementRef> = next_row.select(&Selector::parse("td").unwrap()).collect();
+                    let next_tds: Vec<ElementRef> =
+                        next_row.select(&Selector::parse("td").unwrap()).collect();
 
                     if !next_tds.is_empty() {
                         // Check if first td contains an image
@@ -986,13 +1004,14 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
                 let mut found_new_denomination = false;
                 while i < rows.len() {
                     let data_row = &rows[i];
-                    let data_tds: Vec<ElementRef> = data_row.select(&Selector::parse("td").unwrap()).collect();
-                    
+                    let data_tds: Vec<ElementRef> =
+                        data_row.select(&Selector::parse("td").unwrap()).collect();
+
                     // Check ALL tds in this row for colspan="8"
-                    let has_colspan_8 = data_tds.iter().any(|td| {
-                        td.value().attr("colspan") == Some("8")
-                    });
-                    
+                    let has_colspan_8 = data_tds
+                        .iter()
+                        .any(|td| td.value().attr("colspan") == Some("8"));
+
                     if has_colspan_8 {
                         found_new_denomination = true;
                         break;
@@ -1018,13 +1037,33 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
                         let scott_text = scott_text_str.trim();
 
                         // Check if this looks like a Scott number
-                        if !scott_text.is_empty() && scott_text.chars().next().unwrap_or(' ').is_ascii_digit() {
-                            let issue_date = data_tds.get(1).map(|td| td.text().collect::<String>()).unwrap_or_default();
-                            let printing_method = data_tds.get(2).map(|td| td.text().collect::<String>()).unwrap_or_default();
-                            let perforation = data_tds.get(3).map(|td| td.text().collect::<String>()).unwrap_or_default();
-                            let tagging = data_tds.get(4).map(|td| td.text().collect::<String>()).unwrap_or_default();
-                            let varieties = data_tds.get(5).map(|td| td.text().collect::<String>()).unwrap_or_default();
-                            let usage = data_tds.get(6).map(|td| td.text().collect::<String>()).unwrap_or_default();
+                        if !scott_text.is_empty()
+                            && scott_text.chars().next().unwrap_or(' ').is_ascii_digit()
+                        {
+                            let issue_date = data_tds
+                                .get(1)
+                                .map(|td| td.text().collect::<String>())
+                                .unwrap_or_default();
+                            let printing_method = data_tds
+                                .get(2)
+                                .map(|td| td.text().collect::<String>())
+                                .unwrap_or_default();
+                            let perforation = data_tds
+                                .get(3)
+                                .map(|td| td.text().collect::<String>())
+                                .unwrap_or_default();
+                            let tagging = data_tds
+                                .get(4)
+                                .map(|td| td.text().collect::<String>())
+                                .unwrap_or_default();
+                            let varieties = data_tds
+                                .get(5)
+                                .map(|td| td.text().collect::<String>())
+                                .unwrap_or_default();
+                            let usage = data_tds
+                                .get(6)
+                                .map(|td| td.text().collect::<String>())
+                                .unwrap_or_default();
 
                             let stamp = StampInfo {
                                 scott_number: scott_text.to_string(),
@@ -1050,12 +1089,16 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
                                 stamp_type: "liberty_issue".to_string(),
                             };
 
-                            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
+                            if let Err(e) =
+                                insert_stamp_if_not_exists(conn, series_id, series_title, &stamp)
+                            {
                                 eprintln!("Failed to insert stamp {}: {}", scott_text, e);
                             } else {
                                 stamps_found += 1;
                             }
-                        } else if !scott_text.is_empty() && (scott_text.contains('¢') || scott_text.contains('$')) {
+                        } else if !scott_text.is_empty()
+                            && (scott_text.contains('¢') || scott_text.contains('$'))
+                        {
                             // Detected start of new denomination section
                             found_new_denomination = true;
                             break;
@@ -1064,7 +1107,7 @@ fn parse_liberty_issue_stamp(document: &Html, series_id: i64, series_title: &str
 
                     i += 1;
                 }
-                
+
                 // If we didn't find a new denomination, increment i for next iteration
                 // If we did find one, i is already pointing to it, so don't increment
                 if !found_new_denomination {

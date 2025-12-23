@@ -64,9 +64,7 @@ impl ReqwestFetcher {
         );
         default_headers.insert(
             reqwest::header::ACCEPT,
-            "image/webp,image/apng,image/*,*/*;q=0.8"
-                .parse()
-                .unwrap(),
+            "image/webp,image/apng,image/*,*/*;q=0.8".parse().unwrap(),
         );
 
         let client = reqwest::blocking::Client::builder()
