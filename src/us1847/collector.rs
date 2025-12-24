@@ -28,6 +28,7 @@ struct StampInfo {
     usage: String,
     description: String,
     stamp_type: String,
+    design_size: String,
 }
 
 pub fn process_1847us_page(
@@ -200,8 +201,10 @@ pub fn process_1847us_page(
     // Special handling for Liberty Issue page with table format
     if url.contains("1954-liberty-issue") {
         info!("Detected Liberty Issue page, using specialized parser");
+        eprintln!("DEBUG: Using Liberty Issue parser for URL: {}", url);
         stamps_found += parse_liberty_issue_stamp(&document, series_id, &series_title, conn, url)?;
     } else {
+        eprintln!("DEBUG: Using generic parser for URL: {}", url);
         stamps_found += parse_html_tables(
             client,
             conn,
@@ -610,6 +613,7 @@ fn parse_single_image_stamp(
         usage: String::new(),
         description: String::new(),
         stamp_type: stamp_type.to_string(),
+        design_size: String::new(),
     })
 }
 
@@ -834,6 +838,7 @@ fn parse_stamp_from_title_and_description(
         usage: String::new(),
         description: description.to_string(),
         stamp_type: stamp_type.to_string(),
+        design_size: String::new(),
     })
 }
 
@@ -882,10 +887,64 @@ fn parse_ordinary_stamp_line(line: &str) -> Option<StampInfo> {
             usage: String::new(),
             description: String::new(),
             stamp_type: "ordinary".to_string(),
+            design_size: String::new(),
         })
     } else {
         None
     }
+}
+
+fn extract_design_size(document: &Html) -> String {
+    // Look for design size information in the page
+    // Pattern: "Design size · Portrait Stamps: .75 x .82 inches ... · Landscape Stamps: .82 x .75 in."
+    let p_selector = Selector::parse("p").unwrap();
+
+    for p in document.select(&p_selector) {
+        let text = p.text().collect::<String>();
+
+        if text.contains("Design size") {
+            // Found it! Now extract dimensions
+            // The HTML has: "Design size · Portrait Stamps: .75 x .82 inches (about 19 x 20.8mm)<br/>· Landscape Stamps: .82 x .75 in. (about 20.8 x 19mm), unless noted otherwise."
+
+            let mut portrait = String::new();
+            let mut landscape = String::new();
+
+            // Extract Portrait: look for "Portrait Stamps:" and get dimensions
+            if let Some(start) = text.find("Portrait Stamps:") {
+                let after = &text[start + 16..]; // len("Portrait Stamps:") = 16
+                                                 // Find dimensions: look for pattern ".XX x .XX inches" or ".XX x .XX in"
+                if let Some(first_dot) = after.find('.') {
+                    let from_first = &after[first_dot..];
+                    // Find " inches" or " in" to mark end of this dimension section
+                    if let Some(end_inch) = from_first.find(" in") {
+                        let dim_str = &from_first[0..end_inch];
+                        portrait = dim_str.trim().to_string();
+                    }
+                }
+            }
+
+            // Extract Landscape: look for "Landscape Stamps:" and get dimensions
+            if let Some(start) = text.find("Landscape Stamps:") {
+                let after = &text[start + 17..]; // len("Landscape Stamps:") = 17
+                                                 // Find dimensions: look for pattern ".XX x .XX in"
+                if let Some(first_dot) = after.find('.') {
+                    let from_first = &after[first_dot..];
+                    // Find " in" to mark end of this dimension section (could be "in." or "in,")
+                    if let Some(end_in_pos) = from_first.find(" in") {
+                        let dim_str = &from_first[0..end_in_pos];
+                        landscape = dim_str.trim().to_string();
+                    }
+                }
+            }
+
+            if !portrait.is_empty() && !landscape.is_empty() {
+                let result = format!("Portrait: {}; Landscape: {}", portrait, landscape);
+                return result;
+            }
+        }
+    }
+
+    String::new()
 }
 
 fn parse_liberty_issue_stamp(
@@ -895,7 +954,15 @@ fn parse_liberty_issue_stamp(
     conn: &Connection,
     _base_url: &str,
 ) -> Result<usize, Box<dyn Error>> {
+    std::fs::write(
+        "/tmp/function_called.txt",
+        "parse_liberty_issue_stamp was called",
+    )
+    .ok();
     let mut stamps_found = 0;
+
+    // Extract design size information from the page
+    let design_size = extract_design_size(document);
 
     // Find the main table that contains all stamp information
     let table_selector = Selector::parse("table").unwrap();
@@ -1087,6 +1154,7 @@ fn parse_liberty_issue_stamp(
                                 usage: usage.trim().to_string(),
                                 description: String::new(),
                                 stamp_type: "liberty_issue".to_string(),
+                                design_size: design_size.clone(),
                             };
 
                             if let Err(e) =
@@ -1172,6 +1240,7 @@ fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
             usage: String::new(),
             description: String::new(),
             stamp_type: "commemorative".to_string(),
+            design_size: String::new(),
         })
     } else {
         None
@@ -1215,7 +1284,8 @@ fn insert_stamp_if_not_exists(
                 collectible_varieties = CASE WHEN collectible_varieties = '' THEN ? ELSE collectible_varieties END,
                 usage = CASE WHEN usage = '' THEN ? ELSE usage END,
                 description = CASE WHEN description = '' THEN ? ELSE description END,
-                stamp_type = CASE WHEN stamp_type = '' THEN ? ELSE stamp_type END
+                stamp_type = CASE WHEN stamp_type = '' THEN ? ELSE stamp_type END,
+                design_size = CASE WHEN design_size = '' THEN ? ELSE design_size END
              WHERE scott_number = ?",
             rusqlite::params![
                 &stamp.name,
@@ -1236,6 +1306,7 @@ fn insert_stamp_if_not_exists(
                 &stamp.usage,
                 &stamp.description,
                 &stamp.stamp_type,
+                &stamp.design_size,
                 &stamp.scott_number
             ],
         )?;
@@ -1245,8 +1316,8 @@ fn insert_stamp_if_not_exists(
             "INSERT INTO us1847_stamps (
                 series_id, scott_number, denomination, name, color, place_issued, issue_date,
                 quantity_issued, designer, vignette, frame, lettering, engraver, image_url, printer, perforation,
-                printing_details, tagging, collectible_varieties, usage, description, stamp_type
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                printing_details, tagging, collectible_varieties, usage, description, stamp_type, design_size
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             rusqlite::params![
                 series_id,
                 &stamp.scott_number,
@@ -1269,7 +1340,8 @@ fn insert_stamp_if_not_exists(
                 &stamp.collectible_varieties,
                 &stamp.usage,
                 &stamp.description,
-                &stamp.stamp_type
+                &stamp.stamp_type,
+                &stamp.design_size
             ],
         )?;
     }
