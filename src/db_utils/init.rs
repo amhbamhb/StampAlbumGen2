@@ -271,6 +271,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             usage TEXT,
             description TEXT,
             stamp_type TEXT,
+            design_size TEXT,
             FOREIGN KEY(series_id) REFERENCES us1847_series(id),
             UNIQUE(scott_number)
         )",
