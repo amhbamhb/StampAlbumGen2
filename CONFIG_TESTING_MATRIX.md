@@ -109,9 +109,9 @@ This file documents systematic testing of all configuration parameters found in 
 | Test Case | Input | Expected Result | Status |
 |-----------|-------|----------------|---------|
 | Valid: first_date | "first_date" | Series ordered by first date | ⏳ |
-| Valid: first_sg | "first_sg" | Series ordered by SG number | ⏳ |
+| Valid: first_sg | "first_sg" | Series ordered by StampWorld catalog number | ⏳ |
 | Valid: alpha | "alpha" | Series ordered alphabetically | ⏳ |
-| Valid: first_sg_desc | "first_sg_desc" | Descending SG order | ⏳ |
+| Valid: first_sg_desc | "first_sg_desc" | Descending catalog number order | ⏳ |
 | Invalid | "invalid_order" | Error/Default | ⏳ |
 | Empty string | "" | Error/Default | ⏳ |
 | Default | omitted | "first_date" used | ⏳ |

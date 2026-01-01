@@ -124,7 +124,7 @@ pub fn collect_stampworld_data(
                 let tr_html = tr.html();
                 debug!("Raw stamp row HTML len={} snippet='{}'", tr_html.len(), tr_html.chars().take(400).collect::<String>());
                 // Mapping based on provided example:
-                // th[0] = No. (sg_number)
+                // th[0] = No. (StampWorld catalog number, stored as sg_number for historical reasons)
                 // td[0] = Type
                 // td[1] = Denomination
                 // td[2] = (blank)

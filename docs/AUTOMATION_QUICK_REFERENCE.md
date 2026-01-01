@@ -83,7 +83,7 @@ Developer Commit → CI/CD Trigger → Version Analysis → File Updates → Rel
 - Image paths are read from the DB and composed as:
   Albums/{album-name}/{image_path} (album_name spaces replaced with '-').
 - Physical sizes estimated using estimate_real_dimensions(...). Images are scaled so height ≤ stamp_box_height; final emitted size adds stamp_box_adjust margins.
-- Left column: cleaned denomination (sg number/denomination).
+- Left column: cleaned denomination (StampWorld catalog number/denomination).
 - Centre column: color, description, and stamps_issued (counts shown when present) joined with newline separators.
 - Right column: first line = mint_condition fallback — if blank the code substitutes the literal "Unsed"; second line = used; stamps_issued remains in centre.
 - Day/month parsing: the collector accepts Unicode month names (e.g., "3. März") using the module-level `DAY_MONTH_RE` in `src/stampworld/data_collector.rs`.

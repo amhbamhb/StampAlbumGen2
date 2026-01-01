@@ -1,0 +1,106 @@
+#####################################################################################
+#
+# A sample AlbumEasy file showing how to use the STAMP_HEADING commands to
+# add headings above the stamps
+#
+# These commands were first added to AlbumEasy V3.4.0
+#
+#####################################################################################
+
+ALBUM_PAGES_SIZE     (210.0 297.0)            #Set the page to A4 size
+ALBUM_PAGES_MARGINS  (22.0 10.0 10.0 10.0)
+ALBUM_PAGES_BORDER   (0.8 0.2 0.0 1.0)
+ALBUM_PAGES_TITLE    (HN 14 "STAMP_HEADING EXAMPLES")
+ALBUM_PAGES_SPACING  (6.0 4.0)
+
+
+PAGE_START
+ROW_ALIGN_BOTTOM
+
+PAGE_TEXT_CENTRE (HB 10 "\n\nROW_ALIGN_BOTTOM using STAMP_HEADING\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (45.0 30.0 "One"     ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (30.0 45.0 "Two"     ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (45.0 30.0 "Three"   ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+
+PAGE_TEXT_CENTRE (HB 10 "\n\nROW_ALIGN_BOTTOM using STAMP_HEADING_VA\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (45.0 30.0 "One"     ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (30.0 45.0 "Two"     ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (45.0 30.0 "Three"   ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+
+
+PAGE_START
+ROW_ALIGN_MIDDLE
+
+PAGE_TEXT_CENTRE (HB 10 "\n\nROW_ALIGN_MIDDLE using STAMP_HEADING\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (45.0 30.0 "One"     ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (30.0 45.0 "Two"     ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (45.0 30.0 "Three"   ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+
+PAGE_TEXT_CENTRE (HB 10 "\n\nROW_ALIGN_MIDDLE using STAMP_HEADING_VA\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (45.0 30.0 "One"     ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (30.0 45.0 "Two"     ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (45.0 30.0 "Three"   ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+
+
+PAGE_START
+ROW_ALIGN_TOP
+
+PAGE_TEXT_CENTRE (HB 10 "\n\nROW_ALIGN_TOP using STAMP_HEADING\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (45.0 30.0 "One"     ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (30.0 45.0 "Two"     ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (45.0 30.0 "Three"   ""  "" "")
+STAMP_HEADING(HN 10 "Heading Line 1\nHeading Line 2")
+
+PAGE_TEXT_CENTRE (HB 10 "\n\nROW_ALIGN_TOP using STAMP_HEADING_VA\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (45.0 30.0 "One"     ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (30.0 45.0 "Two"     ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+STAMP_ADD (45.0 30.0 "Three"   ""  "" "")
+STAMP_HEADING_VA(HN 10 "Heading Line 1\nHeading Line 2")
+
+
+
+PAGE_START
+PAGE_TEXT (HN 10 "The STAMP_HEADING commands can accept an optional fourth parameter that is "\
+                 "used to offset the heading horizontally. This can be used for example to shift "\
+                 "a heading so that it is centred over two stamps as in the second example below.")
+
+PAGE_TEXT_CENTRE (HB 12 "\n\nHeading on two stamps\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (28.0 32.0 "One"     ""  "" "")
+STAMP_HEADING(HN 14 "Heading on\nfirst stamp")
+STAMP_ADD (28.0 32.0 "Two"     ""  "" "")
+STAMP_ADD (28.0 32.0 "Three"   ""  "" "")
+STAMP_HEADING(HN 14 "Heading on\nthird stamp")
+STAMP_ADD (28.0 32.0 "Four"    ""  "" "")
+
+PAGE_TEXT_CENTRE (HB 12 "\n\nHeadings offset\n");
+ROW_START_FS (HN 6 0.2 6.0)
+STAMP_ADD (28.0 32.0 "One"     ""  "" "")
+STAMP_HEADING(HN 14 "Heading on\nfirst stamp" 20.0)
+STAMP_ADD (28.0 32.0 "Two"     ""  "" "")
+STAMP_ADD (28.0 32.0 "Three"   ""  "" "")
+STAMP_HEADING(HN 14 "Heading on\nthird stamp" 20.0)
+STAMP_ADD (28.0 32.0 "Four"    ""  "" "")
+

@@ -146,11 +146,28 @@ pub fn fetch_and_filter_stamps(
         attrs.set("color", &stamp.color);
         attrs.set("description", &stamp.description);
         attrs.set("stamps_issued", &stamp.stamps_issued);
+        attrs.set("issue_location", &stamp.issue_location);
+        attrs.set("quantity_printed", &stamp.quantity_printed);
         attrs.set("mint_condition", &stamp.mint_condition);
         attrs.set("unused", &stamp.unused);
 
-        // Try to fetch Colnect info
+        // Try to fetch Colnect info and store width/height for later use
+        let mut colnect_width_mm: Option<f64> = None;
+        let mut colnect_height_mm: Option<f64> = None;
+
         if let Ok(Some(colnect)) = get_colnect_info(conn, &stamp.sg_number) {
+            // Parse and store Colnect dimensions (in mm)
+            if let Some(ref w) = colnect.width {
+                if let Ok(width_val) = w.trim().parse::<f64>() {
+                    colnect_width_mm = Some(width_val);
+                }
+            }
+            if let Some(ref h) = colnect.height {
+                if let Ok(height_val) = h.trim().parse::<f64>() {
+                    colnect_height_mm = Some(height_val);
+                }
+            }
+
             if let Some(v) = colnect.printing {
                 attrs.set("colnect_printing", &v);
             }
@@ -196,8 +213,26 @@ pub fn fetch_and_filter_stamps(
                     .collect::<Vec<_>>()
                     .join("  ");
                 attrs.set("colnect_catalog_codes", &codes_str);
+
+                // Extract Scott number specifically for use as default catalog number
+                if let Some((_, scott_code)) = colnect
+                    .catalog_codes
+                    .iter()
+                    .find(|(catalog_type, _)| catalog_type == "Sn")
+                {
+                    attrs.set("scott_number", scott_code);
+                }
             }
         }
+
+        // Store Colnect dimensions in attributes for use in dimension calculation
+        if let Some(w) = colnect_width_mm {
+            attrs.set("colnect_width_mm", &w.to_string());
+        }
+        if let Some(h) = colnect_height_mm {
+            attrs.set("colnect_height_mm", &h.to_string());
+        }
+
         attrs.set("used", &stamp.used);
         attrs.set("month", &stamp.month);
         attrs.set("month_num", &stamp.month_num.to_string());
@@ -235,6 +270,7 @@ pub fn estimate_and_ensure_placeholders(
     stamp_box_height: f64,
     reference_width_mm: f64,
     reference_height_mm: f64,
+    config: &Config,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Compute series averages from available images
     let mut series_widths_mm: Vec<f64> = Vec::new();
@@ -263,58 +299,79 @@ pub fn estimate_and_ensure_placeholders(
         None
     };
 
+    // Get Colnect dimension adjustments from config (default 2.0mm if not set)
+    let colnect_w_adjust = config.colnect_width_adjust_mm.unwrap_or(2.0) as f64;
+    let colnect_h_adjust = config.colnect_height_adjust_mm.unwrap_or(2.0) as f64;
+
     for s in stamps.iter_mut() {
-        let image_path = s.image_path.trim();
-        let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-        if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
-            let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
-            let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
-            s.est_width_mm = Some(w_mm);
-            s.est_height_mm = Some(h_mm);
-        } else if let Some((w_mm, h_mm)) =
-            estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
-        {
-            let mut w = w_mm as f64;
-            let mut h = h_mm as f64;
-            if !preserve_real && h > stamp_box_height {
-                let sc = stamp_box_height / h;
-                w *= sc;
-                h *= sc;
-            }
-            s.est_width_mm = Some(w);
-            s.est_height_mm = Some(h);
+        // First priority: Use Colnect dimensions if available (already in mm)
+        let colnect_w = s
+            .attrs
+            .get("colnect_width_mm")
+            .and_then(|w| w.parse::<f64>().ok());
+        let colnect_h = s
+            .attrs
+            .get("colnect_height_mm")
+            .and_then(|h| h.parse::<f64>().ok());
 
-            // We found the real image and got dimensions!
-            // Update the stamp object and DB so we don't generate a placeholder.
-            let px_w = (w_mm / mm_per_pixel_w).round() as i32;
-            let px_h = (h_mm / mm_per_pixel_h).round() as i32;
-            s.image_width_px = Some(px_w);
-            s.image_height_px = Some(px_h);
-
-            if px_w > 0 && px_h > 0 {
-                let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
-                if let Err(e) = update_image_dimensions(
-                    conn,
-                    album_name,
-                    series_name,
-                    sg_str,
-                    Some(px_w),
-                    Some(px_h),
-                ) {
-                    log::error!(
-                        "Failed to update DB image dims for {} sg {}: {}",
-                        album_name,
-                        sg_str,
-                        e
-                    );
-                }
-            }
-        } else if let (Some(avg_w), Some(avg_h)) = (series_avg_w_mm, series_avg_h_mm) {
-            s.est_width_mm = Some(avg_w);
-            s.est_height_mm = Some(avg_h);
+        if let (Some(w_mm), Some(h_mm)) = (colnect_w, colnect_h) {
+            // Use Colnect dimensions with separate width/height adjustments
+            s.est_width_mm = Some(w_mm + colnect_w_adjust);
+            s.est_height_mm = Some(h_mm + colnect_h_adjust);
         } else {
-            s.est_width_mm = Some(reference_width_mm as f64);
-            s.est_height_mm = Some(reference_height_mm as f64);
+            // Fall back to existing logic for image-based or default dimensions
+            let image_path = s.image_path.trim();
+            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+                let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
+                let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
+                s.est_width_mm = Some(w_mm);
+                s.est_height_mm = Some(h_mm);
+            } else if let Some((w_mm, h_mm)) =
+                estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+            {
+                let mut w = w_mm as f64;
+                let mut h = h_mm as f64;
+                if !preserve_real && h > stamp_box_height {
+                    let sc = stamp_box_height / h;
+                    w *= sc;
+                    h *= sc;
+                }
+                s.est_width_mm = Some(w);
+                s.est_height_mm = Some(h);
+
+                // We found the real image and got dimensions!
+                // Update the stamp object and DB so we don't generate a placeholder.
+                let px_w = (w_mm / mm_per_pixel_w).round() as i32;
+                let px_h = (h_mm / mm_per_pixel_h).round() as i32;
+                s.image_width_px = Some(px_w);
+                s.image_height_px = Some(px_h);
+
+                if px_w > 0 && px_h > 0 {
+                    let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                    if let Err(e) = update_image_dimensions(
+                        conn,
+                        album_name,
+                        series_name,
+                        sg_str,
+                        Some(px_w),
+                        Some(px_h),
+                    ) {
+                        log::error!(
+                            "Failed to update DB image dims for {} sg {}: {}",
+                            album_name,
+                            sg_str,
+                            e
+                        );
+                    }
+                }
+            } else if let (Some(avg_w), Some(avg_h)) = (series_avg_w_mm, series_avg_h_mm) {
+                s.est_width_mm = Some(avg_w);
+                s.est_height_mm = Some(avg_h);
+            } else {
+                s.est_width_mm = Some(reference_width_mm as f64);
+                s.est_height_mm = Some(reference_height_mm as f64);
+            }
         }
 
         // If the stamp lacks pixel dims, generate a placeholder sized to the
@@ -324,9 +381,16 @@ pub fn estimate_and_ensure_placeholders(
             let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
             let target_w_mm = base_w;
             let target_h_mm = base_h;
+            // Use Scott number if available, fall back to SG number for placeholder filename
+            let catalog_num = s
+                .attrs
+                .get("scott_number")
+                .or_else(|| s.attrs.get("sg_number"))
+                .map(|v| v.as_str())
+                .unwrap_or("");
             match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
                 album_name,
-                s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or(""),
+                catalog_num,
                 s.attrs.get("year").map(|v| v.as_str()).unwrap_or(""),
                 Some(series_name),
                 None,
@@ -384,6 +448,7 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
     album_name: &str,
     series_name: &str,
     sg_number: &str,
+    catalog_number: &str,
     year: &str,
     target_w_mm: f64,
     target_h_mm: f64,
@@ -393,7 +458,7 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
 ) -> Option<(String, i32, i32)> {
     match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
         album_name,
-        sg_number,
+        catalog_number,
         year,
         Some(series_name),
         None,

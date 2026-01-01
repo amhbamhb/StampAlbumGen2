@@ -34,6 +34,8 @@ pub struct StampStub {
     pub perforation: String,
     pub series: String,
     pub context: String,
+    pub issue_location: String,
+    pub quantity_printed: String,
     pub multi_perf: bool,
 }
 
@@ -282,7 +284,7 @@ pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
 pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Result<Vec<StampStub>> {
     let mut result: Vec<StampStub> = Vec::new();
     if year.trim().is_empty() || year == "0" {
-        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
+        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px, issue_location, quantity_printed FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
         let rows = stmt.query_map([series], |row| {
             let raw_stamps_issued: String = row.get::<_, Option<String>>(9)?.unwrap_or_default();
             Ok(StampStub {
@@ -315,6 +317,8 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
                 used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
                 letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+                issue_location: row.get::<_, Option<String>>(26)?.unwrap_or_default(),
+                quantity_printed: row.get::<_, Option<String>>(27)?.unwrap_or_default(),
                 multi_perf: false,
             })
         })?;
@@ -322,7 +326,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
             result.push(s?);
         }
     } else {
-        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
+        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px, issue_location, quantity_printed FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
         let rows = stmt.query_map([series, year], |row| {
             let raw_stamps_issued: String = row.get::<_, Option<String>>(9)?.unwrap_or_default();
             Ok(StampStub {
@@ -355,6 +359,8 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
                 used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
                 letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+                issue_location: row.get::<_, Option<String>>(26)?.unwrap_or_default(),
+                quantity_printed: row.get::<_, Option<String>>(27)?.unwrap_or_default(),
                 multi_perf: false,
             })
         })?;

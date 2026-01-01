@@ -1,6 +1,7 @@
 # Liberty Issue Collector Rewrite - Summary
 
 ## Problem Statement
+
 The original `parse_liberty_issue_stamp()` function had critical data extraction issues:
 
 1. **Only extracted 34 stamps** instead of ~91 total on the page
@@ -12,24 +13,29 @@ The original `parse_liberty_issue_stamp()` function had critical data extraction
 ## Root Causes
 
 ### Issue 1: Single Denomination Detection
+
 The original code found the first `colspan="8"` denomination row but then parsed ALL subsequent rows as if they belonged to that same denomination. It never detected the other ~24 denomination sections on the page.
 
 **Fix**: Changed detection logic to check ALL td elements in a row for `colspan="8"`, not just rows with exactly 1 td element. This allows detecting denomination headers that are structured differently in the HTML.
 
 ### Issue 2: Non-incrementing Loop Index  
+
 After breaking from the variations loop when detecting a new denomination, the code would then increment `i` again at the end of the main loop, causing it to skip the newly detected denomination row.
 
 **Fix**: Introduced `found_new_denomination` flag to track whether we exited early. Only increment `i` at the end of main loop if we didn't find a new denomination. If we did find one, keep `i` pointing to that row for next iteration.
 
 ### Issue 3: Column Count Filtering
+
 The code only processed rows with `data_tds.len() >= 7`, filtering out rows with fewer columns. However, the page has variation rows with 3, 5, and 6 columns containing valid Scott numbers.
 
 **Fix**: Removed the column count requirement. Changed to process any row where the first column contains a Scott number (starts with digit).
 
 ### Issue 4: Image URL Extraction vs. Construction
+
 Instead of using the actual image URLs embedded in the page's `<img src="...">` tags, the code was constructing URLs like `https://1847us.com/1954/1954Series{DenominationName}.jpg` which often didn't exist or were incorrect.
 
 **Fix**: Extract image URLs directly from the denomination header row's `<img>` tag using the scraper API:
+
 ```rust
 if let Some(img_elem) = next_tds[0].select(&img_selector).next() {
     if let Some(src) = img_elem.value().attr("src") {
@@ -41,7 +47,8 @@ if let Some(img_elem) = next_tds[0].select(&img_selector).next() {
 ## Results
 
 ### Before Fix
-```
+
+```text
 Total stamps parsed: 34
 All 34 stamps:
   - denomination: "1/2¢"
@@ -49,7 +56,8 @@ All 34 stamps:
 ```
 
 ### After Fix  
-```
+
+```text
 Total stamps parsed: 91
 Stamps extracted across 25 denominations:
   - 1/2¢, 1¢, 1.25¢, 1.5¢, 2¢, 2.5¢, 3¢, 4¢, 4.5¢, 5¢
@@ -130,12 +138,14 @@ Each denomination section repeats this pattern ~27 times, with varying numbers o
 ## Testing
 
 Tested with:
+
 ```bash
 ./stamp_album_gen2 --source us1847 --site-name "1954-liberty-issue" \
   --album-name test_liberty --base-url "https://1847us.com/1954-liberty-issue/"
 ```
 
 Verified:
+
 - ✅ All 91 stamps extracted
 - ✅ Correct denominations applied
 - ✅ Image URLs match page sources
@@ -146,6 +156,7 @@ Verified:
 ## Future Improvements
 
 This rewrite establishes a solid foundation for:
+
 1. Generic template-based page parsers (series vs. year-based layouts)
 2. Multi-format page support detection
 3. Robust variation data extraction

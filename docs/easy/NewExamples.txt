@@ -1,0 +1,365 @@
+###########################################################################################
+#
+# This file will be updated with each release.
+# The intention is to give examples of most, if not all, the commands that have been added
+# or updated with the release.
+#
+# -----------------------------------------------------------------------------------------
+#
+#  V4.4 command examples:
+#   ALBUM_PAGES_MARGIN_TXT         - place vertical text in the page margins
+#   PAGE_ADD_BOX                   - placed boxes on a page, optionally rotated at an angle
+#   PAGE_QUADRILLE                 - place a grid on the page.
+#   PAGE_COLUMN_START              - column mode enhancments
+#   PAGE_RULE_H                    - page rule enhancments
+#   PAGE_TEXT_PARAGRAPH_START      - paragraph mode enhancments
+#
+#  V4.3 command examples:
+#   PAGE_START_INFO              - generate informational pages
+#   ALBUM_STAMP_IMG_GREYSCALE_ON - display images in greyscale
+#   ALBUM_STAMP_IMG_HIDE         - hide and show images
+#
+#  V4.2 command examples:
+#   STAMP_ADD_IMG now supports text along with images inside stamp boxes.
+#   PAGE_BACKGROUND_IMG to place a background image on a page
+#
+###########################################################################################
+
+# ------------------------------------------------------------------------------
+# Setup page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE (215.9 279.4)                              # set the page size to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (12.0 12.0 15.0 15.0)                  # left, right, top and bottom page margins
+ALBUM_PAGES_DECORATIVE_BORDER("Classic.txt");               # include a decorative page border
+
+ALBUM_TITLE ("New Examples Stamp Album")           #Optional command to embed a title attribute in the PDF properties
+ALBUM_AUTHOR ("Johnny Stamp-Collector")            #Optional command to embed an author attribute in the PDF properties
+
+ALBUM_PAGES_SPACING (1.0 6.0)
+
+ALBUM_DEFINE_FONT (PALI "Palatino Linotype Italic")      #load some fonts
+ALBUM_DEFINE_FONT (PAL  "Palatino Linotype")
+ALBUM_DEFINE_FONT (DJ   "DejaVu Sans")
+
+
+                   # Add a page number centred in the footer including the total number of pages
+                   # NOTE: $PAGES$ is substituted by the total page count when the PDF is generated
+ALBUM_PAGES_FOOTER_NUMBER (HN 12 C 1 "Page " " of $PAGES$")
+
+                # Add a date to the footer, lower right on odd pages and lower left on even pages
+ALBUM_PAGES_FOOTER_DATE (HN 10 RL YMD "." "generated: ")
+
+                   # Pad the footer 5mm below the border
+ALBUM_PAGES_FOOTER_PAD (5.0)
+
+ALBUM_PAGES_HEADER (TN 10 C "Header commands, that complement the footer commands, were added as of AlbumEasy v4.2")
+ALBUM_PAGES_HEADER_PAD (3.0)                     # Pad the header 3mm above the border
+
+                                               # Add a title to all pages
+ALBUM_PAGES_TITLE  (TB 16 "New and enhanced commands - AlbumEasy V4.2 to V4.4")
+
+TEXT_LINE_LEADING (0.75)                                          #increase spacing between line of text in the vertical margin
+ALBUM_PAGES_MARGIN_TXT (DJ 9 "AlbumEasy\nwww.theStampWeb.com" L ) #add vertical text to the left margin
+ALBUM_PAGES_MARGIN_TXT_PAD(1.0)                                   #pad the vertical text 1mm away from the border
+TEXT_LINE_LEADING (0.0)                                           #set default line spacing for all other text
+
+
+# ------------------------------------------------------------------------------
+# The first page
+# ------------------------------------------------------------------------------
+PAGE_START_INFO (NO_BORDER)
+
+PAGE_VSPACE(20.0)
+PAGE_TEXT_CENTRE  (HB  22 "AlbumEasy V4.2 to V4.4 Examples" 12.0)
+PAGE_TEXT_CENTRE  (HB  22 "This is an example of an informational page" 3.0)
+PAGE_TEXT_CENTRE  (HN  14 "This page has been created by means of the PAGE_START_INFO command\nwith the optional NO_BORDER parameter")
+
+TEXT_LINE_LEADING (0.5)
+PAGE_TEXT_PARAGRAPH_START(HN 12 JUSTIFIED 12.0)
+Informational pages may be used to provide additional information that is not intended to be part of the printed album.
+Another use would be for creating title pages.\nInformational pages may be placed anywhere in the album and have
+the following characteristics:\n\n
+• Do not include a title.\n
+• Do not include headers or footers.\n
+• Do not increment the page number.\n
+• Do not process any commands that are part of a page start group.\n
+• The optional NO_BORDER parameter can be added to suppress the page border.
+PAGE_TEXT_PARAGRAPH_END
+TEXT_LINE_LEADING (0.0)
+
+# ------------------------------------------------------------------------------
+# The second page
+# ------------------------------------------------------------------------------
+
+PAGE_START_INFO ()
+
+PAGE_VSPACE(10.0)
+PAGE_TEXT_CENTRE  (HB  18 "Another example of an informational page." 3.0)
+PAGE_TEXT_CENTRE  (HN  14 "This example includes a border.\nIt is used here as a title page" 20.0)
+
+PAGE_TEXT_CENTRE (TB 26 "My Stamp Album" 20.0)
+ROW_START_FS(HN 6 0.1 6.0)
+STAMP_ADD_IMG(80.0 80.0 "stamp_images/coa.png"  "" "" "" NO_FRAME)
+PAGE_VSPACE(10.0)
+PAGE_TEXT_CENTRE(TB 22 "1900 - 1966")
+
+# ------------------------------------------------------------------------------
+# The third page
+# ------------------------------------------------------------------------------
+PAGE_START
+
+PAGE_ADD_BOX ( HB 10 0.1 20.0 35.0  176.0  40.0  "Boxes can be placed anywhere on a page\nby means of the PAGE_ADD_BOX command."  "" "" "")
+
+PAGE_VSPACE(50.0)
+TEXT_LINE_LEADING (0.5)
+
+PAGE_TEXT_PARAGRAPH_START (HN 10 JUSTIFIED 12.0)
+The PAGE_ADD_BOX command accepts an optional rotational value in degrees allowing boxes to be placed at an angle.
+This could be useful for long coil strips or envelopes.
+PAGE_TEXT_PARAGRAPH_END
+
+PAGE_ADD_BOX ( HN 10 0.1  13.0 100.0 28.0 140.0   "Rotated\n30 degrees\nClockwise"  "" "" "" 30)
+PAGE_ADD_BOX ( HN 10 0.1  108.5 100.0 28.0 140.0   "Rotated\n30 degrees\nAnticlockwise"  "" "" "" -30)
+
+
+# ------------------------------------------------------------------------------
+# The fourth page
+# ------------------------------------------------------------------------------
+PAGE_START
+
+PAGE_TEXT_PARAGRAPH_START(TN 12 JUSTIFIED 10.0)
+The PAGE_QUADRILLE command may be used to add a grid to the page.
+For examples of different grid sizes, styles and colours see the Quadrilles.txt
+and GraphPaper.txt example files.
+PAGE_TEXT_PARAGRAPH_END
+
+COLOUR_PAGE_QUADRILLE(lightgray)                       #a light grey grid
+PAGE_QUADRILLE(0.1 2.5 2.5 CENTRE 1.5 125 150.0 0.75 10)
+
+
+# ------------------------------------------------------------------------------
+# The fifth page
+# ------------------------------------------------------------------------------
+
+PAGE_START
+PAGE_TEXT_PARAGRAPH_START(TN 12 JUSTIFIED 10.0)
+Column mode has been improved so that it is now possible to specify independent
+column widths and padding. For further examples please refer to the Columns.txt example file.
+PAGE_TEXT_PARAGRAPH_END
+
+
+PAGE_COLUMN_START (50.0 5.0 2.5 2.5 5.0)
+COLOUR_PAGE_TEXT(crimson)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_NEXT
+COLOUR_PAGE_TEXT(seagreen)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_STOP
+COLOUR_PAGE_TEXT(black)
+
+PAGE_TEXT_CENTRE (HN 10 "Here, the left column is given 60% of the page width.")
+
+PAGE_COLUMN_START (60.0 5.0 2.5 2.5 5.0)
+COLOUR_PAGE_TEXT(crimson)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. 
+ PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_NEXT
+COLOUR_PAGE_TEXT(seagreen)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_STOP
+COLOUR_PAGE_TEXT(black)
+
+PAGE_TEXT_CENTRE (HN 10 "Examples of stamp boxes in columns.")
+
+    # first group of stamps in the left hand column
+PAGE_COLUMN_START (50 10.0 5.0 5.0 10.0)
+PAGE_TEXT_CENTRE (HN 8 "After a PAGE_COLUMN_START. This text will only appear in the left hand column\n above a tall stamp box centred in the left hand column.\n")
+PAGE_VSPACE(8.0)
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (26.0 60.0 "A tall\nstrip of stamps"     ""  "1" "")
+    # second group of stamps in the right hand column
+PAGE_COLUMN_NEXT
+PAGE_TEXT_CENTRE (HN 8 "After a PAGE_COLUMN_NEXT all output appears in the right hand column, which is where this text appears centred above some stamp boxes also in the right hand column.\n")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (26.0 22.0 "1/2d \n green"             ""  "2" "")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (64.0 18.0 "1d \n rose red"            ""  "3" "")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (32.0 22.0 "1 1/2d \n chestnut"        ""  "4" "")
+    # exit column mode
+PAGE_COLUMN_STOP
+
+
+# ------------------------------------------------------------------------------
+# The sixth page
+# ------------------------------------------------------------------------------
+
+PAGE_START
+PAGE_TEXT_PARAGRAPH_START(TN 12 JUSTIFIED 10.0)
+Both the PAGE_TEXT_PARAGRAPH_START and PAGE_RULE_H commands have been enhanced allowing for
+independent settings of the left and right padding
+PAGE_TEXT_PARAGRAPH_END
+
+PAGE_TEXT_CENTRE (HN 10 "Page rule with NO padding.")
+PAGE_RULE_H (0.1 -2.0)
+
+PAGE_TEXT_CENTRE (HN 10 "Page rule with 5mm padding at the left and right.")
+PAGE_RULE_H (0.1 -2.0 5.0)
+
+PAGE_TEXT_CENTRE (HN 10 "Page rule with 40mm padding at the left, 5mm at the right.")
+PAGE_RULE_H (0.1 -2.0 40.0 5.0 )
+
+PAGE_TEXT_CENTRE (HN 10 "Paragraph of justified text with 10mm padding to the left, 60mm to the right." 2.0)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED 10.0 6.0 60.0)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. 
+PAGE_TEXT_PARAGRAPH_END
+
+PAGE_TEXT_CENTRE (HN 10 "Paragraph of justified text with 60mm padding to the left, 10mm to the right." 2.0)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED 60.0 0.0 10.0)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. 
+PAGE_TEXT_PARAGRAPH_END
+
+# ------------------------------------------------------------------------------
+# The seventh page
+# ------------------------------------------------------------------------------
+PAGE_START
+
+PAGE_TEXT_PARAGRAPH_START(TN 12 JUSTIFIED 10.0)
+The ALBUM_STAMP_IMG_GREYSCALE_ON and ALBUM_STAMP_IMG_HIDE commands can be used to completely
+change the look of an album as illustrated by the four "albums" below.\n
+The first a DIGITAL album, the images are set to the actual stamp size.  Next, a PRINT READY
+album with reduced size images, and if preferred, the images can also be grey-scaled, or completely
+hidden as in the following examples.
+PAGE_TEXT_PARAGRAPH_END
+
+
+STAMP_BOXES_SIZE_ADJUST(4.0)    #set the stamp boxes to be 4mm larger than the actual stamps
+
+                                #set the images to be 2mm smaller all round than the stamp boxes i.e actual size
+ALBUM_STAMP_IMG_NEW_SETTING(2.0 2.0 false)
+
+PAGE_TEXT_CENTRE (PALI 10 "King George VI Definitive Issue - 1st April 1938" 4.0)
+ROW_START_FS (PAL 10 0.1 6.0)
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b17.png"  ""   "17"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b18.png"  ""   "18"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b21.png"  ""   "21"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b25.png"  ""   "25"   "")
+
+
+                         #set all succeeding images to be 5mm smaller all round than the stamp boxes
+ALBUM_STAMP_IMG_NEW_SETTING(5.0 5.0 false)
+
+PAGE_TEXT_CENTRE (PALI 10 "King George VI Definitive Issue - 1st April 1938" 4.0)
+ROW_START_FS (PAL 10 0.1 6.0)
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b17.png"  ""   "17"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b18.png"  ""   "18"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b21.png"  ""   "21"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b25.png"  ""   "25"   "")
+
+                              #set all subsequent images to greay scale
+ALBUM_STAMP_IMG_GREYSCALE_ON
+
+PAGE_TEXT_CENTRE (PALI 10 "King George VI Definitive Issue - 1st April 1938" 4.0)
+ROW_START_FS (PAL 10 0.1 6.0)
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b17.png"  ""   "17"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b18.png"  ""   "18"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b21.png"  ""   "21"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b25.png"  ""   "25"   "")
+
+                              #hide all subsequent images
+ALBUM_STAMP_IMG_HIDE
+
+PAGE_TEXT_CENTRE (PALI 10 "King George VI Definitive Issue - 1st April 1938" 4.0)
+ROW_START_FS (PAL 10 0.1 6.0)
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b17.png"  ""   "17"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b18.png"  ""   "18"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b21.png"  ""   "21"   "")
+STAMP_ADD_IMG (22.0 28.0 "stamp_images/b25.png"  ""   "25"   "")
+
+                                  # restore default image settins
+STAMP_BOXES_SIZE_ADJUST(0.0)
+ALBUM_STAMP_IMG_NEW_SETTING(0.7 0.7 false)
+ALBUM_STAMP_IMG_GREYSCALE_OFF
+ALBUM_STAMP_IMG_SHOW
+
+
+# ------------------------------------------------------------------------------
+# The eighth page
+# ------------------------------------------------------------------------------
+PAGE_START
+PAGE_TEXT_CENTRE (TN 12 "As of AlbumEasy V4.2 stamp boxes may contain both text and images")
+
+ROW_START_FS (HN 9 0.2 4.0)
+ALBUM_STAMP_NEW_IMG_SETTING (1.4 7.0 false)
+STAMP_ADD_IMG (30.0 48.0 "stamp_images/Sage.png"   ""  ""   "" "Text first line\nsecond line" -6.0 38.0  )
+
+ROW_START_FS (HN 9 0.2 4.0)
+ALBUM_STAMP_NEW_IMG_SETTING (3.5 8.5 false)
+STAMP_ADD_IMG (69.0 52.0 "stamp_images/Merson.png"  "" "And can still place text\nbelow the box" ""  "Text can be placed above the image\ninside the box" 4.0 2.0)
+ALBUM_STAMP_NEW_IMG_SETTING (3.5 14 false)
+STAMP_ADD_IMG (69.0 64.0 "stamp_images/Merson.png"  "" "" "" "Or below the image.\nA second line\nA blank line:\n\nand some more text." -12.0 42.0)
+
+ALBUM_STAMP_IMG_SETTING (2.0 2.0 false)       #back to defaults
+
+# ------------------------------------------------------------------------------
+# The ninth page
+# ------------------------------------------------------------------------------
+PAGE_START
+PAGE_BACKGROUND_IMG("stamp_images/building.png" 1.0 0.0 0.0)
+
+PAGE_TEXT_PARAGRAPH_START(TN 12 CENTRE 16.0)
+The image on this page has been added by means of the PAGE_BACKGROUND_IMG command introduced with V4.2
+PAGE_TEXT_PARAGRAPH_END
+
+PAGE_VSPACE(24.0)
+COLOUR_PAGE_TEXT(mediumturquoise)
+PAGE_TEXT_PARAGRAPH_START(HB 14 CENTRE)
+Text and other items on the page appear over\nthe background image.
+PAGE_TEXT_PARAGRAPH_END
+COLOUR_PAGE_TEXT(black)
+
+PAGE_VSPACE(24.0)
+ROW_START_FS (HN 8 0.1 6.0)
+ALBUM_STAMP_IMG_SETTING (6.0 6.0 false)
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SR_SG55.png"  " " "" " " )
+COLOUR_STAMP_BACKGROUND(ghostwhite)
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SR_SG55.png"  " " "" " " )
+COLOUR_STAMP_BACKGROUND(lightgreen)
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SR_SG55.png"  " " "" " " )
+COLOUR_STAMP_BACKGROUND(white)               #back to defaults
+ALBUM_STAMP_IMG_SETTING (2.0 2.0 false)
+
+

@@ -28,6 +28,14 @@ stamp_box_height = 36.0              # Height allocated per stamp box (mm)
 # than the nominal size.
 stamp_box_adjust = -3.5
 
+# Colnect-specific dimension adjustments (mm)
+# When using Colnect CSV data, width and height can be adjusted separately
+# to compensate for printing differences. These values are added to the
+# Colnect dimensions. Defaults are 2.0mm for width and 2.0mm for height.
+# Set to 0.0 to use exact Colnect dimensions.
+colnect_width_adjust_mm = 2.0
+colnect_height_adjust_mm = 2.0
+
 # Packing limits: control how many stamps/rows the generator will try
 # to place on a single row/page. Reduce if pages feel cramped.
 max_stamps_per_row = 5               # Maximum stamps horizontally per row
@@ -148,7 +156,7 @@ row_start_es_marker = "ROW_START_ES"
 # Stamp heading font/label settings (short codes, see earlier font list)
 stamp_heading_font = "HN"
 stamp_heading_size = 6.0
-stamp_heading_label = "SG"
+stamp_heading_label = "Scott"
 
 # Visual / Color
 ###################################

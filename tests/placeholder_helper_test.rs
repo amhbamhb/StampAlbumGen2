@@ -60,6 +60,7 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
         album_name,
         series_name,
         sg_number,
+        sg_number, // catalog_number (same as sg for this test)
         "1900",
         target_w_mm,
         target_h_mm,

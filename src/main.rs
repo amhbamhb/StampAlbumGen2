@@ -82,8 +82,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Execute appropriate mode
-    if cli.db_path.is_some() {
-        // Database-only mode
+    if cli.db_path.is_some() || (effective_source == "colnectexport" && cli.colnect_csv.is_some()) {
+        // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
         run_database_mode(&cli, show_progress)?;
     } else if effective_source == "stampworld" || effective_source == "us1847" {
         // Scraping mode

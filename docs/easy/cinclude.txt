@@ -1,0 +1,13 @@
+#####################################################################################
+# This is not a stand alone album file, it is an example of a file that is being
+# included in another. See Control.txt
+#####################################################################################
+
+PAGE_RULE_H (0.1 0.0 10.0)
+
+ROW_START_FS (HN 6 0.1 8.0)
+STAMP_ADD (22.0 28.0 ""  ""  "1" "")
+STAMP_ADD (22.0 28.0 ""  ""  "2" "")
+STAMP_ADD (22.0 28.0 ""  ""  "3" "")
+
+PAGE_RULE_H (0.1 0.0 10.0)

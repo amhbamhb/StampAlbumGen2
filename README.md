@@ -155,13 +155,15 @@ New: stamp heading formatting
 
 - `stamp_heading_font` (string) — AlbumEasy font code used for the per-stamp heading (default: "HN").
 - `stamp_heading_size` (integer/float) — Numeric size used in the `STAMP_HEADING` token (default: 10).
-- `stamp_heading_label` (string) — Short label shown before the SG number (default: "SG").
+- `stamp_heading_label` (string) — Optional label shown before the catalog number (default: ""). When empty (default), no `STAMP_HEADING` line is emitted since the StampWorld number is not a recognized catalog system. Set this to a catalog name (e.g., "SG", "Scott", "Michel") if you map the numbers to a real catalog.
 
-These control the small heading emitted immediately after each `STAMP_ADD` or `STAMP_ADD_IMG` line. The generator writes lines like:
+These control the small heading emitted immediately after each `STAMP_ADD` or `STAMP_ADD_IMG` line. When a label is configured (e.g., `stamp_heading_label = "SG"`), the generator writes:
 
 ```
 STAMP_HEADING(HN 10 "SG : 1234")
 ```
+
+When the label is empty (default), no `STAMP_HEADING` line is generated.
 
 You can customize the font/size/label in your `config.toml` to match your AlbumEasy templates or parser expectations. Example values are present in `config_full_example.toml`.
 

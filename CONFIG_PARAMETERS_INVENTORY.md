@@ -114,7 +114,7 @@
 |-----------|------|---------|-------------|
 | `stamp_heading_font` | String | "HN" | Font for stamp headings |
 | `stamp_heading_size` | f32 | 10.0 | Size for stamp headings |
-| `stamp_heading_label` | String | "SG" | Label prefix for stamp headings |
+| `stamp_heading_label` | String | "" | Optional label prefix for stamp headings. When empty (default), no STAMP_HEADING is emitted. Set to a catalog name (e.g., "SG", "Scott") only if mapping to a recognized catalog system. |
 | `stamp_heading_in_row_height` | bool | false | Include heading in row height calc |
 
 ### Content Control & Header Information

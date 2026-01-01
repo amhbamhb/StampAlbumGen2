@@ -8,6 +8,7 @@ use rusqlite::Connection;
 use rusqlite::Result as SqlResult;
 use stamp_album_db;
 
+pub mod commemorative_layout;
 pub mod emit;
 pub mod layout;
 mod postprocess;

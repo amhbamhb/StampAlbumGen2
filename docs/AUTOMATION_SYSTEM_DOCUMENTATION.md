@@ -9,7 +9,7 @@ This document describes the automated version management and related automation 
 - album layout and metadata extraction (src/album_globals.rs)
   - image paths are read from the DB and composed as Albums/{album-name}/{image_path}.
   - image physical sizes are estimated with estimate_real_dimensions(...) and scaled to fit stamp_box_height; emitted box sizes include stamp_box_adjust margins.
-  - left column: denomination (sg number/denomination) is cleaned and used.
+  - left column: denomination (StampWorld catalog number/denomination) is cleaned and used.
   - centre column: now emits color, description, and stamps_issued (counts shown when present) joined with newline separators.
   - right column: mint/unused/used handling improved. If mint_condition is blank the code now substitutes the literal "Unsed" as the first-line fallback (per preference). A get_meaningful(...) helper filters placeholders to determine meaningful values. used remains the second right-hand line; stamps_issued stays in the centre field when present.
   - other safety cleanups: sg and image strings sanitized for quotes/newlines.

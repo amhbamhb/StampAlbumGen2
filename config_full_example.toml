@@ -6,6 +6,11 @@
 stamp_box_height = 24.0
 stamp_box_adjust = 3.0
 
+# --- Colnect Dimension Adjustments ---
+# Separate adjustments for width and height (in mm) to compensate for printing
+colnect_width_adjust_mm = 2.0
+colnect_height_adjust_mm = 2.0
+
 # --- Row & Header Spacing ---
 row_font_spacing = 5.0
 header_font_spacing = 3.0
@@ -56,7 +61,7 @@ print_flag_cover = false
 # Tune the small heading displayed above/beside each stamp box.
 stamp_heading_font = "HN"
 stamp_heading_size = 10
-stamp_heading_label = "SG"
+stamp_heading_label = "Scott"
 
 # --- Grouped range handling ---
 expand_grouped_ranges = "placeholders"

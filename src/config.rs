@@ -30,6 +30,8 @@ pub struct Config {
     pub reference_height_mm: Option<f32>,
     pub stamp_box_height: Option<f32>,
     pub stamp_box_adjust: Option<f32>,
+    pub colnect_width_adjust_mm: Option<f32>,
+    pub colnect_height_adjust_mm: Option<f32>,
     // Page layout overrides (mm)
     pub album_page_width_mm: Option<f32>,
     pub album_page_height_mm: Option<f32>,
@@ -376,7 +378,7 @@ impl Config {
             page_text_right_vspace: Some(1.0),
             stamp_heading_font: Some("HN".to_string()),
             stamp_heading_size: Some(6.0),
-            stamp_heading_label: Some("SG".to_string()),
+            stamp_heading_label: Some("".to_string()),
             force_dpi: Some(96.0),
             preserve_real_image_size: Some(true),
             show_progress_indicator: Some(true),

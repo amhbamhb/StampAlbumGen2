@@ -1,0 +1,56 @@
+#####################################################################################
+#
+# A sample AlbumEasy file illustrating how to use the Control Commands
+#
+#####################################################################################
+
+ALBUM_PAGES_SIZE     (210.0 297.0)
+ALBUM_PAGES_MARGINS  (15.0 15.0 15.0 15.0 )
+ALBUM_PAGES_BORDER   (0.5 0.1 0.0 1.0)
+ALBUM_PAGES_SPACING  (5.0 5.0)
+ALBUM_PAGES_TITLE    (TB 16  "Control Commands")
+
+PAGE_START
+
+PAGE_TEXT(HN 12 "Including a file called cinclude.txt")
+$INCLUDE ("cinclude.txt")
+PAGE_TEXT(HN 12 "The stamp boxes shown above were defined in the file cinclude.txt." 6.0)
+
+PAGE_TEXT_CENTRE(HN 14 "Examples of conditional commands below")
+
+# define some conditional control parameters
+$DEFINE(FIRST)
+$DEFINE(SECOND)
+$DEFINE(THIRD)
+
+# Note: The indentation is intended to make for ease of reading, and is not required.
+
+$IFDEF(FIRST)
+  PAGE_TEXT (HN 10 "This will only appear if FIRST is defined" )
+$ELSE
+  $IFDEF(SECOND)
+    PAGE_TEXT (HN 10 "This will only appear if FIRST is NOT defined and SECOND is defined" )
+    $IFDEF(THIRD)
+      PAGE_TEXT (HN 10 "This will only appear if FIRST is NOT defined and SECOND is defined and THIRD is defined" )
+    $ENDIF
+  $ENDIF
+$ENDIF
+
+PAGE_VSPACE(6.0)
+
+# undefine FIRST, it will be as if FIRST was never defined and then execute the exact same group of commands
+PAGE_TEXT (HN 12 "Undefine FIRST")
+
+$UNDEFINE(FIRST)
+
+$IFDEF(FIRST)
+  PAGE_TEXT (HN 10 "This will only appear if FIRST is defined" )
+$ELSE
+  $IFDEF(SECOND)
+    PAGE_TEXT (HN 10 "This will only appear if FIRST is NOT defined and SECOND is defined" )
+    $IFDEF(THIRD)
+      PAGE_TEXT (HN 10 "This will only appear if FIRST is NOT defined and SECOND is defined and THIRD is defined" )
+    $ENDIF
+  $ENDIF
+$ENDIF
+

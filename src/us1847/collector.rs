@@ -181,15 +181,23 @@ pub fn process_1847us_page(
         "INSERT OR IGNORE INTO us1847_series (series_name, series_url, description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
         rusqlite::params![series_title, url, series_description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape],
         |row| row.get::<_, i64>(0),
-    ).unwrap_or_else(|_| {
+    ).unwrap_or_else(|insert_err| {
+        error!("INSERT failed: {}", insert_err);
+        error!("Attempting SELECT fallback with URL: {}", url);
+        error!("Series title: {}", series_title);
         conn.query_row(
             "SELECT id FROM us1847_series WHERE series_url = ?",
             rusqlite::params![url],
             |row| row.get::<_, i64>(0),
-        ).unwrap_or(0)
+        ).unwrap_or_else(|select_err| {
+            error!("SELECT fallback also failed: {}", select_err);
+            0
+        })
     });
 
     if series_id == 0 {
+        error!("Could not create or retrieve series for URL: {}", url);
+        error!("Series name was: {}", series_title);
         return Err("Failed to get or create series".into());
     }
 
@@ -805,8 +813,16 @@ fn parse_stamp_from_title_and_description(
         quantity_issued = quantity_issued[4..].to_string();
     }
 
-    // Find image URL
-    let image_url = format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number);
+    // Find image URL - special handling for certification/special handling stamps
+    let image_url = if scott_number.starts_with("QE") || scott_number.starts_with("FA") {
+        // QE1a, QE2a, QE3a, FA1 use the wp-content path with _dry-print suffix
+        format!(
+            "https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg",
+            scott_number
+        )
+    } else {
+        format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number)
+    };
 
     Some(StampInfo {
         scott_number,
@@ -863,7 +879,14 @@ fn parse_ordinary_stamp_line(line: &str) -> Option<StampInfo> {
             (String::new(), stamp_info.to_string())
         };
 
-        let image_url = format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number);
+        let image_url = if scott_number.starts_with("QE") || scott_number.starts_with("FA") {
+            format!(
+                "https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg",
+                scott_number
+            )
+        } else {
+            format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number)
+        };
 
         Some(StampInfo {
             scott_number,
@@ -1216,7 +1239,14 @@ fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
             (String::new(), stamp_info.to_string())
         };
 
-        let image_url = format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number);
+        let image_url = if scott_number.starts_with("QE") || scott_number.starts_with("FA") {
+            format!(
+                "https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg",
+                scott_number
+            )
+        } else {
+            format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number)
+        };
 
         Some(StampInfo {
             scott_number,

@@ -1,0 +1,175 @@
+# ------------------------------------------------------------------------------
+# Setup page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE     (215.9 279.4)               # Set the page to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0)      # Left, right, top and bottom page margins
+ALBUM_PAGES_BORDER   (0.5 0.1  0.0 1.0)
+ALBUM_PAGES_SPACING  (3.0 3.0)
+
+#------------------------------------------
+#            FIRST PAGE
+#------------------------------------------
+PAGE_START
+
+PAGE_VSPACE(3.0)
+
+PAGE_TEXT (HN 9 "This album illustrates how the PAGE_COLUMN_START, PAGE_COLUMN_NEXT and PAGE_COLUMN_STOP "\
+                        "commands may be used to split the page into two vertical columns.")
+PAGE_RULE_H (0.1 3.0 5)
+
+PAGE_TEXT_CENTRE (HN 10 "Two columns of  equal width.")
+
+PAGE_COLUMN_START (50.0 5.0 2.5 2.5 5.0)
+COLOUR_PAGE_TEXT(crimson)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
+ anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua.\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit.
+PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_NEXT
+COLOUR_PAGE_TEXT(seagreen)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
+ anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua.\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit.
+PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_STOP
+COLOUR_PAGE_TEXT(black)
+
+PAGE_TEXT_CENTRE (HN 10 "Here, the left column is given 60% of the page width.")
+
+PAGE_COLUMN_START (60.0 5.0 2.5 2.5 5.0)
+COLOUR_PAGE_TEXT(crimson)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit
+ anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua.\nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit.
+PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_NEXT
+COLOUR_PAGE_TEXT(seagreen)
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla pariatur excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+ fugiat nulla  ......
+PAGE_TEXT_PARAGRAPH_END
+PAGE_COLUMN_STOP
+COLOUR_PAGE_TEXT(black)
+
+#------------------------------------------
+#            FIRST PAGE
+#------------------------------------------
+
+PAGE_START
+
+PAGE_VSPACE(3.0)
+
+PAGE_TEXT_CENTRE (HN 10 "Some stamp layouts using columns.")
+PAGE_RULE_H (0.1 0.0 5)
+
+
+#------------------------------------------
+# FIRST GROUP OF STAMPS - LEFT HAND COLUMN
+#------------------------------------------
+
+PAGE_COLUMN_START (50 10.0 5.0 5.0 10.0)
+PAGE_TEXT_CENTRE (HN 8 "After a PAGE_COLUMN_START. This text will only appear in the left hand column\n above a tall stamp box centred in the left hand column.\n")
+
+PAGE_VSPACE(8.0)
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (26.0 60.0 "A tall\nstrip of stamps"     ""  "1" "")
+
+
+#------------------------------------------
+# FIRST GROUP OF STAMPS - RIGHT HAND COLUMN
+#------------------------------------------
+PAGE_COLUMN_NEXT
+PAGE_TEXT_CENTRE (HN 8 "After a PAGE_COLUMN_NEXT all output appears in the right hand column, which is where this text appears centred above some stamp boxes also in the right hand column.\n")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (26.0 22.0 "1/2d \n green"             ""  "2" "")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (64.0 18.0 "1d \n rose red"            ""  "3" "")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (32.0 22.0 "1 1/2d \n chestnut"        ""  "4" "")
+
+#------------------------------------------
+# EXIT COLUMN MODE
+#------------------------------------------
+PAGE_COLUMN_STOP
+
+
+PAGE_RULE_H (0.1 0.0 5)
+PAGE_TEXT_CENTRE (HN 10 "In the example below, the left hand column is given 70% of the width\nleaving 30% for the right hand column ")
+PAGE_RULE_H (0.1 0.0 5)
+
+PAGE_VSPACE(5)
+
+ROW_ALIGN_MIDDLE
+
+
+#------------------------------------------
+# SECOND GROUP OF STAMPS - LEFT HAND COLUMN
+#------------------------------------------
+
+
+PAGE_COLUMN_START (70 10.0 5.0 5.0 10.0)
+
+PAGE_TEXT_CENTRE (HB 12 "Heading Centred In the Left Column")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (40.0 32.0 ""             ""  "1" "")
+STAMP_HEADING (HN 10 "Sub-Heading\nSecond Line")
+
+STAMP_ADD (32.0 40.0 ""             ""  "2" "")
+STAMP_HEADING (HN 10 "Sub-Heading\nSecond Line")
+
+STAMP_ADD (32.0 40.0 ""             ""  "2" "")
+STAMP_HEADING (HN 10 "Sub-Heading\nSecond Line")
+
+#------------------------------------------
+# SEcOND GROUP OF STAMPS - RIGHT HAND COLUMN
+#------------------------------------------
+
+PAGE_COLUMN_NEXT
+PAGE_TEXT_CENTRE (HB 12 "Another Heading\nCentred In the Right Hand Column")
+
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (32.0 40.0 ""             ""  "1" "")
+
+#------------------------------------------
+# EXIT COLUMN MODE
+#------------------------------------------
+
+PAGE_COLUMN_STOP
+

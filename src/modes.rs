@@ -1,15 +1,144 @@
 use crate::progress::ProgressIndicator;
 
+/// Parse Colnect CSV filename to extract country and year
+/// Format: en_stamps_csv_list_country_13-Australia_year_1975.csv
+fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
+    let filename = std::path::Path::new(csv_path).file_name()?.to_str()?;
+
+    // Extract country: look for "country_XX-CountryName"
+    let country = if let Some(country_start) = filename.find("country_") {
+        let after_country = &filename[country_start + 8..]; // Skip "country_"
+        if let Some(dash_pos) = after_country.find('-') {
+            let after_dash = &after_country[dash_pos + 1..];
+            if let Some(underscore_pos) = after_dash.find('_') {
+                Some(after_dash[..underscore_pos].to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Extract year: look for "year_YYYY"
+    let year = if let Some(year_start) = filename.find("year_") {
+        let after_year = &filename[year_start + 5..]; // Skip "year_"
+        if let Some(dot_pos) = after_year.find('.') {
+            Some(after_year[..dot_pos].to_string())
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    match (country, year) {
+        (Some(c), Some(y)) => Some((c, y)),
+        _ => None,
+    }
+}
+
+/// Populate stamps table from colnect_stamps when stamps table is empty
+fn populate_stamps_from_colnect(
+    conn: &rusqlite::Connection,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    use log::info;
+
+    // Check if stamps table is empty
+    let stamp_count: i64 = conn.query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))?;
+
+    if stamp_count > 0 {
+        return Ok(0); // Already has stamps, don't populate
+    }
+
+    info!("Stamps table is empty. Populating from colnect_stamps...");
+
+    // Insert stamps from colnect_stamps into stamps table
+    let inserted = conn.execute(
+        "INSERT INTO stamps (
+            country, series, year, month, month_num, day, sg_number, type,
+            denomination, color, description,
+            stamps_issued, mint_condition, unused, used, letter_fdc,
+            currency, image_path, remote_image_url, original_image_url,
+            watermark, design, engraving, perforation, context,
+            issue_location, quantity_printed
+        )
+        SELECT 
+            '' as country,
+            series,
+            CAST(substr(issued_on, 1, 4) AS INTEGER) as year,
+            CASE CAST(substr(issued_on, 6, 2) AS INTEGER)
+                WHEN 1 THEN 'January' WHEN 2 THEN 'February' WHEN 3 THEN 'March'
+                WHEN 4 THEN 'April' WHEN 5 THEN 'May' WHEN 6 THEN 'June'
+                WHEN 7 THEN 'July' WHEN 8 THEN 'August' WHEN 9 THEN 'September'
+                WHEN 10 THEN 'October' WHEN 11 THEN 'November' WHEN 12 THEN 'December'
+                ELSE '' END as month,
+            CAST(substr(issued_on, 6, 2) AS INTEGER) as month_num,
+            substr(issued_on, 9, 2) as day,
+            sg_number,
+            '' as type,
+            face_value as denomination,
+            colors as color,
+            description,
+            print_run as stamps_issued,
+            '' as mint_condition,
+            '' as unused,
+            '' as used,
+            '' as letter_fdc,
+            currency,
+            '' as image_path,
+            '' as remote_image_url,
+            colnect_link as original_image_url,
+            '' as watermark,
+            designers as design,
+            '' as engraving,
+            printing as perforation,
+            themes as context,
+            '' as issue_location,
+            print_run as quantity_printed
+        FROM colnect_stamps
+        WHERE sg_number IS NOT NULL AND sg_number != ''",
+        [],
+    )?;
+
+    info!("Populated {} stamps from colnect_stamps table", inserted);
+    Ok(inserted)
+}
+
 /// Run the database-only mode (generate album from existing database)
 pub fn run_database_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    use log::{error, info};
+
     // Output-only mode: use the provided db_path and album_name
     let progress = ProgressIndicator::new_with_config(show_progress);
     progress.set_message("🔍 Initializing database mode...");
 
-    let db_path = cli.db_path.as_ref().unwrap();
+    // Infer db_path from CSV filename if not provided
+    let inferred_db_path;
+    let db_path = if let Some(path) = cli.db_path.as_ref() {
+        path
+    } else if let Some(csv_path) = cli.colnect_csv.as_ref() {
+        // Parse CSV filename to extract country and year
+        // Format: en_stamps_csv_list_country_13-Australia_year_1975.csv
+        progress.set_message("🔍 Inferring database path from CSV filename...");
+        if let Some((country, _year)) = parse_colnect_csv_filename(csv_path) {
+            inferred_db_path = format!("Albums/{}/{}.db", country, country);
+            info!("Inferred database path: {}", inferred_db_path);
+            &inferred_db_path
+        } else {
+            progress.finish_with_error("Could not infer database path from CSV filename");
+            return Err("No --db-path provided and could not infer from CSV filename. Please provide --db-path or use a standard Colnect CSV filename format.".into());
+        }
+    } else {
+        progress.finish_with_error("No database path provided");
+        return Err("No --db-path provided. Please specify --db-path for database mode.".into());
+    };
+
     progress.set_message(&format!("📁 Checking database path: {}", db_path));
 
     // Ensure parent directory exists and attempt to create the DB file if missing
@@ -68,10 +197,49 @@ pub fn run_database_mode(
             return Err(e.into());
         }
     };
-    let album_name = cli
-        .album_name
-        .clone()
-        .unwrap_or_else(|| "Album".to_string());
+    // Determine album name: use provided name, or try to infer from db_path
+    let album_name = if let Some(name) = &cli.album_name {
+        name.clone()
+    } else {
+        // Try to infer album name from db_path
+        // e.g., "Albums/Australia.db" -> "Australia"
+        // e.g., "Albums/Australia/Australia.db" -> "Australia"
+        let db_path_str = db_path.to_string();
+        if let Some(db_filename) = std::path::Path::new(&db_path_str).file_stem() {
+            db_filename.to_string_lossy().to_string()
+        } else {
+            "Album".to_string()
+        }
+    };
+
+    // Ingest Colnect CSV if provided (for colnectexport source)
+    if let Some(csv_path) = &cli.colnect_csv {
+        progress.set_message(&format!("📥 Ingesting Colnect CSV: {}", csv_path));
+        match crate::colnect::parser::parse_csv(csv_path) {
+            Ok(stamps) => match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+                Ok(_) => info!("✅ Successfully ingested Colnect data"),
+                Err(e) => error!("❌ Failed to ingest Colnect data: {}", e),
+            },
+            Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
+        }
+
+        // After ingesting Colnect data, check if stamps table is empty
+        // If so, populate it from colnect_stamps
+        progress.set_message("🔍 Checking if stamps table needs population...");
+        match populate_stamps_from_colnect(&conn) {
+            Ok(count) if count > 0 => {
+                info!("✅ Populated {} stamps from Colnect data", count);
+                progress.set_message(&format!("✅ Populated {} stamps from Colnect data", count));
+            }
+            Ok(_) => {
+                info!("Stamps table already has data, skipping population");
+            }
+            Err(e) => {
+                error!("❌ Failed to populate stamps from Colnect: {}", e);
+            }
+        }
+    }
+
     progress.set_message(&format!("📖 Generating album output for: {}", album_name));
 
     // Temporary unconditional marker to help automated runs detect that

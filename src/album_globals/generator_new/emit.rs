@@ -31,20 +31,24 @@ pub fn emit_stamp_lines<W: Write>(
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     }
 
-    let sh_font = config
-        .stamp_heading_font
-        .clone()
-        .unwrap_or_else(|| "HN".to_string());
-    let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
     let sh_label = config
         .stamp_heading_label
         .clone()
-        .unwrap_or_else(|| "SG".to_string());
-    writeln!(
-        out,
-        "STAMP_HEADING({} {} \"{} : {}\")",
-        sh_font, sh_size, sh_label, sgnum
-    )?;
+        .unwrap_or_else(|| "".to_string());
+    // Only emit STAMP_HEADING if a label is configured (the number alone
+    // is from StampWorld's internal system, not a real catalog)
+    if !sh_label.is_empty() {
+        let sh_font = config
+            .stamp_heading_font
+            .clone()
+            .unwrap_or_else(|| "HN".to_string());
+        let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
+        writeln!(
+            out,
+            "STAMP_HEADING({} {} \"{} : {}\")",
+            sh_font, sh_size, sh_label, sgnum
+        )?;
+    }
 
     Ok(())
 }
@@ -74,22 +78,29 @@ pub fn emit_stamp<W: Write>(
             emit_width, emit_height, image_path, left, centre, right
         );
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
-        writeln!(
-            out,
-            "STAMP_HEADING({} {} \"{} : {}\")",
-            sh_font, sh_size, sh_label, sgnum
-        )?;
+        // Only emit STAMP_HEADING if a label is configured (the number alone
+        // is from StampWorld's internal system, not a real catalog)
+        if !sh_label.is_empty() {
+            writeln!(
+                out,
+                "STAMP_HEADING({} {} \"{} : {}\")",
+                sh_font, sh_size, sh_label, sgnum
+            )?;
+        }
     } else {
         let line = format!(
             "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
             emit_width, emit_height, left, centre, right
         );
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
-        writeln!(
-            out,
-            "STAMP_HEADING({} {} \"{} : {}\")",
-            sh_font, sh_size, sh_label, sgnum
-        )?;
+        // Only emit STAMP_HEADING if a label is configured
+        if !sh_label.is_empty() {
+            writeln!(
+                out,
+                "STAMP_HEADING({} {} \"{} : {}\")",
+                sh_font, sh_size, sh_label, sgnum
+            )?;
+        }
     }
     Ok(())
 }

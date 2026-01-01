@@ -1,0 +1,152 @@
+###########################################################################################
+#
+# New with AlbumEasy V3.7
+#
+###########################################################################################
+# Commands to set the colours of various album elements:
+#
+#         COLOUR_ALBUM_BORDER
+#         COLOUR_ALBUM_FOOTER
+#         COLOUR_ALBUM_TITLE
+#         COLOUR_PAGE_RULE_H
+#         COLOUR_PAGE_TEXT
+#         COLOUR_STAMP_BORDER
+#         COLOUR_STAMP_HEADING
+#         COLOUR_STAMP_TEXT
+#
+# US spelling of COLOR also works: e.g COLOR_ALBUM_BORDER
+#
+###########################################################################################
+
+
+# ------------------------------------------------------------------------------
+# Setup page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE (215.9 279.4)               # Set the page to US Letter (8.5 x 11)
+
+ALBUM_PAGES_MARGINS  (20.0 15.0 15.0 15.0)   # Left, right, top and bottom page margins
+ALBUM_PAGES_MARGINSE (12.0 20.0 15.0 15.0)   # Set different margins for the even pages
+
+ALBUM_PAGES_BORDER   (0.1 0.5 0.1 1.0)       # Place a triple line border around the page
+
+ALBUM_PAGES_SPACING  (6.0 4.0)
+
+                                             # Add a footer to all pages
+ALBUM_PAGES_NUMBER (HN 12 C 1 "Page " " of $PAGES$")
+ALBUM_PAGES_DATE   (HN 12 RL YMD "-")
+
+                                              # Add a title to all pages
+ALBUM_PAGES_TITLE  (TB 16 "Examples of the colour/color commands \n introduced with AlbumEasy v3.7")
+
+                                              #Set the colours that are applied to the whole album
+COLOUR_ALBUM_TITLE(blue)                      #set a blue title
+COLOUR_ALBUM_BORDER(red)                      #with a red border
+COLOR_ALBUM_FOOTER(Lime)                      #and a lime footer
+
+# ------------------------------------------------------------------------------
+# Add a page
+# ------------------------------------------------------------------------------
+PAGE_START
+
+                                              #set the colours for text and horizontal rule lines
+COLOUR_PAGE_TEXT(crimson)
+COLOR_PAGE_RULE_H(seagreen)
+
+PAGE_TEXT_CENTRE (HN 10 "Crimson text, followed by a THICK SeaGreen horizontal line.\n"\
+                  "(Colour names are listed in the help file!)")
+PAGE_RULE_H (2.0 0 6)
+
+COLOUR_PAGE_TEXT(black)
+COLOR_PAGE_RULE_H(black)
+PAGE_TEXT_CENTRE (HN 10 "And Back to Black!")
+PAGE_RULE_H (0.1 0 6)
+
+
+PAGE_TEXT_CENTRE (HN 10 "\n\nColour can be subtle - here it is used to highlight a scarce variety")
+
+# ------------------------------------------------------------------------------
+# Add a row of stamps
+# ------------------------------------------------------------------------------
+
+ROW_START_FS (HN 8 0.2 6.0)
+
+STAMP_ADD (28.0 32.0          "1d red"                            ""  "sg 1"   "")
+STAMP_ADD (28.0 32.0          "2d blue"                           ""  "sg 2"   "")
+
+COLOUR_STAMP_HEADING(red)
+STAMP_ADD (28.0 32.0          "2d blue \n inverted \n watermark"  ""  "sg 2a"  "")
+STAMP_HEADING(HB 10 "Scarce")
+
+STAMP_ADD (28.0 32.0          "3d green"                          ""  "sg 3"   "")
+
+
+
+PAGE_TEXT_CENTRE (HN 10 "\n\nOr as gaudy as you like!")
+
+# ------------------------------------------------------------------------------
+# Add another row of stamps
+# ------------------------------------------------------------------------------
+
+ROW_START_FS (HB 8 0.4 6.0)
+
+COLOUR_STAMP_BORDER(hotpink)
+COLOUR_STAMP_HEADING(chartreuse)
+COLOUR_STAMP_TEXT(springgreen)
+STAMP_ADD (28.0 32.0          "1d red"                        ""  "sg 1"   "")
+STAMP_HEADING(HN 10 "Common")
+
+COLOUR_STAMP_BORDER(royalblue)
+COLOUR_STAMP_HEADING(hotpink)
+COLOUR_STAMP_TEXT(gold)
+STAMP_ADD (28.0 32.0          "2d blue"                       ""  "sg 2"   "")
+STAMP_HEADING(HN 10 "Common")
+
+COLOUR_STAMP_HEADING(red)
+COLOUR_STAMP_BORDER(deeppink)
+COLOUR_STAMP_TEXT(fuchsia)
+STAMP_ADD (28.0 32.0          "2d blue \n inverted \n watermark"  ""  "sg 2a"  "")
+STAMP_HEADING(HB 10 "Scarce")
+
+COLOUR_STAMP_HEADING(lawngreen)
+COLOUR_STAMP_BORDER(blue)
+COLOUR_STAMP_TEXT(maroon)
+STAMP_ADD (28.0 32.0          "3d green"                      ""  "sg 3"   "")
+STAMP_HEADING(HN 10 "Common")
+
+PAGE_TEXT_CENTRE (HN 10 "\n\nOr FILLED!")
+# ------------------------------------------------------------------------------
+# Add another row of stamps
+# ------------------------------------------------------------------------------
+
+ROW_START_FS (HB 8 0.4 6.0)
+
+COLOUR_STAMP_BACKGROUND(ghostwhite)
+COLOUR_STAMP_BORDER(hotpink)
+COLOUR_STAMP_HEADING(chartreuse)
+COLOUR_STAMP_TEXT(springgreen)
+STAMP_ADD (28.0 32.0          "1d red"                        ""  "sg 1"   "")
+STAMP_HEADING(HN 10 "Common")
+
+COLOUR_STAMP_BACKGROUND(lightsteelblue)
+COLOUR_STAMP_BORDER(royalblue)
+COLOUR_STAMP_HEADING(hotpink)
+COLOUR_STAMP_TEXT(gold)
+STAMP_ADD (28.0 32.0          "2d blue"                       ""  "sg 2"   "")
+STAMP_HEADING(HN 10 "Common")
+
+COLOUR_STAMP_BACKGROUND(lightgrey)
+COLOUR_STAMP_HEADING(red)
+COLOUR_STAMP_BORDER(deeppink)
+COLOUR_STAMP_TEXT(fuchsia)
+STAMP_ADD (28.0 32.0          "2d blue \n inverted \n watermark"  ""  "sg 2a"  "")
+STAMP_HEADING(HB 10 "Scarce")
+
+COLOUR_STAMP_BACKGROUND(lemonchiffon)
+COLOUR_STAMP_HEADING(lawngreen)
+COLOUR_STAMP_BORDER(blue)
+COLOUR_STAMP_TEXT(maroon)
+STAMP_ADD (28.0 32.0          "3d green"                      ""  "sg 3"   "")
+STAMP_HEADING(HN 10 "Common")
+
+COLOUR_STAMP_BACKGROUND(white)

@@ -383,41 +383,59 @@ where
         // layout uses the final sizes rather than seeing stale or missing
         // dimensions during the single-pass layout.
         // -------------------------
+        // Get Colnect dimension adjustments from config (default 2.0mm if not set)
+        let colnect_w_adjust = config.colnect_width_adjust_mm.unwrap_or(2.0) as f64;
+        let colnect_h_adjust = config.colnect_height_adjust_mm.unwrap_or(2.0) as f64;
+
         for s in stamps_vec.iter_mut() {
-            let image_path = s.image_path.trim();
-            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
-            // Prefer DB-stored pixel dimensions if available; otherwise fall back
-            // to on-disk image estimation or series-average, finally reference size.
-            // Track where the estimated size came from for diagnostics
+            // First priority: Check for Colnect dimensions (already in mm)
+            let colnect_w = s.attrs.get("colnect_width_mm")
+                .and_then(|w| w.parse::<f64>().ok());
+            let colnect_h = s.attrs.get("colnect_height_mm")
+                .and_then(|h| h.parse::<f64>().ok());
+
             let est_source: &str;
-            if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
-                let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
-                let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
-                s.est_width_mm = Some(w_mm);
-                s.est_height_mm = Some(h_mm);
-                est_source = "db_pixels";
-            } else if let Some((w_mm, h_mm)) =
-                estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
-            {
-                let mut w = w_mm as f64;
-                let mut h = h_mm as f64;
-                // Scale down proportionally if image is taller than the stamp box
-                if !preserve_real && h > stamp_box_height {
-                    let s = stamp_box_height / h;
-                    w *= s;
-                    h *= s;
-                }
-                s.est_width_mm = Some(w);
-                s.est_height_mm = Some(h);
-                est_source = "image_estimate";
-            } else if let (Some(avg_w), Some(avg_h)) = (series_avg_w_mm, series_avg_h_mm) {
-                s.est_width_mm = Some(avg_w);
-                s.est_height_mm = Some(avg_h);
-                est_source = "series_average";
+            if let (Some(w_mm), Some(h_mm)) = (colnect_w, colnect_h) {
+                // Use Colnect dimensions with separate width/height adjustments
+                s.est_width_mm = Some(w_mm + colnect_w_adjust);
+                s.est_height_mm = Some(h_mm + colnect_h_adjust);
+                est_source = "colnect";
             } else {
-                s.est_width_mm = Some(reference_width_mm as f64);
-                s.est_height_mm = Some(reference_height_mm as f64);
-                est_source = "reference";
+                // Fall back to existing dimension sources
+                let image_path = s.image_path.trim();
+                let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                // Prefer DB-stored pixel dimensions if available; otherwise fall back
+                // to on-disk image estimation or series-average, finally reference size.
+                // Track where the estimated size came from for diagnostics
+                if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
+                    let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
+                    let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
+                    s.est_width_mm = Some(w_mm);
+                    s.est_height_mm = Some(h_mm);
+                    est_source = "db_pixels";
+                } else if let Some((w_mm, h_mm)) =
+                    estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+                {
+                    let mut w = w_mm as f64;
+                    let mut h = h_mm as f64;
+                    // Scale down proportionally if image is taller than the stamp box
+                    if !preserve_real && h > stamp_box_height {
+                        let s = stamp_box_height / h;
+                        w *= s;
+                        h *= s;
+                    }
+                    s.est_width_mm = Some(w);
+                    s.est_height_mm = Some(h);
+                    est_source = "image_estimate";
+                } else if let (Some(avg_w), Some(avg_h)) = (series_avg_w_mm, series_avg_h_mm) {
+                    s.est_width_mm = Some(avg_w);
+                    s.est_height_mm = Some(avg_h);
+                    est_source = "series_average";
+                } else {
+                    s.est_width_mm = Some(reference_width_mm as f64);
+                    s.est_height_mm = Some(reference_height_mm as f64);
+                    est_source = "reference";
+                }
             }
 
             // Emit a compact per-stamp diagnostic so we can trace where the
@@ -457,6 +475,10 @@ where
                 let target_w_mm = base_w; // image-only width (mm)
                 let target_h_mm = base_h; // image-only height (mm)
                 let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                let catalog_num = s.attrs.get("scott_number")
+                    .or_else(|| s.attrs.get("sg_number"))
+                    .map(|v| v.as_str())
+                    .unwrap_or("");
                 let year_str = s.attrs.get("year").map(|v| v.as_str()).unwrap_or("");
                 if let Some((rel, px_w, px_h)) =
                     crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
@@ -464,6 +486,7 @@ where
                         album_name,
                         series,
                         sg_str,
+                        catalog_num,
                         year_str,
                         target_w_mm,
                         target_h_mm,
@@ -479,9 +502,53 @@ where
             }
         }
 
-        // Now perform layout using the finalized est_* values
+        // COMMEMORATIVE SEPARATION: Check if this series has commemoratives and route accordingly
+        let (commemorative_stamps, regular_stamps): (Vec<Stamp>, Vec<Stamp>) = stamps_vec.into_iter().partition(|stamp| {
+            crate::album_globals::generator_new::commemorative_layout::is_commemorative(stamp, passed_start_year)
+        });
+
+        // If this series has commemoratives, emit them using the nice layout
+        if !commemorative_stamps.is_empty() {
+            let year = passed_start_year.unwrap_or_else(|| {
+                commemorative_stamps.first()
+                    .and_then(|s| s.attrs.get("year").and_then(|y| y.parse::<i32>().ok()))
+                    .unwrap_or(1955)
+            });
+
+            // Split commemoratives into regular and special stamps
+            let (special_stamps, regular_commemoratives): (Vec<Stamp>, Vec<Stamp>) = commemorative_stamps.into_iter().partition(|stamp| {
+                crate::album_globals::commemorative_generator::is_special_stamp(stamp)
+            });
+
+            let has_commemoratives = !regular_commemoratives.is_empty() || !special_stamps.is_empty();
+
+            // Only emit commemorative pages if there are regular commemoratives
+            if !regular_commemoratives.is_empty() {
+                let _ = crate::album_globals::commemorative_generator::emit_commemorative_pages(&mut output, &regular_commemoratives);
+                page_counter += 1;
+            }
+
+            // Emit special stamps on a separate page if any exist
+            if !special_stamps.is_empty() {
+                let _ = crate::album_globals::commemorative_generator::emit_special_stamps_page(&mut output, &special_stamps);
+                page_counter += 1;
+            }
+
+            // Emit summary page with all commemoratives
+            if has_commemoratives {
+                let all_commemoratives: Vec<Stamp> = [regular_commemoratives, special_stamps].concat();
+                let _ = crate::album_globals::commemorative_generator::emit_summary_page(&mut output, year, &all_commemoratives);
+                page_counter += 1;
+            }
+            // If all stamps were commemorative, we're done with this series
+            if regular_stamps.is_empty() {
+                return;
+            }
+        }
+
+        // Now perform layout using the finalized est_* values for REGULAR stamps
         // let mut row_width = 0.0;
-        for stamp in stamps_vec.into_iter() {
+        for stamp in regular_stamps.into_iter() {
             let image_path = stamp.image_path.trim();
             let _full_image_path =
                 format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
@@ -1494,10 +1561,13 @@ where
                     .to_string();
                 let _mint = clean_text(&mint_raw);
                 let _unused = clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string()));
-                let mut sgnum = clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()));
-                if let Some(codes) = stamp.attrs.get("colnect_catalog_codes") {
-                     sgnum = format!("{}  {}", sgnum, codes);
-                }
+
+                // Prefer Scott catalog number if available, fall back to SG number
+                let sgnum = if let Some(scott) = stamp.attrs.get("scott_number") {
+                    clean_text(scott)
+                } else {
+                    clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()))
+                };
                 let _safe_sg = left
                     .replace("\\n", " ")
                     .split_whitespace()
@@ -1731,11 +1801,14 @@ where
                             }
                         }
 
+                        // sgnum already contains Scott number (or SG fallback), use for both DB and filename
+                        let sg_for_db = stamp.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
                         if let Some((rel_path, _, _)) =
                             crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
                                 conn,
                                 album_name,
                                 series,
+                                sg_for_db,
                                 &sgnum,
                                 &year_clean,
                                 target_w_mm,
@@ -1759,7 +1832,7 @@ where
                         let sh_label = config
                             .stamp_heading_label
                             .clone()
-                            .unwrap_or_else(|| "SG".to_string());
+                            .unwrap_or_else(|| "".to_string());
                         let _ = crate::album_globals::generator_new::emit::emit_stamp(
                             &mut output,
                             true,
@@ -1784,7 +1857,7 @@ where
                         let sh_label = config
                             .stamp_heading_label
                             .clone()
-                            .unwrap_or_else(|| "SG".to_string());
+                            .unwrap_or_else(|| "".to_string());
                         let _ = crate::album_globals::generator_new::emit::emit_stamp(
                             &mut output,
                             false,

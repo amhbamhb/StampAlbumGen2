@@ -24,17 +24,25 @@ reference_width_mm = 24.0            # Default nominal stamp width in mm
 reference_height_mm = 27.0           # Default nominal stamp height in mm
 stamp_box_height = 36.0              # Height allocated per stamp box (mm)
 
+# Colnect-specific dimension adjustments (mm)
+# When using Colnect CSV data, width and height can be adjusted separately
+# to compensate for printing differences. These values are added to the
+# Colnect dimensions. Defaults are 2.0mm for width and 2.0mm for height.
+# Set to 0.0 to use exact Colnect dimensions.
+colnect_width_adjust_mm = 1.0
+colnect_height_adjust_mm = 3.0
+
 # Fine-tune packing/adjustment. `stamp_box_adjust` can be negative to
 # slightly shrink the reserved box if your stamps are slightly smaller
 # than the nominal size.
-stamp_box_adjust = -2.5
+stamp_box_adjust = 0.0
 
 # Packing limits: control how many stamps/rows the generator will try
 # to place on a single row/page. Reduce if pages feel cramped.
-max_stamps_per_row = 3               # Maximum stamps horizontally per row
+max_stamps_per_row = 5               # Maximum stamps horizontally per row
 max_rows_per_page = 5                # Maximum rows per page
-packing_horizontal_safety_mm = 5.0   # Safety gap left/right of each stamp (mm)
-packing_vertical_safety_mm = 2.0     # Safety gap above/below each stamp (mm)
+packing_horizontal_safety_mm = 1.0   # Safety gap left/right of each stamp (mm)
+packing_vertical_safety_mm = 1.0     # Safety gap above/below each stamp (mm)
 series_row_gap_mm = 0.0              # Per-series inter-row gap (mm). Set to None/omit to disable.
 
 # Centering & diagnostics
@@ -102,7 +110,7 @@ row_start_es_enabled = true
 row_start_es_font = "HN"
 row_start_es_size = 6.0
 row_start_es_spacing = 0.1
-row_start_es_vspace = 8.0          # Increased from 5.0 to provide more space after row start header
+row_start_es_vspace = 6.0          # Increased from 5.0 to provide more space after row start header
 
 # When trying to fit content on a page, apply this conservative buffer
 # (mm) to avoid clipping or very tight layouts when rounding occurs.
@@ -140,16 +148,16 @@ single_stamp_threshold_pct = 0.7
 
 # Usable height padding & header spacing (mm)
 usable_height_padding_mm = 1.0
-header_vspace_before_mm = 10.0
+header_vspace_before_mm = 1.0
 header_vspace_after_mm = 1.0
 
 # Text metrics and image spacing
 text_line_height_mm = 2.6
-image_spacing_mm = 5.0
+image_spacing_mm = 1.0
 
 # Image sizing hints used when generating the 'new' stamp image box
-album_stamp_img_new_setting_w_mm = 6.0
-album_stamp_img_new_setting_h_mm = 6.0
+album_stamp_img_new_setting_w_mm = 3.0
+album_stamp_img_new_setting_h_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
 
 # Allow keeping album-wide stamp aspect ratio setting
@@ -163,7 +171,7 @@ row_start_es_marker = "ROW_START_ES"
 # Stamp heading font/label settings (short codes, see earlier font list)
 stamp_heading_font = "HN"
 stamp_heading_size = 6.0
-stamp_heading_label = "SG"
+stamp_heading_label = "Scott"
 
 # Visual / Color
 ###################################
@@ -179,7 +187,7 @@ color_album_margin_txt = "darkblue"
 color_stamp_border = "black"
 color_stamp_heading = "black"
 color_stamp_text = "black"
-color_stamp_background = "white"
+color_stamp_background = "black"
 
 ###################################
 # Flags / Cover

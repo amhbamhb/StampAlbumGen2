@@ -46,6 +46,7 @@ pub fn validate_user_input(cli: &crate::cli::Cli) -> Result<(), ValidationError>
         || cli.album_name.is_some()
         || cli.site_name.is_some()
         || cli.base_url.is_some()
+        || cli.colnect_csv.is_some()
         || source_non_default
         || cli.start_year != 1840
         || cli.end_year != env!("BUILD_YEAR").parse::<i32>().unwrap_or(9999)
