@@ -126,6 +126,24 @@ include_series = true
 include_country = true
 include_date = true
 
+# Stamp detail layout controls how Colnect information appears:
+# - "inline" : All details inside stamp boxes (can be cluttered with lots of data)
+# - "separate_rows" : Clean stamps showing only print run, details in organized blocks below (recommended)
+# - "minimal" : Only face value shown, no Colnect details
+stamp_detail_layout = "separate_rows"
+
+# Which Colnect fields to include in output (comma-separated)
+# Available: print_run, themes, printing, paper, gum, designers, printers, colors, description
+# Recommended: keep it concise for cleaner albums
+# For full details use: "print_run,themes,printing,paper,gum,designers,printers,colors"
+colnect_detail_fields = "print_run,themes,designers"
+
+# Font size for stamp details (6, 7, or 8, default: 8)
+# stamp_detail_font_size = 6
+
+# Vertical space before and after stamp details in mm (default: 2.0)
+# stamp_detail_vspace = 2.0
+
 # Allow a single large stamp to take an entire page if it exceeds this
 # fraction of the page width/height (0.0-1.0 range).
 allow_single_large_stamp_per_page = true

@@ -10,9 +10,11 @@ pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result
 
     let mut stmt = conn.prepare(
         "INSERT INTO colnect_stamps (
-            sg_number, colnect_id, catalog_codes, width, height, printing, paper, gum, themes,
-            colnect_link, description, issued_on, print_run, face_value, currency, colors, designers, printers, series
-        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19)",
+            sg_number, colnect_id, name, catalog_codes, country, width, height, watermark, format, emission,
+            perforation, printing, paper, gum, ord_mi, ord_sn, ord_yt, ord_sg, themes, colnect_link, description, issued_on, expiry_date,
+            print_run, face_value, currency, colors, designers, printers, series,
+            parent_item, variant, overprint_variant, score, accuracy, list, quantity, condition, public_note, private_note
+        ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33, ?34, ?35, ?36, ?37, ?38, ?39, ?40)",
     )?;
 
     let mut code_stmt = conn.prepare(
@@ -23,65 +25,109 @@ pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result
     for stamp in stamps {
         let sg_number = extract_sg_number(&stamp.catalog_codes);
 
+        // If no SG number, try to extract Scott number
+        let catalog_number = if let Some(ref sg) = sg_number {
+            normalize_sg(sg)
+        } else if let Some(sn) = extract_scott_number(&stamp.catalog_codes) {
+            normalize_sg(&sn)
+        } else {
+            // No catalog number found, skip this stamp
+            warn!("No SG or Scott catalog number found for: {}", stamp.name);
+            continue;
+        };
+
         // Use Colnect code as ID, fallback to Link
         let colnect_id =
             extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone());
 
-        if let Some(sg) = sg_number {
-            // Normalize SG number: remove country prefix if present
-            let normalized_sg = normalize_sg(&sg);
+        // Convert Option<String> to Option<&str> for rusqlite
+        let width_ref = stamp.width.as_ref().map(|s| s.as_str());
+        let height_ref = stamp.height.as_ref().map(|s| s.as_str());
+        let watermark_ref = stamp.watermark.as_ref().map(|s| s.as_str());
+        let format_ref = stamp.format.as_ref().map(|s| s.as_str());
+        let emission_ref = stamp.emission.as_ref().map(|s| s.as_str());
+        let perforation_ref = stamp.perforation.as_ref().map(|s| s.as_str());
+        let printing_ref = stamp.printing.as_ref().map(|s| s.as_str());
+        let paper_ref = stamp.paper.as_ref().map(|s| s.as_str());
+        let gum_ref = stamp.gum.as_ref().map(|s| s.as_str());
+        let ord_mi_ref = stamp.ord_mi.as_ref().map(|s| s.as_str());
+        let ord_sn_ref = stamp.ord_sn.as_ref().map(|s| s.as_str());
+        let ord_yt_ref = stamp.ord_yt.as_ref().map(|s| s.as_str());
+        let ord_sg_ref = stamp.ord_sg.as_ref().map(|s| s.as_str());
+        let themes_ref = stamp.themes.as_ref().map(|s| s.as_str());
+        let description_ref = stamp.description.as_ref().map(|s| s.as_str());
+        let expiry_date_ref = stamp.expiry_date.as_ref().map(|s| s.as_str());
+        let print_run_ref = stamp.print_run.as_ref().map(|s| s.as_str());
+        let face_value_ref = stamp.face_value.as_ref().map(|s| s.as_str());
+        let currency_ref = stamp.currency.as_ref().map(|s| s.as_str());
+        let colors_ref = stamp.colors.as_ref().map(|s| s.as_str());
+        let designers_ref = stamp.designers.as_ref().map(|s| s.as_str());
+        let printers_ref = stamp.printers.as_ref().map(|s| s.as_str());
+        let parent_item_ref = stamp.parent_item.as_ref().map(|s| s.as_str());
+        let variant_ref = stamp.variant.as_ref().map(|s| s.as_str());
+        let overprint_variant_ref = stamp.overprint_variant.as_ref().map(|s| s.as_str());
+        let score_ref = stamp.score.as_ref().map(|s| s.as_str());
+        let accuracy_ref = stamp.accuracy.as_ref().map(|s| s.as_str());
+        let list_ref = stamp.list.as_ref().map(|s| s.as_str());
+        let quantity_ref = stamp.quantity.as_ref().map(|s| s.as_str());
+        let condition_ref = stamp.condition.as_ref().map(|s| s.as_str());
+        let public_note_ref = stamp.public_note.as_ref().map(|s| s.as_str());
+        let private_note_ref = stamp.private_note.as_ref().map(|s| s.as_str());
 
-            // Convert Option<String> to Option<&str> for rusqlite
-            let width_ref = stamp.width.as_ref().map(|s| s.as_str());
-            let height_ref = stamp.height.as_ref().map(|s| s.as_str());
-            let printing_ref = stamp.printing.as_ref().map(|s| s.as_str());
-            let paper_ref = stamp.paper.as_ref().map(|s| s.as_str());
-            let gum_ref = stamp.gum.as_ref().map(|s| s.as_str());
-            let themes_ref = stamp.themes.as_ref().map(|s| s.as_str());
-            let description_ref = stamp.description.as_ref().map(|s| s.as_str());
-            let print_run_ref = stamp.print_run.as_ref().map(|s| s.as_str());
-            let face_value_ref = stamp.face_value.as_ref().map(|s| s.as_str());
-            let currency_ref = stamp.currency.as_ref().map(|s| s.as_str());
-            let colors_ref = stamp.colors.as_ref().map(|s| s.as_str());
-            let designers_ref = stamp.designers.as_ref().map(|s| s.as_str());
-            let printers_ref = stamp.printers.as_ref().map(|s| s.as_str());
+        stmt.execute(params![
+            catalog_number,
+            colnect_id,
+            stamp.name,
+            stamp.catalog_codes,
+            stamp.country,
+            width_ref,
+            height_ref,
+            watermark_ref,
+            format_ref,
+            emission_ref,
+            perforation_ref,
+            printing_ref,
+            paper_ref,
+            gum_ref,
+            ord_mi_ref,
+            ord_sn_ref,
+            ord_yt_ref,
+            ord_sg_ref,
+            themes_ref,
+            stamp.link,
+            description_ref,
+            stamp.issued_on,
+            expiry_date_ref,
+            print_run_ref,
+            face_value_ref,
+            currency_ref,
+            colors_ref,
+            designers_ref,
+            printers_ref,
+            stamp.series,
+            parent_item_ref,
+            variant_ref,
+            overprint_variant_ref,
+            score_ref,
+            accuracy_ref,
+            list_ref,
+            quantity_ref,
+            condition_ref,
+            public_note_ref,
+            private_note_ref,
+        ])?;
 
-            stmt.execute(params![
-                normalized_sg,
-                colnect_id,
-                stamp.catalog_codes,
-                width_ref,
-                height_ref,
-                printing_ref,
-                paper_ref,
-                gum_ref,
-                themes_ref,
-                stamp.link,
-                description_ref,
-                stamp.issued_on,
-                print_run_ref,
-                face_value_ref,
-                currency_ref,
-                colors_ref,
-                designers_ref,
-                printers_ref,
-                stamp.series,
-            ])?;
-
-            // Insert individual catalog codes
-            for part in stamp.catalog_codes.split(',') {
-                let part = part.trim();
-                if let Some((type_part, code_part)) = part.split_once(':') {
-                    let cat_type = type_part.trim();
-                    let code = code_part.trim();
-                    code_stmt.execute(params![colnect_id, cat_type, code])?;
-                }
+        // Insert individual catalog codes
+        for part in stamp.catalog_codes.split(',') {
+            let part = part.trim();
+            if let Some((type_part, code_part)) = part.split_once(':') {
+                let cat_type = type_part.trim();
+                let code = code_part.trim();
+                code_stmt.execute(params![colnect_id, cat_type, code])?;
             }
-
-            count += 1;
-        } else {
-            warn!("No SG number found for stamp: {}", stamp.name);
         }
+
+        count += 1;
     }
     info!("Ingested {} Colnect stamps", count);
 
@@ -252,6 +298,17 @@ fn extract_sg_number(codes: &str) -> Option<String> {
         let part = part.trim();
         if part.starts_with("Sg:") {
             return Some(part["Sg:".len()..].trim().to_string());
+        }
+    }
+    None
+}
+
+fn extract_scott_number(codes: &str) -> Option<String> {
+    // codes example: "Sn:CA 454ai, Mi:CA 123..."
+    for part in codes.split(',') {
+        let part = part.trim();
+        if part.starts_with("Sn:") {
+            return Some(part["Sn:".len()..].trim().to_string());
         }
     }
     None

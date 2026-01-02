@@ -141,6 +141,38 @@ include_series = true
 include_country = true
 include_date = true
 
+# Stamp detail layout mode controls how stamp information is displayed:
+# - "inline" : All details cramped inside stamp boxes (can be messy with Colnect data)
+# - "separate_rows" : Clean stamps in first row, organized detail blocks below (recommended)
+# - "minimal" : Only face value shown, no Colnect details
+stamp_detail_layout = "separate_rows"
+
+# Which Colnect fields to show in detail output (comma-separated list)
+# Available: print_run, themes, printing, paper, gum, designers, printers, colors, description
+# Default shows the most useful fields without overwhelming the output
+# For full details use: "print_run,themes,printing,paper,gum,designers,printers,colors"
+colnect_detail_fields = "print_run,themes,printing,paper,gum,designers,printers,colors"
+
+# Font size for stamp details (6, 7, or 8, default: 8)
+stamp_detail_font_size = 6
+
+# Vertical space before and after stamp details in mm (default: 2.0)
+stamp_detail_vspace = 2.0
+
+# Box colors for detail boxes in separate_rows mode
+# Default: border=blue, text=blue, background=white
+page_box_border_color = "blue"
+page_box_text_color = "blue"
+page_box_background_color = "white"
+
+# PAGE_ADD_BOX configuration for detail boxes
+# Font: HN (Helvetica Normal), HB (Helvetica Bold), TN (Times Normal), etc.
+page_box_font = "HN"
+# Font size in points (6, 7, 8, etc.)
+page_box_font_size = 6
+# Border width in mm
+page_box_border_width = 0.1
+
 # Allow a single large stamp to take an entire page if it exceeds this
 # fraction of the page width/height (0.0-1.0 range).
 allow_single_large_stamp_per_page = true
@@ -149,7 +181,8 @@ single_stamp_threshold_pct = 0.7
 # Usable height padding & header spacing (mm)
 usable_height_padding_mm = 1.0
 header_vspace_before_mm = 1.0
-header_vspace_after_mm = 1.0
+# Reduced to 2.0 to minimize space between series header and stamps
+header_vspace_after_mm = 2.0
 
 # Text metrics and image spacing
 text_line_height_mm = 2.6
@@ -165,7 +198,8 @@ album_stamp_img_aspect_ratio = true
 
 # Series ordering, page marker tokens and row-start marker strings
 series_order = "first_sg"
-page_vspace_marker = "6"
+# Disable page_vspace_marker to use actual numeric values from header_vspace_after_mm
+# page_vspace_marker = "6"
 row_start_es_marker = "ROW_START_ES"
 
 # Stamp heading font/label settings (short codes, see earlier font list)

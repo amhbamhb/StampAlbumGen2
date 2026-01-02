@@ -71,6 +71,7 @@ pub fn emit_stamp<W: Write>(
     sh_size: i32,
     sh_label: &str,
     sgnum: &str,
+    stamp_name: Option<&str>,
 ) -> std::io::Result<()> {
     if has_image {
         let line = format!(
@@ -81,10 +82,22 @@ pub fn emit_stamp<W: Write>(
         // Only emit STAMP_HEADING if a label is configured (the number alone
         // is from StampWorld's internal system, not a real catalog)
         if !sh_label.is_empty() {
+            // Combine Scott number and stamp name with literal \n
+            let heading = if let Some(name) = stamp_name {
+                if !name.is_empty() {
+                    format!("{} : {} \\n {}", sh_label, sgnum, name.replace('"', "'"))
+                } else {
+                    format!("{} : {}", sh_label, sgnum)
+                }
+            } else {
+                format!("{} : {}", sh_label, sgnum)
+            };
             writeln!(
                 out,
-                "STAMP_HEADING({} {} \"{} : {}\")",
-                sh_font, sh_size, sh_label, sgnum
+                "STAMP_HEADING({} {} \"{}\")",
+                sh_font,
+                sh_size,
+                heading.replace('"', "'")
             )?;
         }
     } else {
@@ -95,10 +108,22 @@ pub fn emit_stamp<W: Write>(
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
         // Only emit STAMP_HEADING if a label is configured
         if !sh_label.is_empty() {
+            // Combine Scott number and stamp name with literal \n
+            let heading = if let Some(name) = stamp_name {
+                if !name.is_empty() {
+                    format!("{} : {} \\n {}", sh_label, sgnum, name.replace('"', "'"))
+                } else {
+                    format!("{} : {}", sh_label, sgnum)
+                }
+            } else {
+                format!("{} : {}", sh_label, sgnum)
+            };
             writeln!(
                 out,
-                "STAMP_HEADING({} {} \"{} : {}\")",
-                sh_font, sh_size, sh_label, sgnum
+                "STAMP_HEADING({} {} \"{}\")",
+                sh_font,
+                sh_size,
+                heading.replace('"', "'")
             )?;
         }
     }

@@ -168,6 +168,9 @@ pub fn fetch_and_filter_stamps(
                 }
             }
 
+            if let Some(v) = colnect.name {
+                attrs.set("colnect_name", &v);
+            }
             if let Some(v) = colnect.printing {
                 attrs.set("colnect_printing", &v);
             }

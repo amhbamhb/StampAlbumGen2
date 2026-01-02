@@ -87,6 +87,39 @@ pub struct Config {
     pub include_series: Option<bool>,
     pub include_country: Option<bool>,
     pub include_date: Option<bool>,
+    // Stamp detail layout mode: "inline" (default), "separate_rows", "minimal"
+    // - inline: All details inside stamp boxes (current behavior, can be cluttered)
+    // - separate_rows: Clean stamps on first row, organized details below each stamp
+    // - minimal: Only essential info (face value) in stamps, no detail rows
+    pub stamp_detail_layout: Option<String>,
+    // Which Colnect fields to include in detail output (comma-separated)
+    // Options: print_run, themes, printing, paper, gum, designers, printers, colors, description
+    // Default: "print_run,themes,designers" for concise output
+    pub colnect_detail_fields: Option<String>,
+    // Font size for stamp details in separate_rows mode (e.g., 6, 7, 8)
+    // Default: 8
+    pub stamp_detail_font_size: Option<u8>,
+    // Vertical space before and after stamp details in separate_rows mode
+    // Default: 2.0
+    pub stamp_detail_vspace: Option<f64>,
+    // Box border color for detail boxes in separate_rows mode
+    // Default: "blue"
+    pub page_box_border_color: Option<String>,
+    // Box text color for detail boxes in separate_rows mode
+    // Default: "blue"
+    pub page_box_text_color: Option<String>,
+    // Box background color for detail boxes in separate_rows mode
+    // Default: "white"
+    pub page_box_background_color: Option<String>,
+    // Font for PAGE_ADD_BOX detail boxes
+    // Default: "HN" (Helvetica Normal)
+    pub page_box_font: Option<String>,
+    // Font size for PAGE_ADD_BOX detail boxes
+    // Default: 8
+    pub page_box_font_size: Option<u8>,
+    // Border width for PAGE_ADD_BOX detail boxes
+    // Default: 0.1
+    pub page_box_border_width: Option<f64>,
     // Allow overriding maximum rows per page when header is larger
     pub max_rows_per_page: Option<usize>,
     // When false, don't emit ROW_START_ES automatically after PAGE_START
@@ -315,6 +348,8 @@ impl Config {
             include_series: Some(true),
             include_country: Some(true),
             include_date: Some(true),
+            stamp_detail_layout: Some("separate_rows".to_string()),
+            colnect_detail_fields: Some("print_run,themes,designers".to_string()),
             max_rows_per_page: Some(5),
             row_start_es_enabled: Some(true),
             row_start_es_font: Some("HN".to_string()),

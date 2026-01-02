@@ -1,0 +1,209 @@
+;; This buffer is for text that is not saved, and for Lisp evaluation.
+;; To create a file, visit it with C-x C-f and enter text in its buffer.
+
+ALBUM COMMANDS 
+The Album Commands control the appearance and layout of all the pages in an album. These commands should be placed at the beginning of each album text file. Some, but not all Album Commands are mandatory and need to be included in every album file. 
+ALBUM_PAGES_SIZE (width height) 
+Mandatory command to set the page size
+e.g.
+ALBUM_PAGES_SIZE (210.0 297.0) for A4 sized pages
+or
+ALBUM_PAGES_SIZE (215.9 279.4) for US Letter size (8.5 x 11) 
+ALBUM_PAGES_MARGINS (left right top bottom) 
+ALBUM_PAGES_MARGINSE (left right top bottom) 
+ALBUM_PAGES_MARGINS a mandatory command used to set the page margins.
+e.g.
+ALBUM_PAGES_MARGINS (25.0 12.0 15.0 15.0) to leave a wider left margin to allow for punch holes.
+
+ALBUM_PAGES_MARGINSE an optional command that is used to apply a different set of margins to even numbered pages.
+e.g.
+ALBUM_PAGES_MARGINSE (12.0 25.0 15.0 15.0) set a wider right margin on even numbered pages. 
+ALBUM_PAGES_SPACING (horizontal vertical) 
+Mandatory command to set the default horizontal and vertical spacing for elements on a page.
+Horizontal spacing controls the distance that text and stamps will be separated from the left and right borders.
+Vertical spacing controls the space between rows of stamps, or blocks of text.
+e.g.
+ALBUM_PAGES_SPACING (6.0 6.0) set both the horizontal and vertical spacing to 6 mm. 
+ALBUM_PAGES_TITLE (Font Fontsize Title [vspace]) 
+Optional command to place a title on every page of the album.
+e.g.
+ALBUM_PAGES_TITLE (TB 16 "Transvaal") Will place the title Transvaal on every page of the album using a Times Roman Bold 16 point font. 
+The ALBUM_PAGES_TITLE commands also accepts an optional vspace parameter which is used to control the amount of blank space after the title.
+e.g.
+ALBUM_PAGES_TITLE (TB 16 "Transvaal" 10.0) will insert 10mm of blank space after the title on each page.
+If the vspace parameter is negative, then the items that follow it on the page will be moved up the specified distance. 
+ALBUM_PAGES_BORDER (outer inner1 inner2 spacing) 
+Optional command to place a single, double or triple line border around the page. This is placed just inside the page margins.
+e.g.
+ALBUM_PAGES_BORDER (0.1 0.5 0.1 1.0) draw a triple line border consisting of an outer line 0.1mm thick, an inner line 0.5mm thick, and a second inner line 0.1mm thick with a 1mm space between the lines.
+
+Double or single line borders can be placed by setting the unused line thickness to 0.0
+e.g.
+ALBUM_PAGES_BORDER (0.5 0.1 0.0 1.0) will draw a double line border with an outer line 0.5mm thick, an inner line 0.1 mm thick and a 1mm space between the lines.
+
+NOTE: In order to maintain backwards compatibility with older versions of AlbumEasy which only supported double line borders, this command will also accept only three parameters: ALBUM_PAGES_BORDER (outer inner spacing). 
+ALBUM_PAGES_CROP_MARKS ([line] [horizontal-padding] [vertical-padding] [arms]) 
+Optional command which places crop marks at the page corners to act as cutting guides when the physical paper size is larger than the required page size.
+
+This command takes four parameters, all are optional, and if not given the defaults will be used: 
+line
+The line thickness - default is 0.1mm
+horizontal-padding
+Distance between left and right sides of the page and the inside edge of the crop marks - default is 1.0mm
+vertical-padding
+Distance between top and bottom sides of the page and the inside edge of the crop marks - default is 1.0mm
+arms
+Length of the crossed arms - default is 5.0mm
+
+e.g.
+ALBUM_PAGES_CROP_MARKS draw a crop mark at each page corner with a line width of 0.1mm, spaced 1.0mm from the left, right, top and bottom page edges with arms 5.0mm long.
+
+e.g.
+ALBUM_PAGES_CROP_MARKS(0.25 2.0 4.0 5.0) draw a crop mark at each page corner with a line width of 0.25mm, spaced 2.0mm from the left and right page edges, and 4.0mm from the top and bottom page edges with arms 5.0mm long. 
+ALBUM_PAGES_DECORATIVE_BORDER (border-definition-file) 
+Optional command that places a decorative border around the page at the page margins.
+This command takes a single parameter which is the name of a Decorative Border Definition File.
+e.g.
+ALBUM_PAGES_DECORATIVE_BORDER ("ArtDeco.txt")
+The default AlbumEasy installation includes a number of sample decorative border definition files: 
+ArtDeco.txt
+ 
+ArtDecoSmall.txt
+ 
+Bottom.txt
+ 
+CornerStyleA.txt
+ 
+CornerStyleB.txt
+ 
+CornerAndVerticalStyleC.txt
+ 
+Classic.txt
+ 
+
+These sample border definition files may be used as-is, or used as templates for creating custom decorative borders.
+See the Decorative Borders help topic for further details. 
+ALBUM_PAGES_HEADER (Font Fontsize Position Text) 
+ALBUM_PAGES_HEADER_NUMBER (Font Fontsize Position [Start] [Text Before] [Text After]) 
+ALBUM_PAGES_HEADER_DATE (Font Fontsize Position Format [Separator] [Text Before] [Text After]) 
+ALBUM_PAGES_FOOTER (Font Fontsize Position Text) 
+ALBUM_PAGES_FOOTER_NUMBER (Font Fontsize Position [Start] [Text Before] [Text After]) 
+ALBUM_PAGES_FOOTER_DATE (Font Fontsize Position Format [Separator] [Text Before] [Text After]) 
+ALBUM_PAGES_NUMBER (Font Fontsize Position [Start] [Text Before] [Text After]) (obsolete) 
+ALBUM_PAGES_DATE (Font Fontsize Position Format [Separator] [Text Before] [Text After]) (obsolete) 
+Optional commands for inserting text, page numbers or the date that the album was generated into the page header or footer.
+One or more of these commands may be used simultaneously as long as they are not assigned overlapping positions.
+The Position parameter is one of: 
+L
+Left
+R
+Right
+C
+Centre
+LR
+Left on odd pages, right on even pages
+RL
+Right on odd pages, left on even pages
+
+If the text is too close to, or overlaps the top or bottom borders of the page, the ALBUM_PAGES_HEADER_PAD and ALBUM_PAGES_FOOTER_PAD commands may be used to space the text from the border. 
+ALBUM_PAGES_HEADER (Font Fontsize Position Text) 
+ALBUM_PAGES_FOOTER (Font Fontsize Position Text) 
+Insert text into the header or footer. Text can span multiple lines by means of the \n newline indicator
+e.g.
+ALBUM_PAGES_FOOTER (TI 12 C "This text will appear centred in the footer of every page \n with a second line below it.") 
+ALBUM_PAGES_HEADER_NUMBER (Font Fontsize Position [Start] [Before] [After]) 
+ALBUM_PAGES_FOOTER_NUMBER (Font Fontsize Position [Start] [Before] [After]) 
+Insert a page number into the page header or footer.
+Optional parameters: 
+Start
+Page number to start the numbering from
+Before
+Text to be placed before the page number
+After
+Text to be placed after the page number
+
+e.g.
+ALBUM_PAGES_HEADER_NUMBER (HN 10 C)   insert the page number centred in the header. Begin numbering from 1.
+ALBUM_PAGES_HEADER_NUMBER (HN 10 C 7)   same as previous example, except pages are numbered from page 7 onwards.
+ALBUM_PAGES_FOOTER_NUMBER (HN 10 C 1 "Page " " of $PAGES$") will output Page 1 of 32
+Note: $PAGES$ is substituted by the actual total number of pages when the album is generated. 
+ALBUM_PAGES_HEADER_DATE (Font Fontsize Position Format [Separator] [Before] [After]) 
+ALBUM_PAGES_FOOTER_DATE (Font Fontsize Position Format [Separator] [Before] [After]) 
+Insert the date that the PDF file was generated into the page header or footer.
+Format is one of: 
+YMD
+year, month, day
+DMY
+day, month, year
+MDY
+month, day, year
+
+Optional parameters: 
+Separator
+Text placed between the date fields
+Before
+Text placed before the date
+After
+Text placed after the date
+
+e.g.
+ALBUM_PAGES_HEADER_DATE(HN 10 R YMD) places the date 20190131 in the header right aligned.
+ALBUM_PAGES_FOOTER_DATE(HN 10 R YMD "-") places: 2019-01-31 in the footer right aligned.
+ALBUM_PAGES_FOOTER_DATE(HN 10 L YMD "-" "Created: " ) places: Created: 2019-01-31 in the footer left aligned.
+
+ALBUM_PAGES_NUMBER (Font Fontsize Position [Start] [Text Before] [Text After]) (obsolete) 
+ALBUM_PAGES_DATE (Font Fontsize Position Format [Separator] [Text Before] [Text After]) (obsolete) 
+Prior to the introduction of the ALBUM_PAGES_HEADER_NUMBER and ALBUM_PAGES_HEADER_DATE commands, these two commands were used for adding a page number and date to the footer.
+
+For consistency, they have now been renamed as ALBUM_PAGES_FOOTER_NUMBER and ALBUM_PAGES_FOOTER_DATE. However, the original names are still accepted by AlbumEasy for backwards compatibility. 
+ALBUM_PAGES_HEADER_PAD (padding) 
+ALBUM_PAGES_FOOTER_PAD (padding) 
+ALBUM_PAGES_MARGIN_TXT_PAD (padding) 
+Commands to adjust the spacing between the page borders and text placed in the header, footer or margins of the page by the ALBUM_PAGES_MARGIN_TXT,  ALBUM_PAGES_HEADER,  ALBUM_PAGES_FOOTER and associated commands.
+The padding, once set, will be applied to the whole album.
+A negative padding value will move the text closer to the margin. 
+e.g.
+ALBUM_PAGES_HEADER_PAD (5.0)
+ALBUM_PAGES_FOOTER_PAD (3.0) 
+ALBUM_PAGES_MARGIN_TXT (Font Fontsize Text Position [Align] [Direction] ) 
+Optional command for inserting text vertically in the page margin.
+This command may be issued twice, specifying a different position each time in order to place text in both margins.
+The margin text setting persists for the whole album.
+
+By default, the text is centred vertically in the margin reading upwards. However, this can be changed by using the optional Align and Direction parameters. Text may span multiple lines by including the two character \n newline indicator. 
+If the text is too close to, or overlaps the page edges, the ALBUM_PAGES_MARGIN_TXT_PAD command may be used to adjust the spacing of the text from the margin border.
+
+The colour of the text in the margin can be set by means of the COLOUR_ALBUM_MARGIN_TXT command. 
+The Position parameter is required. This may be one of: 
+L
+Left Margin
+R
+Right Margin
+LR
+Left margin on odd pages, right margin on even pages
+RL
+Right margin on odd pages, left margin on even pages
+
+The optional Align parameter can be one of: 
+TOP
+Top of the margin
+CENTRE
+Centred vertically in the margin (default)
+BOTTOM
+bottom of the margin
+
+The optional Direction parameter can be one of: 
+UP
+Text reads up (default)
+DOWN
+Text reads down
+
+e.g.
+ALBUM_PAGES_MARGIN_TXT (HN 12 "www.thestampweb.com" L) insert the text "www.thestampweb.com" centred vertically in the left margin reading upwards.
+ALBUM_PAGES_MARGIN_TXT (HN 12 "Hello\nThere" R TOP DOWN) insert two vertical lines of text, "Hello" and "There" at the top of the right margin reading downwards. 
+ALBUM_AUTHOR (author) 
+ALBUM_TITLE (title) 
+Optional commands that may be used to set the author and title attributes of the PDF file. These attributes are visible in the PDF file properties and have no effect on the printed output.
+e.g.
+ALBUM_TITLE ("All the world stamp album")
+ALBUM_AUTHOR ("Johnny Stamp Collector") 

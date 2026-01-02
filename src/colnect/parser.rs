@@ -1,8 +1,37 @@
+use regex::Regex;
 use serde::Deserialize;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+
+/// Clean up the Name field by extracting perforation suffix like "- P(14 x 15)"
+/// and reformatting it on a new line without the dash and brackets
+fn clean_name(name: &str) -> String {
+    // Match pattern like "- P(14 x 15)" or "- P(14½ x 14)" at end of string
+    let re = Regex::new(r"\s*-\s*P\(([^)]+)\)\s*$").unwrap();
+    if let Some(caps) = re.captures(name) {
+        let base_name = re.replace(name, "").trim().to_string();
+        let perf_info = &caps[1];
+        format!("{} \\n P {}", base_name, perf_info)
+    } else {
+        name.to_string()
+    }
+}
+
+/// Clean up the Perforation field by removing HTML tags and type prefixes
+/// Example: "comb<i> 14 x 14½</i>" -> "14 x 14½"
+fn clean_perforation(perf: &str) -> String {
+    // Remove HTML tags
+    let re_tags = Regex::new(r"<[^>]+>").unwrap();
+    let no_tags = re_tags.replace_all(perf, "");
+
+    // Remove "comb" or "line" prefix (case insensitive)
+    let re_prefix = Regex::new(r"(?i)^(comb|line)\s*").unwrap();
+    let cleaned = re_prefix.replace(&no_tags, "");
+
+    cleaned.trim().to_string()
+}
 
 #[derive(Debug, Deserialize)]
 pub struct ColnectStamp {
@@ -36,6 +65,14 @@ pub struct ColnectStamp {
     pub paper: Option<String>,
     #[serde(rename = "Gum")]
     pub gum: Option<String>,
+    #[serde(rename = "Ord Mi")]
+    pub ord_mi: Option<String>,
+    #[serde(rename = "Ord Sn")]
+    pub ord_sn: Option<String>,
+    #[serde(rename = "Ord Yt")]
+    pub ord_yt: Option<String>,
+    #[serde(rename = "Ord Sg")]
+    pub ord_sg: Option<String>,
     #[serde(rename = "Currency")]
     pub currency: Option<String>,
     #[serde(rename = "FaceValue")]
@@ -54,6 +91,26 @@ pub struct ColnectStamp {
     pub description: Option<String>,
     #[serde(rename = "Link")]
     pub link: String,
+    #[serde(rename = "Parent Item")]
+    pub parent_item: Option<String>,
+    #[serde(rename = "Variant")]
+    pub variant: Option<String>,
+    #[serde(rename = "Overprint Variant")]
+    pub overprint_variant: Option<String>,
+    #[serde(rename = "Score")]
+    pub score: Option<String>,
+    #[serde(rename = "Accuracy")]
+    pub accuracy: Option<String>,
+    #[serde(rename = "List")]
+    pub list: Option<String>,
+    #[serde(rename = "Quantity")]
+    pub quantity: Option<String>,
+    #[serde(rename = "Condition")]
+    pub condition: Option<String>,
+    #[serde(rename = "Public Note")]
+    pub public_note: Option<String>,
+    #[serde(rename = "Private Note")]
+    pub private_note: Option<String>,
 }
 
 pub fn parse_csv<P: AsRef<Path>>(path: P) -> Result<Vec<ColnectStamp>, Box<dyn Error>> {
@@ -95,9 +152,23 @@ pub fn parse_csv<P: AsRef<Path>>(path: P) -> Result<Vec<ColnectStamp>, Box<dyn E
         .from_reader(csv_content.as_bytes());
 
     let mut stamps = Vec::new();
-    for result in rdr.deserialize() {
-        let record: ColnectStamp = result?;
-        stamps.push(record);
+    for (i, result) in rdr.deserialize().enumerate() {
+        match result {
+            Ok(record) => {
+                let mut record: ColnectStamp = record;
+                // Clean up the name field (extract perforation suffix)
+                record.name = clean_name(&record.name);
+                // Clean up the perforation field (remove HTML tags and prefixes)
+                if let Some(ref perf) = record.perforation {
+                    record.perforation = Some(clean_perforation(perf));
+                }
+                stamps.push(record);
+            }
+            Err(e) => {
+                eprintln!("Warning: Failed to parse CSV record {}: {}", i + 1, e);
+            }
+        }
     }
+    eprintln!("Successfully parsed {} stamps from CSV", stamps.len());
     Ok(stamps)
 }

@@ -1,0 +1,323 @@
+STAMP COMMANDS 
+Commands for adding and formatting stamp boxes. 
+ROW_START_ES (Font Fontsize border) 
+ROW_START_JS (Font Fontsize border) 
+ROW_START_FS (Font Fontsize border spacing) 
+Start a row of stamps with equal, justified or fixed spacing.
+Font and Fontsize specify the font that will be used for any text under or inside stamp boxes in the row. Border specifies the thickness of the line used to draw the stamp frames. 
+ROW_START_ES:
+Equal spacing - The stamps are spaced evenly across the page with equal spacing between the stamps as well as the margins.
+ROW_START_JS:
+Justified spacing - The left edge of the leftmost stamp at the left margin, the right edge of the rightmost stamp at the right margin, with equal spacing between the stamps.
+ROW_START_FS:
+Fixed spacing. - The spacing parameter specifies the fixed amount of space between the stamps. The row of stamps is centred between the margins.
+
+e.g.
+ROW_START_ES (HN 6 0.1) Use 6 point Helvetica Normal font, with a 0.1mm border for the stamp frames.
+ROW_START_FS (HN 6 0.1 5.0) Use a 6 point Helvetica font, with a 0.1mm border for the stamp frames. Stamps are spaced 5.0mm apart. 
+ROW_ALIGN_TOP 
+ROW_ALIGN_MIDDLE 
+ROW_ALIGN_BOTTOM 
+Commands to set the vertical alignment of stamps in a row to either the top edge, bottom edge or middle of the stamp.
+Once one of the ROW_ALIGN commands has been issued it will take effect as from the next ROW_START command, and the setting will persist until the next ROW_ALIGN command is issued.
+ROW_ALIGN_TOP is the default.
+See here for examples. 
+STAMP_ADD (width height inside left centre right) 
+STAMP_ADD_DIAMOND (width height inside left centre right) 
+STAMP_ADD_OVAL (width height inside left centre right) 
+STAMP_ADD_PENTAGON (width SU|CU inside left centre right) 
+STAMP_ADD_HEXAGON (width SU|CU inside left centre right) 
+STAMP_ADD_OCTAGON (width SU|CU inside left centre right) 
+STAMP_ADD_TRIANGLE (width height inside left centre right [apex]) 
+STAMP_ADD_TRIANGLE_INV (width height inside left centre right [apex]) 
+STAMP_ADD_RT_TRIANGLE (width height SU|CU L|R inside left centre right) 
+Add a stamp with a rectangular, diamond, triangle, right triangle, inverted-triangle, hexagonal, octagonal or oval shaped frame (Round stamps are supported by means of an oval frame with equal width and height).
+Except for pentagons,hexagons and octagons which only require a width, frames are sized according to the width and height parameters.
+In addition, each stamp requires 4 text parameters: 
+inside:
+Text placed inside the frame.
+left:
+Text placed below the stamp to the left.
+centre:
+Text placed below the stamp in the centre.
+right:
+Text placed below the stamp to the right.
+
+e.g.
+STAMP_ADD (25.0 28.0 "inside"   "below left"   "below centre"   "below right") 
+Text items can be placed over multiple lines by using the \n newline indicator.
+e.g.
+STAMP_ADD (25.0 28.0 "inside line 1 \n inside line 2"   "left"   "centre 1 \n centre 2 \n centre 3"   "right") 
+Note: All text items parameters must be provided even if not used. e.g.
+STAMP_ADD (50.0 28.0   ""   ""   "below centre"   "") 
+STAMP_ADD (50.0 28.0 ""   ""   ""   "") Will draw the frame only without any text. 
+Note: In place of the height parameter, pentagons, hexagons and octagons require an orientation parameter which can be either SU for side up, or CU for corner up. e.g.
+STAMP_ADD_HEXAGON (28.0 SU "Hexagon\n side\n up" "" "" "") 
+STAMP_ADD_OCTAGON (28.0 CU "Octagon\n corner\n up" "" "" "") 
+The differences between side up and corner up are illustrated here. 
+Note: Right triangles require both an orientation parameter, either of SU for side up, or CU for corner up as well as an L or R to indicate whether the left or right side is vertical. e.g.
+STAMP_ADD_RT_TRIANGLE (28.0 36.0 CU L "Right triangle\n corner\n up" "Left side\nvertical" "" "") 
+The various options are illustrated here. 
+Note: The STAMP_ADD_TRIANGLE and STAMP_ADD_TRIANGLE_INV commands accept an optional apex parameter for creating flattened triangles. This value is the width of the apex (or bottom in the case of an inverted triangle) of the triangle.
+Examples of these flattened triangles or trapeziums (trapezoids in the US) can be seen here example. 
+Note: Prior to AlbumEasy V3.8 the STAMP_ADD commands required 6 text parameters. Three lines of text inside the stamp box and the three text items below: 
+STAMP_ADD (width height txt0 txt1 txt2 txtBL txtBC txtBR)
+  ... etc. 
+This syntax is still supported for backwards compatibility, however it is not recommended for new albums.
+e.g.
+STAMP_ADD (50.0 28.0 "inside line 1" "inside line 2" "inside line 3" "below left" "below centre" "below right") 
+
+STAMP_ADD_IMG (width height image left centre right [NO_FRAME]) 
+STAMP_ADD_IMG (width height image left centre right inside-text img-vert-offset txt-vert-offset [img-horz-offset txt-horz-offset] [NO_FRAME]) 
+Add a stamp box containing an image. This command can also be used for adding non-stamp images elsewhere on the page.
+Currently AlbumEasy only supports PNG and JPEG format image files.
+The parameters accepted by this command: 
+width:
+Width of the stamp box.
+height:
+Height of the stamp box.
+image:
+Name of the image file.
+left:
+Text placed below the stamp to the left.
+centre:
+Text placed below the stamp in the centre.
+right:
+Text placed below the stamp to the right.
+NO_FRAME:
+Optional parameter to draw the stamp image without a frame.
+
+Text can be included along with an image inside the stamp box.
+The additional parameters required to include text are: 
+inside-text:
+Text to be included inside the stamp box.
+img-vert-offset:
+Offset of the image from the top of the stamp box.
+txt-vert-offset:
+Offset of the text from the top of the stamp box.
+img-horz-offset & txt-horz-offset:
+Optional parameters to offset the image and text horizontally.
+
+The horizontal and vertical offset values may be positive or negative. Positive values move the text or image down or to the right, negative values move up or to the left. 
+The text is centred horizontally inside the box. The text may include new-lines indicated by \n. If the optional txt-horz-offset parameter is not set, or is set to 0.0, then the additional lines of text are also centred. However, if the txt-horz-offset is set to a non-zero value, then additional lines of text are left-aligned with the first line. 
+Note: the ALBUM_STAMP_IMG_NEW_SETTING command controls the scaling of the image in the frame. 
+The image file must be specified relative to the location of the album text file.
+So for example if the image file is called admiral.png and located in the same directory as the album file, it should be specified as "admiral.png" however if it is located in for example a sub-folder called images, then the sub-folder name must be included "images/admiral.png"
+e.g.
+STAMP_ADD_IMG (28.0 50.0 "admiral.png" "sg 5a" "" "sacc 4b") will draw a 50mm by 28mm frame containing the image admiral.png.
+
+Like the STAMP_ADD command text items can be placed over multiple lines by means of the \n newline indicator.
+STAMP_ADD_IMG (28.0 50.0 "admiral.png" "left 1 \n left 2" "centre 1 \n centre 2" "right 1 \n right 2") 
+
+Including text as well as an image inside the box.
+STAMP_ADD_IMG (23.0 36.0 "admiral.png"  ""  ""  ""  "text inside \n the box" -4.0 28.0 ) 
+
+The optional NO_FRAME parameter is used to draw the stamp without a frame. This is especially useful for placing non-stamp images on the page 
+e.g.
+STAMP_ADD_IMG (28.0 50.0    "admiral.png"    ""    ""    ""    NO_FRAME) 
+Note: As of AlbumEasy V4.1 the STAMP_BORDER_STYLE (BLANK) can be used as an alternative to the NO_FRAME parameter for creating frameless stamp boxes. 
+
+Note: For further examples, please refer to the Images.txt sample album file which may be found in the AlbumEasy examples directory. The comments in this sample file explain how to adjust the image settings in order to accomodate both images and text inside stamp boxes. 
+ALBUM_STAMP_IMG_NEW_SETTING (horizontal [vertical] [stretch]) 
+ALBUM_STAMP_IMG_NEW_SETTING_PCNT (horizontal [vertical] [stretch]) 
+These commands control the placement and scaling of images inside stamp boxes.
+The ALBUM_STAMP_IMG_NEW_SETTING accepts parameters specified in mm, whereas the ALBUM_STAMP_IMG_NEW_SETTING_PCNT values are as a percentage of the box width or height. 
+Parameters are: 
+horizontal:
+Width of the space between the stamp frame vertical edges and the image.
+vertical:
+Optional value for the height of the space between the stamp frame horizontal edges and the image. If a value is not specified, then it will default to the same value as specified for the horizontal parameter.
+stretch:
+Optional stretch setting, this accepts a value of true or false. If not specified the default is false.
+
+The stretch parameter is either true or false and only affects images that are smaller than the stamp drawing area. When stretch is set to true the images will be stretched to fill the drawing area. If false images that are smaller than the drawing area will not be stretched to fill it.
+e.g.
+ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 false) 
+or
+ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true) 
+
+If neither of these commands are given then the default settings are used.
+These are equivalent to ALBUM_STAMP_IMG_NEW_SETTING (0.7 0.7 false) which gives a 0.7mm gap between the image and the stamp box 
+For examples of how this command may be used please refer to the Images.txt sample album file which can be found in the AlbumEasy examples directory. 
+ALBUM_STAMP_IMG_ASPECT_RATIO (fixed) 
+By default, images in stamp boxes are sized to fit the box. However, it is sometimes preferable for images to retain their original aspect ratio when being drawn. This command is used to enable this behaviour. 
+The command accepts one parameter with a value of true or false: 
+true:
+subsequent images retain their aspect ratio when being drawn.
+false:
+subsequent images are sized to fit the stamp box, the same as the default behaviour.
+
+e.g
+ALBUM_STAMP_IMG_ASPECT_RATIO (true) 
+ALBUM_STAMP_IMG_GREYSCALE_ON 
+ALBUM_STAMP_IMG_GRAYSCALE_ON 
+ALBUM_STAMP_IMG_GREYSCALE_OFF 
+ALBUM_STAMP_IMG_GRAYSCALE_OFF 
+The ALBUM_STAMP_IMG_GREYSCALE_ON (US spelling ALBUM_STAMP_IMG_GRAYSCALE_ON) command will display all subsequent images in stamp boxes in greyscale as from where this command is issued.
+The ALBUM_STAMP_IMG_GREYSCALE_OFF will display all subsequent images in their original colours. This is the default behaviour. 
+NOTE: These commands have no affect on page background images. 
+ALBUM_STAMP_IMG_HIDE 
+ALBUM_STAMP_IMG_SHOW 
+The ALBUM_STAMP_IMG_HIDE command will hide all images in stamp boxes after this command has been issued. This is useful for example when one wishes to print a 3rd party album containing images without the images.
+The ALBUM_STAMP_IMG_SHOW will turn on display of images in subsequent stamp boxes. This is the default behaviour. 
+NOTE: These commands have no affect on page background images. 
+STAMP_ADD_BLANK (width height) 
+Add a blank stamp box, with no frame or text. Can be used to leave a gap within a row.
+See here for an example. 
+STAMP_INNER_BORDER (padding border) ** 
+Add a second or inner frame to all succeeding stamp boxes until the command is cancelled.
+The appearance of the inner frame may be modified by means of the
+STAMP_INNER_BORDER_STYLE and
+COLOUR_STAMP_INNER_BORDER commands.
+
+The parameters accepted by this command are: 
+padding:
+Spacing between the outer and inner frames.
+border:
+Thickess of inner frame border line.
+
+To cancel this command set both parameters to zero
+e.g
+STAMP_INNER_BORDER (0.0 0.0) 
+See here for a few examples
+** NOTE: This command is only applicable to rectangular stamp boxes with borders and will be ignored for other stamp shapes. It will also not have any effect on rotated stamp boxes. 
+STAMP_BORDER_STYLE (Style) 
+STAMP_INNER_BORDER_STYLE (Style) 
+Set the style of the stamp box frame or the inner stamp box frame. The Style parameter can be one of: 
+SOLID
+ 
+DOTTED
+ 
+DOT_DASH
+ 
+DASHED
+ 
+BLANK (no border)
+ 
+CORNER **
+ 
+SIDES **
+ 
+
+e.g.
+STAMP_BORDER_STYLE (DOT_DASH)
+The default style is SOLID, once a style has been set it will be applied to all succeeding stamp boxes until the next STAMP_BORDER_STYLE command. 
+The CORNER style places a small corner marker in each of the four corners of the box.
+The CORNER style can be modified by adding one to four optional parameters: TL, TR, BL, or BR to indicate which corners should receive a marker.
+e.g.
+STAMP_BORDER_STYLE (CORNER) Would draw a corner marker in all four corners of the stamp box
+STAMP_BORDER_STYLE (CORNER TL BR) Would draw a corner marker in the Top Left and Bottom Right corners of the stamp box. 
+The SIDES style specifies which of the box sides are drawn.
+The sides to be drawn are specified by means of one or more optional parameters: L, R, T, or B to indicate which of the sides: left, right, top, or bottom should be drawn.
+e.g.
+STAMP_BORDER_STYLE (SIDES) Does not draw any borders - functionally equivalent to the BLANK style
+STAMP_BORDER_STYLE (SIDES B) Only draw the bottom border of the stamp box
+STAMP_BORDER_STYLE (SIDES L R) Only draw the left and right borders of the stamp box
+STAMP_BORDER_STYLE (SIDES L R T B ) draw all borders - reset to the default. 
+The SIDES style is independent of the other styles and, unlike the other styles is not reset when a new style is applied. This style does not affect how corners are drawn.
+
+** NOTE: The SIDES and CORNER styles are only applicable to rectangular stamps boxes. Other box shapes are unaffected by these two styles. 
+Examples of the stamp box border styles can be seen here example. 
+STAMP_BOXES_SIZE_ADJUST (adjust) 
+The STAMP_BOXES_SIZE_ADJUST command is used to increase or decrease the box sizes of all succeeding stamps.
+A positive value increases stamp box sizes, a negative value decreases it.
+e.g.
+STAMP_BOXES_SIZE_ADJUST(2.0) will increase the size of all succeeding stamp boxes by 2mm. 
+whereas
+STAMP_BOXES_SIZE_ADJUST(-1.5) would decrease all succeeding stamp boxes by 1.5mm. 
+
+The primary purpose of this command is to facilitate the sharing of albums.
+If for example an album is created with the intention of using mounts which require a 2mm border all round, then the stamp boxes would be sized 4mm larger than the stamps.
+For someone else to use the same album without mounts, rather than edit the album to adjust the size of each and every stamp, they could simply add a STAMP_BOXES_SIZE_ADJUST(-4.0) command to the beginning of the album to ensure that all succeeding boxes are drawn the desired size. 
+STAMP_HEADING (Font Fontsize Text [offset]) 
+STAMP_HEADING_VA (Font Fontsize Text [offset]) 
+Commands to attach a heading to a stamp. These commands must follow immediately after one of the STAMP_ADD commands.
+e.g. To add the text Heading Text above a stamp:
+STAMP_ADD (28.0 32.0 "" "" "" "" "" "")
+STAMP_HEADING(HN 12 "Heading Text") 
+
+Multi-line headings can be placed by means of the \n newline indicator
+e.g.
+STAMP_HEADING(HN 12 "Heading Text Line 1 \n Line 2") 
+
+The difference between the STAMP_HEADING and STAMP_HEADING_VA commands is that the former aligns the headings vertically relative to the top of each the stamp, while the latter aligns the headings vertically with each other.
+This example illustrates the difference. 
+The STAMP_HEADING commands take an optional offset parameter used to shift the heading horizontally from its default position centred above a stamp.
+e.g.
+STAMP_HEADING(HB 12 "Heading Text" 34.0) 
+The effect of the offset parameter is illustrated by this example.
+
+For additional examples of how these commands may be used please refer to the StampHeadings.txt and SteinerExample.txt sample album files which can be found in the AlbumEasy examples directory.
+
+STAMP_HEADING_PADDING (padding) 
+This command adjusts the amount of space between the stamp heading and the stamp-box for all succeeding stamps.
+The padding value, which may be negative or positive, is added to the default spacing. A positive value increases the spacing spacing while a negative value reduces it.
+e.g. to increase the spacing between the stamp box and the text
+STAMP_HEADING_PADDING (6.0) 
+to reduce the spacing
+STAMP_HEADING_PADDING (-3.0) 
+
+To restore the default spacing: STAMP_HEADING_PADDING (0.0). 
+STAMP_FOOTER_TXT_ALIGN (align) 
+Command to adjust the alignment of the left and right text items under the stamp box.
+By default, the left text item is left-aligned under the bottom left corner of the box, the right text item is right-aligned under the bottom right corner.
+The align parameter can be one of: 
+ALIGN
+The default setting - left text is left-aligned, right text right-aligned
+CENTRE
+The top row of text under the stamp is left and right aligned, while subsequent rows of text are centred under the top row
+CNR_CENTRE
+Similar to centre, however, the lines of text are centred under the left and right corners.
+
+Note: US spelling variants are also accepted e.g CENTER and CNR_CENTER
+
+See here for examples. 
+STAMP_FOOTER_TXT_PAD (padding) 
+Command to adjust the amount of space between the stamp box and the text under the box. This affects all succeeding boxes.
+The specified padding value, which may be negative or positive, is added to the default spacing.
+A positive value increases the spacing while a negative value will reduce it.
+
+Note: This only adjusts the spacing between the box and the top line of text. Spacing between subsequent lines of text may be adjusted by means of the TEXT_LINE_LEADING command.
+
+To increase the amount of space between the bottom of the box and the top line of text by 6mm:
+STAMP_FOOTER_TXT_PAD (6.0) 
+whereas a negative value will move the text closer:
+STAMP_FOOTER_TXT_PAD (-3.0) 
+
+Setting the padding to 0 will restore the default spacing: STAMP_FOOTER_TXT_PAD (0.0). 
+ALBUM_STAMP_SETTINGS_SAVE 
+ALBUM_STAMP_SETTINGS_RESTORE 
+The ALBUM_STAMP_SETTINGS_SAVE command saves the state of the parameters used for drawing stamp boxes.
+The ALBUM_STAMP_SETTINGS_RESTORE command restores the saved settings.
+
+These commands are useful for example to draw an image such as a map, coat-of-arms, etc. using different settings from those used to draw stamp boxes.
+e.g.
+STAMP_BOXES_SIZE_ADJUST(4.0) increase the size of all succeeding stamp boxes by 4mm
+ALBUM_STAMP_IMG_GREYSCALE_ON draw all succeeding stamp images in greyscale
+
+      . . . output stamp boxes and other operations. . .
+
+ALBUM_STAMP_SETTINGS_SAVE save the stamp settings state
+STAMP_BOXES_SIZE_ADJUST(0.0) draw succeeding stamp boxes actual size
+ALBUM_STAMP_IMG_GREYSCALE_OFF draw succeeding stamp images in colour
+STAMP_ADD_IMG (100.0 100.0 "map.png" "" "" "") display the map image in colour
+ALBUM_STAMP_SETTINGS_RESTORE restore the stamp settings state
+
+The following settings are saved and restored: 
+ALBUM_STAMP_IMG_NEW_SETTING 
+ALBUM_STAMP_IMG_NEW_SETTING_PCNT 
+ALBUM_STAMP_IMG_ASPECT_RATIO 
+ALBUM_STAMP_IMG_HIDE and ALBUM_STAMP_IMG_SHOW 
+ALBUM_STAMP_IMG_GREYSCALE_ON and ALBUM_STAMP_IMG_GREYSCALE_OFF 
+STAMP_BOXES_SIZE_ADJUST 
+STAMP_BORDER_STYLE 
+STAMP_INNER_BORDER_STYLE 
+STAMP_INNER_BORDER 
+STAMP_HEADING_PADDING 
+STAMP_FOOTER_TXT_PAD 
+STAMP_FOOTER_TXT_ALIGN 
+COLOUR_STAMP_BORDER 
+COLOUR_STAMP_INNER_BORDER 
+COLOUR_STAMP_HEADING 
+COLOUR_STAMP_TEXT 
+COLOUR_STAMP_BACKGROUND 

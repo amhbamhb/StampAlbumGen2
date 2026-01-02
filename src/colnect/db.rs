@@ -2,6 +2,7 @@ use rusqlite::{Connection, OptionalExtension, Result};
 
 #[derive(Debug, Clone)]
 pub struct ColnectInfo {
+    pub name: Option<String>,
     pub printing: Option<String>,
     pub paper: Option<String>,
     pub gum: Option<String>,
@@ -22,7 +23,7 @@ pub struct ColnectInfo {
 pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<ColnectInfo>> {
     // Try exact match first
     let mut stmt = conn.prepare(
-        "SELECT colnect_id, printing, paper, gum, themes, description, issued_on, print_run, face_value, currency, colors, designers, printers, width, height 
+        "SELECT colnect_id, name, printing, paper, gum, themes, description, issued_on, print_run, face_value, currency, colors, designers, printers, width, height 
          FROM colnect_stamps WHERE sg_number = ?1"
     )?;
 
@@ -32,20 +33,21 @@ pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<Col
             Ok((
                 colnect_id,
                 ColnectInfo {
-                    printing: row.get(1)?,
-                    paper: row.get(2)?,
-                    gum: row.get(3)?,
-                    themes: row.get(4)?,
-                    description: row.get(5)?,
-                    issued_on: row.get(6)?,
-                    print_run: row.get(7)?,
-                    face_value: row.get(8)?,
-                    currency: row.get(9)?,
-                    colors: row.get(10)?,
-                    designers: row.get(11)?,
-                    printers: row.get(12)?,
-                    width: row.get(13)?,
-                    height: row.get(14)?,
+                    name: row.get(1)?,
+                    printing: row.get(2)?,
+                    paper: row.get(3)?,
+                    gum: row.get(4)?,
+                    themes: row.get(5)?,
+                    description: row.get(6)?,
+                    issued_on: row.get(7)?,
+                    print_run: row.get(8)?,
+                    face_value: row.get(9)?,
+                    currency: row.get(10)?,
+                    colors: row.get(11)?,
+                    designers: row.get(12)?,
+                    printers: row.get(13)?,
+                    width: row.get(14)?,
+                    height: row.get(15)?,
                     catalog_codes: Vec::new(),
                 },
             ))
