@@ -893,10 +893,8 @@ pub fn load_config(path: &str) -> Config {
                         "runtime",
                     ];
                     for section in promotable_sections.iter() {
-                        if let Some(sec_table) = value
-                            .get(*section)
-                            .and_then(|v| v.as_table())
-                            .cloned()
+                        if let Some(sec_table) =
+                            value.get(*section).and_then(|v| v.as_table()).cloned()
                         {
                             if let Some(tbl) = value.as_table_mut() {
                                 for (k, v) in sec_table.iter() {

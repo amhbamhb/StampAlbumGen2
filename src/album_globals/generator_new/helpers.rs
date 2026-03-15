@@ -134,7 +134,10 @@ pub fn build_series_page_text_centre_template(cfg: &Config) -> String {
         .or(cfg.page_text_centre_vspace)
         .unwrap_or(1.0_f32);
 
-    format!("PAGE_TEXT_CENTRE ({} {} \"{{}}\" {:.1})", font, size, vspace)
+    format!(
+        "PAGE_TEXT_CENTRE ({} {} \"{{}}\" {:.1})",
+        font, size, vspace
+    )
 }
 
 fn build_scoped_page_text_centre_template(
@@ -157,8 +160,13 @@ fn build_scoped_page_text_centre_template(
         .or_else(|| cfg.page_text_centre_font.clone())
         .unwrap_or_else(|| "TN".to_string());
     let size = size_opt.or(cfg.page_text_centre_size).unwrap_or(8.0) as i32;
-    let vspace = vspace_opt.or(cfg.page_text_centre_vspace).unwrap_or(1.0_f32);
-    format!("PAGE_TEXT_CENTRE ({} {} \"{{}}\" {:.1})", font, size, vspace)
+    let vspace = vspace_opt
+        .or(cfg.page_text_centre_vspace)
+        .unwrap_or(1.0_f32);
+    format!(
+        "PAGE_TEXT_CENTRE ({} {} \"{{}}\" {:.1})",
+        font, size, vspace
+    )
 }
 
 pub fn build_date_page_text_centre_template(cfg: &Config) -> String {

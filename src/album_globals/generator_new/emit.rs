@@ -238,7 +238,11 @@ pub fn emit_stamp<W: Write>(
                 emit_width,
                 sh_size,
             ) {
-                writeln!(out, "STAMP_HEADING({} {} \"{}\")", sh_font, sh_size, heading)?;
+                writeln!(
+                    out,
+                    "STAMP_HEADING({} {} \"{}\")",
+                    sh_font, sh_size, heading
+                )?;
             }
         }
     } else {
@@ -261,7 +265,11 @@ pub fn emit_stamp<W: Write>(
                 emit_width,
                 sh_size,
             ) {
-                writeln!(out, "STAMP_HEADING({} {} \"{}\")", sh_font, sh_size, heading)?;
+                writeln!(
+                    out,
+                    "STAMP_HEADING({} {} \"{}\")",
+                    sh_font, sh_size, heading
+                )?;
             }
         }
     }

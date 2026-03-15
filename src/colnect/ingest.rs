@@ -23,8 +23,10 @@ pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result
 
     let mut count = 0;
     for stamp in stamps {
-        let catalog_number = extract_preferred_catalog_number(&stamp.catalog_codes)
-            .unwrap_or_else(|| extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone()));
+        let catalog_number =
+            extract_preferred_catalog_number(&stamp.catalog_codes).unwrap_or_else(|| {
+                extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone())
+            });
 
         // Use Colnect code as ID, fallback to Link
         let colnect_id =

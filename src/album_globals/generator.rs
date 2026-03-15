@@ -69,12 +69,27 @@ fn stamp_dedupe_fingerprints(stamp: &Stamp) -> Vec<String> {
         .map(|s| normalize_digits(s))
         .unwrap_or_default();
     let date = stamp_date_key(stamp);
-    let denom = normalize_denom(stamp.attrs.get("denomination").map(|s| s.as_str()).unwrap_or(""));
-    let issued = normalize_digits(stamp.attrs.get("stamps_issued").map(|s| s.as_str()).unwrap_or(""));
+    let denom = normalize_denom(
+        stamp
+            .attrs
+            .get("denomination")
+            .map(|s| s.as_str())
+            .unwrap_or(""),
+    );
+    let issued = normalize_digits(
+        stamp
+            .attrs
+            .get("stamps_issued")
+            .map(|s| s.as_str())
+            .unwrap_or(""),
+    );
 
     let mut keys = Vec::new();
     if !year.is_empty() && !date.is_empty() && !denom.is_empty() && !issued.is_empty() {
-        keys.push(format!("y:{}|d:{}|den:{}|iss:{}", year, date, denom, issued));
+        keys.push(format!(
+            "y:{}|d:{}|den:{}|iss:{}",
+            year, date, denom, issued
+        ));
     }
     if !year.is_empty() && !denom.is_empty() && !issued.is_empty() {
         keys.push(format!("y:{}|den:{}|iss:{}", year, denom, issued));
@@ -2477,7 +2492,7 @@ where
                 let right_margin = config.page_right_margin_mm.unwrap_or(10.0) as f64;
                 let pages_spacing_h = config.album_pages_spacing_h.unwrap_or(0.0) as f64;
                 let border_total = border_outer + border_inner1 + border_inner2 + border_spacing;
-                
+
                 // Calculate usable width (same formula as row centering)
                 let usable_width = page_width - left_margin - right_margin - pages_spacing_h - border_total;
 
@@ -2498,22 +2513,22 @@ where
                 if !stamp_details.is_empty() {
                     row_w -= row_spacing;
                 }
-                
+
                 // Calculate centering offset (extra space divided by 2)
                 let extra = usable_width - row_w;
                 let left_offset = if extra > 0.0 { extra / 2.0 } else { 0.0 };
-                
+
                 // The absolute starting position on the page is:
                 // left_margin + pages_spacing_h + (borders are not counted here) + left_offset
                 // But actually, reviewing the calculation: usable_width already excludes left_margin, right_margin, pages_spacing_h, and borders
                 // So left_offset is relative to the start of usable area
                 // Absolute position = left_margin + pages_spacing_h + left_offset
                 let base_start = left_margin + pages_spacing_h + left_offset;
-                
+
                 // Calculate X positions based on stamp widths with row centering applied
                 let mut stamp_positions: Vec<(f64, f64)> = Vec::new(); // (left_pos, stamp_width)
                 let mut current_x = base_start;
-                
+
                 for (_catalog_num, _details, stamp_width) in stamp_details.iter() {
                     stamp_positions.push((current_x, *stamp_width));
                     current_x += stamp_width + row_spacing;
@@ -2522,7 +2537,7 @@ where
                 for (idx, (catalog_num, details, stamp_width)) in stamp_details.iter().enumerate() {
                     // Get the stamp's left position from our calculated positions
                     let (stamp_left, _) = stamp_positions[idx];
-                    
+
                     // Box width: prefer 2x stamp width for better text flow, but cap at stamp width minimum
                     // Maximum box width should not exceed usable page width
                     let max_box_width = usable_width.min(*stamp_width * 3.5);
@@ -2728,9 +2743,7 @@ where
                 log::warn!("Page-centering post-process failed: {}", e);
             }
         } else {
-            log::info!(
-                "Skipping page-centering post-process for separate_rows layout"
-            );
+            log::info!("Skipping page-centering post-process for separate_rows layout");
         }
         use std::fs;
         match fs::read_to_string(&tmp_path) {
@@ -2834,7 +2847,11 @@ where
     ));
     audit_lines.extend(dedupe_audit);
     if let Err(e) = std::fs::write(&audit_path, audit_lines.join("\n") + "\n") {
-        warn!("Failed to write dedupe audit file {}: {}", audit_path.display(), e);
+        warn!(
+            "Failed to write dedupe audit file {}: {}",
+            audit_path.display(),
+            e
+        );
     } else {
         info!("Wrote dedupe audit file {}", audit_path.display());
     }

@@ -139,7 +139,10 @@ fn sync_missing_stamps_from_colnect(
         [],
     )?;
 
-    info!("Inserted {} missing stamp variants from colnect_stamps", inserted);
+    info!(
+        "Inserted {} missing stamp variants from colnect_stamps",
+        inserted
+    );
     Ok(inserted)
 }
 
@@ -297,7 +300,10 @@ pub fn run_database_mode(
         match sync_missing_stamps_from_colnect(&conn) {
             Ok(count) if count > 0 => {
                 info!("✅ Added {} missing variants from Colnect data", count);
-                progress.set_message(&format!("✅ Added {} missing variants from Colnect data", count));
+                progress.set_message(&format!(
+                    "✅ Added {} missing variants from Colnect data",
+                    count
+                ));
             }
             Ok(_) => {
                 info!("No missing Colnect variants to add");
