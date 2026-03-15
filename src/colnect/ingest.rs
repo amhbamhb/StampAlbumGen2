@@ -1,5 +1,5 @@
 use crate::colnect::parser::ColnectStamp;
-use log::{info, warn};
+use log::info;
 use regex::Regex;
 use rusqlite::{params, Connection, Result};
 
@@ -23,18 +23,8 @@ pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result
 
     let mut count = 0;
     for stamp in stamps {
-        let sg_number = extract_sg_number(&stamp.catalog_codes);
-
-        // If no SG number, try to extract Scott number
-        let catalog_number = if let Some(ref sg) = sg_number {
-            normalize_sg(sg)
-        } else if let Some(sn) = extract_scott_number(&stamp.catalog_codes) {
-            normalize_sg(&sn)
-        } else {
-            // No catalog number found, skip this stamp
-            warn!("No SG or Scott catalog number found for: {}", stamp.name);
-            continue;
-        };
+        let catalog_number = extract_preferred_catalog_number(&stamp.catalog_codes)
+            .unwrap_or_else(|| extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone()));
 
         // Use Colnect code as ID, fallback to Link
         let colnect_id =
@@ -292,6 +282,17 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
+fn extract_catalog_code(codes: &str, key: &str) -> Option<String> {
+    let prefix = format!("{}:", key);
+    for part in codes.split(',') {
+        let part = part.trim();
+        if part.starts_with(&prefix) {
+            return Some(part[prefix.len()..].trim().to_string());
+        }
+    }
+    None
+}
+
 fn extract_sg_number(codes: &str) -> Option<String> {
     // codes example: "Mi:CH 964, Sn:CH 540, Yt:CH 895, Sg:CH 824, AFA:CH 959..."
     for part in codes.split(',') {
@@ -312,6 +313,41 @@ fn extract_scott_number(codes: &str) -> Option<String> {
         }
     }
     None
+}
+
+fn extract_first_catalog_number(codes: &str) -> Option<String> {
+    for part in codes.split(',') {
+        let part = part.trim();
+        if let Some((_kind, value)) = part.split_once(':') {
+            let v = value.trim();
+            if !v.is_empty() {
+                return Some(v.to_string());
+            }
+        }
+    }
+    None
+}
+
+fn extract_preferred_catalog_number(codes: &str) -> Option<String> {
+    // Prefer Michel because StampWorld's numeric keys frequently align with it
+    // and this improves cross-source matching and enrichment.
+    if let Some(mi) = extract_catalog_code(codes, "Mi") {
+        return Some(normalize_sg(&mi));
+    }
+    if let Some(sg) = extract_sg_number(codes) {
+        return Some(normalize_sg(&sg));
+    }
+    if let Some(sn) = extract_scott_number(codes) {
+        return Some(normalize_sg(&sn));
+    }
+
+    // Fallbacks for variants/booklets where Mi/Sg/Sn are absent.
+    for key in ["Yt", "AFA", "NVP", "Un"] {
+        if let Some(code) = extract_catalog_code(codes, key) {
+            return Some(normalize_sg(&code));
+        }
+    }
+    extract_first_catalog_number(codes).map(|v| normalize_sg(&v))
 }
 
 fn extract_colnect_code(codes: &str) -> Option<String> {
