@@ -32,8 +32,8 @@ pub struct Cli {
     #[arg(long, default_value_t = 1840)]
     pub start_year: i32,
 
-    // Default end-year set at compile time to the current year via build.rs -> BUILD_YEAR
-    #[arg(long, default_value = env!("BUILD_YEAR"))]
+    // Default end-year resolved at runtime from system clock.
+    #[arg(long, default_value_t = crate::runtime_defaults::default_end_year())]
     pub end_year: i32,
 
     #[arg(long, default_value_t = false)]
@@ -68,4 +68,32 @@ pub struct Cli {
     /// Path to Colnect CSV file for ingestion
     #[arg(long)]
     pub colnect_csv: Option<String>,
+
+    /// Path to a Colnect inbox folder. When set, matching CSV files are
+    /// discovered recursively and processed country-by-country.
+    #[arg(long)]
+    pub colnect_inbox: Option<String>,
+
+    /// If true, discovered Colnect CSV files are moved into
+    /// <inbox>/<country>/ before processing.
+    #[arg(long, default_value_t = false)]
+    pub colnect_auto_route: bool,
+
+    /// Optional country filter for inbox processing (case-insensitive).
+    #[arg(long)]
+    pub colnect_country: Option<String>,
+
+    /// Allow creating missing Albums/<Country>/<Country>.db when ingesting
+    /// inbox files. If false, missing country DBs are skipped.
+    #[arg(long, default_value_t = false)]
+    pub colnect_create_country_db: bool,
+
+    /// Skip files already imported (by SHA256 checksum) into the target
+    /// country DB. Default true.
+    #[arg(long, default_value_t = true)]
+    pub colnect_skip_duplicates: bool,
+
+    /// Reimport even if checksum already exists in import history.
+    #[arg(long, default_value_t = false)]
+    pub colnect_force_reimport: bool,
 }

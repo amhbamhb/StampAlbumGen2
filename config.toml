@@ -115,7 +115,7 @@ color_stamp_background = "black"
 # Flag Cover
 ###################################
 [flag_cover]
-print_flag_cover = false
+print_flag_cover = true
 flag_cover_img_w_mm = 160.0
 flag_cover_img_h_mm = 80.0
 flag_cover_page_vspace_top = 20.0

@@ -49,7 +49,7 @@ pub fn validate_user_input(cli: &crate::cli::Cli) -> Result<(), ValidationError>
         || cli.colnect_csv.is_some()
         || source_non_default
         || cli.start_year != 1840
-        || cli.end_year != env!("BUILD_YEAR").parse::<i32>().unwrap_or(9999)
+        || cli.end_year != crate::runtime_defaults::default_end_year()
         || cli.overwrite_images
         || cli.overwrite_album
         || cli.max_pages != 0

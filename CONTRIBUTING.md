@@ -187,7 +187,11 @@ Contributors are recognized in:
 
 ## 📄 License
 
-By contributing to this project, you agree that your contributions will be licensed under the same MIT License that covers the project.
+By contributing to this project, you agree that your contributions are governed by the same project license in `LICENSE`:
+
+- **Laser Spider Stamp Collector License (LSSCL) v1.0**
+- Copyright remains with Laser Spider LLC unless a separate written agreement states otherwise
+- Non-collector/commercial use requires a separate written paid agreement with Laser Spider LLC
 
 ## 🙏 Acknowledgments
 
@@ -195,7 +199,7 @@ Thank you for contributing to StampAlbumGen2! Your efforts help make stamp album
 
 ---
 
-**Last Updated**: September 11, 2025</content>
+**Last Updated**: March 15, 2026
 
 ## 🏷️ Linking & closing GitLab issues from commits and merge requests
 
@@ -243,6 +247,3 @@ Notes & tips:
 - If you only want to reference an issue without closing it, use `Refs #2` or `Related to #2`.
 - You can close multiple issues in one commit/MR: `Closes #2, #5` or list each on its own line.
 - Prefer placing the closing note in the MR description for clarity; reviewers will see it immediately.
-
-If you want, we can add a small `CONTRIBUTING` subsection with a commit-msg template that reminds contributors to reference issues — say the word and I'll add it.
-<parameter name="filePath">/media/ray/program/Rust/StampAlbumGen2/CONTRIBUTING.md

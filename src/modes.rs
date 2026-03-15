@@ -71,6 +71,361 @@ fn has_downloaded_images(images_dir: &std::path::Path) -> bool {
     false
 }
 
+fn is_colnect_export_filename(path: &std::path::Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    name.starts_with("en_stamps_csv_list_countr") && name.ends_with(".csv")
+}
+
+fn collect_colnect_csv_files_rec(
+    root: &std::path::Path,
+    out: &mut Vec<std::path::PathBuf>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !root.exists() {
+        return Ok(());
+    }
+    for entry in std::fs::read_dir(root)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_colnect_csv_files_rec(&path, out)?;
+        } else if is_colnect_export_filename(&path) {
+            out.push(path);
+        }
+    }
+    Ok(())
+}
+
+fn country_slug(s: &str) -> String {
+    canonical_album_dir_name(s).to_lowercase()
+}
+
+fn file_sha256(path: &std::path::Path) -> Result<String, Box<dyn std::error::Error>> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+
+    let mut file = std::fs::File::open(path)?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 8192];
+    loop {
+        let n = file.read(&mut buf)?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn ensure_colnect_import_history_table(
+    conn: &rusqlite::Connection,
+) -> Result<(), Box<dyn std::error::Error>> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS colnect_import_history (
+            id INTEGER PRIMARY KEY,
+            country_key TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            file_name TEXT NOT NULL,
+            sha256 TEXT NOT NULL,
+            file_size INTEGER,
+            modified_time TEXT,
+            status TEXT NOT NULL,
+            started_at TEXT,
+            finished_at TEXT,
+            rows_ingested INTEGER,
+            error_message TEXT
+        )",
+        [],
+    )?;
+    conn.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_colnect_import_history_country_sha
+         ON colnect_import_history (country_key, sha256)",
+        [],
+    )?;
+    Ok(())
+}
+
+fn has_import_checksum(
+    conn: &rusqlite::Connection,
+    country_key: &str,
+    sha256: &str,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let mut stmt = conn.prepare(
+        "SELECT 1 FROM colnect_import_history WHERE country_key = ?1 AND sha256 = ?2 AND status = 'success' LIMIT 1",
+    )?;
+    let mut rows = stmt.query([country_key, sha256])?;
+    Ok(rows.next()?.is_some())
+}
+
+fn record_import_history(
+    conn: &rusqlite::Connection,
+    country_key: &str,
+    file_path: &std::path::Path,
+    sha256: &str,
+    status: &str,
+    rows_ingested: i64,
+    error_message: Option<&str>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let meta = std::fs::metadata(file_path).ok();
+    let file_size = meta.as_ref().map(|m| m.len() as i64);
+    let modified_time = meta
+        .and_then(|m| m.modified().ok())
+        .map(|t| format!("{:?}", t));
+    let file_name = file_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("")
+        .to_string();
+    let file_path_str = file_path.to_string_lossy().to_string();
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "INSERT OR REPLACE INTO colnect_import_history (
+            id, country_key, file_path, file_name, sha256, file_size, modified_time,
+            status, started_at, finished_at, rows_ingested, error_message
+        ) VALUES (
+            (SELECT id FROM colnect_import_history WHERE country_key = ?1 AND sha256 = ?2),
+            ?1, ?3, ?4, ?2, ?5, ?6, ?7, ?8, ?8, ?9, ?10
+        )",
+        rusqlite::params![
+            country_key,
+            sha256,
+            file_path_str,
+            file_name,
+            file_size,
+            modified_time,
+            status,
+            now,
+            rows_ingested,
+            error_message
+        ],
+    )?;
+    Ok(())
+}
+
+fn infer_country_from_stamps(stamps: &[crate::colnect::parser::ColnectStamp]) -> Option<String> {
+    stamps.iter().find_map(|s| {
+        let c = s.country.trim();
+        if c.is_empty() {
+            None
+        } else {
+            Some(c.to_string())
+        }
+    })
+}
+
+fn move_to_country_inbox(
+    file_path: &std::path::Path,
+    country: &str,
+) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
+    // Keep country-specific Colnect source files with the country album DB.
+    // Example: Albums/Netherlands/colnect/<csv-file>
+    let country_dir = std::path::Path::new("Albums")
+        .join(canonical_album_dir_name(country))
+        .join("colnect");
+    std::fs::create_dir_all(&country_dir)?;
+    let file_name = file_path
+        .file_name()
+        .ok_or("Missing file name")?
+        .to_os_string();
+    let target = country_dir.join(file_name);
+    if file_path == target {
+        return Ok(target);
+    }
+    match std::fs::rename(file_path, &target) {
+        Ok(_) => Ok(target),
+        Err(_) => {
+            std::fs::copy(file_path, &target)?;
+            std::fs::remove_file(file_path)?;
+            Ok(target)
+        }
+    }
+}
+
+fn run_colnect_inbox_mode(
+    cli: &crate::cli::Cli,
+    show_progress: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use log::{error, info, warn};
+
+    let progress = ProgressIndicator::new_with_config(show_progress);
+    let inbox_root = std::path::PathBuf::from(
+        cli.colnect_inbox
+            .as_ref()
+            .ok_or("Missing --colnect-inbox path")?,
+    );
+    if !inbox_root.exists() {
+        return Err(format!(
+            "Colnect inbox path does not exist: {}",
+            inbox_root.display()
+        )
+        .into());
+    }
+
+    progress.set_message(&format!(
+        "🔎 Scanning Colnect inbox: {}",
+        inbox_root.display()
+    ));
+    let mut files = Vec::new();
+    collect_colnect_csv_files_rec(&inbox_root, &mut files)?;
+    files.sort();
+
+    let country_filter = cli.colnect_country.as_ref().map(|s| country_slug(s));
+    if let Some(filter) = country_filter.as_ref() {
+        files.retain(|p| {
+            parse_colnect_csv_filename(&p.to_string_lossy())
+                .map(|(country, _)| country_slug(&country) == *filter)
+                .unwrap_or(false)
+        });
+    }
+
+    if files.is_empty() {
+        return Err("No matching Colnect CSV files found in inbox.".into());
+    }
+
+    let mut imported = 0usize;
+    let mut skipped_duplicates = 0usize;
+    let mut skipped_missing_db = 0usize;
+    let mut failed = 0usize;
+
+    for mut csv_file in files {
+        progress.set_message(&format!("📥 Processing {}", csv_file.display()));
+
+        let mut country = parse_colnect_csv_filename(&csv_file.to_string_lossy()).map(|(c, _)| c);
+
+        if cli.colnect_auto_route {
+            if let Some(c) = country.clone() {
+                csv_file = move_to_country_inbox(&csv_file, &c)?;
+            }
+        }
+
+        let stamps = match crate::colnect::parser::parse_csv(&csv_file) {
+            Ok(s) => s,
+            Err(e) => {
+                failed += 1;
+                error!("Failed to parse {}: {}", csv_file.display(), e);
+                continue;
+            }
+        };
+
+        if country.is_none() {
+            country = infer_country_from_stamps(&stamps);
+            if cli.colnect_auto_route {
+                if let Some(c) = country.clone() {
+                    csv_file = move_to_country_inbox(&csv_file, &c)?;
+                }
+            }
+        }
+
+        let country = match country {
+            Some(c) => c,
+            None => {
+                failed += 1;
+                warn!(
+                    "Could not infer country for file {}; skipping",
+                    csv_file.display()
+                );
+                continue;
+            }
+        };
+
+        let album_country = canonical_album_dir_name(&country);
+        let db_path = format!("Albums/{0}/{0}.db", album_country);
+        let db_exists = std::path::Path::new(&db_path).exists();
+        if !db_exists && !cli.colnect_create_country_db {
+            skipped_missing_db += 1;
+            warn!(
+                "Skipping {} because target DB does not exist and --colnect-create-country-db is false: {}",
+                csv_file.display(),
+                db_path
+            );
+            continue;
+        }
+
+        let conn = crate::db_utils::init_db(&db_path)?;
+        ensure_colnect_import_history_table(&conn)?;
+
+        let checksum = file_sha256(&csv_file)?;
+        let country_key = country_slug(&country);
+        if cli.colnect_skip_duplicates
+            && !cli.colnect_force_reimport
+            && has_import_checksum(&conn, &country_key, &checksum)?
+        {
+            skipped_duplicates += 1;
+            info!(
+                "Skipping duplicate file for country {}: {}",
+                country,
+                csv_file.display()
+            );
+            continue;
+        }
+
+        match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+            Ok(_) => {
+                if let Err(e) = sync_missing_stamps_from_colnect(&conn) {
+                    failed += 1;
+                    let _ = record_import_history(
+                        &conn,
+                        &country_key,
+                        &csv_file,
+                        &checksum,
+                        "failed",
+                        0,
+                        Some(&e.to_string()),
+                    );
+                    error!(
+                        "Failed variant sync for {} ({}): {}",
+                        country,
+                        csv_file.display(),
+                        e
+                    );
+                    continue;
+                }
+                imported += 1;
+                let _ = record_import_history(
+                    &conn,
+                    &country_key,
+                    &csv_file,
+                    &checksum,
+                    "success",
+                    stamps.len() as i64,
+                    None,
+                );
+                info!(
+                    "Imported {} rows into {} from {}",
+                    stamps.len(),
+                    db_path,
+                    csv_file.display()
+                );
+            }
+            Err(e) => {
+                failed += 1;
+                let _ = record_import_history(
+                    &conn,
+                    &country_key,
+                    &csv_file,
+                    &checksum,
+                    "failed",
+                    0,
+                    Some(&e.to_string()),
+                );
+                error!(
+                    "Failed ingest for {} ({}): {}",
+                    country,
+                    csv_file.display(),
+                    e
+                );
+            }
+        }
+    }
+
+    progress.finish_with_message(&format!(
+        "Colnect inbox complete: imported={}, skipped_duplicates={}, skipped_missing_db={}, failed={}",
+        imported, skipped_duplicates, skipped_missing_db, failed
+    ));
+    Ok(())
+}
+
 /// Merge Colnect data into stamps table by inserting only missing variants.
 /// This runs even when StampWorld rows already exist so booklet/sheet variants
 /// from Colnect can appear in output.
@@ -152,6 +507,10 @@ pub fn run_database_mode(
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use log::{error, info, warn};
+
+    if cli.source == "colnectexport" && cli.colnect_inbox.is_some() {
+        return run_colnect_inbox_mode(cli, show_progress);
+    }
 
     // Output-only mode: use the provided db_path and album_name
     let progress = ProgressIndicator::new_with_config(show_progress);

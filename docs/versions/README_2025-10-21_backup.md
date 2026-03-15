@@ -27,9 +27,9 @@ cargo build --release
 stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
 ```
 
-## Support / Donations
+## License Notice
 
-If you find this project useful, please consider donating. See the `LICENSE` file for guidance or add a sponsorship link to the repository.
+Use of this project is governed by the Laser Spider Stamp Collector License (LSSCL) v1.0. See the `LICENSE` file for full terms, including personal-use permissions and non-collector commercial restrictions.
 
 ## Development
 
@@ -665,7 +665,7 @@ Extracts page header information from stamp collections including year ranges, s
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the Laser Spider Stamp Collector License (LSSCL) v1.0 - see the LICENSE file for details.
 
 ## 🙏 Acknowledgments
 

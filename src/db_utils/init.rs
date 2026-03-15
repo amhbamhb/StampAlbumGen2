@@ -222,6 +222,73 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         debug!("Stamps table ensured.");
     }
 
+    // Migration: ensure legacy colnect_stamps tables include all expected columns.
+    // Some older country DBs were created with a reduced schema (missing `name`
+    // and related metadata columns), which breaks current ingest INSERTs.
+    {
+        let mut existing = std::collections::HashSet::new();
+        let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            existing.insert(name);
+        }
+
+        let required_cols: [(&str, &str); 38] = [
+            ("name", "TEXT"),
+            ("catalog_codes", "TEXT"),
+            ("country", "TEXT"),
+            ("width", "TEXT"),
+            ("height", "TEXT"),
+            ("watermark", "TEXT"),
+            ("format", "TEXT"),
+            ("emission", "TEXT"),
+            ("perforation", "TEXT"),
+            ("printing", "TEXT"),
+            ("paper", "TEXT"),
+            ("gum", "TEXT"),
+            ("ord_mi", "TEXT"),
+            ("ord_sn", "TEXT"),
+            ("ord_yt", "TEXT"),
+            ("ord_sg", "TEXT"),
+            ("themes", "TEXT"),
+            ("colnect_link", "TEXT"),
+            ("description", "TEXT"),
+            ("issued_on", "TEXT"),
+            ("expiry_date", "TEXT"),
+            ("print_run", "TEXT"),
+            ("face_value", "TEXT"),
+            ("currency", "TEXT"),
+            ("colors", "TEXT"),
+            ("designers", "TEXT"),
+            ("printers", "TEXT"),
+            ("series", "TEXT"),
+            ("parent_item", "TEXT"),
+            ("variant", "TEXT"),
+            ("overprint_variant", "TEXT"),
+            ("score", "TEXT"),
+            ("accuracy", "TEXT"),
+            ("list", "TEXT"),
+            ("quantity", "TEXT"),
+            ("condition", "TEXT"),
+            ("public_note", "TEXT"),
+            ("private_note", "TEXT"),
+        ];
+
+        for (col, ty) in required_cols.iter() {
+            if !existing.contains(*col) {
+                let sql = format!("ALTER TABLE colnect_stamps ADD COLUMN {} {}", col, ty);
+                match conn.execute(&sql, []) {
+                    Ok(_) => debug!("Added missing colnect_stamps column '{}'", col),
+                    Err(e) => error!(
+                        "Failed to add missing colnect_stamps column '{}': {}",
+                        col, e
+                    ),
+                }
+            }
+        }
+    }
+
     // Migration: add a `uniq_key` column (if missing), backfill it with a
     // canonical dedupe key, then create a UNIQUE index on that column if there
     // are no duplicate keys. This approach is safer when series/country text

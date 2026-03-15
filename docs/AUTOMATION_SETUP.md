@@ -20,13 +20,23 @@ Your Stamp Album Generator project includes an automated version management syst
 
 - `.git/hooks/prepare-commit-msg`: provides guidance for conventional commit types before committing
 - `.git/hooks/post-commit`: detects conventional commits and prints next-step guidance
+- `.githooks/pre-commit`: auto-bumps patch version and synchronizes version references before commit
 
 > Note: Hooks are installed into the local repo's `.git/hooks` directory. If your repo was cloned before hooks were added, re-run the installation script (if present) or copy the hook files into `.git/hooks` manually and make them executable.
+
+Install tracked hooks with:
+
+```bash
+./scripts/install-git-hooks.sh
+```
+
+This sets `core.hooksPath` to `.githooks` and enables the pre-commit version sync hook.
 
 ### 3. Helper Scripts
 
 - `conventional-commit.sh` — interactive helper for creating conventional commits
-- `version_docs.sh` — manual version bump helper (can force major/minor/patch)
+- `scripts/update_versions.sh` — canonical version bump/sync helper
+- `version_docs.sh` — compatibility wrapper to `scripts/update_versions.sh`
 - `test_automation.sh` — validation script to exercise the automation components
 
 ### 4. Editor Integration: GitHub Copilot / VS Code
@@ -90,8 +100,9 @@ git push
 Manual bump:
 
 ```bash
-./version_docs.sh patch   # force a patch bump
-./version_docs.sh minor   # force a minor bump
+./scripts/update_versions.sh patch   # force a patch bump
+./scripts/update_versions.sh minor   # force a minor bump
+./scripts/update_versions.sh --set 1.2.3
 ```
 
 Validate automation:

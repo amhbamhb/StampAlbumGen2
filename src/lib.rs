@@ -4,6 +4,7 @@ pub mod config;
 pub mod flagdb;
 pub mod modes;
 pub mod progress;
+pub mod runtime_defaults;
 pub mod setup;
 pub mod validation;
 pub mod wikipedia;

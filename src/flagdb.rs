@@ -70,29 +70,32 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
         }
     }
 
-    // If no file found on disk, fall back to an embedded copy of the
-    // flag_codes.json so the binary is usable even when run from a small
-    // temporary directory. Also attempt to write the embedded JSON out to a
-    // 'flags/flag_codes.json' file so subsequent runs can pick it up.
+    // Optional full map path: if enabled, fall back to an embedded copy of
+    // flag_codes.json and try to write it back to disk for future runs.
+    if let Some(full_map) = load_embedded_flag_map_if_enabled() {
+        return full_map;
+    }
+
+    default_flag_map()
+}
+
+#[cfg(feature = "full-flag-db")]
+fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
     const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
+
     if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(EMBEDDED_FLAGS_JSON) {
         // Attempt to write the embedded json to the preferred writable location
-        // (cwd 'flags' preferred). Ignore write errors but log them at caller
-        // level if needed; here we simply try the obvious locations.
+        // (cwd 'flags' preferred). Ignore write errors; runtime lookups still
+        // succeed from the in-memory map if writes are not possible.
         let prefer_dirs: Vec<PathBuf> = vec![
             PathBuf::from("flags"),
-            // exe parent
             std::env::current_exe()
                 .ok()
                 .and_then(|e| e.parent().map(|p| p.to_path_buf()))
                 .unwrap_or_else(|| PathBuf::from("flags")),
-            // build manifest
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
         ];
-        // Try writing to the current working directory 'flags' first and
-        // overwrite any existing file so tests that set a temporary cwd can
-        // reliably observe the write-back. If that fails, try the other
-        // preferred dirs and stop when a write succeeds.
+
         let cwd_flags = PathBuf::from("flags");
         if fs::create_dir_all(&cwd_flags).is_ok() {
             let out_path = cwd_flags.join("flag_codes.json");
@@ -101,7 +104,6 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
             for dir in prefer_dirs.iter() {
                 if fs::create_dir_all(dir).is_ok() {
                     let out_path = dir.join("flag_codes.json");
-                    // Attempt to write (overwrite) and stop on success
                     if fs::write(&out_path, EMBEDDED_FLAGS_JSON).is_ok() {
                         break;
                     }
@@ -109,13 +111,19 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
             }
         }
 
-        return j
-            .into_iter()
-            .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
-            .collect();
+        return Some(
+            j.into_iter()
+                .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+                .collect(),
+        );
     }
 
-    default_flag_map()
+    None
+}
+
+#[cfg(not(feature = "full-flag-db"))]
+fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
+    None
 }
 
 /// Given a country name, attempt to return an alpha-2 code (lowercase) using simple normalization.
