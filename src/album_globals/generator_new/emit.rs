@@ -1,5 +1,138 @@
 use std::io::{self, Write};
 
+fn escape_ae_text(v: &str) -> String {
+    // AlbumEasy command args are wrapped in double quotes; embedded quotes
+    // are normalized to apostrophes for parser safety.
+    v.replace('"', "'")
+}
+
+fn heading_max_chars_per_line(emit_width: f64, sh_size: i32) -> usize {
+    // Rough width model for HN heading text. Keep bounded so extremely
+    // narrow or wide stamps still wrap in a stable way.
+    let font_size = (sh_size.max(1)) as f64;
+    let mm_per_char = (font_size * 0.42).max(1.8);
+    let estimated = (emit_width / mm_per_char).floor() as usize;
+    estimated.clamp(16, 72)
+}
+
+fn wrap_segment_words(segment: &str, max_chars: usize) -> Vec<String> {
+    let clean = segment.trim();
+    if clean.is_empty() {
+        return Vec::new();
+    }
+
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+    for word in clean.split_whitespace() {
+        if current.is_empty() {
+            current.push_str(word);
+        } else if current.len() + 1 + word.len() <= max_chars {
+            current.push(' ');
+            current.push_str(word);
+        } else {
+            lines.push(current);
+            current = word.to_string();
+        }
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines
+}
+
+fn wrap_preserving_breaks(text: &str, max_chars: usize) -> Vec<String> {
+    let normalized = text.replace("\\n", "\n");
+    let mut out: Vec<String> = Vec::new();
+    for seg in normalized.split('\n') {
+        let wrapped = wrap_segment_words(seg, max_chars);
+        if wrapped.is_empty() {
+            continue;
+        }
+        out.extend(wrapped);
+    }
+    out
+}
+
+fn build_stamp_heading_lines(
+    sh_label: &str,
+    sgnum: &str,
+    stamp_name: Option<&str>,
+    perforation: Option<&str>,
+    include_perforation: bool,
+    emit_width: f64,
+    sh_size: i32,
+) -> Vec<String> {
+    if sh_label.trim().is_empty() {
+        return Vec::new();
+    }
+
+    let max_chars = heading_max_chars_per_line(emit_width, sh_size);
+    let mut lines: Vec<String> = vec![format!("{} : {}", sh_label.trim(), sgnum.trim())];
+
+    if let Some(name) = stamp_name {
+        lines.extend(wrap_preserving_breaks(name, max_chars));
+    }
+
+    if include_perforation {
+        if let Some(perf) = perforation {
+            let perf_clean = perf.trim();
+            if !perf_clean.is_empty() {
+                lines.extend(wrap_preserving_breaks(
+                    &format!("Perforation: {}", perf_clean),
+                    max_chars,
+                ));
+            }
+        }
+    }
+
+    lines
+}
+
+fn format_stamp_heading(
+    sh_label: &str,
+    sgnum: &str,
+    stamp_name: Option<&str>,
+    perforation: Option<&str>,
+    include_perforation: bool,
+    emit_width: f64,
+    sh_size: i32,
+) -> Option<String> {
+    let lines = build_stamp_heading_lines(
+        sh_label,
+        sgnum,
+        stamp_name,
+        perforation,
+        include_perforation,
+        emit_width,
+        sh_size,
+    );
+    if lines.is_empty() {
+        return None;
+    }
+    Some(lines.join(" \\n ").replace('"', "'"))
+}
+
+pub fn estimate_stamp_heading_line_count(
+    sh_label: &str,
+    sgnum: &str,
+    stamp_name: Option<&str>,
+    perforation: Option<&str>,
+    include_perforation: bool,
+    emit_width: f64,
+    sh_size: i32,
+) -> usize {
+    build_stamp_heading_lines(
+        sh_label,
+        sgnum,
+        stamp_name,
+        perforation,
+        include_perforation,
+        emit_width,
+        sh_size,
+    )
+    .len()
+}
+
 /// Emit a stamp line and its heading into the AlbumEasy output.
 ///
 /// - `is_image`: when true emits `STAMP_ADD_IMG (...)` using `image_path`,
@@ -18,12 +151,20 @@ pub fn emit_stamp_lines<W: Write>(
     is_image: bool,
 ) -> io::Result<()> {
     if is_image {
+        let image_path = escape_ae_text(image_path);
+        let left = escape_ae_text(left);
+        let centre = escape_ae_text(centre);
+        let right = escape_ae_text(right);
         let line = format!(
             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
             emit_width, emit_height, image_path, left, centre, right
         );
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     } else {
+        let image_path = escape_ae_text(image_path);
+        let left = escape_ae_text(left);
+        let centre = escape_ae_text(centre);
+        let right = escape_ae_text(right);
         let line = format!(
             "STAMP_ADD ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
             emit_width, emit_height, image_path, left, centre, right
@@ -72,8 +213,14 @@ pub fn emit_stamp<W: Write>(
     sh_label: &str,
     sgnum: &str,
     stamp_name: Option<&str>,
+    perforation: Option<&str>,
+    include_perforation: bool,
 ) -> std::io::Result<()> {
     if has_image {
+        let image_path = escape_ae_text(image_path);
+        let left = escape_ae_text(left);
+        let centre = escape_ae_text(centre);
+        let right = escape_ae_text(right);
         let line = format!(
             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
             emit_width, emit_height, image_path, left, centre, right
@@ -82,25 +229,22 @@ pub fn emit_stamp<W: Write>(
         // Only emit STAMP_HEADING if a label is configured (the number alone
         // is from StampWorld's internal system, not a real catalog)
         if !sh_label.is_empty() {
-            // Combine Scott number and stamp name with literal \n
-            let heading = if let Some(name) = stamp_name {
-                if !name.is_empty() {
-                    format!("{} : {} \\n {}", sh_label, sgnum, name.replace('"', "'"))
-                } else {
-                    format!("{} : {}", sh_label, sgnum)
-                }
-            } else {
-                format!("{} : {}", sh_label, sgnum)
-            };
-            writeln!(
-                out,
-                "STAMP_HEADING({} {} \"{}\")",
-                sh_font,
+            if let Some(heading) = format_stamp_heading(
+                sh_label,
+                sgnum,
+                stamp_name,
+                perforation,
+                include_perforation,
+                emit_width,
                 sh_size,
-                heading.replace('"', "'")
-            )?;
+            ) {
+                writeln!(out, "STAMP_HEADING({} {} \"{}\")", sh_font, sh_size, heading)?;
+            }
         }
     } else {
+        let left = escape_ae_text(left);
+        let centre = escape_ae_text(centre);
+        let right = escape_ae_text(right);
         let line = format!(
             "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
             emit_width, emit_height, left, centre, right
@@ -108,23 +252,17 @@ pub fn emit_stamp<W: Write>(
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
         // Only emit STAMP_HEADING if a label is configured
         if !sh_label.is_empty() {
-            // Combine Scott number and stamp name with literal \n
-            let heading = if let Some(name) = stamp_name {
-                if !name.is_empty() {
-                    format!("{} : {} \\n {}", sh_label, sgnum, name.replace('"', "'"))
-                } else {
-                    format!("{} : {}", sh_label, sgnum)
-                }
-            } else {
-                format!("{} : {}", sh_label, sgnum)
-            };
-            writeln!(
-                out,
-                "STAMP_HEADING({} {} \"{}\")",
-                sh_font,
+            if let Some(heading) = format_stamp_heading(
+                sh_label,
+                sgnum,
+                stamp_name,
+                perforation,
+                include_perforation,
+                emit_width,
                 sh_size,
-                heading.replace('"', "'")
-            )?;
+            ) {
+                writeln!(out, "STAMP_HEADING({} {} \"{}\")", sh_font, sh_size, heading)?;
+            }
         }
     }
     Ok(())
@@ -143,6 +281,10 @@ pub fn emit_image_only<W: Write>(
     right: &str,
     options: Option<&str>,
 ) -> std::io::Result<()> {
+    let image_path = escape_ae_text(image_path);
+    let left = escape_ae_text(left);
+    let centre = escape_ae_text(centre);
+    let right = escape_ae_text(right);
     let mut line = format!(
         "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\"",
         emit_width, emit_height, image_path, left, centre, right

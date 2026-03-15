@@ -108,6 +108,89 @@ pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {
     }
 }
 
+pub fn build_series_page_text_centre_template(cfg: &Config) -> String {
+    if let Some(t) = cfg.series_page_text_centre_format.clone() {
+        return t;
+    }
+    let has_series_override = cfg.series_page_text_centre_font.is_some()
+        || cfg.series_page_text_centre_size.is_some()
+        || cfg.series_page_text_centre_vspace.is_some();
+
+    if !has_series_override {
+        return build_page_text_template(cfg, "centre");
+    }
+
+    let font = cfg
+        .series_page_text_centre_font
+        .clone()
+        .or_else(|| cfg.page_text_centre_font.clone())
+        .unwrap_or_else(|| "TN".to_string());
+    let size = cfg
+        .series_page_text_centre_size
+        .or(cfg.page_text_centre_size)
+        .unwrap_or(8.0) as i32;
+    let vspace = cfg
+        .series_page_text_centre_vspace
+        .or(cfg.page_text_centre_vspace)
+        .unwrap_or(1.0_f32);
+
+    format!("PAGE_TEXT_CENTRE ({} {} \"{{}}\" {:.1})", font, size, vspace)
+}
+
+fn build_scoped_page_text_centre_template(
+    cfg: &Config,
+    format_opt: Option<String>,
+    font_opt: Option<String>,
+    size_opt: Option<f32>,
+    vspace_opt: Option<f32>,
+) -> String {
+    if let Some(t) = format_opt {
+        return t;
+    }
+
+    let has_override = font_opt.is_some() || size_opt.is_some() || vspace_opt.is_some();
+    if !has_override {
+        return build_page_text_template(cfg, "centre");
+    }
+
+    let font = font_opt
+        .or_else(|| cfg.page_text_centre_font.clone())
+        .unwrap_or_else(|| "TN".to_string());
+    let size = size_opt.or(cfg.page_text_centre_size).unwrap_or(8.0) as i32;
+    let vspace = vspace_opt.or(cfg.page_text_centre_vspace).unwrap_or(1.0_f32);
+    format!("PAGE_TEXT_CENTRE ({} {} \"{{}}\" {:.1})", font, size, vspace)
+}
+
+pub fn build_date_page_text_centre_template(cfg: &Config) -> String {
+    build_scoped_page_text_centre_template(
+        cfg,
+        cfg.date_page_text_centre_format.clone(),
+        cfg.date_page_text_centre_font.clone(),
+        cfg.date_page_text_centre_size,
+        cfg.date_page_text_centre_vspace,
+    )
+}
+
+pub fn build_watermark_page_text_centre_template(cfg: &Config) -> String {
+    build_scoped_page_text_centre_template(
+        cfg,
+        cfg.watermark_page_text_centre_format.clone(),
+        cfg.watermark_page_text_centre_font.clone(),
+        cfg.watermark_page_text_centre_size,
+        cfg.watermark_page_text_centre_vspace,
+    )
+}
+
+pub fn build_engraving_page_text_centre_template(cfg: &Config) -> String {
+    build_scoped_page_text_centre_template(
+        cfg,
+        cfg.engraving_page_text_centre_format.clone(),
+        cfg.engraving_page_text_centre_font.clone(),
+        cfg.engraving_page_text_centre_size,
+        cfg.engraving_page_text_centre_vspace,
+    )
+}
+
 /// Fetch stamps for a given `series` from the DB and apply optional
 /// start/end year filtering. Returns a Vec<`Stamp`> suitable for the
 /// generator layout pipeline.
@@ -117,8 +200,17 @@ pub fn fetch_and_filter_stamps(
     start_year: Option<i32>,
     end_year: Option<i32>,
 ) -> SqlResult<Vec<Stamp>> {
-    // Fetch all stamps for the series using the existing DB helper.
-    let mut stamps = get_stamps_by_series(conn, series, "0")?;
+    // Fast path: when a single target year is requested, ask the DB helper
+    // for that year directly to avoid loading full-series history.
+    let mut stamps = if let (Some(sy), Some(ey)) = (start_year, end_year) {
+        if sy > 0 && ey == sy {
+            get_stamps_by_series(conn, series, &sy.to_string())?
+        } else {
+            get_stamps_by_series(conn, series, "0")?
+        }
+    } else {
+        get_stamps_by_series(conn, series, "0")?
+    };
 
     // Apply inclusive year filtering like the canonical generator.
     if let (Some(sy), Some(ey)) = (start_year, end_year) {
@@ -171,6 +263,18 @@ pub fn fetch_and_filter_stamps(
             if let Some(v) = colnect.name {
                 attrs.set("colnect_name", &v);
             }
+            if let Some(v) = colnect.watermark {
+                attrs.set("colnect_watermark", &v);
+            }
+            if let Some(v) = colnect.format {
+                attrs.set("colnect_format", &v);
+            }
+            if let Some(v) = colnect.emission {
+                attrs.set("colnect_emission", &v);
+            }
+            if let Some(v) = colnect.perforation {
+                attrs.set("colnect_perforation", &v);
+            }
             if let Some(v) = colnect.printing {
                 attrs.set("colnect_printing", &v);
             }
@@ -188,6 +292,9 @@ pub fn fetch_and_filter_stamps(
             }
             if let Some(v) = colnect.issued_on {
                 attrs.set("colnect_issued_on", &v);
+            }
+            if let Some(v) = colnect.expiry_date {
+                attrs.set("colnect_expiry_date", &v);
             }
             if let Some(v) = colnect.print_run {
                 attrs.set("colnect_print_run", &v);
@@ -207,6 +314,12 @@ pub fn fetch_and_filter_stamps(
             if let Some(v) = colnect.printers {
                 attrs.set("colnect_printers", &v);
             }
+            if let Some(v) = colnect.score {
+                attrs.set("colnect_score", &v);
+            }
+            if let Some(v) = colnect.accuracy {
+                attrs.set("colnect_accuracy", &v);
+            }
 
             if !colnect.catalog_codes.is_empty() {
                 let codes_str = colnect
@@ -214,7 +327,7 @@ pub fn fetch_and_filter_stamps(
                     .iter()
                     .map(|(k, v)| format!("{}: {}", k, v))
                     .collect::<Vec<_>>()
-                    .join("  ");
+                    .join(" | ");
                 attrs.set("colnect_catalog_codes", &codes_str);
 
                 // Extract Scott number specifically for use as default catalog number

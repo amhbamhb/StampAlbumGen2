@@ -11,6 +11,12 @@ pub fn center_tmp_pages(
     config: &crate::config::Config,
     usable_height: f64,
 ) -> std::io::Result<()> {
+    let max_page_vspace_mm = config
+        .max_page_vspace_mm
+        .map(|v| v as f64)
+        .filter(|v| *v > 0.0)
+        .unwrap_or(10.0);
+
     use std::fs;
     let contents = fs::read_to_string(tmp_path)?;
     let lines: Vec<&str> = contents.lines().collect();
@@ -234,7 +240,7 @@ pub fn center_tmp_pages(
                     // due to an explicit header (see effective_base_gaps).
                     if gap_mm > 0.0 && !(series_count == 0 && has_page_header) {
                         let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(
-                            gap_mm,
+                            gap_mm.min(max_page_vspace_mm),
                         );
                         out_lines.push(s);
                     }
@@ -253,7 +259,7 @@ pub fn center_tmp_pages(
                         if j != *first_row_idx && per_row_gap > 0.0 {
                             let s =
                                 crate::album_globals::generator_new::layout::format_page_vspace_mm(
-                                    per_row_gap,
+                                    per_row_gap.min(max_page_vspace_mm),
                                 );
                             out_lines.push(s);
                         }
@@ -264,7 +270,7 @@ pub fn center_tmp_pages(
                     if series_row_indices.contains(&j) {
                         if let Some(pos) = series_row_indices.iter().position(|&x| x == j) {
                             if pos > 0 && gap_mm > 0.0 {
-                                let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
+                                let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm.min(max_page_vspace_mm));
                                 out_lines.push(s);
                             }
                         }
@@ -272,14 +278,6 @@ pub fn center_tmp_pages(
                 }
 
                 out_lines.push(l.to_string());
-            }
-            // After emitting all page lines, insert a bottom gap if we
-            // computed one. This complements the top gap inserted above
-            // so the extra space is used symmetrically (top + bottom +
-            // any between-series gaps).
-            if gap_mm > 0.0 {
-                let s = crate::album_globals::generator_new::layout::format_page_vspace_mm(gap_mm);
-                out_lines.push(s);
             }
         } else {
             for l in page_block.iter() {

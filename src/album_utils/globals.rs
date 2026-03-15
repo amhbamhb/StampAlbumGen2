@@ -516,8 +516,13 @@ pub fn write_globals<W: Write>(
                                 Some(&cfg),
                             );
                         }
-                        // White background for the coat area
-                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(white)");
+                        // Background color for the coat area (from config)
+                        let coat_bg_color = cfg
+                            .color_stamp_background
+                            .as_ref()
+                            .map(|s| s.as_str())
+                            .unwrap_or("black");
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", coat_bg_color);
                         // Use configurable coat dimensions from config, default 80x100
                         let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(80.0);
                         let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(100.0);
@@ -558,8 +563,13 @@ pub fn write_globals<W: Write>(
                             "",
                             Some("NO_FRAME"),
                         );
-                        // Set stamp background back to black as requested after the flag
-                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(black)");
+                        // Reset stamp background to default from config after the flag
+                        let default_bg = cfg
+                            .color_stamp_background
+                            .as_ref()
+                            .map(|s| s.as_str())
+                            .unwrap_or("black");
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", default_bg);
                         // Vertical gap after flag controlled by config
                         let _ = layout::write_page_vspace(writer, after_vspace_default as f64);
                     }

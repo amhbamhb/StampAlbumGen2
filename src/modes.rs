@@ -40,22 +40,47 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
     }
 }
 
-/// Populate stamps table from colnect_stamps when stamps table is empty
-fn populate_stamps_from_colnect(
+fn canonical_album_dir_name(name: &str) -> String {
+    name.trim().replace(' ', "-")
+}
+
+fn has_downloaded_images(images_dir: &std::path::Path) -> bool {
+    let Ok(entries) = std::fs::read_dir(images_dir) else {
+        return false;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        let Some(file_name) = path.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        if file_name.starts_with("no_image") {
+            continue;
+        }
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if matches!(ext.as_str(), "jpg" | "jpeg" | "png" | "webp") {
+            return true;
+        }
+    }
+    false
+}
+
+/// Merge Colnect data into stamps table by inserting only missing variants.
+/// This runs even when StampWorld rows already exist so booklet/sheet variants
+/// from Colnect can appear in output.
+fn sync_missing_stamps_from_colnect(
     conn: &rusqlite::Connection,
 ) -> Result<usize, Box<dyn std::error::Error>> {
     use log::info;
 
-    // Check if stamps table is empty
-    let stamp_count: i64 = conn.query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get(0))?;
-
-    if stamp_count > 0 {
-        return Ok(0); // Already has stamps, don't populate
-    }
-
-    info!("Stamps table is empty. Populating from colnect_stamps...");
-
-    // Insert stamps from colnect_stamps into stamps table
+    // Insert missing Colnect rows into stamps using year+catalog key dedupe.
+    // Keep existing StampWorld rows and only add missing variants.
     let inserted = conn.execute(
         "INSERT INTO stamps (
             country, series, year, month, month_num, day, sg_number, type,
@@ -66,8 +91,8 @@ fn populate_stamps_from_colnect(
             issue_location, quantity_printed
         )
         SELECT 
-            '' as country,
-            series,
+            COALESCE(NULLIF(country, ''), '') as country,
+            COALESCE(NULLIF(series, ''), name) as series,
             CAST(substr(issued_on, 1, 4) AS INTEGER) as year,
             CASE CAST(substr(issued_on, 6, 2) AS INTEGER)
                 WHEN 1 THEN 'January' WHEN 2 THEN 'February' WHEN 3 THEN 'March'
@@ -76,12 +101,15 @@ fn populate_stamps_from_colnect(
                 WHEN 10 THEN 'October' WHEN 11 THEN 'November' WHEN 12 THEN 'December'
                 ELSE '' END as month,
             CAST(substr(issued_on, 6, 2) AS INTEGER) as month_num,
-            substr(issued_on, 9, 2) as day,
+            CASE
+                WHEN length(issued_on) >= 10 THEN substr(issued_on, 9, 2)
+                ELSE ''
+            END as day,
             sg_number,
-            '' as type,
+            COALESCE(NULLIF(format, ''), 'Stamp') as type,
             face_value as denomination,
             colors as color,
-            description,
+            COALESCE(NULLIF(description, ''), name) as description,
             print_run as stamps_issued,
             '' as mint_condition,
             '' as unused,
@@ -91,19 +119,27 @@ fn populate_stamps_from_colnect(
             '' as image_path,
             '' as remote_image_url,
             colnect_link as original_image_url,
-            '' as watermark,
+            COALESCE(watermark, '') as watermark,
             designers as design,
-            '' as engraving,
-            printing as perforation,
+            printers as engraving,
+            perforation as perforation,
             themes as context,
             '' as issue_location,
             print_run as quantity_printed
         FROM colnect_stamps
-        WHERE sg_number IS NOT NULL AND sg_number != ''",
+        WHERE sg_number IS NOT NULL
+          AND TRIM(sg_number) != ''
+          AND CAST(substr(issued_on, 1, 4) AS INTEGER) > 0
+          AND NOT EXISTS (
+              SELECT 1
+              FROM stamps s
+              WHERE s.sg_number = colnect_stamps.sg_number
+                AND s.year = CAST(substr(colnect_stamps.issued_on, 1, 4) AS INTEGER)
+          )",
         [],
     )?;
 
-    info!("Populated {} stamps from colnect_stamps table", inserted);
+    info!("Inserted {} missing stamp variants from colnect_stamps", inserted);
     Ok(inserted)
 }
 
@@ -112,7 +148,7 @@ pub fn run_database_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    use log::{error, info};
+    use log::{error, info, warn};
 
     // Output-only mode: use the provided db_path and album_name
     let progress = ProgressIndicator::new_with_config(show_progress);
@@ -126,8 +162,15 @@ pub fn run_database_mode(
         // Parse CSV filename to extract country and year
         // Format: en_stamps_csv_list_country_13-Australia_year_1975.csv
         progress.set_message("🔍 Inferring database path from CSV filename...");
-        if let Some((country, _year)) = parse_colnect_csv_filename(csv_path) {
-            inferred_db_path = format!("Albums/{}/{}.db", country, country);
+        let inferred_country = cli
+            .site_name
+            .clone()
+            .or_else(|| parse_colnect_csv_filename(csv_path).map(|(country, _year)| country))
+            .or_else(|| cli.album_name.clone());
+
+        if let Some(country) = inferred_country {
+            let canonical = canonical_album_dir_name(&country);
+            inferred_db_path = format!("Albums/{0}/{0}.db", canonical);
             info!("Inferred database path: {}", inferred_db_path);
             &inferred_db_path
         } else {
@@ -197,20 +240,45 @@ pub fn run_database_mode(
             return Err(e.into());
         }
     };
-    // Determine album name: use provided name, or try to infer from db_path
-    let album_name = if let Some(name) = &cli.album_name {
-        name.clone()
-    } else {
-        // Try to infer album name from db_path
-        // e.g., "Albums/Australia.db" -> "Australia"
-        // e.g., "Albums/Australia/Australia.db" -> "Australia"
-        let db_path_str = db_path.to_string();
-        if let Some(db_filename) = std::path::Path::new(&db_path_str).file_stem() {
-            db_filename.to_string_lossy().to_string()
-        } else {
-            "Album".to_string()
+    // Determine album output/storage base from DB path so generated TXT and
+    // image folder remain aligned across StampWorld and Colnect runs.
+    let db_stem = std::path::Path::new(db_path)
+        .file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "Album".to_string());
+    if let Some(name) = &cli.album_name {
+        if canonical_album_dir_name(name).to_lowercase() != db_stem.to_lowercase() {
+            warn!(
+                "album-name '{}' differs from DB base '{}'; using '{}' so output and images stay in one folder",
+                name,
+                db_stem,
+                db_stem
+            );
+            eprintln!(
+                "Warning: --album-name '{}' differs from DB base '{}'. Using '{}' to keep output and images together.",
+                name, db_stem, db_stem
+            );
         }
-    };
+    }
+    let album_name = db_stem;
+
+    // If Colnect is being ingested before StampWorld images exist, continue
+    // but warn clearly so users understand why album pages may have placeholders.
+    if cli.colnect_csv.is_some() {
+        let images_dir = std::path::Path::new(db_path)
+            .parent()
+            .map(|p| p.join("images"))
+            .unwrap_or_else(|| std::path::PathBuf::from("images"));
+        if !has_downloaded_images(&images_dir) {
+            let msg = format!(
+                "⚠️ Colnect import is running before StampWorld images were found in '{}'. Recommended flow: run StampWorld first, then Colnect to enrich metadata.",
+                images_dir.display()
+            );
+            warn!("{}", msg);
+            progress.set_message(&msg);
+            eprintln!("{}", msg);
+        }
+    }
 
     // Ingest Colnect CSV if provided (for colnectexport source)
     if let Some(csv_path) = &cli.colnect_csv {
@@ -223,19 +291,19 @@ pub fn run_database_mode(
             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
         }
 
-        // After ingesting Colnect data, check if stamps table is empty
-        // If so, populate it from colnect_stamps
-        progress.set_message("🔍 Checking if stamps table needs population...");
-        match populate_stamps_from_colnect(&conn) {
+        // Merge additional variants from Colnect into stamps while preserving
+        // existing StampWorld rows.
+        progress.set_message("🔍 Syncing missing variants from Colnect...");
+        match sync_missing_stamps_from_colnect(&conn) {
             Ok(count) if count > 0 => {
-                info!("✅ Populated {} stamps from Colnect data", count);
-                progress.set_message(&format!("✅ Populated {} stamps from Colnect data", count));
+                info!("✅ Added {} missing variants from Colnect data", count);
+                progress.set_message(&format!("✅ Added {} missing variants from Colnect data", count));
             }
             Ok(_) => {
-                info!("Stamps table already has data, skipping population");
+                info!("No missing Colnect variants to add");
             }
             Err(e) => {
-                error!("❌ Failed to populate stamps from Colnect: {}", e);
+                error!("❌ Failed to sync missing Colnect variants: {}", e);
             }
         }
     }
@@ -278,7 +346,7 @@ pub fn run_scraping_mode(
     source: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use crate::commands_file_generator::CommandsFileGenerator;
-    use log::{error, info};
+    use log::{error, info, warn};
 
     let progress = ProgressIndicator::new_with_config(show_progress);
     progress.set_message("🌐 Preparing StampWorld scraping mode...");
@@ -311,13 +379,38 @@ pub fn run_scraping_mode(
         // This would need to be handled by the caller
         return Err("Missing site name for scraping".into());
     };
-    let album_name = cli.album_name.clone().unwrap_or_else(|| site_name.clone());
+    let requested_album_name = cli.album_name.clone().unwrap_or_else(|| site_name.clone());
 
     let album_name = if source == "us1847" {
-        "US-".to_string() + &album_name
+        "US-".to_string() + &requested_album_name
     } else {
-        album_name
+        requested_album_name
     };
+
+    // Always keep scrape DB/images rooted by country/site so subsequent Colnect
+    // enrichment resolves to the same folder.
+    let storage_base_name = if source == "us1847" {
+        album_name.clone()
+    } else {
+        site_name.clone()
+    };
+    let canonical_storage_dir = canonical_album_dir_name(&storage_base_name);
+
+    if source != "us1847"
+        && canonical_album_dir_name(&album_name).to_lowercase()
+            != canonical_storage_dir.to_lowercase()
+    {
+        warn!(
+            "album-name '{}' differs from site-name '{}'; storage/output will use '{}' so StampWorld and Colnect share one folder",
+            album_name,
+            site_name,
+            canonical_storage_dir
+        );
+        eprintln!(
+            "Warning: --album-name '{}' differs from --site-name '{}'. Using '{}' as shared storage base.",
+            album_name, site_name, canonical_storage_dir
+        );
+    }
 
     progress.set_message(&format!(
         "📋 Setting up scrape: {} → {} ({}..{})",
@@ -340,8 +433,9 @@ pub fn run_scraping_mode(
     let mut cfg = CommandsFileGenerator::default();
     cfg.album_name = album_name.clone();
     cfg.country = site_name.clone();
-    cfg.album_path = format!("Albums/{}", album_name);
-    cfg.image_path = format!("Albums/{}/images", album_name);
+    // Keep scrape outputs in a canonical country/site-based folder.
+    cfg.album_path = format!("Albums/{}", canonical_storage_dir);
+    cfg.image_path = format!("Albums/{}/images", canonical_storage_dir);
     cfg.year = cli.start_year.to_string();
 
     // Build base URL
@@ -417,7 +511,11 @@ pub fn run_scraping_mode(
     // Compose the DB path early and set it for the collector so both scraper
     // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
     progress.set_message("💾 Setting up database path...");
-    let db_path = format!("{}/{}.db", cfg.album_path, album_name.replace('/', "-"));
+    let db_path = format!(
+        "{}/{}.db",
+        cfg.album_path,
+        canonical_storage_dir.replace('/', "-")
+    );
     crate::file_utils::set_db_path_from_cli(&db_path);
     // Propagate the CLI overwrite flag into global state so generators
     // can create backups when the user explicitly requested overwrites.
@@ -581,13 +679,28 @@ pub fn run_scraping_mode(
                             }
                             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
                         }
+
+                        progress.set_message("🔍 Syncing missing variants from Colnect...");
+                        match sync_missing_stamps_from_colnect(&conn) {
+                            Ok(count) if count > 0 => {
+                                info!("✅ Added {} missing variants from Colnect data", count);
+                            }
+                            Ok(_) => {
+                                info!("No missing Colnect variants to add");
+                            }
+                            Err(e) => {
+                                error!("❌ Failed to sync missing Colnect variants: {}", e);
+                            }
+                        }
                     }
 
-                    progress
-                        .set_message(&format!("📖 Generating album output for: {}", album_name));
+                    progress.set_message(&format!(
+                        "📖 Generating album output for: {}",
+                        canonical_storage_dir
+                    ));
                     let output_path = crate::album_globals::generate_album_output_conn(
                         &conn,
-                        &album_name,
+                        &canonical_storage_dir,
                         None::<fn(usize)>,
                         Some(cli.start_year),
                         Some(cli.end_year),
@@ -595,7 +708,7 @@ pub fn run_scraping_mode(
 
                     progress.finish_with_message(&format!(
                         "Album '{}' completed successfully! 🎉 📄 File: {}",
-                        album_name,
+                        canonical_storage_dir,
                         output_path.display()
                     ));
                 }

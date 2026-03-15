@@ -155,12 +155,12 @@ pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
         None,
     );
     // Draw separator
-    let sep_y = (h / 2) as i32 + 2;
-    for x in 40..(w.saturating_sub(40)) {
-        if sep_y >= 0 && (sep_y as u32) < h {
-            img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
-        }
-    }
+    // let sep_y = (h / 2) as i32 + 2;
+    // for x in 40..(w.saturating_sub(40)) {
+    //     if sep_y >= 0 && (sep_y as u32) < h {
+    //         img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+    //     }
+    // }
     if !subtitle.is_empty() {
         draw_text(
             &mut img,
@@ -553,12 +553,12 @@ pub fn ensure_placeholder_image_for_stamp(
             bundled,
         );
         // Draw a thin separator line to add breathing room between title and subtitle
-        let sep_y = (height / 2) as i32 + 2;
-        for x in 40..(width - 40) {
-            if sep_y >= 0 && (sep_y as u32) < height {
-                img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
-            }
-        }
+        // let sep_y = (height / 2) as i32 + 2;
+        // for x in 40..(width - 40) {
+        //     if sep_y >= 0 && (sep_y as u32) < height {
+        //         img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+        //     }
+        // }
         if !subtitle.is_empty() {
             draw_text(
                 &mut img,
@@ -725,12 +725,12 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
             Rgba([90, 90, 90, 255]),
             bundled,
         );
-        let sep_y = (px_h / 2) as i32 + 2;
-        for x in 40..(px_w.saturating_sub(40)) {
-            if sep_y >= 0 && (sep_y as u32) < px_h {
-                img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
-            }
-        }
+        // let sep_y = (px_h / 2) as i32 + 2;
+        // for x in 40..(px_w.saturating_sub(40)) {
+        //     if sep_y >= 0 && (sep_y as u32) < px_h {
+        //         img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+        //     }
+        // }
         if !subtitle.is_empty() {
             draw_text(
                 &mut img,
