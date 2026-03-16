@@ -234,6 +234,9 @@ page_text_right_vspace = 1.0
 ###################################
 [runtime]
 show_progress_indicator = true
+# Used when CLI omits --colnect-inbox for --source colnectexport.
+# The directory is auto-created on startup if missing.
+colnect_inbox_path = "samples/colnect_inbox"
 
 ###################################
 # Colnect

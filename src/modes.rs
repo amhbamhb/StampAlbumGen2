@@ -255,8 +255,21 @@ fn run_colnect_inbox_mode(
             .ok_or("Missing --colnect-inbox path")?,
     );
     if !inbox_root.exists() {
+        eprintln!(
+            "Colnect inbox '{}' does not exist. Creating it now (equivalent to answering yes).",
+            inbox_root.display()
+        );
+        if let Err(e) = std::fs::create_dir_all(&inbox_root) {
+            return Err(format!(
+                "Failed to create Colnect inbox path '{}': {}",
+                inbox_root.display(),
+                e
+            )
+            .into());
+        }
+    } else if !inbox_root.is_dir() {
         return Err(format!(
-            "Colnect inbox path does not exist: {}",
+            "Colnect inbox path is not a directory: {}",
             inbox_root.display()
         )
         .into());

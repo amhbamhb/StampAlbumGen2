@@ -40,3 +40,26 @@ Notes and limitations
 - The CI job tries `cargo2junit` first for environments where it's available and known to work, then falls back to this converter automatically.
 
 If you improve the converter, please add tests and update this README with any required runtime dependencies (e.g. Python version).
+
+## GitLab Issue + Branch Helper
+
+Use `new-issue-branch.sh` to create a GitLab issue with `glab`, then create and
+push a linked branch in one flow.
+
+Default branch format:
+
+`issue/<iid>-<slug>`
+
+Examples:
+
+```bash
+scripts/new-issue-branch.sh
+scripts/new-issue-branch.sh "Fix colnect inbox parsing"
+scripts/new-issue-branch.sh --title "Fix parser" --label bug --label cli
+scripts/new-issue-branch.sh --title "Fix parser" --description "Details"
+```
+
+Requirements:
+
+- `glab` installed and authenticated (`glab auth login`)
+- Run from inside a git repository with a valid remote

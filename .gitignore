@@ -6,8 +6,7 @@ Albums/
 Alblums/
 /Archive/
 Archive/
-Archive/*
-Archive/*.rs
+Archive/**
 Archives/*.rs
 examples/
 /examples/
@@ -26,6 +25,14 @@ examples/
 /examples/*
 demo_outputs/
 demo_outputs/*
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
 
 
 

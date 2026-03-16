@@ -301,6 +301,9 @@ pub struct Config {
     // Progress indicator settings
     // When true, show spinning progress indicator with current operation status
     pub show_progress_indicator: Option<bool>,
+    // Default Colnect inbox directory used when `--colnect-inbox` is not
+    // provided on the CLI for `--source colnectexport` runs.
+    pub colnect_inbox_path: Option<String>,
 
     // Wikipedia content configuration
     // Path to Wikipedia cache database
@@ -501,6 +504,7 @@ impl Config {
             force_dpi: Some(96.0),
             preserve_real_image_size: Some(true),
             show_progress_indicator: Some(true),
+            colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
             content_wiki_font_size: Some(12),
@@ -662,6 +666,14 @@ impl Config {
     /// instead of separate PAGE_ADD_BOX blocks.
     pub fn colnect_details_inside_stamp(&self) -> bool {
         matches!(self.colnect_details_placement(), "inside_stamp" | "inline")
+    }
+
+    /// Effective default Colnect inbox path from configuration.
+    pub fn effective_colnect_inbox_path(&self) -> Option<&str> {
+        self.colnect_inbox_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
     }
 }
 
@@ -1276,6 +1288,10 @@ pub fn load_config(path: &str) -> Config {
                                 }
                                 if cfg.show_progress_indicator.is_none() {
                                     cfg.show_progress_indicator = defaults.show_progress_indicator;
+                                    has_missing = true;
+                                }
+                                if cfg.colnect_inbox_path.is_none() {
+                                    cfg.colnect_inbox_path = defaults.colnect_inbox_path;
                                     has_missing = true;
                                 }
                                 if cfg.wikipedia_cache_db_path.is_none() {
