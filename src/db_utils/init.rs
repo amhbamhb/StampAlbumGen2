@@ -76,6 +76,100 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         )",
         [],
     )?;
+
+    // Create colnect_stamps table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS colnect_stamps (
+            id INTEGER PRIMARY KEY,
+            sg_number TEXT,
+            colnect_id TEXT UNIQUE,
+            name TEXT,
+            catalog_codes TEXT,
+            country TEXT,
+            width TEXT,
+            height TEXT,
+            watermark TEXT,
+            format TEXT,
+            emission TEXT,
+            perforation TEXT,
+            printing TEXT,
+            paper TEXT,
+            gum TEXT,
+            ord_mi TEXT,
+            ord_sn TEXT,
+            ord_yt TEXT,
+            ord_sg TEXT,
+            themes TEXT,
+            colnect_link TEXT,
+            description TEXT,
+            issued_on TEXT,
+            expiry_date TEXT,
+            print_run TEXT,
+            face_value TEXT,
+            currency TEXT,
+            colors TEXT,
+            designers TEXT,
+            printers TEXT,
+            series TEXT,
+            parent_item TEXT,
+            variant TEXT,
+            overprint_variant TEXT,
+            score TEXT,
+            accuracy TEXT,
+            list TEXT,
+            quantity TEXT,
+            condition TEXT,
+            public_note TEXT,
+            private_note TEXT
+        )",
+        [],
+    )?;
+
+    // Create index on sg_number for faster joins
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_colnect_stamps_sg_number ON colnect_stamps (sg_number)",
+        [],
+    )?;
+
+    // Create colnect_catalog_codes table for storing individual catalog codes
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS colnect_catalog_codes (
+            id INTEGER PRIMARY KEY,
+            colnect_id TEXT,
+            catalog_type TEXT,
+            code TEXT,
+            UNIQUE(colnect_id, catalog_type)
+        )",
+        [],
+    )?;
+
+    // Create index on colnect_id for faster lookups
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_colnect_catalog_codes_colnect_id ON colnect_catalog_codes (colnect_id)",
+        [],
+    )?;
+
+    // Migration: Add 'series' column to colnect_stamps if missing
+    {
+        let mut has_series_col = false;
+        let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            if name == "series" {
+                has_series_col = true;
+                break;
+            }
+        }
+        if !has_series_col {
+            debug!("Adding column 'series' to colnect_stamps table");
+            match conn.execute("ALTER TABLE colnect_stamps ADD COLUMN series TEXT", []) {
+                Ok(_) => debug!("Added series column to colnect_stamps."),
+                Err(e) => error!("Failed to add series column to colnect_stamps: {}", e),
+            }
+        }
+    }
+
     // Print column names and count after creation
     {
         let pragma = conn.prepare("PRAGMA table_info(stamps)");
@@ -126,6 +220,73 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     const DEBUG: bool = true;
     if DEBUG {
         debug!("Stamps table ensured.");
+    }
+
+    // Migration: ensure legacy colnect_stamps tables include all expected columns.
+    // Some older country DBs were created with a reduced schema (missing `name`
+    // and related metadata columns), which breaks current ingest INSERTs.
+    {
+        let mut existing = std::collections::HashSet::new();
+        let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            existing.insert(name);
+        }
+
+        let required_cols: [(&str, &str); 38] = [
+            ("name", "TEXT"),
+            ("catalog_codes", "TEXT"),
+            ("country", "TEXT"),
+            ("width", "TEXT"),
+            ("height", "TEXT"),
+            ("watermark", "TEXT"),
+            ("format", "TEXT"),
+            ("emission", "TEXT"),
+            ("perforation", "TEXT"),
+            ("printing", "TEXT"),
+            ("paper", "TEXT"),
+            ("gum", "TEXT"),
+            ("ord_mi", "TEXT"),
+            ("ord_sn", "TEXT"),
+            ("ord_yt", "TEXT"),
+            ("ord_sg", "TEXT"),
+            ("themes", "TEXT"),
+            ("colnect_link", "TEXT"),
+            ("description", "TEXT"),
+            ("issued_on", "TEXT"),
+            ("expiry_date", "TEXT"),
+            ("print_run", "TEXT"),
+            ("face_value", "TEXT"),
+            ("currency", "TEXT"),
+            ("colors", "TEXT"),
+            ("designers", "TEXT"),
+            ("printers", "TEXT"),
+            ("series", "TEXT"),
+            ("parent_item", "TEXT"),
+            ("variant", "TEXT"),
+            ("overprint_variant", "TEXT"),
+            ("score", "TEXT"),
+            ("accuracy", "TEXT"),
+            ("list", "TEXT"),
+            ("quantity", "TEXT"),
+            ("condition", "TEXT"),
+            ("public_note", "TEXT"),
+            ("private_note", "TEXT"),
+        ];
+
+        for (col, ty) in required_cols.iter() {
+            if !existing.contains(*col) {
+                let sql = format!("ALTER TABLE colnect_stamps ADD COLUMN {} {}", col, ty);
+                match conn.execute(&sql, []) {
+                    Ok(_) => debug!("Added missing colnect_stamps column '{}'", col),
+                    Err(e) => error!(
+                        "Failed to add missing colnect_stamps column '{}': {}",
+                        col, e
+                    ),
+                }
+            }
+        }
     }
 
     // Migration: add a `uniq_key` column (if missing), backfill it with a
@@ -190,6 +351,141 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             error!("Failed to check for duplicate uniq_key groups: {}. Skipping UNIQUE index creation.", e);
         }
     }
+
+    // Add issue_location column if missing
+    {
+        let mut has_col = false;
+        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            if name == "issue_location" {
+                has_col = true;
+                break;
+            }
+        }
+        if !has_col {
+            debug!("Adding column 'issue_location' to stamps table");
+            match conn.execute(
+                "ALTER TABLE stamps ADD COLUMN issue_location TEXT DEFAULT ''",
+                [],
+            ) {
+                Ok(_) => debug!("Added issue_location column."),
+                Err(e) => error!("Failed to add issue_location column: {}", e),
+            }
+        }
+    }
+
+    // Add quantity_printed column if missing
+    {
+        let mut has_col = false;
+        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            if name == "quantity_printed" {
+                has_col = true;
+                break;
+            }
+        }
+        if !has_col {
+            debug!("Adding column 'quantity_printed' to stamps table");
+            match conn.execute(
+                "ALTER TABLE stamps ADD COLUMN quantity_printed TEXT DEFAULT ''",
+                [],
+            ) {
+                Ok(_) => debug!("Added quantity_printed column."),
+                Err(e) => error!("Failed to add quantity_printed column: {}", e),
+            }
+        }
+    }
+
+    // Create us1847_series table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS us1847_series (
+            id INTEGER PRIMARY KEY,
+            series_name TEXT,
+            series_url TEXT UNIQUE,
+            description TEXT,
+            president TEXT,
+            postmaster_general TEXT,
+            domestic_letter_rate TEXT,
+            postcard_rate TEXT,
+            airmail_rate TEXT,
+            printing_info TEXT,
+            tagging_info TEXT,
+            size_info TEXT,
+            design_size_portrait TEXT,
+            design_size_landscape TEXT
+        )",
+        [],
+    )?;
+
+    // Create us1847_stamps table
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS us1847_stamps (
+            id INTEGER PRIMARY KEY,
+            series_id INTEGER,
+            scott_number TEXT,
+            denomination TEXT,
+            name TEXT,
+            color TEXT,
+            place_issued TEXT,
+            issue_date TEXT,
+            quantity_issued TEXT,
+            designer TEXT,
+            vignette TEXT,
+            frame TEXT,
+            lettering TEXT,
+            engraver TEXT,
+            image_url TEXT,
+            printer TEXT,
+            perforation TEXT,
+            printing_details TEXT,
+            tagging TEXT,
+            collectible_varieties TEXT,
+            usage TEXT,
+            description TEXT,
+            stamp_type TEXT,
+            design_size TEXT,
+            FOREIGN KEY(series_id) REFERENCES us1847_series(id),
+            UNIQUE(scott_number)
+        )",
+        [],
+    )?;
+
+    // Add color column if it doesn't exist (for backward compatibility)
+    conn.execute("ALTER TABLE us1847_stamps ADD COLUMN color TEXT", [])
+        .ok();
+    conn.execute(
+        "UPDATE us1847_stamps SET color = '' WHERE color IS NULL",
+        [],
+    )
+    .ok();
+
+    // Add missing columns to us1847_series if they don't exist (for backward compatibility)
+    conn.execute(
+        "ALTER TABLE us1847_series ADD COLUMN design_size_portrait TEXT DEFAULT ''",
+        [],
+    )
+    .ok();
+    conn.execute(
+        "ALTER TABLE us1847_series ADD COLUMN design_size_landscape TEXT DEFAULT ''",
+        [],
+    )
+    .ok();
+
+    // Create us1847_variations table (keeping for future use with varieties)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS us1847_variations (
+            id INTEGER PRIMARY KEY,
+            stamp_id INTEGER,
+            variation_type TEXT,
+            description TEXT,
+            FOREIGN KEY(stamp_id) REFERENCES us1847_stamps(id)
+        )",
+        [],
+    )?;
 
     Ok(conn)
 }

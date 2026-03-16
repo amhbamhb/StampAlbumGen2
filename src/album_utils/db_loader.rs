@@ -5,7 +5,7 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
     // Load all stamps directly instead of filtering by series
     let mut stmt = conn
         .prepare(
-            "SELECT year, month, day, w_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context FROM stamps ORDER BY sg_number"
+            "SELECT year, month, day, w_number, type, denomination, color, month_num, description, stamps_issued, image_path, remote_image_url, watermark, design, engraving, perforation, series, currency, context, issue_location, quantity_printed FROM stamps ORDER BY sg_number"
         )
         .expect("Failed to prepare statement");
 
@@ -56,6 +56,8 @@ pub fn load_stamps_from_db(db_path: &str) -> Vec<crate::db_utils::StampStub> {
                 perforation: row.get(15).unwrap_or(String::new()), // perforation at index 15
                 series: row.get(16).unwrap_or(String::new()),    // series at index 16
                 context: row.get(18).unwrap_or(String::new()),   // context at index 18
+                issue_location: row.get(19).unwrap_or(String::new()), // issue_location at index 19
+                quantity_printed: row.get(20).unwrap_or(String::new()), // quantity_printed at index 20
                 multi_perf: false,
             })
         })

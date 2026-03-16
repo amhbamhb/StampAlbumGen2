@@ -1,0 +1,108 @@
+#####################################################################################
+#
+# A sample AlbumEasy file showing how to insert images into stamp frames.
+#
+#
+#####################################################################################
+
+ALBUM_PAGES_SIZE  (215.9 279.4)                              #Set the page to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (15.0 15.0 15.0 15.0 )
+ALBUM_PAGES_BORDER   (0.1 0.5 0.1 1.0)
+ALBUM_PAGES_SPACING  (5.0 2.0)
+ALBUM_PAGES_TITLE    (TB 16  "Stamp Image Examples")
+
+ROW_ALIGN_BOTTOM
+
+PAGE_START
+PAGE_TEXT (HB 11 "\nA row of stamps containing images drawn using the default image settings:")
+PAGE_TEXT_PARAGRAPH_START (HN 10 JUSTIFIED 0.0 4.0)
+These are a 0.7mm border between the image and the frame, and stretch is set to false. 
+This will ensure that images that are smaller than the printing area are drawn actual size
+rather than stretched to fill the box as illustrated by the rightmost stamp.\n
+The third stamp is drawn a second time to illustrate the effect of the optional NO_FRAME parameter.
+PAGE_TEXT_PARAGRAPH_END
+
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD_IMG (22.0 27.0  "stamp_images/NR_SGD1.png"  "\nsg d1"  "Postage Due"       "\nsacc 21" )
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SR_SG55.png"  "\nsg 55"  "Cecil John Rhodes" "\nsacc 57" )
+STAMP_ADD_IMG (23.0 28.0  "stamp_images/SR_SG3.png"   "\nsg 3"   "KGV Definitive"    "\nsacc 3" )
+STAMP_ADD_IMG (23.0 28.0  "stamp_images/SR_SG3.png"   "\nsg 3"   "KGV Definitive"    "\nsacc 3" NO_FRAME)
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SA_SG100.png" "\nsg 100" "War Effort Bantam" "\nsacc 98" )
+
+PAGE_TEXT (HB 11 "\nThe same row of stamps as above but with stretch now set to true:")
+PAGE_TEXT_PARAGRAPH_START (HN 10 JUSTIFIED 0.0 4.0)
+A 0.7mm border between the image and frame, however, with stretch stretch set to true, images
+that are smaller than the printing area will be stretched to fill the box as can be seen in the rightmost stamp.
+PAGE_TEXT_PARAGRAPH_END
+
+ALBUM_STAMP_NEW_IMG_SETTING (0.7 0.7 true)
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD_IMG (22.0 27.0  "stamp_images/NR_SGD1.png"  "\nsg d1"  "Postage Due"       "\nsacc 21" )
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SR_SG55.png"  "\nsg 55"  "Cecil John Rhodes" "\nsacc 57" )
+STAMP_ADD_IMG (23.0 28.0  "stamp_images/SR_SG3.png"   "\nsg 3"   "KGV Definitive"    "\nsacc 3" )
+STAMP_ADD_IMG (23.0 28.0  "stamp_images/SR_SG3.png"   "\nsg 3"   "KGV Definitive"    "\nsacc 3" NO_FRAME)
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SA_SG100.png" "\nsg 100" "War Effort Bantam" "\nsacc 98" )
+
+
+PAGE_TEXT (HB 11 "\nThe same row of stamps as above, but with changed image settings:")
+PAGE_TEXT_PARAGRAPH_START (HN 10 JUSTIFIED 0.0 4.0)
+The 0.7mm border between the image and frame has been changed to 2.0mm, and stretch has been set to false
+PAGE_TEXT_PARAGRAPH_END
+
+ALBUM_STAMP_NEW_IMG_SETTING (2.0 2.0 false)
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD_IMG (22.0 27.0  "stamp_images/NR_SGD1.png"  "\nsg d1"  "Postage Due"       "\nsacc 21" )
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SR_SG55.png"  "\nsg 55"  "Cecil John Rhodes" "\nsacc 57" )
+STAMP_ADD_IMG (23.0 28.0  "stamp_images/SR_SG3.png"   "\nsg 3"   "KGV Definitive"    "\nsacc 3" )
+STAMP_ADD_IMG (23.0 28.0  "stamp_images/SR_SG3.png"   "\nsg 3"   "KGV Definitive"    "\nsacc 3" NO_FRAME)
+STAMP_ADD_IMG (31.0 42.0  "stamp_images/SA_SG100.png" "\nsg 100" "War Effort Bantam" "\nsacc 98" )
+
+PAGE_START
+PAGE_TEXT (HB 11 "\nStamp boxes containing both text and images:")
+PAGE_VSPACE (8.0)
+ROW_ALIGN_TOP
+
+ROW_START_FS (HN 7 0.2 4.0)
+
+# The default stamp box with no text.
+# The box is 28mm tall and the image has a 2mm border all around => that the image will be 19mm wide and 24mm tall.
+
+ALBUM_STAMP_NEW_IMG_SETTING (2.0 2.0 false)
+STAMP_ADD_IMG (23.0 28.0 "stamp_images/SR_SG3.png"   ""  ""   "" )
+
+# To leave room for some text, the stamp box is increased to 38mm.
+#To keep the image the same size, i.e 24mm will need 14mm of blank space, i.e a 7mm border top and bottom.
+ALBUM_STAMP_NEW_IMG_SETTING (2.0 7.0 false)
+STAMP_ADD_IMG (23.0 38.0 "stamp_images/SR_SG3.png"  "\nSG3" "and under the box" "\nSC3" "Text above the\nimage inside\nthe box" 4.0 2.0 )
+
+# In this case, the stamp box has been increased to 27m wide by 52mm tall.
+# To keep the image as 19mm x 24mm tall will require 8mm horizontal blank space and 28mm of vertical blank space
+# i.e 4mm at the left and right and 14mm at the top and bottom.
+
+ALBUM_STAMP_NEW_IMG_SETTING (4.0 14.0 false)
+STAMP_ADD_IMG (27.0 52.0 "stamp_images/SR_SG3.png"  "" "" "" "Or below the image.\nA few blank lines:\n\n\n\nfollowed by a few\nmore lines of text\nas shown here." -12.0 28.0 )
+
+
+PAGE_VSPACE (12.0)
+
+# The stamp box with and image and no text
+# The box is 62mm x 35mm, and the image has a 2mm border all around => that the image will be 58mm x 31mm
+ROW_START_FS (HN 9 0.2 4.0)
+ALBUM_STAMP_NEW_IMG_SETTING (2.0 2.0 false)
+STAMP_ADD_IMG (62.0 35.0 "stamp_images/Merson.png"  "" "" "" )
+
+PAGE_VSPACE (4.0)
+
+# In this case, the stamp box has been increased to 82m wide by 70mm tall.
+# To keep the image as 58mm x 31mm tall will require 24mm horizontal blank space and 39mm of vertical  blank space
+# i.e 12mm borders left and right and 19.5mm borders top and bottom.
+
+# The image has been moved up 12mm from the default central position, and the text has been moved 42.0mm down.
+ROW_START_FS (HN 9 0.2 4.0)
+ALBUM_STAMP_NEW_IMG_SETTING (12.0 19.5 false)
+STAMP_ADD_IMG (80.0 70.0 "stamp_images/Merson.png"  "" "" "" "Text below the image\nA second line\n\nand a third spaced from the line\nabove." -12.0 42.0)
+
+#Optional horizontal offset parameters move the image left 6mm and the text right 10mm
+STAMP_ADD_IMG (80.0 70.0 "stamp_images/Merson.png"  "" "" "" "Here, the image had been moved to\nthe upper left,\nThe text has been placed at the\nlower right." -16.0 55.0 -8.0 14.0)
+
+

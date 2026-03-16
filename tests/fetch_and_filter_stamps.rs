@@ -29,6 +29,8 @@ fn test_fetch_and_filter_stamps_basic() {
             original_image_url TEXT,
             image_width_px INTEGER,
             image_height_px INTEGER,
+               issue_location TEXT,
+               quantity_printed TEXT,
             watermark TEXT,
             design TEXT,
             engraving TEXT,

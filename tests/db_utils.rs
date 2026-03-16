@@ -35,6 +35,8 @@ fn make_stub(sg: &str, year: i32) -> StampStub {
         series: String::new(),
         context: String::new(),
         multi_perf: false,
+        issue_location: String::new(),
+        quantity_printed: String::new(),
     }
 }
 

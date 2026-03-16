@@ -1,0 +1,44 @@
+#####################################################################################
+#
+# A sample AlbumEasy file showing how to load and use fonts, including international
+# fonts.
+#
+# NOTE: For the international character sets to be processed correctly,
+#       AlbumEasy must be configured to use the Unicode(UTF-8) encoding.
+#
+#####################################################################################
+
+ALBUM_PAGES_SIZE     (210.0 297.0)                                #sized A4
+ALBUM_PAGES_MARGINS  (15.0 15.0 15.0 15.0 )
+ALBUM_PAGES_BORDER   (0.5 0.1 0.0 1.0)
+ALBUM_PAGES_SPACING  (5.0 5.0)
+ALBUM_PAGES_TITLE    (TB 16  "International Font Examples")
+
+                                                                # load the fonts
+ALBUM_DEFINE_FONT(DEJAVU_SANS  "DejaVu Sans")
+ALBUM_DEFINE_FONT(UN_BATANG    "Un Batang")
+
+PAGE_START
+
+PAGE_TEXT (HN 10 "\nThis page contains examples of text using international character sets.\n"\
+                 "In order for the international characters to appear correctly AlbumEasy "\
+                 "must be configured to use Unicode(UTF-8) Character Encoding.\nThis is the "\
+                 "default setting. However, it can be changed via the configuration button on the toolbar.")
+
+COLOUR_PAGE_TEXT(red)
+PAGE_TEXT (HN 10 "The next two lines of text contain Cyrillic and Hebrew using the free DejaVu Sans font:" 3.0)
+COLOUR_PAGE_TEXT(black)
+
+PAGE_TEXT (DEJAVU_SANS 14 "Cyrillic: АБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" 1.0)
+PAGE_TEXT (DEJAVU_SANS 14 "Hebrew: תשרקצץפףעסנןמםלכךיטחזוהדגבא")
+
+COLOUR_PAGE_TEXT(red)
+PAGE_TEXT (HN 10 "Un Batang used below is a free font that supports Korean as well as some Chinese and Japanese characters:" 3.0)
+COLOUR_PAGE_TEXT(black)
+
+PAGE_TEXT (UN_BATANG 12 "This is traditional Chinese text: 這是繁體中文文本" 1.0)
+PAGE_TEXT (UN_BATANG 12 "This is Japanese text: これは日本語のテキストです"  1.0)
+PAGE_TEXT (UN_BATANG 12 "This is Korean text: 이것은 한국어 텍스트입니다.")
+
+
+

@@ -155,12 +155,12 @@ pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
         None,
     );
     // Draw separator
-    let sep_y = (h / 2) as i32 + 2;
-    for x in 40..(w.saturating_sub(40)) {
-        if sep_y >= 0 && (sep_y as u32) < h {
-            img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
-        }
-    }
+    // let sep_y = (h / 2) as i32 + 2;
+    // for x in 40..(w.saturating_sub(40)) {
+    //     if sep_y >= 0 && (sep_y as u32) < h {
+    //         img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+    //     }
+    // }
     if !subtitle.is_empty() {
         draw_text(
             &mut img,
@@ -249,7 +249,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
         "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
         "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
         "/Library/Fonts/Arial.ttf",
-        "C:\\Windows\\Fonts\\arial.ttf",
+        "C:/Windows/Fonts/arial.ttf", // Windows accepts forward slashes
     ];
 
     for path in candidates.iter() {
@@ -492,19 +492,19 @@ pub fn ensure_placeholder_image_for_album(
     Ok("images/no_image_placeholder.png".to_string())
 }
 
-/// Generates a per-stamp placeholder image (includes SG number and year) inside the album images folder.
-/// Returns the relative path (from album dir) to the generated image, e.g. "images/no_image_SG1234_1967.png".
+/// Generates a per-stamp placeholder image (includes catalog number and year) inside the album images folder.
+/// Returns the relative path (from album dir) to the generated image, e.g. "images/no_image_AU_619a_1975.png".
 pub fn ensure_placeholder_image_for_stamp(
     album_name: &str,
-    sg_number: &str,
+    catalog_number: &str,
     year: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize album directory name to match other modules (use hyphens for spaces)
     let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
-    // sanitize sg_number for filename (replace slashes etc.)
-    let safe_sg = sg_number.replace(|c: char| !c.is_alphanumeric(), "_");
+    // sanitize catalog_number for filename (replace slashes etc.)
+    let safe_catalog = catalog_number.replace(|c: char| !c.is_alphanumeric(), "_");
     let safe_year = if year.is_empty() { "unknown" } else { year };
-    let filename = format!("no_image_{}_{}.png", safe_sg, safe_year);
+    let filename = format!("no_image_{}_{}.png", safe_catalog, safe_year);
     let placeholder_path = album_dir.join("images").join(&filename);
 
     if !placeholder_path.exists() {
@@ -534,8 +534,8 @@ pub fn ensure_placeholder_image_for_stamp(
             }
         }
 
-        // Title: SG {sg_number}
-        let title = format!("SG {}", sg_number);
+        // Title: catalog number (e.g., "AU 619a")
+        let title = catalog_number.to_string();
         let subtitle = if year.is_empty() {
             "".to_string()
         } else {
@@ -553,12 +553,12 @@ pub fn ensure_placeholder_image_for_stamp(
             bundled,
         );
         // Draw a thin separator line to add breathing room between title and subtitle
-        let sep_y = (height / 2) as i32 + 2;
-        for x in 40..(width - 40) {
-            if sep_y >= 0 && (sep_y as u32) < height {
-                img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
-            }
-        }
+        // let sep_y = (height / 2) as i32 + 2;
+        // for x in 40..(width - 40) {
+        //     if sep_y >= 0 && (sep_y as u32) < height {
+        //         img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+        //     }
+        // }
         if !subtitle.is_empty() {
             draw_text(
                 &mut img,
@@ -589,7 +589,7 @@ pub fn ensure_placeholder_image_for_stamp(
 /// `ensure_placeholder_image_for_stamp` which delegates to this with None hints.
 pub fn ensure_placeholder_image_for_stamp_with_hint(
     album_name: &str,
-    sg_number: &str,
+    catalog_number: &str,
     year: &str,
     series_hint: Option<&str>,
     stamp_bg_color: Option<Rgba<u8>>,
@@ -604,10 +604,10 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize album directory name to match other modules (use hyphens for spaces)
     let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
-    // sanitize sg_number for filename (replace slashes etc.)
-    let safe_sg = sg_number.replace(|c: char| !c.is_alphanumeric(), "_");
+    // sanitize catalog_number for filename (replace slashes etc.)
+    let safe_catalog = catalog_number.replace(|c: char| !c.is_alphanumeric(), "_");
     let safe_year = if year.is_empty() { "unknown" } else { year };
-    let filename = format!("no_image_{}_{}.png", safe_sg, safe_year);
+    let filename = format!("no_image_{}_{}.png", safe_catalog, safe_year);
     let placeholder_path = album_dir.join("images").join(&filename);
 
     // Ensure parent dir exists even if file already exists (we may overwrite)
@@ -710,7 +710,7 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
         }
 
         // Title/subtitle
-        let title = format!("SG {}", sg_number);
+        let title = catalog_number.to_string();
         let subtitle = if year.is_empty() {
             "".to_string()
         } else {
@@ -725,12 +725,12 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
             Rgba([90, 90, 90, 255]),
             bundled,
         );
-        let sep_y = (px_h / 2) as i32 + 2;
-        for x in 40..(px_w.saturating_sub(40)) {
-            if sep_y >= 0 && (sep_y as u32) < px_h {
-                img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
-            }
-        }
+        // let sep_y = (px_h / 2) as i32 + 2;
+        // for x in 40..(px_w.saturating_sub(40)) {
+        //     if sep_y >= 0 && (sep_y as u32) < px_h {
+        //         img.put_pixel(x, sep_y as u32, Rgba([220, 220, 220, 255]));
+        //     }
+        // }
         if !subtitle.is_empty() {
             draw_text(
                 &mut img,

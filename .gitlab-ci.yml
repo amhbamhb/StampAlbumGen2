@@ -1,369 +1,62 @@
 stages:
-  - lint
-  - test
+  - verify
   - build
-  - tag
-  - release
+
+# Keep CI simple: validate what should already pass locally, then optionally
+# produce a release artifact for default branch and tags.
+default:
+  image: rust:latest
+  before_script:
+    - rustc --version
+    - cargo --version
 
 variables:
-  # Keep a local CARGO_HOME in CI to avoid polluting global state
-  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
   CARGO_TERM_COLOR: "always"
   RUST_BACKTRACE: "1"
-
-default:
-  image: rust:1.72
-  before_script:
-    - rustup component add rustfmt --toolchain stable || true
-    - rustup component add clippy --toolchain stable || true
+  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
 
 cache:
-  key: "${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}"
+  key:
+    files:
+      - Cargo.lock
   paths:
     - target/
     - .cargo/registry/
-  policy: pull-push
 
-build:
-  stage: build
-  script:
-    - cargo build --bin stamp_album_gen2 --release --verbose
-    # Get version from Cargo.toml for artifact naming
-    - export VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-    - export BUILD_DATE=$(date +%Y%m%d_%H%M)
-    - echo "Building version $VERSION at $BUILD_DATE"
-    # Create versioned directory structure
-    - mkdir -p artifacts/stamp_album_gen2_v${VERSION}_${BUILD_DATE}
-    - cp target/release/stamp_album_gen2 artifacts/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
-    - cp README.md RELEASE_NOTES.md config.toml config_full_example.toml artifacts/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
-    # Create a "latest" symlink for easy access
-    - ln -sf stamp_album_gen2_v${VERSION}_${BUILD_DATE} artifacts/latest
-  artifacts:
-    when: always
-    name: "stamp_album_gen2_v${VERSION}_${BUILD_DATE}"
-    paths:
-      - artifacts/
-    expire_in: 30 days  # Keep artifacts for 30 days instead of 1 hour
-
-deploy_latest:
-  stage: release
-  script:
-    - export VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-    - export BUILD_DATE=$(date +%Y%m%d_%H%M)
-    - echo "Deploying stamp_album_gen2 v${VERSION} to permanent storage"
-    # Create deployment directory structure
-    - mkdir -p /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}
-    - cp target/release/stamp_album_gen2 /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
-    - cp README.md RELEASE_NOTES.md config.toml config_full_example.toml /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/
-    # Server deployment - uncomment when permissions are set up:
-    - sudo mkdir -p /home/admin/stamp_gen/versions
-    - sudo cp -r /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE} /home/admin/stamp_gen/versions/
-    - sudo ln -sf /home/admin/stamp_gen/versions/stamp_album_gen2_v${VERSION}_${BUILD_DATE} /home/admin/stamp_gen/latest
-    - sudo chown -R admin:admin /home/admin/stamp_gen/
-    - echo "Successfully deployed to /home/admin/stamp_gen/versions/"
-    - echo "Version is ${VERSION}"
-    - echo "Build date is ${BUILD_DATE}"
-    - echo "Files prepared in /tmp/deploy/stamp_album_gen2_v${VERSION}_${BUILD_DATE}/"
-  needs:
-    - build
-    - fmt
-  only:
-    - main
-    - master
-  when: on_success
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'
+    - if: '$CI_COMMIT_TAG'
 
 fmt:
-  stage: lint
+  stage: verify
   script:
     - cargo fmt --all -- --check
-  # fmt is a lint-stage job and should not depend on build. Stage ordering
-  # (lint -> test -> build) will ensure fmt runs before build. Remove
-  # explicit needs to avoid forcing unnecessary ordering.
 
-test_workspace:
-  stage: test
-  image: rust:latest
-  script: |
-    rustc --version
-    cargo --version
-    cargo install cargo2junit --version 0.3.0 2>/dev/null || true
-    mkdir -p target
-    set -o pipefail; cargo test --workspace --all-features --message-format=json 2>&1 | tee target/cargo-json.log | cargo2junit > target/junit-report.xml || true
-    if [ ! -s target/junit-report.xml ] || grep -q "No test suite results were found" target/junit-report.xml 2>/dev/null || grep -q "<testsuites */>" target/junit-report.xml 2>/dev/null || ! grep -q "<testcase" target/junit-report.xml 2>/dev/null; then
-      python3 scripts/cargo_json_to_junit.py target/cargo-json.log target/junit-report.xml || true
-    fi
-  only:
-    - branches
-    - merge_requests
-  except:
-    - tags
-  artifacts:
-    when: always
-    paths:
-      - target/junit-report.xml
-    reports:
-      junit: target/junit-report.xml
-
-db_path_quick_check:
-  stage: test
-  image: rust:latest
-  script: |
-    rustc --version
-    cargo --version
-    # Run only the lightweight db path unit test to provide a fast CI signal
-    mkdir -p target
-    set -o pipefail; cargo test -p stamp_album_gen2 --test db_path_unit -- --nocapture || true
-  only:
-    - branches
-    - merge_requests
-  except:
-    - tags
-
-version_consistency:
-  stage: test
-  image: rust:latest
-  script: |
-    set -e
-    # Ensure we have tags available
-    git fetch --tags --prune
-    LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-    if [ -z "$LATEST_TAG" ]; then
-      echo "No tags found; skipping version consistency check"
-      exit 0
-    fi
-    STRIPPED=${LATEST_TAG#v}
-    CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-    echo "Cargo.toml: $CARGO_VERSION, latest tag: $STRIPPED"
-
-    # Compare semantic versions numerically. Pass if Cargo.toml >= latest tag.
-    version_ge() {
-      # returns 0 if $1 >= $2
-      IFS='.' read -r a1 a2 a3 <<< "$1"
-      IFS='.' read -r b1 b2 b3 <<< "$2"
-      a1=${a1:-0}; a2=${a2:-0}; a3=${a3:-0}
-      b1=${b1:-0}; b2=${b2:-0}; b3=${b3:-0}
-      if [ "$a1" -gt "$b1" ]; then return 0; fi
-      if [ "$a1" -lt "$b1" ]; then return 1; fi
-      if [ "$a2" -gt "$b2" ]; then return 0; fi
-      if [ "$a2" -lt "$b2" ]; then return 1; fi
-      if [ "$a3" -ge "$b3" ]; then return 0; else return 1; fi
-    }
-
-    if version_ge "$CARGO_VERSION" "$STRIPPED"; then
-      if [ "$CARGO_VERSION" != "$STRIPPED" ]; then
-        echo "Cargo.toml ($CARGO_VERSION) is ahead of latest tag ($STRIPPED). This is expected when Cargo.toml was manually bumped; continuing."
-      else
-        echo "Version consistency check passed: $CARGO_VERSION"
-      fi
-      exit 0
-    else
-      echo "Version mismatch: Cargo.toml ($CARGO_VERSION) is older than latest tag ($STRIPPED)" >&2
-      exit 1
-    fi
-  only:
-    - branches
-    - merge_requests
-  except:
-    - tags
-
-tag_collision_check:
-  stage: test
-  image: rust:latest
-  script: |
-    set -e
-    # Check whether the current Cargo.toml version already exists as a v-tag on the remote
-    git fetch --tags --prune
-    CARGO_VERSION=$(grep '^version = ' Cargo.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
-    TAG_NAME="v${CARGO_VERSION}"
-    echo "Checking for existing tag: $TAG_NAME"
-    if git ls-remote --exit-code --tags origin "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
-      echo "Tag collision: tag $TAG_NAME already exists on remote origin" >&2
-      exit 1
-    fi
-    echo "No tag collision detected for $TAG_NAME"
-  only:
-    - merge_requests
-  except:
-    - tags
-
-bump_version:
-  stage: tag
-  before_script:
-    - git --version || true
-  script: |
-    set -e
-    git fetch --tags --prune
-    LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-    echo "Latest tag: $LATEST_TAG"
-    # Normalize by stripping a leading 'v' if present, then parse numbers
-    STRIPPED_TAG=${LATEST_TAG#v}
-    IFS='.' read -r MAJ MIN PATCH <<< "$STRIPPED_TAG"
-    MAJ=${MAJ:-0}; MIN=${MIN:-0}; PATCH=${PATCH:-0}
-    PATCH=$((PATCH + 1))
-    NEW_VERSION="${MAJ}.${MIN}.${PATCH}"
-    TAG_NAME="v${NEW_VERSION}"
-    echo "New version: $NEW_VERSION -> tag: $TAG_NAME"
-
-    # Update Cargo.toml so the project file and tag stay in sync
-    echo "Updating Cargo.toml to version $NEW_VERSION"
-    sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml || true
-
-    # Stage and commit Cargo.toml change if any, using CI credentials when available
-    git config --global user.name "GitLab CI/CD"
-    git config --global user.email "gitlab-ci@gitlab.com"
-    git add Cargo.toml || true
-    if git diff --cached --quiet; then
-      echo "No changes to commit for Cargo.toml"
-    else
-      git commit -m "chore: bump version to $NEW_VERSION" || echo "Warning: commit failed"
-      # Try to push the commit back to the branch (may fail if CI token lacks permissions)
-      if [ -n "${CI_JOB_TOKEN:-}" ]; then
-        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with CI_JOB_TOKEN"
-      elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
-        git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with GITLAB_ACCESS_TOKEN"
-      else
-        echo "No CI token available to push commit; commit remains local"
-      fi
-    fi
-
-    # Create the tag if it doesn't already exist
-    echo "Creating tag: $TAG_NAME"
-    if git rev-parse --verify "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
-      echo "Tag $TAG_NAME already exists; skipping creation."
-    else
-      git tag -a "$TAG_NAME" -m "CI: bump version to $TAG_NAME"
-      echo "Tag created locally: $TAG_NAME"
-    fi
-
-    # Push the tag if we have a token; otherwise skip pushing tags
-    if [ -n "${CI_JOB_TOKEN:-}" ]; then
-      echo "Attempting to push tag using CI_JOB_TOKEN..."
-      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "$TAG_NAME" || echo "Warning: Failed to push tag with CI_JOB_TOKEN (may lack permissions)"
-    elif [ -n "${GITLAB_ACCESS_TOKEN:-}" ]; then
-      echo "Attempting to push tag using GITLAB_ACCESS_TOKEN..."
-      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "$TAG_NAME" || echo "Warning: Failed to push tag with GITLAB_ACCESS_TOKEN"
-    else
-      echo "No CI token available to push tags; skipping push"
-      echo "To enable automatic tag pushing, set up a GITLAB_ACCESS_TOKEN with write_repository permissions"
-    fi
-  needs:
-    - build
-    - fmt
-  only:
-    - branches
-  when: on_success
-
-run_version_docs:
-  stage: tag
-  image: rust:latest
-  before_script:
-    - git --version || true
-    - chmod +x ./version_docs.sh || true
-  script: |
-    set -e
-    # Run the canonical version bump script. This will attempt to commit and push
-    # using CI tokens when available. Run non-interactively.
-    ./version_docs.sh patch --git --push --yes
-  needs:
-    - build
-    - fmt
-  only:
-    - branches
-  when: on_success
-
-release:
-  stage: release
-  image: rust:latest
-  only:
-    refs:
-      - main
-      - master
-  except:
-    refs:
-      - tags
-  variables:
-    CI_COMMIT_MESSAGE: "$CI_COMMIT_MESSAGE"
-  before_script:
-    - git --version || true
-    - rustc --version
-    - cargo --version
-  script: |
-    if ! echo "$CI_COMMIT_MESSAGE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
-      echo "Not a conventional commit. Skipping automated release."
-      exit 0
-    fi
-    echo "Starting automated release process..."
-    export CURRENT_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-    echo "Current version: $CURRENT_VERSION"
-    if git log --oneline -n 20 | grep -q "feat:"; then
-      export VERSION_TYPE="minor"
-    elif git log --oneline -n 20 | grep -q "fix:"; then
-      export VERSION_TYPE="patch"
-    elif git log --oneline -n 20 | grep -q "BREAKING CHANGE"; then
-      export VERSION_TYPE="major"
-    else
-      export VERSION_TYPE="patch"
-    fi
-    MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
-    MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
-    PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
-    case $VERSION_TYPE in
-      "major")
-        NEW_VERSION="$((MAJOR + 1)).0.0"
-        ;;
-      "minor")
-        NEW_VERSION="$MAJ.$((MINOR + 1)).0"
-        ;;
-      "patch")
-        NEW_VERSION="$MAJ.$MINOR.$((PATCH + 1))"
-        ;;
-    esac
-    export NEW_VERSION=$NEW_VERSION
-    echo "New version: $CURRENT_VERSION -> $NEW_VERSION"
-    sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
-    DATE=$(date +%Y-%m-%d)
-    sed -i "s/Version: [0-9]\+\.[0-9]\+\.[0-9]\+/Version: $NEW_VERSION/" README.md || true
-    sed -i "s/Last Updated: [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/Last Updated: $DATE/" README.md || true
-    sed -i "s/\*\*Version\*\*: [0-9]\+\.[0-9]\+\.[0-9]\+/\*\*Version\*\*: $NEW_VERSION/" README.md || true
-    sed -i "s/\*\*Release Date\*\*: [0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}/\*\*Release Date\*\*: $DATE/" README.md || true
-    git config --global user.name "GitLab CI/CD"
-    git config --global user.email "gitlab-ci@gitlab.com"
-    git add Cargo.toml README.md || true
-    if git diff --cached --quiet; then
-      echo "No changes to commit"
-    else
-      git commit -m "chore: bump version to $NEW_VERSION"
-      echo "Attempting to push version bump commit..."
-      if [ -n "${CI_JOB_TOKEN:-}" ]; then
-        git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with CI_JOB_TOKEN"
-      else
-        git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" HEAD:${CI_COMMIT_REF_NAME} || echo "Warning: Failed to push commit with GITLAB_ACCESS_TOKEN"
-      fi
-    fi
-    RELEASE_NOTES="## Release $NEW_VERSION
-    ### Changes
-    $(git log --oneline --pretty=format:\"- %s\" HEAD~1..HEAD)
-    ### Version Bump
-    - **Type**: $VERSION_TYPE
-    - **Previous**: $CURRENT_VERSION
-    - **New**: $NEW_VERSION
-    ### Automated Release
-    This release was automatically created by the CI/CD pipeline based on conventional commits."
-    curl --header 'Content-Type: application/json' \
-         --header "PRIVATE-TOKEN: ${GITLAB_ACCESS_TOKEN}" \
-         --data "{\"name\": \"Release $NEW_VERSION\", \"tag_name\": \"v$NEW_VERSION\", \"description\": \"$RELEASE_NOTES\", \"ref\": \"${CI_COMMIT_SHA}\"}" \
-         --request POST ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases || true
-    git tag "v$NEW_VERSION" || true
-    echo "Attempting to push tag v$NEW_VERSION..."
-    if [ -n "${CI_JOB_TOKEN:-}" ]; then
-      git push "https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || echo "Warning: Failed to push tag with CI_JOB_TOKEN"
-    else
-      git push "https://oauth2:${GITLAB_ACCESS_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git" "v$NEW_VERSION" || echo "Warning: Failed to push tag with GITLAB_ACCESS_TOKEN"
-    fi
-
-manual_release:
-  stage: release
-  image: rust:latest
-  when: manual
+check:
+  stage: verify
   script:
-    - echo "Manual release triggered"
+    - cargo check --workspace --all-targets
+
+test:
+  stage: verify
+  script:
+    - cargo test --workspace --all-features
+
+build_release:
+  stage: build
+  script:
+    - cargo build --release --bin stamp_album_gen2
+    - mkdir -p artifacts
+    - cp target/release/stamp_album_gen2 artifacts/
+    - cp README.md RELEASE_NOTES.md config.toml config_full_example.toml artifacts/
+  artifacts:
+    name: "stamp_album_gen2-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA"
+    when: on_success
+    expire_in: 14 days
+    paths:
+      - artifacts/
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'

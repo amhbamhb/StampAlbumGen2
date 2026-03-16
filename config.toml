@@ -1,129 +1,28 @@
-
 ###################################
-# General - Page & Layout
+# Page
 ###################################
-
-# These values control the physical page size and the printable margins.
-# Units: millimetres (mm). The defaults below produce a standard A4-ish
-# album page. Adjust margins to tune how much printable area the album has.
-album_page_width_mm = 216.0          # Page width in mm (paper width)
-album_page_height_mm = 279.4         # Page height in mm (paper height)
-page_top_margin_mm = 10.0            # Top margin (mm)
-page_bottom_margin_mm = 10.0         # Bottom margin (mm)
-page_left_margin_mm = 10.0           # Left margin (mm)
-page_right_margin_mm = 10.0          # Right margin (mm)
-
-###################################
-# Stamps - Sizing & Packing
-###################################
-
-# Defaults used when measuring images or creating stamp boxes. These
-# are conservative defaults; set them to match your scanned images so
-# the layout engine can place stamps neatly.
-reference_width_mm = 24.0            # Default nominal stamp width in mm
-reference_height_mm = 27.0           # Default nominal stamp height in mm
-stamp_box_height = 36.0              # Height allocated per stamp box (mm)
-
-# Fine-tune packing/adjustment. `stamp_box_adjust` can be negative to
-# slightly shrink the reserved box if your stamps are slightly smaller
-# than the nominal size.
-stamp_box_adjust = -2.5
-
-# Packing limits: control how many stamps/rows the generator will try
-# to place on a single row/page. Reduce if pages feel cramped.
-max_stamps_per_row = 3               # Maximum stamps horizontally per row
-max_rows_per_page = 5                # Maximum rows per page
-packing_horizontal_safety_mm = 5.0   # Safety gap left/right of each stamp (mm)
-packing_vertical_safety_mm = 2.0     # Safety gap above/below each stamp (mm)
-series_row_gap_mm = 0.0              # Per-series inter-row gap (mm). Set to None/omit to disable.
-
-# Centering & diagnostics
-# When true the generator will emit a prototype `PAGE_HSPACE (X)` line
-# before rows to indicate an intended left-offset (in mm) that would
-# center the row in the printable area. This is a renderer-facing
-# prototype feature — enable only if your renderer supports horizontal offsets.
-enable_row_centering = true
-
-# When true the generator emits a `# ROW_META ...` diagnostic comment
-# before each row containing: number of stamps, computed row width (mm),
-# usable width (mm), extra space and computed left offset. Useful to tune
-# packing and centering without changing rendering.
-show_stamps_per_row = true
-
-
-############################################
-# Standard font size for stamp headings (HN value)
-# here is list of posible font:
-############################################
-
-# CN = Courier
-# CB = Courier Bold
-# CI = Courier Italic
-# CS = Courier Bold-Italic
-# HN = Times Roman
-# TB = Times Roman Bold
-# TI = Times Roman Italic
-# TS = Times Roman Bold-Italic
-# HN = Helvetica
-# HB = Helvetica Bold
-# HI = Helvetica Italic
-# HS = Helvetica Bold-Italic
-
-###################################
-# Fonts and Header/Footer
-###################################
-
-
-# Font and page title settings. Fonts are referenced by short codes used
-# by the renderer (for example: HN = Helvetica Neue, TN = Times New Roman).
-album_pages_title_font = "HN"        # Font used for album page titles
-album_pages_title_size = 10.0         # Title font size (pt)
-album_pages_header_position = "C"    # Header alignment: L|C|R
-
-# Footer page numbering: enable or disable and choose font/placement
-album_pages_footer_number_enabled = true
-album_pages_footer_number_font = "HN"
-album_pages_footer_number_size = 8.0
-album_pages_footer_number_position = "C"  # Footer alignment: L|C|R
-album_pages_footer_number_start = 1         # Starting page number
-album_pages_footer_number_before = "Page " # Text printed before the number
-album_pages_footer_number_after = " of $PAGES$" # Text printed after the number
-
-###################################
-# Row / Text Layout
-###################################
-
-# Controls spacing and the optional 'row start' element (an initial
-# short paragraph/header used at the top of a section) used by some
-# album styles. These values affect text layout and pagination.
-row_font_spacing = 0.1
-header_font_spacing = 2.0
-row_start_es_enabled = true
-row_start_es_font = "HN"
-row_start_es_size = 6.0
-row_start_es_spacing = 0.1
-row_start_es_vspace = 5.0
-
-# When trying to fit content on a page, apply this conservative buffer
-# (mm) to avoid clipping or very tight layouts when rounding occurs.
-page_fit_conservative_buffer_mm = 2.0
-
-###################################
-# Additional layout & feature toggles
-# These keys appear in some deployed `config.toml` files; they control
-# fine-grained borders, optional stamp features and a few rendering flags.
-
-# Page borders (outer and internal guide lines in mm)
+[page]
+album_page_width_mm = 216.0
+album_page_height_mm = 279.4
+page_top_margin_mm = 10.0
+page_bottom_margin_mm = 10.0
+page_left_margin_mm = 10.0
+page_right_margin_mm = 10.0
 page_border_outer = 0.1
 page_border_inner1 = 0.5
 page_border_inner2 = 0.1
 page_border_spacing = 1.0
-
-# Horizontal/vertical spacing between album page stamp groups
 album_pages_spacing_h = 3.0
 album_pages_spacing_v = 3.0
+max_page_vspace_mm = 10.0
 
-# Feature toggles for stamp details (include or hide these attributes)
+###################################
+# Header / Footer
+###################################
+[header]
+album_pages_title_font = "HN"
+album_pages_title_size = 10.0
+album_pages_header_position = "C"
 include_design = true
 include_engraving = true
 include_watermark = true
@@ -132,45 +31,76 @@ include_catalog_numbers = true
 include_series = true
 include_country = true
 include_date = true
+header_vspace_before_mm = 1.0
+header_vspace_after_mm = 2.0
 
-# Allow a single large stamp to take an entire page if it exceeds this
-# fraction of the page width/height (0.0-1.0 range).
+[footer]
+album_pages_footer_number_enabled = true
+album_pages_footer_number_font = "HN"
+album_pages_footer_number_size = 8.0
+album_pages_footer_number_position = "C"
+album_pages_footer_number_start = 1
+album_pages_footer_number_before = "Page "
+album_pages_footer_number_after = " of $PAGES$"
+
+###################################
+# Stamps
+###################################
+[stamps]
+reference_width_mm = 24.0
+reference_height_mm = 27.0
+stamp_box_height = 36.0
+stamp_box_adjust = 0.0
+colnect_width_adjust_mm = 1.0
+colnect_height_adjust_mm = 3.0
+max_stamps_per_row = 5
+max_rows_per_page = 5
+packing_horizontal_safety_mm = 8.0
+packing_vertical_safety_mm = 1.0
+series_row_gap_mm = 0.0
+stamp_detail_layout = "separate_rows"
+stamp_detail_font_size = 6
+stamp_detail_vspace = 3.5
+page_box_border_color = "white"
+page_box_text_color = "black"
+page_box_background_color = "white"
+page_box_font = "HN"
+page_box_font_size = 6
+page_box_border_width = 0.1
 allow_single_large_stamp_per_page = true
 single_stamp_threshold_pct = 0.7
-
-# Usable height padding & header spacing (mm)
 usable_height_padding_mm = 1.0
-header_vspace_before_mm = 10.0
-header_vspace_after_mm = 1.0
-
-# Text metrics and image spacing
 text_line_height_mm = 2.6
-image_spacing_mm = 5.0
-
-# Image sizing hints used when generating the 'new' stamp image box
-album_stamp_img_new_setting_w_mm = 6.0
-album_stamp_img_new_setting_h_mm = 6.0
+image_spacing_mm = 1.0
+album_stamp_img_new_setting_w_mm = 3.0
+album_stamp_img_new_setting_h_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
-
-# Allow keeping album-wide stamp aspect ratio setting
 album_stamp_img_aspect_ratio = true
-
-# Series ordering, page marker tokens and row-start marker strings
-series_order = "first_sg"
-page_vspace_marker = "6"
-row_start_es_marker = "ROW_START_ES"
-
-# Stamp heading font/label settings (short codes, see earlier font list)
 stamp_heading_font = "HN"
 stamp_heading_size = 6.0
-stamp_heading_label = "SG"
+stamp_heading_label = "Scott"
 
-# Visual / Color
 ###################################
+# Layout
+###################################
+[layout]
+row_font_spacing = 0.1
+header_font_spacing = 2.0
+row_start_es_enabled = true
+row_start_es_font = "HN"
+row_start_es_size = 6.0
+row_start_es_spacing = 0.1
+row_start_es_vspace = 6.0
+page_fit_conservative_buffer_mm = 2.0
+enable_row_centering = true
+show_stamps_per_row = true
+row_start_es_marker = "ROW_START_ES"
+series_order = "first_sg"
 
-# Colour tokens used for album decoration. Values are symbolic names
-# that the rendering layer maps to actual colours; consult renderer
-# documentation if you want custom hex values.
+###################################
+# Colors
+###################################
+[colors]
 color_album_border = "darkblue"
 color_album_footer = "darkblue"
 color_album_header = "darkblue"
@@ -182,13 +112,9 @@ color_stamp_text = "black"
 color_stamp_background = "black"
 
 ###################################
-# Flags / Cover
+# Flag Cover
 ###################################
-
-# Controls the optional flag/cover page printed at the start of an album.
-# If `print_flag_cover` is true the renderer will attempt to copy a country
-# flag into the album images folder and print a cover image using the
-# dimensions below.
+[flag_cover]
 print_flag_cover = true
 flag_cover_img_w_mm = 160.0
 flag_cover_img_h_mm = 80.0
@@ -197,8 +123,6 @@ flag_cover_image_vspace_after = 12.0
 flag_cover_image_title_font = "HN"
 flag_cover_image_title_size = 32.0
 flag_cover_image_title_scale = 1.0
-
-# Text-only cover layout settings (used when no flag image is available)
 flag_cover_text_only_vspace_top = 24.0
 flag_cover_text_only_title_font = "HN"
 flag_cover_text_only_title_size = 48.0
@@ -206,91 +130,49 @@ flag_cover_text_only_title_scale = 1.0
 flag_cover_text_only_vspace_after = 18.0
 
 ###################################
-# Data Sources & Collection
+# Data Sources
 ###################################
-
-# These settings control external data collection and caching. The program
-# will consult these at startup and the fetch/caching subsystems honor them.
-
-# If `fetch_wikipedia` is true the program will attempt to fetch and cache
-# Wikipedia / Grokipedia content for the album topic. If false, cached
-# content (if present) may still be used depending on other flags.
+[data_sources]
 fetch_wikipedia = false
-
-# When true, include any cached Wikipedia/Grokipedia content in the album
-# output (formatted into album pages). This is separate from `fetch_wikipedia`
-# to allow using previously-cached content without network activity.
 include_wikipedia_content = false
-
-# Where to store the cached Wikipedia content (SQLite DB path).
 wikipedia_cache_db_path = "wikipedia_cache.db"
-
-# Wikipedia ingest: when scraping finds ZERO stamps you can optionally
-# attempt to ingest cached wiki content into the album DB so a first-run
-# album has meaningful content. This is conservative by default and will
-# not overwrite an album that already has stamps.
 wikipedia_ingest_enable = true
 wikipedia_ingest_max_entries = 12
 wikipedia_ingest_series_prefix = "Wikipedia import"
-
-# How to expand grouped ranges found on StampWorld listings.
-# Options:
-#  - "none"        : do not expand grouped ranges at all
-#  - "placeholders": insert lightweight placeholder rows for grouped ranges
-#  - "detail_fetch" : attempt to fetch detailed pages for each range entry
 expand_grouped_ranges = "placeholders"
 
 ###################################
-# Wikipedia / Grokipedia formatting & pagination
+# Wikipedia
 ###################################
-
-# These control how cached Wikipedia/Grokipedia content is converted into
-# album pages: fonts, paragraph spacing and the pagination strategy.
-
-# Font and paragraph layout for wiki content
-content_wiki_font = "HN"                  # Font used for larger wiki content blocks (body+headings)
-content_wiki_font_size = 12                # Default font size (pt) for content blocks
-wikipedia_paragraph_font = "HN"           # Font code used for paragraphs
-wikipedia_paragraph_font_size = 12         # Paragraph font size (pt)
-wikipedia_paragraph_alignment = "JUSTIFIED" # LEFT|RIGHT|CENTER|JUSTIFIED
-wikipedia_paragraph_padding = 10.0         # Left/right padding inside paragraph (mm)
-wikipedia_paragraph_right_padding = 10.0   # Right padding (mm)
-
-# You can either set an explicit paragraph vertical gap in mm or rely on the
-# multiplier which scales relative to the paragraph font size. If you set
-# `wikipedia_paragraph_vspace` it overrides the multiplier.
-# wikipedia_paragraph_vspace = 5.0
+[wikipedia]
+content_wiki_font = "HN"
+content_wiki_font_size = 12
+wikipedia_paragraph_font = "HN"
+wikipedia_paragraph_font_size = 11
+wikipedia_paragraph_alignment = "JUSTIFIED"
+wikipedia_paragraph_padding = 8.0
+wikipedia_paragraph_right_padding = 8.0
 wikipedia_paragraph_vspace_multiplier = 0.18
-
-# Pagination strategy determines how large wiki pages are split across
-# album pages. Choose `balanced` for even distribution, `conservative`
-# to use a reduced per-page target (to avoid crowding), or `no_balance`
-# for greedy filling.
+wikipedia_section_title_font = "HB"
+wikipedia_section_title_font_size = 13
+wikipedia_section_title_spacing = 4.0
 wikipedia_pagination_strategy = "balanced"
-wikipedia_pagination_conservative_fraction = 0.75
-
-# If true, center small wiki sections vertically on the page to avoid
-# large empty bottom margins when content is small compared to the page.
-wikipedia_center_content = true
+wikipedia_pagination_conservative_fraction = 0.80
+wikipedia_center_content = false
+wikipedia_use_math_spacing = true
 
 ###################################
-# Image & DPI
+# Image / DPI
 ###################################
-
-# Image processing options. `force_dpi` sets the DPI assumed for scanned
-# images when converting pixel sizes to millimetres. `preserve_real_image_size`
-# instructs the renderer to respect the original image dimensions where
-# possible instead of scaling to the nominal stamp box.
+[images]
 force_dpi = 96.0
 preserve_real_image_size = true
+placeholder_always_overwrite = true
 
 ###################################
-# Album Text / PAGE_TEXT templates
+# Text Templates
 ###################################
-
-# These templates control how text blocks are emitted into album pages.
-# They are parser-friendly formats used by the page renderer. You can
-# modify the font/size tokens here if you want different default styles.
+[text_templates]
 page_text_format = 'PAGE_TEXT (HN 10 "{}" 1.0)'
 page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
 page_text_right_format = 'PAGE_TEXT_RIGHT (HN 10 "{}" 1.0)'
@@ -300,29 +182,53 @@ page_text_vspace = 1.0
 page_text_centre_font = "HN"
 page_text_centre_size = 8.0
 page_text_centre_vspace = 1.0
+# Optional overrides for series heading lines (e.g. "Queen Juliana ...")
+series_page_text_centre_font = "HN"
+series_page_text_centre_size = 8.0
+series_page_text_centre_vspace = 1.0
+# Optional overrides for date lines (e.g. "July 1970")
+date_page_text_centre_font = "HN"
+date_page_text_centre_size = 8.0
+date_page_text_centre_vspace = 1.0
+# Optional overrides for watermark lines
+watermark_page_text_centre_font = "HN"
+watermark_page_text_centre_size = 8.0
+watermark_page_text_centre_vspace = 1.0
+# Optional overrides for engraving lines
+engraving_page_text_centre_font = "HN"
+engraving_page_text_centre_size = 8.0
+engraving_page_text_centre_vspace = 1.0
 page_text_right_font = "HN"
 page_text_right_size = 10.0
 page_text_right_vspace = 1.0
 
 ###################################
-# Misc
+# Runtime
 ###################################
-
-placeholder_always_overwrite = true
-
-# Miscellaneous flags used by tooling and the renderer.
+[runtime]
 show_progress_indicator = true
 
-# NOTE TO MAINTAINS / COPILOT: The program reads `config.toml` at
-# startup and many subsystems (fetchers, pagination, and ingest) consult
-# these values. Tooling or helper scripts should always load and validate
-# the effective configuration before performing operations that depend on
-# these keys (for example, the Wikipedia ingest fallback). Prefer
-# `crate::config::load_config("config.toml")` to ensure defaults are
-# populated and documented values are available.
-
-
-# ---- Computed values (auto-updated) ----
-# Computed: recommended stamps per row (mm math)
+###################################
+# Computed (informational)
+###################################
 computed_stamps_per_row = 3
-# Computed: average_emit_width_mm = 36.98
+computed_average_emit_width_mm = 36.98
+
+###################################
+# Colnect
+###################################
+[colnect]
+include_details = true
+# detail_box | inside_stamp
+details_placement = "inside_stamp"
+detail_fields = "catalog_codes,issued_on,expiry_date,size,themes,printing,paper,gum,designers,printers,colors,watermark,format,emission,perforation,face_value,print_run,score,description"
+
+[colnect.fields]
+catalog_codes = false
+themes = true
+perforation = true
+issued_on = true
+face_value = false
+print_run = true
+description = true
+designers = true

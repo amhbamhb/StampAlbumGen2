@@ -1,0 +1,91 @@
+# ------------------------------------------------------------------------------
+# Setup page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE     (215.9 279.4)               # Set the page to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0)      # Left, right, top and bottom page margins
+ALBUM_PAGES_BORDER   (0.5 0.1  0.0 1.0)
+ALBUM_PAGES_SPACING  (3.0 0.0)
+
+#------------------------------------------
+#            FIRST PAGE
+#------------------------------------------
+
+PAGE_START
+PAGE_VSPACE(5)
+PAGE_TEXT_CENTRE(TN 12 "A LIGHT GREY GRID OF 4mm SQUARES" 2.0)
+COLOUR_PAGE_QUADRILLE(lightgray)
+PAGE_QUADRILLE(0.1 4.0 4.0 CENTRE)
+
+#------------------------------------------
+#            SECOND PAGE
+#------------------------------------------
+
+PAGE_START
+PAGE_TEXT_CENTRE(TN 12 "GRIDS SIZES AND COLOURS CAN BE CUSTOMISED\nTHESE ARE 2.5mm SQUARES" 12.0)
+
+COLOUR_PAGE_QUADRILLE(orange)
+PAGE_QUADRILLE(0.1 2.5 2.5 CENTRE 1.5 125 200.0 0.75 10)
+
+#------------------------------------------
+#            THIRD PAGE
+#------------------------------------------
+
+PAGE_START
+PAGE_VSPACE(5)
+PAGE_TEXT_CENTRE(TN 12 "GRIDS CAN APPEAR IN COLUMNS" 12.0)
+
+PAGE_COLUMN_START (50 1.0 0.0 0.0 1.0)
+PAGE_VSPACE (12.0)
+COLOUR_PAGE_QUADRILLE(red)
+PAGE_QUADRILLE(0.25 5.0 5.0 CENTRE 1.0 75 200 1.25 5)
+
+PAGE_COLUMN_NEXT
+PAGE_VSPACE (12.0)
+COLOUR_PAGE_QUADRILLE(Green)
+PAGE_QUADRILLE(0.25 5.0 5.0 CENTRE 0.25 90 120)
+PAGE_COLUMN_STOP
+
+#------------------------------------------
+#            FOURTH PAGE
+#------------------------------------------
+
+PAGE_START
+PAGE_VSPACE(5)
+PAGE_TEXT_CENTRE(TN 12 "MIX AND MATCH" 12.0)
+
+ROW_START_FS (HN 6 0.1 8.0)
+STAMP_ADD (28.0 32.0 ""  ""  "1" "")
+STAMP_ADD (28.0 32.0 ""  ""  "2" "")
+STAMP_ADD (28.0 32.0 ""  ""  "3" "")
+STAMP_ADD (28.0 32.0 ""  ""  "4" "")
+STAMP_ADD (28.0 32.0 ""  ""  "5" "")
+
+PAGE_VSPACE(5)
+
+PAGE_TEXT_CENTRE(TN 12 "SOME MORE STAMPS" 6.0)
+
+ROW_START_FS (HN 6 0.1 8.0)
+STAMP_ADD (28.0 32.0 ""  ""  "6" "")
+STAMP_ADD (28.0 32.0 ""  ""  "7" "")
+STAMP_ADD (28.0 32.0 ""  ""  "8" "")
+STAMP_ADD (28.0 32.0 ""  ""  "9" "")
+STAMP_ADD (28.0 32.0 ""  ""  "10" "")
+
+PAGE_VSPACE(8)
+
+COLOUR_PAGE_QUADRILLE(lightgray)
+
+PAGE_COLUMN_START (50 0.0 0.0 0.0 0.0)
+PAGE_TEXT_CENTRE(TN 12 "Colours" 4.0)
+PAGE_QUADRILLE(0.25 5.0 5.0 CENTRE 0.25 85 40)
+
+PAGE_COLUMN_NEXT
+PAGE_TEXT_CENTRE(TN 12 "Perfs" 4.0)
+PAGE_QUADRILLE(0.25 5.0 5.0 CENTRE 0.25 85 40)
+
+PAGE_COLUMN_STOP
+
+PAGE_VSPACE(10.0)
+PAGE_TEXT_CENTRE(TN 12 "Other Variations" 4.0)
+PAGE_QUADRILLE(0.25 5.0 5.0 CENTRE 0.25 180 60)

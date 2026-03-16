@@ -82,10 +82,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Execute appropriate mode
-    if cli.db_path.is_some() {
-        // Database-only mode
+    if cli.db_path.is_some()
+        || (effective_source == "colnectexport"
+            && (cli.colnect_csv.is_some() || cli.colnect_inbox.is_some()))
+    {
+        // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
         run_database_mode(&cli, show_progress)?;
-    } else if effective_source == "stampworld" {
+    } else if effective_source == "stampworld" || effective_source == "us1847" {
         // Scraping mode
         // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
         // network operations, but we must still validate required CLI
@@ -107,9 +110,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 println!();
                 std::process::exit(1);
             }
-            println!("Skipping StampWorld scraping because SKIP_NETWORK_SCRAPE is set");
+            println!(
+                "Skipping {} scraping because SKIP_NETWORK_SCRAPE is set",
+                if effective_source == "stampworld" {
+                    "StampWorld"
+                } else {
+                    "US1847"
+                }
+            );
         } else {
-            run_scraping_mode(&cli, show_progress)?;
+            run_scraping_mode(&cli, show_progress, &effective_source)?;
         }
     } else {
         // No db_path and not stampworld: require db_path

@@ -30,6 +30,8 @@ pub struct Config {
     pub reference_height_mm: Option<f32>,
     pub stamp_box_height: Option<f32>,
     pub stamp_box_adjust: Option<f32>,
+    pub colnect_width_adjust_mm: Option<f32>,
+    pub colnect_height_adjust_mm: Option<f32>,
     // Page layout overrides (mm)
     pub album_page_width_mm: Option<f32>,
     pub album_page_height_mm: Option<f32>,
@@ -85,8 +87,47 @@ pub struct Config {
     pub include_series: Option<bool>,
     pub include_country: Option<bool>,
     pub include_date: Option<bool>,
+    // Stamp detail layout mode: "inline" (default), "separate_rows", "minimal"
+    // - inline: All details inside stamp boxes (current behavior, can be cluttered)
+    // - separate_rows: Clean stamps on first row, organized details below each stamp
+    // - minimal: Only essential info (face value) in stamps, no detail rows
+    pub stamp_detail_layout: Option<String>,
+    // Which Colnect fields to include in detail output (comma-separated)
+    // Options: print_run, themes, printing, paper, gum, designers, printers, colors, description
+    // Default: "print_run,themes,designers" for concise output
+    pub colnect_detail_fields: Option<String>,
+    // Dedicated Colnect detail-output controls. If present, this section
+    // takes precedence over legacy top-level Colnect detail keys.
+    pub colnect: Option<ColnectConfig>,
+    // Font size for stamp details in separate_rows mode (e.g., 6, 7, 8)
+    // Default: 8
+    pub stamp_detail_font_size: Option<u8>,
+    // Vertical space before and after stamp details in separate_rows mode
+    // Default: 2.0
+    pub stamp_detail_vspace: Option<f64>,
+    // Box border color for detail boxes in separate_rows mode
+    // Default: "blue"
+    pub page_box_border_color: Option<String>,
+    // Box text color for detail boxes in separate_rows mode
+    // Default: "blue"
+    pub page_box_text_color: Option<String>,
+    // Box background color for detail boxes in separate_rows mode
+    // Default: "white"
+    pub page_box_background_color: Option<String>,
+    // Font for PAGE_ADD_BOX detail boxes
+    // Default: "HN" (Helvetica Normal)
+    pub page_box_font: Option<String>,
+    // Font size for PAGE_ADD_BOX detail boxes
+    // Default: 8
+    pub page_box_font_size: Option<u8>,
+    // Border width for PAGE_ADD_BOX detail boxes
+    // Default: 0.1
+    pub page_box_border_width: Option<f64>,
     // Allow overriding maximum rows per page when header is larger
     pub max_rows_per_page: Option<usize>,
+    // Maximum PAGE_VSPACE (mm) the centering postprocessor is allowed to emit.
+    // Helps avoid excessive whitespace on sparse pages.
+    pub max_page_vspace_mm: Option<f32>,
     // When false, don't emit ROW_START_ES automatically after PAGE_START
     // Default: true
     pub row_start_es_enabled: Option<bool>,
@@ -218,6 +259,27 @@ pub struct Config {
     pub page_text_centre_font: Option<String>,
     pub page_text_centre_size: Option<f32>,
     pub page_text_centre_vspace: Option<f32>,
+    // Optional per-header-line PAGE_TEXT_CENTRE templates and overrides.
+    // Each `*_format` should contain a single `{}` placeholder for text.
+    pub series_page_text_centre_format: Option<String>,
+    // Optional series-header-specific PAGE_TEXT_CENTRE overrides. When any of
+    // these are set, series name lines use these values instead of the generic
+    // centered text template.
+    pub series_page_text_centre_font: Option<String>,
+    pub series_page_text_centre_size: Option<f32>,
+    pub series_page_text_centre_vspace: Option<f32>,
+    pub date_page_text_centre_format: Option<String>,
+    pub date_page_text_centre_font: Option<String>,
+    pub date_page_text_centre_size: Option<f32>,
+    pub date_page_text_centre_vspace: Option<f32>,
+    pub watermark_page_text_centre_format: Option<String>,
+    pub watermark_page_text_centre_font: Option<String>,
+    pub watermark_page_text_centre_size: Option<f32>,
+    pub watermark_page_text_centre_vspace: Option<f32>,
+    pub engraving_page_text_centre_format: Option<String>,
+    pub engraving_page_text_centre_font: Option<String>,
+    pub engraving_page_text_centre_size: Option<f32>,
+    pub engraving_page_text_centre_vspace: Option<f32>,
     pub page_text_right_font: Option<String>,
     pub page_text_right_size: Option<f32>,
     pub page_text_right_vspace: Option<f32>,
@@ -266,6 +328,48 @@ pub struct Config {
     // Wikipedia section title formatting
     pub wikipedia_section_title_font: Option<String>,
     pub wikipedia_section_title_font_size: Option<u32>,
+    pub wikipedia_section_title_spacing: Option<f64>,
+    pub wikipedia_use_math_spacing: Option<bool>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct ColnectConfig {
+    // Master toggle for including Colnect detail metadata in output.
+    // Defaults to true when omitted.
+    pub include_details: Option<bool>,
+    // Optional comma-separated list of Colnect detail fields. When omitted,
+    // falls back to legacy `colnect_detail_fields` or built-in defaults.
+    pub detail_fields: Option<String>,
+    // Optional per-field boolean toggles. When at least one toggle is set,
+    // this map takes precedence over `detail_fields`.
+    pub fields: Option<ColnectFieldToggles>,
+    // Colnect detail placement mode.
+    // - "detail_box" (default): separate PAGE_ADD_BOX blocks under stamps
+    // - "inside_stamp": include Colnect text in STAMP_ADD_IMG text fields
+    pub details_placement: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct ColnectFieldToggles {
+    pub catalog_codes: Option<bool>,
+    pub issued_on: Option<bool>,
+    pub expiry_date: Option<bool>,
+    pub size: Option<bool>,
+    pub themes: Option<bool>,
+    pub printing: Option<bool>,
+    pub paper: Option<bool>,
+    pub gum: Option<bool>,
+    pub designers: Option<bool>,
+    pub printers: Option<bool>,
+    pub colors: Option<bool>,
+    pub watermark: Option<bool>,
+    pub format: Option<bool>,
+    pub emission: Option<bool>,
+    pub perforation: Option<bool>,
+    pub face_value: Option<bool>,
+    pub print_run: Option<bool>,
+    pub score: Option<bool>,
+    pub description: Option<bool>,
 }
 
 impl Config {
@@ -311,7 +415,10 @@ impl Config {
             include_series: Some(true),
             include_country: Some(true),
             include_date: Some(true),
+            stamp_detail_layout: Some("separate_rows".to_string()),
+            colnect_detail_fields: Some("print_run,themes,designers".to_string()),
             max_rows_per_page: Some(5),
+            max_page_vspace_mm: Some(10.0),
             row_start_es_enabled: Some(true),
             row_start_es_font: Some("HN".to_string()),
             row_start_es_size: Some(6.0),
@@ -369,12 +476,28 @@ impl Config {
             page_text_centre_font: Some("HN".to_string()),
             page_text_centre_size: Some(8.0),
             page_text_centre_vspace: Some(1.0),
+            series_page_text_centre_format: None,
+            series_page_text_centre_font: None,
+            series_page_text_centre_size: None,
+            series_page_text_centre_vspace: None,
+            date_page_text_centre_format: None,
+            date_page_text_centre_font: None,
+            date_page_text_centre_size: None,
+            date_page_text_centre_vspace: None,
+            watermark_page_text_centre_format: None,
+            watermark_page_text_centre_font: None,
+            watermark_page_text_centre_size: None,
+            watermark_page_text_centre_vspace: None,
+            engraving_page_text_centre_format: None,
+            engraving_page_text_centre_font: None,
+            engraving_page_text_centre_size: None,
+            engraving_page_text_centre_vspace: None,
             page_text_right_font: Some("HN".to_string()),
             page_text_right_size: Some(10.0),
             page_text_right_vspace: Some(1.0),
             stamp_heading_font: Some("HN".to_string()),
             stamp_heading_size: Some(6.0),
-            stamp_heading_label: Some("SG".to_string()),
+            stamp_heading_label: Some("".to_string()),
             force_dpi: Some(96.0),
             preserve_real_image_size: Some(true),
             show_progress_indicator: Some(true),
@@ -389,17 +512,156 @@ impl Config {
             wikipedia_paragraph_font_size: Some(12),
             wikipedia_paragraph_alignment: Some("JUSTIFIED".to_string()),
             wikipedia_paragraph_padding: Some(10.0),
-            wikipedia_paragraph_vspace: Some(5.0),
-            wikipedia_paragraph_vspace_multiplier: Some(0.25),
+            wikipedia_paragraph_vspace: None, // Use multiplier instead of fixed value
+            wikipedia_paragraph_vspace_multiplier: Some(0.15), // 15% of font size
             wikipedia_paragraph_right_padding: Some(10.0),
             wikipedia_pagination_strategy: Some("balanced".to_string()),
             wikipedia_center_content: Some(true),
             wikipedia_pagination_conservative_fraction: Some(0.75),
             wikipedia_section_title_font: Some("HB".to_string()),
             wikipedia_section_title_font_size: Some(14),
+            wikipedia_section_title_spacing: Some(2.0),
+            wikipedia_use_math_spacing: Some(true),
             // All other fields remain None (not set in defaults)
             ..Default::default()
         }
+    }
+
+    /// Effective master toggle for Colnect detail metadata output.
+    /// New `[colnect] include_details` takes precedence when present.
+    pub fn colnect_details_enabled(&self) -> bool {
+        self.colnect
+            .as_ref()
+            .and_then(|c| c.include_details)
+            .unwrap_or(true)
+    }
+
+    /// Effective comma-separated Colnect detail fields list.
+    /// New `[colnect] detail_fields` takes precedence over legacy
+    /// top-level `colnect_detail_fields`.
+    pub fn effective_colnect_detail_fields(&self) -> &str {
+        self.colnect
+            .as_ref()
+            .and_then(|c| c.detail_fields.as_deref())
+            .or(self.colnect_detail_fields.as_deref())
+            .unwrap_or("print_run,themes,designers")
+    }
+
+    /// Effective enabled Colnect detail fields.
+    /// Precedence:
+    /// 1) `[colnect.fields]` booleans when at least one key is set
+    /// 2) `[colnect].detail_fields` comma-separated list
+    /// 3) legacy top-level `colnect_detail_fields`
+    /// 4) built-in default list
+    pub fn effective_colnect_detail_field_set(&self) -> std::collections::HashSet<String> {
+        if let Some(fields) = self.colnect.as_ref().and_then(|c| c.fields.as_ref()) {
+            let any_set = [
+                fields.catalog_codes,
+                fields.issued_on,
+                fields.expiry_date,
+                fields.size,
+                fields.themes,
+                fields.printing,
+                fields.paper,
+                fields.gum,
+                fields.designers,
+                fields.printers,
+                fields.colors,
+                fields.watermark,
+                fields.format,
+                fields.emission,
+                fields.perforation,
+                fields.face_value,
+                fields.print_run,
+                fields.score,
+                fields.description,
+            ]
+            .iter()
+            .any(|v| v.is_some());
+
+            if any_set {
+                let mut set = std::collections::HashSet::new();
+                if fields.catalog_codes.unwrap_or(false) {
+                    set.insert("catalog_codes".to_string());
+                }
+                if fields.issued_on.unwrap_or(false) {
+                    set.insert("issued_on".to_string());
+                }
+                if fields.expiry_date.unwrap_or(false) {
+                    set.insert("expiry_date".to_string());
+                }
+                if fields.size.unwrap_or(false) {
+                    set.insert("size".to_string());
+                }
+                if fields.themes.unwrap_or(false) {
+                    set.insert("themes".to_string());
+                }
+                if fields.printing.unwrap_or(false) {
+                    set.insert("printing".to_string());
+                }
+                if fields.paper.unwrap_or(false) {
+                    set.insert("paper".to_string());
+                }
+                if fields.gum.unwrap_or(false) {
+                    set.insert("gum".to_string());
+                }
+                if fields.designers.unwrap_or(false) {
+                    set.insert("designers".to_string());
+                }
+                if fields.printers.unwrap_or(false) {
+                    set.insert("printers".to_string());
+                }
+                if fields.colors.unwrap_or(false) {
+                    set.insert("colors".to_string());
+                }
+                if fields.watermark.unwrap_or(false) {
+                    set.insert("watermark".to_string());
+                }
+                if fields.format.unwrap_or(false) {
+                    set.insert("format".to_string());
+                }
+                if fields.emission.unwrap_or(false) {
+                    set.insert("emission".to_string());
+                }
+                if fields.perforation.unwrap_or(false) {
+                    set.insert("perforation".to_string());
+                }
+                if fields.face_value.unwrap_or(false) {
+                    set.insert("face_value".to_string());
+                }
+                if fields.print_run.unwrap_or(false) {
+                    set.insert("print_run".to_string());
+                }
+                if fields.score.unwrap_or(false) {
+                    set.insert("score".to_string());
+                }
+                if fields.description.unwrap_or(false) {
+                    set.insert("description".to_string());
+                }
+                return set;
+            }
+        }
+
+        self.effective_colnect_detail_fields()
+            .split(',')
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .map(|s| s.to_string())
+            .collect()
+    }
+
+    /// Effective Colnect detail placement mode.
+    pub fn colnect_details_placement(&self) -> &str {
+        self.colnect
+            .as_ref()
+            .and_then(|c| c.details_placement.as_deref())
+            .unwrap_or("detail_box")
+    }
+
+    /// True when Colnect details should be rendered inside stamp text fields
+    /// instead of separate PAGE_ADD_BOX blocks.
+    pub fn colnect_details_inside_stamp(&self) -> bool {
+        matches!(self.colnect_details_placement(), "inside_stamp" | "inline")
     }
 }
 
@@ -612,6 +874,38 @@ pub fn load_config(path: &str) -> Config {
                         }
                     }
 
+                    // Support sectioned config layouts by promoting known
+                    // top-level section tables into the root TOML table.
+                    // This keeps backward compatibility with the existing
+                    // flat Config struct while allowing cleaner config files.
+                    let promotable_sections = [
+                        "page",
+                        "stamps",
+                        "layout",
+                        "header",
+                        "footer",
+                        "colors",
+                        "flag_cover",
+                        "data_sources",
+                        "wikipedia",
+                        "images",
+                        "text_templates",
+                        "runtime",
+                    ];
+                    for section in promotable_sections.iter() {
+                        if let Some(sec_table) =
+                            value.get(*section).and_then(|v| v.as_table()).cloned()
+                        {
+                            if let Some(tbl) = value.as_table_mut() {
+                                for (k, v) in sec_table.iter() {
+                                    if tbl.get(k).is_none() {
+                                        tbl.insert(k.clone(), v.clone());
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Now serialize the possibly-modified `Value` back to TOML
                     // and deserialize into the strongly-typed `Config`.
                     match toml::to_string(&value) {
@@ -772,6 +1066,10 @@ pub fn load_config(path: &str) -> Config {
                                 }
                                 if cfg.max_rows_per_page.is_none() {
                                     cfg.max_rows_per_page = defaults.max_rows_per_page;
+                                    has_missing = true;
+                                }
+                                if cfg.max_page_vspace_mm.is_none() {
+                                    cfg.max_page_vspace_mm = defaults.max_page_vspace_mm;
                                     has_missing = true;
                                 }
                                 if cfg.row_start_es_enabled.is_none() {
@@ -942,6 +1240,7 @@ pub fn load_config(path: &str) -> Config {
                                     cfg.page_text_centre_vspace = defaults.page_text_centre_vspace;
                                     has_missing = true;
                                 }
+                                // Keep series-specific centered text overrides optional.
                                 if cfg.page_text_right_font.is_none() {
                                     cfg.page_text_right_font = defaults.page_text_right_font;
                                     has_missing = true;
@@ -1039,6 +1338,16 @@ pub fn load_config(path: &str) -> Config {
                                 if cfg.wikipedia_section_title_font_size.is_none() {
                                     cfg.wikipedia_section_title_font_size =
                                         defaults.wikipedia_section_title_font_size;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_section_title_spacing.is_none() {
+                                    cfg.wikipedia_section_title_spacing =
+                                        defaults.wikipedia_section_title_spacing;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_use_math_spacing.is_none() {
+                                    cfg.wikipedia_use_math_spacing =
+                                        defaults.wikipedia_use_math_spacing;
                                     has_missing = true;
                                 }
 
@@ -1218,6 +1527,39 @@ pub fn load_config(path: &str) -> Config {
 
     log::info!("config.toml not found in parent dirs or failed to parse, using default values");
     Config::default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Config;
+
+    #[test]
+    fn colnect_fields_boolean_toggles_are_parsed() {
+        let cfg_toml = r#"
+[colnect]
+include_details = true
+detail_fields = "catalog_codes,themes,printing,perforation"
+
+[colnect.fields]
+catalog_codes = true
+themes = true
+perforation = true
+issued_on = true
+face_value = true
+print_run = true
+"#;
+
+        let cfg: Config = toml::from_str(cfg_toml).expect("config should parse");
+        let fields = cfg.effective_colnect_detail_field_set();
+
+        assert!(fields.contains("catalog_codes"));
+        assert!(fields.contains("themes"));
+        assert!(fields.contains("perforation"));
+        assert!(fields.contains("issued_on"));
+        assert!(fields.contains("face_value"));
+        assert!(fields.contains("print_run"));
+        assert!(!fields.contains("printing"));
+    }
 }
 
 use std::collections::HashMap;

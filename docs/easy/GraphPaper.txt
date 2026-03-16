@@ -1,0 +1,16 @@
+# ------------------------------------------------------------------------------
+# AlbumEasy Example:
+#  Using the PAGE_QUADRILLE command to create a sheet of graph paper
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE     (215.9 279.4)          #set the page size to US LETTER
+ALBUM_PAGES_MARGINS  (0.0 0.0 0.0 0.0)      #no margins
+ALBUM_PAGES_SPACING  (0.0 0.0)
+
+PAGE_START
+PAGE_VSPACE(4.5)
+COLOUR_PAGE_QUADRILLE(lightgray)
+
+# create the graph - see help for a description of the parameters
+PAGE_QUADRILLE(0.2 2.0 2.0 CENTRE 0.5 200.0 270.0 0.5 5)
+

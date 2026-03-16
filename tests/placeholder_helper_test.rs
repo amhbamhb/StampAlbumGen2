@@ -33,7 +33,7 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
     // Prepare an in-memory SQLite DB and create a minimal `stamps` table
     let conn = Connection::open_in_memory().expect("open in-memory db");
     conn.execute(
-        "CREATE TABLE stamps (country TEXT, series TEXT, sg_number TEXT, image_width_px INTEGER, image_height_px INTEGER)",
+        "CREATE TABLE stamps (country TEXT, series TEXT, sg_number TEXT, image_width_px INTEGER, image_height_px INTEGER, issue_location TEXT, quantity_printed TEXT)",
         [],
     )
     .expect("create stamps table");
@@ -60,6 +60,7 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
         album_name,
         series_name,
         sg_number,
+        sg_number, // catalog_number (same as sg for this test)
         "1900",
         target_w_mm,
         target_h_mm,

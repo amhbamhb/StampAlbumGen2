@@ -104,7 +104,7 @@ pub fn write_globals<W: Write>(
     // here with a baseline run marker and a no-wikipedia summary if applicable.
     if std::env::var("FORCE_WIKI_PAGE_METRICS").is_ok() {
         let safe_album = album_name.replace(' ', "_");
-        let metrics_path = format!("/tmp/forcemetrics_{}.runlog", safe_album);
+        let metrics_path = std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
         if let Ok(mut mf) = std::fs::File::create(&metrics_path) {
             let _ = writeln!(
                 mf,
@@ -516,8 +516,13 @@ pub fn write_globals<W: Write>(
                                 Some(&cfg),
                             );
                         }
-                        // White background for the coat area
-                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(white)");
+                        // Background color for the coat area (from config)
+                        let coat_bg_color = cfg
+                            .color_stamp_background
+                            .as_ref()
+                            .map(|s| s.as_str())
+                            .unwrap_or("black");
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", coat_bg_color);
                         // Use configurable coat dimensions from config, default 80x100
                         let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(80.0);
                         let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(100.0);
@@ -558,8 +563,13 @@ pub fn write_globals<W: Write>(
                             "",
                             Some("NO_FRAME"),
                         );
-                        // Set stamp background back to black as requested after the flag
-                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND(black)");
+                        // Reset stamp background to default from config after the flag
+                        let default_bg = cfg
+                            .color_stamp_background
+                            .as_ref()
+                            .map(|s| s.as_str())
+                            .unwrap_or("black");
+                        let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", default_bg);
                         // Vertical gap after flag controlled by config
                         let _ = layout::write_page_vspace(writer, after_vspace_default as f64);
                     }
@@ -627,7 +637,7 @@ pub fn write_globals<W: Write>(
 
         // Add Wikipedia content section if enabled
         if cfg_include_wikipedia {
-            page_counter = add_wikipedia_section(writer, album_name, &cfg, page_counter);
+            page_counter = add_wikipedia_section(writer, album_name, &cfg, page_counter, conn_opt);
         }
     }
 
@@ -641,6 +651,7 @@ fn add_wikipedia_section<W: Write>(
     album_name: &str,
     cfg: &crate::config::Config,
     mut page_counter: usize,
+    conn_opt: Option<&rusqlite::Connection>,
 ) -> usize {
     let cache_db_path = cfg
         .wikipedia_cache_db_path
@@ -651,7 +662,30 @@ fn add_wikipedia_section<W: Write>(
     // when cached content is missing.
     let usable_height = crate::album_globals::compute_usable_height(cfg);
 
-    match crate::wikipedia::get_cached_content(album_name, cache_db_path) {
+    // Try to get the country/site name from the stamps table in the album DB
+    // If we can't find it, fall back to using album_name as the topic
+    let topic = if let Some(conn) = conn_opt {
+        // Try to get country from the first stamp
+        let mut stmt = match conn.prepare("SELECT DISTINCT country FROM stamps LIMIT 1") {
+            Ok(stmt) => stmt,
+            Err(_) => {
+                info!("Could not query stamps table for country; using album_name as fallback");
+                return page_counter; // Return early if DB is not accessible
+            }
+        };
+
+        match stmt.query_row([], |row| row.get::<_, String>(0)) {
+            Ok(country) => country,
+            Err(_) => {
+                info!("No country found in stamps table; using album_name as fallback");
+                album_name.to_string()
+            }
+        }
+    } else {
+        album_name.to_string()
+    };
+
+    match crate::wikipedia::get_cached_content(&topic, cache_db_path) {
         Ok(Some((content, source))) => {
             // usable_height already computed above
 
@@ -733,17 +767,18 @@ fn add_wikipedia_section<W: Write>(
                         (total_content_height / usable_height).ceil() as usize
                     };
 
-                    // Per-page target: distribute content evenly but never exceed usable_height
+                    // Per-page target: distribute content evenly but NEVER exceed a hard cap
+                    // Hard cap at 45% of usable height to leave margin for spacing/rendering
+                    let hard_cap_height = usable_height * 0.45;
                     let mut pagination_height = if pages_needed == 0 {
-                        usable_height
+                        hard_cap_height
                     } else {
-                        (total_content_height / (pages_needed as f64)).min(usable_height)
+                        (total_content_height / (pages_needed as f64)).min(hard_cap_height)
                     };
 
-                    // If content is small compared to a page, use usable_height so
-                    // centering/flow look natural.
-                    if total_content_height < usable_height * 0.9 {
-                        pagination_height = usable_height;
+                    // Additional conservative check: if content is small, be even more conservative
+                    if total_content_height < usable_height * 0.30 {
+                        pagination_height = usable_height * 0.30; // Use 30% of page, leave 70% buffer
                     }
 
                     create_balanced_pages(&content_sections, &heights, pagination_height, cfg)
@@ -845,7 +880,8 @@ fn add_wikipedia_section<W: Write>(
             // FORCE_WIKI_PAGE_METRICS to avoid accidental writes.
             if std::env::var("FORCE_WIKI_PAGE_METRICS").is_ok() {
                 let safe_album = album_name.replace(' ', "_");
-                let metrics_path = format!("/tmp/forcemetrics_{}.runlog", safe_album);
+                let metrics_path =
+                    std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
                 if let Ok(mut mf) = std::fs::File::create(&metrics_path) {
                     use std::io::Write;
                     let _ = writeln!(mf, "WIKI_PAGE_PAGINATION_SUMMARY album={} sections={} pages={} total_content_height={:.1} usable_height={:.1} strategy={}",
@@ -885,21 +921,67 @@ fn add_wikipedia_section<W: Write>(
                     let _ = writeln!(writer, "### Page {} ###", page_counter);
                     let _ = writeln!(writer, "### {} Content (continued) ###", source_name);
                 }
-
                 // Optionally center content vertically on the page by distributing
                 // leftover space as top padding. Controlled by config.wikipedia_center_content.
+                // ALWAYS add minimum top spacing (3mm) for page border clearance
                 let page_content_height: f64 = page_sections.iter().map(|&idx| heights[idx]).sum();
-                let mut final_centering_vspace = 0.0;
-                if cfg.wikipedia_center_content.unwrap_or(true) {
+                let final_centering_vspace = if let Some(true) = cfg.wikipedia_center_content {
+                    // Only center if explicitly enabled (not just presence of config value)
                     let leftover = usable_height - page_content_height;
                     if leftover > 0.5 {
-                        final_centering_vspace = leftover / 2.0;
+                        leftover / 2.0
+                    } else {
+                        3.0 // At minimum, use 3mm for border clearance
                     }
-                }
+                } else {
+                    // Always use minimum 3mm top spacing for border clearance
+                    info!("Wikipedia centering disabled: using minimum top spacing of 3mm");
+                    3.0
+                };
 
                 info!(
-                    "Wikipedia page {}: content_height={:.1}, centering_space={:.1}",
-                    page_index, page_content_height, final_centering_vspace
+                    "Wikipedia page {}: centering_vspace={:.1}",
+                    page_index, final_centering_vspace
+                );
+
+                // Calculate per-page dynamic spacing if enabled
+                let page_level_vspace = if cfg.wikipedia_use_math_spacing.unwrap_or(true) {
+                    let page_fill_percent = if usable_height > 0.0 {
+                        (page_content_height / usable_height) * 100.0
+                    } else {
+                        0.0
+                    };
+
+                    // Calculate target spacing to maximize page fill
+                    // Goal: fill as much of the page as possible without huge gaps
+                    // We'll scale this based on how much content we have
+                    if page_fill_percent > 85.0 {
+                        0.3 // Very tight for well-filled pages
+                    } else if page_fill_percent > 75.0 {
+                        0.5 // Tight
+                    } else if page_fill_percent > 65.0 {
+                        0.8 // Normal
+                    } else if page_fill_percent > 50.0 {
+                        1.2 // Relaxed
+                    } else {
+                        1.5 // Loose for sparse content
+                    }
+                } else {
+                    // Use config-based default when math spacing is disabled
+                    cfg.wikipedia_paragraph_vspace
+                        .map(|v| v as f64)
+                        .unwrap_or_else(|| {
+                            let multiplier =
+                                cfg.wikipedia_paragraph_vspace_multiplier.unwrap_or(0.15);
+                            (11.0 as f64) * (multiplier as f64)
+                        })
+                };
+
+                info!(
+                    "Wikipedia page {}: content_height={:.1}, usable_height={:.1}, fill={:.1}%, vspace={:.2}",
+                    page_index, page_content_height, usable_height,
+                    if usable_height > 0.0 { (page_content_height / usable_height) * 100.0 } else { 0.0 },
+                    page_level_vspace
                 );
 
                 // Emit a PAGE_VSPACE to provide top padding if centering is requested
@@ -915,10 +997,22 @@ fn add_wikipedia_section<W: Write>(
                                 cfg.wikipedia_section_title_font.as_deref().unwrap_or("HB");
                             let section_title_font_size =
                                 cfg.wikipedia_section_title_font_size.unwrap_or(14);
+                            let section_title_spacing =
+                                cfg.wikipedia_section_title_spacing.unwrap_or(1.0);
+
+                            // Add spacing BEFORE header (but not for first section)
+                            if section_index > 0 {
+                                let _ =
+                                    layout::write_page_vspace(writer, section_title_spacing * 0.5);
+                            }
+
                             let _ = writeln!(
                                 writer,
-                                "PAGE_TEXT ({} {} \"{}\" 3.0)",
-                                section_title_font, section_title_font_size, header_text
+                                "PAGE_TEXT ({} {} \"{}\" {:.1})",
+                                section_title_font,
+                                section_title_font_size,
+                                header_text,
+                                section_title_spacing
                             );
                         }
                         ContentSection::Paragraph(paragraph_text) => {
@@ -930,14 +1024,16 @@ fn add_wikipedia_section<W: Write>(
                                 .wikipedia_paragraph_alignment
                                 .as_deref()
                                 .unwrap_or("JUSTIFIED");
-                            let paragraph_padding = cfg.wikipedia_paragraph_padding.unwrap_or(10.0);
-                            let paragraph_vspace = cfg.wikipedia_paragraph_vspace.unwrap_or(5.0);
+                            let paragraph_padding = cfg.wikipedia_paragraph_padding.unwrap_or(5.0);
                             let paragraph_right_padding =
-                                cfg.wikipedia_paragraph_right_padding.unwrap_or(10.0);
+                                cfg.wikipedia_paragraph_right_padding.unwrap_or(5.0);
+
+                            // Use the pre-calculated page-level spacing
+                            let paragraph_vspace = page_level_vspace;
 
                             let _ = writeln!(
                                 writer,
-                                "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.1} {:.1})",
+                                "PAGE_TEXT_PARAGRAPH_START({} {} {} {:.1} {:.2} {:.1})",
                                 paragraph_font,
                                 paragraph_font_size,
                                 paragraph_alignment,
@@ -966,7 +1062,8 @@ fn add_wikipedia_section<W: Write>(
             // result to parse.
             if std::env::var("FORCE_WIKI_PAGE_METRICS").is_ok() {
                 let safe_album = album_name.replace(' ', "_");
-                let metrics_path = format!("/tmp/forcemetrics_{}.runlog", safe_album);
+                let metrics_path =
+                    std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
                 if let Ok(mut mf) = std::fs::OpenOptions::new()
                     .append(true)
                     .create(true)
@@ -1023,7 +1120,54 @@ fn parse_content_into_sections(content: &str) -> Vec<ContentSection> {
 
             if !paragraph_lines.is_empty() {
                 let paragraph_text = paragraph_lines.join(" ");
-                sections.push(ContentSection::Paragraph(paragraph_text));
+
+                // IMPORTANT: Break up very long paragraphs into smaller chunks
+                // to prevent individual paragraphs from overflowing a page
+                // Split at roughly 700 characters (about 3-4 rendered lines worth)
+                // This ensures pagination can work properly
+                if paragraph_text.len() > 700 {
+                    // Split long paragraphs into sentences or roughly equal chunks
+                    let mut chunk_start = 0;
+                    let max_chunk = 600;
+
+                    while chunk_start < paragraph_text.len() {
+                        let chunk_end = (chunk_start + max_chunk).min(paragraph_text.len());
+
+                        // Try to find a sentence boundary (period + space) to split at
+                        let mut best_split = chunk_end;
+                        if chunk_end < paragraph_text.len() {
+                            // Search backwards from chunk_end for a good break point
+                            for (j, _) in paragraph_text[chunk_start..chunk_end]
+                                .rmatch_indices(". ")
+                                .take(1)
+                            {
+                                best_split = chunk_start + j + 2;
+                                break;
+                            }
+
+                            // If no sentence boundary found, try to break at space
+                            if best_split == chunk_end {
+                                for (j, _) in paragraph_text[chunk_start..chunk_end]
+                                    .rmatch_indices(" ")
+                                    .take(1)
+                                {
+                                    best_split = chunk_start + j + 1;
+                                    break;
+                                }
+                            }
+                        }
+
+                        let chunk_text = paragraph_text[chunk_start..best_split].trim().to_string();
+                        if !chunk_text.is_empty() {
+                            sections.push(ContentSection::Paragraph(chunk_text));
+                        }
+
+                        chunk_start = best_split;
+                    }
+                } else {
+                    // Short paragraph - use as-is
+                    sections.push(ContentSection::Paragraph(paragraph_text));
+                }
             }
         }
 
@@ -1135,7 +1279,7 @@ fn create_greedy_pages(
 
 /// Helper function to balance content between existing pages
 /// This tries to move content from over-full pages to under-full pages
-fn balance_pages(pages: &mut Vec<Vec<usize>>, heights: &[f64], usable_height: f64) {
+pub fn balance_pages(pages: &mut Vec<Vec<usize>>, heights: &[f64], usable_height: f64) {
     // Calculate current page heights
     let mut page_heights: Vec<f64> = pages
         .iter()

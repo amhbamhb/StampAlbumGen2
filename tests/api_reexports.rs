@@ -38,7 +38,9 @@ fn insert_stamp_placeholder_via_crate_reexport() {
             context TEXT,
             uniq_key TEXT
                 image_width_px INTEGER,
-                image_height_px INTEGER
+                image_height_px INTEGER,
+                issue_location TEXT,
+                quantity_printed TEXT
         );",
     )
     .expect("create table");

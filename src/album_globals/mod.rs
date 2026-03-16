@@ -1,3 +1,4 @@
+pub mod commemorative_generator;
 pub mod constants;
 pub mod generator;
 pub mod generator_new;

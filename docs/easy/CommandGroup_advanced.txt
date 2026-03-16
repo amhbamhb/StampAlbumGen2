@@ -1,0 +1,78 @@
+#####################################################################################
+#
+# A sample AlbumEasy file showing how to use a page start command group
+# defined by means of the PAGE_START_GROUP_BEGIN command
+#
+# This example shows how to include placeholders in the command group to customise
+# the individual pages
+#
+# Placeholders in the command group are indicated by two $ symbols followed by a
+# digit between 1 and 9. e.g $$1
+# the placeholders are substituted with parameters passed to the PAGE_START commands.
+#
+# for a simpler example please see:
+# CommandGroup.txt
+#
+#####################################################################################
+
+
+# ------------------------------------------------------------------------------
+# Setup page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE     (215.9 279.4)           # Set the page to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (15.0 15.0 15.0 15.0)   # Left, right, top and bottom page margins
+ALBUM_PAGES_BORDER   (0.8 0.1 0.0 1.0)       #double line border around the page
+
+ALBUM_PAGES_SPACING  (3.0 3.0)
+
+ALBUM_DEFINE_FONT(LUCIDA_CI "Lucida Calligraphy Italic" )
+
+# ------------------------------------------------------------------------------
+# Start of the page start command group
+# ------------------------------------------------------------------------------
+PAGE_START_GROUP_BEGIN
+
+PAGE_COLUMN_START
+PAGE_TEXT_CENTRE (HN 1 "" 7.5)
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD_IMG ($$4 $$5 $$6  ""  "" "" NO_FRAME)
+
+PAGE_COLUMN_NEXT
+PAGE_TEXT_CENTRE (HN 1 "" 6)
+PAGE_TEXT_CENTRE (LUCIDA_CI 26 "France" 8.0)
+PAGE_TEXT_CENTRE (HN 13  $$1 1.5)
+PAGE_TEXT_CENTRE (HN 13 "Definitive Series" 1.5)
+PAGE_TEXT_CENTRE (HN 13 $$2 7.0)
+PAGE_TEXT_CENTRE (HI 10 $$3 5.0)
+
+PAGE_COLUMN_STOP
+
+PAGE_TEXT_CENTRE (HN 1 "" 10.0)
+
+PAGE_START_GROUP_END
+
+
+# ------------------------------------------------------------------------------
+# Album Page 1
+# ------------------------------------------------------------------------------
+PAGE_START ("Sage Peace and Commerce" "1876 - 1900" "Designer - Jules Auguste Sage" 37.0 45.0 "stamp_images/Sage.png")
+
+PAGE_TEXT_CENTRE (HN 14 "Page One of the album")
+
+# ------------------------------------------------------------------------------
+# Album Page 2
+# ------------------------------------------------------------------------------
+PAGE_START ("Merson Liberty and Peace" "1900 - 1927" "Designer - Nicolas Luc-Olivier Merson" 80.0 45.0 "stamp_images/Merson.png")
+
+PAGE_TEXT_CENTRE (HN 14 "Page Two of the album")
+
+
+
+
+
+
+
+
+
+

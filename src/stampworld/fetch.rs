@@ -58,11 +58,13 @@ impl ReqwestFetcher {
         let mut default_headers = HeaderMap::new();
         default_headers.insert(
             reqwest::header::USER_AGENT,
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36".parse().unwrap(),
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+                .parse()
+                .unwrap(),
         );
         default_headers.insert(
-            reqwest::header::REFERER,
-            "https://www.google.com/".parse().unwrap(),
+            reqwest::header::ACCEPT,
+            "image/webp,image/apng,image/*,*/*;q=0.8".parse().unwrap(),
         );
 
         let client = reqwest::blocking::Client::builder()
