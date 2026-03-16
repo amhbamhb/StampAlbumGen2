@@ -35,6 +35,8 @@ fn make_stub(sg: &str, year: i32) -> StampStub {
         perforation: String::new(),
         series: String::new(),
         context: String::new(),
+        issue_location: String::new(),
+        quantity_printed: String::new(),
         multi_perf: false,
     }
 }
@@ -81,6 +83,8 @@ fn test_get_all_series_and_get_stamps_by_series() {
             original_image_url TEXT,
             image_width_px INTEGER,
             image_height_px INTEGER,
+            issue_location TEXT,
+            quantity_printed TEXT,
             watermark TEXT,
             design TEXT,
             engraving TEXT,
@@ -135,6 +139,8 @@ fn test_insert_stamp_and_backfill() {
             image_path TEXT,
             remote_image_url TEXT,
             original_image_url TEXT,
+            issue_location TEXT,
+            quantity_printed TEXT,
             watermark TEXT,
             design TEXT,
             engraving TEXT,
