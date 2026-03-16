@@ -43,7 +43,9 @@ fn test_series_header_includes_date() {
             used TEXT,
             letter_fdc TEXT
             ,image_width_px INTEGER,
-            image_height_px INTEGER
+            image_height_px INTEGER,
+            issue_location TEXT,
+            quantity_printed TEXT
         );",
     )
     .expect("create table");
