@@ -27,7 +27,7 @@ use stamp_album_gen2::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse CLI arguments
-    let cli = Cli::parse();
+    let mut cli = Cli::parse();
 
     // If requested, initialize (or force-initialize) the config file and exit.
     if cli.init_config {
@@ -49,6 +49,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load config early to check for progress indicator setting
     let config = config::load_config("config.toml");
     let show_progress = config.show_progress_indicator.unwrap_or(true);
+
+    // For Colnect inbox mode, allow config.toml to provide a default inbox
+    // path when the CLI omits --colnect-inbox.
+    if cli.source.eq_ignore_ascii_case("colnectexport")
+        && cli.colnect_inbox.is_none()
+        && cli.colnect_csv.is_none()
+    {
+        if let Some(default_inbox) = config.effective_colnect_inbox_path() {
+            eprintln!(
+                "No --colnect-inbox provided; using config default colnect_inbox_path='{}'.",
+                default_inbox
+            );
+            cli.colnect_inbox = Some(default_inbox.to_string());
+        }
+    }
 
     // Validate user input
     if let Err(_error) = validate_user_input(&cli) {
