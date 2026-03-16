@@ -7,6 +7,8 @@ Alblums/
 /Archive/
 Archive/
 Archive/*
+Archive/*.rs
+Archives/*.rs
 examples/
 /examples/
 examples/*

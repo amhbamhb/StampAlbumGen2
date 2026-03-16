@@ -20,6 +20,7 @@
 - Use GitLab Issues for project-related questions.
 
 # Git Repository Structure
+
 - Source code is in `/src`.
 - Configuration files are in `/config.toml` and `/config_template.toml`.
 - Documentation is in `/docs`:
