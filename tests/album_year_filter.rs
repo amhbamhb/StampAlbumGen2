@@ -114,10 +114,10 @@ fn test_generate_album_filters_by_year_exact() {
         "Example Series".replace(' ', "-")
     );
     let contents = std::fs::read_to_string(&path).expect("read output file");
-    // Should contain the 1976 description but not 1975/1977
-    assert!(contents.contains("Desc 1976"));
-    assert!(!contents.contains("Desc 1975"));
-    assert!(!contents.contains("Desc 1977"));
+    // Should contain only the 1976 stamp (A2) and exclude 1975/1977 (A1/A3).
+    assert!(contents.contains("Scott : A2"));
+    assert!(!contents.contains("Scott : A1"));
+    assert!(!contents.contains("Scott : A3"));
 }
 
 #[test]
@@ -125,10 +125,14 @@ fn test_generate_album_filters_by_year_open_ended() {
     let conn = populate_test_db();
     // start=1976, end=None -> include 1976 and 1977
     generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None);
-    // Generator only appends a range to the filename when both start and end
-    // were provided and are sensible. Fallback to the default filename if the
-    // ranged filename does not exist.
-    let ranged = format!(
+    // The generator may resolve an inferred end-year from DB max(year), so
+    // accept both explicit and inferred ranged filenames.
+    let ranged_inferred = format!(
+        "Albums/{}/{}-1976-1977.txt",
+        "Example Series".replace(' ', "-"),
+        "Example Series".replace(' ', "-")
+    );
+    let ranged_legacy = format!(
         "Albums/{}/{}-1976-9999.txt",
         "Example Series".replace(' ', "-"),
         "Example Series".replace(' ', "-")
@@ -138,13 +142,15 @@ fn test_generate_album_filters_by_year_open_ended() {
         "Example Series".replace(' ', "-"),
         "Example Series".replace(' ', "-")
     );
-    let path = if std::path::Path::new(&ranged).exists() {
-        ranged
+    let path = if std::path::Path::new(&ranged_inferred).exists() {
+        ranged_inferred
+    } else if std::path::Path::new(&ranged_legacy).exists() {
+        ranged_legacy
     } else {
         default
     };
     let contents = std::fs::read_to_string(&path).expect("read output file");
-    assert!(contents.contains("Desc 1976"));
-    assert!(contents.contains("Desc 1977"));
-    assert!(!contents.contains("Desc 1975"));
+    assert!(contents.contains("Scott : A2"));
+    assert!(contents.contains("Scott : A3"));
+    assert!(!contents.contains("Scott : A1"));
 }
