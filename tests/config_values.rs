@@ -58,7 +58,8 @@ fn test_stamp_heading_size_changes_output() {
     file_utils::set_overwrite_album_from_cli(true);
 
     // First config: heading size 10
-    let cfg1 = r#"stamp_heading_size = 10
+    let cfg1 = r#"stamp_heading_label = "Scott"
+stamp_heading_size = 10
 "#;
     write_config(td.path(), cfg1);
 
@@ -78,7 +79,8 @@ fn test_stamp_heading_size_changes_output() {
     let sz1 = read_stamp_heading_size(&out1).expect("found heading size in output");
 
     // Second config: heading size 20
-    let cfg2 = r#"stamp_heading_size = 20
+    let cfg2 = r#"stamp_heading_label = "Scott"
+stamp_heading_size = 20
 "#;
     write_config(td.path(), cfg2);
 
