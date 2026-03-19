@@ -696,23 +696,31 @@ fn render_html(payload: &MatcherPayload) -> String {
 <meta charset='utf-8'>
 <title>Stamp Matcher UI</title>
 <style>
-body {{ font-family: sans-serif; margin: 16px; background: #f6f6f6; }}
+body {{
+  font-family: sans-serif;
+  margin: 16px;
+  background: #f6f6f6;
+  --row-odd-bg: #ffffff;
+  --row-even-bg: #e6eef4;
+  --row-odd-key-bg: #f1f3f5;
+  --row-even-key-bg: #d7e2eb;
+}}
 .wrap {{ background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; }}
 .top {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }}
 .row {{ display: flex; gap: 16px; align-items: stretch; }}
 .col {{ flex: 1; min-width: 280px; display: flex; flex-direction: column; }}
 .panelCard {{ display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; background: #fff; overflow: hidden; min-height: 0; }}
-.panelHead {{ padding: 10px; border-bottom: 1px solid #ececec; background: #fbfcfd; }}
+.panelHead {{ padding: 10px; border-bottom: 1px solid #ececec; background: #fbfcfd; font-size: 12px; }}
 .panelBody {{ padding: 8px; overflow: auto; max-height: 56vh; }}
 .imgbox {{ min-height: 260px; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; background: #fff; }}
 img {{ max-width: 260px; max-height: 260px; border: 1px solid #ccc; background: #fff; }}
 .imgph {{ width: 260px; height: 260px; border: 1px dashed #bbb; background: #f7f7f7; color: #666; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; padding: 8px; box-sizing: border-box; }}
 .kv {{ width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }}
-.kv td {{ border: 1px solid #eee; padding: 4px 6px; vertical-align: top; }}
-.kv tr:nth-child(odd) td {{ background: #ffffff; }}
-.kv tr:nth-child(even) td {{ background: #f5fafc; }}
-.kv tr:nth-child(odd) td.k {{ background: #f7f7f7; }}
-.kv tr:nth-child(even) td.k {{ background: #edf4f8; }}
+.kv td {{ border: 1px solid #e1e6ea; padding: 4px 6px; vertical-align: top; }}
+.kv tr:nth-child(odd) td {{ background: var(--row-odd-bg); }}
+.kv tr:nth-child(even) td {{ background: var(--row-even-bg); }}
+.kv tr:nth-child(odd) td.k {{ background: var(--row-odd-key-bg); }}
+.kv tr:nth-child(even) td.k {{ background: var(--row-even-key-bg); }}
 .kv td.k {{ width: 36%; font-weight: 600; }}
 .kv td.v {{ width: 64%; word-break: break-word; }}
 button {{ padding: 6px 10px; }}
@@ -747,7 +755,7 @@ button {{ padding: 6px 10px; }}
     <span id='status' class='badge'></span>
   </div>
     <div class='top'>
-        <label><input type='checkbox' id='f_series' checked/> series</label>
+        <label><input type='checkbox' id='f_series'/> series</label>
         <label><input type='checkbox' id='f_description' checked/> description</label>
         <label><input type='checkbox' id='f_watermark'/> watermark</label>
         <label><input type='checkbox' id='f_design'/> design</label>
@@ -808,6 +816,24 @@ let rightIdxByLeft = {{}};
 let assignedByLeft = {{}}; // left_rowid -> colnect_id
 let selectedCatalogCodeByLeft = {{}}; // left_rowid -> chosen code
 let deletedCandidatesStack = []; // stack entries: candidate + removedAssignments
+const rowOddColor = (payload.odd_row_color || '').trim() || '#ffffff';
+const rowEvenColor = (payload.even_row_color || '').trim() || '#e6eef4';
+const checkboxDefaults = {{
+  f_series: payload.series_default_checked !== false,
+  f_description: payload.description_default_checked !== false,
+  f_watermark: payload.watermark_default_checked !== false,
+  f_design: payload.design_default_checked !== false,
+  f_engraving: payload.engraving_default_checked !== false,
+  f_perforation: payload.perforation_default_checked !== false,
+  f_context: payload.context_default_checked !== false,
+  f_links: payload.colnect_links_default_checked !== false,
+  f_image_url: payload.colnect_image_url_default_checked !== false,
+  f_colnect_meta: payload.colnect_metadata_default_checked !== false,
+  f_replace_sg: payload.replace_sg_number_default_checked !== false,
+  f_right_unmatched_only: payload.right_unmatched_only_default_checked !== false
+}};
+document.documentElement.style.setProperty('--row-odd-bg', rowOddColor);
+document.documentElement.style.setProperty('--row-even-bg', rowEvenColor);
 
 function b(v) {{ return !!v && String(v).trim().length > 0; }}
 function fmt(v) {{ return b(v) ? String(v) : '(no info)'; }}
@@ -873,15 +899,21 @@ function render() {{
     return;
   }}
 
+  const seriesEl = document.getElementById('f_series');
+  if (seriesEl && !seriesEl.dataset.userTouched) {{
+    seriesEl.checked = checkboxDefaults.f_series;
+  }}
+
   const l = left[leftIdx];
   const leftImg = b(l.image_abs) ? `/image?path=${{encodeURIComponent(l.image_abs)}}` : l.stampworld_image_url;
   document.getElementById('leftPos').innerText = `Left ${{leftIdx + 1}}/${{left.length}} (rowid=${{l.rowid}})`;
   document.getElementById('leftPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
-                ${{imageBox(leftImg, 'StampWorld image')}}
+                <strong>Base Stamp</strong> SG=${{html(fmt(l.sg_number))}} | Year=${{html(fmt(l.year))}} | Series=${{html(fmt(l.series))}}
             </div>
             <div class='panelBody'>
+                ${{imageBox(leftImg, 'StampWorld image')}}
                 <table class='kv'>
                     ${{row('SG', l.sg_number)}}
                     ${{row('Year', l.year)}}
@@ -928,16 +960,17 @@ function render() {{
   document.getElementById('rightPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
-                ${{imageBox(rightImg, 'Colnect candidate image')}}
+                <div><strong>Candidate Controls</strong></div>
                 <div style='margin-top:8px;'>
                     <label>Catalog Code (for optional SG replace):</label>
                     <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
                         <option value=''>-- none --</option>
                         ${{catPairs}}
                     </select>
-        </div>
+                </div>
             </div>
             <div class='panelBody'>
+                ${{imageBox(rightImg, 'Colnect candidate image')}}
                 <table class='kv'>
                     ${{row('Colnect ID', r.colnect_id)}}
                     ${{row('SG', r.sg_number)}}
@@ -1260,10 +1293,30 @@ async function undoLastDelete() {{
     render();
 }}
 
+const seriesToggle = document.getElementById('f_series');
+if (seriesToggle) {{
+  seriesToggle.checked = checkboxDefaults.f_series;
+  seriesToggle.addEventListener('change', () => {{
+    seriesToggle.dataset.userTouched = '1';
+  }});
+}}
+
+// Apply all checkbox defaults from config
+for (const [checkboxId, checked] of Object.entries(checkboxDefaults)) {{
+  const el = document.getElementById(checkboxId);
+  if (el) {{
+    el.checked = checked;
+    el.addEventListener('change', () => {{
+      el.dataset.userTouched = '1';
+    }});
+  }}
+}}
+
 render();
 </script>
 </body>
-</html>"#
+</html>"#,
+        json = json
     )
 }
 
