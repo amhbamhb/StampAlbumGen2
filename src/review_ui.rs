@@ -7,6 +7,12 @@ use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Response, Server, StatusCode};
 
 #[derive(Debug, Clone, Serialize)]
+struct DbField {
+    key: String,
+    value: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
 struct LeftStamp {
     rowid: i64,
     sg_number: String,
@@ -31,6 +37,7 @@ struct LeftStamp {
     colnect_print_run: String,
     colnect_public_note: String,
     colnect_private_note: String,
+    all_db_fields: Vec<DbField>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -112,6 +119,8 @@ struct SelectedMatch {
     left_rowid: i64,
     colnect_id: String,
     selected_catalog_code: Option<String>,
+    width: Option<String>,
+    height: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -305,6 +314,49 @@ fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> S
     String::new()
 }
 
+fn value_ref_to_string(v: rusqlite::types::ValueRef<'_>) -> String {
+    match v {
+        rusqlite::types::ValueRef::Null => String::new(),
+        rusqlite::types::ValueRef::Integer(n) => n.to_string(),
+        rusqlite::types::ValueRef::Real(f) => f.to_string(),
+        rusqlite::types::ValueRef::Text(t) => String::from_utf8_lossy(t).to_string(),
+        rusqlite::types::ValueRef::Blob(b) => format!("<{} bytes>", b.len()),
+    }
+}
+
+fn load_stamp_all_fields(
+    conn: &Connection,
+    rowid: i64,
+) -> Result<Vec<DbField>, Box<dyn std::error::Error>> {
+    let mut stmt = conn.prepare("SELECT * FROM stamps WHERE rowid = ?1 LIMIT 1")?;
+    let column_names: Vec<String> = stmt
+        .column_names()
+        .iter()
+        .map(|n| (*n).to_string())
+        .collect();
+
+    let mut rows = stmt.query(params![rowid])?;
+    let Some(row) = rows.next()? else {
+        return Ok(Vec::new());
+    };
+
+    let mut fields = Vec::with_capacity(column_names.len() + 1);
+    fields.push(DbField {
+        key: "rowid".to_string(),
+        value: rowid.to_string(),
+    });
+
+    for (idx, key) in column_names.iter().enumerate() {
+        let value = value_ref_to_string(row.get_ref(idx)?);
+        fields.push(DbField {
+            key: key.clone(),
+            value,
+        });
+    }
+
+    Ok(fields)
+}
+
 fn load_left_stamps(
     conn: &Connection,
     db_path: &str,
@@ -365,12 +417,16 @@ fn load_left_stamps(
             colnect_print_run: row.get(19)?,
             colnect_public_note: row.get(20)?,
             colnect_private_note: row.get(21)?,
+            all_db_fields: Vec::new(),
         })
     })?;
 
     let mut out = Vec::new();
     for r in rows {
         out.push(r?);
+    }
+    for stamp in &mut out {
+        stamp.all_db_fields = load_stamp_all_fields(conn, stamp.rowid).unwrap_or_default();
     }
     Ok(out)
 }
@@ -564,7 +620,10 @@ fn apply_matches(
             continue;
         };
 
-        let selected_catalog_code = normalize_catalog_code(&m.selected_catalog_code.unwrap_or_default());
+        let selected_catalog_code =
+            normalize_catalog_code(&m.selected_catalog_code.unwrap_or_default());
+        let selected_width = m.width.as_deref().unwrap_or(c.width.as_str());
+        let selected_height = m.height.as_deref().unwrap_or(c.height.as_str());
 
         let res = conn.execute(
             "UPDATE stamps
@@ -640,8 +699,8 @@ fn apply_matches(
                 c.name,
                 c.catalog_codes_text,
                 c.country,
-                c.width,
-                c.height,
+                selected_width,
+                selected_height,
                 c.format,
                 c.emission,
                 c.printing,
@@ -843,6 +902,10 @@ function html(v) {{ return String(v)
   .replaceAll('>','&gt;')
   .replaceAll('"','&quot;'); }}
 function row(k, v) {{ return `<tr><td class='k'>${{html(k)}}</td><td class='v'>${{html(fmt(v))}}</td></tr>`; }}
+function allDbRows(fields) {{
+    if (!Array.isArray(fields) || !fields.length) return row('DB Fields', '(no fields)');
+    return fields.map(f => row(`DB:${{f.key || ''}}`, f.value || '')).join('');
+}}
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
   return `<div class='imgbox'><div class='imgph'>${{html(label)}}<br/>No image available</div></div>`;
@@ -936,6 +999,7 @@ function render() {{
                     ${{row('colnect_print_run', l.colnect_print_run)}}
                     ${{row('colnect_public_note', l.colnect_public_note)}}
                     ${{row('colnect_private_note', l.colnect_private_note)}}
+                    ${{allDbRows(l.all_db_fields)}}
                     ${{row('Assigned Colnect ID', assignedByLeft[l.rowid] || '(none)')}}
                 </table>
             </div>
@@ -1076,11 +1140,18 @@ function clearAssignment() {{
 }}
 
 async function applyMatches() {{
-  const matches = Object.entries(assignedByLeft).map(([leftRowid, colnectId]) => ({{
+    const matches = Object.entries(assignedByLeft).map(([leftRowid, colnectId]) => {{
+        const candidateMap = {{}};
+        rightAll.forEach(c => {{ candidateMap[c.colnect_id] = c; }});
+        const candidate = candidateMap[colnectId];
+        return {{
     left_rowid: Number(leftRowid),
         colnect_id: colnectId,
-        selected_catalog_code: selectedCatalogCodeByLeft[leftRowid] || null
-  }}));
+                selected_catalog_code: selectedCatalogCodeByLeft[leftRowid] || null,
+                width: candidate?.width || null,
+                height: candidate?.height || null
+        }};
+    }});
 
     if (!matches.length) {{
         document.getElementById('status').innerText = 'No assigned matches selected. Use Assign Candidate first.';
@@ -1468,8 +1539,9 @@ fn load_left_stamp_by_rowid(
     };
 
     let rel_image: String = row.get(4)?;
+    let resolved_rowid: i64 = row.get(0)?;
     Ok(Some(LeftStamp {
-        rowid: row.get(0)?,
+        rowid: resolved_rowid,
         sg_number: row.get(1)?,
         year: row.get(2)?,
         series: row.get(3)?,
@@ -1492,6 +1564,7 @@ fn load_left_stamp_by_rowid(
         colnect_print_run: row.get(19)?,
         colnect_public_note: row.get(20)?,
         colnect_private_note: row.get(21)?,
+        all_db_fields: load_stamp_all_fields(conn, resolved_rowid).unwrap_or_default(),
     }))
 }
 
