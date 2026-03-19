@@ -376,25 +376,10 @@ fn run_colnect_inbox_mode(
 
         match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
             Ok(_) => {
-                if let Err(e) = sync_missing_stamps_from_colnect(&conn) {
-                    failed += 1;
-                    let _ = record_import_history(
-                        &conn,
-                        &country_key,
-                        &csv_file,
-                        &checksum,
-                        "failed",
-                        0,
-                        Some(&e.to_string()),
-                    );
-                    error!(
-                        "Failed variant sync for {} ({}): {}",
-                        country,
-                        csv_file.display(),
-                        e
-                    );
-                    continue;
-                }
+                info!(
+                    "Review-first mode: Colnect ingest kept in colnect_stamps only for {}",
+                    country
+                );
                 imported += 1;
                 imported_countries.insert(album_country.clone());
                 let _ = record_import_history(
@@ -490,6 +475,7 @@ fn run_colnect_inbox_mode(
 /// Merge Colnect data into stamps table by inserting only missing variants.
 /// This runs even when StampWorld rows already exist so booklet/sheet variants
 /// from Colnect can appear in output.
+#[allow(dead_code)]
 fn sync_missing_stamps_from_colnect(
     conn: &rusqlite::Connection,
 ) -> Result<usize, Box<dyn std::error::Error>> {
@@ -942,46 +928,12 @@ pub fn run_database_mode(
             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
         }
 
-        // Merge additional variants from Colnect into stamps while preserving
-        // existing StampWorld rows.
-        progress.set_message("🔍 Syncing missing variants from Colnect...");
-        match sync_missing_stamps_from_colnect(&conn) {
-            Ok(count) if count > 0 => {
-                info!("✅ Added {} missing variants from Colnect data", count);
-                progress.set_message(&format!(
-                    "✅ Added {} missing variants from Colnect data",
-                    count
-                ));
-            }
-            Ok(_) => {
-                info!("No missing Colnect variants to add");
-            }
-            Err(e) => {
-                error!("❌ Failed to sync missing Colnect variants: {}", e);
-            }
-        }
-
-        // Fallback image resolver for Colnect rows: fetch page image URLs and
-        // persist downloaded files into Albums/<country>/images.
-        progress.set_message("🖼️ Fetching fallback images from Colnect pages...");
-        match crate::colnect::image_fetcher::populate_missing_images_from_colnect_pages(
-            &conn,
-            &album_name,
-        ) {
-            Ok(stats) => {
-                info!(
-                    "Colnect fallback image fetch stats: attempted={}, downloaded={}, failed={}, skipped_existing={}",
-                    stats.attempted, stats.downloaded, stats.failed, stats.skipped_existing
-                );
-                progress.set_message(&format!(
-                    "🖼️ Colnect fallback images: downloaded {} (attempted {}, failed {})",
-                    stats.downloaded, stats.attempted, stats.failed
-                ));
-            }
-            Err(e) => {
-                warn!("Colnect fallback image fetch failed: {}", e);
-            }
-        }
+        progress.set_message(
+            "🧾 Colnect import complete (review-first mode: no automatic writes into stamps)",
+        );
+        info!(
+            "Review-first mode enabled: skipped Colnect variant sync and fallback image updates to stamps"
+        );
     }
 
     progress.set_message(&format!("📖 Generating album output for: {}", album_name));
@@ -1356,18 +1308,9 @@ pub fn run_scraping_mode(
                             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
                         }
 
-                        progress.set_message("🔍 Syncing missing variants from Colnect...");
-                        match sync_missing_stamps_from_colnect(&conn) {
-                            Ok(count) if count > 0 => {
-                                info!("✅ Added {} missing variants from Colnect data", count);
-                            }
-                            Ok(_) => {
-                                info!("No missing Colnect variants to add");
-                            }
-                            Err(e) => {
-                                error!("❌ Failed to sync missing Colnect variants: {}", e);
-                            }
-                        }
+                        info!(
+                            "Review-first mode enabled: Colnect ingest kept in colnect_stamps only"
+                        );
                     }
 
                     progress.set_message(&format!(
