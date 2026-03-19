@@ -3304,7 +3304,7 @@ dependencies = [
 
 [[package]]
 name = "stamp_album_gen2"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "assert_cmd",
  "atty",
