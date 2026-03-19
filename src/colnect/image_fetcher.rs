@@ -44,7 +44,9 @@ fn is_likely_stamp_image(url: &str) -> bool {
         return false;
     }
     // Prefer URLs that look like image files and have stamp-ish path hints.
-    let has_image_ext = [".jpg", ".jpeg", ".png", ".webp"].iter().any(|e| u.contains(e));
+    let has_image_ext = [".jpg", ".jpeg", ".png", ".webp"]
+        .iter()
+        .any(|e| u.contains(e));
     let stamp_hint = u.contains("stamp") || u.contains("stamps") || u.contains("philately");
     has_image_ext && stamp_hint
 }
@@ -91,7 +93,11 @@ fn extract_colnect_image_url(page_url: &str, html: &str) -> Option<String> {
     let img_sel = Selector::parse("img").ok();
     if let Some(sel) = img_sel {
         for node in doc.select(&sel) {
-            if let Some(src) = node.value().attr("src").and_then(|x| resolve_url(page_url, x)) {
+            if let Some(src) = node
+                .value()
+                .attr("src")
+                .and_then(|x| resolve_url(page_url, x))
+            {
                 if is_likely_stamp_image(&src) {
                     return Some(src);
                 }
@@ -110,7 +116,9 @@ fn extract_colnect_image_url(page_url: &str, html: &str) -> Option<String> {
     }
 
     // Last resort: regex scan for absolute image URLs in HTML/script blocks.
-    if let Ok(re_abs) = regex::Regex::new(r#"https?://[^\s\"']+\.(?:jpg|jpeg|png|webp)(?:\?[^\s\"']*)?"#) {
+    if let Ok(re_abs) =
+        regex::Regex::new(r#"https?://[^\s\"']+\.(?:jpg|jpeg|png|webp)(?:\?[^\s\"']*)?"#)
+    {
         for m in re_abs.find_iter(html) {
             let candidate = m.as_str();
             if is_likely_stamp_image(candidate) {
@@ -120,7 +128,9 @@ fn extract_colnect_image_url(page_url: &str, html: &str) -> Option<String> {
     }
 
     // Also try relative image paths and resolve against the page URL.
-    if let Ok(re_rel) = regex::Regex::new(r#"(?:/|\./)[^\s\"']+\.(?:jpg|jpeg|png|webp)(?:\?[^\s\"']*)?"#) {
+    if let Ok(re_rel) =
+        regex::Regex::new(r#"(?:/|\./)[^\s\"']+\.(?:jpg|jpeg|png|webp)(?:\?[^\s\"']*)?"#)
+    {
         for m in re_rel.find_iter(html) {
             if let Some(candidate) = resolve_url(page_url, m.as_str()) {
                 if is_likely_stamp_image(&candidate) {
@@ -252,7 +262,8 @@ pub fn populate_missing_images_from_colnect_pages(
             .join("images")
             .join(&file_name);
 
-        if let Err(e) = crate::image_downloader::download_image(&image_url, &full_path, &sg_number) {
+        if let Err(e) = crate::image_downloader::download_image(&image_url, &full_path, &sg_number)
+        {
             stats.failed += 1;
             eprintln!(
                 "[COLNECT_IMG_FALLBACK] download failed sg={} img='{}': {}",

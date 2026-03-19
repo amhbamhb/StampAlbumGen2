@@ -200,7 +200,8 @@ pub fn insert_stamp(
 
         // Prefer real image paths over placeholder/empty image paths.
         if is_real_image_candidate(image_path)
-            && (existing_image_path.trim().is_empty() || is_placeholder_image_path(&existing_image_path))
+            && (existing_image_path.trim().is_empty()
+                || is_placeholder_image_path(&existing_image_path))
         {
             if update_needed {
                 update_sql.push_str(", ");
@@ -243,7 +244,11 @@ pub fn insert_stamp(
             &inferred_colnect_image_url
         );
 
-        add_update_if_missing!("original_image_url", &existing_original_url, original_image_url);
+        add_update_if_missing!(
+            "original_image_url",
+            &existing_original_url,
+            original_image_url
+        );
         add_update_if_missing!("description", &existing_description, description);
         add_update_if_missing!(
             "stamps_issued",

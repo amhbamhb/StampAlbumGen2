@@ -266,10 +266,7 @@ fn ensure_review_columns(conn: &Connection) -> Result<(), Box<dyn std::error::Er
 }
 
 fn ensure_colnect_soft_delete_columns(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
-    for (col, ty, default_val) in [
-        ("is_deleted", "INTEGER", "0"),
-        ("deleted_at", "TEXT", "''"),
-    ] {
+    for (col, ty, default_val) in [("is_deleted", "INTEGER", "0"), ("deleted_at", "TEXT", "''")] {
         let mut has_col = false;
         let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
         let mut rows = stmt.query([])?;
@@ -747,7 +744,8 @@ fn apply_matches(
 }
 
 fn render_html(payload: &MatcherPayload) -> String {
-    let json = serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
+    let json =
+        serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
     format!(
         r#"<!doctype html>
 <html>
@@ -1489,12 +1487,22 @@ fn store_uploaded_image_from_data_url(
 
     let album_dir = album_dir_for_ui(db_path, album_name);
     let images_dir = album_dir.join("images");
-    fs::create_dir_all(&images_dir)
-        .map_err(|e| format!("failed to create images directory {}: {}", images_dir.display(), e))?;
+    fs::create_dir_all(&images_dir).map_err(|e| {
+        format!(
+            "failed to create images directory {}: {}",
+            images_dir.display(),
+            e
+        )
+    })?;
 
     let abs_path = images_dir.join(&file_name);
-    fs::write(&abs_path, &bytes)
-        .map_err(|e| format!("failed to write uploaded image {}: {}", abs_path.display(), e))?;
+    fs::write(&abs_path, &bytes).map_err(|e| {
+        format!(
+            "failed to write uploaded image {}: {}",
+            abs_path.display(),
+            e
+        )
+    })?;
 
     Ok(format!("images/{}", file_name))
 }
@@ -1732,23 +1740,24 @@ fn add_colnect_stamp_to_stamps(
         };
     }
 
-    let candidate = match load_right_candidate_by_colnect_id(conn, db_path, album_name, &req.colnect_id) {
-        Ok(Some(c)) => c,
-        Ok(None) => {
-            return AddColnectStampResponse {
-                ok: false,
-                message: format!("colnect candidate not found for id={}", req.colnect_id),
-                added_left: None,
+    let candidate =
+        match load_right_candidate_by_colnect_id(conn, db_path, album_name, &req.colnect_id) {
+            Ok(Some(c)) => c,
+            Ok(None) => {
+                return AddColnectStampResponse {
+                    ok: false,
+                    message: format!("colnect candidate not found for id={}", req.colnect_id),
+                    added_left: None,
+                }
             }
-        }
-        Err(e) => {
-            return AddColnectStampResponse {
-                ok: false,
-                message: format!("failed to load colnect candidate: {}", e),
-                added_left: None,
+            Err(e) => {
+                return AddColnectStampResponse {
+                    ok: false,
+                    message: format!("failed to load colnect candidate: {}", e),
+                    added_left: None,
+                }
             }
-        }
-    };
+        };
 
     let existing = conn.query_row(
         "SELECT COUNT(*) FROM stamps WHERE TRIM(COALESCE(colnect_id, '')) = ?1",
@@ -1759,7 +1768,10 @@ fn add_colnect_stamp_to_stamps(
         if count > 0 {
             return AddColnectStampResponse {
                 ok: false,
-                message: format!("stamp with colnect_id={} already exists in stamps", candidate.colnect_id),
+                message: format!(
+                    "stamp with colnect_id={} already exists in stamps",
+                    candidate.colnect_id
+                ),
                 added_left: None,
             };
         }
@@ -1786,7 +1798,10 @@ fn add_colnect_stamp_to_stamps(
                     Err(e) => {
                         return AddColnectStampResponse {
                             ok: false,
-                            message: format!("failed reading image from source row {}: {}", left_rowid, e),
+                            message: format!(
+                                "failed reading image from source row {}: {}",
+                                left_rowid, e
+                            ),
                             added_left: None,
                         };
                     }
@@ -1823,7 +1838,9 @@ fn add_colnect_stamp_to_stamps(
         .target_sg_number
         .unwrap_or_else(|| candidate.sg_number.clone());
     let year = req.target_year.unwrap_or(candidate.year);
-    let series = req.target_series.unwrap_or_else(|| candidate.series.clone());
+    let series = req
+        .target_series
+        .unwrap_or_else(|| candidate.series.clone());
 
     let insert_res = conn.execute(
         "INSERT INTO stamps (
@@ -1915,7 +1932,10 @@ fn add_colnect_stamp_to_stamps(
 
     AddColnectStampResponse {
         ok: true,
-        message: format!("added colnect_id={} into stamps rowid={}", req.colnect_id, rowid),
+        message: format!(
+            "added colnect_id={} into stamps rowid={}",
+            req.colnect_id, rowid
+        ),
         added_left,
     }
 }
@@ -1939,10 +1959,7 @@ fn delete_colnect_candidate(
              deleted_at = ?2
          WHERE COALESCE(colnect_id, '') = ?1
            AND COALESCE(is_deleted, 0) = 0",
-        params![
-            req.colnect_id.clone(),
-            chrono::Utc::now().to_rfc3339()
-        ],
+        params![req.colnect_id.clone(), chrono::Utc::now().to_rfc3339()],
     ) {
         Ok(n) => n,
         Err(e) => {
@@ -2068,8 +2085,12 @@ pub fn run_review_ui(
     let html = render_html(&payload);
 
     let bind = bind_addr_opt.unwrap_or("127.0.0.1:7878");
-    let server = Server::http(bind)
-        .map_err(|e| std::io::Error::other(format!("failed to start review UI server on {}: {}", bind, e)))?;
+    let server = Server::http(bind).map_err(|e| {
+        std::io::Error::other(format!(
+            "failed to start review UI server on {}: {}",
+            bind, e
+        ))
+    })?;
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);
@@ -2081,7 +2102,9 @@ pub fn run_review_ui(
 
         if method == Method::Get && req_url == "/" {
             let mut resp = Response::from_string(html.clone());
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..]) {
+            if let Ok(h) =
+                Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
+            {
                 resp = resp.with_header(h);
             }
             let _ = request.respond(resp);
@@ -2101,7 +2124,9 @@ pub fn run_review_ui(
             match fs::File::open(&p) {
                 Ok(f) => {
                     let mut resp = Response::from_file(f);
-                    if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], mime_from_path(&p).as_bytes()) {
+                    if let Ok(h) =
+                        Header::from_bytes(&b"Content-Type"[..], mime_from_path(&p).as_bytes())
+                    {
                         resp = resp.with_header(h);
                     }
                     let _ = request.respond(resp);
@@ -2122,9 +2147,16 @@ pub fn run_review_ui(
 
             let parsed: Result<ApplyMatchesEnvelope, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&apply_matches(&conn, req.matches, req.fields, &right_map)).unwrap_or_else(
-                    |_| "{\"updated_rows\":0,\"skipped_rows\":0,\"errors\":[\"serialization failed\"]}".to_string(),
-                ),
+                Ok(req) => serde_json::to_string(&apply_matches(
+                    &conn,
+                    req.matches,
+                    req.fields,
+                    &right_map,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"updated_rows\":0,\"skipped_rows\":0,\"errors\":[\"serialization failed\"]}"
+                        .to_string()
+                }),
                 Err(e) => serde_json::to_string(&ApplyMatchesResponse {
                     updated_rows: 0,
                     skipped_rows: 0,
@@ -2160,7 +2192,8 @@ pub fn run_review_ui(
                     req,
                 ))
                 .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}".to_string()
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
+                        .to_string()
                 }),
                 Err(e) => serde_json::to_string(&AddColnectStampResponse {
                     ok: false,
@@ -2220,9 +2253,12 @@ pub fn run_review_ui(
 
             let parsed: Result<UndoColnectDeleteRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&undo_colnect_delete(&conn, req)).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}".to_string()
-                }),
+                Ok(req) => {
+                    serde_json::to_string(&undo_colnect_delete(&conn, req)).unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}"
+                            .to_string()
+                    })
+                }
                 Err(e) => serde_json::to_string(&UndoColnectDeleteResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),

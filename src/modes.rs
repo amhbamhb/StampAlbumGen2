@@ -566,7 +566,8 @@ fn sync_missing_stamps_from_colnect(
             ))
         })?;
 
-        let mut update_stmt = conn.prepare("UPDATE colnect_stamps SET sg_number = ?1 WHERE rowid = ?2")?;
+        let mut update_stmt =
+            conn.prepare("UPDATE colnect_stamps SET sg_number = ?1 WHERE rowid = ?2")?;
         let mut remapped = 0usize;
 
         for row in col_rows {
