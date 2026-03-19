@@ -237,6 +237,10 @@ show_progress_indicator = true
 # Used when CLI omits --colnect-inbox for --source colnectexport.
 # The directory is auto-created on startup if missing.
 colnect_inbox_path = "samples/colnect_inbox"
+# Optional AlbumEasy CLI path used for automatic PDF generation from output TXT.
+albumeasy_cli_path = "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+# When true, run: <albumeasy_cli_path> -c <generated_txt>
+albumeasy_auto_generate_pdf = true
 
 ###################################
 # Colnect
