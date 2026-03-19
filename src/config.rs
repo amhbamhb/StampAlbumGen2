@@ -306,6 +306,12 @@ pub struct Config {
     // Default Colnect inbox directory used when `--colnect-inbox` is not
     // provided on the CLI for `--source colnectexport` runs.
     pub colnect_inbox_path: Option<String>,
+    // Optional AlbumEasy CLI path for PDF generation from generated text files.
+    // Example: "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+    pub albumeasy_cli_path: Option<String>,
+    // When true, run AlbumEasy in console mode (-c) after generating the
+    // album text file so the PDF is produced automatically.
+    pub albumeasy_auto_generate_pdf: Option<bool>,
 
     // Wikipedia content configuration
     // Path to Wikipedia cache database
@@ -541,6 +547,8 @@ impl Config {
             preserve_real_image_size: Some(true),
             show_progress_indicator: Some(true),
             colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
+            albumeasy_cli_path: None,
+            albumeasy_auto_generate_pdf: Some(false),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
             content_wiki_font_size: Some(12),
@@ -812,6 +820,20 @@ impl Config {
             .as_deref()
             .map(str::trim)
             .filter(|s| !s.is_empty())
+    }
+
+    /// Effective AlbumEasy CLI path for post-generation PDF rendering.
+    pub fn effective_albumeasy_cli_path(&self) -> Option<&str> {
+        self.albumeasy_cli_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
+    /// True when generated album text should be passed to AlbumEasy CLI (-c)
+    /// to produce PDF output automatically.
+    pub fn albumeasy_auto_pdf_enabled(&self) -> bool {
+        self.albumeasy_auto_generate_pdf.unwrap_or(false)
     }
 }
 
@@ -1430,6 +1452,15 @@ pub fn load_config(path: &str) -> Config {
                                 }
                                 if cfg.colnect_inbox_path.is_none() {
                                     cfg.colnect_inbox_path = defaults.colnect_inbox_path;
+                                    has_missing = true;
+                                }
+                                if cfg.albumeasy_cli_path.is_none() {
+                                    cfg.albumeasy_cli_path = defaults.albumeasy_cli_path;
+                                    has_missing = true;
+                                }
+                                if cfg.albumeasy_auto_generate_pdf.is_none() {
+                                    cfg.albumeasy_auto_generate_pdf =
+                                        defaults.albumeasy_auto_generate_pdf;
                                     has_missing = true;
                                 }
                                 if cfg.wikipedia_cache_db_path.is_none() {
