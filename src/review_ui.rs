@@ -27,14 +27,36 @@ struct LeftStamp {
     engraving: String,
     perforation: String,
     context: String,
+    colnect_page_url: String,
+    colnect_image_url: String,
     colnect_id: String,
     colnect_name: String,
     colnect_catalog_codes: String,
     colnect_country: String,
+    colnect_width: String,
+    colnect_height: String,
+    colnect_format: String,
+    colnect_emission: String,
+    colnect_printing: String,
+    colnect_paper: String,
+    colnect_gum: String,
+    colnect_ord_mi: String,
+    colnect_ord_sn: String,
+    colnect_ord_yt: String,
     colnect_face_value: String,
     colnect_currency: String,
     colnect_ord_sg: String,
+    colnect_expiry_date: String,
     colnect_print_run: String,
+    colnect_colors: String,
+    colnect_parent_item: String,
+    colnect_variant: String,
+    colnect_overprint_variant: String,
+    colnect_score: String,
+    colnect_accuracy: String,
+    colnect_list: String,
+    colnect_quantity: String,
+    colnect_condition: String,
     colnect_public_note: String,
     colnect_private_note: String,
     all_db_fields: Vec<DbField>,
@@ -372,14 +394,36 @@ fn load_left_stamps(
                 COALESCE(engraving, ''),
                 COALESCE(perforation, ''),
             COALESCE(context, ''),
+            COALESCE(colnect_page_url, ''),
+            COALESCE(colnect_image_url, ''),
             COALESCE(colnect_id, ''),
             COALESCE(colnect_name, ''),
             COALESCE(colnect_catalog_codes, ''),
             COALESCE(colnect_country, ''),
+            COALESCE(colnect_width, ''),
+            COALESCE(colnect_height, ''),
+            COALESCE(colnect_format, ''),
+            COALESCE(colnect_emission, ''),
+            COALESCE(colnect_printing, ''),
+            COALESCE(colnect_paper, ''),
+            COALESCE(colnect_gum, ''),
+            COALESCE(colnect_ord_mi, ''),
+            COALESCE(colnect_ord_sn, ''),
+            COALESCE(colnect_ord_yt, ''),
             COALESCE(colnect_face_value, ''),
             COALESCE(colnect_currency, ''),
             COALESCE(colnect_ord_sg, ''),
+            COALESCE(colnect_expiry_date, ''),
             COALESCE(colnect_print_run, ''),
+            COALESCE(colnect_colors, ''),
+            COALESCE(colnect_parent_item, ''),
+            COALESCE(colnect_variant, ''),
+            COALESCE(colnect_overprint_variant, ''),
+            COALESCE(colnect_score, ''),
+            COALESCE(colnect_accuracy, ''),
+            COALESCE(colnect_list, ''),
+            COALESCE(colnect_quantity, ''),
+            COALESCE(colnect_condition, ''),
             COALESCE(colnect_public_note, ''),
             COALESCE(colnect_private_note, '')
          FROM stamps
@@ -404,16 +448,38 @@ fn load_left_stamps(
             engraving: row.get(9)?,
             perforation: row.get(10)?,
             context: row.get(11)?,
-            colnect_id: row.get(12)?,
-            colnect_name: row.get(13)?,
-            colnect_catalog_codes: row.get(14)?,
-            colnect_country: row.get(15)?,
-            colnect_face_value: row.get(16)?,
-            colnect_currency: row.get(17)?,
-            colnect_ord_sg: row.get(18)?,
-            colnect_print_run: row.get(19)?,
-            colnect_public_note: row.get(20)?,
-            colnect_private_note: row.get(21)?,
+            colnect_page_url: row.get(12)?,
+            colnect_image_url: row.get(13)?,
+            colnect_id: row.get(14)?,
+            colnect_name: row.get(15)?,
+            colnect_catalog_codes: row.get(16)?,
+            colnect_country: row.get(17)?,
+            colnect_width: row.get(18)?,
+            colnect_height: row.get(19)?,
+            colnect_format: row.get(20)?,
+            colnect_emission: row.get(21)?,
+            colnect_printing: row.get(22)?,
+            colnect_paper: row.get(23)?,
+            colnect_gum: row.get(24)?,
+            colnect_ord_mi: row.get(25)?,
+            colnect_ord_sn: row.get(26)?,
+            colnect_ord_yt: row.get(27)?,
+            colnect_face_value: row.get(28)?,
+            colnect_currency: row.get(29)?,
+            colnect_ord_sg: row.get(30)?,
+            colnect_expiry_date: row.get(31)?,
+            colnect_print_run: row.get(32)?,
+            colnect_colors: row.get(33)?,
+            colnect_parent_item: row.get(34)?,
+            colnect_variant: row.get(35)?,
+            colnect_overprint_variant: row.get(36)?,
+            colnect_score: row.get(37)?,
+            colnect_accuracy: row.get(38)?,
+            colnect_list: row.get(39)?,
+            colnect_quantity: row.get(40)?,
+            colnect_condition: row.get(41)?,
+            colnect_public_note: row.get(42)?,
+            colnect_private_note: row.get(43)?,
             all_db_fields: Vec::new(),
         })
     })?;
@@ -987,14 +1053,36 @@ function render() {{
                     ${{row('Engraving', l.engraving)}}
                     ${{row('Perforation', l.perforation)}}
                     ${{row('Context', l.context)}}
+                    ${{row('colnect_page_url', l.colnect_page_url)}}
+                    ${{row('colnect_image_url', l.colnect_image_url)}}
                     ${{row('colnect_id', l.colnect_id)}}
                     ${{row('colnect_name', l.colnect_name)}}
                     ${{row('colnect_catalog_codes', l.colnect_catalog_codes)}}
                     ${{row('colnect_country', l.colnect_country)}}
+                    ${{row('colnect_width', l.colnect_width)}}
+                    ${{row('colnect_height', l.colnect_height)}}
+                    ${{row('colnect_format', l.colnect_format)}}
+                    ${{row('colnect_emission', l.colnect_emission)}}
+                    ${{row('colnect_printing', l.colnect_printing)}}
+                    ${{row('colnect_paper', l.colnect_paper)}}
+                    ${{row('colnect_gum', l.colnect_gum)}}
+                    ${{row('colnect_ord_mi', l.colnect_ord_mi)}}
+                    ${{row('colnect_ord_sn', l.colnect_ord_sn)}}
+                    ${{row('colnect_ord_yt', l.colnect_ord_yt)}}
                     ${{row('colnect_face_value', l.colnect_face_value)}}
                     ${{row('colnect_currency', l.colnect_currency)}}
                     ${{row('colnect_ord_sg', l.colnect_ord_sg)}}
+                    ${{row('colnect_expiry_date', l.colnect_expiry_date)}}
                     ${{row('colnect_print_run', l.colnect_print_run)}}
+                    ${{row('colnect_colors', l.colnect_colors)}}
+                    ${{row('colnect_parent_item', l.colnect_parent_item)}}
+                    ${{row('colnect_variant', l.colnect_variant)}}
+                    ${{row('colnect_overprint_variant', l.colnect_overprint_variant)}}
+                    ${{row('colnect_score', l.colnect_score)}}
+                    ${{row('colnect_accuracy', l.colnect_accuracy)}}
+                    ${{row('colnect_list', l.colnect_list)}}
+                    ${{row('colnect_quantity', l.colnect_quantity)}}
+                    ${{row('colnect_condition', l.colnect_condition)}}
                     ${{row('colnect_public_note', l.colnect_public_note)}}
                     ${{row('colnect_private_note', l.colnect_private_note)}}
                     ${{allDbRows(l.all_db_fields)}}
@@ -1526,14 +1614,36 @@ fn load_left_stamp_by_rowid(
                 COALESCE(engraving, ''),
                 COALESCE(perforation, ''),
                 COALESCE(context, ''),
+                  COALESCE(colnect_page_url, ''),
+                  COALESCE(colnect_image_url, ''),
                 COALESCE(colnect_id, ''),
                 COALESCE(colnect_name, ''),
                 COALESCE(colnect_catalog_codes, ''),
                 COALESCE(colnect_country, ''),
+                  COALESCE(colnect_width, ''),
+                  COALESCE(colnect_height, ''),
+                  COALESCE(colnect_format, ''),
+                  COALESCE(colnect_emission, ''),
+                  COALESCE(colnect_printing, ''),
+                  COALESCE(colnect_paper, ''),
+                  COALESCE(colnect_gum, ''),
+                  COALESCE(colnect_ord_mi, ''),
+                  COALESCE(colnect_ord_sn, ''),
+                  COALESCE(colnect_ord_yt, ''),
                 COALESCE(colnect_face_value, ''),
                 COALESCE(colnect_currency, ''),
                 COALESCE(colnect_ord_sg, ''),
+                  COALESCE(colnect_expiry_date, ''),
                 COALESCE(colnect_print_run, ''),
+                  COALESCE(colnect_colors, ''),
+                  COALESCE(colnect_parent_item, ''),
+                  COALESCE(colnect_variant, ''),
+                  COALESCE(colnect_overprint_variant, ''),
+                  COALESCE(colnect_score, ''),
+                  COALESCE(colnect_accuracy, ''),
+                  COALESCE(colnect_list, ''),
+                  COALESCE(colnect_quantity, ''),
+                  COALESCE(colnect_condition, ''),
                 COALESCE(colnect_public_note, ''),
                 COALESCE(colnect_private_note, '')
          FROM stamps
@@ -1562,16 +1672,38 @@ fn load_left_stamp_by_rowid(
         engraving: row.get(9)?,
         perforation: row.get(10)?,
         context: row.get(11)?,
-        colnect_id: row.get(12)?,
-        colnect_name: row.get(13)?,
-        colnect_catalog_codes: row.get(14)?,
-        colnect_country: row.get(15)?,
-        colnect_face_value: row.get(16)?,
-        colnect_currency: row.get(17)?,
-        colnect_ord_sg: row.get(18)?,
-        colnect_print_run: row.get(19)?,
-        colnect_public_note: row.get(20)?,
-        colnect_private_note: row.get(21)?,
+        colnect_page_url: row.get(12)?,
+        colnect_image_url: row.get(13)?,
+        colnect_id: row.get(14)?,
+        colnect_name: row.get(15)?,
+        colnect_catalog_codes: row.get(16)?,
+        colnect_country: row.get(17)?,
+        colnect_width: row.get(18)?,
+        colnect_height: row.get(19)?,
+        colnect_format: row.get(20)?,
+        colnect_emission: row.get(21)?,
+        colnect_printing: row.get(22)?,
+        colnect_paper: row.get(23)?,
+        colnect_gum: row.get(24)?,
+        colnect_ord_mi: row.get(25)?,
+        colnect_ord_sn: row.get(26)?,
+        colnect_ord_yt: row.get(27)?,
+        colnect_face_value: row.get(28)?,
+        colnect_currency: row.get(29)?,
+        colnect_ord_sg: row.get(30)?,
+        colnect_expiry_date: row.get(31)?,
+        colnect_print_run: row.get(32)?,
+        colnect_colors: row.get(33)?,
+        colnect_parent_item: row.get(34)?,
+        colnect_variant: row.get(35)?,
+        colnect_overprint_variant: row.get(36)?,
+        colnect_score: row.get(37)?,
+        colnect_accuracy: row.get(38)?,
+        colnect_list: row.get(39)?,
+        colnect_quantity: row.get(40)?,
+        colnect_condition: row.get(41)?,
+        colnect_public_note: row.get(42)?,
+        colnect_private_note: row.get(43)?,
         all_db_fields: load_stamp_all_fields(conn, resolved_rowid).unwrap_or_default(),
     }))
 }
