@@ -337,6 +337,30 @@ value, making the candidate visible again in the right panel. The undo stack is
 per-session (in-memory in the browser); it is cleared when the page is
 reloaded.
 
+### Review UI Config
+
+You can tune row striping colors and the default checkbox states in `config.toml`:
+
+```toml
+[review_ui]
+odd_row_color = "#ffffff"
+even_row_color = "#e6eef4"
+
+# Default checkbox states for field selection
+default_series_checked = true
+default_description_checked = true
+default_watermark_checked = false
+default_design_checked = false
+default_engraving_checked = false
+default_perforation_checked = false
+default_context_checked = false
+default_colnect_links_checked = true
+default_colnect_image_url_checked = true
+default_colnect_metadata_checked = true
+default_replace_sg_number_checked = false
+default_right_unmatched_only_checked = false
+```
+
 ### Auto-migration
 
 On startup the Review UI automatically adds any missing columns to both the
