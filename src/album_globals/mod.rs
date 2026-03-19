@@ -21,6 +21,50 @@ pub use page_functions::{add_stamp, new_page, new_row, new_series, new_year};
 pub use structs::{GenericAttrs, Stamp};
 
 use rusqlite::Connection;
+use std::path::Path;
+use std::process::Command;
+
+fn maybe_generate_album_pdf(output_txt_path: &Path) {
+    let cfg = crate::config::load_config("config.toml");
+    if !cfg.albumeasy_auto_pdf_enabled() {
+        return;
+    }
+
+    let Some(cli_path) = cfg.effective_albumeasy_cli_path() else {
+        log::warn!(
+            "AlbumEasy PDF generation is enabled but 'albumeasy_cli_path' is not set in config"
+        );
+        return;
+    };
+
+    let status = Command::new(cli_path)
+        .arg("-c")
+        .arg(output_txt_path)
+        .status();
+    match status {
+        Ok(s) if s.success() => {
+            log::info!(
+                "AlbumEasy CLI completed successfully for {}",
+                output_txt_path.display()
+            );
+        }
+        Ok(s) => {
+            log::warn!(
+                "AlbumEasy CLI exited with status {} for {}",
+                s,
+                output_txt_path.display()
+            );
+        }
+        Err(e) => {
+            log::warn!(
+                "Failed to run AlbumEasy CLI '{}' for {}: {}",
+                cli_path,
+                output_txt_path.display(),
+                e
+            );
+        }
+    }
+}
 
 // Safe forwarding wrappers: prefer the refactored `generator_new` implementation
 // but fall back to the original `generator` implementation if the
@@ -43,12 +87,21 @@ where
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {
+                maybe_generate_album_pdf(&path);
                 return path;
             }
         }
     }
     // Fallback to original implementation
-    generator::generate_album_output_conn(conn, album_name, page_callback, start_year, end_year)
+    let path = generator::generate_album_output_conn(
+        conn,
+        album_name,
+        page_callback,
+        start_year,
+        end_year,
+    );
+    maybe_generate_album_pdf(&path);
+    path
 }
 
 pub fn generate_album_output<F>(
@@ -67,9 +120,13 @@ where
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {
+                maybe_generate_album_pdf(&path);
                 return path;
             }
         }
     }
-    generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year)
+    let path =
+        generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year);
+    maybe_generate_album_pdf(&path);
+    path
 }
