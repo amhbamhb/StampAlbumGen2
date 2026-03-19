@@ -218,6 +218,18 @@ struct UndoColnectDeleteResponse {
     restored_rows: usize,
 }
 
+#[derive(Debug, Deserialize)]
+struct ShutdownRequest {
+    generate_album: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct ShutdownResponse {
+    ok: bool,
+    message: String,
+    generated_output_path: Option<String>,
+}
+
 fn mime_from_path(path: &Path) -> &'static str {
     match path
         .extension()
@@ -875,6 +887,7 @@ button {{ padding: 6px 10px; }}
         <button onclick='deleteCurrentCandidate()'>Delete Colnect Candidate</button>
         <button onclick='undoLastDelete()'>Undo Delete</button>
     <button onclick='applyMatches()'>Apply Matches To DB</button>
+        <button onclick='closeReviewUi()'>Close Review UI</button>
     <span id='status' class='badge'></span>
   </div>
     <div class='top'>
@@ -1448,6 +1461,25 @@ async function undoLastDelete() {{
     }}
     document.getElementById('status').innerText = j.message || 'Undo complete';
     render();
+}}
+
+async function closeReviewUi() {{
+    if (!confirm('Close Review UI server now?')) return;
+
+    const generateAlbum = confirm('Generate/update album text before closing?');
+    const res = await fetch('/shutdown', {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json' }},
+        body: JSON.stringify({{ generate_album: generateAlbum }})
+    }});
+
+    const j = await res.json();
+    const details = j.generated_output_path ? (`\nOutput: ${{j.generated_output_path}}`) : '';
+    alert((j.message || 'Review UI shutdown request sent.') + details);
+
+    // window.close may be blocked for tabs not opened by script; provide fallback.
+    window.close();
+    setTimeout(() => {{ window.location.href = 'about:blank'; }}, 150);
 }}
 
 const seriesToggle = document.getElementById('f_series');
@@ -2407,6 +2439,64 @@ pub fn run_review_ui(
             }
             let _ = request.respond(resp);
             continue;
+        }
+
+        if method == Method::Post && req_url == "/shutdown" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<ShutdownRequest, _> = serde_json::from_str(&body);
+            let mut generated_output_path = None;
+            let message = match parsed {
+                Ok(req) => {
+                    if req.generate_album {
+                        let generated =
+                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                                crate::album_globals::generate_album_output_conn(
+                                    &conn,
+                                    &album_name,
+                                    None::<fn(usize)>,
+                                    None,
+                                    None,
+                                )
+                            }));
+                        match generated {
+                            Ok(output) => {
+                                generated_output_path = Some(output.display().to_string());
+                                "Review UI closed. Album text generation completed (PDF generation follows config)."
+                                    .to_string()
+                            }
+                            Err(_) => {
+                                "Review UI closed. Album generation failed unexpectedly (panic)."
+                                    .to_string()
+                            }
+                        }
+                    } else {
+                        "Review UI closed without album generation.".to_string()
+                    }
+                }
+                Err(e) => format!("Review UI closed (invalid shutdown payload: {}).", e),
+            };
+
+            let resp_json = serde_json::to_string(&ShutdownResponse {
+                ok: true,
+                message,
+                generated_output_path,
+            })
+            .unwrap_or_else(|_| {
+                "{\"ok\":true,\"message\":\"Review UI closed\",\"generated_output_path\":null}"
+                    .to_string()
+            });
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            break;
         }
 
         let _ = request.respond(Response::empty(StatusCode(404)));
