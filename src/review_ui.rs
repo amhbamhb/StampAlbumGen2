@@ -91,6 +91,20 @@ struct CatalogCodePair {
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
+    odd_row_color: String,
+    even_row_color: String,
+    series_default_checked: bool,
+    description_default_checked: bool,
+    watermark_default_checked: bool,
+    design_default_checked: bool,
+    engraving_default_checked: bool,
+    perforation_default_checked: bool,
+    context_default_checked: bool,
+    colnect_links_default_checked: bool,
+    colnect_image_url_default_checked: bool,
+    colnect_metadata_default_checked: bool,
+    replace_sg_number_default_checked: bool,
+    right_unmatched_only_default_checked: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -1870,6 +1884,20 @@ pub fn run_review_ui(
     db_path: &str,
     album_name_opt: Option<&str>,
     bind_addr_opt: Option<&str>,
+    odd_row_color: &str,
+    even_row_color: &str,
+    series_default_checked: bool,
+    description_default_checked: bool,
+    watermark_default_checked: bool,
+    design_default_checked: bool,
+    engraving_default_checked: bool,
+    perforation_default_checked: bool,
+    context_default_checked: bool,
+    colnect_links_default_checked: bool,
+    colnect_image_url_default_checked: bool,
+    colnect_metadata_default_checked: bool,
+    replace_sg_number_default_checked: bool,
+    right_unmatched_only_default_checked: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let conn = Connection::open(db_path)?;
     ensure_review_columns(&conn)?;
@@ -1893,7 +1921,24 @@ pub fn run_review_ui(
         .map(|c| (c.colnect_id.clone(), c))
         .collect();
 
-    let payload = MatcherPayload { left, right };
+    let payload = MatcherPayload {
+        left,
+        right,
+        odd_row_color: odd_row_color.to_string(),
+        even_row_color: even_row_color.to_string(),
+        series_default_checked,
+        description_default_checked,
+        watermark_default_checked,
+        design_default_checked,
+        engraving_default_checked,
+        perforation_default_checked,
+        context_default_checked,
+        colnect_links_default_checked,
+        colnect_image_url_default_checked,
+        colnect_metadata_default_checked,
+        replace_sg_number_default_checked,
+        right_unmatched_only_default_checked,
+    };
     let html = render_html(&payload);
 
     let bind = bind_addr_opt.unwrap_or("127.0.0.1:7878");

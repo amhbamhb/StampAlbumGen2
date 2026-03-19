@@ -46,10 +46,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             std::process::exit(1);
         };
 
+        let review_cfg = config::load_config("config.toml");
         run_review_ui(
             &db_path,
             cli.album_name.as_deref(),
             cli.review_ui_bind.as_deref(),
+            review_cfg.review_ui_odd_row_color(),
+            review_cfg.review_ui_even_row_color(),
+            review_cfg.review_ui_series_default_checked(),
+            review_cfg.review_ui_description_default_checked(),
+            review_cfg.review_ui_watermark_default_checked(),
+            review_cfg.review_ui_design_default_checked(),
+            review_cfg.review_ui_engraving_default_checked(),
+            review_cfg.review_ui_perforation_default_checked(),
+            review_cfg.review_ui_context_default_checked(),
+            review_cfg.review_ui_colnect_links_default_checked(),
+            review_cfg.review_ui_colnect_image_url_default_checked(),
+            review_cfg.review_ui_colnect_metadata_default_checked(),
+            review_cfg.review_ui_replace_sg_number_default_checked(),
+            review_cfg.review_ui_right_unmatched_only_default_checked(),
         )?;
         return Ok(());
     }
