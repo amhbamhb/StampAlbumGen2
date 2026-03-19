@@ -1,8 +1,8 @@
+use image::GenericImageView;
 use log::{debug, info, warn};
 use rusqlite::{params, Connection};
 use scraper::{Html, Selector};
 use std::path::Path;
-use image::GenericImageView;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ColnectImageFetchStats {
