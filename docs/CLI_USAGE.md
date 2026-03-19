@@ -70,6 +70,28 @@ Process a Colnect inbox recursively, auto-route files by country, and create mis
     --colnect-create-country-db
 ```
 
+Process a Colnect inbox and auto-generate album pages for countries with successful imports:
+
+```bash
+./stamp_album_gen2 \
+    --source colnectexport \
+    --colnect-inbox /path/to/colnect_inbox \
+    --colnect-auto-route \
+    --colnect-create-country-db \
+    --colnect-generate-after-import
+```
+
+Note: by default, inbox mode is ingestion-only. It imports CSV data into country
+DBs but does not generate AlbumEasy pages unless
+`--colnect-generate-after-import` is set.
+
+After inbox import, generate pages per country from the DB:
+
+```bash
+./stamp_album_gen2 --db-path Albums/Switzerland/Switzerland.db --album-name Switzerland
+./stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
+```
+
 If `--colnect-inbox` is omitted for `--source colnectexport`, the program uses
 `colnect_inbox_path` from `config.toml` and creates that directory on startup if
 it does not exist.
@@ -148,10 +170,17 @@ Force overwrite existing config (creates backup first):
 
 - `--colnect-csv <PATH>`
     Ingest a single Colnect CSV file.
+    When used with `--db-path`, this run also proceeds to album generation.
 - `--colnect-inbox <DIR>`
     Recursively discover and process Colnect CSV files country-by-country.
     If omitted in `colnectexport` mode, falls back to `colnect_inbox_path` in
     `config.toml`.
+    By default this mode is ingestion-only; run a follow-up
+    `--db-path ... --album-name ...` command to generate pages, or use
+    `--colnect-generate-after-import` to auto-generate in the same run.
+- `--colnect-generate-after-import`
+    After inbox ingestion, generate album output for each country with at least
+    one successful import in this run.
 - `--colnect-auto-route`
     Move discovered files into `<inbox>/<country>/` before processing.
 - `--colnect-country <COUNTRY>`

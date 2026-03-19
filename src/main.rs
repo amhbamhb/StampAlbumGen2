@@ -19,6 +19,7 @@ use stamp_album_gen2::{
     cli::Cli,
     config,
     modes::{run_database_mode, run_scraping_mode},
+    review_ui::run_review_ui,
     setup::{setup_logging, validate_os},
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -28,6 +29,30 @@ use stamp_album_gen2::{
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse CLI arguments
     let mut cli = Cli::parse();
+
+    // Review UI mode is intentionally independent from normal source/mode
+    // validation to keep the workflow lightweight.
+    if cli.review_ui {
+        validate_os()?;
+
+        let db_path = if let Some(path) = cli.db_path.clone() {
+            path
+        } else if let Some(album_name) = cli.album_name.clone() {
+            let album_dir = album_name.trim().replace(' ', "-");
+            format!("Albums/{0}/{0}.db", album_dir)
+        } else {
+            eprintln!("Review UI requires --db-path or --album-name.");
+            eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
+            std::process::exit(1);
+        };
+
+        run_review_ui(
+            &db_path,
+            cli.album_name.as_deref(),
+            cli.review_ui_bind.as_deref(),
+        )?;
+        return Ok(());
+    }
 
     // If requested, initialize (or force-initialize) the config file and exit.
     if cli.init_config {

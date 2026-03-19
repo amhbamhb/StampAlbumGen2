@@ -8,6 +8,44 @@ use rusqlite::{params, Connection, Result};
 
 use crate::db_utils::StampStub;
 
+fn is_placeholder_image_path(path: &str) -> bool {
+    let p = path.trim().to_ascii_lowercase();
+    p.starts_with("images/no_image") || p.contains("placeholder")
+}
+
+fn is_real_image_candidate(path: &str) -> bool {
+    let p = path.trim();
+    !p.is_empty() && !is_placeholder_image_path(p)
+}
+
+fn is_image_url(url: &str) -> bool {
+    let u = url.trim().to_ascii_lowercase();
+    if u.is_empty() {
+        return false;
+    }
+    let has_scheme = u.starts_with("http://") || u.starts_with("https://");
+    let has_ext = [".jpg", ".jpeg", ".png", ".webp"]
+        .iter()
+        .any(|e| u.contains(e));
+    has_scheme && has_ext
+}
+
+fn is_stampworld_image_url(url: &str) -> bool {
+    let u = url.trim().to_ascii_lowercase();
+    u.contains("stampworld.com") && is_image_url(&u)
+}
+
+fn is_colnect_page_url(url: &str) -> bool {
+    url.trim()
+        .to_ascii_lowercase()
+        .contains("colnect.com/stamps/stamp/")
+}
+
+fn is_colnect_image_url(url: &str) -> bool {
+    let u = url.trim().to_ascii_lowercase();
+    u.contains("colnect.com") && is_image_url(&u)
+}
+
 /// Insert a stamp into the database.
 ///
 /// This function handles the complex logic of inserting or updating stamp records,
@@ -40,6 +78,24 @@ pub fn insert_stamp(
     perforation: &str,
     context: &str,
 ) -> Result<bool> {
+    let inferred_stampworld_image_url = if is_stampworld_image_url(remote_image_url) {
+        remote_image_url.trim().to_string()
+    } else {
+        String::new()
+    };
+    let inferred_colnect_page_url = if is_colnect_page_url(remote_image_url) {
+        remote_image_url.trim().to_string()
+    } else if is_colnect_page_url(original_image_url) {
+        original_image_url.trim().to_string()
+    } else {
+        String::new()
+    };
+    let inferred_colnect_image_url = if is_colnect_image_url(remote_image_url) {
+        remote_image_url.trim().to_string()
+    } else {
+        String::new()
+    };
+
     // Normalize stamps_issued: if dots are used as thousand separators and no commas are present, replace them with commas
     let mut stamps_issued_normalized = stamps_issued.trim().to_string();
     if stamps_issued_normalized.starts_with('(') && stamps_issued_normalized.ends_with(')') {
@@ -56,12 +112,13 @@ pub fn insert_stamp(
     // Check if stamp already exists and fetch existing metadata to decide if we
     // should backfill missing columns. We will only fill columns that are NULL
     // or empty and where the caller provided a non-empty value.
-    let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
+    let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
     let (
         count,
         existing_image_path,
         existing_remote_url,
+        existing_original_url,
         existing_description,
         existing_stamps_issued,
         existing_mint_condition,
@@ -74,8 +131,15 @@ pub fn insert_stamp(
         existing_engraving,
         existing_perforation,
         existing_context,
+        existing_stampworld_image_url,
+        existing_colnect_page_url,
+        existing_colnect_image_url,
     ): (
         i64,
+        String,
+        String,
+        String,
+        String,
         String,
         String,
         String,
@@ -107,6 +171,10 @@ pub fn insert_stamp(
             row.get(12).unwrap_or(String::new()),
             row.get(13).unwrap_or(String::new()),
             row.get(14).unwrap_or(String::new()),
+            row.get(15).unwrap_or(String::new()),
+            row.get(16).unwrap_or(String::new()),
+            row.get(17).unwrap_or(String::new()),
+            row.get(18).unwrap_or(String::new()),
         ))
     })?;
     if count > 0 {
@@ -116,37 +184,82 @@ pub fn insert_stamp(
         let mut params_vec = Vec::new();
         let mut param_count = 0;
 
-        // Helper to add update clause if value is missing and we have a non-empty value
-        let mut add_update = |field: &str, existing: &str, new_val: &str| {
-            if existing.trim().is_empty() && !new_val.trim().is_empty() {
-                if update_needed {
-                    update_sql.push_str(", ");
+        macro_rules! add_update_if_missing {
+            ($field:expr, $existing:expr, $new_val:expr) => {
+                if $existing.trim().is_empty() && !$new_val.trim().is_empty() {
+                    if update_needed {
+                        update_sql.push_str(", ");
+                    }
+                    update_sql.push_str(&format!("{} = ?{}", $field, param_count + 1));
+                    params_vec.push($new_val.to_string());
+                    param_count += 1;
+                    update_needed = true;
                 }
-                update_sql.push_str(&format!("{} = ?{}", field, param_count + 1));
-                params_vec.push(new_val.to_string());
-                param_count += 1;
-                update_needed = true;
-            }
-        };
+            };
+        }
 
-        add_update("image_path", &existing_image_path, image_path);
-        add_update("remote_image_url", &existing_remote_url, remote_image_url);
-        add_update("description", &existing_description, description);
-        add_update(
+        // Prefer real image paths over placeholder/empty image paths.
+        if is_real_image_candidate(image_path)
+            && (existing_image_path.trim().is_empty() || is_placeholder_image_path(&existing_image_path))
+        {
+            if update_needed {
+                update_sql.push_str(", ");
+            }
+            update_sql.push_str(&format!("image_path = ?{}", param_count + 1));
+            params_vec.push(image_path.to_string());
+            param_count += 1;
+            update_needed = true;
+        }
+
+        // If current remote URL is empty or still a Colnect page URL, prefer
+        // a concrete non-empty URL from new ingestion (e.g. StampWorld image URL).
+        let existing_remote_is_colnect_page =
+            existing_remote_url.contains("colnect.com/stamps/stamp/");
+        if !remote_image_url.trim().is_empty()
+            && (existing_remote_url.trim().is_empty() || existing_remote_is_colnect_page)
+        {
+            if update_needed {
+                update_sql.push_str(", ");
+            }
+            update_sql.push_str(&format!("remote_image_url = ?{}", param_count + 1));
+            params_vec.push(remote_image_url.to_string());
+            param_count += 1;
+            update_needed = true;
+        }
+
+        add_update_if_missing!(
+            "stampworld_image_url",
+            &existing_stampworld_image_url,
+            &inferred_stampworld_image_url
+        );
+        add_update_if_missing!(
+            "colnect_page_url",
+            &existing_colnect_page_url,
+            &inferred_colnect_page_url
+        );
+        add_update_if_missing!(
+            "colnect_image_url",
+            &existing_colnect_image_url,
+            &inferred_colnect_image_url
+        );
+
+        add_update_if_missing!("original_image_url", &existing_original_url, original_image_url);
+        add_update_if_missing!("description", &existing_description, description);
+        add_update_if_missing!(
             "stamps_issued",
             &existing_stamps_issued,
-            &stamps_issued_normalized,
+            &stamps_issued_normalized
         );
-        add_update("mint_condition", &existing_mint_condition, mint_condition);
-        add_update("unused", &existing_unused, unused);
-        add_update("used", &existing_used, used);
-        add_update("letter_fdc", &existing_letter_fdc, letter_fdc);
-        add_update("currency", &existing_currency, currency);
-        add_update("watermark", &existing_watermark, watermark);
-        add_update("design", &existing_design, design);
-        add_update("engraving", &existing_engraving, engraving);
-        add_update("perforation", &existing_perforation, perforation);
-        add_update("context", &existing_context, context);
+        add_update_if_missing!("mint_condition", &existing_mint_condition, mint_condition);
+        add_update_if_missing!("unused", &existing_unused, unused);
+        add_update_if_missing!("used", &existing_used, used);
+        add_update_if_missing!("letter_fdc", &existing_letter_fdc, letter_fdc);
+        add_update_if_missing!("currency", &existing_currency, currency);
+        add_update_if_missing!("watermark", &existing_watermark, watermark);
+        add_update_if_missing!("design", &existing_design, design);
+        add_update_if_missing!("engraving", &existing_engraving, engraving);
+        add_update_if_missing!("perforation", &existing_perforation, perforation);
+        add_update_if_missing!("context", &existing_context, context);
 
         if update_needed {
             update_sql.push_str(" WHERE country = ?");
@@ -172,8 +285,94 @@ pub fn insert_stamp(
         }
     }
 
+    // Reconciliation fallback for Colnect-first/StampWorld-second flow:
+    // if no exact (country+series+sg) match exists, try matching by
+    // (country+year+sg) across any series and upgrade that row instead of
+    // inserting a duplicate image-less variant.
+    let alt_count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND year = ?2 AND sg_number = ?3",
+        params![country, year, sg_number],
+        |r| r.get(0),
+    )?;
+    if alt_count > 0 {
+        let image_for_update = if is_real_image_candidate(image_path) {
+            image_path
+        } else {
+            ""
+        };
+        let update_sql = "UPDATE stamps SET
+            series = CASE
+                WHEN TRIM(COALESCE(series, '')) = '' THEN ?1
+                WHEN (TRIM(COALESCE(image_path, '')) = '' OR LOWER(image_path) LIKE 'images/no_image%') THEN ?1
+                ELSE series
+            END,
+            image_path = CASE
+                WHEN (?2 != '') AND (TRIM(COALESCE(image_path, '')) = '' OR LOWER(image_path) LIKE 'images/no_image%') THEN ?2
+                ELSE image_path
+            END,
+            remote_image_url = CASE
+                WHEN (?3 != '') AND (TRIM(COALESCE(remote_image_url, '')) = '' OR remote_image_url LIKE '%colnect.com/stamps/stamp/%') THEN ?3
+                ELSE remote_image_url
+            END,
+            original_image_url = CASE
+                WHEN (?4 != '') AND TRIM(COALESCE(original_image_url, '')) = '' THEN ?4
+                ELSE original_image_url
+            END,
+            description = CASE WHEN (description IS NULL OR description = '') AND (?5 != '') THEN ?5 ELSE description END,
+            stamps_issued = CASE WHEN (stamps_issued IS NULL OR stamps_issued = '') AND (?6 != '') THEN ?6 ELSE stamps_issued END,
+            mint_condition = CASE WHEN (mint_condition IS NULL OR mint_condition = '') AND (?7 != '') THEN ?7 ELSE mint_condition END,
+            unused = CASE WHEN (unused IS NULL OR unused = '') AND (?8 != '') THEN ?8 ELSE unused END,
+            used = CASE WHEN (used IS NULL OR used = '') AND (?9 != '') THEN ?9 ELSE used END,
+            letter_fdc = CASE WHEN (letter_fdc IS NULL OR letter_fdc = '') AND (?10 != '') THEN ?10 ELSE letter_fdc END,
+            currency = CASE WHEN (currency IS NULL OR currency = '') AND (?11 != '') THEN ?11 ELSE currency END,
+            watermark = CASE WHEN (watermark IS NULL OR watermark = '') AND (?12 != '') THEN ?12 ELSE watermark END,
+            design = CASE WHEN (design IS NULL OR design = '') AND (?13 != '') THEN ?13 ELSE design END,
+            engraving = CASE WHEN (engraving IS NULL OR engraving = '') AND (?14 != '') THEN ?14 ELSE engraving END,
+            perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?15 != '') THEN ?15 ELSE perforation END,
+            context = CASE WHEN (context IS NULL OR context = '') AND (?16 != '') THEN ?16 ELSE context END,
+            stampworld_image_url = CASE WHEN (stampworld_image_url IS NULL OR stampworld_image_url = '') AND (?17 != '') THEN ?17 ELSE stampworld_image_url END,
+            colnect_page_url = CASE WHEN (colnect_page_url IS NULL OR colnect_page_url = '') AND (?18 != '') THEN ?18 ELSE colnect_page_url END,
+            colnect_image_url = CASE WHEN (colnect_image_url IS NULL OR colnect_image_url = '') AND (?19 != '') THEN ?19 ELSE colnect_image_url END
+            WHERE country = ?20 AND year = ?21 AND sg_number = ?22";
+
+        let rows = conn.execute(
+            update_sql,
+            params![
+                series,
+                image_for_update,
+                remote_image_url,
+                original_image_url,
+                description,
+                stamps_issued_normalized,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                watermark,
+                design,
+                engraving,
+                perforation,
+                context,
+                inferred_stampworld_image_url,
+                inferred_colnect_page_url,
+                inferred_colnect_image_url,
+                country,
+                year,
+                sg_number
+            ],
+        )?;
+        if rows > 0 {
+            debug!(
+                "Reconciled existing stamp by country+year+sg: {}|{}|{}|{}",
+                country, year, series, sg_number
+            );
+            return Ok(true);
+        }
+    }
+
     // Stamp does not exist; insert new record
-    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)";
+    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, stampworld_image_url, colnect_page_url, colnect_image_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)";
     let month_num: i32 = _month_num.parse().unwrap_or(0);
     match conn.execute(
         insert_sql,
@@ -202,7 +401,10 @@ pub fn insert_stamp(
             design,
             engraving,
             perforation,
-            context
+            context,
+            inferred_stampworld_image_url,
+            inferred_colnect_page_url,
+            inferred_colnect_image_url
         ],
     ) {
         Ok(_) => {

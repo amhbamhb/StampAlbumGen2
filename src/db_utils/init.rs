@@ -66,6 +66,39 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             image_path TEXT,
             remote_image_url TEXT,
             original_image_url TEXT,
+            stampworld_image_url TEXT,
+            colnect_page_url TEXT,
+            colnect_image_url TEXT,
+            colnect_id TEXT,
+            colnect_name TEXT,
+            colnect_catalog_codes TEXT,
+            colnect_country TEXT,
+            colnect_width TEXT,
+            colnect_height TEXT,
+            colnect_format TEXT,
+            colnect_emission TEXT,
+            colnect_printing TEXT,
+            colnect_paper TEXT,
+            colnect_gum TEXT,
+            colnect_ord_mi TEXT,
+            colnect_ord_sn TEXT,
+            colnect_ord_yt TEXT,
+            colnect_ord_sg TEXT,
+            colnect_expiry_date TEXT,
+            colnect_print_run TEXT,
+            colnect_face_value TEXT,
+            colnect_currency TEXT,
+            colnect_colors TEXT,
+            colnect_parent_item TEXT,
+            colnect_variant TEXT,
+            colnect_overprint_variant TEXT,
+            colnect_score TEXT,
+            colnect_accuracy TEXT,
+            colnect_list TEXT,
+            colnect_quantity TEXT,
+            colnect_condition TEXT,
+            colnect_public_note TEXT,
+            colnect_private_note TEXT,
             image_width_px INTEGER,
             image_height_px INTEGER,
             watermark TEXT,
@@ -204,8 +237,8 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             );
         }
     }
-    // Expected columns (including uniq_key). We've added image_width_px and image_height_px so the expected count increases by 2.
-    let expected_col_count = 29;
+    // Expected initial columns in CREATE TABLE stamps before later ALTERs.
+    let expected_col_count = 61;
     if col_count > 0 && col_count != expected_col_count {
         debug!(
             "Stamps table column count ({}) does not match expected ({}). Running safe migration.",
@@ -396,6 +429,66 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             ) {
                 Ok(_) => debug!("Added quantity_printed column."),
                 Err(e) => error!("Failed to add quantity_printed column: {}", e),
+            }
+        }
+    }
+
+    // Add source-specific image URL columns to reduce ambiguity between
+    // StampWorld and Colnect image/link provenance.
+    for (col, ty, default_val) in [
+        ("stampworld_image_url", "TEXT", "''"),
+        ("colnect_page_url", "TEXT", "''"),
+        ("colnect_image_url", "TEXT", "''"),
+        ("colnect_id", "TEXT", "''"),
+        ("colnect_name", "TEXT", "''"),
+        ("colnect_catalog_codes", "TEXT", "''"),
+        ("colnect_country", "TEXT", "''"),
+        ("colnect_width", "TEXT", "''"),
+        ("colnect_height", "TEXT", "''"),
+        ("colnect_format", "TEXT", "''"),
+        ("colnect_emission", "TEXT", "''"),
+        ("colnect_printing", "TEXT", "''"),
+        ("colnect_paper", "TEXT", "''"),
+        ("colnect_gum", "TEXT", "''"),
+        ("colnect_ord_mi", "TEXT", "''"),
+        ("colnect_ord_sn", "TEXT", "''"),
+        ("colnect_ord_yt", "TEXT", "''"),
+        ("colnect_ord_sg", "TEXT", "''"),
+        ("colnect_expiry_date", "TEXT", "''"),
+        ("colnect_print_run", "TEXT", "''"),
+        ("colnect_face_value", "TEXT", "''"),
+        ("colnect_currency", "TEXT", "''"),
+        ("colnect_colors", "TEXT", "''"),
+        ("colnect_parent_item", "TEXT", "''"),
+        ("colnect_variant", "TEXT", "''"),
+        ("colnect_overprint_variant", "TEXT", "''"),
+        ("colnect_score", "TEXT", "''"),
+        ("colnect_accuracy", "TEXT", "''"),
+        ("colnect_list", "TEXT", "''"),
+        ("colnect_quantity", "TEXT", "''"),
+        ("colnect_condition", "TEXT", "''"),
+        ("colnect_public_note", "TEXT", "''"),
+        ("colnect_private_note", "TEXT", "''"),
+    ] {
+        let mut has_col = false;
+        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
+        let mut rows = stmt.query([])?;
+        while let Ok(Some(row)) = rows.next() {
+            let name: String = row.get(1)?;
+            if name == col {
+                has_col = true;
+                break;
+            }
+        }
+        if !has_col {
+            debug!("Adding column '{}' to stamps table", col);
+            let sql = format!(
+                "ALTER TABLE stamps ADD COLUMN {} {} DEFAULT {}",
+                col, ty, default_val
+            );
+            match conn.execute(&sql, []) {
+                Ok(_) => debug!("Added '{}' column.", col),
+                Err(e) => error!("Failed to add '{}' column: {}", col, e),
             }
         }
     }
