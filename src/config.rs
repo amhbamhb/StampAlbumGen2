@@ -99,6 +99,8 @@ pub struct Config {
     // Dedicated Colnect detail-output controls. If present, this section
     // takes precedence over legacy top-level Colnect detail keys.
     pub colnect: Option<ColnectConfig>,
+    // Review UI visual controls.
+    pub review_ui: Option<ReviewUiConfig>,
     // Font size for stamp details in separate_rows mode (e.g., 6, 7, 8)
     // Default: 8
     pub stamp_detail_font_size: Option<u8>,
@@ -375,6 +377,24 @@ pub struct ColnectFieldToggles {
     pub description: Option<bool>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct ReviewUiConfig {
+    pub odd_row_color: Option<String>,
+    pub even_row_color: Option<String>,
+    pub default_series_checked: Option<bool>,
+    pub default_description_checked: Option<bool>,
+    pub default_watermark_checked: Option<bool>,
+    pub default_design_checked: Option<bool>,
+    pub default_engraving_checked: Option<bool>,
+    pub default_perforation_checked: Option<bool>,
+    pub default_context_checked: Option<bool>,
+    pub default_colnect_links_checked: Option<bool>,
+    pub default_colnect_image_url_checked: Option<bool>,
+    pub default_colnect_metadata_checked: Option<bool>,
+    pub default_replace_sg_number_checked: Option<bool>,
+    pub default_right_unmatched_only_checked: Option<bool>,
+}
+
 impl Config {
     /// Returns a Config with all default values set (used for auto-fixing missing config fields)
     pub fn with_defaults() -> Self {
@@ -420,6 +440,22 @@ impl Config {
             include_date: Some(true),
             stamp_detail_layout: Some("separate_rows".to_string()),
             colnect_detail_fields: Some("print_run,themes,designers".to_string()),
+            review_ui: Some(ReviewUiConfig {
+                odd_row_color: Some("#ffffff".to_string()),
+                even_row_color: Some("#e6eef4".to_string()),
+                default_series_checked: Some(true),
+                default_description_checked: Some(true),
+                default_watermark_checked: Some(false),
+                default_design_checked: Some(false),
+                default_engraving_checked: Some(false),
+                default_perforation_checked: Some(false),
+                default_context_checked: Some(false),
+                default_colnect_links_checked: Some(true),
+                default_colnect_image_url_checked: Some(true),
+                default_colnect_metadata_checked: Some(true),
+                default_replace_sg_number_checked: Some(false),
+                default_right_unmatched_only_checked: Some(false),
+            }),
             max_rows_per_page: Some(5),
             max_page_vspace_mm: Some(10.0),
             row_start_es_enabled: Some(true),
@@ -666,6 +702,108 @@ impl Config {
     /// instead of separate PAGE_ADD_BOX blocks.
     pub fn colnect_details_inside_stamp(&self) -> bool {
         matches!(self.colnect_details_placement(), "inside_stamp" | "inline")
+    }
+
+    pub fn review_ui_odd_row_color(&self) -> &str {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.odd_row_color.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("#ffffff")
+    }
+
+    pub fn review_ui_even_row_color(&self) -> &str {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.even_row_color.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("#e6eef4")
+    }
+
+    pub fn review_ui_series_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_series_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_description_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_description_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_watermark_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_watermark_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_design_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_design_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_engraving_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_engraving_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_perforation_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_perforation_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_context_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_context_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_colnect_links_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_colnect_links_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_colnect_image_url_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_colnect_image_url_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_colnect_metadata_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_colnect_metadata_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_replace_sg_number_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_replace_sg_number_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_right_unmatched_only_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_right_unmatched_only_checked)
+            .unwrap_or(false)
     }
 
     /// Effective default Colnect inbox path from configuration.
