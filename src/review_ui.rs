@@ -455,6 +455,13 @@ button.primary {{ background: #2f6fa3; color: #fff; border-color: #2f6fa3; }}
 button:hover {{ background: #f1f6fa; }}
 code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
 .status {{ margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }}
+.loadingBox {{ display: none; margin-top: 12px; padding: 12px; border: 1px solid #d7e2eb; border-left: 5px solid #2f6fa3; border-radius: 10px; background: #f5fafe; }}
+.spinner {{ width: 16px; height: 16px; border: 3px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; display: inline-block; animation: spin 0.9s linear infinite; }}
+.loadingRow {{ display: flex; align-items: center; gap: 10px; }}
+.dots {{ display: inline-block; min-width: 18px; text-align: left; }}
+body.busy {{ cursor: progress; }}
+body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-events: none; }}
+@keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 </style>
 </head>
 <body>
@@ -490,10 +497,51 @@ code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padd
         </div>
     </div>
     <div id='status' class='status'></div>
+    <div id='loadingBox' class='loadingBox'>
+        <div class='loadingRow'>
+            <span class='spinner'></span>
+            <div>
+                <strong>Preparing Review UI<span id='loadingDotsTitle' class='dots'></span></strong><br/>
+                <span id='loadingText'>Loading country data and opening the compare view. This may take a few seconds.</span>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
 let countries = [];
+let loadingDotsTimer = null;
+
+function setMovingDots(active) {{
+    const dots = document.getElementById('loadingDotsTitle');
+    if (!dots) return;
+
+    if (!active) {{
+        if (loadingDotsTimer) {{
+            clearInterval(loadingDotsTimer);
+            loadingDotsTimer = null;
+        }}
+        dots.innerText = '';
+        return;
+    }}
+
+    if (loadingDotsTimer) return;
+    let idx = 0;
+    const frames = ['', '.', '..', '...'];
+    loadingDotsTimer = setInterval(() => {{
+        idx = (idx + 1) % frames.length;
+        dots.innerText = frames[idx];
+    }}, 260);
+}}
+
+function setBusy(isBusy, message) {{
+    document.body.classList.toggle('busy', isBusy);
+    const box = document.getElementById('loadingBox');
+    const txt = document.getElementById('loadingText');
+    if (txt && message) txt.innerText = message;
+    if (box) box.style.display = isBusy ? 'block' : 'none';
+    setMovingDots(isBusy);
+}}
 
 function slugCountry(name) {{
     return String(name || '').trim().replaceAll(' ', '-');
@@ -530,6 +578,7 @@ function renderCountryPanel() {{
 async function refreshState() {{
     const status = document.getElementById('status');
     status.innerText = 'Scanning Albums...';
+    setBusy(false, '');
     try {{
         const r = await fetch('/bootstrap-state');
         const j = await r.json();
@@ -554,6 +603,7 @@ async function startReview() {{
         return;
     }}
     document.getElementById('status').innerText = `Starting Review UI for ${{sel.value}}...`;
+    setBusy(true, `Preparing database and compare view for ${{sel.value}}. Watch the terminal for progress updates.`);
     try {{
         const r = await fetch('/start-review', {{
             method: 'POST',
@@ -562,12 +612,14 @@ async function startReview() {{
         }});
         const j = await r.json();
         if (!j.ok) {{
+            setBusy(false, '');
             document.getElementById('status').innerText = j.message || 'Failed to start review.';
             return;
         }}
         document.getElementById('status').innerText = j.message || 'Launching review...';
-        setTimeout(() => {{ window.location.href = '/'; }}, 450);
+        setTimeout(() => {{ window.location.href = '/'; }}, 1000);
     }} catch (e) {{
+        setBusy(false, '');
         document.getElementById('status').innerText = `Failed to start: ${{e}}`;
     }}
 }}
