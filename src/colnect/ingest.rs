@@ -123,6 +123,21 @@ pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result
     }
     info!("Ingested {} Colnect stamps", count);
 
+    conn.execute(
+        "UPDATE colnect_stamps
+         SET is_processed = CASE
+             WHEN TRIM(COALESCE(colnect_id, '')) != ''
+              AND EXISTS (
+                  SELECT 1
+                  FROM stamps s
+                  WHERE TRIM(COALESCE(s.colnect_id, '')) = TRIM(COALESCE(colnect_stamps.colnect_id, ''))
+                    AND TRIM(COALESCE(s.colnect_id, '')) != ''
+              ) THEN 1
+             ELSE 0
+         END",
+        [],
+    )?;
+
     // Skip link_colnect_data for now as it has issues with NULL handling
     // TODO: Fix link_colnect_data to handle NULL values properly
     // link_colnect_data(conn)?;

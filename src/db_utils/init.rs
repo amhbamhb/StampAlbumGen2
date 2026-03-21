@@ -5,59 +5,6 @@
 use log::{debug, error};
 use rusqlite::{Connection, Result};
 
-fn cleanup_legacy_stampworld_identity_duplicates(conn: &Connection) -> Result<usize> {
-    let mut group_stmt = conn.prepare(
-        "SELECT lower(coalesce(country, '')) AS country_key,
-                trim(coalesce(stampworld_image_url, '')) AS sw_img,
-                min(rowid) AS keep_rowid,
-                count(*) AS cnt
-         FROM stamps
-         WHERE trim(coalesce(stampworld_image_url, '')) != ''
-         GROUP BY lower(coalesce(country, '')), trim(coalesce(stampworld_image_url, ''))
-         HAVING count(*) > 1",
-    )?;
-
-    let groups = group_stmt
-        .query_map([], |r| {
-            Ok((
-                r.get::<_, String>(0)?,
-                r.get::<_, String>(1)?,
-                r.get::<_, i64>(2)?,
-                r.get::<_, i64>(3)?,
-            ))
-        })?
-        .collect::<std::result::Result<Vec<_>, _>>()?;
-
-    let mut deleted = 0usize;
-    for (country_key, sw_img, keep_rowid, cnt) in groups {
-        let n = conn.execute(
-            "DELETE FROM stamps
-             WHERE rowid != ?1
-               AND lower(coalesce(country, '')) = ?2
-               AND trim(coalesce(stampworld_image_url, '')) = ?3",
-            rusqlite::params![keep_rowid, country_key, sw_img],
-        )?;
-        if n > 0 {
-            deleted += n;
-            debug!(
-                "Deduped {} legacy row(s) for country='{}' stampworld_image_url='{}' (kept rowid={}, group_size={})",
-                n, country_key, sw_img, keep_rowid, cnt
-            );
-        }
-    }
-
-    if deleted > 0 {
-        let _ = conn.execute(
-            "UPDATE stamps
-             SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
-             WHERE uniq_key IS NULL OR uniq_key = ''",
-            [],
-        );
-    }
-
-    Ok(deleted)
-}
-
 /// Initialize the database connection and ensure the stamps table exists.
 ///
 /// This function creates the database file if it doesn't exist, ensures the
@@ -158,7 +105,10 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             design TEXT,
             engraving TEXT,
             perforation TEXT,
-            context TEXT
+            context TEXT,
+            uniq_key TEXT DEFAULT '',
+            issue_location TEXT DEFAULT '',
+            quantity_printed TEXT DEFAULT ''
         )",
         [],
     )?;
@@ -206,7 +156,10 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             quantity TEXT,
             condition TEXT,
             public_note TEXT,
-            private_note TEXT
+            private_note TEXT,
+            is_deleted INTEGER DEFAULT 0,
+            deleted_at TEXT DEFAULT '',
+            is_processed INTEGER DEFAULT 0
         )",
         [],
     )?;
@@ -234,331 +187,6 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         "CREATE INDEX IF NOT EXISTS idx_colnect_catalog_codes_colnect_id ON colnect_catalog_codes (colnect_id)",
         [],
     )?;
-
-    // Migration: Add 'series' column to colnect_stamps if missing
-    {
-        let mut has_series_col = false;
-        let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == "series" {
-                has_series_col = true;
-                break;
-            }
-        }
-        if !has_series_col {
-            debug!("Adding column 'series' to colnect_stamps table");
-            match conn.execute("ALTER TABLE colnect_stamps ADD COLUMN series TEXT", []) {
-                Ok(_) => debug!("Added series column to colnect_stamps."),
-                Err(e) => error!("Failed to add series column to colnect_stamps: {}", e),
-            }
-        }
-    }
-
-    // Print column names and count after creation
-    {
-        let pragma = conn.prepare("PRAGMA table_info(stamps)");
-        if let Ok(mut stmt) = pragma {
-            let mut rows = stmt.query([])?;
-            let mut col_names = Vec::new();
-            while let Ok(Some(row)) = rows.next() {
-                let name: String = row.get(1)?;
-                col_names.push(name);
-            }
-            // eprintln!("[DEBUG] Stamps table columns after creation: {:?} (count: {})", col_names, col_names.len());
-        }
-    }
-    // Now check column count. If it doesn't match our expected schema we should
-    // run a safe migration rather than blindly dropping the table which loses
-    // existing data. The desired schema currently has 27 columns (including
-    // the 'uniq_key' column).
-    let mut col_count = 0;
-    let mut col_names = Vec::new();
-    {
-        let pragma = conn.prepare("PRAGMA table_info(stamps)");
-        if let Ok(mut stmt) = pragma {
-            let mut rows = stmt.query([])?;
-            while let Ok(Some(row)) = rows.next() {
-                let name: String = row.get(1)?;
-                col_names.push(name.clone());
-                col_count += 1;
-            }
-            debug!(
-                "Stamps table columns before possible migration: {:?} (count: {})",
-                col_names, col_count
-            );
-        }
-    }
-    // Expected initial columns in CREATE TABLE stamps before later ALTERs.
-    let expected_col_count = 61;
-    if col_count > 0 && col_count != expected_col_count {
-        debug!(
-            "Stamps table column count ({}) does not match expected ({}). Running safe migration.",
-            col_count, expected_col_count
-        );
-        match crate::db_utils::migrations::migrate_stamps_table(&conn) {
-            Ok(_) => debug!("Safe migration completed from init_db."),
-            Err(e) => error!("Safe migration failed from init_db: {}", e),
-        }
-    }
-    // Set this to true to enable debug output, false to disable
-    const DEBUG: bool = true;
-    if DEBUG {
-        debug!("Stamps table ensured.");
-    }
-
-    // Migration: ensure legacy colnect_stamps tables include all expected columns.
-    // Some older country DBs were created with a reduced schema (missing `name`
-    // and related metadata columns), which breaks current ingest INSERTs.
-    {
-        let mut existing = std::collections::HashSet::new();
-        let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            existing.insert(name);
-        }
-
-        let required_cols: [(&str, &str); 38] = [
-            ("name", "TEXT"),
-            ("catalog_codes", "TEXT"),
-            ("country", "TEXT"),
-            ("width", "TEXT"),
-            ("height", "TEXT"),
-            ("watermark", "TEXT"),
-            ("format", "TEXT"),
-            ("emission", "TEXT"),
-            ("perforation", "TEXT"),
-            ("printing", "TEXT"),
-            ("paper", "TEXT"),
-            ("gum", "TEXT"),
-            ("ord_mi", "TEXT"),
-            ("ord_sn", "TEXT"),
-            ("ord_yt", "TEXT"),
-            ("ord_sg", "TEXT"),
-            ("themes", "TEXT"),
-            ("colnect_link", "TEXT"),
-            ("description", "TEXT"),
-            ("issued_on", "TEXT"),
-            ("expiry_date", "TEXT"),
-            ("print_run", "TEXT"),
-            ("face_value", "TEXT"),
-            ("currency", "TEXT"),
-            ("colors", "TEXT"),
-            ("designers", "TEXT"),
-            ("printers", "TEXT"),
-            ("series", "TEXT"),
-            ("parent_item", "TEXT"),
-            ("variant", "TEXT"),
-            ("overprint_variant", "TEXT"),
-            ("score", "TEXT"),
-            ("accuracy", "TEXT"),
-            ("list", "TEXT"),
-            ("quantity", "TEXT"),
-            ("condition", "TEXT"),
-            ("public_note", "TEXT"),
-            ("private_note", "TEXT"),
-        ];
-
-        for (col, ty) in required_cols.iter() {
-            if !existing.contains(*col) {
-                let sql = format!("ALTER TABLE colnect_stamps ADD COLUMN {} {}", col, ty);
-                match conn.execute(&sql, []) {
-                    Ok(_) => debug!("Added missing colnect_stamps column '{}'", col),
-                    Err(e) => error!(
-                        "Failed to add missing colnect_stamps column '{}': {}",
-                        col, e
-                    ),
-                }
-            }
-        }
-    }
-
-    // Migration: add a `uniq_key` column (if missing), backfill it with a
-    // canonical dedupe key, then create a UNIQUE index on that column if there
-    // are no duplicate keys. This approach is safer when series/country text
-    // normalization is required and lets us inspect/backfill before enforcing
-    // the constraint.
-    // 1) Add column if missing
-    let mut has_uniq_col = false;
-    {
-        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == "uniq_key" {
-                has_uniq_col = true;
-                break;
-            }
-        }
-    }
-
-    // Heal legacy duplicate StampWorld rows created before stable identity
-    // dedupe was implemented.
-    match cleanup_legacy_stampworld_identity_duplicates(&conn) {
-        Ok(n) if n > 0 => debug!(
-            "Removed {} legacy duplicate StampWorld identity row(s) during init_db",
-            n
-        ),
-        Ok(_) => {}
-        Err(e) => error!(
-            "Failed legacy StampWorld identity dedupe during init_db: {}",
-            e
-        ),
-    }
-    if !has_uniq_col {
-        debug!("Adding column 'uniq_key' to stamps table");
-        match conn.execute("ALTER TABLE stamps ADD COLUMN uniq_key TEXT", []) {
-            Ok(_) => debug!("Added uniq_key column."),
-            Err(e) => error!("Failed to add uniq_key column: {}", e),
-        }
-    }
-
-    // 2) Backfill uniq_key using a normalized concatenation; use COALESCE to
-    // guard against NULLs and lower() for basic normalization.
-    match conn.execute(
-        "UPDATE stamps SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'') WHERE uniq_key IS NULL OR uniq_key = ''",
-        [],
-    ) {
-        Ok(n) => debug!("Backfilled uniq_key for {} rows", n),
-        Err(e) => error!("Failed to backfill uniq_key: {}", e),
-    }
-
-    // 3) Check for duplicates on uniq_key; only create UNIQUE index if none exist
-    match conn.query_row(
-        "SELECT COUNT(*) FROM (SELECT uniq_key FROM stamps GROUP BY uniq_key HAVING COUNT(*) > 1);",
-        [],
-        |r| r.get::<_, i64>(0),
-    ) {
-        Ok(dup_groups) => {
-            if dup_groups == 0 {
-                match conn.execute(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps(uniq_key);",
-                    [],
-                ) {
-                    Ok(_) => debug!("Created UNIQUE index stamps_unique_uniq_key"),
-                    Err(e) => error!(
-                        "Failed to create UNIQUE index stamps_unique_uniq_key: {}",
-                        e
-                    ),
-                }
-            } else {
-                error!("Found {} duplicate uniq_key group(s). UNIQUE index not created. Please deduplicate rows before enabling this constraint.", dup_groups);
-            }
-        }
-        Err(e) => {
-            error!("Failed to check for duplicate uniq_key groups: {}. Skipping UNIQUE index creation.", e);
-        }
-    }
-
-    // Add issue_location column if missing
-    {
-        let mut has_col = false;
-        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == "issue_location" {
-                has_col = true;
-                break;
-            }
-        }
-        if !has_col {
-            debug!("Adding column 'issue_location' to stamps table");
-            match conn.execute(
-                "ALTER TABLE stamps ADD COLUMN issue_location TEXT DEFAULT ''",
-                [],
-            ) {
-                Ok(_) => debug!("Added issue_location column."),
-                Err(e) => error!("Failed to add issue_location column: {}", e),
-            }
-        }
-    }
-
-    // Add quantity_printed column if missing
-    {
-        let mut has_col = false;
-        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == "quantity_printed" {
-                has_col = true;
-                break;
-            }
-        }
-        if !has_col {
-            debug!("Adding column 'quantity_printed' to stamps table");
-            match conn.execute(
-                "ALTER TABLE stamps ADD COLUMN quantity_printed TEXT DEFAULT ''",
-                [],
-            ) {
-                Ok(_) => debug!("Added quantity_printed column."),
-                Err(e) => error!("Failed to add quantity_printed column: {}", e),
-            }
-        }
-    }
-
-    // Add source-specific image URL columns to reduce ambiguity between
-    // StampWorld and Colnect image/link provenance.
-    for (col, ty, default_val) in [
-        ("stampworld_image_url", "TEXT", "''"),
-        ("colnect_page_url", "TEXT", "''"),
-        ("colnect_image_url", "TEXT", "''"),
-        ("colnect_id", "TEXT", "''"),
-        ("colnect_name", "TEXT", "''"),
-        ("colnect_catalog_codes", "TEXT", "''"),
-        ("colnect_country", "TEXT", "''"),
-        ("colnect_width", "TEXT", "''"),
-        ("colnect_height", "TEXT", "''"),
-        ("colnect_format", "TEXT", "''"),
-        ("colnect_emission", "TEXT", "''"),
-        ("colnect_printing", "TEXT", "''"),
-        ("colnect_paper", "TEXT", "''"),
-        ("colnect_gum", "TEXT", "''"),
-        ("colnect_ord_mi", "TEXT", "''"),
-        ("colnect_ord_sn", "TEXT", "''"),
-        ("colnect_ord_yt", "TEXT", "''"),
-        ("colnect_ord_sg", "TEXT", "''"),
-        ("colnect_expiry_date", "TEXT", "''"),
-        ("colnect_print_run", "TEXT", "''"),
-        ("colnect_face_value", "TEXT", "''"),
-        ("colnect_currency", "TEXT", "''"),
-        ("colnect_colors", "TEXT", "''"),
-        ("colnect_parent_item", "TEXT", "''"),
-        ("colnect_variant", "TEXT", "''"),
-        ("colnect_overprint_variant", "TEXT", "''"),
-        ("colnect_score", "TEXT", "''"),
-        ("colnect_accuracy", "TEXT", "''"),
-        ("colnect_list", "TEXT", "''"),
-        ("colnect_quantity", "TEXT", "''"),
-        ("colnect_condition", "TEXT", "''"),
-        ("colnect_public_note", "TEXT", "''"),
-        ("colnect_private_note", "TEXT", "''"),
-    ] {
-        let mut has_col = false;
-        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == col {
-                has_col = true;
-                break;
-            }
-        }
-        if !has_col {
-            debug!("Adding column '{}' to stamps table", col);
-            let sql = format!(
-                "ALTER TABLE stamps ADD COLUMN {} {} DEFAULT {}",
-                col, ty, default_val
-            );
-            match conn.execute(&sql, []) {
-                Ok(_) => debug!("Added '{}' column.", col),
-                Err(e) => error!("Failed to add '{}' column: {}", col, e),
-            }
-        }
-    }
 
     // Create us1847_series table
     conn.execute(
@@ -614,27 +242,6 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         [],
     )?;
 
-    // Add color column if it doesn't exist (for backward compatibility)
-    conn.execute("ALTER TABLE us1847_stamps ADD COLUMN color TEXT", [])
-        .ok();
-    conn.execute(
-        "UPDATE us1847_stamps SET color = '' WHERE color IS NULL",
-        [],
-    )
-    .ok();
-
-    // Add missing columns to us1847_series if they don't exist (for backward compatibility)
-    conn.execute(
-        "ALTER TABLE us1847_series ADD COLUMN design_size_portrait TEXT DEFAULT ''",
-        [],
-    )
-    .ok();
-    conn.execute(
-        "ALTER TABLE us1847_series ADD COLUMN design_size_landscape TEXT DEFAULT ''",
-        [],
-    )
-    .ok();
-
     // Create us1847_variations table (keeping for future use with varieties)
     conn.execute(
         "CREATE TABLE IF NOT EXISTS us1847_variations (
@@ -646,6 +253,10 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
         )",
         [],
     )?;
+
+    crate::db_utils::migrations::ensure_schema_migrations_table(&conn)?;
+    crate::db_utils::migrations::run_pending_schema_migrations(&conn)?;
+    debug!("Database schema ensured via numbered migrations.");
 
     Ok(conn)
 }

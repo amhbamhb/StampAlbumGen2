@@ -170,6 +170,7 @@ struct ApplyMatchesEnvelope {
 struct ApplyMatchesResponse {
     updated_rows: usize,
     skipped_rows: usize,
+    processed_colnect_ids: Vec<String>,
     errors: Vec<String>,
 }
 
@@ -191,6 +192,7 @@ struct AddColnectStampResponse {
     ok: bool,
     message: String,
     added_left: Option<LeftStamp>,
+    processed_colnect_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -245,104 +247,38 @@ fn mime_from_path(path: &Path) -> &'static str {
     }
 }
 
-fn ensure_review_columns(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
-    for col in [
-        "stampworld_image_url",
-        "colnect_page_url",
-        "colnect_image_url",
-        "colnect_id",
-        "colnect_name",
-        "colnect_catalog_codes",
-        "colnect_country",
-        "colnect_width",
-        "colnect_height",
-        "colnect_format",
-        "colnect_emission",
-        "colnect_printing",
-        "colnect_paper",
-        "colnect_gum",
-        "colnect_ord_mi",
-        "colnect_ord_sn",
-        "colnect_ord_yt",
-        "colnect_ord_sg",
-        "colnect_expiry_date",
-        "colnect_print_run",
-        "colnect_face_value",
-        "colnect_currency",
-        "colnect_colors",
-        "colnect_parent_item",
-        "colnect_variant",
-        "colnect_overprint_variant",
-        "colnect_score",
-        "colnect_accuracy",
-        "colnect_list",
-        "colnect_quantity",
-        "colnect_condition",
-        "colnect_public_note",
-        "colnect_private_note",
-    ] {
-        let mut has_col = false;
-        let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == col {
-                has_col = true;
-                break;
-            }
-        }
-        if !has_col {
-            let sql = format!("ALTER TABLE stamps ADD COLUMN {} TEXT DEFAULT ''", col);
-            conn.execute(&sql, [])?;
-        }
-    }
-    Ok(())
-}
-
-fn ensure_colnect_soft_delete_columns(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
-    for (col, ty, default_val) in [("is_deleted", "INTEGER", "0"), ("deleted_at", "TEXT", "''")] {
-        let mut has_col = false;
-        let mut stmt = conn.prepare("PRAGMA table_info(colnect_stamps)")?;
-        let mut rows = stmt.query([])?;
-        while let Ok(Some(row)) = rows.next() {
-            let name: String = row.get(1)?;
-            if name == col {
-                has_col = true;
-                break;
-            }
-        }
-        if !has_col {
-            let sql = format!(
-                "ALTER TABLE colnect_stamps ADD COLUMN {} {} DEFAULT {}",
-                col, ty, default_val
-            );
-            conn.execute(&sql, [])?;
-        }
-    }
-    Ok(())
-}
-
-fn ensure_uniq_key_column(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
-    let mut has_col = false;
-    let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
-    let mut rows = stmt.query([])?;
-    while let Ok(Some(row)) = rows.next() {
-        let name: String = row.get(1)?;
-        if name == "uniq_key" {
-            has_col = true;
-            break;
-        }
-    }
-    if !has_col {
-        conn.execute("ALTER TABLE stamps ADD COLUMN uniq_key TEXT DEFAULT ''", [])?;
-    }
+fn sync_processed_colnect_candidates(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
     conn.execute(
-        "UPDATE stamps
-         SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
-         WHERE uniq_key IS NULL OR uniq_key = ''",
+        "UPDATE colnect_stamps
+         SET is_processed = CASE
+             WHEN TRIM(COALESCE(colnect_id, '')) != ''
+              AND EXISTS (
+                  SELECT 1
+                  FROM stamps s
+                  WHERE TRIM(COALESCE(s.colnect_id, '')) = TRIM(COALESCE(colnect_stamps.colnect_id, ''))
+                    AND TRIM(COALESCE(s.colnect_id, '')) != ''
+              ) THEN 1
+             ELSE 0
+         END",
         [],
     )?;
     Ok(())
+}
+
+fn mark_colnect_candidate_processed(
+    conn: &Connection,
+    colnect_id: &str,
+) -> rusqlite::Result<usize> {
+    if colnect_id.trim().is_empty() {
+        return Ok(0);
+    }
+
+    conn.execute(
+        "UPDATE colnect_stamps
+         SET is_processed = 1
+         WHERE TRIM(COALESCE(colnect_id, '')) = TRIM(?1)",
+        params![colnect_id],
+    )
 }
 
 fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> String {
@@ -608,6 +544,7 @@ fn load_right_candidates(
                  ), '')
          FROM colnect_stamps c
          WHERE COALESCE(c.is_deleted, 0) = 0
+                     AND COALESCE(c.is_processed, 0) = 0
          ORDER BY CAST(substr(COALESCE(c.issued_on, ''), 1, 4) AS INTEGER), c.sg_number",
     )?;
 
@@ -710,6 +647,7 @@ fn apply_matches(
 
     let mut updated_rows = 0usize;
     let mut skipped_rows = 0usize;
+    let mut processed_colnect_ids = Vec::new();
     let mut errors = Vec::new();
 
     for m in matches {
@@ -831,7 +769,16 @@ fn apply_matches(
         );
 
         match res {
-            Ok(n) if n > 0 => updated_rows += 1,
+            Ok(n) if n > 0 => {
+                updated_rows += 1;
+                match mark_colnect_candidate_processed(conn, &m.colnect_id) {
+                    Ok(_) => processed_colnect_ids.push(m.colnect_id.clone()),
+                    Err(e) => errors.push(format!(
+                        "updated rowid={} but failed to mark colnect_id={} processed: {}",
+                        m.left_rowid, m.colnect_id, e
+                    )),
+                }
+            }
             Ok(_) => skipped_rows += 1,
             Err(e) => errors.push(format!(
                 "failed to apply colnect_id={} to rowid={}: {}",
@@ -843,6 +790,7 @@ fn apply_matches(
     ApplyMatchesResponse {
         updated_rows,
         skipped_rows,
+        processed_colnect_ids,
         errors,
     }
 }
@@ -978,6 +926,25 @@ let rightIdxByLeft = {{}};
 let assignedByLeft = {{}}; // left_rowid -> colnect_id
 let selectedCatalogCodeByLeft = {{}}; // left_rowid -> chosen code
 let deletedCandidatesStack = []; // stack entries: candidate + removedAssignments
+
+function removeCandidateFromUi(colnectId) {{
+    if (!colnectId) return;
+    rightAll = rightAll.filter(c => c.colnect_id !== colnectId);
+    Object.keys(assignedByLeft).forEach(k => {{
+        if (assignedByLeft[k] === colnectId) delete assignedByLeft[k];
+    }});
+    Object.keys(selectedCatalogCodeByLeft).forEach(k => {{
+        if (!assignedByLeft[k]) delete selectedCatalogCodeByLeft[k];
+    }});
+    for (const key of Object.keys(rightIdxByLeft)) {{
+        rightIdxByLeft[key] = 0;
+    }}
+    for (let i = deletedCandidatesStack.length - 1; i >= 0; i -= 1) {{
+        if (deletedCandidatesStack[i]?.candidate?.colnect_id === colnectId) {{
+            deletedCandidatesStack.splice(i, 1);
+        }}
+    }}
+}}
 const rowOddColor = (payload.odd_row_color || '').trim() || '#ffffff';
 const rowEvenColor = (payload.even_row_color || '').trim() || '#e6eef4';
 const checkboxDefaults = {{
@@ -1303,10 +1270,14 @@ async function applyMatches() {{
         body: JSON.stringify({{ matches, fields }})
   }});
   const j = await res.json();
+    for (const colnectId of (j.processed_colnect_ids || [])) {{
+        removeCandidateFromUi(colnectId);
+    }}
   document.getElementById('status').innerText = `Applied: updated=${{j.updated_rows}}, skipped=${{j.skipped_rows}}, errors=${{(j.errors||[]).length}}`;
   if ((j.errors || []).length) {{
     alert(j.errors.join('\n'));
   }}
+    render();
 }}
 
 function getSelectedAddImageMode() {{
@@ -1336,6 +1307,9 @@ function openAddDialog() {{
     document.getElementById('addYear').value = Number.isFinite(r.year) ? r.year : '';
     document.getElementById('addSeries').value = r.series || '';
     document.getElementById('addAssociateImage').checked = true;
+    if (j.processed_colnect_id) {{
+        removeCandidateFromUi(j.processed_colnect_id);
+    }}
     const radioCurrent = document.querySelector("input[name='addImageMode'][value='current_left']");
     if (radioCurrent) radioCurrent.checked = true;
     const upload = document.getElementById('addUploadFile');
@@ -1448,13 +1422,7 @@ async function deleteCurrentCandidate() {{
     }});
     deletedCandidatesStack.push({{ candidate: r, removedAssignments }});
 
-    rightAll = rightAll.filter(c => c.colnect_id !== r.colnect_id);
-    Object.keys(assignedByLeft).forEach(k => {{
-        if (assignedByLeft[k] === r.colnect_id) delete assignedByLeft[k];
-    }});
-    Object.keys(selectedCatalogCodeByLeft).forEach(k => {{
-        if (!assignedByLeft[k]) delete selectedCatalogCodeByLeft[k];
-    }});
+    removeCandidateFromUi(r.colnect_id);
     document.getElementById('status').innerText = j.message || 'Soft-deleted candidate';
     render();
 }}
@@ -1872,6 +1840,7 @@ fn load_right_candidate_by_colnect_id(
                  FROM colnect_stamps c
                  WHERE COALESCE(c.colnect_id, '') = ?1
                      AND COALESCE(c.is_deleted, 0) = 0
+                     AND COALESCE(c.is_processed, 0) = 0
          LIMIT 1",
     )?;
 
@@ -1955,6 +1924,7 @@ fn add_colnect_stamp_to_stamps(
             ok: false,
             message: "colnect_id is required".to_string(),
             added_left: None,
+            processed_colnect_id: None,
         };
     }
 
@@ -1966,6 +1936,7 @@ fn add_colnect_stamp_to_stamps(
                     ok: false,
                     message: format!("colnect candidate not found for id={}", req.colnect_id),
                     added_left: None,
+                    processed_colnect_id: None,
                 }
             }
             Err(e) => {
@@ -1973,6 +1944,7 @@ fn add_colnect_stamp_to_stamps(
                     ok: false,
                     message: format!("failed to load colnect candidate: {}", e),
                     added_left: None,
+                    processed_colnect_id: None,
                 }
             }
         };
@@ -1991,6 +1963,7 @@ fn add_colnect_stamp_to_stamps(
                     candidate.colnect_id
                 ),
                 added_left: None,
+                processed_colnect_id: None,
             };
         }
     }
@@ -2021,6 +1994,7 @@ fn add_colnect_stamp_to_stamps(
                                 left_rowid, e
                             ),
                             added_left: None,
+                            processed_colnect_id: None,
                         };
                     }
                 }
@@ -2031,6 +2005,7 @@ fn add_colnect_stamp_to_stamps(
                     ok: false,
                     message: "upload mode selected but no upload data provided".to_string(),
                     added_left: None,
+                    processed_colnect_id: None,
                 };
             };
             match store_uploaded_image_from_data_url(
@@ -2046,6 +2021,7 @@ fn add_colnect_stamp_to_stamps(
                         ok: false,
                         message: e,
                         added_left: None,
+                        processed_colnect_id: None,
                     }
                 }
             }
@@ -2146,6 +2122,7 @@ fn add_colnect_stamp_to_stamps(
             ok: false,
             message: format!("failed to insert into stamps: {}", e),
             added_left: None,
+            processed_colnect_id: None,
         };
     }
 
@@ -2154,13 +2131,28 @@ fn add_colnect_stamp_to_stamps(
         .ok()
         .flatten();
 
-    AddColnectStampResponse {
-        ok: true,
-        message: format!(
+    let processed_colnect_id = match mark_colnect_candidate_processed(conn, &req.colnect_id) {
+        Ok(_) => Some(req.colnect_id.clone()),
+        Err(_) => None,
+    };
+
+    let message = if processed_colnect_id.is_some() {
+        format!(
             "added colnect_id={} into stamps rowid={}",
             req.colnect_id, rowid
-        ),
+        )
+    } else {
+        format!(
+            "added colnect_id={} into stamps rowid={} (warning: candidate was not marked processed until next UI sync)",
+            req.colnect_id, rowid
+        )
+    };
+
+    AddColnectStampResponse {
+        ok: true,
+        message,
         added_left,
+        processed_colnect_id,
     }
 }
 
@@ -2267,9 +2259,7 @@ pub fn run_review_ui(
     right_unmatched_only_default_checked: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let conn = crate::db_utils::init_db(db_path)?;
-    ensure_review_columns(&conn)?;
-    ensure_colnect_soft_delete_columns(&conn)?;
-    ensure_uniq_key_column(&conn)?;
+    sync_processed_colnect_candidates(&conn)?;
 
     let album_name = album_name_opt
         .map(|s| s.to_string())
@@ -2413,16 +2403,17 @@ pub fn run_review_ui(
                     &right_map,
                 ))
                 .unwrap_or_else(|_| {
-                    "{\"updated_rows\":0,\"skipped_rows\":0,\"errors\":[\"serialization failed\"]}"
+                    "{\"updated_rows\":0,\"skipped_rows\":0,\"processed_colnect_ids\":[],\"errors\":[\"serialization failed\"]}"
                         .to_string()
                 }),
                 Err(e) => serde_json::to_string(&ApplyMatchesResponse {
                     updated_rows: 0,
                     skipped_rows: 0,
+                    processed_colnect_ids: Vec::new(),
                     errors: vec![format!("invalid request: {}", e)],
                 })
                 .unwrap_or_else(|_| {
-                    "{\"updated_rows\":0,\"skipped_rows\":0,\"errors\":[\"invalid request\"]}"
+                    "{\"updated_rows\":0,\"skipped_rows\":0,\"processed_colnect_ids\":[],\"errors\":[\"invalid request\"]}"
                         .to_string()
                 }),
             };
@@ -2451,16 +2442,17 @@ pub fn run_review_ui(
                     req,
                 ))
                 .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null,\"processed_colnect_id\":null}"
                         .to_string()
                 }),
                 Err(e) => serde_json::to_string(&AddColnectStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
                     added_left: None,
+                    processed_colnect_id: None,
                 })
                 .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"invalid request\",\"added_left\":null}".to_string()
+                    "{\"ok\":false,\"message\":\"invalid request\",\"added_left\":null,\"processed_colnect_id\":null}".to_string()
                 }),
             };
 
@@ -2598,4 +2590,77 @@ pub fn run_review_ui(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{mark_colnect_candidate_processed, sync_processed_colnect_candidates};
+    use rusqlite::Connection;
+
+    #[test]
+    fn sync_processed_colnect_candidates_marks_existing_stamp_links() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute("CREATE TABLE stamps (colnect_id TEXT)", [])
+            .expect("create stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (colnect_id TEXT, is_processed INTEGER DEFAULT 0)",
+            [],
+        )
+        .expect("create colnect_stamps");
+
+        conn.execute("INSERT INTO stamps (colnect_id) VALUES ('CID-1')", [])
+            .expect("insert stamp");
+        conn.execute(
+            "INSERT INTO colnect_stamps (colnect_id, is_processed) VALUES ('CID-1', 0), ('CID-2', 1)",
+            [],
+        )
+        .expect("insert candidates");
+
+        sync_processed_colnect_candidates(&conn).expect("sync processed flags");
+
+        let cid1: i64 = conn
+            .query_row(
+                "SELECT is_processed FROM colnect_stamps WHERE colnect_id = 'CID-1'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("cid1 processed state");
+        let cid2: i64 = conn
+            .query_row(
+                "SELECT is_processed FROM colnect_stamps WHERE colnect_id = 'CID-2'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("cid2 processed state");
+
+        assert_eq!(cid1, 1);
+        assert_eq!(cid2, 0);
+    }
+
+    #[test]
+    fn mark_colnect_candidate_processed_sets_flag_for_matching_candidate() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (colnect_id TEXT, is_processed INTEGER DEFAULT 0)",
+            [],
+        )
+        .expect("create colnect_stamps");
+        conn.execute(
+            "INSERT INTO colnect_stamps (colnect_id, is_processed) VALUES ('CID-9', 0)",
+            [],
+        )
+        .expect("insert candidate");
+
+        let updated = mark_colnect_candidate_processed(&conn, "CID-9").expect("mark processed");
+        let processed: i64 = conn
+            .query_row(
+                "SELECT is_processed FROM colnect_stamps WHERE colnect_id = 'CID-9'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("processed state");
+
+        assert_eq!(updated, 1);
+        assert_eq!(processed, 1);
+    }
 }
