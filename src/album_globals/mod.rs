@@ -118,6 +118,28 @@ pub fn generate_album_output_conn<F>(
 where
     F: FnMut(usize),
 {
+    generate_album_output_conn_with_pdf_override(
+        conn,
+        album_name,
+        page_callback,
+        start_year,
+        end_year,
+        None,
+    )
+    .output_txt_path
+}
+
+pub fn generate_album_output_conn_with_pdf_override<F>(
+    conn: &Connection,
+    album_name: &str,
+    page_callback: Option<F>,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+    generate_pdf_override: Option<bool>,
+) -> GeneratedAlbumArtifacts
+where
+    F: FnMut(usize),
+{
     // Call refactored implementation without moving the caller's callback.
     let path = generator_new::generate_album_output_conn::<F>(
         conn, album_name, None, start_year, end_year,
@@ -125,8 +147,7 @@ where
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {
-                maybe_generate_album_pdf(&path);
-                return path;
+                return generated_artifacts_from_path(path, generate_pdf_override);
             }
         }
     }
@@ -138,8 +159,7 @@ where
         start_year,
         end_year,
     );
-    maybe_generate_album_pdf(&path);
-    path
+    generated_artifacts_from_path(path, generate_pdf_override)
 }
 
 pub fn generate_album_output<F>(
@@ -158,13 +178,11 @@ where
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {
-                maybe_generate_album_pdf(&path);
-                return path;
+                return generated_artifacts_from_path(path, None).output_txt_path;
             }
         }
     }
     let path =
         generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year);
-    maybe_generate_album_pdf(&path);
-    path
+    generated_artifacts_from_path(path, None).output_txt_path
 }
