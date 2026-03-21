@@ -963,6 +963,10 @@ const checkboxDefaults = {{
   f_replace_sg: payload.replace_sg_number_default_checked !== false,
   f_right_unmatched_only: payload.right_unmatched_only_default_checked !== false
 }};
+const pdfGenerationDefaults = {{
+    enabledByDefault: payload.albumeasy_auto_generate_pdf_default !== false,
+    cliConfigured: payload.albumeasy_cli_configured !== false
+}};
 document.documentElement.style.setProperty('--row-odd-bg', rowOddColor);
 document.documentElement.style.setProperty('--row-even-bg', rowEvenColor);
 
@@ -1462,6 +1466,15 @@ async function undoLastDelete() {{
 async function closeReviewUi() {{
     // Show a 3-button modal: Generate & Close | Close Only | Cancel
     const choice = await new Promise(resolve => {{
+        const defaultPdfChecked = pdfGenerationDefaults.enabledByDefault && pdfGenerationDefaults.cliConfigured;
+        const pdfOptionHtml =
+            '<label style="display:flex;align-items:flex-start;gap:0.65em;margin:0 0 1.1em;text-align:left;font-size:0.95em;line-height:1.4">' +
+            `<input id="_dlg_pdf" type="checkbox" ${{defaultPdfChecked ? 'checked' : ''}} ${{pdfGenerationDefaults.cliConfigured ? '' : 'disabled'}} style="margin-top:0.2em" />` +
+            '<span>Generate PDF with AlbumEasy CLI <code>-c</code> and open it after generation</span>' +
+            '</label>' +
+            (pdfGenerationDefaults.cliConfigured
+                ? ''
+                : '<div style="margin:-0.45em 0 1.1em;text-align:left;color:#8a3b12;font-size:0.9em">AlbumEasy CLI is not configured. Set runtime.albumeasy_cli_path in config.toml to enable this.</div>');
         const dlg = document.createElement('dialog');
         dlg.style.cssText = [
             'padding:1.8em 2.2em',
@@ -1474,6 +1487,7 @@ async function closeReviewUi() {{
         ].join(';');
         dlg.innerHTML =
             '<p style="margin:0 0 1.2em;font-size:1.05em;font-weight:500">Close Review UI?</p>' +
+            pdfOptionHtml +
             '<div style="display:flex;gap:0.6em;justify-content:center;flex-wrap:wrap">' +
             '<button id="_dlg_gen"  style="padding:0.5em 1.1em;background:#1a73e8;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Generate &amp; Close</button>' +
             '<button id="_dlg_cls"  style="padding:0.5em 1.1em;background:#555;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Close / End</button>' +
