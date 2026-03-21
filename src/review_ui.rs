@@ -1490,9 +1490,37 @@ async function undoLastDelete() {{
 }}
 
 async function closeReviewUi() {{
-    if (!confirm('Close Review UI server now?')) return;
+    // Show a 3-button modal: Generate & Close | Close Only | Cancel
+    const choice = await new Promise(resolve => {{
+        const dlg = document.createElement('dialog');
+        dlg.style.cssText = [
+            'padding:1.8em 2.2em',
+            'border-radius:10px',
+            'font-family:sans-serif',
+            'border:1px solid #bbb',
+            'min-width:320px',
+            'text-align:center',
+            'box-shadow:0 4px 24px rgba(0,0,0,.25)',
+        ].join(';');
+        dlg.innerHTML =
+            '<p style="margin:0 0 1.2em;font-size:1.05em;font-weight:500">Close Review UI?</p>' +
+            '<div style="display:flex;gap:0.6em;justify-content:center;flex-wrap:wrap">' +
+            '<button id="_dlg_gen"  style="padding:0.5em 1.1em;background:#1a73e8;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Generate &amp; Close</button>' +
+            '<button id="_dlg_cls"  style="padding:0.5em 1.1em;background:#555;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Close / End</button>' +
+            '<button id="_dlg_cxl" style="padding:0.5em 1.1em;background:#e9e9e9;color:#333;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Cancel</button>' +
+            '</div>';
+        document.body.appendChild(dlg);
+        dlg.showModal();
+        const done = v => {{ dlg.close(); dlg.remove(); resolve(v); }};
+        dlg.querySelector('#_dlg_gen').onclick  = () => done('generate');
+        dlg.querySelector('#_dlg_cls').onclick  = () => done('close');
+        dlg.querySelector('#_dlg_cxl').onclick  = () => done('cancel');
+        dlg.addEventListener('cancel', () => done('cancel')); // Esc key
+    }});
 
-    const generateAlbum = confirm('Generate/update album text before closing?');
+    if (choice === 'cancel') return;
+
+    const generateAlbum = choice === 'generate';
     const res = await fetch('/shutdown', {{
         method: 'POST',
         headers: {{ 'Content-Type': 'application/json' }},
@@ -2238,7 +2266,7 @@ pub fn run_review_ui(
     replace_sg_number_default_checked: bool,
     right_unmatched_only_default_checked: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let conn = Connection::open(db_path)?;
+    let conn = crate::db_utils::init_db(db_path)?;
     ensure_review_columns(&conn)?;
     ensure_colnect_soft_delete_columns(&conn)?;
     ensure_uniq_key_column(&conn)?;
@@ -2281,13 +2309,47 @@ pub fn run_review_ui(
     };
     let html = render_html(&payload);
 
-    let bind = bind_addr_opt.unwrap_or("127.0.0.1:7878");
-    let server = Server::http(bind).map_err(|e| {
-        std::io::Error::other(format!(
-            "failed to start review UI server on {}: {}",
-            bind, e
-        ))
-    })?;
+    // When the user explicitly specifies a bind address, use it exactly and
+    // fail loudly if it is unavailable.  When falling back to the default,
+    // try incrementing the port up to 10 times so that a stale process on
+    // 7878 does not block a new session.
+    let (server, bind) = if let Some(explicit) = bind_addr_opt {
+        let srv = Server::http(explicit).map_err(|e| {
+            std::io::Error::other(format!(
+                "failed to start review UI server on {}: {}",
+                explicit, e
+            ))
+        })?;
+        (srv, explicit.to_string())
+    } else {
+        const BASE_PORT: u16 = 7878;
+        const MAX_TRIES: u16 = 10;
+        let mut last_err = String::new();
+        let mut found = None;
+        for offset in 0..MAX_TRIES {
+            let candidate = format!("127.0.0.1:{}", BASE_PORT + offset);
+            match Server::http(&candidate) {
+                Ok(srv) => {
+                    found = Some((srv, candidate));
+                    break;
+                }
+                Err(e) => {
+                    last_err = format!("{}", e);
+                }
+            }
+        }
+        found.ok_or_else(|| {
+            std::io::Error::other(format!(
+                "failed to start review UI server: all ports {}-{} are in use (last error: {}). \
+                 Kill the existing process with `fuser -k {}/tcp` or specify a free port with \
+                 `--review-ui-bind 127.0.0.1:<PORT>`.",
+                BASE_PORT,
+                BASE_PORT + MAX_TRIES - 1,
+                last_err,
+                BASE_PORT,
+            ))
+        })?
+    };
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);
