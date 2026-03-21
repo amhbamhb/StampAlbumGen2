@@ -290,7 +290,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
                 month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                month_num: row.get::<_, i32>(2)?,
+                month_num: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
                 day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
                 sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
                 r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
@@ -332,7 +332,7 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
             Ok(StampStub {
                 year: row.get::<_, i32>(0)?,
                 month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                month_num: row.get::<_, i32>(2)?,
+                month_num: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
                 day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
                 sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
                 r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
