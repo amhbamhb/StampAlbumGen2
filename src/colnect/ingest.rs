@@ -4,12 +4,22 @@ use regex::Regex;
 use rusqlite::{params, Connection, Result};
 
 pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result<()> {
-    // Clear existing Colnect data before re-ingesting
-    conn.execute("DELETE FROM colnect_catalog_codes", [])?;
-    conn.execute("DELETE FROM colnect_stamps", [])?;
+    ingest_colnect_data_with_mode(conn, stamps, true)
+}
+
+pub fn ingest_colnect_data_with_mode(
+    conn: &Connection,
+    stamps: &[ColnectStamp],
+    clear_existing: bool,
+) -> Result<()> {
+    if clear_existing {
+        // Single-file mode: start with a fresh staging set.
+        conn.execute("DELETE FROM colnect_catalog_codes", [])?;
+        conn.execute("DELETE FROM colnect_stamps", [])?;
+    }
 
     let mut stmt = conn.prepare(
-        "INSERT INTO colnect_stamps (
+        "INSERT OR REPLACE INTO colnect_stamps (
             sg_number, colnect_id, name, catalog_codes, country, width, height, watermark, format, emission,
             perforation, printing, paper, gum, ord_mi, ord_sn, ord_yt, ord_sg, themes, colnect_link, description, issued_on, expiry_date,
             print_run, face_value, currency, colors, designers, printers, series,
@@ -18,7 +28,7 @@ pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result
     )?;
 
     let mut code_stmt = conn.prepare(
-        "INSERT INTO colnect_catalog_codes (colnect_id, catalog_type, code) VALUES (?1, ?2, ?3)",
+        "INSERT OR REPLACE INTO colnect_catalog_codes (colnect_id, catalog_type, code) VALUES (?1, ?2, ?3)",
     )?;
 
     let mut count = 0;

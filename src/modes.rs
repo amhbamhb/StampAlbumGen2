@@ -374,7 +374,7 @@ fn run_colnect_inbox_mode(
             continue;
         }
 
-        match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+        match crate::colnect::ingest::ingest_colnect_data_with_mode(&conn, &stamps, false) {
             Ok(_) => {
                 info!(
                     "Review-first mode: Colnect ingest kept in colnect_stamps only for {}",
