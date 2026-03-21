@@ -4,9 +4,49 @@
 
 use log::{debug, error};
 use regex::Regex;
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Connection, OptionalExtension, Result};
 
 use crate::db_utils::StampStub;
+
+fn cleanup_stampworld_identity_duplicates(
+    conn: &Connection,
+    keep_rowid: i64,
+    country: &str,
+    stampworld_image_url: &str,
+) -> Result<usize> {
+    if stampworld_image_url.trim().is_empty() {
+        return Ok(0);
+    }
+
+    let mut stmt = conn.prepare(
+        "SELECT rowid
+         FROM stamps
+         WHERE country = ?1
+           AND TRIM(COALESCE(stampworld_image_url, '')) = ?2
+           AND rowid != ?3",
+    )?;
+    let rowids = stmt
+        .query_map(params![country, stampworld_image_url, keep_rowid], |r| {
+            r.get::<_, i64>(0)
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    let mut deleted = 0usize;
+    for rid in rowids {
+        let n = conn.execute("DELETE FROM stamps WHERE rowid = ?1", params![rid])?;
+        if n > 0 {
+            deleted += n;
+        }
+    }
+
+    if deleted > 0 {
+        debug!(
+            "Removed {} duplicate StampWorld identity row(s) for country='{}' sw_img='{}' (keeper rowid={})",
+            deleted, country, stampworld_image_url, keep_rowid
+        );
+    }
+    Ok(deleted)
+}
 
 fn is_placeholder_image_path(path: &str) -> bool {
     let p = path.trim().to_ascii_lowercase();
@@ -110,12 +150,70 @@ pub fn insert_stamp(
         stamps_issued_normalized = stamps_issued_normalized.replace('.', ",");
     }
     // Check if stamp already exists and fetch existing metadata to decide if we
-    // should backfill missing columns. We will only fill columns that are NULL
-    // or empty and where the caller provided a non-empty value.
-    let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
-    let mut stmt = conn.prepare(exists_sql)?;
-    let (
-        count,
+    // should backfill missing columns. Prefer exact country+series+sg matching,
+    // but fall back to stable StampWorld identity keys so a later Colnect review
+    // edit of series/SG does not cause the same StampWorld row to be inserted again.
+    let existing_select = "SELECT rowid, image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE {predicate} LIMIT 1";
+    let load_existing = |predicate: &str, bind: &[&dyn rusqlite::ToSql]| {
+        let sql = existing_select.replace("{predicate}", predicate);
+        let mut stmt = conn.prepare(&sql)?;
+        stmt.query_row(bind, |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(7)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(9)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(10)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(11)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(12)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(13)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(14)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(15)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(16)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(17)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+            ))
+        })
+        .optional()
+    };
+
+    let existing = load_existing(
+        "country = ?1 AND series = ?2 AND sg_number = ?3",
+        &[&country, &series, &sg_number],
+    )?
+    .or_else(|| {
+        if inferred_stampworld_image_url.trim().is_empty() {
+            None
+        } else {
+            load_existing(
+                "country = ?1 AND TRIM(COALESCE(stampworld_image_url, '')) = ?2",
+                &[&country, &inferred_stampworld_image_url],
+            )
+            .ok()
+            .flatten()
+        }
+    })
+    .or_else(|| {
+        if !is_real_image_candidate(image_path) {
+            None
+        } else {
+            load_existing(
+                "country = ?1 AND TRIM(COALESCE(image_path, '')) = ?2",
+                &[&country, &image_path],
+            )
+            .ok()
+            .flatten()
+        }
+    });
+
+    if let Some((
+        existing_rowid,
         existing_image_path,
         existing_remote_url,
         existing_original_url,
@@ -134,50 +232,23 @@ pub fn insert_stamp(
         existing_stampworld_image_url,
         existing_colnect_page_url,
         existing_colnect_image_url,
-    ): (
-        i64,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-    ) = stmt.query_row(params![country, series, sg_number], |row| {
-        Ok((
-            row.get(0)?,
-            row.get(1).unwrap_or(String::new()),
-            row.get(2).unwrap_or(String::new()),
-            row.get(3).unwrap_or(String::new()),
-            row.get(4).unwrap_or(String::new()),
-            row.get(5).unwrap_or(String::new()),
-            row.get(6).unwrap_or(String::new()),
-            row.get(7).unwrap_or(String::new()),
-            row.get(8).unwrap_or(String::new()),
-            row.get(9).unwrap_or(String::new()),
-            row.get(10).unwrap_or(String::new()),
-            row.get(11).unwrap_or(String::new()),
-            row.get(12).unwrap_or(String::new()),
-            row.get(13).unwrap_or(String::new()),
-            row.get(14).unwrap_or(String::new()),
-            row.get(15).unwrap_or(String::new()),
-            row.get(16).unwrap_or(String::new()),
-            row.get(17).unwrap_or(String::new()),
-            row.get(18).unwrap_or(String::new()),
-        ))
-    })?;
-    if count > 0 {
+    )) = existing
+    {
+        // Heal previously duplicated rows from older import behavior.
+        if !inferred_stampworld_image_url.trim().is_empty() {
+            if let Err(e) = cleanup_stampworld_identity_duplicates(
+                conn,
+                existing_rowid,
+                country,
+                &inferred_stampworld_image_url,
+            ) {
+                error!(
+                    "Failed duplicate StampWorld identity cleanup for rowid={} sw_img='{}': {}",
+                    existing_rowid, inferred_stampworld_image_url, e
+                );
+            }
+        }
+
         // Stamp exists; check if we need to backfill any missing columns
         let mut update_needed = false;
         let mut update_sql = "UPDATE stamps SET ".to_string();
@@ -267,24 +338,20 @@ pub fn insert_stamp(
         add_update_if_missing!("context", &existing_context, context);
 
         if update_needed {
-            update_sql.push_str(" WHERE country = ?");
-            params_vec.push(country.to_string());
-            update_sql.push_str(" AND series = ?");
-            params_vec.push(series.to_string());
-            update_sql.push_str(" AND sg_number = ?");
-            params_vec.push(sg_number.to_string());
+            update_sql.push_str(" WHERE rowid = ?");
+            params_vec.push(existing_rowid.to_string());
 
             debug!(
-                "Updating existing stamp: {}|{}|{}",
-                country, series, sg_number
+                "Updating existing stamp rowid={} for {}|{}|{}",
+                existing_rowid, country, series, sg_number
             );
             let mut update_stmt = conn.prepare(&update_sql)?;
             update_stmt.execute(rusqlite::params_from_iter(params_vec))?;
             return Ok(true);
         } else {
             debug!(
-                "Stamp already exists and no updates needed: {}|{}|{}",
-                country, series, sg_number
+                "Stamp already exists and no updates needed for rowid={} using stable StampWorld identity: {}|{}|{}",
+                existing_rowid, country, series, sg_number
             );
             return Ok(false);
         }
