@@ -2776,6 +2776,7 @@ pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
 ) -> Result<Option<(String, String)>, Box<dyn std::error::Error>> {
+    eprintln!("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
     let (server, bind) = bind_review_server(bind_addr_opt)?;
 
@@ -2830,10 +2831,17 @@ pub fn run_review_ui_bootstrap(
                         .find(|c| c.country.eq_ignore_ascii_case(req.country.trim()));
                     match found {
                         Some(c) => {
+                            eprintln!(
+                                "Review UI: country selected '{}'; preparing compare view from {}",
+                                c.country, c.db_path
+                            );
                             selected = Some((c.db_path.clone(), c.country.clone()));
                             BootstrapStartResponse {
                                 ok: true,
-                                message: format!("starting review for {}", c.country),
+                                message: format!(
+                                    "Selected {}. Preparing Review UI now...",
+                                    c.country
+                                ),
                                 country: Some(c.country),
                                 db_path: Some(c.db_path),
                             }
@@ -2898,7 +2906,10 @@ pub fn run_review_ui(
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    eprintln!("Review UI: preparing data from {}", db_path);
+    eprintln!("Review UI: opening database...");
     let conn = crate::db_utils::init_db(db_path)?;
+    eprintln!("Review UI: syncing processed Colnect candidates...");
     sync_processed_colnect_candidates(&conn)?;
 
     let album_name = album_name_opt
@@ -2910,8 +2921,15 @@ pub fn run_review_ui(
         })
         .unwrap_or_else(|| "Album".to_string());
 
+    eprintln!("Review UI: loading left StampWorld rows...");
     let left = load_left_stamps(&conn, db_path, &album_name)?;
+    eprintln!("Review UI: loading right Colnect candidates...");
     let right = load_right_candidates(&conn, db_path, &album_name)?;
+    eprintln!(
+        "Review UI: loaded {} left rows and {} right candidates",
+        left.len(),
+        right.len()
+    );
 
     let right_map: HashMap<String, RightCandidate> = right
         .iter()
@@ -2941,10 +2959,12 @@ pub fn run_review_ui(
     };
     let html = render_html(&payload);
 
+    eprintln!("Review UI: starting local web server...");
     let (server, bind) = bind_review_server(bind_addr_opt)?;
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);
+    eprintln!("Review UI: opening browser...");
     let _ = webbrowser::open(&url);
 
     for mut request in server.incoming_requests() {
