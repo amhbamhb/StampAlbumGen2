@@ -35,10 +35,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cli.review_ui {
         validate_os()?;
 
+        eprintln!("Review UI: initializing...");
+
         let review_cfg = config::load_config("config.toml");
 
         let (db_path, album_name_opt): (String, Option<String>) =
             if cli.db_path.is_none() && cli.album_name.is_none() {
+                eprintln!(
+                    "Review UI: no country/database selected on CLI; opening startup selector..."
+                );
                 let selection = run_review_ui_bootstrap(
                     cli.review_ui_bind.as_deref(),
                     review_cfg.effective_colnect_inbox_path(),
@@ -48,6 +53,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     eprintln!("No country selected; exiting Review UI startup.");
                     return Ok(());
                 };
+                eprintln!(
+                    "Review UI: selected '{}' with database {}",
+                    selected_country, selected_db
+                );
                 (selected_db, Some(selected_country))
             } else {
                 let db_path = if let Some(path) = cli.db_path.clone() {
@@ -60,8 +69,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
                     std::process::exit(1);
                 };
+                eprintln!("Review UI: using requested database {}", db_path);
                 (db_path, cli.album_name.clone())
             };
+
+        eprintln!("Review UI: loading compare data. This may take a few seconds...");
 
         run_review_ui(
             &db_path,
