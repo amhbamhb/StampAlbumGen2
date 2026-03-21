@@ -322,6 +322,29 @@ fn ensure_colnect_soft_delete_columns(conn: &Connection) -> Result<(), Box<dyn s
     Ok(())
 }
 
+fn ensure_uniq_key_column(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
+    let mut has_col = false;
+    let mut stmt = conn.prepare("PRAGMA table_info(stamps)")?;
+    let mut rows = stmt.query([])?;
+    while let Ok(Some(row)) = rows.next() {
+        let name: String = row.get(1)?;
+        if name == "uniq_key" {
+            has_col = true;
+            break;
+        }
+    }
+    if !has_col {
+        conn.execute("ALTER TABLE stamps ADD COLUMN uniq_key TEXT DEFAULT ''", [])?;
+    }
+    conn.execute(
+        "UPDATE stamps
+         SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
+         WHERE uniq_key IS NULL OR uniq_key = ''",
+        [],
+    )?;
+    Ok(())
+}
+
 fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> String {
     let rel = rel_image_path.trim();
     if rel.is_empty() {
@@ -2209,6 +2232,7 @@ pub fn run_review_ui(
     let conn = Connection::open(db_path)?;
     ensure_review_columns(&conn)?;
     ensure_colnect_soft_delete_columns(&conn)?;
+    ensure_uniq_key_column(&conn)?;
 
     let album_name = album_name_opt
         .map(|s| s.to_string())
