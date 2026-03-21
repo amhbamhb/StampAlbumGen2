@@ -5,6 +5,59 @@
 use log::{debug, error};
 use rusqlite::{Connection, Result};
 
+fn cleanup_legacy_stampworld_identity_duplicates(conn: &Connection) -> Result<usize> {
+    let mut group_stmt = conn.prepare(
+        "SELECT lower(coalesce(country, '')) AS country_key,
+                trim(coalesce(stampworld_image_url, '')) AS sw_img,
+                min(rowid) AS keep_rowid,
+                count(*) AS cnt
+         FROM stamps
+         WHERE trim(coalesce(stampworld_image_url, '')) != ''
+         GROUP BY lower(coalesce(country, '')), trim(coalesce(stampworld_image_url, ''))
+         HAVING count(*) > 1",
+    )?;
+
+    let groups = group_stmt
+        .query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, i64>(2)?,
+                r.get::<_, i64>(3)?,
+            ))
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    let mut deleted = 0usize;
+    for (country_key, sw_img, keep_rowid, cnt) in groups {
+        let n = conn.execute(
+            "DELETE FROM stamps
+             WHERE rowid != ?1
+               AND lower(coalesce(country, '')) = ?2
+               AND trim(coalesce(stampworld_image_url, '')) = ?3",
+            rusqlite::params![keep_rowid, country_key, sw_img],
+        )?;
+        if n > 0 {
+            deleted += n;
+            debug!(
+                "Deduped {} legacy row(s) for country='{}' stampworld_image_url='{}' (kept rowid={}, group_size={})",
+                n, country_key, sw_img, keep_rowid, cnt
+            );
+        }
+    }
+
+    if deleted > 0 {
+        let _ = conn.execute(
+            "UPDATE stamps
+             SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
+             WHERE uniq_key IS NULL OR uniq_key = ''",
+            [],
+        );
+    }
+
+    Ok(deleted)
+}
+
 /// Initialize the database connection and ensure the stamps table exists.
 ///
 /// This function creates the database file if it doesn't exist, ensures the
@@ -339,6 +392,20 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
                 break;
             }
         }
+    }
+
+    // Heal legacy duplicate StampWorld rows created before stable identity
+    // dedupe was implemented.
+    match cleanup_legacy_stampworld_identity_duplicates(&conn) {
+        Ok(n) if n > 0 => debug!(
+            "Removed {} legacy duplicate StampWorld identity row(s) during init_db",
+            n
+        ),
+        Ok(_) => {}
+        Err(e) => error!(
+            "Failed legacy StampWorld identity dedupe during init_db: {}",
+            e
+        ),
     }
     if !has_uniq_col {
         debug!("Adding column 'uniq_key' to stamps table");
