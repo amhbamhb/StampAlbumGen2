@@ -21,22 +21,32 @@ pub use page_functions::{add_stamp, new_page, new_row, new_series, new_year};
 pub use structs::{GenericAttrs, Stamp};
 
 use rusqlite::Connection;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
-fn maybe_generate_album_pdf(output_txt_path: &Path) {
-    let cfg = crate::config::load_config("config.toml");
-    if !cfg.albumeasy_auto_pdf_enabled() {
-        return;
+#[derive(Debug, Clone)]
+pub struct GeneratedAlbumArtifacts {
+    pub output_txt_path: PathBuf,
+    pub generated_pdf_path: Option<PathBuf>,
+}
+
+fn maybe_generate_album_pdf_with_settings(
+    output_txt_path: &Path,
+    generate_pdf: bool,
+    cli_path: Option<&str>,
+) -> Option<PathBuf> {
+    if !generate_pdf {
+        return None;
     }
 
-    let Some(cli_path) = cfg.effective_albumeasy_cli_path() else {
+    let Some(cli_path) = cli_path else {
         log::warn!(
             "AlbumEasy PDF generation is enabled but 'albumeasy_cli_path' is not set in config"
         );
-        return;
+        return None;
     };
 
+    let expected_pdf_path = output_txt_path.with_extension("pdf");
     let status = Command::new(cli_path)
         .arg("-c")
         .arg(output_txt_path)
@@ -47,6 +57,16 @@ fn maybe_generate_album_pdf(output_txt_path: &Path) {
                 "AlbumEasy CLI completed successfully for {}",
                 output_txt_path.display()
             );
+            if expected_pdf_path.exists() {
+                Some(expected_pdf_path)
+            } else {
+                log::warn!(
+                    "AlbumEasy CLI reported success for {} but no PDF was found at {}",
+                    output_txt_path.display(),
+                    expected_pdf_path.display()
+                );
+                None
+            }
         }
         Ok(s) => {
             log::warn!(
@@ -54,6 +74,7 @@ fn maybe_generate_album_pdf(output_txt_path: &Path) {
                 s,
                 output_txt_path.display()
             );
+            None
         }
         Err(e) => {
             log::warn!(
@@ -62,7 +83,24 @@ fn maybe_generate_album_pdf(output_txt_path: &Path) {
                 output_txt_path.display(),
                 e
             );
+            None
         }
+    }
+}
+
+fn generated_artifacts_from_path(
+    output_txt_path: PathBuf,
+    generate_pdf_override: Option<bool>,
+) -> GeneratedAlbumArtifacts {
+    let cfg = crate::config::load_config("config.toml");
+    let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
+    let generate_pdf = generate_pdf_override.unwrap_or_else(|| cfg.albumeasy_auto_pdf_enabled());
+    let generated_pdf_path =
+        maybe_generate_album_pdf_with_settings(&output_txt_path, generate_pdf, cli_path.as_deref());
+
+    GeneratedAlbumArtifacts {
+        output_txt_path,
+        generated_pdf_path,
     }
 }
 
