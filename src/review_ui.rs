@@ -1770,9 +1770,6 @@ function openAddDialog() {{
     document.getElementById('addYear').value = Number.isFinite(r.year) ? r.year : '';
     document.getElementById('addSeries').value = r.series || '';
     document.getElementById('addAssociateImage').checked = true;
-    if (j.processed_colnect_id) {{
-        removeCandidateFromUi(j.processed_colnect_id);
-    }}
     const radioCurrent = document.querySelector("input[name='addImageMode'][value='current_left']");
     if (radioCurrent) radioCurrent.checked = true;
     const upload = document.getElementById('addUploadFile');
@@ -1849,6 +1846,9 @@ async function addCurrentColnectAsStamp() {{
 
     if (j.added_left) {{
         left.push(j.added_left);
+    }}
+    if (j.processed_colnect_id) {{
+        removeCandidateFromUi(j.processed_colnect_id);
     }}
     closeAddDialog();
     document.getElementById('status').innerText = j.message || 'Added to stamps';
