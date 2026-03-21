@@ -849,6 +849,9 @@ body {{
 .top {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }}
 .row {{ display: flex; gap: 16px; align-items: stretch; }}
 .col {{ flex: 1; min-width: 280px; display: flex; flex-direction: column; }}
+.colNav {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }}
+.titleRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }}
+.titleRow h3 {{ margin: 0; }}
 .panelCard {{ display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; background: #fff; overflow: hidden; min-height: 0; }}
 .panelHead {{ padding: 10px; border-bottom: 1px solid #ececec; background: #fbfcfd; font-size: 12px; }}
 .panelBody {{ padding: 8px; overflow: auto; max-height: 56vh; }}
@@ -880,12 +883,6 @@ button {{ padding: 6px 10px; }}
 <body>
 <div class='wrap'>
   <div class='top'>
-    <button onclick='prevLeft()'>Prev Left</button>
-    <button onclick='nextLeft()'>Next Left</button>
-    <span id='leftPos' class='badge'></span>
-    <button onclick='prevRight()'>Prev Candidate</button>
-    <button onclick='nextRight()'>Next Candidate</button>
-    <span id='rightPos' class='badge'></span>
     <button onclick='assignCurrent()'>Assign Candidate</button>
     <button onclick='clearAssignment()'>Clear Assignment</button>
         <button onclick='openAddDialog()'>Add Colnect As Stamp</button>
@@ -911,11 +908,25 @@ button {{ padding: 6px 10px; }}
     </div>
   <div class='row'>
     <div class='col'>
-      <h3>Left: StampWorld Base</h3>
+            <div class='colNav'>
+                <button onclick='prevLeft()'>Prev Left</button>
+                <button onclick='nextLeft()'>Next Left</button>
+            </div>
+            <div class='titleRow'>
+                <h3>Left: StampWorld Base</h3>
+                <span id='leftPos' class='badge'></span>
+            </div>
       <div id='leftPanel'></div>
     </div>
     <div class='col'>
-      <h3>Right: Colnect Candidate</h3>
+            <div class='colNav'>
+                <button onclick='prevRight()'>Prev Candidate</button>
+                <button onclick='nextRight()'>Next Candidate</button>
+            </div>
+            <div class='titleRow'>
+                <h3>Right: Colnect Candidate</h3>
+                <span id='rightPos' class='badge'></span>
+            </div>
       <div id='rightPanel'></div>
     </div>
   </div>
