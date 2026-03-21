@@ -225,6 +225,8 @@ struct UndoColnectDeleteResponse {
 #[derive(Debug, Deserialize)]
 struct ShutdownRequest {
     generate_album: bool,
+    #[serde(default)]
+    generate_pdf: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -232,6 +234,33 @@ struct ShutdownResponse {
     ok: bool,
     message: String,
     generated_output_path: Option<String>,
+    generated_pdf_path: Option<String>,
+}
+
+fn path_to_file_url(path: &Path) -> Option<String> {
+    let canonical = path.canonicalize().ok()?;
+    let encoded = canonical
+        .to_string_lossy()
+        .split('/')
+        .map(|segment| urlencoding::encode(segment).into_owned())
+        .collect::<Vec<_>>()
+        .join("/");
+    Some(format!("file://{}", encoded))
+}
+
+fn open_local_path(path: &Path) {
+    let Some(url) = path_to_file_url(path) else {
+        log::warn!("Failed to build file URL for {}", path.display());
+        return;
+    };
+
+    if let Err(error) = webbrowser::open(&url) {
+        log::warn!(
+            "Failed to open {} in default viewer: {}",
+            path.display(),
+            error
+        );
+    }
 }
 
 fn mime_from_path(path: &Path) -> &'static str {
@@ -1495,24 +1524,32 @@ async function closeReviewUi() {{
             '</div>';
         document.body.appendChild(dlg);
         dlg.showModal();
-        const done = v => {{ dlg.close(); dlg.remove(); resolve(v); }};
+        const done = v => {{
+            const generatePdf = v === 'generate' && !!dlg.querySelector('#_dlg_pdf')?.checked;
+            dlg.close();
+            dlg.remove();
+            resolve({{ choice: v, generatePdf }});
+        }};
         dlg.querySelector('#_dlg_gen').onclick  = () => done('generate');
         dlg.querySelector('#_dlg_cls').onclick  = () => done('close');
         dlg.querySelector('#_dlg_cxl').onclick  = () => done('cancel');
         dlg.addEventListener('cancel', () => done('cancel')); // Esc key
     }});
 
-    if (choice === 'cancel') return;
+    if (choice.choice === 'cancel') return;
 
-    const generateAlbum = choice === 'generate';
+    const generateAlbum = choice.choice === 'generate';
     const res = await fetch('/shutdown', {{
         method: 'POST',
         headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ generate_album: generateAlbum }})
+        body: JSON.stringify({{ generate_album: generateAlbum, generate_pdf: choice.generatePdf }})
     }});
 
     const j = await res.json();
-    const details = j.generated_output_path ? (`\nOutput: ${{j.generated_output_path}}`) : '';
+    const details = [
+        j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
+        j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
+    ].join('');
     alert((j.message || 'Review UI shutdown request sent.') + details);
 
     // window.close may be blocked for tabs not opened by script; provide fallback.
@@ -2557,24 +2594,43 @@ pub fn run_review_ui(
 
             let parsed: Result<ShutdownRequest, _> = serde_json::from_str(&body);
             let mut generated_output_path = None;
+            let mut generated_pdf_path = None;
             let message = match parsed {
                 Ok(req) => {
                     if req.generate_album {
                         let generated =
                             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                crate::album_globals::generate_album_output_conn(
+                                crate::album_globals::generate_album_output_conn_with_pdf_override(
                                     &conn,
                                     &album_name,
                                     None::<fn(usize)>,
                                     None,
                                     None,
+                                    Some(req.generate_pdf),
                                 )
                             }));
                         match generated {
-                            Ok(output) => {
-                                generated_output_path = Some(output.display().to_string());
-                                "Review UI closed. Album text generation completed (PDF generation follows config)."
-                                    .to_string()
+                            Ok(artifacts) => {
+                                generated_output_path =
+                                    Some(artifacts.output_txt_path.display().to_string());
+                                if let Some(pdf_path) = artifacts.generated_pdf_path {
+                                    open_local_path(&pdf_path);
+                                    generated_pdf_path = Some(pdf_path.display().to_string());
+                                }
+                                match (req.generate_pdf, generated_pdf_path.is_some()) {
+                                    (true, true) => {
+                                        "Review UI closed. Album text and PDF generation completed."
+                                            .to_string()
+                                    }
+                                    (true, false) => {
+                                        "Review UI closed. Album text generation completed, but no PDF was opened. Check AlbumEasy CLI configuration or logs."
+                                            .to_string()
+                                    }
+                                    (false, _) => {
+                                        "Review UI closed. Album text generation completed without PDF generation."
+                                            .to_string()
+                                    }
+                                }
                             }
                             Err(_) => {
                                 "Review UI closed. Album generation failed unexpectedly (panic)."
@@ -2592,9 +2648,10 @@ pub fn run_review_ui(
                 ok: true,
                 message,
                 generated_output_path,
+                generated_pdf_path,
             })
             .unwrap_or_else(|_| {
-                "{\"ok\":true,\"message\":\"Review UI closed\",\"generated_output_path\":null}"
+                "{\"ok\":true,\"message\":\"Review UI closed\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
                     .to_string()
             });
 
