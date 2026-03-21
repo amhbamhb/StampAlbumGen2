@@ -727,6 +727,9 @@ fn apply_matches(
             "UPDATE stamps
              SET sg_number = CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?2 ELSE sg_number END,
                  series = CASE WHEN ?3 = 1 AND ?4 != '' THEN ?4 ELSE series END,
+                 uniq_key = lower(coalesce(country,'')) || '|' ||
+                            CASE WHEN ?3 = 1 AND ?4 != '' THEN ?4 ELSE coalesce(series,'') END || '|' ||
+                            CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?2 ELSE coalesce(sg_number,'') END,
                  description = CASE WHEN ?5 = 1 AND ?6 != '' THEN ?6 ELSE description END,
                  watermark = CASE WHEN ?7 = 1 AND ?8 != '' THEN ?8 ELSE watermark END,
                  design = CASE WHEN ?9 = 1 AND ?10 != '' THEN ?10 ELSE design END,
@@ -2031,7 +2034,7 @@ fn add_colnect_stamp_to_stamps(
 
     let insert_res = conn.execute(
         "INSERT INTO stamps (
-            country, series, year, sg_number,
+            country, series, year, sg_number, uniq_key,
             description, image_path, remote_image_url, original_image_url,
             colnect_page_url, colnect_image_url, colnect_id, colnect_name,
             colnect_catalog_codes, colnect_country, colnect_width, colnect_height,
@@ -2043,23 +2046,29 @@ fn add_colnect_stamp_to_stamps(
             colnect_quantity, colnect_condition, colnect_public_note, colnect_private_note,
             watermark, design, engraving, perforation, context
          ) VALUES (
-            ?1, ?2, ?3, ?4,
-            ?5, ?6, ?7, ?8,
-            ?9, ?10, ?11, ?12,
-            ?13, ?14, ?15, ?16,
-            ?17, ?18, ?19, ?20,
-            ?21, ?22, ?23, ?24,
-            ?25, ?26, ?27, ?28,
-            ?29, ?30, ?31, ?32,
-            ?33, ?34, ?35, ?36,
-            ?37, ?38, ?39, ?40,
-            ?41, ?42, ?43, ?44, ?45
+            ?1, ?2, ?3, ?4, ?5,
+            ?6, ?7, ?8, ?9,
+            ?10, ?11, ?12, ?13,
+            ?14, ?15, ?16, ?17,
+            ?18, ?19, ?20, ?21,
+            ?22, ?23, ?24, ?25,
+            ?26, ?27, ?28, ?29,
+            ?30, ?31, ?32, ?33,
+            ?34, ?35, ?36, ?37,
+            ?38, ?39, ?40, ?41,
+            ?42, ?43, ?44, ?45, ?46
          )",
         params![
             candidate.country,
-            series,
+            series.clone(),
             year,
-            sg_number,
+            sg_number.clone(),
+            format!(
+                "{}|{}|{}",
+                candidate.country.trim().to_ascii_lowercase(),
+                series,
+                sg_number
+            ),
             candidate.description,
             image_path,
             candidate.image_url,
