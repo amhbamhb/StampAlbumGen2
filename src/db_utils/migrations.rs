@@ -4,6 +4,353 @@
 
 use log::{debug, error};
 use rusqlite::{params, Connection, Result};
+use std::collections::HashSet;
+
+const LATEST_SCHEMA_VERSION: i64 = 4;
+
+const CANONICAL_STAMPS_COLUMNS: [(&str, &str); 64] = [
+    ("id", "INTEGER PRIMARY KEY"),
+    ("country", "TEXT"),
+    ("series", "TEXT"),
+    ("year", "INTEGER"),
+    ("month", "TEXT"),
+    ("month_num", "INTEGER"),
+    ("day", "TEXT"),
+    ("sg_number", "TEXT"),
+    ("type", "TEXT"),
+    ("denomination", "TEXT"),
+    ("color", "TEXT"),
+    ("description", "TEXT"),
+    ("stamps_issued", "TEXT"),
+    ("mint_condition", "TEXT"),
+    ("unused", "TEXT"),
+    ("used", "TEXT"),
+    ("letter_fdc", "TEXT"),
+    ("currency", "TEXT"),
+    ("image_path", "TEXT"),
+    ("remote_image_url", "TEXT"),
+    ("original_image_url", "TEXT"),
+    ("stampworld_image_url", "TEXT DEFAULT ''"),
+    ("colnect_page_url", "TEXT DEFAULT ''"),
+    ("colnect_image_url", "TEXT DEFAULT ''"),
+    ("colnect_id", "TEXT DEFAULT ''"),
+    ("colnect_name", "TEXT DEFAULT ''"),
+    ("colnect_catalog_codes", "TEXT DEFAULT ''"),
+    ("colnect_country", "TEXT DEFAULT ''"),
+    ("colnect_width", "TEXT DEFAULT ''"),
+    ("colnect_height", "TEXT DEFAULT ''"),
+    ("colnect_format", "TEXT DEFAULT ''"),
+    ("colnect_emission", "TEXT DEFAULT ''"),
+    ("colnect_printing", "TEXT DEFAULT ''"),
+    ("colnect_paper", "TEXT DEFAULT ''"),
+    ("colnect_gum", "TEXT DEFAULT ''"),
+    ("colnect_ord_mi", "TEXT DEFAULT ''"),
+    ("colnect_ord_sn", "TEXT DEFAULT ''"),
+    ("colnect_ord_yt", "TEXT DEFAULT ''"),
+    ("colnect_ord_sg", "TEXT DEFAULT ''"),
+    ("colnect_expiry_date", "TEXT DEFAULT ''"),
+    ("colnect_print_run", "TEXT DEFAULT ''"),
+    ("colnect_face_value", "TEXT DEFAULT ''"),
+    ("colnect_currency", "TEXT DEFAULT ''"),
+    ("colnect_colors", "TEXT DEFAULT ''"),
+    ("colnect_parent_item", "TEXT DEFAULT ''"),
+    ("colnect_variant", "TEXT DEFAULT ''"),
+    ("colnect_overprint_variant", "TEXT DEFAULT ''"),
+    ("colnect_score", "TEXT DEFAULT ''"),
+    ("colnect_accuracy", "TEXT DEFAULT ''"),
+    ("colnect_list", "TEXT DEFAULT ''"),
+    ("colnect_quantity", "TEXT DEFAULT ''"),
+    ("colnect_condition", "TEXT DEFAULT ''"),
+    ("colnect_public_note", "TEXT DEFAULT ''"),
+    ("colnect_private_note", "TEXT DEFAULT ''"),
+    ("image_width_px", "INTEGER"),
+    ("image_height_px", "INTEGER"),
+    ("watermark", "TEXT"),
+    ("design", "TEXT"),
+    ("engraving", "TEXT"),
+    ("perforation", "TEXT"),
+    ("context", "TEXT"),
+    ("uniq_key", "TEXT DEFAULT ''"),
+    ("issue_location", "TEXT DEFAULT ''"),
+    ("quantity_printed", "TEXT DEFAULT ''"),
+];
+
+const COLNECT_STAMPS_MIGRATION_COLUMNS: [(&str, &str); 41] = [
+    ("name", "TEXT"),
+    ("catalog_codes", "TEXT"),
+    ("country", "TEXT"),
+    ("width", "TEXT"),
+    ("height", "TEXT"),
+    ("watermark", "TEXT"),
+    ("format", "TEXT"),
+    ("emission", "TEXT"),
+    ("perforation", "TEXT"),
+    ("printing", "TEXT"),
+    ("paper", "TEXT"),
+    ("gum", "TEXT"),
+    ("ord_mi", "TEXT"),
+    ("ord_sn", "TEXT"),
+    ("ord_yt", "TEXT"),
+    ("ord_sg", "TEXT"),
+    ("themes", "TEXT"),
+    ("colnect_link", "TEXT"),
+    ("description", "TEXT"),
+    ("issued_on", "TEXT"),
+    ("expiry_date", "TEXT"),
+    ("print_run", "TEXT"),
+    ("face_value", "TEXT"),
+    ("currency", "TEXT"),
+    ("colors", "TEXT"),
+    ("designers", "TEXT"),
+    ("printers", "TEXT"),
+    ("series", "TEXT"),
+    ("parent_item", "TEXT"),
+    ("variant", "TEXT"),
+    ("overprint_variant", "TEXT"),
+    ("score", "TEXT"),
+    ("accuracy", "TEXT"),
+    ("list", "TEXT"),
+    ("quantity", "TEXT"),
+    ("condition", "TEXT"),
+    ("public_note", "TEXT"),
+    ("private_note", "TEXT"),
+    ("is_deleted", "INTEGER DEFAULT 0"),
+    ("deleted_at", "TEXT DEFAULT ''"),
+    ("is_processed", "INTEGER DEFAULT 0"),
+];
+
+fn table_column_names(conn: &Connection, table_name: &str) -> Result<Vec<String>> {
+    let pragma = format!("PRAGMA table_info({})", table_name);
+    let mut stmt = conn.prepare(&pragma)?;
+    let mut rows = stmt.query([])?;
+    let mut columns = Vec::new();
+    while let Ok(Some(row)) = rows.next() {
+        columns.push(row.get::<_, String>(1)?);
+    }
+    Ok(columns)
+}
+
+fn table_column_name_set(conn: &Connection, table_name: &str) -> Result<HashSet<String>> {
+    Ok(table_column_names(conn, table_name)?.into_iter().collect())
+}
+
+fn ensure_columns(conn: &Connection, table_name: &str, columns: &[(&str, &str)]) -> Result<()> {
+    let existing = table_column_name_set(conn, table_name)?;
+    for (name, definition) in columns {
+        if existing.contains(*name) {
+            continue;
+        }
+        let sql = format!(
+            "ALTER TABLE {} ADD COLUMN {} {}",
+            table_name, name, definition
+        );
+        conn.execute(&sql, [])?;
+        debug!("Added missing {} column '{}'", table_name, name);
+    }
+    Ok(())
+}
+
+fn cleanup_legacy_stampworld_identity_duplicates(conn: &Connection) -> Result<usize> {
+    let mut group_stmt = conn.prepare(
+        "SELECT lower(coalesce(country, '')) AS country_key,
+                trim(coalesce(stampworld_image_url, '')) AS sw_img,
+                min(rowid) AS keep_rowid,
+                count(*) AS cnt
+         FROM stamps
+         WHERE trim(coalesce(stampworld_image_url, '')) != ''
+         GROUP BY lower(coalesce(country, '')), trim(coalesce(stampworld_image_url, ''))
+         HAVING count(*) > 1",
+    )?;
+
+    let groups = group_stmt
+        .query_map([], |r| {
+            Ok((
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(1)?,
+                r.get::<_, i64>(2)?,
+                r.get::<_, i64>(3)?,
+            ))
+        })?
+        .collect::<std::result::Result<Vec<_>, _>>()?;
+
+    let mut deleted = 0usize;
+    for (country_key, sw_img, keep_rowid, cnt) in groups {
+        let n = conn.execute(
+            "DELETE FROM stamps
+             WHERE rowid != ?1
+               AND lower(coalesce(country, '')) = ?2
+               AND trim(coalesce(stampworld_image_url, '')) = ?3",
+            rusqlite::params![keep_rowid, country_key, sw_img],
+        )?;
+        if n > 0 {
+            deleted += n;
+            debug!(
+                "Deduped {} legacy row(s) for country='{}' stampworld_image_url='{}' (kept rowid={}, group_size={})",
+                n, country_key, sw_img, keep_rowid, cnt
+            );
+        }
+    }
+
+    if deleted > 0 {
+        let _ = conn.execute(
+            "UPDATE stamps
+             SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
+             WHERE uniq_key IS NULL OR uniq_key = ''",
+            [],
+        );
+    }
+
+    Ok(deleted)
+}
+
+pub fn ensure_schema_migrations_table(conn: &Connection) -> Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS schema_migrations (
+            version INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )",
+        [],
+    )?;
+    Ok(())
+}
+
+pub fn run_pending_schema_migrations(conn: &Connection) -> Result<()> {
+    ensure_schema_migrations_table(conn)?;
+
+    let mut stmt = conn.prepare("SELECT version FROM schema_migrations")?;
+    let applied = stmt
+        .query_map([], |row| row.get::<_, i64>(0))?
+        .collect::<std::result::Result<HashSet<_>, _>>()?;
+
+    let migrations: [(i64, &str, fn(&Connection) -> Result<()>); 4] = [
+        (
+            1,
+            "stamps_schema_alignment",
+            migration_001_stamps_schema_alignment,
+        ),
+        (
+            2,
+            "stamps_uniq_key_and_indexes",
+            migration_002_stamps_uniq_key_and_indexes,
+        ),
+        (
+            3,
+            "colnect_schema_alignment",
+            migration_003_colnect_schema_alignment,
+        ),
+        (
+            4,
+            "us1847_compat_columns",
+            migration_004_us1847_compat_columns,
+        ),
+    ];
+
+    for (version, name, migrate) in migrations {
+        if applied.contains(&version) {
+            continue;
+        }
+
+        debug!("Applying schema migration {} ({})", version, name);
+        migrate(conn)?;
+        conn.execute(
+            "INSERT INTO schema_migrations (version, name) VALUES (?1, ?2)",
+            params![version, name],
+        )?;
+        debug!("Applied schema migration {} ({})", version, name);
+    }
+
+    debug!("Schema is at version {}", LATEST_SCHEMA_VERSION);
+    Ok(())
+}
+
+fn migration_001_stamps_schema_alignment(conn: &Connection) -> Result<()> {
+    ensure_columns(conn, "stamps", &CANONICAL_STAMPS_COLUMNS[1..])?;
+
+    let existing = table_column_name_set(conn, "stamps")?;
+    let desired: HashSet<String> = CANONICAL_STAMPS_COLUMNS
+        .iter()
+        .map(|(name, _)| (*name).to_string())
+        .collect();
+
+    if existing != desired {
+        debug!(
+            "Stamps schema still differs from canonical after additive repair. Running safe rebuild. existing={:?}, desired={:?}",
+            existing, desired
+        );
+        migrate_stamps_table(conn)?;
+    }
+
+    Ok(())
+}
+
+fn migration_002_stamps_uniq_key_and_indexes(conn: &Connection) -> Result<()> {
+    match cleanup_legacy_stampworld_identity_duplicates(conn) {
+        Ok(n) if n > 0 => debug!(
+            "Removed {} legacy duplicate StampWorld identity row(s) during schema migration",
+            n
+        ),
+        Ok(_) => {}
+        Err(e) => error!(
+            "Failed legacy StampWorld identity dedupe during schema migration: {}",
+            e
+        ),
+    }
+
+    conn.execute(
+        "UPDATE stamps
+         SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
+         WHERE uniq_key IS NULL OR uniq_key = ''",
+        [],
+    )?;
+
+    let dup_groups: i64 = conn.query_row(
+        "SELECT COUNT(*)
+         FROM (
+             SELECT uniq_key
+             FROM stamps
+             GROUP BY uniq_key
+             HAVING COUNT(*) > 1
+         )",
+        [],
+        |r| r.get(0),
+    )?;
+
+    if dup_groups == 0 {
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps(uniq_key)",
+            [],
+        )?;
+    } else {
+        error!(
+            "Found {} duplicate uniq_key group(s). UNIQUE index not created.",
+            dup_groups
+        );
+    }
+
+    Ok(())
+}
+
+fn migration_003_colnect_schema_alignment(conn: &Connection) -> Result<()> {
+    ensure_columns(conn, "colnect_stamps", &COLNECT_STAMPS_MIGRATION_COLUMNS)
+}
+
+fn migration_004_us1847_compat_columns(conn: &Connection) -> Result<()> {
+    ensure_columns(conn, "us1847_stamps", &[("color", "TEXT DEFAULT ''")])?;
+    ensure_columns(
+        conn,
+        "us1847_series",
+        &[
+            ("design_size_portrait", "TEXT DEFAULT ''"),
+            ("design_size_landscape", "TEXT DEFAULT ''"),
+        ],
+    )?;
+    conn.execute(
+        "UPDATE us1847_stamps SET color = '' WHERE color IS NULL",
+        [],
+    )?;
+    Ok(())
+}
 
 /// Robust migration helper: recreate `stamps` table with canonical schema while preserving data.
 pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
@@ -14,70 +361,16 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
 
     // Desired final schema columns and types (same as earlier, plus uniq_key)
     // include image_width_px and image_height_px so the canonical schema contains them
-    let desired_cols = vec![
-        "id INTEGER PRIMARY KEY",
-        "country TEXT",
-        "series TEXT",
-        "year INTEGER",
-        "month TEXT",
-        "month_num INTEGER",
-        "day TEXT",
-        "sg_number TEXT",
-        "type TEXT",
-        "denomination TEXT",
-        "color TEXT",
-        "description TEXT",
-        "stamps_issued TEXT",
-        "mint_condition TEXT",
-        "unused TEXT",
-        "used TEXT",
-        "letter_fdc TEXT",
-        "currency TEXT",
-        "image_path TEXT",
-        "remote_image_url TEXT",
-        "original_image_url TEXT",
-        "image_width_px INTEGER",
-        "image_height_px INTEGER",
-        "watermark TEXT",
-        "design TEXT",
-        "engraving TEXT",
-        "perforation TEXT",
-        "context TEXT",
-        "uniq_key TEXT",
-    ];
+    let desired_cols: Vec<String> = CANONICAL_STAMPS_COLUMNS
+        .iter()
+        .map(|(name, definition)| format!("{} {}", name, definition))
+        .collect();
 
     // Also keep a simple list of desired column NAMES for matching existing columns.
-    let desired_col_names = vec![
-        "id",
-        "country",
-        "series",
-        "year",
-        "month",
-        "month_num",
-        "day",
-        "sg_number",
-        "type",
-        "denomination",
-        "color",
-        "description",
-        "stamps_issued",
-        "mint_condition",
-        "unused",
-        "used",
-        "letter_fdc",
-        "currency",
-        "image_path",
-        "remote_image_url",
-        "original_image_url",
-        "image_width_px",
-        "image_height_px",
-        "watermark",
-        "design",
-        "engraving",
-        "perforation",
-        "context",
-        "uniq_key",
-    ];
+    let desired_col_names: Vec<&str> = CANONICAL_STAMPS_COLUMNS
+        .iter()
+        .map(|(name, _)| *name)
+        .collect();
 
     // Create new table
     let create_sql = format!(
@@ -169,6 +462,119 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     conn.execute_batch("COMMIT;")?;
     debug!("Stamps table migration completed successfully");
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ensure_schema_migrations_table, run_pending_schema_migrations};
+    use rusqlite::Connection;
+
+    fn column_names(conn: &Connection, table_name: &str) -> Vec<String> {
+        let pragma = format!("PRAGMA table_info({})", table_name);
+        let mut stmt = conn.prepare(&pragma).expect("prepare pragma");
+        stmt.query_map([], |row| row.get::<_, String>(1))
+            .expect("query table info")
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .expect("collect columns")
+    }
+
+    #[test]
+    fn run_pending_schema_migrations_adds_missing_columns_and_records_versions() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                sg_number TEXT,
+                image_path TEXT,
+                stampworld_image_url TEXT
+            )",
+            [],
+        )
+        .expect("create legacy stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (
+                id INTEGER PRIMARY KEY,
+                sg_number TEXT,
+                colnect_id TEXT UNIQUE
+            )",
+            [],
+        )
+        .expect("create legacy colnect_stamps");
+        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_series");
+        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_stamps");
+
+        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
+        run_pending_schema_migrations(&conn).expect("run migrations");
+
+        let versions: i64 = conn
+            .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
+            .expect("count migrations");
+        assert_eq!(versions, 4);
+
+        let stamps_columns = column_names(&conn, "stamps");
+        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+        assert!(stamps_columns.iter().any(|name| name == "issue_location"));
+        assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
+
+        let colnect_columns = column_names(&conn, "colnect_stamps");
+        assert!(colnect_columns.iter().any(|name| name == "series"));
+        assert!(colnect_columns.iter().any(|name| name == "is_processed"));
+
+        let us1847_series_columns = column_names(&conn, "us1847_series");
+        assert!(us1847_series_columns
+            .iter()
+            .any(|name| name == "design_size_portrait"));
+
+        let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
+        assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
+    }
+
+    #[test]
+    fn run_pending_schema_migrations_rebuilds_unexpected_stamps_schema() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                sg_number TEXT,
+                odd_legacy_column TEXT
+            )",
+            [],
+        )
+        .expect("create divergent stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (
+                id INTEGER PRIMARY KEY,
+                sg_number TEXT,
+                colnect_id TEXT UNIQUE
+            )",
+            [],
+        )
+        .expect("create legacy colnect_stamps");
+        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_series");
+        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_stamps");
+
+        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
+        run_pending_schema_migrations(&conn).expect("run migrations");
+
+        let stamps_columns = column_names(&conn, "stamps");
+        assert!(!stamps_columns
+            .iter()
+            .any(|name| name == "odd_legacy_column"));
+        assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
+        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+    }
 }
 
 /// Migration to fix rows where block metadata (design/engraving/perforation)

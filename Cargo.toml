@@ -39,6 +39,10 @@ once_cell = "1.21.3"
 strsim = "0.10"
 atty = "0.2"
 which = "4"
+tiny_http = "0.12"
+webbrowser = "1.0"
+urlencoding = "2.1"
+base64 = "0.22"
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 resvg = "0.29"
 usvg = "0.29"
@@ -54,7 +58,7 @@ serial_test = "0.5"
 
 [package]
 name = "stamp_album_gen2"
-version = "1.6.2"
+version = "1.6.5"
 edition = "2021"
 default-run = "stamp_album_gen2"
 

@@ -27,52 +27,68 @@ pub struct ColnectInfo {
     pub catalog_codes: Vec<(String, String)>,
 }
 
-pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<ColnectInfo>> {
-    fn load_with_query(
-        conn: &Connection,
-        sql: &str,
-        param: &str,
-    ) -> Result<Option<(String, ColnectInfo)>> {
-        let mut stmt = conn.prepare(sql)?;
-        stmt.query_row([param], |row| {
-            let colnect_id: String = row.get(0)?;
-            Ok((
-                colnect_id,
-                ColnectInfo {
-                    name: row.get(1)?,
-                    watermark: row.get(2)?,
-                    format: row.get(3)?,
-                    emission: row.get(4)?,
-                    perforation: row.get(5)?,
-                    printing: row.get(6)?,
-                    paper: row.get(7)?,
-                    gum: row.get(8)?,
-                    themes: row.get(9)?,
-                    description: row.get(10)?,
-                    issued_on: row.get(11)?,
-                    expiry_date: row.get(12)?,
-                    print_run: row.get(13)?,
-                    face_value: row.get(14)?,
-                    currency: row.get(15)?,
-                    colors: row.get(16)?,
-                    designers: row.get(17)?,
-                    printers: row.get(18)?,
-                    score: row.get(19)?,
-                    accuracy: row.get(20)?,
-                    width: row.get(21)?,
-                    height: row.get(22)?,
-                    catalog_codes: Vec::new(),
-                },
-            ))
-        })
-        .optional()
+fn load_colnect_info_with_query(
+    conn: &Connection,
+    sql: &str,
+    param: &str,
+) -> Result<Option<(String, ColnectInfo)>> {
+    let mut stmt = conn.prepare(sql)?;
+    stmt.query_row([param], |row| {
+        let colnect_id: String = row.get(0)?;
+        Ok((
+            colnect_id,
+            ColnectInfo {
+                name: row.get(1)?,
+                watermark: row.get(2)?,
+                format: row.get(3)?,
+                emission: row.get(4)?,
+                perforation: row.get(5)?,
+                printing: row.get(6)?,
+                paper: row.get(7)?,
+                gum: row.get(8)?,
+                themes: row.get(9)?,
+                description: row.get(10)?,
+                issued_on: row.get(11)?,
+                expiry_date: row.get(12)?,
+                print_run: row.get(13)?,
+                face_value: row.get(14)?,
+                currency: row.get(15)?,
+                colors: row.get(16)?,
+                designers: row.get(17)?,
+                printers: row.get(18)?,
+                score: row.get(19)?,
+                accuracy: row.get(20)?,
+                width: row.get(21)?,
+                height: row.get(22)?,
+                catalog_codes: Vec::new(),
+            },
+        ))
+    })
+    .optional()
+}
+
+fn hydrate_catalog_codes(
+    conn: &Connection,
+    colnect_id: String,
+    mut info: ColnectInfo,
+) -> Result<Option<ColnectInfo>> {
+    let mut code_stmt =
+        conn.prepare("SELECT catalog_type, code FROM colnect_catalog_codes WHERE colnect_id = ?1")?;
+    let codes = code_stmt.query_map([colnect_id], |row| Ok((row.get(0)?, row.get(1)?)))?;
+
+    for code in codes {
+        info.catalog_codes.push(code?);
     }
 
+    Ok(Some(info))
+}
+
+pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<ColnectInfo>> {
     // Try exact SG match first.
     let exact_sql =
         "SELECT colnect_id, name, watermark, format, emission, perforation, printing, paper, gum, themes, description, issued_on, expiry_date, print_run, face_value, currency, colors, designers, printers, score, accuracy, width, height
          FROM colnect_stamps WHERE sg_number = ?1";
-    let mut result = load_with_query(conn, exact_sql, sg_number)?;
+    let mut result = load_colnect_info_with_query(conn, exact_sql, sg_number)?;
 
     // Fallback for SG variants (e.g. requested `944`, Colnect has `944x`).
     // This is intentionally narrow: same numeric prefix and shortest suffix first.
@@ -84,19 +100,23 @@ pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<Col
                AND sg_number <> ?1
              ORDER BY LENGTH(sg_number) ASC
              LIMIT 1";
-        result = load_with_query(conn, variant_sql, sg_number)?;
+        result = load_colnect_info_with_query(conn, variant_sql, sg_number)?;
     }
 
-    if let Some((colnect_id, mut info)) = result {
-        let mut code_stmt = conn.prepare(
-            "SELECT catalog_type, code FROM colnect_catalog_codes WHERE colnect_id = ?1",
-        )?;
-        let codes = code_stmt.query_map([colnect_id], |row| Ok((row.get(0)?, row.get(1)?)))?;
+    if let Some((colnect_id, info)) = result {
+        return hydrate_catalog_codes(conn, colnect_id, info);
+    }
 
-        for code in codes {
-            info.catalog_codes.push(code?);
-        }
-        return Ok(Some(info));
+    Ok(None)
+}
+
+pub fn get_colnect_info_by_id(conn: &Connection, colnect_id: &str) -> Result<Option<ColnectInfo>> {
+    let by_id_sql =
+        "SELECT colnect_id, name, watermark, format, emission, perforation, printing, paper, gum, themes, description, issued_on, expiry_date, print_run, face_value, currency, colors, designers, printers, score, accuracy, width, height
+         FROM colnect_stamps WHERE colnect_id = ?1 LIMIT 1";
+
+    if let Some((resolved_id, info)) = load_colnect_info_with_query(conn, by_id_sql, colnect_id)? {
+        return hydrate_catalog_codes(conn, resolved_id, info);
     }
 
     Ok(None)

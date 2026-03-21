@@ -99,30 +99,14 @@ pub struct Config {
     // Dedicated Colnect detail-output controls. If present, this section
     // takes precedence over legacy top-level Colnect detail keys.
     pub colnect: Option<ColnectConfig>,
+    // Review UI visual controls.
+    pub review_ui: Option<ReviewUiConfig>,
     // Font size for stamp details in separate_rows mode (e.g., 6, 7, 8)
     // Default: 8
     pub stamp_detail_font_size: Option<u8>,
     // Vertical space before and after stamp details in separate_rows mode
     // Default: 2.0
     pub stamp_detail_vspace: Option<f64>,
-    // Box border color for detail boxes in separate_rows mode
-    // Default: "blue"
-    pub page_box_border_color: Option<String>,
-    // Box text color for detail boxes in separate_rows mode
-    // Default: "blue"
-    pub page_box_text_color: Option<String>,
-    // Box background color for detail boxes in separate_rows mode
-    // Default: "white"
-    pub page_box_background_color: Option<String>,
-    // Font for PAGE_ADD_BOX detail boxes
-    // Default: "HN" (Helvetica Normal)
-    pub page_box_font: Option<String>,
-    // Font size for PAGE_ADD_BOX detail boxes
-    // Default: 8
-    pub page_box_font_size: Option<u8>,
-    // Border width for PAGE_ADD_BOX detail boxes
-    // Default: 0.1
-    pub page_box_border_width: Option<f64>,
     // Allow overriding maximum rows per page when header is larger
     pub max_rows_per_page: Option<usize>,
     // Maximum PAGE_VSPACE (mm) the centering postprocessor is allowed to emit.
@@ -304,6 +288,12 @@ pub struct Config {
     // Default Colnect inbox directory used when `--colnect-inbox` is not
     // provided on the CLI for `--source colnectexport` runs.
     pub colnect_inbox_path: Option<String>,
+    // Optional AlbumEasy CLI path for PDF generation from generated text files.
+    // Example: "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+    pub albumeasy_cli_path: Option<String>,
+    // When true, run AlbumEasy in console mode (-c) after generating the
+    // album text file so the PDF is produced automatically.
+    pub albumeasy_auto_generate_pdf: Option<bool>,
 
     // Wikipedia content configuration
     // Path to Wikipedia cache database
@@ -346,10 +336,6 @@ pub struct ColnectConfig {
     // Optional per-field boolean toggles. When at least one toggle is set,
     // this map takes precedence over `detail_fields`.
     pub fields: Option<ColnectFieldToggles>,
-    // Colnect detail placement mode.
-    // - "detail_box" (default): separate PAGE_ADD_BOX blocks under stamps
-    // - "inside_stamp": include Colnect text in STAMP_ADD_IMG text fields
-    pub details_placement: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -373,6 +359,24 @@ pub struct ColnectFieldToggles {
     pub print_run: Option<bool>,
     pub score: Option<bool>,
     pub description: Option<bool>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct ReviewUiConfig {
+    pub odd_row_color: Option<String>,
+    pub even_row_color: Option<String>,
+    pub default_series_checked: Option<bool>,
+    pub default_description_checked: Option<bool>,
+    pub default_watermark_checked: Option<bool>,
+    pub default_design_checked: Option<bool>,
+    pub default_engraving_checked: Option<bool>,
+    pub default_perforation_checked: Option<bool>,
+    pub default_context_checked: Option<bool>,
+    pub default_colnect_links_checked: Option<bool>,
+    pub default_colnect_image_url_checked: Option<bool>,
+    pub default_colnect_metadata_checked: Option<bool>,
+    pub default_replace_sg_number_checked: Option<bool>,
+    pub default_right_unmatched_only_checked: Option<bool>,
 }
 
 impl Config {
@@ -420,6 +424,22 @@ impl Config {
             include_date: Some(true),
             stamp_detail_layout: Some("separate_rows".to_string()),
             colnect_detail_fields: Some("print_run,themes,designers".to_string()),
+            review_ui: Some(ReviewUiConfig {
+                odd_row_color: Some("#ffffff".to_string()),
+                even_row_color: Some("#e6eef4".to_string()),
+                default_series_checked: Some(true),
+                default_description_checked: Some(true),
+                default_watermark_checked: Some(false),
+                default_design_checked: Some(false),
+                default_engraving_checked: Some(false),
+                default_perforation_checked: Some(false),
+                default_context_checked: Some(false),
+                default_colnect_links_checked: Some(true),
+                default_colnect_image_url_checked: Some(true),
+                default_colnect_metadata_checked: Some(true),
+                default_replace_sg_number_checked: Some(false),
+                default_right_unmatched_only_checked: Some(false),
+            }),
             max_rows_per_page: Some(5),
             max_page_vspace_mm: Some(10.0),
             row_start_es_enabled: Some(true),
@@ -505,6 +525,8 @@ impl Config {
             preserve_real_image_size: Some(true),
             show_progress_indicator: Some(true),
             colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
+            albumeasy_cli_path: None,
+            albumeasy_auto_generate_pdf: Some(false),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
             content_wiki_font_size: Some(12),
@@ -654,18 +676,106 @@ impl Config {
             .collect()
     }
 
-    /// Effective Colnect detail placement mode.
-    pub fn colnect_details_placement(&self) -> &str {
-        self.colnect
+    pub fn review_ui_odd_row_color(&self) -> &str {
+        self.review_ui
             .as_ref()
-            .and_then(|c| c.details_placement.as_deref())
-            .unwrap_or("detail_box")
+            .and_then(|r| r.odd_row_color.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("#ffffff")
     }
 
-    /// True when Colnect details should be rendered inside stamp text fields
-    /// instead of separate PAGE_ADD_BOX blocks.
-    pub fn colnect_details_inside_stamp(&self) -> bool {
-        matches!(self.colnect_details_placement(), "inside_stamp" | "inline")
+    pub fn review_ui_even_row_color(&self) -> &str {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.even_row_color.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("#e6eef4")
+    }
+
+    pub fn review_ui_series_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_series_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_description_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_description_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_watermark_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_watermark_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_design_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_design_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_engraving_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_engraving_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_perforation_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_perforation_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_context_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_context_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_colnect_links_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_colnect_links_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_colnect_image_url_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_colnect_image_url_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_colnect_metadata_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_colnect_metadata_checked)
+            .unwrap_or(true)
+    }
+
+    pub fn review_ui_replace_sg_number_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_replace_sg_number_checked)
+            .unwrap_or(false)
+    }
+
+    pub fn review_ui_right_unmatched_only_default_checked(&self) -> bool {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.default_right_unmatched_only_checked)
+            .unwrap_or(false)
     }
 
     /// Effective default Colnect inbox path from configuration.
@@ -674,6 +784,20 @@ impl Config {
             .as_deref()
             .map(str::trim)
             .filter(|s| !s.is_empty())
+    }
+
+    /// Effective AlbumEasy CLI path for post-generation PDF rendering.
+    pub fn effective_albumeasy_cli_path(&self) -> Option<&str> {
+        self.albumeasy_cli_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
+    /// True when generated album text should be passed to AlbumEasy CLI (-c)
+    /// to produce PDF output automatically.
+    pub fn albumeasy_auto_pdf_enabled(&self) -> bool {
+        self.albumeasy_auto_generate_pdf.unwrap_or(false)
     }
 }
 
@@ -1292,6 +1416,15 @@ pub fn load_config(path: &str) -> Config {
                                 }
                                 if cfg.colnect_inbox_path.is_none() {
                                     cfg.colnect_inbox_path = defaults.colnect_inbox_path;
+                                    has_missing = true;
+                                }
+                                if cfg.albumeasy_cli_path.is_none() {
+                                    cfg.albumeasy_cli_path = defaults.albumeasy_cli_path;
+                                    has_missing = true;
+                                }
+                                if cfg.albumeasy_auto_generate_pdf.is_none() {
+                                    cfg.albumeasy_auto_generate_pdf =
+                                        defaults.albumeasy_auto_generate_pdf;
                                     has_missing = true;
                                 }
                                 if cfg.wikipedia_cache_db_path.is_none() {

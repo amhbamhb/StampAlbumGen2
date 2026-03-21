@@ -300,6 +300,7 @@ fn run_colnect_inbox_mode(
     let mut skipped_duplicates = 0usize;
     let mut skipped_missing_db = 0usize;
     let mut failed = 0usize;
+    let mut imported_countries = std::collections::BTreeSet::new();
 
     for mut csv_file in files {
         progress.set_message(&format!("📥 Processing {}", csv_file.display()));
@@ -373,28 +374,14 @@ fn run_colnect_inbox_mode(
             continue;
         }
 
-        match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+        match crate::colnect::ingest::ingest_colnect_data_with_mode(&conn, &stamps, false) {
             Ok(_) => {
-                if let Err(e) = sync_missing_stamps_from_colnect(&conn) {
-                    failed += 1;
-                    let _ = record_import_history(
-                        &conn,
-                        &country_key,
-                        &csv_file,
-                        &checksum,
-                        "failed",
-                        0,
-                        Some(&e.to_string()),
-                    );
-                    error!(
-                        "Failed variant sync for {} ({}): {}",
-                        country,
-                        csv_file.display(),
-                        e
-                    );
-                    continue;
-                }
+                info!(
+                    "Review-first mode: Colnect ingest kept in colnect_stamps only for {}",
+                    country
+                );
                 imported += 1;
+                imported_countries.insert(album_country.clone());
                 let _ = record_import_history(
                     &conn,
                     &country_key,
@@ -432,20 +419,291 @@ fn run_colnect_inbox_mode(
         }
     }
 
-    progress.finish_with_message(&format!(
-        "Colnect inbox complete: imported={}, skipped_duplicates={}, skipped_missing_db={}, failed={}",
-        imported, skipped_duplicates, skipped_missing_db, failed
-    ));
+    let mut generated = 0usize;
+    let mut generate_failed = 0usize;
+    if cli.colnect_generate_after_import {
+        for album_country in &imported_countries {
+            let db_path = format!("Albums/{0}/{0}.db", album_country);
+            progress.set_message(&format!(
+                "📖 Generating album output for imported country: {}",
+                album_country
+            ));
+
+            match crate::db_utils::init_db(&db_path) {
+                Ok(conn) => {
+                    let output_path = crate::album_globals::generate_album_output_conn(
+                        &conn,
+                        album_country,
+                        None::<fn(usize)>,
+                        Some(cli.start_year),
+                        Some(cli.end_year),
+                    );
+                    generated += 1;
+                    info!(
+                        "Generated album for {}: {}",
+                        album_country,
+                        output_path.display()
+                    );
+                }
+                Err(e) => {
+                    generate_failed += 1;
+                    error!(
+                        "Failed to open DB for album generation {} ({}): {}",
+                        album_country, db_path, e
+                    );
+                }
+            }
+        }
+    }
+
+    let summary = if cli.colnect_generate_after_import {
+        format!(
+            "Colnect inbox complete: imported={}, skipped_duplicates={}, skipped_missing_db={}, failed={}, generated_albums={}, generate_failed={}",
+            imported, skipped_duplicates, skipped_missing_db, failed, generated, generate_failed
+        )
+    } else {
+        format!(
+            "Colnect inbox complete: imported={}, skipped_duplicates={}, skipped_missing_db={}, failed={}",
+            imported, skipped_duplicates, skipped_missing_db, failed
+        )
+    };
+
+    progress.finish_with_message(&summary);
     Ok(())
 }
 
 /// Merge Colnect data into stamps table by inserting only missing variants.
 /// This runs even when StampWorld rows already exist so booklet/sheet variants
 /// from Colnect can appear in output.
+#[allow(dead_code)]
 fn sync_missing_stamps_from_colnect(
     conn: &rusqlite::Connection,
 ) -> Result<usize, Box<dyn std::error::Error>> {
     use log::info;
+
+    fn extract_year(issued_on: &str) -> Option<i32> {
+        issued_on.get(0..4)?.parse::<i32>().ok()
+    }
+
+    fn numeric_tokens(v: &str) -> Vec<String> {
+        let re = regex::Regex::new(r"[0-9]+(?:[\.,][0-9]+)?")
+            .expect("numeric token regex should compile");
+        re.find_iter(v)
+            .map(|m| m.as_str().replace(',', "."))
+            .collect()
+    }
+
+    fn score_candidate(
+        col_tokens: &[String],
+        cand_tokens: &[String],
+        col_series: &str,
+        cand_series: &str,
+        cand_image_path: &str,
+    ) -> i32 {
+        if col_tokens.is_empty() || cand_tokens.is_empty() {
+            return 0;
+        }
+
+        let mut score = 0;
+        if col_tokens == cand_tokens {
+            score += 100;
+        } else {
+            let overlap = col_tokens
+                .iter()
+                .filter(|t| cand_tokens.iter().any(|c| c == *t))
+                .count() as i32;
+            score += overlap * 20;
+        }
+
+        let col_series_l = col_series.to_lowercase();
+        let cand_series_l = cand_series.to_lowercase();
+        if !col_series_l.is_empty() && !cand_series_l.is_empty() {
+            if cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l) {
+                score += 10;
+            }
+        }
+
+        if !cand_image_path.trim().is_empty() {
+            score += 5;
+        }
+
+        score
+    }
+
+    fn remap_colnect_sg_to_existing_stamps(
+        conn: &rusqlite::Connection,
+    ) -> Result<usize, Box<dyn std::error::Error>> {
+        use log::{debug, info};
+
+        let mut col_stmt = conn.prepare(
+            "SELECT rowid, COALESCE(country, ''), COALESCE(series, ''), COALESCE(issued_on, ''),
+                    COALESCE(face_value, ''), COALESCE(sg_number, '')
+             FROM colnect_stamps",
+        )?;
+
+        let col_rows = col_stmt.query_map([], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
+            ))
+        })?;
+
+        let mut update_stmt =
+            conn.prepare("UPDATE colnect_stamps SET sg_number = ?1 WHERE rowid = ?2")?;
+        let mut remapped = 0usize;
+
+        for row in col_rows {
+            let (rowid, country, col_series, issued_on, face_value, current_sg) = row?;
+            let Some(year) = extract_year(&issued_on) else {
+                continue;
+            };
+            let col_tokens = numeric_tokens(&face_value);
+            if col_tokens.is_empty() {
+                continue;
+            }
+
+            let mut cand_stmt = if country.trim().is_empty() {
+                conn.prepare(
+                    "SELECT COALESCE(sg_number, ''), COALESCE(denomination, ''),
+                            COALESCE(series, ''), COALESCE(image_path, '')
+                     FROM stamps
+                     WHERE year = ?1 AND TRIM(COALESCE(sg_number, '')) != ''",
+                )?
+            } else {
+                conn.prepare(
+                    "SELECT COALESCE(sg_number, ''), COALESCE(denomination, ''),
+                            COALESCE(series, ''), COALESCE(image_path, '')
+                     FROM stamps
+                     WHERE year = ?1
+                       AND LOWER(TRIM(COALESCE(country, ''))) = LOWER(TRIM(?2))
+                       AND TRIM(COALESCE(sg_number, '')) != ''",
+                )?
+            };
+
+            let cands: Vec<(String, String, String, String)> = if country.trim().is_empty() {
+                cand_stmt
+                    .query_map(rusqlite::params![year], |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, String>(2)?,
+                            r.get::<_, String>(3)?,
+                        ))
+                    })?
+                    .collect::<Result<Vec<_>, _>>()?
+            } else {
+                cand_stmt
+                    .query_map(rusqlite::params![year, country], |r| {
+                        Ok((
+                            r.get::<_, String>(0)?,
+                            r.get::<_, String>(1)?,
+                            r.get::<_, String>(2)?,
+                            r.get::<_, String>(3)?,
+                        ))
+                    })?
+                    .collect::<Result<Vec<_>, _>>()?
+            };
+
+            let mut best_score = i32::MIN;
+            let mut best_sg = String::new();
+            let mut tie_count = 0usize;
+
+            for (cand_sg, cand_denom, cand_series, cand_image_path) in cands {
+                let cand_tokens = numeric_tokens(&cand_denom);
+                let score = score_candidate(
+                    &col_tokens,
+                    &cand_tokens,
+                    &col_series,
+                    &cand_series,
+                    &cand_image_path,
+                );
+
+                if score > best_score {
+                    best_score = score;
+                    best_sg = cand_sg;
+                    tie_count = 1;
+                } else if score == best_score {
+                    tie_count += 1;
+                }
+            }
+
+            // Require a strong-enough match and no ambiguity.
+            if best_score >= 100 && tie_count == 1 && !best_sg.is_empty() && best_sg != current_sg {
+                update_stmt.execute(rusqlite::params![best_sg, rowid])?;
+                remapped += 1;
+            } else if best_score > 0 {
+                debug!(
+                    "Skipped ambiguous/weak Colnect remap rowid={} sg='{}' score={} ties={}",
+                    rowid, current_sg, best_score, tie_count
+                );
+            }
+        }
+
+        info!(
+            "Remapped {} Colnect rows onto existing stamps using year+denomination matching",
+            remapped
+        );
+        Ok(remapped)
+    }
+
+    fn backfill_colnect_links_on_existing_stamps(
+        conn: &rusqlite::Connection,
+    ) -> Result<usize, Box<dyn std::error::Error>> {
+        // Populate remote/original URLs for existing stamp rows so downstream
+        // fallback image fetch can resolve Colnect page images even when rows
+        // already existed before current Colnect ingest.
+        let updated = conn.execute(
+            "UPDATE stamps
+             SET remote_image_url = CASE
+                    WHEN TRIM(COALESCE(remote_image_url, '')) = '' THEN (
+                        SELECT COALESCE(c.colnect_link, '')
+                        FROM colnect_stamps c
+                        WHERE c.sg_number = stamps.sg_number
+                          AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                        LIMIT 1
+                    )
+                    ELSE remote_image_url
+                 END,
+                 original_image_url = CASE
+                    WHEN TRIM(COALESCE(original_image_url, '')) = '' THEN (
+                        SELECT COALESCE(c.colnect_link, '')
+                        FROM colnect_stamps c
+                        WHERE c.sg_number = stamps.sg_number
+                          AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                        LIMIT 1
+                    )
+                    ELSE original_image_url
+                                 END,
+                                 colnect_page_url = CASE
+                                        WHEN TRIM(COALESCE(colnect_page_url, '')) = '' THEN (
+                                                SELECT COALESCE(c.colnect_link, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_page_url
+                                 END
+             WHERE EXISTS (
+                 SELECT 1
+                 FROM colnect_stamps c
+                 WHERE c.sg_number = stamps.sg_number
+                   AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+             )",
+            [],
+        )?;
+        Ok(updated)
+    }
+
+    // First align Colnect sg_number values with existing StampWorld stamps when
+    // a strong year+denomination match exists. This keeps image-backed base
+    // rows and lets Colnect enrichment attach to those rows.
+    let remapped = remap_colnect_sg_to_existing_stamps(conn)?;
+    let links_backfilled = backfill_colnect_links_on_existing_stamps(conn)?;
 
     // Insert missing Colnect rows into stamps using year+catalog key dedupe.
     // Keep existing StampWorld rows and only add missing variants.
@@ -455,6 +713,7 @@ fn sync_missing_stamps_from_colnect(
             denomination, color, description,
             stamps_issued, mint_condition, unused, used, letter_fdc,
             currency, image_path, remote_image_url, original_image_url,
+            stampworld_image_url, colnect_page_url, colnect_image_url,
             watermark, design, engraving, perforation, context,
             issue_location, quantity_printed
         )
@@ -485,8 +744,11 @@ fn sync_missing_stamps_from_colnect(
             '' as letter_fdc,
             currency,
             '' as image_path,
-            '' as remote_image_url,
+            colnect_link as remote_image_url,
             colnect_link as original_image_url,
+            '' as stampworld_image_url,
+            colnect_link as colnect_page_url,
+            '' as colnect_image_url,
             COALESCE(watermark, '') as watermark,
             designers as design,
             printers as engraving,
@@ -508,8 +770,8 @@ fn sync_missing_stamps_from_colnect(
     )?;
 
     info!(
-        "Inserted {} missing stamp variants from colnect_stamps",
-        inserted
+        "Inserted {} missing stamp variants from colnect_stamps (after {} remaps, {} link backfills)",
+        inserted, remapped, links_backfilled
     );
     Ok(inserted)
 }
@@ -666,24 +928,12 @@ pub fn run_database_mode(
             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
         }
 
-        // Merge additional variants from Colnect into stamps while preserving
-        // existing StampWorld rows.
-        progress.set_message("🔍 Syncing missing variants from Colnect...");
-        match sync_missing_stamps_from_colnect(&conn) {
-            Ok(count) if count > 0 => {
-                info!("✅ Added {} missing variants from Colnect data", count);
-                progress.set_message(&format!(
-                    "✅ Added {} missing variants from Colnect data",
-                    count
-                ));
-            }
-            Ok(_) => {
-                info!("No missing Colnect variants to add");
-            }
-            Err(e) => {
-                error!("❌ Failed to sync missing Colnect variants: {}", e);
-            }
-        }
+        progress.set_message(
+            "🧾 Colnect import complete (review-first mode: no automatic writes into stamps)",
+        );
+        info!(
+            "Review-first mode enabled: skipped Colnect variant sync and fallback image updates to stamps"
+        );
     }
 
     progress.set_message(&format!("📖 Generating album output for: {}", album_name));
@@ -1058,18 +1308,9 @@ pub fn run_scraping_mode(
                             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
                         }
 
-                        progress.set_message("🔍 Syncing missing variants from Colnect...");
-                        match sync_missing_stamps_from_colnect(&conn) {
-                            Ok(count) if count > 0 => {
-                                info!("✅ Added {} missing variants from Colnect data", count);
-                            }
-                            Ok(_) => {
-                                info!("No missing Colnect variants to add");
-                            }
-                            Err(e) => {
-                                error!("❌ Failed to sync missing Colnect variants: {}", e);
-                            }
-                        }
+                        info!(
+                            "Review-first mode enabled: Colnect ingest kept in colnect_stamps only"
+                        );
                     }
 
                     progress.set_message(&format!(

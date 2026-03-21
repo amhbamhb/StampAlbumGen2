@@ -760,30 +760,14 @@ where
                 .map(|s| {
                     let est_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
                     let emit_w = est_w + img_new_w + 2.0 * stamp_box_adjust;
-                    let footprint = if detail_layout == "separate_rows"
-                        && !config.colnect_details_inside_stamp()
-                    {
-                        let max_box_width = usable_width.min(emit_w * 3.5);
-                        (emit_w * 2.8).min(max_box_width).max(85.0)
-                    } else {
-                        emit_w
-                    };
-                    footprint + margin
+                    emit_w + margin
                 })
                 .sum();
             // If adding this stamp would exceed usable width or row has max stamps, start a new row before adding.
             // Note: `row_width` already includes the per-stamp `2.0 * stamp_box_adjust` offset for existing
             // stamps. Ensure we include the same adjustment when considering the new stamp so the width
             // check is consistent and prevents placing an oversized placeholder into the row.
-            let new_stamp_footprint = if detail_layout == "separate_rows"
-                && !config.colnect_details_inside_stamp()
-            {
-                let emit_w = est_width_mm + img_new_w + 2.0 * stamp_box_adjust;
-                let max_box_width = usable_width.min(emit_w * 3.5);
-                (emit_w * 2.8).min(max_box_width).max(85.0)
-            } else {
-                est_width_mm + img_new_w + 2.0 * stamp_box_adjust
-            };
+            let new_stamp_footprint = est_width_mm + img_new_w + 2.0 * stamp_box_adjust;
             let new_stamp_total = new_stamp_footprint + margin;
             if row.len() >= max_stamps_per_row || row_width + new_stamp_total > usable_width {
                 if !row.is_empty() {
@@ -1235,7 +1219,7 @@ where
                 .packing_vertical_safety_mm
                 .unwrap_or(cfg_defaults.packing_vertical_safety_mm.unwrap())
                 as f64;
-            let mut total_row_height = max_row_height + row_font_spacing as f64 + vertical_safety;
+            let total_row_height = max_row_height + row_font_spacing as f64 + vertical_safety;
             // ROW_START_ES emits a line with configured vspace; account for it
             // in fit checks and consumed height to avoid stranded headers.
             let row_start_es_height = if config.row_start_es_enabled.unwrap_or(true) {
@@ -1255,103 +1239,6 @@ where
             };
             let row_start_total_height = row_start_es_height + page_entry_row_start_es_height;
 
-            // In separate_rows mode, reserve a conservative detail-box block
-            // during page-fit checks so subsequent rows don't get placed into
-            // the vertical space required by metadata boxes.
-            let detail_layout_cfg = config
-                .stamp_detail_layout
-                .as_ref()
-                .map(|s| s.as_str())
-                .unwrap_or("inline");
-            if detail_layout_cfg == "separate_rows"
-                && config.colnect_details_enabled()
-                && !config.colnect_details_inside_stamp()
-            {
-                let enabled_fields = config.effective_colnect_detail_field_set();
-
-                let mut max_est_lines = 1.0_f64; // catalog header line
-                for stamp in stamps_in_row {
-                    let mut lines = 1.0_f64;
-
-                    if enabled_fields.contains("catalog_codes")
-                        && stamp.attrs.get("colnect_catalog_codes").map(|v| !v.trim().is_empty()).unwrap_or(false)
-                    {
-                        lines += 2.0;
-                    }
-
-                    for key in [
-                        "colnect_description",
-                        "colnect_themes",
-                        "colnect_printing",
-                        "colnect_format",
-                        "colnect_emission",
-                        "colnect_paper",
-                        "colnect_gum",
-                        "colnect_designers",
-                        "colnect_printers",
-                        "colnect_colors",
-                        "colnect_watermark",
-                        "colnect_perforation",
-                        "colnect_issued_on",
-                        "colnect_expiry_date",
-                        "colnect_face_value",
-                        "colnect_score",
-                    ] {
-                        let show = match key {
-                            "colnect_description" => enabled_fields.contains("description"),
-                            "colnect_themes" => enabled_fields.contains("themes"),
-                            "colnect_printing" => enabled_fields.contains("printing"),
-                            "colnect_format" => enabled_fields.contains("format"),
-                            "colnect_emission" => enabled_fields.contains("emission"),
-                            "colnect_paper" => enabled_fields.contains("paper"),
-                            "colnect_gum" => enabled_fields.contains("gum"),
-                            "colnect_designers" => enabled_fields.contains("designers"),
-                            "colnect_printers" => enabled_fields.contains("printers"),
-                            "colnect_colors" => enabled_fields.contains("colors"),
-                            "colnect_watermark" => enabled_fields.contains("watermark"),
-                            "colnect_perforation" => enabled_fields.contains("perforation"),
-                            "colnect_issued_on" => enabled_fields.contains("issued_on"),
-                            "colnect_expiry_date" => enabled_fields.contains("expiry_date"),
-                            "colnect_face_value" => enabled_fields.contains("face_value"),
-                            "colnect_score" => enabled_fields.contains("score"),
-                            _ => false,
-                        };
-                        if !show {
-                            continue;
-                        }
-
-                        if let Some(v) = stamp.attrs.get(key) {
-                            let t = v.trim();
-                            if !t.is_empty() {
-                                let norm = t.replace(',', ", ").replace('|', " | ");
-                                lines += (norm.len() as f64 / 42.0).ceil().max(1.0);
-                            }
-                        }
-                    }
-
-                    // Size and print-run/score synthetic lines
-                    if enabled_fields.contains("size")
-                        && stamp.attrs.get("colnect_width_mm").is_some()
-                        && stamp.attrs.get("colnect_height_mm").is_some()
-                    {
-                        lines += 1.0;
-                    }
-                    if enabled_fields.contains("print_run")
-                        && stamp.attrs.get("colnect_print_run").map(|v| !v.trim().is_empty()).unwrap_or(false)
-                    {
-                        lines += 1.0;
-                    }
-
-                    if lines > max_est_lines {
-                        max_est_lines = lines;
-                    }
-                }
-
-                let line_height_mm = config.page_box_font_size.unwrap_or(8) as f64 * 0.72;
-                let detail_vspace = config.stamp_detail_vspace.unwrap_or(2.0) as f64;
-                let detail_block_height = (max_est_lines * line_height_mm) + (2.0 * detail_vspace) + 1.0;
-                total_row_height += detail_block_height;
-            }
             // Determine configured max rows per page (preference). Use canonical default.
             let cfg_max_rows = config
                 .max_rows_per_page
@@ -1655,9 +1542,6 @@ where
 
             let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
 
-            // Collect stamp details for separate_rows mode (catalog_num, details, width_mm)
-            let mut stamp_details: Vec<(String, String, f64)> = Vec::new();
-
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {
                 // Use correct fields from StampStub
@@ -1795,30 +1679,6 @@ where
                 if chars_per_line < 10 {
                     chars_per_line = 10;
                 } // minimum line length
-
-                // Greedy word-wrap preserving words when possible
-                let wrap_words = |s: &str, max_chars: usize| -> String {
-                    if s.trim().is_empty() {
-                        return String::new();
-                    }
-                    let mut lines: Vec<String> = Vec::new();
-                    let mut current = String::new();
-                    for word in s.split_whitespace() {
-                        if current.is_empty() {
-                            current.push_str(word);
-                        } else if current.len() + 1 + word.len() <= max_chars {
-                            current.push(' ');
-                            current.push_str(word);
-                        } else {
-                            lines.push(current);
-                            current = word.to_string();
-                        }
-                    }
-                    if !current.is_empty() {
-                        lines.push(current);
-                    }
-                    lines.join("\\n")
-                };
 
                 // Description text can be sentence-like and reads poorly with
                 // very tight wrapping. Use a looser target and soft overflow
@@ -1981,9 +1841,8 @@ where
                         }
                     }
                     // Perforation is now shown in STAMP_HEADING when enabled.
-                    // Keep it out of inline/inside-stamp body text to avoid duplicate clutter.
-                    let show_perforation_in_stamp_body =
-                        detail_layout == "separate_rows" && !config.colnect_details_inside_stamp();
+                    // Keep it out of inline stamp body text to avoid duplicate clutter.
+                    let show_perforation_in_stamp_body = detail_layout == "separate_rows";
                     if enabled_fields.contains("perforation") && show_perforation_in_stamp_body {
                         if let Some(v) = stamp.attrs.get("colnect_perforation") {
                             colnect_parts.push(format!("Perforation: {}", v));
@@ -2039,17 +1898,14 @@ where
                     true
                 });
 
-                let colnect_text = if detail_layout == "separate_rows"
-                    && !config.colnect_details_inside_stamp()
-                {
-                    colnect_parts.join("\n")
-                } else {
-                    colnect_parts.join("; ")
-                };
-                let wrapped_colnect = if detail_layout == "separate_rows"
-                    && !config.colnect_details_inside_stamp()
-                {
-                    wrap_words(&colnect_text, chars_per_line)
+                let wrapped_colnect = if detail_layout == "separate_rows" {
+                    let mut wrapped_entries: Vec<String> = Vec::new();
+                    for entry in &colnect_parts {
+                        if let Some(wrapped) = wrap_label_value(entry, chars_per_line) {
+                            wrapped_entries.push(wrapped);
+                        }
+                    }
+                    wrapped_entries.join("\\n")
                 } else {
                     let mut wrapped_entries: Vec<String> = Vec::new();
                     for (idx, entry) in colnect_parts.iter().enumerate() {
@@ -2070,23 +1926,20 @@ where
                         String::new()
                     }
                     "separate_rows" => {
-                        if config.colnect_details_inside_stamp() {
-                            // Keep details with the stamp instead of PAGE_ADD_BOX.
-                            if wrapped_colnect.is_empty() {
-                                raw_stamps_issued.clone()
-                            } else if raw_stamps_issued.is_empty() {
-                                wrapped_colnect.clone()
-                            } else {
-                                format!("{}\\n\\n{}", raw_stamps_issued, wrapped_colnect)
-                            }
-                        } else {
-                            // Separate rows with detail boxes: keep stamp text minimal.
-                            if enabled_fields.contains("print_run") {
-                                raw_stamps_issued.clone()
-                            } else {
-                                String::new()
-                            }
+                        let mut blocks: Vec<String> = Vec::new();
+                        if !raw_stamps_issued.is_empty() {
+                            blocks.push(raw_stamps_issued.clone());
                         }
+                        if !wrapped_desc.is_empty() {
+                            blocks.push(wrapped_desc.clone());
+                        }
+                        if !wrapped_colnect.is_empty() {
+                            blocks.push(wrapped_colnect.clone());
+                        }
+                        if !raw_color.is_empty() {
+                            blocks.push(raw_color.clone());
+                        }
+                        blocks.join("\\n")
                     }
                     _ => {
                         // Inline (default): everything crammed inside stamp box
@@ -2122,14 +1975,6 @@ where
                 } else {
                     clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()))
                 };
-
-                // Store details for separate_rows mode with stamp width
-                if detail_layout == "separate_rows"
-                    && !config.colnect_details_inside_stamp()
-                    && !colnect_text.is_empty()
-                {
-                    stamp_details.push((sgnum.clone(), colnect_text.clone(), emit_width));
-                }
 
                 let _safe_sg = left
                     .replace("\\n", " ")
@@ -2468,256 +2313,7 @@ where
                 }
             }
 
-            let mut consumed_height_this_row = total_row_height;
-
-            // Emit stamp details in separate row if mode is "separate_rows"
-            if !stamp_details.is_empty() {
-                let vspace = config.stamp_detail_vspace.unwrap_or(2.0);
-
-                // Get PAGE_ADD_BOX configuration from config
-                let box_font = config.page_box_font.as_ref().map(|s| s.as_str()).unwrap_or("HN");
-                let box_font_size = config.page_box_font_size.unwrap_or(8);
-                let box_border_width = config.page_box_border_width.unwrap_or(0.1);
-                let box_border_color = config.page_box_border_color.as_ref().map(|s| s.as_str()).unwrap_or("blue");
-                let box_text_color = config.page_box_text_color.as_ref().map(|s| s.as_str()).unwrap_or("blue");
-                let box_bg_color = config.page_box_background_color.as_ref().map(|s| s.as_str()).unwrap_or("white");
-
-                // Note: We don't emit PAGE_VSPACE here because:
-                // 1. The box_top coordinate already includes the vspace offset
-                // 2. Post-processing filters out PAGE_VSPACE and adds its own for page centering
-
-                // Calculate usable page width for detail boxes (same as row centering logic)
-                let page_width = config.album_page_width_mm.unwrap_or(216.0) as f64;
-                let left_margin = config.page_left_margin_mm.unwrap_or(10.0) as f64;
-                let right_margin = config.page_right_margin_mm.unwrap_or(10.0) as f64;
-                let pages_spacing_h = config.album_pages_spacing_h.unwrap_or(0.0) as f64;
-                let border_total = border_outer + border_inner1 + border_inner2 + border_spacing;
-
-                // Calculate usable width (same formula as row centering)
-                let usable_width = page_width - left_margin - right_margin - pages_spacing_h - border_total;
-
-                // Vertical position: boxes should appear AFTER the stamp row, not at the same height
-                // current_height tracks where we are on the page before this row
-                // total_row_height is the height of the stamp row that was just emitted
-                // vspace is additional spacing between stamps and detail boxes
-                let box_top = current_height + total_row_height + vspace;
-
-                // Calculate row width and centering offset (mimicking the ROW_META calculation above)
-                // Use the same spacing value as ROW_META calculation (packing_horizontal_safety_mm)
-                let row_spacing = config.packing_horizontal_safety_mm.unwrap_or(5.0) as f64;
-                let mut row_w = 0.0;
-                for stamp_width in stamp_details.iter().map(|(_, _, w)| w) {
-                    row_w += stamp_width + row_spacing;
-                }
-                // Remove trailing spacing
-                if !stamp_details.is_empty() {
-                    row_w -= row_spacing;
-                }
-
-                // Calculate centering offset (extra space divided by 2)
-                let extra = usable_width - row_w;
-                let left_offset = if extra > 0.0 { extra / 2.0 } else { 0.0 };
-
-                // The absolute starting position on the page is:
-                // left_margin + pages_spacing_h + (borders are not counted here) + left_offset
-                // But actually, reviewing the calculation: usable_width already excludes left_margin, right_margin, pages_spacing_h, and borders
-                // So left_offset is relative to the start of usable area
-                // Absolute position = left_margin + pages_spacing_h + left_offset
-                let base_start = left_margin + pages_spacing_h + left_offset;
-
-                // Calculate X positions based on stamp widths with row centering applied
-                let mut stamp_positions: Vec<(f64, f64)> = Vec::new(); // (left_pos, stamp_width)
-                let mut current_x = base_start;
-
-                for (_catalog_num, _details, stamp_width) in stamp_details.iter() {
-                    stamp_positions.push((current_x, *stamp_width));
-                    current_x += stamp_width + row_spacing;
-                }
-
-                for (idx, (catalog_num, details, stamp_width)) in stamp_details.iter().enumerate() {
-                    // Get the stamp's left position from our calculated positions
-                    let (stamp_left, _) = stamp_positions[idx];
-
-                    // Box width: prefer 2x stamp width for better text flow, but cap at stamp width minimum
-                    // Maximum box width should not exceed usable page width
-                    let max_box_width = usable_width.min(*stamp_width * 3.5);
-                    let box_width = (*stamp_width * 2.8).min(max_box_width).max(85.0);
-
-                    // Center box under stamp using the stamp's actual position
-                    let stamp_center = stamp_left + (*stamp_width / 2.0);
-                    let box_left = stamp_center - (box_width / 2.0).max(0.0);
-
-                    // Accurate character width calculation based on font size
-                    // For Helvetica Normal, average character width is approximately:
-                    // - Lowercase letters: ~0.5-0.6 * font_size in points
-                    // - Mixed text (typical): ~0.55 * font_size in points
-                    // In mm: 1 point ≈ 0.3527mm, so char_width ≈ font_size * 0.55 * 0.3527 ≈ font_size * 0.194mm
-                    // However, with proper kerning and tight spacing: ~0.22mm per point of font size
-                    // For tighter fit to minimize white space: using 0.21
-                    let char_width_mm = box_font_size as f64 * 0.21;
-                    // Line height needs more spacing to prevent bleeding/touching
-                    // For font size 6: 6 * 0.60 = 3.6mm
-                    // For font size 8: 8 * 0.60 = 4.8mm
-                    // For font size 10: 10 * 0.60 = 6.0mm
-                    let line_height_mm = box_font_size as f64 * 0.72;
-
-                    // Calculate max characters per line based on box width
-                    let padding = 0.5; // minimal padding for tight fit
-                    let available_width = box_width - padding;
-                    let max_chars_per_line = (available_width / char_width_mm).floor() as usize;
-                    let max_chars = max_chars_per_line.max(40); // keep sections readable
-
-                    // Wrap text to fit box width
-                    let mut wrapped_lines = Vec::new();
-
-                    // Add catalog number as first line
-                    wrapped_lines.push(format!("{}:", catalog_num));
-
-                    // Preserve section lines where possible and only wrap long lines.
-                    for field in details.lines() {
-                        if field.is_empty() {
-                            continue;
-                        }
-
-                        let normalized_field = field.replace(',', ", ").replace('|', " | ");
-
-                        // Word wrapping with better space utilization
-                        let mut current_line = String::new();
-                        for raw_word in normalized_field.split_whitespace() {
-                            // Split very long tokens so a single unbroken token
-                            // (e.g. long theme/catalog fragments) can't force
-                            // overlapping text in the detail box.
-                            let mut parts: Vec<String> = Vec::new();
-                            if raw_word.len() > max_chars {
-                                let mut start = 0;
-                                while start < raw_word.len() {
-                                    let end = (start + max_chars).min(raw_word.len());
-                                    parts.push(raw_word[start..end].to_string());
-                                    start = end;
-                                }
-                            } else {
-                                parts.push(raw_word.to_string());
-                            }
-
-                            for word in parts {
-                            let test_line = if current_line.is_empty() {
-                                word.clone()
-                            } else {
-                                format!("{} {}", current_line, word)
-                            };
-
-                            if test_line.len() <= max_chars {
-                                current_line = test_line;
-                            } else {
-                                // Line would be too long, push current and start new
-                                if !current_line.is_empty() {
-                                    wrapped_lines.push(current_line);
-                                }
-                                current_line = word;
-                            }
-                        }
-                        }
-                        if !current_line.is_empty() {
-                            wrapped_lines.push(current_line);
-                        }
-                    }
-
-                    // Calculate box height based on number of wrapped lines
-                    let num_lines = wrapped_lines.len();
-                    let box_height = (num_lines as f64 * line_height_mm) + padding;
-
-                    // Format inside text with newlines
-                    let inside_text = wrapped_lines.join("\\n").replace('"', "'");
-
-                    // Set colors before box
-                    let _ = writeln!(output, "COLOR_STAMP_BACKGROUND({})", box_bg_color);
-                    let _ = writeln!(output, "COLOUR_STAMP_BORDER ({})", box_border_color);
-                    let _ = writeln!(output, "COLOUR_STAMP_TEXT ({})", box_text_color);
-
-                    // Emit PAGE_ADD_BOX (Font Fontsize border left top width height inside-text left-text centre-text right-text)
-                    let _ = writeln!(
-                        output,
-                        "PAGE_ADD_BOX ({} {} {} {:.2} {:.2} {:.2} {:.2} \"{}\" \"\" \"\" \"\")",
-                        box_font,
-                        box_font_size,
-                        box_border_width,
-                        box_left,
-                        box_top,
-                        box_width,
-                        box_height,
-                        inside_text
-                    );
-
-                    // Reset colors to default values from config
-                    let default_bg = config.color_stamp_background.as_ref().map(|s| s.as_str()).unwrap_or("black");
-                    let default_border = config.color_stamp_border.as_ref().map(|s| s.as_str()).unwrap_or("black");
-                    let default_text = config.color_stamp_text.as_ref().map(|s| s.as_str()).unwrap_or("black");
-                    let _ = writeln!(output, "COLOR_STAMP_BACKGROUND({})", default_bg);
-                    let _ = writeln!(output, "COLOUR_STAMP_BORDER({})", default_border);
-                    let _ = writeln!(output, "COLOUR_STAMP_TEXT({})", default_text);
-                }
-
-                // Update current_height to account for the tallest box
-                if let Some(max_height) = stamp_details.iter().map(|(_, details, width)| {
-                    // Calculate box width consistently with the loop above
-                    let max_box_width = usable_width.min(*width * 3.5);
-                    let box_width = (*width * 2.8).min(max_box_width).max(85.0);
-                    let char_width_mm = box_font_size as f64 * 0.21;
-                    let line_height_mm = box_font_size as f64 * 0.72;
-                    let padding = 0.5;
-                    let available_width = box_width - padding;
-                    let max_chars = ((available_width / char_width_mm).floor() as usize).max(40);
-
-                    let mut line_count = 1; // catalog number
-                    for field in details.lines() {
-                        if !field.is_empty() {
-                            let normalized_field = field.replace(',', ", ").replace('|', " | ");
-                            let mut current_line = String::new();
-                            for raw_word in normalized_field.split_whitespace() {
-                                let mut parts: Vec<String> = Vec::new();
-                                if raw_word.len() > max_chars {
-                                    let mut start = 0;
-                                    while start < raw_word.len() {
-                                        let end = (start + max_chars).min(raw_word.len());
-                                        parts.push(raw_word[start..end].to_string());
-                                        start = end;
-                                    }
-                                } else {
-                                    parts.push(raw_word.to_string());
-                                }
-
-                                for word in parts {
-                                let test_line = if current_line.is_empty() {
-                                    word.clone()
-                                } else {
-                                    format!("{} {}", current_line, word)
-                                };
-
-                                if test_line.len() <= max_chars {
-                                    current_line = test_line;
-                                } else {
-                                    if !current_line.is_empty() {
-                                        line_count += 1;
-                                    }
-                                    current_line = word;
-                                }
-                            }
-                            }
-                            if !current_line.is_empty() {
-                                line_count += 1;
-                            }
-                        }
-                    }
-                    (line_count as f64 * line_height_mm) + padding
-                }).max_by(|a, b| a.partial_cmp(b).unwrap()) {
-                    // Reserve full block height: stamp row + gap above details +
-                    // detail box + trailing safety gap. This prevents the next
-                    // stamp row from starting inside this detail block.
-                    consumed_height_this_row = (box_top - current_height) + max_height + vspace;
-                }
-            }
-
-            current_height += consumed_height_this_row + row_start_total_height;
+            current_height += total_row_height + row_start_total_height;
             rows_on_page += 1;
             row_idx += 1;
         }
@@ -2733,17 +2329,8 @@ where
         // (PAGE_VSPACE (n)) at the top of each stamp page where there is
         // unused vertical space. This keeps centering purely vertical and
         // avoids inserting filler images or modifying page content otherwise.
-        let detail_layout = config
-            .stamp_detail_layout
-            .as_ref()
-            .map(|s| s.as_str())
-            .unwrap_or("inline");
-        if detail_layout != "separate_rows" || config.colnect_details_inside_stamp() {
-            if let Err(e) = center_tmp_pages(&tmp_path, &config, effective_usable) {
-                log::warn!("Page-centering post-process failed: {}", e);
-            }
-        } else {
-            log::info!("Skipping page-centering post-process for separate_rows layout");
+        if let Err(e) = center_tmp_pages(&tmp_path, &config, effective_usable) {
+            log::warn!("Page-centering post-process failed: {}", e);
         }
         use std::fs;
         match fs::read_to_string(&tmp_path) {
@@ -3274,23 +2861,6 @@ fn compute_page_used_height(page_block: &[&str], config: &crate::config::Config)
                                     if hv > row_max_h {
                                         row_max_h = hv;
                                     }
-                                }
-                            }
-                        }
-                    }
-                }
-                // Also check for PAGE_ADD_BOX detail boxes and add their height
-                if ll.starts_with("PAGE_ADD_BOX") {
-                    // parse: PAGE_ADD_BOX (Font Fontsize border left top width height inside-text ...)
-                    if let Some(paren_idx) = ll.find('(') {
-                        if let Some(close_idx) = ll.rfind(')') {
-                            let inside = &ll[paren_idx + 1..close_idx];
-                            let parts: Vec<&str> = inside.split_whitespace().collect();
-                            // box height is at index 6 (Font=0, Fontsize=1, border=2, left=3, top=4, width=5, height=6)
-                            if parts.len() >= 7 {
-                                if let Ok(box_h) = parts[6].parse::<f64>() {
-                                    // Add box height to row height (boxes appear below stamps)
-                                    row_max_h += box_h;
                                 }
                             }
                         }

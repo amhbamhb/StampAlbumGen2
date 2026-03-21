@@ -1,10 +1,11 @@
 use crate::album_globals::structs::{GenericAttrs, Stamp};
-use crate::colnect::db::get_colnect_info;
+use crate::colnect::db::{get_colnect_info, get_colnect_info_by_id};
 use crate::config::Config;
 use crate::db_utils::get_stamps_by_series;
 use crate::db_utils::update_image_dimensions;
 use crate::image_utils::estimate_real_dimensions;
 use rusqlite::Connection;
+use rusqlite::OptionalExtension;
 use rusqlite::Result as SqlResult;
 use std::io::Write;
 // Path is not currently needed here; keep import commented for future use.
@@ -199,6 +200,130 @@ pub fn build_engraving_page_text_centre_template(cfg: &Config) -> String {
     )
 }
 
+#[derive(Debug, Default)]
+struct StoredColnectMeta {
+    colnect_id: String,
+    colnect_name: String,
+    colnect_catalog_codes: String,
+    colnect_width: String,
+    colnect_height: String,
+    colnect_format: String,
+    colnect_emission: String,
+    colnect_printing: String,
+    colnect_paper: String,
+    colnect_gum: String,
+    colnect_expiry_date: String,
+    colnect_print_run: String,
+    colnect_face_value: String,
+    colnect_currency: String,
+    colnect_colors: String,
+    colnect_parent_item: String,
+    colnect_variant: String,
+    colnect_overprint_variant: String,
+    colnect_score: String,
+    colnect_accuracy: String,
+    colnect_list: String,
+    colnect_quantity: String,
+    colnect_condition: String,
+    colnect_public_note: String,
+    colnect_private_note: String,
+    colnect_ord_sg: String,
+}
+
+fn load_stored_colnect_meta(
+    conn: &Connection,
+    stamp: &crate::db_utils::StampStub,
+) -> SqlResult<Option<StoredColnectMeta>> {
+    conn.query_row(
+        "SELECT COALESCE(colnect_id, ''),
+                COALESCE(colnect_name, ''),
+                COALESCE(colnect_catalog_codes, ''),
+                COALESCE(colnect_width, ''),
+                COALESCE(colnect_height, ''),
+                COALESCE(colnect_format, ''),
+                COALESCE(colnect_emission, ''),
+                COALESCE(colnect_printing, ''),
+                COALESCE(colnect_paper, ''),
+                COALESCE(colnect_gum, ''),
+                COALESCE(colnect_expiry_date, ''),
+                COALESCE(colnect_print_run, ''),
+                COALESCE(colnect_face_value, ''),
+                COALESCE(colnect_currency, ''),
+                COALESCE(colnect_colors, ''),
+                COALESCE(colnect_parent_item, ''),
+                COALESCE(colnect_variant, ''),
+                COALESCE(colnect_overprint_variant, ''),
+                COALESCE(colnect_score, ''),
+                COALESCE(colnect_accuracy, ''),
+                COALESCE(colnect_list, ''),
+                COALESCE(colnect_quantity, ''),
+                COALESCE(colnect_condition, ''),
+                COALESCE(colnect_public_note, ''),
+                COALESCE(colnect_private_note, ''),
+                COALESCE(colnect_ord_sg, '')
+         FROM stamps
+         WHERE series = ?1
+           AND year = ?2
+           AND sg_number = ?3
+         ORDER BY CASE WHEN image_path = ?4 THEN 0 ELSE 1 END, rowid DESC
+         LIMIT 1",
+        [
+            &stamp.series,
+            &stamp.year.to_string(),
+            &stamp.sg_number,
+            &stamp.image_path,
+        ],
+        |row| {
+            Ok(StoredColnectMeta {
+                colnect_id: row.get(0)?,
+                colnect_name: row.get(1)?,
+                colnect_catalog_codes: row.get(2)?,
+                colnect_width: row.get(3)?,
+                colnect_height: row.get(4)?,
+                colnect_format: row.get(5)?,
+                colnect_emission: row.get(6)?,
+                colnect_printing: row.get(7)?,
+                colnect_paper: row.get(8)?,
+                colnect_gum: row.get(9)?,
+                colnect_expiry_date: row.get(10)?,
+                colnect_print_run: row.get(11)?,
+                colnect_face_value: row.get(12)?,
+                colnect_currency: row.get(13)?,
+                colnect_colors: row.get(14)?,
+                colnect_parent_item: row.get(15)?,
+                colnect_variant: row.get(16)?,
+                colnect_overprint_variant: row.get(17)?,
+                colnect_score: row.get(18)?,
+                colnect_accuracy: row.get(19)?,
+                colnect_list: row.get(20)?,
+                colnect_quantity: row.get(21)?,
+                colnect_condition: row.get(22)?,
+                colnect_public_note: row.get(23)?,
+                colnect_private_note: row.get(24)?,
+                colnect_ord_sg: row.get(25)?,
+            })
+        },
+    )
+    .optional()
+}
+
+fn set_attr_if_non_empty(attrs: &mut GenericAttrs, key: &str, value: &str) {
+    if !value.trim().is_empty() {
+        attrs.set(key, value);
+    }
+}
+
+fn set_attr_if_missing(attrs: &mut GenericAttrs, key: &str, value: Option<String>) {
+    let missing = attrs.get(key).map_or(true, |v| v.trim().is_empty());
+    if missing {
+        if let Some(v) = value {
+            if !v.trim().is_empty() {
+                attrs.set(key, &v);
+            }
+        }
+    }
+}
+
 /// Fetch stamps for a given `series` from the DB and apply optional
 /// start/end year filtering. Returns a Vec<`Stamp`> suitable for the
 /// generator layout pipeline.
@@ -251,85 +376,88 @@ pub fn fetch_and_filter_stamps(
         attrs.set("mint_condition", &stamp.mint_condition);
         attrs.set("unused", &stamp.unused);
 
-        // Try to fetch Colnect info and store width/height for later use
-        let mut colnect_width_mm: Option<f64> = None;
-        let mut colnect_height_mm: Option<f64> = None;
+        // Prefer Colnect values already merged into `stamps` rows via Review UI.
+        // This keeps output aligned with user-selected metadata even when SG mapping
+        // does not match Colnect sg_number exactly.
+        let stored_colnect = load_stored_colnect_meta(conn, &stamp).ok().flatten();
+        let lookup_colnect_id = stored_colnect.as_ref().map(|m| m.colnect_id.clone());
+        if let Some(meta) = stored_colnect.as_ref() {
+            set_attr_if_non_empty(&mut attrs, "colnect_name", &meta.colnect_name);
+            set_attr_if_non_empty(
+                &mut attrs,
+                "colnect_catalog_codes",
+                &meta.colnect_catalog_codes,
+            );
+            set_attr_if_non_empty(&mut attrs, "colnect_width_mm", &meta.colnect_width);
+            set_attr_if_non_empty(&mut attrs, "colnect_height_mm", &meta.colnect_height);
+            set_attr_if_non_empty(&mut attrs, "colnect_format", &meta.colnect_format);
+            set_attr_if_non_empty(&mut attrs, "colnect_emission", &meta.colnect_emission);
+            set_attr_if_non_empty(&mut attrs, "colnect_printing", &meta.colnect_printing);
+            set_attr_if_non_empty(&mut attrs, "colnect_paper", &meta.colnect_paper);
+            set_attr_if_non_empty(&mut attrs, "colnect_gum", &meta.colnect_gum);
+            set_attr_if_non_empty(&mut attrs, "colnect_expiry_date", &meta.colnect_expiry_date);
+            set_attr_if_non_empty(&mut attrs, "colnect_print_run", &meta.colnect_print_run);
+            set_attr_if_non_empty(&mut attrs, "colnect_face_value", &meta.colnect_face_value);
+            set_attr_if_non_empty(&mut attrs, "colnect_currency", &meta.colnect_currency);
+            set_attr_if_non_empty(&mut attrs, "colnect_colors", &meta.colnect_colors);
+            set_attr_if_non_empty(&mut attrs, "colnect_parent_item", &meta.colnect_parent_item);
+            set_attr_if_non_empty(&mut attrs, "colnect_variant", &meta.colnect_variant);
+            set_attr_if_non_empty(
+                &mut attrs,
+                "colnect_overprint_variant",
+                &meta.colnect_overprint_variant,
+            );
+            set_attr_if_non_empty(&mut attrs, "colnect_score", &meta.colnect_score);
+            set_attr_if_non_empty(&mut attrs, "colnect_accuracy", &meta.colnect_accuracy);
+            set_attr_if_non_empty(&mut attrs, "colnect_list", &meta.colnect_list);
+            set_attr_if_non_empty(&mut attrs, "colnect_quantity", &meta.colnect_quantity);
+            set_attr_if_non_empty(&mut attrs, "colnect_condition", &meta.colnect_condition);
+            set_attr_if_non_empty(&mut attrs, "colnect_public_note", &meta.colnect_public_note);
+            set_attr_if_non_empty(
+                &mut attrs,
+                "colnect_private_note",
+                &meta.colnect_private_note,
+            );
+            set_attr_if_non_empty(&mut attrs, "colnect_ord_sg", &meta.colnect_ord_sg);
+        }
 
-        if let Ok(Some(colnect)) = get_colnect_info(conn, &stamp.sg_number) {
-            // Parse and store Colnect dimensions (in mm)
-            if let Some(ref w) = colnect.width {
-                if let Ok(width_val) = w.trim().parse::<f64>() {
-                    colnect_width_mm = Some(width_val);
-                }
-            }
-            if let Some(ref h) = colnect.height {
-                if let Ok(height_val) = h.trim().parse::<f64>() {
-                    colnect_height_mm = Some(height_val);
-                }
-            }
+        // Enrich missing attributes from Colnect reference tables.
+        let colnect_lookup = if let Some(cid) = lookup_colnect_id.filter(|id| !id.trim().is_empty())
+        {
+            get_colnect_info_by_id(conn, &cid).ok().flatten()
+        } else {
+            get_colnect_info(conn, &stamp.sg_number).ok().flatten()
+        };
 
-            if let Some(v) = colnect.name {
-                attrs.set("colnect_name", &v);
-            }
-            if let Some(v) = colnect.watermark {
-                attrs.set("colnect_watermark", &v);
-            }
-            if let Some(v) = colnect.format {
-                attrs.set("colnect_format", &v);
-            }
-            if let Some(v) = colnect.emission {
-                attrs.set("colnect_emission", &v);
-            }
-            if let Some(v) = colnect.perforation {
-                attrs.set("colnect_perforation", &v);
-            }
-            if let Some(v) = colnect.printing {
-                attrs.set("colnect_printing", &v);
-            }
-            if let Some(v) = colnect.paper {
-                attrs.set("colnect_paper", &v);
-            }
-            if let Some(v) = colnect.gum {
-                attrs.set("colnect_gum", &v);
-            }
-            if let Some(v) = colnect.themes {
-                attrs.set("colnect_themes", &v);
-            }
-            if let Some(v) = colnect.description {
-                attrs.set("colnect_description", &v);
-            }
-            if let Some(v) = colnect.issued_on {
-                attrs.set("colnect_issued_on", &v);
-            }
-            if let Some(v) = colnect.expiry_date {
-                attrs.set("colnect_expiry_date", &v);
-            }
-            if let Some(v) = colnect.print_run {
-                attrs.set("colnect_print_run", &v);
-            }
-            if let Some(v) = colnect.face_value {
-                attrs.set("colnect_face_value", &v);
-            }
-            if let Some(v) = colnect.currency {
-                attrs.set("colnect_currency", &v);
-            }
-            if let Some(v) = colnect.colors {
-                attrs.set("colnect_colors", &v);
-            }
-            if let Some(v) = colnect.designers {
-                attrs.set("colnect_designers", &v);
-            }
-            if let Some(v) = colnect.printers {
-                attrs.set("colnect_printers", &v);
-            }
-            if let Some(v) = colnect.score {
-                attrs.set("colnect_score", &v);
-            }
-            if let Some(v) = colnect.accuracy {
-                attrs.set("colnect_accuracy", &v);
-            }
+        if let Some(colnect) = colnect_lookup {
+            set_attr_if_missing(&mut attrs, "colnect_name", colnect.name);
+            set_attr_if_missing(&mut attrs, "colnect_watermark", colnect.watermark);
+            set_attr_if_missing(&mut attrs, "colnect_format", colnect.format);
+            set_attr_if_missing(&mut attrs, "colnect_emission", colnect.emission);
+            set_attr_if_missing(&mut attrs, "colnect_perforation", colnect.perforation);
+            set_attr_if_missing(&mut attrs, "colnect_printing", colnect.printing);
+            set_attr_if_missing(&mut attrs, "colnect_paper", colnect.paper);
+            set_attr_if_missing(&mut attrs, "colnect_gum", colnect.gum);
+            set_attr_if_missing(&mut attrs, "colnect_themes", colnect.themes);
+            set_attr_if_missing(&mut attrs, "colnect_description", colnect.description);
+            set_attr_if_missing(&mut attrs, "colnect_issued_on", colnect.issued_on);
+            set_attr_if_missing(&mut attrs, "colnect_expiry_date", colnect.expiry_date);
+            set_attr_if_missing(&mut attrs, "colnect_print_run", colnect.print_run);
+            set_attr_if_missing(&mut attrs, "colnect_face_value", colnect.face_value);
+            set_attr_if_missing(&mut attrs, "colnect_currency", colnect.currency);
+            set_attr_if_missing(&mut attrs, "colnect_colors", colnect.colors);
+            set_attr_if_missing(&mut attrs, "colnect_designers", colnect.designers);
+            set_attr_if_missing(&mut attrs, "colnect_printers", colnect.printers);
+            set_attr_if_missing(&mut attrs, "colnect_score", colnect.score);
+            set_attr_if_missing(&mut attrs, "colnect_accuracy", colnect.accuracy);
+            set_attr_if_missing(&mut attrs, "colnect_width_mm", colnect.width);
+            set_attr_if_missing(&mut attrs, "colnect_height_mm", colnect.height);
 
-            if !colnect.catalog_codes.is_empty() {
+            if attrs
+                .get("colnect_catalog_codes")
+                .map_or(true, |v| v.trim().is_empty())
+                && !colnect.catalog_codes.is_empty()
+            {
                 let codes_str = colnect
                     .catalog_codes
                     .iter()
@@ -337,8 +465,12 @@ pub fn fetch_and_filter_stamps(
                     .collect::<Vec<_>>()
                     .join(" | ");
                 attrs.set("colnect_catalog_codes", &codes_str);
+            }
 
-                // Extract Scott number specifically for use as default catalog number
+            if attrs
+                .get("scott_number")
+                .map_or(true, |v| v.trim().is_empty())
+            {
                 if let Some((_, scott_code)) = colnect
                     .catalog_codes
                     .iter()
@@ -347,14 +479,6 @@ pub fn fetch_and_filter_stamps(
                     attrs.set("scott_number", scott_code);
                 }
             }
-        }
-
-        // Store Colnect dimensions in attributes for use in dimension calculation
-        if let Some(w) = colnect_width_mm {
-            attrs.set("colnect_width_mm", &w.to_string());
-        }
-        if let Some(h) = colnect_height_mm {
-            attrs.set("colnect_height_mm", &h.to_string());
         }
 
         attrs.set("used", &stamp.used);

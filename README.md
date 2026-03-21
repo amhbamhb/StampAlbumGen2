@@ -81,6 +81,28 @@ Process a Colnect inbox recursively, auto-route files by country, and create mis
  --colnect-create-country-db
 ```
 
+Process a Colnect inbox and auto-generate album pages for countries with successful imports:
+
+```bash
+./stamp_album_gen2 \
+ --source colnectexport \
+ --colnect-inbox /path/to/colnect_inbox \
+ --colnect-auto-route \
+ --colnect-create-country-db \
+ --colnect-generate-after-import
+```
+
+Note: by default, inbox mode is ingestion-only. It imports CSV data into country
+DBs but does not generate AlbumEasy pages unless
+`--colnect-generate-after-import` is set.
+
+After inbox import, generate pages per country from the DB:
+
+```bash
+./stamp_album_gen2 --db-path Albums/Switzerland/Switzerland.db --album-name Switzerland
+./stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
+```
+
 If `--colnect-inbox` is omitted for `--source colnectexport`, the program uses
 `colnect_inbox_path` from `config.toml` and creates that directory on startup if
 it does not exist.
@@ -159,10 +181,17 @@ Force overwrite existing config (creates backup first):
 
 - `--colnect-csv <PATH>`
  Ingest a single Colnect CSV file.
+ When used with `--db-path`, this run also proceeds to album generation.
 - `--colnect-inbox <DIR>`
  Recursively discover and process Colnect CSV files country-by-country.
 	If omitted in `colnectexport` mode, falls back to `colnect_inbox_path` in
 	`config.toml`.
+ By default this mode is ingestion-only; run a follow-up
+ `--db-path ... --album-name ...` command to generate pages, or use
+ `--colnect-generate-after-import` to auto-generate in the same run.
+- `--colnect-generate-after-import`
+ After inbox ingestion, generate album output for each country with at least
+ one successful import in this run.
 - `--colnect-auto-route`
  Move discovered files into `<inbox>/<country>/` before processing.
 - `--colnect-country <COUNTRY>`
@@ -174,10 +203,170 @@ Force overwrite existing config (creates backup first):
 - `--colnect-force-reimport`
  Reimport even if checksum already exists in import history.
 
+### Review UI
+
+- `--review-ui`
+  Launch the local web-based review UI and exit all other processing. Requires
+  either `--album-name` (resolves to `Albums/<name>/<name>.db`) or
+  `--db-path` to identify which database to open.
+- `--review-ui-bind <ADDR>`
+  Override the listen address for the review UI server.
+  Default: `127.0.0.1:7878`.
+
 ### Built-in Utility
 
 - `--help`
 - `--version`
+
+## Review UI
+
+The Review UI is a local browser-based tool for manually linking Colnect stamp
+candidates to existing StampWorld entries in a database. It starts an HTTP
+server and opens at `http://127.0.0.1:7878/` by default.
+
+### Launch Examples
+
+Open the review UI for an existing album by name:
+
+```bash
+./stamp_album_gen2 --review-ui --album-name Malta
+```
+
+Open with an explicit database path:
+
+```bash
+./stamp_album_gen2 --review-ui --db-path Albums/Malta/Malta.db
+```
+
+Bind to a different address or port:
+
+```bash
+./stamp_album_gen2 --review-ui --album-name Malta --review-ui-bind 0.0.0.0:8080
+```
+
+Then open `http://127.0.0.1:7878/` (or the custom address) in a browser.
+
+### Layout
+
+The UI is split into two panels:
+
+| Panel | Contents |
+|-------|----------|
+| **Left** | StampWorld stamps from the `stamps` table — the records already in the DB |
+| **Right** | Colnect candidates from the `colnect_stamps` table — imported via `--source colnectexport` |
+
+Each panel shows the stamp image, catalog codes, year, series, description,
+watermark, design, engraving, perforation, and context text where available.
+
+Navigate left stamps with **Prev / Next** and right candidates with
+**← / →**. The header shows the current position in each list.
+
+### Matching Workflow
+
+1. Navigate to a left stamp that needs Colnect data.
+2. Browse right candidates using **← / →** until you find the matching Colnect entry.
+3. Click **Assign** to pair the current right candidate with the current left stamp.
+   Multiple right candidates can be assigned to the same left stamp.
+4. Use **Clear Assignment** to remove a pairing before writing.
+5. Choose which fields to copy using the field checkboxes (see below).
+6. Click **Apply Matches To DB** to write the selected fields to the `stamps` table.
+
+### Field Checkboxes
+
+Only checked fields are written when **Apply Matches To DB** is clicked:
+
+| Checkbox | What it writes |
+|----------|---------------|
+| **series** | Colnect series name → `series` column |
+| **description** *(default on)* | Colnect item name → `description` column |
+| **watermark** | Colnect watermark |
+| **design** | Colnect designer |
+| **engraving** | Colnect engraver |
+| **perforation** | Colnect perforation gauge |
+| **context** | Colnect additional context text |
+| **colnect links** *(default on)* | `colnect_id`, `colnect_page_url` |
+| **colnect image url** *(default on)* | `colnect_image_url` |
+| **colnect metadata fields** *(default on)* | All remaining Colnect columns (colors, format, emission, paper, gum, print run, face value, currency, dimensions, etc.) |
+| **replace SG number** | Overwrites `sg_number` with the Colnect SG catalog value |
+
+### Right Unmatched Only Filter
+
+Enable the **right unmatched only** checkbox to hide Colnect candidates that
+are already linked to a left stamp (i.e. where their `colnect_id` already
+appears in the `stamps` table). This narrows the right panel to candidates that
+still need to be reviewed.
+
+### Add Colnect As Stamp
+
+The **Add Colnect As Stamp** button on a right candidate opens a dialog to
+insert that Colnect entry directly as a new row in the `stamps` table without
+needing a matching left stamp. Use this for Colnect items that have no
+corresponding StampWorld entry.
+
+Fields in the dialog:
+
+- **SG number** — Stanley Gibbons catalog number to assign to the new stamp row.
+- **Year** — Issue year (defaults to the Colnect candidate's year).
+- **Series** — Series/set name.
+- **Image source** — Choose one of:
+  - *Use current left stamp image* — copies the left panel image path to the
+    new row.
+  - *Upload image file* — opens a file picker; the chosen file is validated,
+    copied into the album's `images/` directory, and linked to the new row.
+  - *No image* — the new row is created with no image path.
+
+After confirming, all available Colnect metadata fields are written to the new
+stamp row alongside the fields entered in the dialog.
+
+### Delete Colnect Candidate
+
+The **Delete Colnect Candidate** button performs a **soft delete** on the
+current right candidate — it sets `is_deleted = 1` and records a `deleted_at`
+timestamp in the `colnect_stamps` table. The row is preserved in the database
+and no longer shown in the right panel.
+
+The `is_deleted` and `deleted_at` columns are added automatically to
+`colnect_stamps` the first time the review UI starts against a database that
+does not yet have them.
+
+### Undo Delete
+
+The **Undo Delete** button restores the most recently soft-deleted candidate in
+the current browser session. It clears the `is_deleted` flag and `deleted_at`
+value, making the candidate visible again in the right panel. The undo stack is
+per-session (in-memory in the browser); it is cleared when the page is
+reloaded.
+
+### Review UI Config
+
+You can tune row striping colors and the default checkbox states in `config.toml`:
+
+```toml
+[review_ui]
+odd_row_color = "#ffffff"
+even_row_color = "#e6eef4"
+
+# Default checkbox states for field selection
+default_series_checked = true
+default_description_checked = true
+default_watermark_checked = false
+default_design_checked = false
+default_engraving_checked = false
+default_perforation_checked = false
+default_context_checked = false
+default_colnect_links_checked = true
+default_colnect_image_url_checked = true
+default_colnect_metadata_checked = true
+default_replace_sg_number_checked = false
+default_right_unmatched_only_checked = false
+```
+
+### Auto-migration
+
+On startup the Review UI automatically adds any missing columns to both the
+`stamps` table (Colnect link and metadata columns) and the `colnect_stamps`
+table (`is_deleted`, `deleted_at`). Existing rows and data are never modified
+by these migrations.
 
 ## Runtime Entry Points
 

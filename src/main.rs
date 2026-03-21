@@ -19,6 +19,7 @@ use stamp_album_gen2::{
     cli::Cli,
     config,
     modes::{run_database_mode, run_scraping_mode},
+    review_ui::{run_review_ui, run_review_ui_bootstrap},
     setup::{setup_logging, validate_os},
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -28,6 +29,75 @@ use stamp_album_gen2::{
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse CLI arguments
     let mut cli = Cli::parse();
+
+    // Review UI mode is intentionally independent from normal source/mode
+    // validation to keep the workflow lightweight.
+    if cli.review_ui {
+        validate_os()?;
+
+        eprintln!("Review UI: initializing...");
+
+        let review_cfg = config::load_config("config.toml");
+
+        let (db_path, album_name_opt): (String, Option<String>) =
+            if cli.db_path.is_none() && cli.album_name.is_none() {
+                eprintln!(
+                    "Review UI: no country/database selected on CLI; opening startup selector..."
+                );
+                let selection = run_review_ui_bootstrap(
+                    cli.review_ui_bind.as_deref(),
+                    review_cfg.effective_colnect_inbox_path(),
+                )?;
+
+                let Some((selected_db, selected_country)) = selection else {
+                    eprintln!("No country selected; exiting Review UI startup.");
+                    return Ok(());
+                };
+                eprintln!(
+                    "Review UI: selected '{}' with database {}",
+                    selected_country, selected_db
+                );
+                (selected_db, Some(selected_country))
+            } else {
+                let db_path = if let Some(path) = cli.db_path.clone() {
+                    path
+                } else if let Some(album_name) = cli.album_name.clone() {
+                    let album_dir = album_name.trim().replace(' ', "-");
+                    format!("Albums/{0}/{0}.db", album_dir)
+                } else {
+                    eprintln!("Review UI requires --db-path or --album-name.");
+                    eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
+                    std::process::exit(1);
+                };
+                eprintln!("Review UI: using requested database {}", db_path);
+                (db_path, cli.album_name.clone())
+            };
+
+        eprintln!("Review UI: loading compare data. This may take a few seconds...");
+
+        run_review_ui(
+            &db_path,
+            album_name_opt.as_deref(),
+            cli.review_ui_bind.as_deref(),
+            review_cfg.review_ui_odd_row_color(),
+            review_cfg.review_ui_even_row_color(),
+            review_cfg.review_ui_series_default_checked(),
+            review_cfg.review_ui_description_default_checked(),
+            review_cfg.review_ui_watermark_default_checked(),
+            review_cfg.review_ui_design_default_checked(),
+            review_cfg.review_ui_engraving_default_checked(),
+            review_cfg.review_ui_perforation_default_checked(),
+            review_cfg.review_ui_context_default_checked(),
+            review_cfg.review_ui_colnect_links_default_checked(),
+            review_cfg.review_ui_colnect_image_url_default_checked(),
+            review_cfg.review_ui_colnect_metadata_default_checked(),
+            review_cfg.review_ui_replace_sg_number_default_checked(),
+            review_cfg.review_ui_right_unmatched_only_default_checked(),
+            review_cfg.albumeasy_auto_pdf_enabled(),
+            review_cfg.effective_albumeasy_cli_path().is_some(),
+        )?;
+        return Ok(());
+    }
 
     // If requested, initialize (or force-initialize) the config file and exit.
     if cli.init_config {

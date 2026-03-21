@@ -71,8 +71,15 @@ pub struct Cli {
 
     /// Path to a Colnect inbox folder. When set, matching CSV files are
     /// discovered recursively and processed country-by-country.
+    /// By default this mode ingests data only; use
+    /// --colnect-generate-after-import to auto-generate pages in the same run.
     #[arg(long)]
     pub colnect_inbox: Option<String>,
+
+    /// After Colnect inbox ingestion succeeds, generate album output for each
+    /// country that had at least one successful import in this run.
+    #[arg(long, default_value_t = false)]
+    pub colnect_generate_after_import: bool,
 
     /// If true, discovered Colnect CSV files are moved into
     /// <inbox>/<country>/ before processing.
@@ -96,4 +103,13 @@ pub struct Cli {
     /// Reimport even if checksum already exists in import history.
     #[arg(long, default_value_t = false)]
     pub colnect_force_reimport: bool,
+
+    /// Launch local review UI for side-by-side existing/candidate comparison
+    /// and selective DB updates.
+    #[arg(long, default_value_t = false)]
+    pub review_ui: bool,
+
+    /// Bind address for review UI server (default: 127.0.0.1:7878)
+    #[arg(long)]
+    pub review_ui_bind: Option<String>,
 }
