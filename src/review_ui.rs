@@ -138,6 +138,32 @@ struct MatcherPayload {
     albumeasy_cli_configured: bool,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct BootstrapCountryInfo {
+    country: String,
+    db_path: String,
+    colnect_file_count: usize,
+    colnect_candidate_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapStateResponse {
+    countries: Vec<BootstrapCountryInfo>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapStartRequest {
+    country: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapStartResponse {
+    ok: bool,
+    message: String,
+    country: Option<String>,
+    db_path: Option<String>,
+}
+
 #[derive(Debug, Deserialize)]
 struct SelectedMatch {
     left_rowid: i64,
@@ -276,6 +302,296 @@ fn mime_from_path(path: &Path) -> &'static str {
         "webp" => "image/webp",
         _ => "application/octet-stream",
     }
+}
+
+fn bind_review_server(
+    bind_addr_opt: Option<&str>,
+) -> Result<(Server, String), Box<dyn std::error::Error>> {
+    if let Some(explicit) = bind_addr_opt {
+        let srv = Server::http(explicit).map_err(|e| {
+            std::io::Error::other(format!(
+                "failed to start review UI server on {}: {}",
+                explicit, e
+            ))
+        })?;
+        return Ok((srv, explicit.to_string()));
+    }
+
+    const BASE_PORT: u16 = 7878;
+    const MAX_TRIES: u16 = 10;
+    let mut last_err = String::new();
+    for offset in 0..MAX_TRIES {
+        let candidate = format!("127.0.0.1:{}", BASE_PORT + offset);
+        match Server::http(&candidate) {
+            Ok(srv) => return Ok((srv, candidate)),
+            Err(e) => {
+                last_err = format!("{}", e);
+            }
+        }
+    }
+
+    Err(std::io::Error::other(format!(
+        "failed to start review UI server: all ports {}-{} are in use (last error: {}). \
+                 Kill the existing process with `fuser -k {}/tcp` or specify a free port with \
+                 `--review-ui-bind 127.0.0.1:<PORT>`.",
+        BASE_PORT,
+        BASE_PORT + MAX_TRIES - 1,
+        last_err,
+        BASE_PORT,
+    ))
+    .into())
+}
+
+fn is_colnect_csv_file(path: &Path) -> bool {
+    let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    let lower = name.to_ascii_lowercase();
+    lower.ends_with(".csv")
+        && (lower.contains("colnect") || lower.starts_with("en_stamps_csv_list_countr"))
+}
+
+fn count_colnect_csv_files_rec(root: &Path) -> usize {
+    if !root.exists() {
+        return 0;
+    }
+    let Ok(entries) = fs::read_dir(root) else {
+        return 0;
+    };
+
+    let mut count = 0usize;
+    for entry in entries.flatten() {
+        let p = entry.path();
+        if p.is_dir() {
+            count += count_colnect_csv_files_rec(&p);
+        } else if is_colnect_csv_file(&p) {
+            count += 1;
+        }
+    }
+    count
+}
+
+fn count_colnect_candidates_in_db(db_path: &Path) -> usize {
+    let Ok(conn) = Connection::open(db_path) else {
+        return 0;
+    };
+    let has_table: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='colnect_stamps'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    if has_table <= 0 {
+        return 0;
+    }
+    conn.query_row(
+        "SELECT COUNT(*) FROM colnect_stamps WHERE COALESCE(is_deleted, 0) = 0",
+        [],
+        |r| r.get::<_, i64>(0),
+    )
+    .unwrap_or(0)
+    .max(0) as usize
+}
+
+fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
+    let albums_root = Path::new("Albums");
+    let Ok(entries) = fs::read_dir(albums_root) else {
+        return Vec::new();
+    };
+
+    let mut out = Vec::new();
+    for entry in entries.flatten() {
+        let dir = entry.path();
+        if !dir.is_dir() {
+            continue;
+        }
+        let Some(slug) = dir.file_name().and_then(|n| n.to_str()) else {
+            continue;
+        };
+        let db_path = dir.join(format!("{}.db", slug));
+        if !db_path.exists() {
+            continue;
+        }
+
+        let country = slug.replace('-', " ");
+        let colnect_dir = dir.join("colnect");
+        let colnect_file_count = count_colnect_csv_files_rec(&colnect_dir);
+        let colnect_candidate_count = count_colnect_candidates_in_db(&db_path);
+        out.push(BootstrapCountryInfo {
+            country,
+            db_path: db_path.to_string_lossy().to_string(),
+            colnect_file_count,
+            colnect_candidate_count,
+        });
+    }
+
+    out.sort_by(|a, b| a.country.to_lowercase().cmp(&b.country.to_lowercase()));
+    out
+}
+
+fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
+    let inbox_hint = default_inbox_path.unwrap_or("samples/colnect_inbox");
+    format!(
+        r#"<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Stamp Matcher Setup</title>
+<style>
+body {{ font-family: sans-serif; margin: 20px; background: linear-gradient(180deg, #edf4f8, #f8fbfd); color: #1e3548; }}
+.card {{ max-width: 960px; background: #fff; border: 1px solid #d7e2eb; border-radius: 12px; padding: 16px; box-shadow: 0 10px 24px rgba(28, 56, 82, 0.08); }}
+h1 {{ margin: 0 0 8px 0; }}
+p {{ margin: 0 0 10px 0; color: #395970; }}
+.row {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
+.badge {{ display: inline-block; border: 1px solid #d2dfea; background: #f6fbff; border-radius: 999px; padding: 2px 8px; font-size: 12px; }}
+.panel {{ border: 1px solid #e2e9ef; border-left: 5px solid #2f6fa3; border-radius: 10px; padding: 12px; background: #fbfdff; margin-top: 12px; }}
+.warn {{ border-left-color: #9b6a20; background: #fffaf2; }}
+.ok {{ border-left-color: #2f8f63; background: #f4fcf8; }}
+label {{ font-size: 13px; font-weight: 600; }}
+select, input {{ padding: 7px 8px; border: 1px solid #c8d5e2; border-radius: 8px; min-width: 170px; }}
+button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #c8d5e2; background: #fff; cursor: pointer; }}
+button.primary {{ background: #2f6fa3; color: #fff; border-color: #2f6fa3; }}
+button:hover {{ background: #f1f6fa; }}
+code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
+.status {{ margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }}
+</style>
+</head>
+<body>
+<div class='card'>
+    <h1>Start Review UI</h1>
+    <p>No database was selected on startup. Pick a country to open its Review UI.</p>
+    <div class='row'>
+        <label for='countrySel'>Country</label>
+        <select id='countrySel'></select>
+        <button onclick='refreshState()'>Refresh</button>
+        <button class='primary' onclick='startReview()'>Open Review</button>
+        <span id='countryCount' class='badge'>Countries: 0</span>
+    </div>
+
+    <div id='countryPanel' class='panel'></div>
+    <div id='stampworldPanel' class='panel warn' style='display:none;'>
+        <strong>No Colnect files found for this country.</strong>
+        <p style='margin-top:6px;'>You can run StampWorld pull first, then import Colnect CSV files and come back.</p>
+        <div class='row'>
+            <label>StampWorld Country</label>
+            <input id='swCountry' type='text' />
+            <label>Start Year</label>
+            <input id='swStartYear' type='number' value='1840' />
+            <label>End Year</label>
+            <input id='swEndYear' type='number' value='2026' />
+        </div>
+        <div class='row'>
+            <span class='badge'>Colnect inbox hint: {}</span>
+        </div>
+        <div class='row'>
+            <strong>Suggested command:</strong>
+            <code id='swCmd'></code>
+        </div>
+    </div>
+    <div id='status' class='status'></div>
+</div>
+
+<script>
+let countries = [];
+
+function slugCountry(name) {{
+    return String(name || '').trim().replaceAll(' ', '-');
+}}
+
+function suggestedStampworldCommand(country) {{
+    const c = document.getElementById('swCountry').value || country || '';
+    const y1 = document.getElementById('swStartYear').value || '1840';
+    const y2 = document.getElementById('swEndYear').value || '2026';
+    return `cargo run -- --source stampworld --site-name "${{c}}" --album-name "${{c}}" --start-year ${{y1}} --end-year ${{y2}}`;
+}}
+
+function renderCountryPanel() {{
+    const sel = document.getElementById('countrySel');
+    const c = countries.find(x => x.country === sel.value);
+    if (!c) {{
+        document.getElementById('countryPanel').innerHTML = '<em>No countries found under Albums/*/*.db</em>';
+        document.getElementById('stampworldPanel').style.display = '';
+        document.getElementById('swCmd').innerText = suggestedStampworldCommand('');
+        return;
+    }}
+    document.getElementById('countryPanel').className = c.colnect_file_count > 0 || c.colnect_candidate_count > 0 ? 'panel ok' : 'panel';
+    document.getElementById('countryPanel').innerHTML =
+        `<strong>${{c.country}}</strong><br/>` +
+        `<span class='badge'>DB: ${{c.db_path}}</span> ` +
+        `<span class='badge'>Colnect files: ${{c.colnect_file_count}}</span> ` +
+        `<span class='badge'>DB candidates: ${{c.colnect_candidate_count}}</span>`;
+
+    document.getElementById('swCountry').value = c.country;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(c.country);
+    document.getElementById('stampworldPanel').style.display = (c.colnect_file_count === 0 && c.colnect_candidate_count === 0) ? '' : 'none';
+}}
+
+async function refreshState() {{
+    const status = document.getElementById('status');
+    status.innerText = 'Scanning Albums...';
+    try {{
+        const r = await fetch('/bootstrap-state');
+        const j = await r.json();
+        countries = j.countries || [];
+        const sel = document.getElementById('countrySel');
+        const old = sel.value;
+        sel.innerHTML = countries.map(c => `<option value="${{c.country}}">${{c.country}}</option>`).join('');
+        if (old && countries.some(c => c.country === old)) sel.value = old;
+        if (!sel.value && countries.length) sel.value = countries[0].country;
+        document.getElementById('countryCount').innerText = `Countries: ${{countries.length}}`;
+        renderCountryPanel();
+        status.innerText = countries.length ? 'Select a country and open review.' : 'No country DBs found. Create one by running a StampWorld pull first.';
+    }} catch (e) {{
+        status.innerText = `Failed to load startup state: ${{e}}`;
+    }}
+}}
+
+async function startReview() {{
+    const sel = document.getElementById('countrySel');
+    if (!sel.value) {{
+        document.getElementById('status').innerText = 'Select a country first.';
+        return;
+    }}
+    document.getElementById('status').innerText = `Starting Review UI for ${{sel.value}}...`;
+    try {{
+        const r = await fetch('/start-review', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ country: sel.value }})
+        }});
+        const j = await r.json();
+        if (!j.ok) {{
+            document.getElementById('status').innerText = j.message || 'Failed to start review.';
+            return;
+        }}
+        document.getElementById('status').innerText = j.message || 'Launching review...';
+        setTimeout(() => {{ window.location.href = '/'; }}, 450);
+    }} catch (e) {{
+        document.getElementById('status').innerText = `Failed to start: ${{e}}`;
+    }}
+}}
+
+document.getElementById('countrySel').addEventListener('change', renderCountryPanel);
+document.getElementById('swCountry').addEventListener('input', () => {{
+    const country = document.getElementById('countrySel').value;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+}});
+document.getElementById('swStartYear').addEventListener('input', () => {{
+    const country = document.getElementById('countrySel').value;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+}});
+document.getElementById('swEndYear').addEventListener('input', () => {{
+    const country = document.getElementById('countrySel').value;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+}});
+
+refreshState();
+</script>
+</body>
+</html>"#,
+        inbox_hint
+    )
 }
 
 fn sync_processed_colnect_candidates(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
@@ -2303,6 +2619,111 @@ fn undo_colnect_delete(
     }
 }
 
+pub fn run_review_ui_bootstrap(
+    bind_addr_opt: Option<&str>,
+    default_inbox_path: Option<&str>,
+) -> Result<Option<(String, String)>, Box<dyn std::error::Error>> {
+    let html = render_bootstrap_html(default_inbox_path);
+    let (server, bind) = bind_review_server(bind_addr_opt)?;
+
+    let url = format!("http://{}/", bind);
+    eprintln!("Review UI Setup: {}", url);
+    let _ = webbrowser::open(&url);
+
+    let mut selected: Option<(String, String)> = None;
+
+    for mut request in server.incoming_requests() {
+        let method = request.method().clone();
+        let req_url = request.url().to_string();
+
+        if method == Method::Get && req_url == "/" {
+            let mut resp = Response::from_string(html.clone());
+            if let Ok(h) =
+                Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
+            {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/bootstrap-state" {
+            let state = BootstrapStateResponse {
+                countries: scan_bootstrap_countries(),
+            };
+            let mut resp = Response::from_string(
+                serde_json::to_string(&state).unwrap_or_else(|_| "{\"countries\":[]}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/start-review" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapStartRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => {
+                    let countries = scan_bootstrap_countries();
+                    let found = countries
+                        .into_iter()
+                        .find(|c| c.country.eq_ignore_ascii_case(req.country.trim()));
+                    match found {
+                        Some(c) => {
+                            selected = Some((c.db_path.clone(), c.country.clone()));
+                            BootstrapStartResponse {
+                                ok: true,
+                                message: format!("starting review for {}", c.country),
+                                country: Some(c.country),
+                                db_path: Some(c.db_path),
+                            }
+                        }
+                        None => BootstrapStartResponse {
+                            ok: false,
+                            message: "Selected country not found or missing DB".to_string(),
+                            country: None,
+                            db_path: None,
+                        },
+                    }
+                }
+                Err(e) => BootstrapStartResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    country: None,
+                    db_path: None,
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"country\":null,\"db_path\":null}"
+                        .to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+
+            if selected.is_some() {
+                break;
+            }
+            continue;
+        }
+
+        let _ = request.respond(Response::empty(StatusCode(404)));
+    }
+
+    Ok(selected)
+}
+
 pub fn run_review_ui(
     db_path: &str,
     album_name_opt: Option<&str>,
@@ -2367,47 +2788,7 @@ pub fn run_review_ui(
     };
     let html = render_html(&payload);
 
-    // When the user explicitly specifies a bind address, use it exactly and
-    // fail loudly if it is unavailable.  When falling back to the default,
-    // try incrementing the port up to 10 times so that a stale process on
-    // 7878 does not block a new session.
-    let (server, bind) = if let Some(explicit) = bind_addr_opt {
-        let srv = Server::http(explicit).map_err(|e| {
-            std::io::Error::other(format!(
-                "failed to start review UI server on {}: {}",
-                explicit, e
-            ))
-        })?;
-        (srv, explicit.to_string())
-    } else {
-        const BASE_PORT: u16 = 7878;
-        const MAX_TRIES: u16 = 10;
-        let mut last_err = String::new();
-        let mut found = None;
-        for offset in 0..MAX_TRIES {
-            let candidate = format!("127.0.0.1:{}", BASE_PORT + offset);
-            match Server::http(&candidate) {
-                Ok(srv) => {
-                    found = Some((srv, candidate));
-                    break;
-                }
-                Err(e) => {
-                    last_err = format!("{}", e);
-                }
-            }
-        }
-        found.ok_or_else(|| {
-            std::io::Error::other(format!(
-                "failed to start review UI server: all ports {}-{} are in use (last error: {}). \
-                 Kill the existing process with `fuser -k {}/tcp` or specify a free port with \
-                 `--review-ui-bind 127.0.0.1:<PORT>`.",
-                BASE_PORT,
-                BASE_PORT + MAX_TRIES - 1,
-                last_err,
-                BASE_PORT,
-            ))
-        })?
-    };
+    let (server, bind) = bind_review_server(bind_addr_opt)?;
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);

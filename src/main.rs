@@ -19,7 +19,7 @@ use stamp_album_gen2::{
     cli::Cli,
     config,
     modes::{run_database_mode, run_scraping_mode},
-    review_ui::run_review_ui,
+    review_ui::{run_review_ui, run_review_ui_bootstrap},
     setup::{setup_logging, validate_os},
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -35,21 +35,37 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cli.review_ui {
         validate_os()?;
 
-        let db_path = if let Some(path) = cli.db_path.clone() {
-            path
-        } else if let Some(album_name) = cli.album_name.clone() {
-            let album_dir = album_name.trim().replace(' ', "-");
-            format!("Albums/{0}/{0}.db", album_dir)
-        } else {
-            eprintln!("Review UI requires --db-path or --album-name.");
-            eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
-            std::process::exit(1);
-        };
-
         let review_cfg = config::load_config("config.toml");
+
+        let (db_path, album_name_opt): (String, Option<String>) =
+            if cli.db_path.is_none() && cli.album_name.is_none() {
+                let selection = run_review_ui_bootstrap(
+                    cli.review_ui_bind.as_deref(),
+                    review_cfg.effective_colnect_inbox_path(),
+                )?;
+
+                let Some((selected_db, selected_country)) = selection else {
+                    eprintln!("No country selected; exiting Review UI startup.");
+                    return Ok(());
+                };
+                (selected_db, Some(selected_country))
+            } else {
+                let db_path = if let Some(path) = cli.db_path.clone() {
+                    path
+                } else if let Some(album_name) = cli.album_name.clone() {
+                    let album_dir = album_name.trim().replace(' ', "-");
+                    format!("Albums/{0}/{0}.db", album_dir)
+                } else {
+                    eprintln!("Review UI requires --db-path or --album-name.");
+                    eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
+                    std::process::exit(1);
+                };
+                (db_path, cli.album_name.clone())
+            };
+
         run_review_ui(
             &db_path,
-            cli.album_name.as_deref(),
+            album_name_opt.as_deref(),
             cli.review_ui_bind.as_deref(),
             review_cfg.review_ui_odd_row_color(),
             review_cfg.review_ui_even_row_color(),
