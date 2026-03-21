@@ -1155,14 +1155,34 @@ fn render_html(payload: &MatcherPayload) -> String {
 body {{
   font-family: sans-serif;
   margin: 16px;
-  background: #f6f6f6;
+    background: linear-gradient(180deg, #eef4f8 0%, #f7f9fb 100%);
   --row-odd-bg: #ffffff;
   --row-even-bg: #e6eef4;
   --row-odd-key-bg: #f1f3f5;
   --row-even-key-bg: #d7e2eb;
+    --accent-blue: #2f6fa3;
+    --accent-green: #2f8f63;
+    --accent-amber: #9b6a20;
+    --accent-red: #a34545;
+    --accent-slate: #4b5a68;
 }}
-.wrap {{ background: white; border: 1px solid #ddd; border-radius: 8px; padding: 12px; }}
+.wrap {{ background: #ffffff; border: 1px solid #dbe4ec; border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(27, 51, 72, 0.08); }}
 .top {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }}
+.startGuide {{ border: 1px solid #d8e3ed; border-left: 6px solid var(--accent-blue); border-radius: 10px; background: #f5fafe; padding: 12px; margin-bottom: 12px; }}
+.startGuide h2 {{ margin: 0 0 4px 0; font-size: 18px; color: #173952; }}
+.startGuide p {{ margin: 0; color: #35566d; font-size: 13px; }}
+.guideStats {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
+.guideActions {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
+.controlGroups {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 10px; }}
+.groupCard {{ border: 1px solid #dbe4ec; border-radius: 10px; background: #fbfdff; padding: 10px; }}
+.groupCard h4 {{ margin: 0 0 8px 0; font-size: 13px; letter-spacing: 0.2px; }}
+.groupCard.match {{ border-left: 5px solid var(--accent-green); }}
+.groupCard.candidate {{ border-left: 5px solid var(--accent-amber); }}
+.groupCard.session {{ border-left: 5px solid var(--accent-slate); }}
+.groupBtns {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+.filtersCard {{ border: 1px solid #dbe4ec; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: #f8fbfe; padding: 10px; margin-bottom: 12px; }}
+.filtersTitle {{ margin: 0 0 8px 0; font-size: 13px; color: #1f4663; }}
+.filtersGrid {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
 .row {{ display: flex; gap: 16px; align-items: stretch; }}
 .col {{ flex: 1; min-width: 280px; display: flex; flex-direction: column; }}
 .colNav {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }}
@@ -1182,8 +1202,18 @@ img {{ max-width: 260px; max-height: 260px; border: 1px solid #ccc; background: 
 .kv tr:nth-child(even) td.k {{ background: var(--row-even-key-bg); }}
 .kv td.k {{ width: 36%; font-weight: 600; }}
 .kv td.v {{ width: 64%; word-break: break-word; }}
-button {{ padding: 6px 10px; }}
-.badge {{ display: inline-block; padding: 2px 8px; border: 1px solid #ddd; border-radius: 999px; background: #fafafa; font-size: 12px; }}
+button {{ padding: 6px 10px; border-radius: 8px; border: 1px solid #c9d5e2; background: #ffffff; color: #1f3448; cursor: pointer; }}
+button:hover {{ background: #f1f6fa; }}
+button.primary {{ background: #2f6fa3; border-color: #2f6fa3; color: #ffffff; }}
+button.primary:hover {{ background: #285f8a; }}
+button.success {{ background: #2f8f63; border-color: #2f8f63; color: #ffffff; }}
+button.success:hover {{ background: #287953; }}
+button.warn {{ background: #f0e1c6; border-color: #ddc79f; color: #694314; }}
+button.danger {{ background: #a34545; border-color: #a34545; color: #ffffff; }}
+button.danger:hover {{ background: #8f3939; }}
+button.neutral {{ background: #4b5a68; border-color: #4b5a68; color: #ffffff; }}
+button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
+.badge {{ display: inline-block; padding: 2px 8px; border: 1px solid #d3dfe9; border-radius: 999px; background: #f8fbfe; font-size: 12px; color: #2d4760; }}
 .modal-backdrop {{ position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1000; }}
 .modal {{ background: #fff; border-radius: 10px; border: 1px solid #ddd; width: min(640px, 95vw); padding: 14px; box-sizing: border-box; }}
 .modal h4 {{ margin: 0 0 10px 0; }}
@@ -1198,17 +1228,48 @@ button {{ padding: 6px 10px; }}
 </head>
 <body>
 <div class='wrap'>
-  <div class='top'>
-    <button onclick='assignCurrent()'>Assign Candidate</button>
-    <button onclick='clearAssignment()'>Clear Assignment</button>
-        <button onclick='openAddDialog()'>Add Colnect As Stamp</button>
-        <button onclick='deleteCurrentCandidate()'>Delete Colnect Candidate</button>
-        <button onclick='undoLastDelete()'>Undo Delete</button>
-    <button onclick='applyMatches()'>Apply Matches To DB</button>
-        <button onclick='closeReviewUi()'>Close Review UI</button>
-    <span id='status' class='badge'></span>
+    <div id='startGuide' class='startGuide'>
+        <h2>Start Review Session</h2>
+        <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
+        <div class='guideStats'>
+            <span id='statLeftCount' class='badge'>Left: 0</span>
+            <span id='statRightCount' class='badge'>Candidates: 0</span>
+            <span id='statAssignedCount' class='badge'>Assigned: 0</span>
+        </div>
+        <div class='guideActions'>
+            <button class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
+            <button onclick='scrollToFilters()'>Review Field Options</button>
+            <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
+        </div>
   </div>
-    <div class='top'>
+    <div class='controlGroups'>
+        <div class='groupCard match'>
+            <h4>Match Actions</h4>
+            <div class='groupBtns'>
+                <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
+                <button onclick='clearAssignment()'>Clear Assignment</button>
+                <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
+            </div>
+        </div>
+        <div class='groupCard candidate'>
+            <h4>Candidate Management</h4>
+            <div class='groupBtns'>
+                <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
+                <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
+                <button onclick='undoLastDelete()'>Undo Delete</button>
+            </div>
+        </div>
+        <div class='groupCard session'>
+            <h4>Session</h4>
+            <div class='groupBtns'>
+                <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
+                <span id='status' class='badge'>Ready</span>
+            </div>
+        </div>
+    </div>
+        <div id='filtersCard' class='filtersCard'>
+            <h4 class='filtersTitle'>Field Update Options</h4>
+            <div class='filtersGrid'>
         <label><input type='checkbox' id='f_series'/> series</label>
         <label><input type='checkbox' id='f_description' checked/> description</label>
         <label><input type='checkbox' id='f_watermark'/> watermark</label>
@@ -1221,12 +1282,13 @@ button {{ padding: 6px 10px; }}
         <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
         <label><input type='checkbox' id='f_replace_sg'/> replace SG number</label>
         <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
+      </div>
     </div>
-  <div class='row'>
+  <div id='comparePanels' class='row'>
     <div class='col'>
             <div class='colNav'>
-                <button onclick='prevLeft()'>Prev Left</button>
-                <button onclick='nextLeft()'>Next Left</button>
+                <button class='navBtn' onclick='prevLeft()'>Prev Left</button>
+                <button class='navBtn' onclick='nextLeft()'>Next Left</button>
             </div>
             <div class='titleRow'>
                 <h3>Left: StampWorld Base</h3>
@@ -1236,8 +1298,8 @@ button {{ padding: 6px 10px; }}
     </div>
     <div class='col'>
             <div class='colNav'>
-                <button onclick='prevRight()'>Prev Candidate</button>
-                <button onclick='nextRight()'>Next Candidate</button>
+                <button class='navBtn' onclick='prevRight()'>Prev Candidate</button>
+                <button class='navBtn' onclick='nextRight()'>Next Candidate</button>
             </div>
             <div class='titleRow'>
                 <h3>Right: Colnect Candidate</h3>
@@ -1284,6 +1346,7 @@ let rightIdxByLeft = {{}};
 let assignedByLeft = {{}}; // left_rowid -> colnect_id
 let selectedCatalogCodeByLeft = {{}}; // left_rowid -> chosen code
 let deletedCandidatesStack = []; // stack entries: candidate + removedAssignments
+let guideDismissed = false;
 
 function removeCandidateFromUi(colnectId) {{
     if (!colnectId) return;
@@ -1343,6 +1406,41 @@ function imageBox(src, label) {{
   return `<div class='imgbox'><div class='imgph'>${{html(label)}}<br/>No image available</div></div>`;
 }}
 
+function dismissStartGuide() {{
+    guideDismissed = true;
+    const guide = document.getElementById('startGuide');
+    if (guide) guide.style.display = 'none';
+}}
+
+function scrollToFilters() {{
+    document.getElementById('filtersCard')?.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+}}
+
+function scrollToPanels() {{
+    document.getElementById('comparePanels')?.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+}}
+
+function updateGuide() {{
+    const leftCount = left.length;
+    const rightCount = rightAll.length;
+    const assignedCount = Object.keys(assignedByLeft).length;
+
+    const leftBadge = document.getElementById('statLeftCount');
+    const rightBadge = document.getElementById('statRightCount');
+    const assignedBadge = document.getElementById('statAssignedCount');
+    if (leftBadge) leftBadge.innerText = `Left: ${{leftCount}}`;
+    if (rightBadge) rightBadge.innerText = `Candidates: ${{rightCount}}`;
+    if (assignedBadge) assignedBadge.innerText = `Assigned: ${{assignedCount}}`;
+
+    const guide = document.getElementById('startGuide');
+    if (!guide) return;
+    if (guideDismissed) {{
+        guide.style.display = 'none';
+        return;
+    }}
+    guide.style.display = '';
+}}
+
 function usedColnectIds(exceptLeftRowId) {{
   const used = new Set();
   for (const [l, cid] of Object.entries(assignedByLeft)) {{
@@ -1388,7 +1486,10 @@ function selectedCatalogCodeForCurrent(r) {{
 }}
 
 function render() {{
+    updateGuide();
   if (!left.length) {{
+        document.getElementById('leftPos').innerText = 'Left 0/0';
+        document.getElementById('rightPos').innerText = 'Candidate 0/0';
     document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
     return;
