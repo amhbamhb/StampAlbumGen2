@@ -511,6 +511,41 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
 <script>
 let countries = [];
 let loadingDotsTimer = null;
+let loadingPhaseTimer = null;
+
+function startLoadingPhases(country) {{
+    const txt = document.getElementById('loadingText');
+    if (!txt) return;
+
+    if (loadingPhaseTimer) {{
+        clearInterval(loadingPhaseTimer);
+        loadingPhaseTimer = null;
+    }}
+
+    const phases = [
+        `Preparing data from ${{country}}`,
+        'Opening database...',
+        'Syncing processed Colnect candidates...',
+        'Loading left StampWorld rows...',
+        'Loading right Colnect candidates...',
+        'Starting local web server...',
+        'Opening compare view in browser...'
+    ];
+
+    let idx = 0;
+    txt.innerText = phases[idx];
+    loadingPhaseTimer = setInterval(() => {{
+        idx = (idx + 1) % phases.length;
+        txt.innerText = phases[idx];
+    }}, 900);
+}}
+
+function stopLoadingPhases() {{
+    if (loadingPhaseTimer) {{
+        clearInterval(loadingPhaseTimer);
+        loadingPhaseTimer = null;
+    }}
+}}
 
 function setMovingDots(active) {{
     const dots = document.getElementById('loadingDotsTitle');
@@ -521,6 +556,7 @@ function setMovingDots(active) {{
             clearInterval(loadingDotsTimer);
             loadingDotsTimer = null;
         }}
+        stopLoadingPhases();
         dots.innerText = '';
         return;
     }}
@@ -603,7 +639,8 @@ async function startReview() {{
         return;
     }}
     document.getElementById('status').innerText = `Starting Review UI for ${{sel.value}}...`;
-    setBusy(true, `Preparing database and compare view for ${{sel.value}}. Watch the terminal for progress updates.`);
+    setBusy(true, `Preparing data from ${{sel.value}}`);
+    startLoadingPhases(sel.value);
     try {{
         const r = await fetch('/start-review', {{
             method: 'POST',
@@ -616,6 +653,8 @@ async function startReview() {{
             document.getElementById('status').innerText = j.message || 'Failed to start review.';
             return;
         }}
+        stopLoadingPhases();
+        document.getElementById('loadingText').innerText = 'Launching compare view...';
         document.getElementById('status').innerText = j.message || 'Launching review...';
         setTimeout(() => {{ window.location.href = '/'; }}, 1000);
     }} catch (e) {{
@@ -949,11 +988,9 @@ fn load_right_candidates(
 
     let rows = stmt.query_map([], |row| {
         let page_url = row.get::<_, String>(4)?;
-        let image_url = if !page_url.trim().is_empty() {
-            crate::colnect::image_fetcher::resolve_colnect_image_url(&page_url).unwrap_or_default()
-        } else {
-            String::new()
-        };
+        // Resolve Colnect image URLs lazily in the browser to avoid N network
+        // requests during startup for every candidate.
+        let image_url = String::new();
         let description = {
             let d = row.get::<_, String>(5)?;
             if d.trim().is_empty() {
@@ -962,7 +999,7 @@ fn load_right_candidates(
                 d
             }
         };
-        let image_path = row.get::<_, String>(12)?;
+        let image_path = row.get::<_, String>(40)?;
 
         let colnect_id = row.get::<_, String>(0)?;
 
@@ -1399,6 +1436,8 @@ let assignedByLeft = {{}}; // left_rowid -> colnect_id
 let selectedCatalogCodeByLeft = {{}}; // left_rowid -> chosen code
 let deletedCandidatesStack = []; // stack entries: candidate + removedAssignments
 let guideDismissed = false;
+let resolvingRightImageById = {{}};
+let resolvedRightImageById = {{}};
 
 function removeCandidateFromUi(colnectId) {{
     if (!colnectId) return;
@@ -1456,6 +1495,36 @@ function allDbRows(fields) {{
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
   return `<div class='imgbox'><div class='imgph'>${{html(label)}}<br/>No image available</div></div>`;
+}}
+
+async function ensureRightImageUrl(r) {{
+    if (!r || !b(r.colnect_id) || !b(r.page_url)) return;
+    if (b(r.image_abs) || b(r.image_url)) return;
+
+    const key = String(r.colnect_id);
+    if (key in resolvedRightImageById) {{
+        r.image_url = resolvedRightImageById[key] || '';
+        return;
+    }}
+    if (resolvingRightImageById[key]) return;
+
+    resolvingRightImageById[key] = true;
+    try {{
+        const res = await fetch(`/resolve-colnect-image?page_url=${{encodeURIComponent(r.page_url)}}`);
+        const j = await res.json();
+        const url = (j && j.ok && b(j.image_url)) ? String(j.image_url) : '';
+        resolvedRightImageById[key] = url;
+        r.image_url = url;
+
+        const current = currentRightCandidate();
+        if (current && String(current.colnect_id) === key) {{
+            render();
+        }}
+    }} catch (_) {{
+        resolvedRightImageById[key] = '';
+    }} finally {{
+        delete resolvingRightImageById[key];
+    }}
 }}
 
 function dismissStartGuide() {{
@@ -1623,6 +1692,7 @@ function render() {{
 
   const key = String(l.rowid);
   document.getElementById('rightPos').innerText = `Candidate ${{(rightIdxByLeft[key] || 0) + 1}}/${{avail.length}}`;
+    ensureRightImageUrl(r);
   const rightImg = b(r.image_abs) ? `/image?path=${{encodeURIComponent(r.image_abs)}}` : r.image_url;
     const catPairs = (r.catalog_code_pairs || []).map(p =>
         `<option value='${{html(p.code)}}'>${{html(p.catalog_type)}}: ${{html(p.code)}}</option>`
@@ -2909,6 +2979,14 @@ pub fn run_review_ui(
     eprintln!("Review UI: preparing data from {}", db_path);
     eprintln!("Review UI: opening database...");
     let conn = crate::db_utils::init_db(db_path)?;
+    let _ = conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_stamps_review_sg_year ON stamps (sg_number, year)",
+        [],
+    );
+    let _ = conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_colnect_review_queue ON colnect_stamps (is_deleted, is_processed, issued_on, sg_number)",
+        [],
+    );
     eprintln!("Review UI: syncing processed Colnect candidates...");
     sync_processed_colnect_candidates(&conn)?;
 
@@ -3006,6 +3084,28 @@ pub fn run_review_ui(
                     let _ = request.respond(Response::empty(StatusCode(500)));
                 }
             }
+            continue;
+        }
+
+        if method == Method::Get && req_url.starts_with("/resolve-colnect-image?") {
+            let Some(page_url) = parse_query_param(&req_url, "page_url") else {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            };
+
+            let image_url = crate::colnect::image_fetcher::resolve_colnect_image_url(&page_url)
+                .unwrap_or_default();
+            let resp_json = serde_json::json!({
+                "ok": !image_url.trim().is_empty(),
+                "image_url": image_url,
+            })
+            .to_string();
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
             continue;
         }
 
