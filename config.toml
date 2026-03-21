@@ -289,5 +289,5 @@ default_context_checked = false
 default_colnect_links_checked = true
 default_colnect_image_url_checked = true
 default_colnect_metadata_checked = true
-default_replace_sg_number_checked = false
+default_replace_sg_number_checked = true
 default_right_unmatched_only_checked = false
