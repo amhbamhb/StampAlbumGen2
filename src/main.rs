@@ -65,6 +65,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             review_cfg.review_ui_colnect_metadata_default_checked(),
             review_cfg.review_ui_replace_sg_number_default_checked(),
             review_cfg.review_ui_right_unmatched_only_default_checked(),
+            review_cfg.albumeasy_auto_pdf_enabled(),
+            review_cfg.effective_albumeasy_cli_path().is_some(),
         )?;
         return Ok(());
     }

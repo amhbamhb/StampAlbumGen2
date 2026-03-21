@@ -134,6 +134,8 @@ struct MatcherPayload {
     colnect_metadata_default_checked: bool,
     replace_sg_number_default_checked: bool,
     right_unmatched_only_default_checked: bool,
+    albumeasy_auto_generate_pdf_default: bool,
+    albumeasy_cli_configured: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -2257,6 +2259,8 @@ pub fn run_review_ui(
     colnect_metadata_default_checked: bool,
     replace_sg_number_default_checked: bool,
     right_unmatched_only_default_checked: bool,
+    albumeasy_auto_generate_pdf_default: bool,
+    albumeasy_cli_configured: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let conn = crate::db_utils::init_db(db_path)?;
     sync_processed_colnect_candidates(&conn)?;
@@ -2296,6 +2300,8 @@ pub fn run_review_ui(
         colnect_metadata_default_checked,
         replace_sg_number_default_checked,
         right_unmatched_only_default_checked,
+        albumeasy_auto_generate_pdf_default,
+        albumeasy_cli_configured,
     };
     let html = render_html(&payload);
 
