@@ -107,24 +107,6 @@ pub struct Config {
     // Vertical space before and after stamp details in separate_rows mode
     // Default: 2.0
     pub stamp_detail_vspace: Option<f64>,
-    // Box border color for detail boxes in separate_rows mode
-    // Default: "blue"
-    pub page_box_border_color: Option<String>,
-    // Box text color for detail boxes in separate_rows mode
-    // Default: "blue"
-    pub page_box_text_color: Option<String>,
-    // Box background color for detail boxes in separate_rows mode
-    // Default: "white"
-    pub page_box_background_color: Option<String>,
-    // Font for PAGE_ADD_BOX detail boxes
-    // Default: "HN" (Helvetica Normal)
-    pub page_box_font: Option<String>,
-    // Font size for PAGE_ADD_BOX detail boxes
-    // Default: 8
-    pub page_box_font_size: Option<u8>,
-    // Border width for PAGE_ADD_BOX detail boxes
-    // Default: 0.1
-    pub page_box_border_width: Option<f64>,
     // Allow overriding maximum rows per page when header is larger
     pub max_rows_per_page: Option<usize>,
     // Maximum PAGE_VSPACE (mm) the centering postprocessor is allowed to emit.
@@ -354,10 +336,6 @@ pub struct ColnectConfig {
     // Optional per-field boolean toggles. When at least one toggle is set,
     // this map takes precedence over `detail_fields`.
     pub fields: Option<ColnectFieldToggles>,
-    // Colnect detail placement mode.
-    // - "detail_box" (default): separate PAGE_ADD_BOX blocks under stamps
-    // - "inside_stamp": include Colnect text in STAMP_ADD_IMG text fields
-    pub details_placement: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
@@ -696,20 +674,6 @@ impl Config {
             .filter(|s| !s.is_empty())
             .map(|s| s.to_string())
             .collect()
-    }
-
-    /// Effective Colnect detail placement mode.
-    pub fn colnect_details_placement(&self) -> &str {
-        self.colnect
-            .as_ref()
-            .and_then(|c| c.details_placement.as_deref())
-            .unwrap_or("detail_box")
-    }
-
-    /// True when Colnect details should be rendered inside stamp text fields
-    /// instead of separate PAGE_ADD_BOX blocks.
-    pub fn colnect_details_inside_stamp(&self) -> bool {
-        matches!(self.colnect_details_placement(), "inside_stamp" | "inline")
     }
 
     pub fn review_ui_odd_row_color(&self) -> &str {

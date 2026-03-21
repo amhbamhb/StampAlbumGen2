@@ -79,14 +79,6 @@ stamp_detail_layout = "separate_rows"
 stamp_detail_font_size = 6
 stamp_detail_vspace = 3.5
 
-# Detail box style (used when detail-box mode is active)
-page_box_border_color = "white"
-page_box_text_color = "black"
-page_box_background_color = "white"
-page_box_font = "HN"
-page_box_font_size = 6
-page_box_border_width = 0.1
-
 # Large-stamp behavior
 allow_single_large_stamp_per_page = true
 single_stamp_threshold_pct = 0.7
@@ -248,11 +240,6 @@ albumeasy_auto_generate_pdf = true
 [colnect]
 # Master toggle for Colnect-derived metadata
 include_details = true
-
-# Placement mode:
-# - detail_box: separate PAGE_ADD_BOX blocks
-# - inside_stamp: include details in STAMP_ADD_IMG text fields
-details_placement = "detail_box"
 
 # Fallback comma-list field selection
 # Available: catalog_codes, issued_on, expiry_date, size, themes, printing,
