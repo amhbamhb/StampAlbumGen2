@@ -1,5 +1,4 @@
 use image::io::Reader as ImageReader;
-use std::path::PathBuf;
 
 #[test]
 fn placeholder_series_size_matches_hint() {

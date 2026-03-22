@@ -1,96 +1,90 @@
 use rusqlite::Connection;
 use stamp_album_gen2::album_globals::generate_album_output_conn;
-use stamp_album_gen2::db_utils::{init_db, insert_stamp};
+use stamp_album_gen2::db_utils::init_db;
+
+fn insert_fixture_stamp(
+    conn: &Connection,
+    year: i32,
+    month: &str,
+    month_num: i32,
+    day: &str,
+    sg_number: &str,
+    denomination: &str,
+    color: &str,
+    description: &str,
+    image_path: &str,
+) {
+    let uniq_key = format!("testcountry|Example Series|{}", sg_number);
+    conn.execute(
+        "INSERT INTO stamps (
+            country, series, year, month, month_num, day, sg_number, catalog_code,
+            type, denomination, color, description, stamps_issued, mint_condition,
+            unused, used, letter_fdc, currency, image_path, remote_image_url,
+            original_image_url, watermark, design, engraving, perforation, context,
+            uniq_key
+        ) VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?6, ?7, '', ?8, ?9, ?10, ?11, '',
+            'Mint', '', '', '', 'USD', ?12, '', '', 'WM', 'Design',
+            'Engraving', '11', 'ctx', ?13
+        )",
+        rusqlite::params![
+            "TestCountry",
+            "Example Series",
+            year,
+            month,
+            month_num,
+            day,
+            sg_number,
+            "Postage",
+            denomination,
+            color,
+            description,
+            image_path,
+            uniq_key,
+        ],
+    )
+    .expect("insert fixture stamp");
+}
 
 // Helper: create an in-memory DB and populate with a few stamps across years
 fn populate_test_db() -> Connection {
     // Use a temporary on-disk DB so init_db migrations run the same path
     let conn = init_db(":memory:").expect("init in-memory db");
-    // Insert sample series and stamps
-    // Use insert_stamp to populate full rows
-    let _ = insert_stamp(
+    insert_fixture_stamp(
         &conn,
-        "TestCountry",
-        "Example Series",
         1975,
-        "Jan",
+        "January",
+        1,
         "1",
-        "1",
-        "A1",
-        "Postage",
+        "1001",
         "1p",
         "Red",
         "Desc 1975",
-        "",
-        "Mint",
-        "",
-        "",
-        "",
-        "USD",
         "images/1975.jpg",
-        "",
-        "",
-        "WM",
-        "Design",
-        "Engraving",
-        "11",
-        "ctx",
     );
-    let _ = insert_stamp(
+    insert_fixture_stamp(
         &conn,
-        "TestCountry",
-        "Example Series",
         1976,
-        "Feb",
+        "February",
+        2,
         "2",
-        "2",
-        "A2",
-        "Postage",
+        "1002",
         "2p",
         "Blue",
         "Desc 1976",
-        "",
-        "Mint",
-        "",
-        "",
-        "",
-        "USD",
         "images/1976.jpg",
-        "",
-        "",
-        "WM",
-        "Design",
-        "Engraving",
-        "11",
-        "ctx",
     );
-    let _ = insert_stamp(
+    insert_fixture_stamp(
         &conn,
-        "TestCountry",
-        "Example Series",
         1977,
-        "Mar",
+        "March",
+        3,
         "3",
-        "3",
-        "A3",
-        "Postage",
+        "1003",
         "3p",
         "Green",
         "Desc 1977",
-        "",
-        "Mint",
-        "",
-        "",
-        "",
-        "USD",
         "images/1977.jpg",
-        "",
-        "",
-        "WM",
-        "Design",
-        "Engraving",
-        "11",
-        "ctx",
     );
     conn
 }
@@ -99,58 +93,28 @@ fn populate_test_db() -> Connection {
 fn test_generate_album_filters_by_year_exact() {
     let conn = populate_test_db();
     // Generate album output restricted to 1976 only
-    generate_album_output_conn(
+    let output_path = generate_album_output_conn(
         &conn,
         "Example Series",
         Some(|_p| {}),
         Some(1976),
         Some(1976),
     );
-    // Re-run but capture output by writing to file created by generator; easier to assert
-    // The generator writes to Albums/{Album}/{Album}-1976-1976.txt — read that file
-    let path = format!(
-        "Albums/{}/{}-1976-1976.txt",
-        "Example Series".replace(' ', "-"),
-        "Example Series".replace(' ', "-")
-    );
-    let contents = std::fs::read_to_string(&path).expect("read output file");
-    // Should contain only the 1976 stamp (A2) and exclude 1975/1977 (A1/A3).
-    assert!(contents.contains("Scott : A2"));
-    assert!(!contents.contains("Scott : A1"));
-    assert!(!contents.contains("Scott : A3"));
+    let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
+    // Should contain only the 1976 stamp (1002) and exclude 1975/1977 (1001/1003).
+    assert!(contents.contains("Scott : 1002"));
+    assert!(!contents.contains("Scott : 1001"));
+    assert!(!contents.contains("Scott : 1003"));
 }
 
 #[test]
 fn test_generate_album_filters_by_year_open_ended() {
     let conn = populate_test_db();
     // start=1976, end=None -> include 1976 and 1977
-    generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None);
-    // The generator may resolve an inferred end-year from DB max(year), so
-    // accept both explicit and inferred ranged filenames.
-    let ranged_inferred = format!(
-        "Albums/{}/{}-1976-1977.txt",
-        "Example Series".replace(' ', "-"),
-        "Example Series".replace(' ', "-")
-    );
-    let ranged_legacy = format!(
-        "Albums/{}/{}-1976-9999.txt",
-        "Example Series".replace(' ', "-"),
-        "Example Series".replace(' ', "-")
-    );
-    let default = format!(
-        "Albums/{}/{}.txt",
-        "Example Series".replace(' ', "-"),
-        "Example Series".replace(' ', "-")
-    );
-    let path = if std::path::Path::new(&ranged_inferred).exists() {
-        ranged_inferred
-    } else if std::path::Path::new(&ranged_legacy).exists() {
-        ranged_legacy
-    } else {
-        default
-    };
-    let contents = std::fs::read_to_string(&path).expect("read output file");
-    assert!(contents.contains("Scott : A2"));
-    assert!(contents.contains("Scott : A3"));
-    assert!(!contents.contains("Scott : A1"));
+    let output_path =
+        generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None);
+    let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
+    assert!(contents.contains("Scott : 1002"));
+    assert!(contents.contains("Scott : 1003"));
+    assert!(!contents.contains("Scott : 1001"));
 }

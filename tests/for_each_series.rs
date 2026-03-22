@@ -1,31 +1,17 @@
-use rusqlite::Connection;
 use stamp_album_gen2::album_globals::generator_new;
 
 #[test]
 fn test_for_each_series_basic() {
-    let conn = Connection::open_in_memory().expect("open");
-    conn.execute_batch(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            country TEXT,
-            series TEXT,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT
-        )",
-    )
-    .unwrap();
+    let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open");
 
     conn.execute(
-        "INSERT INTO stamps (series, year, sg_number) VALUES (?1, ?2, ?3)",
-        rusqlite::params!["S1", 1950, "1"],
+        "INSERT INTO stamps (country, series, year, sg_number, uniq_key) VALUES (?1, ?2, ?3, ?4, ?5)",
+        rusqlite::params!["TestCountry", "S1", 1950, "1", "testcountry|S1|1"],
     )
     .unwrap();
     conn.execute(
-        "INSERT INTO stamps (series, year, sg_number) VALUES (?1, ?2, ?3)",
-        rusqlite::params!["S2", 1951, "1"],
+        "INSERT INTO stamps (country, series, year, sg_number, uniq_key) VALUES (?1, ?2, ?3, ?4, ?5)",
+        rusqlite::params!["TestCountry", "S2", 1951, "1", "testcountry|S2|1"],
     )
     .unwrap();
 

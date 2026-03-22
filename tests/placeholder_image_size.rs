@@ -1,5 +1,4 @@
 use image::io::Reader as ImageReader;
-use std::path::PathBuf;
 
 #[test]
 fn placeholder_per_stamp_has_expected_dimensions() {

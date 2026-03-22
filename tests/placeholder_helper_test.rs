@@ -1,4 +1,3 @@
-use rusqlite::Connection;
 use std::path::Path;
 use tempfile::tempdir;
 
@@ -30,21 +29,15 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
     let td = tempdir().expect("create tempdir");
     let _guard = CwdGuard::chdir_to(td.path());
 
-    // Prepare an in-memory SQLite DB and create a minimal `stamps` table
-    let conn = Connection::open_in_memory().expect("open in-memory db");
-    conn.execute(
-        "CREATE TABLE stamps (country TEXT, series TEXT, sg_number TEXT, image_width_px INTEGER, image_height_px INTEGER, issue_location TEXT, quantity_printed TEXT)",
-        [],
-    )
-    .expect("create stamps table");
+    let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open in-memory db");
 
     // Insert a row that should be updated by the helper
     let album_name = "TestAlbum";
     let series_name = "SeriesX";
     let sg_number = "123";
     conn.execute(
-        "INSERT INTO stamps (country, series, sg_number, image_width_px, image_height_px) VALUES (?1, ?2, ?3, NULL, NULL)",
-        rusqlite::params![album_name, series_name, sg_number],
+        "INSERT INTO stamps (country, series, sg_number, image_width_px, image_height_px, uniq_key) VALUES (?1, ?2, ?3, NULL, NULL, ?4)",
+        rusqlite::params![album_name, series_name, sg_number, "testalbum|SeriesX|123"],
     )
     .expect("insert stub");
 

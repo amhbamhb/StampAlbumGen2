@@ -42,7 +42,7 @@ page_fit_conservative_buffer_mm = 11.0
     let db_path_str = db_path.to_string_lossy().to_string();
     let conn = stamp_album_gen2::db_utils::init_db(&db_path_str).expect("init db");
     let series_name = "RegressionSeries";
-    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, currency, context, mint_condition, unused, used, letter_fdc) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)";
+    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, currency, context, mint_condition, unused, used, letter_fdc, uniq_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)";
     let params = rusqlite::params![
         "TestCountry",
         series_name,
@@ -68,7 +68,8 @@ page_fit_conservative_buffer_mm = 11.0
         "",
         "",
         "",
-        ""
+        "",
+        "testcountry|RegressionSeries|1"
     ];
     conn.execute(insert_sql, params).expect("insert stamp1");
     let params2 = rusqlite::params![
@@ -96,7 +97,8 @@ page_fit_conservative_buffer_mm = 11.0
         "",
         "",
         "",
-        ""
+        "",
+        "testcountry|RegressionSeries|2"
     ];
     conn.execute(insert_sql, params2).expect("insert stamp2");
 

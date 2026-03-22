@@ -1,6 +1,6 @@
-use rusqlite::Connection;
 use stamp_album_gen2::db_utils::{
-    insert_stamp, migrate_fix_block_metadata, sort_stampstubs_inplace, StampStub,
+    init_db, insert_stamp, insert_stamp_placeholder, migrate_fix_block_metadata,
+    sort_stampstubs_inplace, StampStub,
 };
 
 fn make_stub(sg: &str, year: i32) -> StampStub {
@@ -58,42 +58,7 @@ fn test_numeric_prefix_ordering() {
 
 #[test]
 fn test_insert_stamp_backfill() {
-    let conn = Connection::open_in_memory().expect("open in memory");
-    conn.execute(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            country TEXT,
-            series TEXT,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT,
-            currency TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            original_image_url TEXT,
-            image_width_px INTEGER,
-            image_height_px INTEGER,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            context TEXT,
-            uniq_key TEXT
-        )",
-        [],
-    )
-    .unwrap();
+    let conn = init_db(":memory:").expect("open in memory");
 
     conn.execute("INSERT INTO stamps (country, series, sg_number, description, uniq_key) VALUES (?1,?2,?3,?4,?5)", rusqlite::params!["X","S","1","Existing desc","x|s|1"]).unwrap();
 
@@ -145,43 +110,25 @@ fn test_insert_stamp_backfill() {
 }
 
 #[test]
+fn test_insert_stamp_placeholder_allows_distinct_sg_numbers() {
+    let conn = init_db(":memory:").expect("open in memory");
+
+    assert!(insert_stamp_placeholder(&conn, "X", "S", 1970, "1").unwrap());
+    assert!(insert_stamp_placeholder(&conn, "X", "S", 1970, "2").unwrap());
+
+    let count: i64 = conn
+        .query_row(
+            "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND series = ?2",
+            rusqlite::params!["X", "S"],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(count, 2);
+}
+
+#[test]
 fn test_migrate_fix_block_metadata_basic() {
-    let conn = Connection::open_in_memory().expect("open in memory");
-    conn.execute(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            country TEXT,
-            series TEXT,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT,
-            currency TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            original_image_url TEXT,
-            image_width_px INTEGER,
-            image_height_px INTEGER,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            context TEXT,
-            uniq_key TEXT
-        )",
-        [],
-    )
-    .unwrap();
+    let conn = init_db(":memory:").expect("open in memory");
 
     let bad_block =
         "Design: Herman Herbert Schwartz\nEngraving: Herman Herbert Schwartz\nPerforation: 12";

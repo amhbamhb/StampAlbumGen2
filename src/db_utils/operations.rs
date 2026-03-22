@@ -135,6 +135,7 @@ pub fn insert_stamp(
     } else {
         String::new()
     };
+    let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
 
     // Normalize stamps_issued: if dots are used as thousand separators and no commas are present, replace them with commas
     let mut stamps_issued_normalized = stamps_issued.trim().to_string();
@@ -440,7 +441,7 @@ pub fn insert_stamp(
     }
 
     // Stamp does not exist; insert new record
-    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, stampworld_image_url, colnect_page_url, colnect_image_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28)";
+    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key, stampworld_image_url, colnect_page_url, colnect_image_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29)";
     let month_num: i32 = _month_num.parse().unwrap_or(0);
     match conn.execute(
         insert_sql,
@@ -470,6 +471,7 @@ pub fn insert_stamp(
             engraving,
             perforation,
             context,
+            uniq_key,
             inferred_stampworld_image_url,
             inferred_colnect_page_url,
             inferred_colnect_image_url
@@ -511,11 +513,12 @@ pub fn insert_stamp_placeholder(
         );
         return Ok(false);
     }
+    let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
     // Insert with a minimal non-NULL `type` so consumers (album generator)
     // that expect a text value do not panic. Also set description/context
     // to empty strings. We deliberately avoid touching image fields.
-    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '')";
-    match conn.execute(sql, params![country, series, year, sg_number]) {
+    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context, uniq_key) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '', ?5)";
+    match conn.execute(sql, params![country, series, year, sg_number, uniq_key]) {
         Ok(_) => {
             debug!(
                 "Inserted placeholder for {}|{}|{}",

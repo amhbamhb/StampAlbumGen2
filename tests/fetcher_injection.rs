@@ -1,6 +1,5 @@
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
-use stamp_album_gen2::stampworld::fetch::ReqwestFetcher;
 
 struct FakeFetcher;
 
