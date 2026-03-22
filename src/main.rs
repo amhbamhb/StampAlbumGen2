@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let review_cfg = config::load_config("config.toml");
 
-        let (db_path, album_name_opt): (String, Option<String>) =
+        let (db_path, album_name_opt, open_browser): (String, Option<String>, bool) =
             if cli.db_path.is_none() && cli.album_name.is_none() {
                 eprintln!(
                     "Review UI: no country/database selected on CLI; opening startup selector..."
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "Review UI: selected '{}' with database {}",
                     selected_country, selected_db
                 );
-                (selected_db, Some(selected_country))
+                (selected_db, Some(selected_country), false)
             } else {
                 let db_path = if let Some(path) = cli.db_path.clone() {
                     path
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     std::process::exit(1);
                 };
                 eprintln!("Review UI: using requested database {}", db_path);
-                (db_path, cli.album_name.clone())
+                (db_path, cli.album_name.clone(), true)
             };
 
         eprintln!("Review UI: loading compare data. This may take a few seconds...");
@@ -79,6 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &db_path,
             album_name_opt.as_deref(),
             cli.review_ui_bind.as_deref(),
+            open_browser,
             &review_cfg.effective_default_catalog_code(),
             review_cfg.review_ui_odd_row_color(),
             review_cfg.review_ui_even_row_color(),

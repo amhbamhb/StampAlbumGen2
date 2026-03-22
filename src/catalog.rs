@@ -50,17 +50,16 @@ pub fn parse_catalog_codes(raw: &str) -> Vec<(String, String)> {
         .collect()
 }
 
-pub fn preferred_catalog_entry(
-    raw: &str,
-    default_catalog_code: &str,
-) -> Option<(String, String)> {
+pub fn preferred_catalog_entry(raw: &str, default_catalog_code: &str) -> Option<(String, String)> {
     let pairs = parse_catalog_codes(raw);
     if pairs.is_empty() {
         return None;
     }
 
     let preferred = normalize_catalog_type(default_catalog_code);
-    if let Some((catalog_type, code)) = pairs.iter().find(|(catalog_type, _)| *catalog_type == preferred)
+    if let Some((catalog_type, code)) = pairs
+        .iter()
+        .find(|(catalog_type, _)| *catalog_type == preferred)
     {
         return Some((catalog_type.clone(), code.clone()));
     }

@@ -35,6 +35,14 @@ When a new issue, fix, bug, performance problem, or significant remediation task
 5. If GitLab authentication or API access is unavailable, state that clearly and continue on a descriptive branch name, then create/link the issue later once access is restored.
 6. When a branch already exists before the issue is created, rename the branch to include the issue number when practical.
 
+## Commit Quality Gate
+
+Before creating any commit, all relevant tests must pass.
+
+1. Run the project's relevant automated tests for the files/features changed.
+2. Do not commit if any test fails.
+3. If tests cannot be executed (environment/tooling issue), do not commit; report the blocker and required fix steps first.
+
 ## Development Test Logging
 
 When running development test commands (especially data-ingest flows), always

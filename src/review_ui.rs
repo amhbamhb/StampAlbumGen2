@@ -3022,6 +3022,7 @@ pub fn run_review_ui(
     db_path: &str,
     album_name_opt: Option<&str>,
     bind_addr_opt: Option<&str>,
+    open_browser: bool,
     default_catalog_code: &str,
     odd_row_color: &str,
     even_row_color: &str,
@@ -3107,8 +3108,12 @@ pub fn run_review_ui(
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);
-    eprintln!("Review UI: opening browser...");
-    let _ = webbrowser::open(&url);
+    if open_browser {
+        eprintln!("Review UI: opening browser...");
+        let _ = webbrowser::open(&url);
+    } else {
+        eprintln!("Review UI: waiting for bootstrap tab to load compare view...");
+    }
 
     for mut request in server.incoming_requests() {
         let method = request.method().clone();

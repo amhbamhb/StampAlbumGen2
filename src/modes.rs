@@ -374,8 +374,8 @@ fn run_colnect_inbox_mode(
             continue;
         }
 
-        let default_catalog_code = crate::config::load_config("config.toml")
-            .effective_default_catalog_code();
+        let default_catalog_code =
+            crate::config::load_config("config.toml").effective_default_catalog_code();
         match crate::colnect::ingest::ingest_colnect_data_with_mode(
             &conn,
             &stamps,
@@ -712,7 +712,8 @@ fn sync_missing_stamps_from_colnect(
     let remapped = remap_colnect_sg_to_existing_stamps(conn)?;
     let links_backfilled = backfill_colnect_links_on_existing_stamps(conn)?;
 
-    let default_catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
+    let default_catalog_code =
+        crate::config::load_config("config.toml").effective_default_catalog_code();
 
     // Insert missing Colnect rows into stamps using year+catalog key dedupe.
     // Keep existing StampWorld rows and only add missing variants.
@@ -776,7 +777,7 @@ fn sync_missing_stamps_from_colnect(
               WHERE s.sg_number = colnect_stamps.sg_number
                 AND s.year = CAST(substr(colnect_stamps.issued_on, 1, 4) AS INTEGER)
                     )",
-                rusqlite::params![default_catalog_code],
+        rusqlite::params![default_catalog_code],
     )?;
 
     info!(
@@ -932,15 +933,15 @@ pub fn run_database_mode(
         progress.set_message(&format!("📥 Ingesting Colnect CSV: {}", csv_path));
         match crate::colnect::parser::parse_csv(csv_path) {
             Ok(stamps) => {
-                let default_catalog_code = crate::config::load_config("config.toml")
-                    .effective_default_catalog_code();
-                match crate::colnect::ingest::ingest_colnect_data(
+                let default_catalog_code =
+                    crate::config::load_config("config.toml").effective_default_catalog_code();
+                match crate::colnect::ingest::ingest_colnect_data_with_default_catalog(
                     &conn,
                     &stamps,
                     &default_catalog_code,
                 ) {
-                Ok(_) => info!("✅ Successfully ingested Colnect data"),
-                Err(e) => error!("❌ Failed to ingest Colnect data: {}", e),
+                    Ok(_) => info!("✅ Successfully ingested Colnect data"),
+                    Err(e) => error!("❌ Failed to ingest Colnect data: {}", e),
                 }
             }
             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
@@ -1318,9 +1319,10 @@ pub fn run_scraping_mode(
                         progress.set_message(&format!("📥 Ingesting Colnect CSV: {}", csv_path));
                         match crate::colnect::parser::parse_csv(csv_path) {
                             Ok(stamps) => {
-                                let default_catalog_code = crate::config::load_config("config.toml")
-                                    .effective_default_catalog_code();
-                                match crate::colnect::ingest::ingest_colnect_data(
+                                let default_catalog_code =
+                                    crate::config::load_config("config.toml")
+                                        .effective_default_catalog_code();
+                                match crate::colnect::ingest::ingest_colnect_data_with_default_catalog(
                                     &conn,
                                     &stamps,
                                     &default_catalog_code,

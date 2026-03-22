@@ -797,10 +797,10 @@ impl Config {
             .unwrap_or("auto")
         {
             "" => String::new(),
-            label if label.eq_ignore_ascii_case("auto") => crate::catalog::catalog_display_name(
-                &self.effective_default_catalog_code(),
-            )
-            .to_string(),
+            label if label.eq_ignore_ascii_case("auto") => {
+                crate::catalog::catalog_display_name(&self.effective_default_catalog_code())
+                    .to_string()
+            }
             label => label.to_string(),
         }
     }

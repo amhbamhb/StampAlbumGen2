@@ -336,7 +336,8 @@ pub fn fetch_and_filter_stamps(
     start_year: Option<i32>,
     end_year: Option<i32>,
 ) -> SqlResult<Vec<Stamp>> {
-    let default_catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
+    let default_catalog_code =
+        crate::config::load_config("config.toml").effective_default_catalog_code();
     // Fast path: when a single target year is requested, ask the DB helper
     // for that year directly to avoid loading full-series history.
     let mut stamps = if let (Some(sy), Some(ey)) = (start_year, end_year) {
@@ -491,7 +492,9 @@ pub fn fetch_and_filter_stamps(
                     );
                     attrs.set("catalog_code", &catalog_type);
                     if catalog_type == "sn"
-                        && attrs.get("scott_number").map_or(true, |v| v.trim().is_empty())
+                        && attrs
+                            .get("scott_number")
+                            .map_or(true, |v| v.trim().is_empty())
                     {
                         attrs.set(
                             "scott_number",

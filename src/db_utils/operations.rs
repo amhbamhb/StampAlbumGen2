@@ -253,7 +253,6 @@ pub fn insert_stamp(
         let mut update_needed = false;
         let mut update_sql = "UPDATE stamps SET ".to_string();
         let mut params_vec = Vec::new();
-        let mut param_count = 0;
 
         macro_rules! add_update_if_missing {
             ($field:expr, $existing:expr, $new_val:expr) => {
@@ -261,9 +260,8 @@ pub fn insert_stamp(
                     if update_needed {
                         update_sql.push_str(", ");
                     }
-                    update_sql.push_str(&format!("{} = ?{}", $field, param_count + 1));
+                    update_sql.push_str(&format!("{} = ?{}", $field, params_vec.len() + 1));
                     params_vec.push($new_val.to_string());
-                    param_count += 1;
                     update_needed = true;
                 }
             };
@@ -277,9 +275,8 @@ pub fn insert_stamp(
             if update_needed {
                 update_sql.push_str(", ");
             }
-            update_sql.push_str(&format!("image_path = ?{}", param_count + 1));
+            update_sql.push_str(&format!("image_path = ?{}", params_vec.len() + 1));
             params_vec.push(image_path.to_string());
-            param_count += 1;
             update_needed = true;
         }
 
@@ -293,9 +290,8 @@ pub fn insert_stamp(
             if update_needed {
                 update_sql.push_str(", ");
             }
-            update_sql.push_str(&format!("remote_image_url = ?{}", param_count + 1));
+            update_sql.push_str(&format!("remote_image_url = ?{}", params_vec.len() + 1));
             params_vec.push(remote_image_url.to_string());
-            param_count += 1;
             update_needed = true;
         }
 

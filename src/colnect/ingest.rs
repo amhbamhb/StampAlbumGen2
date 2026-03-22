@@ -3,7 +3,11 @@ use log::info;
 use regex::Regex;
 use rusqlite::{params, Connection, Result};
 
-pub fn ingest_colnect_data(
+pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result<()> {
+    ingest_colnect_data_with_default_catalog(conn, stamps, "sg")
+}
+
+pub fn ingest_colnect_data_with_default_catalog(
     conn: &Connection,
     stamps: &[ColnectStamp],
     default_catalog_code: &str,
@@ -38,13 +42,11 @@ pub fn ingest_colnect_data_with_mode(
 
     let mut count = 0;
     for stamp in stamps {
-        let catalog_number = crate::catalog::preferred_catalog_number(
-            &stamp.catalog_codes,
-            default_catalog_code,
-        )
-        .unwrap_or_else(|| {
-                extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone())
-        });
+        let catalog_number =
+            crate::catalog::preferred_catalog_number(&stamp.catalog_codes, default_catalog_code)
+                .unwrap_or_else(|| {
+                    extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone())
+                });
 
         // Use Colnect code as ID, fallback to Link
         let colnect_id =
@@ -315,16 +317,6 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
         linked_count
     );
     Ok(())
-}
-
-fn extract_catalog_code(codes: &str, key: &str) -> Option<String> {
-        let target = crate::catalog::normalize_catalog_type(key);
-        for (catalog_type, code) in crate::catalog::parse_catalog_codes(codes) {
-            if catalog_type == target {
-                return Some(code);
-        }
-    }
-    None
 }
 
 fn extract_colnect_code(codes: &str) -> Option<String> {
