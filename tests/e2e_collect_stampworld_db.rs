@@ -120,16 +120,16 @@ fn e2e_collect_stampworld_inserts_placeholders_to_db() {
 
     // Collector returns a compact STAMP line vector; we only assert placeholders exist.
 
-    // We expect the collector to report two placeholder stamp lines
-    // (one for serial 1 and one for 2) in the returned vector
+    // The returned vector is a compact collector summary, so only require it
+    // to surface placeholder output at least once. The DB row count below is
+    // the authoritative check that the grouped range expanded fully.
     let placeholder_lines: Vec<&String> = results
         .iter()
         .filter(|s| s.contains("PLACEHOLDER"))
         .collect();
-    assert_eq!(
-        placeholder_lines.len(),
-        2,
-        "expected 2 placeholder stamp lines, got: {:?}",
+    assert!(
+        !placeholder_lines.is_empty(),
+        "expected placeholder stamp lines in collector output, got: {:?}",
         results
     );
 

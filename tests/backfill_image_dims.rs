@@ -23,13 +23,14 @@ fn backfill_image_dimensions_persists_to_db() -> Result<(), Box<dyn std::error::
     let conn = stamp_album_gen2::db_utils::init_db(db_path_str)?;
 
     conn.execute(
-        "INSERT INTO stamps (country, series, year, sg_number, image_path) VALUES (?1,?2,?3,?4,?5)",
+        "INSERT INTO stamps (country, series, year, sg_number, image_path, uniq_key) VALUES (?1,?2,?3,?4,?5,?6)",
         params![
             "Switzerland",
             "TestSeries",
             1976,
             "1063",
-            "images/test_img.png"
+            "images/test_img.png",
+            "switzerland|TestSeries|1063"
         ],
     )?;
 

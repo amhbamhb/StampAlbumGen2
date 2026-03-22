@@ -120,6 +120,7 @@ struct CatalogCodePair {
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
+    default_catalog_code: String,
     odd_row_color: String,
     even_row_color: String,
     series_default_checked: bool,
@@ -169,6 +170,7 @@ struct SelectedMatch {
     left_rowid: i64,
     colnect_id: String,
     selected_catalog_code: Option<String>,
+    selected_catalog_type: Option<String>,
     width: Option<String>,
     height: Option<String>,
 }
@@ -656,7 +658,22 @@ async function startReview() {{
         stopLoadingPhases();
         document.getElementById('loadingText').innerText = 'Launching compare view...';
         document.getElementById('status').innerText = j.message || 'Launching review...';
-        setTimeout(() => {{ window.location.href = '/'; }}, 1000);
+        // Poll /compare-ready until the review UI server is accepting requests,
+        // then redirect. This avoids a race between data loading and the redirect.
+        (async function pollReady() {{
+            for (let attempt = 0; attempt < 60; attempt++) {{
+                await new Promise(r => setTimeout(r, 500));
+                try {{
+                    const rdy = await fetch('/compare-ready');
+                    if (rdy.ok) {{
+                        window.location.href = '/';
+                        return;
+                    }}
+                }} catch (_) {{}}
+            }}
+            // Fallback after 30 s: redirect anyway
+            window.location.href = '/';
+        }})();
     }} catch (e) {{
         setBusy(false, '');
         document.getElementById('status').innerText = `Failed to start: ${{e}}`;
@@ -1064,23 +1081,8 @@ fn apply_matches(
     fields: FieldSelection,
     right_map: &HashMap<String, RightCandidate>,
 ) -> ApplyMatchesResponse {
-    fn normalize_catalog_code(raw: &str) -> String {
-        let mut s = raw.trim().to_string();
-        if let Some((_, rest)) = s.split_once(':') {
-            s = rest.trim().to_string();
-        }
-        let mut parts = s.split_whitespace();
-        if let Some(first) = parts.next() {
-            if first.len() == 2 && first.chars().all(|c| c.is_ascii_alphabetic()) {
-                let rest = s[first.len()..].trim_start();
-                if !rest.is_empty() {
-                    return rest.to_string();
-                }
-            }
-        }
-        s
-    }
-
+    let default_catalog_code =
+        crate::config::load_config("config.toml").effective_default_catalog_code();
     let mut updated_rows = 0usize;
     let mut skipped_rows = 0usize;
     let mut processed_colnect_ids = Vec::new();
@@ -1093,64 +1095,77 @@ fn apply_matches(
         };
 
         let selected_catalog_code =
-            normalize_catalog_code(&m.selected_catalog_code.unwrap_or_default());
+            crate::catalog::normalize_catalog_number(&m.selected_catalog_code.unwrap_or_default());
+        let selected_catalog_type = m
+            .selected_catalog_type
+            .as_deref()
+            .map(crate::catalog::normalize_catalog_type)
+            .unwrap_or_else(|| {
+                crate::catalog::infer_catalog_type_for_number(
+                    &c.catalog_codes_text,
+                    &selected_catalog_code,
+                    &default_catalog_code,
+                )
+            });
         let selected_width = m.width.as_deref().unwrap_or(c.width.as_str());
         let selected_height = m.height.as_deref().unwrap_or(c.height.as_str());
 
         let res = conn.execute(
             "UPDATE stamps
              SET sg_number = CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?2 ELSE sg_number END,
-                 series = CASE WHEN ?3 = 1 AND ?4 != '' THEN ?4 ELSE series END,
+                 catalog_code = CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?3 ELSE catalog_code END,
+                      series = CASE WHEN ?4 = 1 AND ?5 != '' THEN ?5 ELSE series END,
                  uniq_key = lower(coalesce(country,'')) || '|' ||
-                            CASE WHEN ?3 = 1 AND ?4 != '' THEN ?4 ELSE coalesce(series,'') END || '|' ||
+                                     CASE WHEN ?4 = 1 AND ?5 != '' THEN ?5 ELSE coalesce(series,'') END || '|' ||
                             CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?2 ELSE coalesce(sg_number,'') END,
-                 description = CASE WHEN ?5 = 1 AND ?6 != '' THEN ?6 ELSE description END,
-                 watermark = CASE WHEN ?7 = 1 AND ?8 != '' THEN ?8 ELSE watermark END,
-                 design = CASE WHEN ?9 = 1 AND ?10 != '' THEN ?10 ELSE design END,
-                 engraving = CASE WHEN ?11 = 1 AND ?12 != '' THEN ?12 ELSE engraving END,
-                 perforation = CASE WHEN ?13 = 1 AND ?14 != '' THEN ?14 ELSE perforation END,
-                 context = CASE WHEN ?15 = 1 AND ?16 != '' THEN ?16 ELSE context END,
-                 colnect_page_url = CASE WHEN ?17 = 1 AND ?18 != '' THEN ?18 ELSE colnect_page_url END,
-                 original_image_url = CASE WHEN ?17 = 1 AND ?18 != '' THEN ?18 ELSE original_image_url END,
-                 colnect_image_url = CASE WHEN ?19 = 1 AND ?20 != '' THEN ?20 ELSE colnect_image_url END,
+                      description = CASE WHEN ?6 = 1 AND ?7 != '' THEN ?7 ELSE description END,
+                      watermark = CASE WHEN ?8 = 1 AND ?9 != '' THEN ?9 ELSE watermark END,
+                      design = CASE WHEN ?10 = 1 AND ?11 != '' THEN ?11 ELSE design END,
+                      engraving = CASE WHEN ?12 = 1 AND ?13 != '' THEN ?13 ELSE engraving END,
+                      perforation = CASE WHEN ?14 = 1 AND ?15 != '' THEN ?15 ELSE perforation END,
+                      context = CASE WHEN ?16 = 1 AND ?17 != '' THEN ?17 ELSE context END,
+                      colnect_page_url = CASE WHEN ?18 = 1 AND ?19 != '' THEN ?19 ELSE colnect_page_url END,
+                      original_image_url = CASE WHEN ?18 = 1 AND ?19 != '' THEN ?19 ELSE original_image_url END,
+                      colnect_image_url = CASE WHEN ?20 = 1 AND ?21 != '' THEN ?21 ELSE colnect_image_url END,
                  remote_image_url = CASE
-                    WHEN (?19 = 1) AND (?20 != '') AND (TRIM(COALESCE(remote_image_url, '')) = '' OR remote_image_url LIKE '%colnect.com/stamps/stamp/%') THEN ?20
+                          WHEN (?20 = 1) AND (?21 != '') AND (TRIM(COALESCE(remote_image_url, '')) = '' OR remote_image_url LIKE '%colnect.com/stamps/stamp/%') THEN ?21
                     ELSE remote_image_url
                  END,
-                 colnect_id = CASE WHEN ?21 = 1 THEN ?22 ELSE colnect_id END,
-                 colnect_name = CASE WHEN ?21 = 1 THEN ?23 ELSE colnect_name END,
-                 colnect_catalog_codes = CASE WHEN ?21 = 1 THEN ?24 ELSE colnect_catalog_codes END,
-                 colnect_country = CASE WHEN ?21 = 1 THEN ?25 ELSE colnect_country END,
-                 colnect_width = CASE WHEN ?21 = 1 THEN ?26 ELSE colnect_width END,
-                 colnect_height = CASE WHEN ?21 = 1 THEN ?27 ELSE colnect_height END,
-                 colnect_format = CASE WHEN ?21 = 1 THEN ?28 ELSE colnect_format END,
-                 colnect_emission = CASE WHEN ?21 = 1 THEN ?29 ELSE colnect_emission END,
-                 colnect_printing = CASE WHEN ?21 = 1 THEN ?30 ELSE colnect_printing END,
-                 colnect_paper = CASE WHEN ?21 = 1 THEN ?31 ELSE colnect_paper END,
-                 colnect_gum = CASE WHEN ?21 = 1 THEN ?32 ELSE colnect_gum END,
-                 colnect_ord_mi = CASE WHEN ?21 = 1 THEN ?33 ELSE colnect_ord_mi END,
-                 colnect_ord_sn = CASE WHEN ?21 = 1 THEN ?34 ELSE colnect_ord_sn END,
-                 colnect_ord_yt = CASE WHEN ?21 = 1 THEN ?35 ELSE colnect_ord_yt END,
-                 colnect_ord_sg = CASE WHEN ?21 = 1 THEN ?36 ELSE colnect_ord_sg END,
-                 colnect_expiry_date = CASE WHEN ?21 = 1 THEN ?37 ELSE colnect_expiry_date END,
-                 colnect_print_run = CASE WHEN ?21 = 1 THEN ?38 ELSE colnect_print_run END,
-                 colnect_face_value = CASE WHEN ?21 = 1 THEN ?39 ELSE colnect_face_value END,
-                 colnect_currency = CASE WHEN ?21 = 1 THEN ?40 ELSE colnect_currency END,
-                 colnect_colors = CASE WHEN ?21 = 1 THEN ?41 ELSE colnect_colors END,
-                 colnect_parent_item = CASE WHEN ?21 = 1 THEN ?42 ELSE colnect_parent_item END,
-                 colnect_variant = CASE WHEN ?21 = 1 THEN ?43 ELSE colnect_variant END,
-                 colnect_overprint_variant = CASE WHEN ?21 = 1 THEN ?44 ELSE colnect_overprint_variant END,
-                 colnect_score = CASE WHEN ?21 = 1 THEN ?45 ELSE colnect_score END,
-                 colnect_accuracy = CASE WHEN ?21 = 1 THEN ?46 ELSE colnect_accuracy END,
-                 colnect_list = CASE WHEN ?21 = 1 THEN ?47 ELSE colnect_list END,
-                 colnect_quantity = CASE WHEN ?21 = 1 THEN ?48 ELSE colnect_quantity END,
-                 colnect_condition = CASE WHEN ?21 = 1 THEN ?49 ELSE colnect_condition END,
-                 colnect_public_note = CASE WHEN ?21 = 1 THEN ?50 ELSE colnect_public_note END,
-                 colnect_private_note = CASE WHEN ?21 = 1 THEN ?51 ELSE colnect_private_note END
-             WHERE rowid = ?52",
+                      colnect_id = CASE WHEN ?22 = 1 THEN ?23 ELSE colnect_id END,
+                      colnect_name = CASE WHEN ?22 = 1 THEN ?24 ELSE colnect_name END,
+                      colnect_catalog_codes = CASE WHEN ?22 = 1 THEN ?25 ELSE colnect_catalog_codes END,
+                      colnect_country = CASE WHEN ?22 = 1 THEN ?26 ELSE colnect_country END,
+                      colnect_width = CASE WHEN ?22 = 1 THEN ?27 ELSE colnect_width END,
+                      colnect_height = CASE WHEN ?22 = 1 THEN ?28 ELSE colnect_height END,
+                      colnect_format = CASE WHEN ?22 = 1 THEN ?29 ELSE colnect_format END,
+                      colnect_emission = CASE WHEN ?22 = 1 THEN ?30 ELSE colnect_emission END,
+                      colnect_printing = CASE WHEN ?22 = 1 THEN ?31 ELSE colnect_printing END,
+                      colnect_paper = CASE WHEN ?22 = 1 THEN ?32 ELSE colnect_paper END,
+                      colnect_gum = CASE WHEN ?22 = 1 THEN ?33 ELSE colnect_gum END,
+                      colnect_ord_mi = CASE WHEN ?22 = 1 THEN ?34 ELSE colnect_ord_mi END,
+                      colnect_ord_sn = CASE WHEN ?22 = 1 THEN ?35 ELSE colnect_ord_sn END,
+                      colnect_ord_yt = CASE WHEN ?22 = 1 THEN ?36 ELSE colnect_ord_yt END,
+                      colnect_ord_sg = CASE WHEN ?22 = 1 THEN ?37 ELSE colnect_ord_sg END,
+                      colnect_expiry_date = CASE WHEN ?22 = 1 THEN ?38 ELSE colnect_expiry_date END,
+                      colnect_print_run = CASE WHEN ?22 = 1 THEN ?39 ELSE colnect_print_run END,
+                      colnect_face_value = CASE WHEN ?22 = 1 THEN ?40 ELSE colnect_face_value END,
+                      colnect_currency = CASE WHEN ?22 = 1 THEN ?41 ELSE colnect_currency END,
+                      colnect_colors = CASE WHEN ?22 = 1 THEN ?42 ELSE colnect_colors END,
+                      colnect_parent_item = CASE WHEN ?22 = 1 THEN ?43 ELSE colnect_parent_item END,
+                      colnect_variant = CASE WHEN ?22 = 1 THEN ?44 ELSE colnect_variant END,
+                      colnect_overprint_variant = CASE WHEN ?22 = 1 THEN ?45 ELSE colnect_overprint_variant END,
+                      colnect_score = CASE WHEN ?22 = 1 THEN ?46 ELSE colnect_score END,
+                      colnect_accuracy = CASE WHEN ?22 = 1 THEN ?47 ELSE colnect_accuracy END,
+                      colnect_list = CASE WHEN ?22 = 1 THEN ?48 ELSE colnect_list END,
+                      colnect_quantity = CASE WHEN ?22 = 1 THEN ?49 ELSE colnect_quantity END,
+                      colnect_condition = CASE WHEN ?22 = 1 THEN ?50 ELSE colnect_condition END,
+                      colnect_public_note = CASE WHEN ?22 = 1 THEN ?51 ELSE colnect_public_note END,
+                      colnect_private_note = CASE WHEN ?22 = 1 THEN ?52 ELSE colnect_private_note END
+                 WHERE rowid = ?53",
             params![
                 if fields.replace_sg_number { 1 } else { 0 },
                 selected_catalog_code,
+                selected_catalog_type,
                 if fields.update_series { 1 } else { 0 },
                 c.series,
                 if fields.update_description { 1 } else { 0 },
@@ -1403,7 +1418,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
     <div class='modal'>
         <h4>Add Colnect Candidate To stamps</h4>
         <div class='rowx'>
-            <label>SG <input id='addSg' type='text' /></label>
+            <label><span id='addCatalogLabel'>Catalog</span> <input id='addSg' type='text' /></label>
             <label>Year <input id='addYear' type='number' /></label>
             <label>Series <input id='addSeries' type='text' /></label>
         </div>
@@ -1430,10 +1445,12 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 const payload = {json};
 let left = payload.left || [];
 let rightAll = payload.right || [];
+const defaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 let leftIdx = 0;
 let rightIdxByLeft = {{}};
 let assignedByLeft = {{}}; // left_rowid -> colnect_id
 let selectedCatalogCodeByLeft = {{}}; // left_rowid -> chosen code
+let selectedCatalogTypeByLeft = {{}}; // left_rowid -> chosen catalog family
 let deletedCandidatesStack = []; // stack entries: candidate + removedAssignments
 let guideDismissed = false;
 let resolvingRightImageById = {{}};
@@ -1447,6 +1464,9 @@ function removeCandidateFromUi(colnectId) {{
     }});
     Object.keys(selectedCatalogCodeByLeft).forEach(k => {{
         if (!assignedByLeft[k]) delete selectedCatalogCodeByLeft[k];
+    }});
+    Object.keys(selectedCatalogTypeByLeft).forEach(k => {{
+        if (!assignedByLeft[k]) delete selectedCatalogTypeByLeft[k];
     }});
     for (const key of Object.keys(rightIdxByLeft)) {{
         rightIdxByLeft[key] = 0;
@@ -1491,6 +1511,27 @@ function row(k, v) {{ return `<tr><td class='k'>${{html(k)}}</td><td class='v'>$
 function allDbRows(fields) {{
     if (!Array.isArray(fields) || !fields.length) return row('DB Fields', '(no fields)');
     return fields.map(f => row(`DB:${{f.key || ''}}`, f.value || '')).join('');
+}}
+function catalogDisplayName(code) {{
+    const c = String(code || '').trim().toLowerCase();
+    if (c === 'sn') return 'Scott';
+    if (c === 'sg') return 'Stanley Gibbons';
+    if (c === 'mi') return 'Michel';
+    if (c === 'yt') return 'Yvert';
+    if (c === 'afa') return 'AFA';
+    if (c === 'nvp') return 'NVP';
+    if (c === 'un') return 'Unificato';
+    if (c === 'col') return 'Colnect';
+    return c ? c.toUpperCase() : 'Catalog';
+}}
+function normalizeCatalogNumber(v) {{
+    let s = String(v || '').trim();
+    if (!s) return '';
+    const colonIdx = s.indexOf(':');
+    if (colonIdx >= 0) s = s.slice(colonIdx + 1).trim();
+    const m = s.match(/^([A-Za-z]+)\s+(.+)$/);
+    if (m && m[2]) return String(m[2]).trim();
+    return s;
 }}
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
@@ -1602,8 +1643,23 @@ function selectedCatalogCodeForCurrent(r) {{
     if (existing) return existing;
     const pairs = r.catalog_code_pairs || [];
     if (!pairs.length) return '';
-    const sgLike = pairs.find(p => String(p.catalog_type || '').toLowerCase() === 'sg');
-    return sgLike ? sgLike.code : (pairs[0].code || '');
+    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
+    return preferred ? preferred.code : (pairs[0].code || '');
+}}
+
+function selectedCatalogTypeForCurrent(r) {{
+    const l = left[leftIdx];
+    if (!l || !r) return '';
+    const existingType = selectedCatalogTypeByLeft[l.rowid] || '';
+    if (existingType) return String(existingType).toLowerCase();
+    const selectedCode = selectedCatalogCodeForCurrent(r);
+    const pairs = r.catalog_code_pairs || [];
+    if (!pairs.length) return '';
+    const matched = pairs.find(p => String(p.code || '') === String(selectedCode || ''));
+    if (matched && matched.catalog_type) return String(matched.catalog_type).toLowerCase();
+    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
+    if (preferred && preferred.catalog_type) return String(preferred.catalog_type).toLowerCase();
+    return String(pairs[0].catalog_type || '').toLowerCase();
 }}
 
 function render() {{
@@ -1695,7 +1751,7 @@ function render() {{
     ensureRightImageUrl(r);
   const rightImg = b(r.image_abs) ? `/image?path=${{encodeURIComponent(r.image_abs)}}` : r.image_url;
     const catPairs = (r.catalog_code_pairs || []).map(p =>
-        `<option value='${{html(p.code)}}'>${{html(p.catalog_type)}}: ${{html(p.code)}}</option>`
+        `<option value='${{html(p.code)}}' data-cat='${{html(p.catalog_type)}}'>${{html(catalogDisplayName(p.catalog_type))}} (${{html(String(p.catalog_type || '').toUpperCase())}}): ${{html(p.code)}}</option>`
     ).join('');
     const selectedCode = selectedCatalogCodeForCurrent(r);
   document.getElementById('rightPanel').innerHTML = `
@@ -1769,6 +1825,8 @@ function rememberCatalogCode() {{
     const sel = document.getElementById('catalogCodeSelect');
     if (!sel) return;
     selectedCatalogCodeByLeft[l.rowid] = sel.value || '';
+    const selectedOpt = sel.options[sel.selectedIndex];
+    selectedCatalogTypeByLeft[l.rowid] = selectedOpt?.dataset?.cat || '';
 }}
 
 function prevLeft() {{
@@ -1812,6 +1870,8 @@ function clearAssignment() {{
   const l = left[leftIdx];
   if (!l) return;
   delete assignedByLeft[l.rowid];
+    delete selectedCatalogCodeByLeft[l.rowid];
+    delete selectedCatalogTypeByLeft[l.rowid];
   document.getElementById('status').innerText = `Cleared assignment for rowid=${{l.rowid}}`;
   render();
 }}
@@ -1825,6 +1885,7 @@ async function applyMatches() {{
     left_rowid: Number(leftRowid),
         colnect_id: colnectId,
                 selected_catalog_code: selectedCatalogCodeByLeft[leftRowid] || null,
+            selected_catalog_type: selectedCatalogTypeByLeft[leftRowid] || null,
                 width: candidate?.width || null,
                 height: candidate?.height || null
         }};
@@ -1888,7 +1949,14 @@ function openAddDialog() {{
         document.getElementById('status').innerText = 'No current candidate to add';
         return;
     }}
-    document.getElementById('addSg').value = r.sg_number || '';
+    const preferredCode = selectedCatalogCodeForCurrent(r) || r.sg_number || '';
+    const preferredType = selectedCatalogTypeForCurrent(r) || defaultCatalogCode || '';
+    const labelText = preferredType
+        ? `${{catalogDisplayName(preferredType)}} (${{String(preferredType).toUpperCase()}})`
+        : 'Catalog';
+    const labelEl = document.getElementById('addCatalogLabel');
+    if (labelEl) labelEl.innerText = labelText;
+    document.getElementById('addSg').value = normalizeCatalogNumber(preferredCode);
     document.getElementById('addYear').value = Number.isFinite(r.year) ? r.year : '';
     document.getElementById('addSeries').value = r.series || '';
     document.getElementById('addAssociateImage').checked = true;
@@ -2002,7 +2070,7 @@ async function deleteCurrentCandidate() {{
     const removedAssignments = [];
     Object.keys(assignedByLeft).forEach(k => {{
         if (assignedByLeft[k] === r.colnect_id) {{
-            removedAssignments.push([k, assignedByLeft[k], selectedCatalogCodeByLeft[k] || '']);
+            removedAssignments.push([k, assignedByLeft[k], selectedCatalogCodeByLeft[k] || '', selectedCatalogTypeByLeft[k] || '']);
         }}
     }});
     deletedCandidatesStack.push({{ candidate: r, removedAssignments }});
@@ -2034,9 +2102,10 @@ async function undoLastDelete() {{
     if (!rightAll.some(c => c.colnect_id === last.candidate.colnect_id)) {{
         rightAll.push(last.candidate);
     }}
-    for (const [k, cid, code] of last.removedAssignments || []) {{
+    for (const [k, cid, code, catalogType] of last.removedAssignments || []) {{
         assignedByLeft[k] = cid;
         if (code) selectedCatalogCodeByLeft[k] = code;
+        if (catalogType) selectedCatalogTypeByLeft[k] = catalogType;
     }}
     document.getElementById('status').innerText = j.message || 'Undo complete';
     render();
@@ -2631,9 +2700,17 @@ fn add_colnect_stamp_to_stamps(
         }
     }
 
-    let sg_number = req
-        .target_sg_number
-        .unwrap_or_else(|| candidate.sg_number.clone());
+    let default_catalog_code =
+        crate::config::load_config("config.toml").effective_default_catalog_code();
+    let sg_number = crate::catalog::normalize_catalog_number(
+        &req.target_sg_number
+            .unwrap_or_else(|| candidate.sg_number.clone()),
+    );
+    let catalog_code = crate::catalog::infer_catalog_type_for_number(
+        &candidate.catalog_codes_text,
+        &sg_number,
+        &default_catalog_code,
+    );
     let year = req.target_year.unwrap_or(candidate.year);
     let series = req
         .target_series
@@ -2641,7 +2718,7 @@ fn add_colnect_stamp_to_stamps(
 
     let insert_res = conn.execute(
         "INSERT INTO stamps (
-            country, series, year, sg_number, uniq_key,
+            country, series, year, sg_number, catalog_code, uniq_key,
             description, image_path, remote_image_url, original_image_url,
             colnect_page_url, colnect_image_url, colnect_id, colnect_name,
             colnect_catalog_codes, colnect_country, colnect_width, colnect_height,
@@ -2653,23 +2730,24 @@ fn add_colnect_stamp_to_stamps(
             colnect_quantity, colnect_condition, colnect_public_note, colnect_private_note,
             watermark, design, engraving, perforation, context
          ) VALUES (
-            ?1, ?2, ?3, ?4, ?5,
-            ?6, ?7, ?8, ?9,
-            ?10, ?11, ?12, ?13,
-            ?14, ?15, ?16, ?17,
-            ?18, ?19, ?20, ?21,
-            ?22, ?23, ?24, ?25,
-            ?26, ?27, ?28, ?29,
-            ?30, ?31, ?32, ?33,
-            ?34, ?35, ?36, ?37,
-            ?38, ?39, ?40, ?41,
-            ?42, ?43, ?44, ?45, ?46
+                ?1, ?2, ?3, ?4, ?5, ?6,
+                ?7, ?8, ?9, ?10,
+                ?11, ?12, ?13, ?14,
+                ?15, ?16, ?17, ?18,
+                ?19, ?20, ?21, ?22,
+                ?23, ?24, ?25, ?26,
+                ?27, ?28, ?29, ?30,
+                ?31, ?32, ?33, ?34,
+                ?35, ?36, ?37, ?38,
+                ?39, ?40, ?41, ?42,
+                ?43, ?44, ?45, ?46, ?47
          )",
         params![
             candidate.country,
             series.clone(),
             year,
             sg_number.clone(),
+            catalog_code,
             format!(
                 "{}|{}|{}",
                 candidate.country.trim().to_ascii_lowercase(),
@@ -2845,7 +2923,7 @@ fn undo_colnect_delete(
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
-) -> Result<Option<(String, String)>, Box<dyn std::error::Error>> {
+) -> Result<Option<(String, String, Server, String)>, Box<dyn std::error::Error>> {
     eprintln!("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
     let (server, bind) = bind_review_server(bind_addr_opt)?;
@@ -2952,13 +3030,16 @@ pub fn run_review_ui_bootstrap(
         let _ = request.respond(Response::empty(StatusCode(404)));
     }
 
-    Ok(selected)
+    Ok(selected.map(|(db, country)| (db, country, server, bind)))
 }
 
 pub fn run_review_ui(
     db_path: &str,
     album_name_opt: Option<&str>,
+    prebound_server: Option<(Server, String)>,
     bind_addr_opt: Option<&str>,
+    open_browser: bool,
+    default_catalog_code: &str,
     odd_row_color: &str,
     even_row_color: &str,
     series_default_checked: bool,
@@ -3018,6 +3099,7 @@ pub fn run_review_ui(
     let payload = MatcherPayload {
         left,
         right,
+        default_catalog_code: default_catalog_code.to_string(),
         odd_row_color: odd_row_color.to_string(),
         even_row_color: even_row_color.to_string(),
         series_default_checked,
@@ -3038,16 +3120,33 @@ pub fn run_review_ui(
     let html = render_html(&payload);
 
     eprintln!("Review UI: starting local web server...");
-    let (server, bind) = bind_review_server(bind_addr_opt)?;
+    let (server, bind) = if let Some(pb) = prebound_server {
+        pb
+    } else {
+        bind_review_server(bind_addr_opt)?
+    };
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);
-    eprintln!("Review UI: opening browser...");
-    let _ = webbrowser::open(&url);
+    if open_browser {
+        eprintln!("Review UI: opening browser...");
+        let _ = webbrowser::open(&url);
+    } else {
+        eprintln!("Review UI: waiting for bootstrap tab to load compare view...");
+    }
 
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
         let req_url = request.url().to_string();
+
+        if method == Method::Get && req_url == "/compare-ready" {
+            let mut resp = Response::from_string("{\"ready\":true}".to_string());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
 
         if method == Method::Get && req_url == "/" {
             let mut resp = Response::from_string(html.clone());

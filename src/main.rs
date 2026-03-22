@@ -39,7 +39,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let review_cfg = config::load_config("config.toml");
 
-        let (db_path, album_name_opt): (String, Option<String>) =
+        let (db_path, album_name_opt, open_browser, prebound) =
             if cli.db_path.is_none() && cli.album_name.is_none() {
                 eprintln!(
                     "Review UI: no country/database selected on CLI; opening startup selector..."
@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     review_cfg.effective_colnect_inbox_path(),
                 )?;
 
-                let Some((selected_db, selected_country)) = selection else {
+                let Some((selected_db, selected_country, srv, bind)) = selection else {
                     eprintln!("No country selected; exiting Review UI startup.");
                     return Ok(());
                 };
@@ -57,7 +57,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "Review UI: selected '{}' with database {}",
                     selected_country, selected_db
                 );
-                (selected_db, Some(selected_country))
+                (
+                    selected_db,
+                    Some(selected_country),
+                    false,
+                    Some((srv, bind)),
+                )
             } else {
                 let db_path = if let Some(path) = cli.db_path.clone() {
                     path
@@ -70,7 +75,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     std::process::exit(1);
                 };
                 eprintln!("Review UI: using requested database {}", db_path);
-                (db_path, cli.album_name.clone())
+                (db_path, cli.album_name.clone(), true, None)
             };
 
         eprintln!("Review UI: loading compare data. This may take a few seconds...");
@@ -78,7 +83,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         run_review_ui(
             &db_path,
             album_name_opt.as_deref(),
+            prebound,
             cli.review_ui_bind.as_deref(),
+            open_browser,
+            &review_cfg.effective_default_catalog_code(),
             review_cfg.review_ui_odd_row_color(),
             review_cfg.review_ui_even_row_color(),
             review_cfg.review_ui_series_default_checked(),

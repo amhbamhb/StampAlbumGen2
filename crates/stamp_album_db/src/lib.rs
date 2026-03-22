@@ -240,8 +240,9 @@ pub fn insert_stamp_placeholder(
     if exists > 0 {
         return Ok(false);
     }
-    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '')";
-    match conn.execute(sql, params![country, series, year, sg_number]) {
+    let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
+    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context, uniq_key) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '', ?5)";
+    match conn.execute(sql, params![country, series, year, sg_number, uniq_key]) {
         Ok(_) => Ok(true),
         Err(e) => Err(e),
     }
@@ -389,6 +390,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             month_num INTEGER,
             day TEXT,
             sg_number TEXT,
+            catalog_code TEXT DEFAULT '',
             type TEXT,
             denomination TEXT,
             color TEXT,
@@ -866,7 +868,8 @@ pub fn insert_stamp(
         "December" => 12,
         _ => 0,
     };
-    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25)";
+    let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
+    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)";
     let params_vec = vec![
         country.to_string(),
         series.to_string(),
@@ -926,7 +929,8 @@ pub fn insert_stamp(
                 design,
                 engraving,
                 perforation,
-                context
+                context,
+                uniq_key
             ],
         ) {
             Ok(_) => {

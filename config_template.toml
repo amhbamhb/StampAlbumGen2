@@ -95,9 +95,18 @@ album_stamp_img_new_setting_preserve_aspect = true
 album_stamp_img_aspect_ratio = true
 
 # Stamp heading style
+# Default catalog family used when choosing a catalog number from Colnect.
+# Examples:
+# - sn = Scott
+# - sg = Stanley Gibbons
+# - mi = Michel
+# - yt = Yvert
+default_catalog_code = "sn"
 stamp_heading_font = "HN"
 stamp_heading_size = 6.0
-stamp_heading_label = "Scott"
+# "auto" = use the display name for default_catalog_code
+# ""     = hide the label entirely
+stamp_heading_label = "auto"
 
 ###################################
 # Layout

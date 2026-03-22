@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::params;
 use std::env;
 use std::fs;
 use tempfile::tempdir;
@@ -15,46 +15,14 @@ fn test_generate_conn_in_memory_clean() {
 
     fs::create_dir_all(tmp.path().join("Albums/TestAlbum")).expect("create album dir");
 
-    let conn = Connection::open_in_memory().expect("open in-memory DB");
-    conn.execute_batch(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            original_image_url TEXT,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            series TEXT,
-            currency TEXT,
-            context TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT
-            ,image_width_px INTEGER,
-            image_height_px INTEGER,
-            issue_location TEXT,
-            quantity_printed TEXT
-        );",
-    )
-    .expect("create table");
+    let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open in-memory DB");
 
     conn.execute(
-        "INSERT INTO stamps (year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)",
+        "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, catalog_code, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, '', ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
         params![
+            "TestCountry",
+            "TestSeries",
             1950i32,
             "January",
             1i32,
@@ -65,6 +33,10 @@ fn test_generate_conn_in_memory_clean() {
             "Red",
             "Test stamp",
             "",
+            "",
+            "",
+            "",
+            "",
             "no_image_placeholder.png",
             "",
             "",
@@ -72,13 +44,9 @@ fn test_generate_conn_in_memory_clean() {
             "",
             "",
             "",
-            "TestSeries",
             "USD",
             "",
-            "",
-            "",
-            "",
-            "",
+            "testcountry|TestSeries|1",
         ],
     ).expect("insert stamp");
 
@@ -86,15 +54,13 @@ fn test_generate_conn_in_memory_clean() {
     let db_path = tmp.path().join("Albums/TestAlbum/TestAlbum.db");
     stamp_album_gen2::file_utils::set_db_path_from_cli(db_path.to_str().unwrap());
 
-    stamp_album_gen2::album_globals::generate_album_output_conn(
+    let output_file = stamp_album_gen2::album_globals::generate_album_output_conn(
         &conn,
         "TestAlbum",
         None::<fn(usize)>,
         Some(1900),
         Some(2000),
     );
-
-    let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1900-2000.txt");
     assert!(
         output_file.exists(),
         "Expected output file to exist: {}",

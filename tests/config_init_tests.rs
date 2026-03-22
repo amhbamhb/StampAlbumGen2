@@ -1,5 +1,4 @@
 use std::fs;
-use std::path::Path;
 
 use serial_test::serial;
 use tempfile::tempdir;

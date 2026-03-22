@@ -53,6 +53,7 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
             month_num INTEGER,
             day TEXT,
             sg_number TEXT,
+            catalog_code TEXT DEFAULT '',
             type TEXT,
             denomination TEXT,
             color TEXT,

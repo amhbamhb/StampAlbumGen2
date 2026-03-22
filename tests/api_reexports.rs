@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::params;
 
 // Integration test that ensures the library-level re-exports from `src/lib.rs`
 // are available and behave as expected. We call `insert_stamp_placeholder`
@@ -6,44 +6,7 @@ use rusqlite::{params, Connection};
 
 #[test]
 fn insert_stamp_placeholder_via_crate_reexport() {
-    // Create an in-memory DB with the canonical stamps table shape (minimal)
-    let conn = Connection::open_in_memory().expect("open memory db");
-    conn.execute_batch(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            country TEXT,
-            series TEXT,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT,
-            currency TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            original_image_url TEXT,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            context TEXT,
-            uniq_key TEXT
-                image_width_px INTEGER,
-                image_height_px INTEGER,
-                issue_location TEXT,
-                quantity_printed TEXT
-        );",
-    )
-    .expect("create table");
+    let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open memory db");
 
     // Call the re-exported helper from the crate root. Use the public re-export
     // path (crate_name::insert_stamp_placeholder) to validate the API surface.

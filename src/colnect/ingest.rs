@@ -4,12 +4,21 @@ use regex::Regex;
 use rusqlite::{params, Connection, Result};
 
 pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result<()> {
-    ingest_colnect_data_with_mode(conn, stamps, true)
+    ingest_colnect_data_with_default_catalog(conn, stamps, "sg")
+}
+
+pub fn ingest_colnect_data_with_default_catalog(
+    conn: &Connection,
+    stamps: &[ColnectStamp],
+    default_catalog_code: &str,
+) -> Result<()> {
+    ingest_colnect_data_with_mode(conn, stamps, default_catalog_code, true)
 }
 
 pub fn ingest_colnect_data_with_mode(
     conn: &Connection,
     stamps: &[ColnectStamp],
+    default_catalog_code: &str,
     clear_existing: bool,
 ) -> Result<()> {
     if clear_existing {
@@ -34,9 +43,10 @@ pub fn ingest_colnect_data_with_mode(
     let mut count = 0;
     for stamp in stamps {
         let catalog_number =
-            extract_preferred_catalog_number(&stamp.catalog_codes).unwrap_or_else(|| {
-                extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone())
-            });
+            crate::catalog::preferred_catalog_number(&stamp.catalog_codes, default_catalog_code)
+                .unwrap_or_else(|| {
+                    extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone())
+                });
 
         // Use Colnect code as ID, fallback to Link
         let colnect_id =
@@ -309,74 +319,6 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-fn extract_catalog_code(codes: &str, key: &str) -> Option<String> {
-    let prefix = format!("{}:", key);
-    for part in codes.split(',') {
-        let part = part.trim();
-        if part.starts_with(&prefix) {
-            return Some(part[prefix.len()..].trim().to_string());
-        }
-    }
-    None
-}
-
-fn extract_sg_number(codes: &str) -> Option<String> {
-    // codes example: "Mi:CH 964, Sn:CH 540, Yt:CH 895, Sg:CH 824, AFA:CH 959..."
-    for part in codes.split(',') {
-        let part = part.trim();
-        if part.starts_with("Sg:") {
-            return Some(part["Sg:".len()..].trim().to_string());
-        }
-    }
-    None
-}
-
-fn extract_scott_number(codes: &str) -> Option<String> {
-    // codes example: "Sn:CA 454ai, Mi:CA 123..."
-    for part in codes.split(',') {
-        let part = part.trim();
-        if part.starts_with("Sn:") {
-            return Some(part["Sn:".len()..].trim().to_string());
-        }
-    }
-    None
-}
-
-fn extract_first_catalog_number(codes: &str) -> Option<String> {
-    for part in codes.split(',') {
-        let part = part.trim();
-        if let Some((_kind, value)) = part.split_once(':') {
-            let v = value.trim();
-            if !v.is_empty() {
-                return Some(v.to_string());
-            }
-        }
-    }
-    None
-}
-
-fn extract_preferred_catalog_number(codes: &str) -> Option<String> {
-    // Prefer Michel because StampWorld's numeric keys frequently align with it
-    // and this improves cross-source matching and enrichment.
-    if let Some(mi) = extract_catalog_code(codes, "Mi") {
-        return Some(normalize_sg(&mi));
-    }
-    if let Some(sg) = extract_sg_number(codes) {
-        return Some(normalize_sg(&sg));
-    }
-    if let Some(sn) = extract_scott_number(codes) {
-        return Some(normalize_sg(&sn));
-    }
-
-    // Fallbacks for variants/booklets where Mi/Sg/Sn are absent.
-    for key in ["Yt", "AFA", "NVP", "Un"] {
-        if let Some(code) = extract_catalog_code(codes, key) {
-            return Some(normalize_sg(&code));
-        }
-    }
-    extract_first_catalog_number(codes).map(|v| normalize_sg(&v))
-}
-
 fn extract_colnect_code(codes: &str) -> Option<String> {
     for part in codes.split(',') {
         let part = part.trim();
@@ -385,17 +327,4 @@ fn extract_colnect_code(codes: &str) -> Option<String> {
         }
     }
     None
-}
-
-fn normalize_sg(sg: &str) -> String {
-    // "CH 824" -> "824"
-    // "824" -> "824"
-    // "GB 123" -> "123"
-    // Simple heuristic: if there is a space, and the first part is letters, remove it.
-    if let Some((prefix, number)) = sg.split_once(' ') {
-        if prefix.chars().all(|c| c.is_alphabetic()) {
-            return number.to_string();
-        }
-    }
-    sg.to_string()
 }

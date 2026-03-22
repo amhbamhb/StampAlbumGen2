@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::params;
 use std::env;
 use std::fs;
 use tempfile::tempdir;
@@ -17,49 +17,17 @@ fn phase1_generate_with_in_memory_conn() {
     // Ensure Albums dir exists for output
     fs::create_dir_all(tmp.path().join("Albums/TestAlbum")).expect("create album dir");
 
-    // Create in-memory SQLite DB and build the minimal stamps table schema
-    let conn = Connection::open_in_memory().expect("open in-memory DB");
-    conn.execute_batch(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            original_image_url TEXT,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            series TEXT,
-            currency TEXT,
-            context TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT,
-            image_width_px INTEGER,
-            image_height_px INTEGER,
-            issue_location TEXT,
-            quantity_printed TEXT
-        );",
-    )
-    .expect("create table");
+    // Use the real schema so this test tracks production DB expectations.
+    let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open in-memory DB");
 
     // Insert a single non-null row for every column that get_stamps_by_series
     // expects as a String; use conservative placeholder values.
     conn.execute(
-        "INSERT INTO stamps (year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)",
+        "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, catalog_code, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, '', ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
         params![
+            "TestCountry",
+            "TestAlbumSeries",
             1950i32,
             "January",
             1i32,
@@ -70,6 +38,10 @@ fn phase1_generate_with_in_memory_conn() {
             "Color",
             "A test stamp description",
             "",
+            "",
+            "",
+            "",
+            "",
             "no_image_placeholder.png",
             "http://example.com/remote.jpg",
             "http://example.com/orig.jpg",
@@ -77,13 +49,9 @@ fn phase1_generate_with_in_memory_conn() {
             "Design",
             "Engraving",
             "Perf",
-            "TestAlbumSeries",
             "USD",
             "",
-            "",
-            "",
-            "",
-            "",
+            "testcountry|TestAlbumSeries|1",
         ],
     ).expect("insert stamp");
 
@@ -92,15 +60,13 @@ fn phase1_generate_with_in_memory_conn() {
     stamp_album_gen2::file_utils::set_db_path_from_cli("Albums/TestAlbum/TestAlbum.db");
 
     // Call the conn-taking API; this should write Albums/TestAlbum/TestAlbum-1900-2000.txt
-    stamp_album_gen2::album_globals::generate_album_output_conn(
+    let output_path = stamp_album_gen2::album_globals::generate_album_output_conn(
         &conn,
         "TestAlbum",
         None::<fn(usize)>,
         Some(1900),
         Some(2000),
     );
-
-    let output_path = tmp.path().join("Albums/TestAlbum/TestAlbum-1900-2000.txt");
     assert!(
         output_path.exists(),
         "expected output file at {}",

@@ -1,7 +1,6 @@
 // Comprehensive CLI option validation tests
 // Tests all CLI options for parsing, validation, error handling, and combinations
 
-use std::fs;
 use std::process::Command;
 use tempfile::tempdir;
 
@@ -116,7 +115,7 @@ fn test_cli_source_validation() {
     let valid_sources = ["stampworld", "touchstamps", "extractfile", "colnectexport"];
     for source in valid_sources.iter() {
         // Just test parsing, not full execution
-        let (exit_code, _stdout, stderr) =
+        let (_exit_code, _stdout, stderr) =
             run_cli_with_args(&["--source", source, "--site-name", "TestSite"]);
         // Exit code may be non-zero due to missing data, but should not be a source validation error
         assert!(
@@ -159,7 +158,7 @@ fn test_cli_year_range_validation() {
     println!("Testing year range validation");
 
     // Valid year range
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -202,7 +201,7 @@ fn test_cli_year_range_validation() {
     println!("  ✓ Invalid year range (start > end) shows error");
 
     // Edge case: same year
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -229,7 +228,7 @@ fn test_cli_database_path_handling() {
     let db_path = temp_dir.path().join("test.db");
     create_test_db(&db_path.to_string_lossy());
 
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (exit_code, _stdout, _stderr) = run_cli_with_args(&[
         "--db-path",
         &db_path.to_string_lossy(),
         "--album-name",
@@ -240,7 +239,7 @@ fn test_cli_database_path_handling() {
 
     // Non-existent database file (should be created)
     let new_db_path = temp_dir.path().join("new.db");
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--db-path",
         &new_db_path.to_string_lossy(),
         "--album-name",
@@ -274,7 +273,7 @@ fn test_cli_boolean_flags() {
     let boolean_flags = ["--overwrite-album", "--overwrite-images", "--yes", "-y"];
 
     for flag in boolean_flags.iter() {
-        let (exit_code, _stdout, stderr) =
+        let (_exit_code, _stdout, stderr) =
             run_cli_with_args(&["--source", "stampworld", "--site-name", "TestSite", flag]);
         // Flag should be parsed correctly (exit code may be non-zero due to other issues)
         assert!(
@@ -286,7 +285,7 @@ fn test_cli_boolean_flags() {
     }
 
     // Test flag combinations
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -320,7 +319,7 @@ fn test_cli_required_combinations() {
     let db_path = temp_dir.path().join("test.db");
     create_test_db(&db_path.to_string_lossy());
 
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (exit_code, _stdout, _stderr) = run_cli_with_args(&[
         "--db-path",
         &db_path.to_string_lossy(),
         "--album-name",
@@ -335,7 +334,7 @@ fn test_cli_error_message_quality() {
     println!("Testing error message quality");
 
     // Test unrecognized source error message
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&["--source", "unknown"]);
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&["--source", "unknown"]);
     assert!(
         stderr.contains("Unrecognized source"),
         "Should identify the problem"
@@ -348,7 +347,7 @@ fn test_cli_error_message_quality() {
     println!("  ✓ Unrecognized source error provides good guidance");
 
     // Test missing site-name error message
-    let (exit_code, _stdout, stderr) =
+    let (_exit_code, _stdout, stderr) =
         run_cli_with_args(&["--source", "stampworld", "--start-year", "1900"]);
     assert!(
         stderr.contains("site name"),
@@ -362,7 +361,7 @@ fn test_cli_error_message_quality() {
     println!("  ✓ Missing site-name error provides clear guidance");
 
     // Test invalid year range error message
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -388,7 +387,7 @@ fn test_cli_special_characters_and_edge_cases() {
     println!("Testing special characters and edge cases");
 
     // Test site name with special characters
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -401,14 +400,14 @@ fn test_cli_special_characters_and_edge_cases() {
     println!("  ✓ Site names with special characters handled");
 
     // Test empty string values
-    let (exit_code, _stdout, stderr) =
+    let (exit_code, _stdout, _stderr) =
         run_cli_with_args(&["--source", "", "--site-name", "TestSite"]);
     assert_ne!(exit_code, 0, "Empty source should be rejected");
     println!("  ✓ Empty string values properly rejected");
 
     // Test very long site name
     let long_name = "Very-Long-Site-Name-With-Many-Hyphens-And-More-Text";
-    let (exit_code, _stdout, stderr) =
+    let (_exit_code, _stdout, stderr) =
         run_cli_with_args(&["--source", "stampworld", "--site-name", long_name]);
     assert!(
         !stderr.contains("unexpected argument"),
@@ -422,7 +421,7 @@ fn test_cli_numeric_parameter_validation() {
     println!("Testing numeric parameter validation");
 
     // Test max-pages with valid values
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -453,7 +452,7 @@ fn test_cli_numeric_parameter_validation() {
     println!("  ✓ Invalid max-pages value rejected");
 
     // Test stop-after-no-hits
-    let (exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
@@ -473,14 +472,14 @@ fn test_cli_auto_correction_with_yes_flag() {
     println!("Testing auto-correction with --yes flag");
 
     // Test --yes flag with a close misspelling (should auto-correct)
-    let (exit_code, _stdout, stderr) =
+    let (_exit_code, _stdout, _stderr) =
         run_cli_with_args(&["--source", "stamworld", "--yes", "--site-name", "TestSite"]);
     // With --yes flag, it might auto-correct and continue (implementation dependent)
     // At minimum, it shouldn't crash
     println!("  ✓ --yes flag handled with source typo (auto-correction behavior)");
 
     // Test --yes flag with valid source (should work normally)
-    let (exit_code, _stdout, stderr) =
+    let (_exit_code, _stdout, stderr) =
         run_cli_with_args(&["--source", "stampworld", "--yes", "--site-name", "TestSite"]);
     assert!(
         !stderr.contains("Unrecognized source"),

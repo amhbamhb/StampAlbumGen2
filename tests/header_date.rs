@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection};
+use rusqlite::params;
 use std::env;
 use std::fs;
 use tempfile::tempdir;
@@ -14,47 +14,14 @@ fn test_series_header_includes_date() {
 
     fs::create_dir_all(tmp.path().join("Albums/TestAlbum")).expect("create album dir");
 
-    let conn = Connection::open_in_memory().expect("open in-memory DB");
-    conn.execute_batch(
-        "CREATE TABLE stamps (
-            id INTEGER PRIMARY KEY,
-            year INTEGER,
-            month TEXT,
-            month_num INTEGER,
-            day TEXT,
-            sg_number TEXT,
-            type TEXT,
-            denomination TEXT,
-            color TEXT,
-            description TEXT,
-            stamps_issued TEXT,
-            image_path TEXT,
-            remote_image_url TEXT,
-            original_image_url TEXT,
-            watermark TEXT,
-            design TEXT,
-            engraving TEXT,
-            perforation TEXT,
-            series TEXT,
-            currency TEXT,
-            context TEXT,
-            mint_condition TEXT,
-            unused TEXT,
-            used TEXT,
-            letter_fdc TEXT
-            ,image_width_px INTEGER,
-            image_height_px INTEGER,
-            issue_location TEXT,
-            quantity_printed TEXT
-        );",
-    )
-    .expect("create table");
+    let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open in-memory DB");
 
     // Insert a single stamp with a full date
     conn.execute(
-        "INSERT INTO stamps (year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24)",
+        "INSERT INTO stamps (country, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, uniq_key)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26)",
         params![
+            "TestCountry",
             1950i32,
             "January",
             1i32,
@@ -79,6 +46,7 @@ fn test_series_header_includes_date() {
             "",
             "",
             "",
+            "testcountry|TestSeries|1",
         ],
     ).expect("insert stamp");
 
