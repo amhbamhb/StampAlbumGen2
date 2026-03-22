@@ -52,7 +52,11 @@ fn filename_infers_db_min_max_when_none_fixed() {
         output_path.file_name().and_then(|s| s.to_str()),
         Some("TestAlbum-1901-1955.txt")
     );
-    assert!(output_path.exists(), "expected generated file at {:?}", output_path);
+    assert!(
+        output_path.exists(),
+        "expected generated file at {:?}",
+        output_path
+    );
     std::env::set_current_dir(orig_dir).unwrap();
 }
 
@@ -81,7 +85,11 @@ fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
         output_path.file_name().and_then(|s| s.to_str()),
         Some("TestAlbum2-1920-1940.txt")
     );
-    assert!(output_path.exists(), "expected generated file at {:?}", output_path);
+    assert!(
+        output_path.exists(),
+        "expected generated file at {:?}",
+        output_path
+    );
     std::env::set_current_dir(orig_dir).unwrap();
 }
 
@@ -110,6 +118,10 @@ fn filename_uses_db_min_and_passed_end_when_start_missing_fixed() {
         output_path.file_name().and_then(|s| s.to_str()),
         Some("TestAlbum3-1888-1900.txt")
     );
-    assert!(output_path.exists(), "expected generated file at {:?}", output_path);
+    assert!(
+        output_path.exists(),
+        "expected generated file at {:?}",
+        output_path
+    );
     std::env::set_current_dir(orig_dir).unwrap();
 }

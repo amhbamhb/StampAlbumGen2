@@ -158,7 +158,7 @@ fn test_cli_year_range_validation() {
     println!("Testing year range validation");
 
     // Valid year range
-        let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
+    let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--source",
         "stampworld",
         "--site-name",
