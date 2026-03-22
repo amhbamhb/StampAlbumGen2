@@ -712,11 +712,13 @@ fn sync_missing_stamps_from_colnect(
     let remapped = remap_colnect_sg_to_existing_stamps(conn)?;
     let links_backfilled = backfill_colnect_links_on_existing_stamps(conn)?;
 
+    let default_catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
+
     // Insert missing Colnect rows into stamps using year+catalog key dedupe.
     // Keep existing StampWorld rows and only add missing variants.
     let inserted = conn.execute(
         "INSERT INTO stamps (
-            country, series, year, month, month_num, day, sg_number, type,
+            country, series, year, month, month_num, day, sg_number, catalog_code, type,
             denomination, color, description,
             stamps_issued, mint_condition, unused, used, letter_fdc,
             currency, image_path, remote_image_url, original_image_url,
@@ -740,6 +742,7 @@ fn sync_missing_stamps_from_colnect(
                 ELSE ''
             END as day,
             sg_number,
+            ?1 as catalog_code,
             COALESCE(NULLIF(format, ''), 'Stamp') as type,
             face_value as denomination,
             colors as color,
@@ -772,8 +775,8 @@ fn sync_missing_stamps_from_colnect(
               FROM stamps s
               WHERE s.sg_number = colnect_stamps.sg_number
                 AND s.year = CAST(substr(colnect_stamps.issued_on, 1, 4) AS INTEGER)
-          )",
-        [],
+                    )",
+                rusqlite::params![default_catalog_code],
     )?;
 
     info!(

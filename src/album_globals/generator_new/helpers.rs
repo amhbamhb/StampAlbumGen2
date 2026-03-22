@@ -203,6 +203,7 @@ pub fn build_engraving_page_text_centre_template(cfg: &Config) -> String {
 #[derive(Debug, Default)]
 struct StoredColnectMeta {
     colnect_id: String,
+    catalog_code: String,
     colnect_name: String,
     colnect_catalog_codes: String,
     colnect_width: String,
@@ -236,6 +237,7 @@ fn load_stored_colnect_meta(
 ) -> SqlResult<Option<StoredColnectMeta>> {
     conn.query_row(
         "SELECT COALESCE(colnect_id, ''),
+            COALESCE(catalog_code, ''),
                 COALESCE(colnect_name, ''),
                 COALESCE(colnect_catalog_codes, ''),
                 COALESCE(colnect_width, ''),
@@ -276,31 +278,32 @@ fn load_stored_colnect_meta(
         |row| {
             Ok(StoredColnectMeta {
                 colnect_id: row.get(0)?,
-                colnect_name: row.get(1)?,
-                colnect_catalog_codes: row.get(2)?,
-                colnect_width: row.get(3)?,
-                colnect_height: row.get(4)?,
-                colnect_format: row.get(5)?,
-                colnect_emission: row.get(6)?,
-                colnect_printing: row.get(7)?,
-                colnect_paper: row.get(8)?,
-                colnect_gum: row.get(9)?,
-                colnect_expiry_date: row.get(10)?,
-                colnect_print_run: row.get(11)?,
-                colnect_face_value: row.get(12)?,
-                colnect_currency: row.get(13)?,
-                colnect_colors: row.get(14)?,
-                colnect_parent_item: row.get(15)?,
-                colnect_variant: row.get(16)?,
-                colnect_overprint_variant: row.get(17)?,
-                colnect_score: row.get(18)?,
-                colnect_accuracy: row.get(19)?,
-                colnect_list: row.get(20)?,
-                colnect_quantity: row.get(21)?,
-                colnect_condition: row.get(22)?,
-                colnect_public_note: row.get(23)?,
-                colnect_private_note: row.get(24)?,
-                colnect_ord_sg: row.get(25)?,
+                catalog_code: row.get(1)?,
+                colnect_name: row.get(2)?,
+                colnect_catalog_codes: row.get(3)?,
+                colnect_width: row.get(4)?,
+                colnect_height: row.get(5)?,
+                colnect_format: row.get(6)?,
+                colnect_emission: row.get(7)?,
+                colnect_printing: row.get(8)?,
+                colnect_paper: row.get(9)?,
+                colnect_gum: row.get(10)?,
+                colnect_expiry_date: row.get(11)?,
+                colnect_print_run: row.get(12)?,
+                colnect_face_value: row.get(13)?,
+                colnect_currency: row.get(14)?,
+                colnect_colors: row.get(15)?,
+                colnect_parent_item: row.get(16)?,
+                colnect_variant: row.get(17)?,
+                colnect_overprint_variant: row.get(18)?,
+                colnect_score: row.get(19)?,
+                colnect_accuracy: row.get(20)?,
+                colnect_list: row.get(21)?,
+                colnect_quantity: row.get(22)?,
+                colnect_condition: row.get(23)?,
+                colnect_public_note: row.get(24)?,
+                colnect_private_note: row.get(25)?,
+                colnect_ord_sg: row.get(26)?,
             })
         },
     )
@@ -383,6 +386,7 @@ pub fn fetch_and_filter_stamps(
         let stored_colnect = load_stored_colnect_meta(conn, &stamp).ok().flatten();
         let lookup_colnect_id = stored_colnect.as_ref().map(|m| m.colnect_id.clone());
         if let Some(meta) = stored_colnect.as_ref() {
+            set_attr_if_non_empty(&mut attrs, "catalog_code", &meta.catalog_code);
             set_attr_if_non_empty(&mut attrs, "colnect_name", &meta.colnect_name);
             set_attr_if_non_empty(
                 &mut attrs,

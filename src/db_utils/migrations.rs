@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 const LATEST_SCHEMA_VERSION: i64 = 4;
 
-const CANONICAL_STAMPS_COLUMNS: [(&str, &str); 64] = [
+const CANONICAL_STAMPS_COLUMNS: [(&str, &str); 65] = [
     ("id", "INTEGER PRIMARY KEY"),
     ("country", "TEXT"),
     ("series", "TEXT"),
@@ -17,6 +17,7 @@ const CANONICAL_STAMPS_COLUMNS: [(&str, &str); 64] = [
     ("month_num", "INTEGER"),
     ("day", "TEXT"),
     ("sg_number", "TEXT"),
+    ("catalog_code", "TEXT DEFAULT ''"),
     ("type", "TEXT"),
     ("denomination", "TEXT"),
     ("color", "TEXT"),
