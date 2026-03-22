@@ -1066,7 +1066,8 @@ fn apply_matches(
     fields: FieldSelection,
     right_map: &HashMap<String, RightCandidate>,
 ) -> ApplyMatchesResponse {
-    let default_catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
+    let default_catalog_code =
+        crate::config::load_config("config.toml").effective_default_catalog_code();
     let mut updated_rows = 0usize;
     let mut skipped_rows = 0usize;
     let mut processed_colnect_ids = Vec::new();
@@ -1078,9 +1079,8 @@ fn apply_matches(
             continue;
         };
 
-        let selected_catalog_code = crate::catalog::normalize_catalog_number(
-            &m.selected_catalog_code.unwrap_or_default(),
-        );
+        let selected_catalog_code =
+            crate::catalog::normalize_catalog_number(&m.selected_catalog_code.unwrap_or_default());
         let selected_catalog_type = m
             .selected_catalog_type
             .as_deref()
@@ -1403,7 +1403,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
     <div class='modal'>
         <h4>Add Colnect Candidate To stamps</h4>
         <div class='rowx'>
-            <label>SG <input id='addSg' type='text' /></label>
+            <label><span id='addCatalogLabel'>Catalog</span> <input id='addSg' type='text' /></label>
             <label>Year <input id='addYear' type='number' /></label>
             <label>Series <input id='addSeries' type='text' /></label>
         </div>
@@ -1508,6 +1508,15 @@ function catalogDisplayName(code) {{
     if (c === 'un') return 'Unificato';
     if (c === 'col') return 'Colnect';
     return c ? c.toUpperCase() : 'Catalog';
+}}
+function normalizeCatalogNumber(v) {{
+    let s = String(v || '').trim();
+    if (!s) return '';
+    const colonIdx = s.indexOf(':');
+    if (colonIdx >= 0) s = s.slice(colonIdx + 1).trim();
+    const m = s.match(/^([A-Za-z]+)\s+(.+)$/);
+    if (m && m[2]) return String(m[2]).trim();
+    return s;
 }}
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
@@ -1621,6 +1630,21 @@ function selectedCatalogCodeForCurrent(r) {{
     if (!pairs.length) return '';
     const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
     return preferred ? preferred.code : (pairs[0].code || '');
+}}
+
+function selectedCatalogTypeForCurrent(r) {{
+    const l = left[leftIdx];
+    if (!l || !r) return '';
+    const existingType = selectedCatalogTypeByLeft[l.rowid] || '';
+    if (existingType) return String(existingType).toLowerCase();
+    const selectedCode = selectedCatalogCodeForCurrent(r);
+    const pairs = r.catalog_code_pairs || [];
+    if (!pairs.length) return '';
+    const matched = pairs.find(p => String(p.code || '') === String(selectedCode || ''));
+    if (matched && matched.catalog_type) return String(matched.catalog_type).toLowerCase();
+    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
+    if (preferred && preferred.catalog_type) return String(preferred.catalog_type).toLowerCase();
+    return String(pairs[0].catalog_type || '').toLowerCase();
 }}
 
 function render() {{
@@ -1910,7 +1934,14 @@ function openAddDialog() {{
         document.getElementById('status').innerText = 'No current candidate to add';
         return;
     }}
-    document.getElementById('addSg').value = r.sg_number || '';
+    const preferredCode = selectedCatalogCodeForCurrent(r) || r.sg_number || '';
+    const preferredType = selectedCatalogTypeForCurrent(r) || defaultCatalogCode || '';
+    const labelText = preferredType
+        ? `${{catalogDisplayName(preferredType)}} (${{String(preferredType).toUpperCase()}})`
+        : 'Catalog';
+    const labelEl = document.getElementById('addCatalogLabel');
+    if (labelEl) labelEl.innerText = labelText;
+    document.getElementById('addSg').value = normalizeCatalogNumber(preferredCode);
     document.getElementById('addYear').value = Number.isFinite(r.year) ? r.year : '';
     document.getElementById('addSeries').value = r.series || '';
     document.getElementById('addAssociateImage').checked = true;
@@ -2654,9 +2685,11 @@ fn add_colnect_stamp_to_stamps(
         }
     }
 
-    let default_catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
+    let default_catalog_code =
+        crate::config::load_config("config.toml").effective_default_catalog_code();
     let sg_number = crate::catalog::normalize_catalog_number(
-        &req.target_sg_number.unwrap_or_else(|| candidate.sg_number.clone()),
+        &req.target_sg_number
+            .unwrap_or_else(|| candidate.sg_number.clone()),
     );
     let catalog_code = crate::catalog::infer_catalog_type_for_number(
         &candidate.catalog_codes_text,
@@ -2699,7 +2732,7 @@ fn add_colnect_stamp_to_stamps(
             series.clone(),
             year,
             sg_number.clone(),
-                catalog_code,
+            catalog_code,
             format!(
                 "{}|{}|{}",
                 candidate.country.trim().to_ascii_lowercase(),
