@@ -658,7 +658,22 @@ async function startReview() {{
         stopLoadingPhases();
         document.getElementById('loadingText').innerText = 'Launching compare view...';
         document.getElementById('status').innerText = j.message || 'Launching review...';
-        setTimeout(() => {{ window.location.href = '/'; }}, 1000);
+        // Poll /compare-ready until the review UI server is accepting requests,
+        // then redirect. This avoids a race between data loading and the redirect.
+        (async function pollReady() {{
+            for (let attempt = 0; attempt < 60; attempt++) {{
+                await new Promise(r => setTimeout(r, 500));
+                try {{
+                    const rdy = await fetch('/compare-ready');
+                    if (rdy.ok) {{
+                        window.location.href = '/';
+                        return;
+                    }}
+                }} catch (_) {{}}
+            }}
+            // Fallback after 30 s: redirect anyway
+            window.location.href = '/';
+        }})();
     }} catch (e) {{
         setBusy(false, '');
         document.getElementById('status').innerText = `Failed to start: ${{e}}`;
@@ -2908,7 +2923,7 @@ fn undo_colnect_delete(
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
-) -> Result<Option<(String, String)>, Box<dyn std::error::Error>> {
+) -> Result<Option<(String, String, Server, String)>, Box<dyn std::error::Error>> {
     eprintln!("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
     let (server, bind) = bind_review_server(bind_addr_opt)?;
@@ -3015,12 +3030,13 @@ pub fn run_review_ui_bootstrap(
         let _ = request.respond(Response::empty(StatusCode(404)));
     }
 
-    Ok(selected)
+    Ok(selected.map(|(db, country)| (db, country, server, bind)))
 }
 
 pub fn run_review_ui(
     db_path: &str,
     album_name_opt: Option<&str>,
+    prebound_server: Option<(Server, String)>,
     bind_addr_opt: Option<&str>,
     open_browser: bool,
     default_catalog_code: &str,
@@ -3104,7 +3120,11 @@ pub fn run_review_ui(
     let html = render_html(&payload);
 
     eprintln!("Review UI: starting local web server...");
-    let (server, bind) = bind_review_server(bind_addr_opt)?;
+    let (server, bind) = if let Some(pb) = prebound_server {
+        pb
+    } else {
+        bind_review_server(bind_addr_opt)?
+    };
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI: {}", url);
@@ -3118,6 +3138,15 @@ pub fn run_review_ui(
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
         let req_url = request.url().to_string();
+
+        if method == Method::Get && req_url == "/compare-ready" {
+            let mut resp = Response::from_string("{\"ready\":true}".to_string());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
 
         if method == Method::Get && req_url == "/" {
             let mut resp = Response::from_string(html.clone());
