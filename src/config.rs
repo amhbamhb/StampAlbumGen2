@@ -271,6 +271,7 @@ pub struct Config {
     pub stamp_heading_font: Option<String>,
     pub stamp_heading_size: Option<f32>,
     pub stamp_heading_label: Option<String>,
+    pub default_catalog_code: Option<String>,
     // Optional override: force a DPI to be used when converting pixels -> mm.
     // If present the generator will compute mm_per_pixel = 25.4 / dpi and
     // use that instead of the embedded-reference ratio when converting
@@ -520,7 +521,8 @@ impl Config {
             page_text_right_vspace: Some(1.0),
             stamp_heading_font: Some("HN".to_string()),
             stamp_heading_size: Some(6.0),
-            stamp_heading_label: Some("".to_string()),
+            stamp_heading_label: Some("auto".to_string()),
+            default_catalog_code: Some("sg".to_string()),
             force_dpi: Some(96.0),
             preserve_real_image_size: Some(true),
             show_progress_indicator: Some(true),
@@ -776,6 +778,31 @@ impl Config {
             .as_ref()
             .and_then(|r| r.default_right_unmatched_only_checked)
             .unwrap_or(false)
+    }
+
+    pub fn effective_default_catalog_code(&self) -> String {
+        self.default_catalog_code
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(crate::catalog::normalize_catalog_type)
+            .unwrap_or_else(|| "sg".to_string())
+    }
+
+    pub fn effective_stamp_heading_label(&self) -> String {
+        match self
+            .stamp_heading_label
+            .as_deref()
+            .map(str::trim)
+            .unwrap_or("auto")
+        {
+            "" => String::new(),
+            label if label.eq_ignore_ascii_case("auto") => crate::catalog::catalog_display_name(
+                &self.effective_default_catalog_code(),
+            )
+            .to_string(),
+            label => label.to_string(),
+        }
     }
 
     /// Effective default Colnect inbox path from configuration.
@@ -1399,6 +1426,10 @@ pub fn load_config(path: &str) -> Config {
                                 }
                                 if cfg.stamp_heading_label.is_none() {
                                     cfg.stamp_heading_label = defaults.stamp_heading_label;
+                                    has_missing = true;
+                                }
+                                if cfg.default_catalog_code.is_none() {
+                                    cfg.default_catalog_code = defaults.default_catalog_code;
                                     has_missing = true;
                                 }
                                 if cfg.force_dpi.is_none() {

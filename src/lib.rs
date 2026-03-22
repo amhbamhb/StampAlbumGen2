@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod catalog;
 pub mod colnect;
 pub mod config;
 pub mod flagdb;

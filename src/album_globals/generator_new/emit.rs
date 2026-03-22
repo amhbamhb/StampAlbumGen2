@@ -172,10 +172,7 @@ pub fn emit_stamp_lines<W: Write>(
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     }
 
-    let sh_label = config
-        .stamp_heading_label
-        .clone()
-        .unwrap_or_else(|| "".to_string());
+    let sh_label = resolve_stamp_heading_label(config, None);
     // Only emit STAMP_HEADING if a label is configured (the number alone
     // is from StampWorld's internal system, not a real catalog)
     if !sh_label.is_empty() {
@@ -192,6 +189,28 @@ pub fn emit_stamp_lines<W: Write>(
     }
 
     Ok(())
+}
+
+pub fn resolve_stamp_heading_label(
+    config: &crate::config::Config,
+    catalog_code: Option<&str>,
+) -> String {
+    let configured = config
+        .stamp_heading_label
+        .as_deref()
+        .map(str::trim)
+        .unwrap_or("auto");
+    if configured.is_empty() {
+        return String::new();
+    }
+    if configured.eq_ignore_ascii_case("auto") {
+        let fallback_catalog_code = config.effective_default_catalog_code();
+        return crate::catalog::catalog_display_name(
+            catalog_code.unwrap_or(fallback_catalog_code.as_str()),
+        )
+        .to_string();
+    }
+    configured.to_string()
 }
 
 /// Emit a stamp block (either with an image or a textual placeholder)

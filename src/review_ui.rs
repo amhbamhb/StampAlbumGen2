@@ -120,6 +120,7 @@ struct CatalogCodePair {
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
+    default_catalog_code: String,
     odd_row_color: String,
     even_row_color: String,
     series_default_checked: bool,
@@ -1064,23 +1065,6 @@ fn apply_matches(
     fields: FieldSelection,
     right_map: &HashMap<String, RightCandidate>,
 ) -> ApplyMatchesResponse {
-    fn normalize_catalog_code(raw: &str) -> String {
-        let mut s = raw.trim().to_string();
-        if let Some((_, rest)) = s.split_once(':') {
-            s = rest.trim().to_string();
-        }
-        let mut parts = s.split_whitespace();
-        if let Some(first) = parts.next() {
-            if first.len() == 2 && first.chars().all(|c| c.is_ascii_alphabetic()) {
-                let rest = s[first.len()..].trim_start();
-                if !rest.is_empty() {
-                    return rest.to_string();
-                }
-            }
-        }
-        s
-    }
-
     let mut updated_rows = 0usize;
     let mut skipped_rows = 0usize;
     let mut processed_colnect_ids = Vec::new();
@@ -1092,8 +1076,9 @@ fn apply_matches(
             continue;
         };
 
-        let selected_catalog_code =
-            normalize_catalog_code(&m.selected_catalog_code.unwrap_or_default());
+        let selected_catalog_code = crate::catalog::normalize_catalog_number(
+            &m.selected_catalog_code.unwrap_or_default(),
+        );
         let selected_width = m.width.as_deref().unwrap_or(c.width.as_str());
         let selected_height = m.height.as_deref().unwrap_or(c.height.as_str());
 
@@ -1430,6 +1415,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 const payload = {json};
 let left = payload.left || [];
 let rightAll = payload.right || [];
+const defaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 let leftIdx = 0;
 let rightIdxByLeft = {{}};
 let assignedByLeft = {{}}; // left_rowid -> colnect_id
@@ -1602,8 +1588,8 @@ function selectedCatalogCodeForCurrent(r) {{
     if (existing) return existing;
     const pairs = r.catalog_code_pairs || [];
     if (!pairs.length) return '';
-    const sgLike = pairs.find(p => String(p.catalog_type || '').toLowerCase() === 'sg');
-    return sgLike ? sgLike.code : (pairs[0].code || '');
+    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
+    return preferred ? preferred.code : (pairs[0].code || '');
 }}
 
 function render() {{
@@ -2631,9 +2617,9 @@ fn add_colnect_stamp_to_stamps(
         }
     }
 
-    let sg_number = req
-        .target_sg_number
-        .unwrap_or_else(|| candidate.sg_number.clone());
+    let sg_number = crate::catalog::normalize_catalog_number(
+        &req.target_sg_number.unwrap_or_else(|| candidate.sg_number.clone()),
+    );
     let year = req.target_year.unwrap_or(candidate.year);
     let series = req
         .target_series
@@ -2959,6 +2945,7 @@ pub fn run_review_ui(
     db_path: &str,
     album_name_opt: Option<&str>,
     bind_addr_opt: Option<&str>,
+    default_catalog_code: &str,
     odd_row_color: &str,
     even_row_color: &str,
     series_default_checked: bool,
@@ -3018,6 +3005,7 @@ pub fn run_review_ui(
     let payload = MatcherPayload {
         left,
         right,
+        default_catalog_code: default_catalog_code.to_string(),
         odd_row_color: odd_row_color.to_string(),
         even_row_color: even_row_color.to_string(),
         series_default_checked,

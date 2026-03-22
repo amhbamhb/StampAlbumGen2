@@ -333,6 +333,7 @@ pub fn fetch_and_filter_stamps(
     start_year: Option<i32>,
     end_year: Option<i32>,
 ) -> SqlResult<Vec<Stamp>> {
+    let default_catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
     // Fast path: when a single target year is requested, ask the DB helper
     // for that year directly to avoid loading full-series history.
     let mut stamps = if let (Some(sy), Some(ey)) = (start_year, end_year) {
@@ -468,6 +469,35 @@ pub fn fetch_and_filter_stamps(
             }
 
             if attrs
+                .get("catalog_number")
+                .map_or(true, |v| v.trim().is_empty())
+            {
+                let raw_codes = colnect
+                    .catalog_codes
+                    .iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect::<Vec<_>>()
+                    .join(" | ");
+                if let Some((catalog_type, catalog_number)) =
+                    crate::catalog::preferred_catalog_entry(&raw_codes, &default_catalog_code)
+                {
+                    attrs.set(
+                        "catalog_number",
+                        &crate::catalog::normalize_catalog_number(&catalog_number),
+                    );
+                    attrs.set("catalog_code", &catalog_type);
+                    if catalog_type == "sn"
+                        && attrs.get("scott_number").map_or(true, |v| v.trim().is_empty())
+                    {
+                        attrs.set(
+                            "scott_number",
+                            &crate::catalog::normalize_catalog_number(&catalog_number),
+                        );
+                    }
+                }
+            }
+
+            if attrs
                 .get("scott_number")
                 .map_or(true, |v| v.trim().is_empty())
             {
@@ -479,6 +509,22 @@ pub fn fetch_and_filter_stamps(
                     attrs.set("scott_number", scott_code);
                 }
             }
+        }
+
+        if attrs
+            .get("catalog_number")
+            .map_or(true, |v| v.trim().is_empty())
+        {
+            if let Some(sg_number) = attrs.get("sg_number").cloned() {
+                attrs.set("catalog_number", &sg_number);
+            }
+        }
+
+        if attrs
+            .get("catalog_code")
+            .map_or(true, |v| v.trim().is_empty())
+        {
+            attrs.set("catalog_code", &default_catalog_code);
         }
 
         attrs.set("used", &stamp.used);
@@ -632,7 +678,8 @@ pub fn estimate_and_ensure_placeholders(
             // Use Scott number if available, fall back to SG number for placeholder filename
             let catalog_num = s
                 .attrs
-                .get("scott_number")
+                .get("catalog_number")
+                .or_else(|| s.attrs.get("scott_number"))
                 .or_else(|| s.attrs.get("sg_number"))
                 .map(|v| v.as_str())
                 .unwrap_or("");

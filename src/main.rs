@@ -79,6 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &db_path,
             album_name_opt.as_deref(),
             cli.review_ui_bind.as_deref(),
+            &review_cfg.effective_default_catalog_code(),
             review_cfg.review_ui_odd_row_color(),
             review_cfg.review_ui_even_row_color(),
             review_cfg.review_ui_series_default_checked(),

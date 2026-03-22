@@ -374,7 +374,14 @@ fn run_colnect_inbox_mode(
             continue;
         }
 
-        match crate::colnect::ingest::ingest_colnect_data_with_mode(&conn, &stamps, false) {
+        let default_catalog_code = crate::config::load_config("config.toml")
+            .effective_default_catalog_code();
+        match crate::colnect::ingest::ingest_colnect_data_with_mode(
+            &conn,
+            &stamps,
+            &default_catalog_code,
+            false,
+        ) {
             Ok(_) => {
                 info!(
                     "Review-first mode: Colnect ingest kept in colnect_stamps only for {}",
@@ -921,10 +928,18 @@ pub fn run_database_mode(
     if let Some(csv_path) = &cli.colnect_csv {
         progress.set_message(&format!("📥 Ingesting Colnect CSV: {}", csv_path));
         match crate::colnect::parser::parse_csv(csv_path) {
-            Ok(stamps) => match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+            Ok(stamps) => {
+                let default_catalog_code = crate::config::load_config("config.toml")
+                    .effective_default_catalog_code();
+                match crate::colnect::ingest::ingest_colnect_data(
+                    &conn,
+                    &stamps,
+                    &default_catalog_code,
+                ) {
                 Ok(_) => info!("✅ Successfully ingested Colnect data"),
                 Err(e) => error!("❌ Failed to ingest Colnect data: {}", e),
-            },
+                }
+            }
             Err(e) => error!("❌ Failed to parse Colnect CSV: {}", e),
         }
 
@@ -1300,7 +1315,13 @@ pub fn run_scraping_mode(
                         progress.set_message(&format!("📥 Ingesting Colnect CSV: {}", csv_path));
                         match crate::colnect::parser::parse_csv(csv_path) {
                             Ok(stamps) => {
-                                match crate::colnect::ingest::ingest_colnect_data(&conn, &stamps) {
+                                let default_catalog_code = crate::config::load_config("config.toml")
+                                    .effective_default_catalog_code();
+                                match crate::colnect::ingest::ingest_colnect_data(
+                                    &conn,
+                                    &stamps,
+                                    &default_catalog_code,
+                                ) {
                                     Ok(_) => info!("✅ Successfully ingested Colnect data"),
                                     Err(e) => error!("❌ Failed to ingest Colnect data: {}", e),
                                 }
