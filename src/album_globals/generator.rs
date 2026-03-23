@@ -438,6 +438,69 @@ where
             fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
             .expect("Failed to get stamps");
         let mut stamps_vec = stamps_iter;
+        // Re-sort by year + catalog number right before layout emission so
+        // updates applied in Review UI are reflected in final PDF order.
+        let parse_catalog_key = |raw: &str| {
+            let trimmed = raw.trim();
+            let mut end = 0usize;
+            for (idx, ch) in trimmed.char_indices() {
+                if ch.is_ascii_digit() {
+                    end = idx + ch.len_utf8();
+                } else {
+                    break;
+                }
+            }
+
+            if end == 0 {
+                (None, trimmed.to_ascii_lowercase(), trimmed.to_ascii_lowercase())
+            } else {
+                let head = trimmed[..end].parse::<i64>().ok();
+                let tail = trimmed[end..].trim().to_ascii_lowercase();
+                (head, tail, trimmed.to_ascii_lowercase())
+            }
+        };
+        stamps_vec.sort_by(|a, b| {
+            let ay = a
+                .attrs
+                .get("year")
+                .and_then(|v| v.trim().parse::<i32>().ok())
+                .unwrap_or(0);
+            let by = b
+                .attrs
+                .get("year")
+                .and_then(|v| v.trim().parse::<i32>().ok())
+                .unwrap_or(0);
+            let year_cmp = ay.cmp(&by);
+            if year_cmp != std::cmp::Ordering::Equal {
+                return year_cmp;
+            }
+
+            let a_code = a.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
+            let b_code = b.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
+            let (a_num, a_suffix, a_norm) = parse_catalog_key(a_code);
+            let (b_num, b_suffix, b_norm) = parse_catalog_key(b_code);
+            match (a_num, b_num) {
+                (Some(an), Some(bn)) => {
+                    let num_cmp = an.cmp(&bn);
+                    if num_cmp != std::cmp::Ordering::Equal {
+                        return num_cmp;
+                    }
+                    let a_empty = a_suffix.is_empty();
+                    let b_empty = b_suffix.is_empty();
+                    if a_empty != b_empty {
+                        return if a_empty {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
+                        };
+                    }
+                    a_suffix.cmp(&b_suffix).then_with(|| a_norm.cmp(&b_norm))
+                }
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => a_norm.cmp(&b_norm),
+            }
+        });
         // Group stamps into rows (configurable max stamps per row). For rich
         // inline metadata, use a more conservative per-row cap to keep text
         // readable and avoid visual crowding in PDF output.

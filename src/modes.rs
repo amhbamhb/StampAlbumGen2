@@ -1155,6 +1155,35 @@ pub fn run_scraping_mode(
     progress.set_message("⚙️ Loading configuration file...");
     let cfg_file = crate::config::load_config("config.toml");
 
+    // Keep Colnect inbox locations ready during StampWorld runs so follow-up
+    // Colnect imports can drop files into known paths without manual setup.
+    let default_colnect_inbox = format!("Albums/{}/colnect", canonical_storage_dir);
+    if let Some(configured_inbox) = cfg_file.effective_colnect_inbox_path() {
+        let configured_path = std::path::Path::new(configured_inbox);
+        if !configured_path.exists() {
+            std::fs::create_dir_all(configured_path)?;
+            info!(
+                "Created configured Colnect inbox directory: {}",
+                configured_path.display()
+            );
+        }
+    }
+    let default_path = std::path::Path::new(&default_colnect_inbox);
+    let configured_matches_default = cfg_file
+        .effective_colnect_inbox_path()
+        .map(|p| {
+            std::path::Path::new(p).to_string_lossy().to_lowercase()
+                == default_path.to_string_lossy().to_lowercase()
+        })
+        .unwrap_or(false);
+    if !configured_matches_default && !default_path.exists() {
+        std::fs::create_dir_all(default_path)?;
+        info!(
+            "Created default Colnect inbox directory: {}",
+            default_path.display()
+        );
+    }
+
     // Compose the DB path early and set it for the collector so both scraper
     // and generator operate on the same DB file under Albums/{Album}/{Album}.db.
     progress.set_message("💾 Setting up database path...");

@@ -120,6 +120,7 @@ struct CatalogCodePair {
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
+    album_name: String,
     default_catalog_code: String,
     odd_row_color: String,
     even_row_color: String,
@@ -163,6 +164,19 @@ struct BootstrapStartResponse {
     message: String,
     country: Option<String>,
     db_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapGeneratePdfRequest {
+    country: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapGeneratePdfResponse {
+    ok: bool,
+    message: String,
+    generated_output_path: Option<String>,
+    generated_pdf_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -263,6 +277,31 @@ struct ShutdownResponse {
     message: String,
     generated_output_path: Option<String>,
     generated_pdf_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ColnectImportRequest {
+    // Empty request - just triggers import from configured/default colnect folder
+}
+
+#[derive(Debug, Serialize)]
+struct ColnectImportResponse {
+    ok: bool,
+    message: String,
+    files_processed: usize,
+    stamps_imported: usize,
+    errors: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateDefaultCatalogRequest {
+    default_catalog_code: String,
+}
+
+#[derive(Debug, Serialize)]
+struct UpdateDefaultCatalogResponse {
+    ok: bool,
+    message: String,
 }
 
 fn path_to_file_url(path: &Path) -> Option<String> {
@@ -454,6 +493,7 @@ label {{ font-size: 13px; font-weight: 600; }}
 select, input {{ padding: 7px 8px; border: 1px solid #c8d5e2; border-radius: 8px; min-width: 170px; }}
 button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #c8d5e2; background: #fff; cursor: pointer; }}
 button.primary {{ background: #2f6fa3; color: #fff; border-color: #2f6fa3; }}
+button.danger {{ background: #a34545; color: #fff; border-color: #a34545; }}
 button:hover {{ background: #f1f6fa; }}
 code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
 .status {{ margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }}
@@ -475,6 +515,9 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         <select id='countrySel'></select>
         <button onclick='refreshState()'>Refresh</button>
         <button class='primary' onclick='startReview()'>Open Review</button>
+        <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
+        <button onclick='importColnectFiles()'>Import Colnect</button>
+        <button class='danger' onclick='logoutApp()'>Logout</button>
         <span id='countryCount' class='badge'>Countries: 0</span>
     </div>
 
@@ -486,9 +529,9 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <label>StampWorld Country</label>
             <input id='swCountry' type='text' />
             <label>Start Year</label>
-            <input id='swStartYear' type='number' value='1840' />
+            <select id='swStartYear'></select>
             <label>End Year</label>
-            <input id='swEndYear' type='number' value='2026' />
+            <select id='swEndYear'></select>
         </div>
         <div class='row'>
             <span class='badge'>Colnect inbox hint: {}</span>
@@ -496,6 +539,7 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         <div class='row'>
             <strong>Suggested command:</strong>
             <code id='swCmd'></code>
+            <button onclick='copySuggestedCommand()'>Copy</button>
         </div>
     </div>
     <div id='status' class='status'></div>
@@ -585,11 +629,58 @@ function slugCountry(name) {{
     return String(name || '').trim().replaceAll(' ', '-');
 }}
 
+function populateYearSelect(id, startYear, endYear, defaultYear) {{
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const options = [];
+    for (let y = startYear; y <= endYear; y++) {{
+        options.push(`<option value="${{y}}">${{y}}</option>`);
+    }}
+    sel.innerHTML = options.join('');
+    const clampedDefault = Math.min(Math.max(defaultYear, startYear), endYear);
+    sel.value = String(clampedDefault);
+}}
+
+function initYearSelectors() {{
+    const minYear = 1840;
+    const maxYear = new Date().getFullYear();
+    populateYearSelect('swStartYear', minYear, maxYear, 1840);
+    populateYearSelect('swEndYear', minYear, maxYear, 2026);
+}}
+
 function suggestedStampworldCommand(country) {{
     const c = document.getElementById('swCountry').value || country || '';
     const y1 = document.getElementById('swStartYear').value || '1840';
     const y2 = document.getElementById('swEndYear').value || '2026';
-    return `cargo run -- --source stampworld --site-name "${{c}}" --album-name "${{c}}" --start-year ${{y1}} --end-year ${{y2}}`;
+    return `./stamp_album_gen2 --source stampworld --site-name "${{c}}" --album-name "${{c}}" --start-year ${{y1}} --end-year ${{y2}}`;
+}}
+
+async function copySuggestedCommand() {{
+    const cmd = document.getElementById('swCmd')?.innerText || '';
+    const status = document.getElementById('status');
+    if (!cmd.trim()) {{
+        if (status) status.innerText = 'No command available to copy.';
+        return;
+    }}
+
+    try {{
+        if (navigator.clipboard && navigator.clipboard.writeText) {{
+            await navigator.clipboard.writeText(cmd);
+        }} else {{
+            const ta = document.createElement('textarea');
+            ta.value = cmd;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }}
+        if (status) status.innerText = 'Suggested command copied to clipboard.';
+    }} catch (e) {{
+        if (status) status.innerText = `Copy failed: ${{e}}`;
+    }}
 }}
 
 function renderCountryPanel() {{
@@ -680,20 +771,116 @@ async function startReview() {{
     }}
 }}
 
-document.getElementById('countrySel').addEventListener('change', renderCountryPanel);
-document.getElementById('swCountry').addEventListener('input', () => {{
+async function logoutApp() {{
+    const status = document.getElementById('status');
+    if (status) status.innerText = 'Logging out and closing Review UI...';
+    setBusy(true, 'Closing Review UI...');
+    try {{
+        await fetch('/logout', {{ method: 'POST' }});
+    }} catch (_) {{
+        // Even if the response is interrupted, continue with shutdown UX.
+    }}
+    setBusy(false, '');
+    document.body.innerHTML = "<div style='font-family:sans-serif;margin:20px;'><h2>Review UI closed</h2><p>You can close this browser tab now.</p></div>";
+}}
+
+async function importColnectFiles() {{
+    const sel = document.getElementById('countrySel');
+    const country = sel.value;
+    const status = document.getElementById('status');
+    
+    if (!country) {{
+        if (status) status.innerText = 'Select a country first.';
+        return;
+    }}
+
+    if (status) status.innerText = 'Importing Colnect files for ' + country + '...';
+    setBusy(true, 'Importing Colnect CSV files for ' + country + '...');
+
+    try {{
+        const r = await fetch('/api/colnect-import', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{}})
+        }});
+        const j = await r.json();
+        setBusy(false, '');
+        if (j.ok && j.stamps_imported > 0) {{
+            if (status) status.innerText = 'Imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)';
+            alert('Successfully imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s).');
+            await refreshState();
+        }} else if (j.ok && j.stamps_imported === 0) {{
+            const msg = j.message || 'No stamps were imported.';
+            const details = (j.errors && j.errors.length > 0)
+                ? '\n\nDetails:\n' + j.errors.join('\n')
+                : '\n\nOpen the Review UI for this country and verify the configured colnect inbox path.';
+            if (status) status.innerText = 'No stamps imported';
+            alert(msg + details);
+        }} else {{
+            const msg = j.message || 'Import failed';
+            const details = (j.errors && j.errors.length > 0)
+                ? '\n\nErrors:\n' + j.errors.join('\n')
+                : '';
+            if (status) status.innerText = 'Import unavailable: ' + msg;
+            alert(msg + details);
+        }}
+    }} catch (e) {{
+        setBusy(false, '');
+        if (status) status.innerText = 'Import error';
+        alert('Import error: ' + e);
+    }}
+}}
+
+async function generateAlbumPdfNow() {{
+    const sel = document.getElementById('countrySel');
+    const country = String((sel && sel.value) || '').trim();
+    const status = document.getElementById('status');
+
+    if (!country) {{
+        if (status) status.innerText = 'Select a country first.';
+        return;
+    }}
+
+    if (status) status.innerText = 'Generating album text and PDF for ' + country + '...';
+    setBusy(true, 'Generating album and PDF for ' + country + '...');
+
+    try {{
+        const r = await fetch('/api/generate-pdf-now', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ country: country }})
+        }});
+        const j = await r.json();
+        setBusy(false, '');
+
+        if (!j.ok) {{
+            if (status) status.innerText = j.message || 'PDF generation failed.';
+            alert('PDF generation failed.\n\n' + (j.message || 'Unknown error.'));
+            return;
+        }}
+
+        const outputPath = j.generated_output_path ? ('\nOutput: ' + j.generated_output_path) : '';
+        const pdfPath = j.generated_pdf_path ? ('\nPDF: ' + j.generated_pdf_path) : '';
+        if (status) status.innerText = j.message || 'PDF generation completed.';
+        alert((j.message || 'PDF generation completed.') + outputPath + pdfPath);
+    }} catch (e) {{
+        setBusy(false, '');
+        const msg = 'Generate PDF request failed: ' + e;
+        if (status) status.innerText = msg;
+        alert(msg);
+    }}
+}}
+
+document.getElementById('swStartYear').addEventListener('change', () => {{
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 }});
-document.getElementById('swStartYear').addEventListener('input', () => {{
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
-}});
-document.getElementById('swEndYear').addEventListener('input', () => {{
+document.getElementById('swEndYear').addEventListener('change', () => {{
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 }});
 
+initYearSelectors();
 refreshState();
 </script>
 </body>
@@ -1366,6 +1553,20 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <div class='groupCard session'>
             <h4>Session</h4>
             <div class='groupBtns'>
+                <button onclick='importColnectFilesReview()'>Import Colnect</button>
+                <button onclick='generatePdfNowReview()'>Generate PDF Now</button>
+                <label for='defaultCatalogSelect'>Default Catalog</label>
+                <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
+                    <option value='sg'>Stanley Gibbons (SG)</option>
+                    <option value='sn'>Scott (SN)</option>
+                    <option value='mi'>Michel (MI)</option>
+                    <option value='yt'>Yvert (YT)</option>
+                    <option value='afa'>AFA</option>
+                    <option value='nvp'>NVP</option>
+                    <option value='un'>Unificato (UN)</option>
+                    <option value='col'>Colnect (COL)</option>
+                </select>
+                <button onclick='saveCatalogDefaultToConfig()'>Update Config Default</button>
                 <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
                 <span id='status' class='badge'>Ready</span>
             </div>
@@ -1445,7 +1646,9 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 const payload = {json};
 let left = payload.left || [];
 let rightAll = payload.right || [];
-const defaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
+const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
+const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
+let countryDefaultCatalogCode = '';
 let leftIdx = 0;
 let rightIdxByLeft = {{}};
 let assignedByLeft = {{}}; // left_rowid -> colnect_id
@@ -1523,6 +1726,50 @@ function catalogDisplayName(code) {{
     if (c === 'un') return 'Unificato';
     if (c === 'col') return 'Colnect';
     return c ? c.toUpperCase() : 'Catalog';
+}}
+
+function getEffectiveDefaultCatalogCode() {{
+    return String(countryDefaultCatalogCode || configDefaultCatalogCode || 'sg').toLowerCase();
+}}
+
+function changeCountryDefaultCatalog() {{
+    const sel = document.getElementById('defaultCatalogSelect');
+    if (!sel) return;
+    countryDefaultCatalogCode = String(sel.value || 'sg').toLowerCase();
+    try {{
+        localStorage.setItem(countryCatalogStorageKey, countryDefaultCatalogCode);
+    }} catch (_) {{}}
+    render();
+}}
+
+async function saveCatalogDefaultToConfig() {{
+    const sel = document.getElementById('defaultCatalogSelect');
+    const statusEl = document.getElementById('status');
+    const code = String(sel?.value || '').toLowerCase();
+    if (!code) {{
+        alert('Choose a catalog first.');
+        return;
+    }}
+
+    if (statusEl) statusEl.innerText = 'Updating config default catalog...';
+    try {{
+        const r = await fetch('/api/default-catalog-config', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ default_catalog_code: code }})
+        }});
+        const j = await r.json();
+        if (j.ok) {{
+            if (statusEl) statusEl.innerText = 'Config default updated';
+            alert(j.message || 'Config updated.');
+        }} else {{
+            if (statusEl) statusEl.innerText = 'Config update failed';
+            alert(j.message || 'Failed to update config default.');
+        }}
+    }} catch (e) {{
+        if (statusEl) statusEl.innerText = 'Config update error';
+        alert('Config update error: ' + e);
+    }}
 }}
 function normalizeCatalogNumber(v) {{
     let s = String(v || '').trim();
@@ -1643,7 +1890,8 @@ function selectedCatalogCodeForCurrent(r) {{
     if (existing) return existing;
     const pairs = r.catalog_code_pairs || [];
     if (!pairs.length) return '';
-    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
+    const preferredCode = getEffectiveDefaultCatalogCode();
+    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === preferredCode);
     return preferred ? preferred.code : (pairs[0].code || '');
 }}
 
@@ -1657,7 +1905,8 @@ function selectedCatalogTypeForCurrent(r) {{
     if (!pairs.length) return '';
     const matched = pairs.find(p => String(p.code || '') === String(selectedCode || ''));
     if (matched && matched.catalog_type) return String(matched.catalog_type).toLowerCase();
-    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
+    const preferredCode = getEffectiveDefaultCatalogCode();
+    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === preferredCode);
     if (preferred && preferred.catalog_type) return String(preferred.catalog_type).toLowerCase();
     return String(pairs[0].catalog_type || '').toLowerCase();
 }}
@@ -1950,7 +2199,7 @@ function openAddDialog() {{
         return;
     }}
     const preferredCode = selectedCatalogCodeForCurrent(r) || r.sg_number || '';
-    const preferredType = selectedCatalogTypeForCurrent(r) || defaultCatalogCode || '';
+    const preferredType = selectedCatalogTypeForCurrent(r) || getEffectiveDefaultCatalogCode() || '';
     const labelText = preferredType
         ? `${{catalogDisplayName(preferredType)}} (${{String(preferredType).toUpperCase()}})`
         : 'Catalog';
@@ -2176,6 +2425,80 @@ async function closeReviewUi() {{
     setTimeout(() => {{ window.location.href = 'about:blank'; }}, 150);
 }}
 
+async function generatePdfNowReview() {{
+    const statusEl = document.getElementById('status');
+    const originalText = statusEl?.innerText || 'Ready';
+    if (statusEl) statusEl.innerText = 'Generating album text and PDF...';
+
+    try {{
+        const res = await fetch('/generate-pdf-now', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{}})
+        }});
+        const j = await res.json();
+        if (!j.ok) {{
+            if (statusEl) statusEl.innerText = 'PDF generation failed';
+            alert(j.message || 'PDF generation failed.');
+            return;
+        }}
+
+        const details = [
+            j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
+            j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
+        ].join('');
+        if (statusEl) statusEl.innerText = j.message || 'PDF generation completed';
+        alert((j.message || 'PDF generation completed.') + details);
+    }} catch (e) {{
+        if (statusEl) statusEl.innerText = 'PDF generation request failed';
+        alert('PDF generation request failed: ' + e);
+    }} finally {{
+        setTimeout(() => {{
+            if (statusEl) statusEl.innerText = originalText;
+        }}, 1600);
+    }}
+}}
+
+async function importColnectFilesReview() {{
+    const statusEl = document.getElementById('status');
+    const originalText = statusEl?.innerText || 'Ready';
+    
+    if (statusEl) statusEl.innerText = 'Importing Colnect files...';
+    
+    try {{
+        const r = await fetch('/api/colnect-import', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{}})
+        }});
+        const j = await r.json();
+            if (j.ok && j.stamps_imported > 0) {{
+                if (statusEl) statusEl.innerText = 'Imported ' + j.stamps_imported + ' stamps';
+                alert('Successfully imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)!\n\nRefreshing...');
+                setTimeout(() => {{
+                    location.reload();
+                }}, 500);
+            }} else if (j.ok && j.stamps_imported === 0) {{
+                if (statusEl) statusEl.innerText = 'No stamps imported';
+                const msg = j.message || 'No stamps were imported.';
+                const details = (j.errors && j.errors.length > 0)
+                    ? '\n\nCheck inbox path and CSV files:\n' + j.errors.join('\n')
+                    : '\n\nCheck that CSV files exist in the configured colnect_inbox_path in config.toml.';
+                alert(msg + details);
+            }} else {{
+                if (statusEl) statusEl.innerText = 'Import failed';
+                const msg = j.message || 'Import failed';
+                const details = (j.errors && j.errors.length > 0)
+                    ? '\n\nErrors:\n' + j.errors.join('\n')
+                    : '';
+                alert(msg + details);
+            }}
+    }} catch (e) {{
+        if (statusEl) statusEl.innerText = 'Import error';
+        alert('Import error: ' + e);
+    }}
+}}
+
 const seriesToggle = document.getElementById('f_series');
 if (seriesToggle) {{
   seriesToggle.checked = checkboxDefaults.f_series;
@@ -2193,6 +2516,18 @@ for (const [checkboxId, checked] of Object.entries(checkboxDefaults)) {{
       el.dataset.userTouched = '1';
     }});
   }}
+}}
+
+try {{
+    const storedCatalog = String(localStorage.getItem(countryCatalogStorageKey) || '').toLowerCase();
+    countryDefaultCatalogCode = storedCatalog || configDefaultCatalogCode;
+}} catch (_) {{
+    countryDefaultCatalogCode = configDefaultCatalogCode;
+}}
+
+const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
+if (defaultCatalogSelect) {{
+    defaultCatalogSelect.value = countryDefaultCatalogCode || 'sg';
 }}
 
 render();
@@ -2920,6 +3255,211 @@ fn undo_colnect_delete(
     }
 }
 
+fn colnect_import_data(
+    conn: &Connection,
+    _req: ColnectImportRequest,
+    db_path: &str,
+    album_name: &str,
+) -> ColnectImportResponse {
+    // Load config and resolve candidate inbox paths.
+    // Priority:
+    // 1) configured colnect_inbox_path (if present)
+    // 2) active album folder (<album>/colnect)
+    let config = match crate::config::load_config("config.toml") {
+        config => config,
+    };
+
+    let mut inbox_candidates: Vec<PathBuf> = Vec::new();
+    if let Some(configured_path) = config.effective_colnect_inbox_path() {
+        inbox_candidates.push(PathBuf::from(configured_path));
+    }
+
+    let album_colnect_dir = album_dir_for_ui(db_path, album_name).join("colnect");
+    if !inbox_candidates.iter().any(|p| p == &album_colnect_dir) {
+        inbox_candidates.push(album_colnect_dir);
+    }
+
+    if inbox_candidates.is_empty() {
+        return ColnectImportResponse {
+            ok: false,
+            message: "No colnect inbox path candidates could be resolved".to_string(),
+            files_processed: 0,
+            stamps_imported: 0,
+            errors: vec!["No configured path and no album path available".to_string()],
+        };
+    }
+
+    // Find CSV files in the first candidate folder that actually contains CSV files.
+    let mut csv_files = Vec::new();
+    let mut errors = Vec::new();
+    let mut checked_dirs: Vec<String> = Vec::new();
+    let mut used_inbox_dir: Option<PathBuf> = None;
+
+    for inbox_dir in inbox_candidates {
+        checked_dirs.push(inbox_dir.display().to_string());
+
+        if !inbox_dir.exists() {
+            errors.push(format!("Directory not found: {}", inbox_dir.display()));
+            continue;
+        }
+
+        let mut local_csvs = Vec::new();
+        match std::fs::read_dir(&inbox_dir) {
+            Ok(entries) => {
+                for entry_result in entries {
+                    match entry_result {
+                        Ok(entry) => {
+                            let path = entry.path();
+                            if path.is_file() {
+                                if let Some(ext) = path.extension() {
+                                    if ext.eq_ignore_ascii_case("csv") {
+                                        local_csvs.push(path);
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            errors.push(format!(
+                                "Failed to read directory entry in {}: {}",
+                                inbox_dir.display(),
+                                e
+                            ));
+                        }
+                    }
+                }
+            }
+            Err(e) => {
+                errors.push(format!(
+                    "Failed to read colnect inbox directory {}: {}",
+                    inbox_dir.display(),
+                    e
+                ));
+                continue;
+            }
+        }
+
+        if !local_csvs.is_empty() {
+            used_inbox_dir = Some(inbox_dir);
+            csv_files = local_csvs;
+            break;
+        }
+    }
+
+    if csv_files.is_empty() {
+        errors.push(format!("Checked folders: {}", checked_dirs.join(" | ")));
+        return ColnectImportResponse {
+            ok: true,
+            message: "No CSV files found in colnect inbox".to_string(),
+            files_processed: 0,
+            stamps_imported: 0,
+            errors,
+        };
+    }
+
+    if let Some(dir) = used_inbox_dir {
+        log::info!("Colnect import using inbox folder: {}", dir.display());
+    }
+
+    // Parse and ingest CSV files
+    let mut total_stamps_imported = 0;
+    let mut files_processed = 0;
+
+    for csv_file in &csv_files {
+        match crate::colnect::parser::parse_csv(csv_file) {
+            Ok(stamps) => {
+                let count = stamps.len();
+                match crate::colnect::ingest::ingest_colnect_data_with_mode(
+                    conn,
+                    &stamps,
+                    "sg",
+                    false, // Don't clear existing - we're adding to what's already there
+                ) {
+                    Ok(_) => {
+                        files_processed += 1;
+                        total_stamps_imported += count;
+                        log::info!(
+                            "Imported {} stamps from {}",
+                            count,
+                            csv_file.display()
+                        );
+                    }
+                    Err(e) => {
+                        errors.push(format!(
+                            "Failed to ingest {}: {}",
+                            csv_file.display(),
+                            e
+                        ));
+                    }
+                }
+            }
+            Err(e) => {
+                errors.push(format!(
+                    "Failed to parse {}: {}",
+                    csv_file.display(),
+                    e
+                ));
+            }
+        }
+    }
+
+    ColnectImportResponse {
+        ok: errors.is_empty(),
+        message: format!(
+            "Imported {} stamps from {} CSV file(s)",
+            total_stamps_imported, files_processed
+        ),
+        files_processed,
+        stamps_imported: total_stamps_imported,
+        errors,
+    }
+}
+
+fn update_default_catalog_code_config(
+    config_path: &str,
+    requested_code: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let normalized = crate::catalog::normalize_catalog_type(requested_code);
+    if normalized.is_empty() {
+        return Err("default catalog code cannot be empty".into());
+    }
+
+    let allowed = ["sg", "sn", "mi", "yt", "afa", "nvp", "un", "col"];
+    if !allowed.contains(&normalized.as_str()) {
+        return Err(format!("unsupported catalog code: {}", normalized).into());
+    }
+
+    let original = fs::read_to_string(config_path)
+        .map_err(|e| format!("failed to read {}: {}", config_path, e))?;
+
+    let mut replaced = false;
+    let mut updated_lines = Vec::new();
+    for line in original.lines() {
+        let trimmed = line.trim_start();
+        if !replaced && trimmed.starts_with("default_catalog_code") {
+            updated_lines.push(format!("default_catalog_code = \"{}\"", normalized));
+            replaced = true;
+        } else {
+            updated_lines.push(line.to_string());
+        }
+    }
+
+    if !replaced {
+        if !updated_lines.is_empty() && !updated_lines.last().unwrap_or(&String::new()).is_empty() {
+            updated_lines.push(String::new());
+        }
+        updated_lines.push(format!("default_catalog_code = \"{}\"", normalized));
+    }
+
+    let mut new_content = updated_lines.join("\n");
+    if original.ends_with('\n') {
+        new_content.push('\n');
+    }
+
+    fs::write(config_path, new_content)
+        .map_err(|e| format!("failed to write {}: {}", config_path, e))?;
+    Ok(normalized)
+}
+
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
@@ -2933,6 +3473,7 @@ pub fn run_review_ui_bootstrap(
     let _ = webbrowser::open(&url);
 
     let mut selected: Option<(String, String)> = None;
+    let mut logout_requested = false;
 
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
@@ -3027,7 +3568,154 @@ pub fn run_review_ui_bootstrap(
             continue;
         }
 
+        if method == Method::Post && req_url == "/logout" {
+            let response = serde_json::json!({
+                "ok": true,
+                "message": "Review UI startup closed"
+            });
+            let mut resp = Response::from_string(response.to_string());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            logout_requested = true;
+            break;
+        }
+
+        if method == Method::Post && req_url == "/api/generate-pdf-now" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapGeneratePdfRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => {
+                    let countries = scan_bootstrap_countries();
+                    let found = countries
+                        .into_iter()
+                        .find(|c| c.country.eq_ignore_ascii_case(req.country.trim()));
+                    match found {
+                        Some(c) => {
+                            match crate::db_utils::init_db(&c.db_path) {
+                                Ok(conn) => {
+                                    let artifacts = crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                        &conn,
+                                        &c.country,
+                                        None::<fn(usize)>,
+                                        None,
+                                        None,
+                                        Some(true),
+                                    );
+                                    if let Some(pdf_path) = artifacts.generated_pdf_path.as_ref() {
+                                        open_local_path(pdf_path);
+                                    }
+
+                                    serde_json::to_string(&BootstrapGeneratePdfResponse {
+                                        ok: true,
+                                        message: format!("Generated album output for {}", c.country),
+                                        generated_output_path: Some(artifacts.output_txt_path.display().to_string()),
+                                        generated_pdf_path: artifacts
+                                            .generated_pdf_path
+                                            .as_ref()
+                                            .map(|p| p.display().to_string()),
+                                    })
+                                    .unwrap_or_else(|_| {
+                                        "{\"ok\":false,\"message\":\"serialization failed\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
+                                            .to_string()
+                                    })
+                                }
+                                Err(e) => serde_json::to_string(&BootstrapGeneratePdfResponse {
+                                    ok: false,
+                                    message: format!("failed to open DB {}: {}", c.db_path, e),
+                                    generated_output_path: None,
+                                    generated_pdf_path: None,
+                                })
+                                .unwrap_or_else(|_| {
+                                    "{\"ok\":false,\"message\":\"failed to open DB\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
+                                        .to_string()
+                                }),
+                            }
+                        }
+                        None => serde_json::to_string(&BootstrapGeneratePdfResponse {
+                            ok: false,
+                            message: "Selected country not found or missing DB".to_string(),
+                            generated_output_path: None,
+                            generated_pdf_path: None,
+                        })
+                        .unwrap_or_else(|_| {
+                            "{\"ok\":false,\"message\":\"selected country not found\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
+                                .to_string()
+                        }),
+                    }
+                }
+                Err(e) => serde_json::to_string(&BootstrapGeneratePdfResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    generated_output_path: None,
+                    generated_pdf_path: None,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
+                        .to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+            if method == Method::Post && req_url == "/api/colnect-import" {
+                let mut body = String::new();
+                if request.as_reader().read_to_string(&mut body).is_err() {
+                    let _ = request.respond(Response::empty(StatusCode(400)));
+                    continue;
+                }
+
+                let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
+                let resp_json = match parsed {
+                    Ok(_req) => serde_json::to_string(&ColnectImportResponse {
+                        ok: false,
+                        message: "Bootstrap stage: please select a country and open Review UI first, then use Import Colnect".to_string(),
+                        files_processed: 0,
+                        stamps_imported: 0,
+                        errors: vec!["Import not available in bootstrap stage".to_string()],
+                    })
+                    .unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                            .to_string()
+                    }),
+                    Err(e) => serde_json::to_string(&ColnectImportResponse {
+                        ok: false,
+                        message: format!("invalid request: {}", e),
+                        files_processed: 0,
+                        stamps_imported: 0,
+                        errors: vec![format!("invalid request: {}", e)],
+                    })
+                    .unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                            .to_string()
+                    }),
+                };
+
+                let mut resp = Response::from_string(resp_json);
+                if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                    resp = resp.with_header(h);
+                }
+                let _ = request.respond(resp);
+                continue;
+            }
+
         let _ = request.respond(Response::empty(StatusCode(404)));
+    }
+
+    if logout_requested {
+        return Ok(None);
     }
 
     Ok(selected.map(|(db, country)| (db, country, server, bind)))
@@ -3099,6 +3787,7 @@ pub fn run_review_ui(
     let payload = MatcherPayload {
         left,
         right,
+        album_name: album_name.clone(),
         default_catalog_code: default_catalog_code.to_string(),
         odd_row_color: odd_row_color.to_string(),
         even_row_color: even_row_color.to_string(),
@@ -3340,6 +4029,149 @@ pub fn run_review_ui(
                     "{\"ok\":false,\"message\":\"invalid request\",\"restored_rows\":0}".to_string()
                 }),
             };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/colnect-import" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => serde_json::to_string(&colnect_import_data(
+                    &conn,
+                    req,
+                    db_path,
+                    &album_name,
+                ))
+                    .unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                            .to_string()
+                    }),
+                Err(e) => serde_json::to_string(&ColnectImportResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    files_processed: 0,
+                    stamps_imported: 0,
+                    errors: vec![format!("invalid request: {}", e)],
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                        .to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/default-catalog-config" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<UpdateDefaultCatalogRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => {
+                    match update_default_catalog_code_config(
+                        "config.toml",
+                        &req.default_catalog_code,
+                    ) {
+                        Ok(saved) => serde_json::to_string(&UpdateDefaultCatalogResponse {
+                            ok: true,
+                            message: format!(
+                                "Updated config default_catalog_code to '{}'",
+                                saved
+                            ),
+                        })
+                        .unwrap_or_else(|_| {
+                            "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
+                        }),
+                        Err(e) => serde_json::to_string(&UpdateDefaultCatalogResponse {
+                            ok: false,
+                            message: format!("Failed to update config: {}", e),
+                        })
+                        .unwrap_or_else(|_| {
+                            "{\"ok\":false,\"message\":\"failed to update config\"}".to_string()
+                        }),
+                    }
+                }
+                Err(e) => serde_json::to_string(&UpdateDefaultCatalogResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\"}".to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/generate-pdf-now" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let _parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
+            let mut generated_output_path = None;
+            let mut generated_pdf_path = None;
+            let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                crate::album_globals::generate_album_output_conn_with_pdf_override(
+                    &conn,
+                    &album_name,
+                    None::<fn(usize)>,
+                    None,
+                    None,
+                    Some(true),
+                )
+            })) {
+                Ok(artifacts) => {
+                    generated_output_path = Some(artifacts.output_txt_path.display().to_string());
+                    if let Some(pdf_path) = artifacts.generated_pdf_path {
+                        open_local_path(&pdf_path);
+                        generated_pdf_path = Some(pdf_path.display().to_string());
+                        "Album text and PDF generation completed.".to_string()
+                    } else {
+                        "Album text generated, but no PDF was produced. Check AlbumEasy CLI configuration/logs."
+                            .to_string()
+                    }
+                }
+                Err(_) => "Album/PDF generation failed unexpectedly (panic).".to_string(),
+            };
+
+            let resp_json = serde_json::to_string(&BootstrapGeneratePdfResponse {
+                ok: generated_output_path.is_some(),
+                message,
+                generated_output_path,
+                generated_pdf_path,
+            })
+            .unwrap_or_else(|_| {
+                "{\"ok\":false,\"message\":\"serialization failed\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
+                    .to_string()
+            });
 
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {

@@ -58,15 +58,15 @@ album_pages_footer_number_after = " of $PAGES$"
 reference_width_mm = 24.0
 reference_height_mm = 27.0
 stamp_box_height = 36.0
-stamp_box_adjust = -2.0
+stamp_box_adjust = 0.0
 
 # Colnect image-dimension adjustments (mm)
-colnect_width_adjust_mm = 1.0
-colnect_height_adjust_mm = 3.0
+colnect_width_adjust_mm = 2.0
+colnect_height_adjust_mm = 4.0
 
 # Packing limits
 max_stamps_per_row = 5
-max_rows_per_page = 5
+max_rows_per_page = 4
 packing_horizontal_safety_mm = 8.0
 packing_vertical_safety_mm = 1.0
 series_row_gap_mm = 0.0
@@ -97,7 +97,7 @@ album_stamp_img_aspect_ratio = true
 # Stamp heading style
 stamp_heading_font = "HN"
 stamp_heading_size = 6.0
-stamp_heading_label = "Scott"
+stamp_heading_label = "SG"
 
 ###################################
 # Layout
@@ -176,7 +176,7 @@ wikipedia_paragraph_alignment = "JUSTIFIED"
 wikipedia_paragraph_padding = 8.0
 wikipedia_paragraph_right_padding = 8.0
 wikipedia_paragraph_vspace_multiplier = 0.18
-wikipedia_section_title_font = "HB"
+wikipedia_section_title_font = "HN"
 wikipedia_section_title_font_size = 13
 wikipedia_section_title_spacing = 4.0
 wikipedia_pagination_strategy = "balanced"
@@ -208,13 +208,13 @@ page_text_centre_vspace = 1.0
 series_page_text_centre_font = "HN"
 series_page_text_centre_size = 8.0
 series_page_text_centre_vspace = 1.0
-date_page_text_centre_font = "TN"
+date_page_text_centre_font = "HN"
 date_page_text_centre_size = 8.0
 date_page_text_centre_vspace = 1.0
-watermark_page_text_centre_font = "TN"
+watermark_page_text_centre_font = "HN"
 watermark_page_text_centre_size = 8.0
 watermark_page_text_centre_vspace = 1.0
-engraving_page_text_centre_font = "TN"
+engraving_page_text_centre_font = "HN"
 engraving_page_text_centre_size = 8.0
 engraving_page_text_centre_vspace = 1.0
 page_text_right_font = "HN"
