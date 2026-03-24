@@ -95,8 +95,17 @@ album_stamp_img_new_setting_preserve_aspect = true
 album_stamp_img_aspect_ratio = true
 
 # Stamp heading style
+# Default catalog family used when choosing a catalog number from Colnect.
+# Examples:
+# - sn = Scott
+# - sg = Stanley Gibbons
+# - mi = Michel
+# - yt = Yvert
+default_catalog_code = "sn"
 stamp_heading_font = "HN"
 stamp_heading_size = 6.0
+# "auto" = use the display name for default_catalog_code
+# ""     = hide the label entirely
 stamp_heading_label = "SG"
 
 ###################################
@@ -180,7 +189,7 @@ wikipedia_section_title_font = "HN"
 wikipedia_section_title_font_size = 13
 wikipedia_section_title_spacing = 4.0
 wikipedia_pagination_strategy = "balanced"
-wikipedia_pagination_conservative_fraction = 0.80
+wikipedia_pagination_conservative_fraction = 0.8
 wikipedia_center_content = false
 wikipedia_use_math_spacing = true
 
@@ -229,10 +238,33 @@ show_progress_indicator = true
 # Used when CLI omits --colnect-inbox for --source colnectexport.
 # The directory is auto-created on startup if missing.
 colnect_inbox_path = "samples/colnect_inbox"
-# Optional AlbumEasy CLI path used for automatic PDF generation from output TXT.
+# Optional AlbumEasy CLI path for post-generation PDF rendering.
+# Linux example: "/home/ray/work/AlbumEasy/AlbumEasy.sh"
 albumeasy_cli_path = "/home/ray/work/AlbumEasy/AlbumEasy.sh"
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = true
+
+###################################
+# Review UI
+###################################
+[review_ui]
+# Alternating row colors for right/left metadata tables.
+odd_row_color = "#ffffff"
+even_row_color = "#e6eef4"
+
+# Default checkbox states for field selection
+default_series_checked = true
+default_description_checked = true
+default_watermark_checked = false
+default_design_checked = false
+default_engraving_checked = false
+default_perforation_checked = false
+default_context_checked = false
+default_colnect_links_checked = true
+default_colnect_image_url_checked = true
+default_colnect_metadata_checked = true
+default_replace_sg_number_checked = true
+default_right_unmatched_only_checked = false
 
 ###################################
 # Colnect
@@ -269,25 +301,3 @@ detail_fields = "print_run,themes,designers"
 #print_run = true
 #score = true
 #description = false
-
-###################################
-# Review UI
-###################################
-[review_ui]
-# Alternating row colors for right/left metadata tables.
-odd_row_color = "#ffffff"
-even_row_color = "#e6eef4"
-
-# Default checkbox states for field selection
-default_series_checked = true
-default_description_checked = true
-default_watermark_checked = false
-default_design_checked = false
-default_engraving_checked = false
-default_perforation_checked = false
-default_context_checked = false
-default_colnect_links_checked = true
-default_colnect_image_url_checked = true
-default_colnect_metadata_checked = true
-default_replace_sg_number_checked = true
-default_right_unmatched_only_checked = false

@@ -1,7 +1,7 @@
 use base64::Engine;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tiny_http::{Header, Method, Response, Server, StatusCode};
@@ -304,6 +304,61 @@ struct UpdateDefaultCatalogResponse {
     message: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct ConfigEditorField {
+    id: String,
+    section_id: String,
+    section_title: String,
+    key: String,
+    template_value: String,
+    current_value: String,
+    comments: Vec<String>,
+    from_template: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct ConfigEditorSection {
+    id: String,
+    title: String,
+    comments: Vec<String>,
+    fields: Vec<ConfigEditorField>,
+}
+
+#[derive(Debug, Serialize)]
+struct ConfigEditorDataResponse {
+    ok: bool,
+    message: String,
+    sections: Vec<ConfigEditorSection>,
+}
+
+#[derive(Debug, Deserialize)]
+struct SaveConfigEditorRequest {
+    values: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize)]
+struct SaveConfigEditorResponse {
+    ok: bool,
+    message: String,
+    reload_required: bool,
+}
+
+pub enum ReviewUiBootstrapOutcome {
+    Exit,
+    ReloadRequested,
+    Selected {
+        db_path: String,
+        country: String,
+        server: Server,
+        bind: String,
+    },
+}
+
+pub enum ReviewUiRunOutcome {
+    Exit,
+    ReloadRequested,
+}
+
 fn path_to_file_url(path: &Path) -> Option<String> {
     let canonical = path.canonicalize().ok()?;
     let encoded = canonical
@@ -514,6 +569,7 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         <label for='countrySel'>Country</label>
         <select id='countrySel'></select>
         <button onclick='refreshState()'>Refresh</button>
+        <button onclick='openConfigEditor()'>Edit Config</button>
         <button class='primary' onclick='startReview()'>Open Review</button>
         <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
         <button onclick='importColnectFiles()'>Import Colnect</button>
@@ -883,9 +939,11 @@ document.getElementById('swEndYear').addEventListener('change', () => {{
 initYearSelectors();
 refreshState();
 </script>
+{config_editor_assets}
 </body>
 </html>"#,
-        inbox_hint
+    inbox_hint,
+    config_editor_assets = render_config_editor_assets()
     )
 }
 
@@ -1553,6 +1611,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <div class='groupCard session'>
             <h4>Session</h4>
             <div class='groupBtns'>
+                <button onclick='openConfigEditor()'>Edit Config</button>
                 <button onclick='importColnectFilesReview()'>Import Colnect</button>
                 <button onclick='generatePdfNowReview()'>Generate PDF Now</button>
                 <label for='defaultCatalogSelect'>Default Catalog</label>
@@ -2532,9 +2591,11 @@ if (defaultCatalogSelect) {{
 
 render();
 </script>
+{config_editor_assets}
 </body>
 </html>"#,
-        json = json
+    json = json,
+    config_editor_assets = render_config_editor_assets()
     )
 }
 
@@ -3460,10 +3521,416 @@ fn update_default_catalog_code_config(
     Ok(normalized)
 }
 
+fn config_field_id(section_id: &str, key: &str) -> String {
+    if section_id.trim().is_empty() {
+        key.trim().to_string()
+    } else {
+        format!("{}.{}", section_id.trim(), key.trim())
+    }
+}
+
+fn friendly_config_section_title(section_id: &str) -> String {
+    if section_id.trim().is_empty() {
+        return "General".to_string();
+    }
+
+    section_id
+        .split('.')
+        .map(|part| {
+            part.split('_')
+                .filter(|segment| !segment.is_empty())
+                .map(|segment| {
+                    let mut chars = segment.chars();
+                    match chars.next() {
+                        Some(first) => {
+                            format!("{}{}", first.to_ascii_uppercase(), chars.as_str())
+                        }
+                        None => String::new(),
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        })
+        .collect::<Vec<_>>()
+        .join(" / ")
+}
+
+fn parse_config_key_value_line(line: &str) -> Option<(String, String)> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.starts_with('#') {
+        return None;
+    }
+    let (key, value) = trimmed.split_once('=')?;
+    let key = key.trim();
+    if key.is_empty() || key.starts_with('[') {
+        return None;
+    }
+    Some((key.to_string(), value.trim().to_string()))
+}
+
+fn ensure_config_section<'a>(
+    sections: &'a mut Vec<ConfigEditorSection>,
+    section_id: &str,
+    section_comments: Vec<String>,
+) -> &'a mut ConfigEditorSection {
+    if let Some(pos) = sections.iter().position(|section| section.id == section_id) {
+        return &mut sections[pos];
+    }
+
+    sections.push(ConfigEditorSection {
+        id: section_id.to_string(),
+        title: friendly_config_section_title(section_id),
+        comments: section_comments,
+        fields: Vec::new(),
+    });
+    sections.last_mut().expect("section just pushed")
+}
+
+fn parse_template_config_sections(template_content: &str) -> Vec<ConfigEditorSection> {
+    let mut sections: Vec<ConfigEditorSection> = Vec::new();
+    let mut current_section_id = String::new();
+    let mut pending_comments: Vec<String> = Vec::new();
+
+    for line in template_content.lines() {
+        let trimmed = line.trim();
+
+        if trimmed.starts_with('#') {
+            let comment = trimmed.trim_start_matches('#').trim();
+            if !comment.is_empty() {
+                pending_comments.push(comment.to_string());
+            }
+            continue;
+        }
+
+        if trimmed.is_empty() {
+            pending_comments.clear();
+            continue;
+        }
+
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            current_section_id = trimmed
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .trim()
+                .to_string();
+            let section_comments = std::mem::take(&mut pending_comments);
+            let _ = ensure_config_section(&mut sections, &current_section_id, section_comments);
+            continue;
+        }
+
+        if let Some((key, value)) = parse_config_key_value_line(trimmed) {
+            let field_comments = std::mem::take(&mut pending_comments);
+            let section = ensure_config_section(&mut sections, &current_section_id, Vec::new());
+            section.fields.push(ConfigEditorField {
+                id: config_field_id(&current_section_id, &key),
+                section_id: current_section_id.clone(),
+                section_title: section.title.clone(),
+                key,
+                template_value: value.clone(),
+                current_value: value,
+                comments: field_comments,
+                from_template: true,
+            });
+            continue;
+        }
+
+        pending_comments.clear();
+    }
+
+    sections.retain(|section| !section.fields.is_empty());
+    sections
+}
+
+fn flatten_toml_value_into_map(prefix: &str, value: &toml::Value, out: &mut HashMap<String, String>) {
+    match value {
+        toml::Value::Table(table) => {
+            for (key, entry) in table {
+                let next_prefix = if prefix.is_empty() {
+                    key.to_string()
+                } else {
+                    format!("{}.{}", prefix, key)
+                };
+                flatten_toml_value_into_map(&next_prefix, entry, out);
+            }
+        }
+        _ => {
+            out.insert(prefix.to_string(), value.to_string());
+        }
+    }
+}
+
+fn load_current_config_values(
+    config_path: &str,
+) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+    let content = fs::read_to_string(config_path)
+        .map_err(|e| format!("failed to read {}: {}", config_path, e))?;
+    let parsed: toml::Value = toml::from_str(&content)
+        .map_err(|e| format!("failed to parse {}: {}", config_path, e))?;
+    let mut values = HashMap::new();
+    flatten_toml_value_into_map("", &parsed, &mut values);
+    Ok(values)
+}
+
+fn build_config_editor_data(
+    config_path: &str,
+    template_path: &str,
+) -> Result<Vec<ConfigEditorSection>, Box<dyn std::error::Error>> {
+    let template_content = fs::read_to_string(template_path)
+        .map_err(|e| format!("failed to read {}: {}", template_path, e))?;
+    let mut template_sections = parse_template_config_sections(&template_content);
+    let current_values = load_current_config_values(config_path)?;
+    let mut used_field_ids = HashSet::new();
+
+    for section in &mut template_sections {
+        for field in &mut section.fields {
+            if let Some(current_value) = current_values.get(&field.id) {
+                field.current_value = current_value.clone();
+            }
+            used_field_ids.insert(field.id.clone());
+        }
+    }
+
+    let mut extra_sections: BTreeMap<String, Vec<ConfigEditorField>> = BTreeMap::new();
+    for (field_id, current_value) in current_values {
+        if used_field_ids.contains(&field_id) {
+            continue;
+        }
+
+        let mut parts = field_id.rsplitn(2, '.');
+        let key = parts.next().unwrap_or_default().to_string();
+        let section_id = parts.next().unwrap_or_default().to_string();
+        extra_sections
+            .entry(section_id.clone())
+            .or_default()
+            .push(ConfigEditorField {
+                id: field_id.clone(),
+                section_id: section_id.clone(),
+                section_title: friendly_config_section_title(&section_id),
+                key,
+                template_value: current_value.clone(),
+                current_value,
+                comments: vec!["Preserved from the current config file. No template comment is available for this key.".to_string()],
+                from_template: false,
+            });
+    }
+
+    for (section_id, mut fields) in extra_sections {
+        fields.sort_by(|left, right| left.key.cmp(&right.key));
+        template_sections.push(ConfigEditorSection {
+            id: section_id.clone(),
+            title: if section_id.is_empty() {
+                "Additional".to_string()
+            } else {
+                format!("{} (Preserved)", friendly_config_section_title(&section_id))
+            },
+            comments: vec!["These settings exist in the active config.toml but are not documented in config_template.toml. They will be preserved on save.".to_string()],
+            fields,
+        });
+    }
+
+    Ok(template_sections)
+}
+
+fn render_config_from_template_values(template_content: &str, values: &HashMap<String, String>) -> String {
+    let mut rendered_lines: Vec<String> = Vec::new();
+    let mut current_section_id = String::new();
+    let mut template_field_ids = HashSet::new();
+
+    for line in template_content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            current_section_id = trimmed
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .trim()
+                .to_string();
+            rendered_lines.push(line.to_string());
+            continue;
+        }
+
+        if let Some((key, original_value)) = parse_config_key_value_line(line) {
+            let field_id = config_field_id(&current_section_id, &key);
+            template_field_ids.insert(field_id.clone());
+            let value = values
+                .get(&field_id)
+                .cloned()
+                .unwrap_or(original_value)
+                .trim()
+                .to_string();
+            rendered_lines.push(format!("{} = {}", key, value));
+            continue;
+        }
+
+        rendered_lines.push(line.to_string());
+    }
+
+    let mut extra_sections: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
+    for (field_id, value) in values {
+        if template_field_ids.contains(field_id) {
+            continue;
+        }
+
+        let mut parts = field_id.rsplitn(2, '.');
+        let key = parts.next().unwrap_or_default().to_string();
+        let section_id = parts.next().unwrap_or_default().to_string();
+        extra_sections
+            .entry(section_id)
+            .or_default()
+            .push((key, value.trim().to_string()));
+    }
+
+    if !extra_sections.is_empty() {
+        if rendered_lines.last().map(|line| !line.is_empty()).unwrap_or(false) {
+            rendered_lines.push(String::new());
+        }
+        rendered_lines.push("###################################".to_string());
+        rendered_lines.push("# Preserved Extra Keys".to_string());
+        rendered_lines.push("###################################".to_string());
+
+        for (section_id, mut fields) in extra_sections {
+            fields.sort_by(|left, right| left.0.cmp(&right.0));
+            rendered_lines.push(String::new());
+            if !section_id.trim().is_empty() {
+                rendered_lines.push(format!("[{}]", section_id));
+            }
+            for (key, value) in fields {
+                rendered_lines.push(format!("{} = {}", key, value));
+            }
+        }
+    }
+
+    let mut output = rendered_lines.join("\n");
+    output.push('\n');
+    output
+}
+
+fn save_full_config_values(
+    config_path: &str,
+    template_path: &str,
+    values: &HashMap<String, String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    if values.is_empty() {
+        return Err("no config values were provided".into());
+    }
+
+    let template_content = fs::read_to_string(template_path)
+        .map_err(|e| format!("failed to read {}: {}", template_path, e))?;
+    let rendered = render_config_from_template_values(&template_content, values);
+
+    toml::from_str::<toml::Value>(&rendered)
+        .map_err(|e| format!("generated config is not valid TOML: {}", e))?;
+
+    fs::write(config_path, rendered)
+        .map_err(|e| format!("failed to write {}: {}", config_path, e))?;
+    Ok(())
+}
+
+fn render_config_editor_assets() -> String {
+    r#"
+<style>
+.cfgBackdrop { position: fixed; inset: 0; background: rgba(17, 31, 43, 0.56); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
+.cfgDialog { width: min(1280px, 96vw); max-height: 92vh; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #d6e0e8; border-radius: 14px; box-shadow: 0 24px 56px rgba(18, 36, 52, 0.32); overflow: hidden; }
+.cfgHeader, .cfgFooter { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #f7fbfe; border-bottom: 1px solid #e0e8ef; }
+.cfgFooter { border-top: 1px solid #e0e8ef; border-bottom: none; }
+.cfgTitleBlock h3 { margin: 0; font-size: 18px; color: #18384d; }
+.cfgTitleBlock p { margin: 4px 0 0 0; font-size: 13px; color: #426078; }
+.cfgActionRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cfgToolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid #e6edf2; background: #ffffff; }
+.cfgToolbar input { min-width: 260px; }
+.cfgBody { overflow: auto; padding: 14px 16px 18px; background: linear-gradient(180deg, #fbfdff 0%, #f5f9fc 100%); }
+.cfgLoadState { padding: 24px 10px; color: #36546a; font-size: 14px; }
+.cfgSection { border: 1px solid #dbe4ec; border-radius: 12px; background: #ffffff; box-shadow: 0 6px 18px rgba(31, 59, 82, 0.06); margin-bottom: 14px; overflow: hidden; }
+.cfgSectionHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #eef5fa; border-bottom: 1px solid #dce7ef; }
+.cfgSectionHead h4 { margin: 0; font-size: 15px; color: #19384e; }
+.cfgSectionHead p { margin: 4px 0 0 0; font-size: 12px; color: #4a697f; }
+.cfgFieldRow { display: grid; grid-template-columns: minmax(320px, 40%) minmax(320px, 1fr); gap: 14px; padding: 14px; border-top: 1px solid #edf2f6; }
+.cfgFieldRow:first-child { border-top: none; }
+.cfgStaticPane { display: flex; flex-direction: column; gap: 8px; }
+.cfgEditPane { display: flex; flex-direction: column; gap: 6px; }
+.cfgKeyRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cfgKeyRow strong { font-size: 14px; color: #18384d; }
+.cfgTemplateBox { border: 1px solid #d9e4ec; border-radius: 10px; background: #f8fbfe; padding: 10px; font-size: 12px; color: #355267; }
+.cfgTemplateBox code { display: block; white-space: pre-wrap; word-break: break-word; background: #ffffff; border: 1px solid #d7e2eb; border-radius: 8px; padding: 8px; margin-top: 6px; }
+.cfgInfoDetail { border: 1px solid #d7e3ec; border-radius: 10px; background: #fbfdff; }
+.cfgInfoDetail summary { cursor: pointer; padding: 8px 10px; font-size: 12px; font-weight: 600; color: #284b64; }
+.cfgInfoBody { padding: 0 10px 10px; font-size: 12px; color: #46657a; white-space: pre-wrap; }
+.cfgValueLabel { font-size: 12px; font-weight: 600; color: #284b64; }
+.cfgValueInput { width: 100%; min-height: 42px; resize: vertical; padding: 9px 10px; border: 1px solid #cfdbe6; border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; background: #ffffff; box-sizing: border-box; }
+.cfgValueInput:focus { outline: 2px solid rgba(47, 111, 163, 0.18); border-color: #2f6fa3; }
+.cfgHidden { display: none !important; }
+@media (max-width: 960px) {
+  .cfgFieldRow { grid-template-columns: 1fr; }
+  .cfgDialog { width: min(96vw, 96vw); }
+  .cfgToolbar input { min-width: 180px; width: 100%; }
+}
+</style>
+
+<div id='configEditorBackdrop' class='cfgBackdrop'>
+    <div class='cfgDialog'>
+        <div class='cfgHeader'>
+            <div class='cfgTitleBlock'>
+                <h3>Edit config.toml</h3>
+                <p>Static template defaults and comments are on the left. Editable current values are on the right.</p>
+            </div>
+            <div class='cfgActionRow'>
+                <button class='primary' onclick='saveConfigEditorChanges()'>OK / Save</button>
+                <button onclick='requestCloseConfigEditor()'>Cancel</button>
+            </div>
+        </div>
+        <div class='cfgToolbar'>
+            <span id='cfgEditorStatus' class='badge'>Ready</span>
+            <span id='cfgEditorFieldCount' class='badge'>Fields: 0</span>
+            <input id='cfgSearchInput' type='text' placeholder='Filter by section, key, or comment' oninput='filterConfigEditorFields()' />
+        </div>
+        <div id='cfgEditorBody' class='cfgBody'>
+            <div id='cfgEditorLoadState' class='cfgLoadState'>Load config details to start editing.</div>
+            <div id='cfgEditorSections'></div>
+        </div>
+        <div class='cfgFooter'>
+            <div style='font-size:12px;color:#49667b'>Saving validates the generated config and reloads the review UI so new values take effect.</div>
+            <div class='cfgActionRow'>
+                <button class='primary' onclick='saveConfigEditorChanges()'>OK / Save</button>
+                <button onclick='requestCloseConfigEditor()'>Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const configEditorState = { open: false, loading: false, saving: false, sections: [], originalValues: {} };
+function cfgHtml(v) { return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;'); }
+function configEditorBackdrop() { return document.getElementById('configEditorBackdrop'); }
+function configEditorSectionsHost() { return document.getElementById('cfgEditorSections'); }
+function configEditorLoadState() { return document.getElementById('cfgEditorLoadState'); }
+function configEditorStatusBadge() { return document.getElementById('cfgEditorStatus'); }
+function configEditorFieldCountBadge() { return document.getElementById('cfgEditorFieldCount'); }
+function configEditorSearchInput() { return document.getElementById('cfgSearchInput'); }
+function setConfigEditorStatus(message) { const badge = configEditorStatusBadge(); if (badge) badge.innerText = message; const statusEl = document.getElementById('status'); if (statusEl) statusEl.innerText = message; }
+function configFieldInputId(fieldId) { return 'cfg-input-' + String(fieldId || '').replaceAll('.', '__').replaceAll('/', '_'); }
+function configFieldInfoHtml(comments) { if (!Array.isArray(comments) || !comments.length) return ''; const text = comments.map(line => cfgHtml(line)).join('\n'); return `<details class='cfgInfoDetail'><summary>Info</summary><div class='cfgInfoBody'>${text}</div></details>`; }
+function showConfigEditorLoading(message) { const loadState = configEditorLoadState(); const host = configEditorSectionsHost(); if (host) host.innerHTML = ''; if (loadState) { loadState.innerText = message; loadState.classList.remove('cfgHidden'); } }
+function hideConfigEditorLoading() { const loadState = configEditorLoadState(); if (loadState) loadState.classList.add('cfgHidden'); }
+function renderConfigEditorSections() { const host = configEditorSectionsHost(); if (!host) return; const sections = Array.isArray(configEditorState.sections) ? configEditorState.sections : []; let fieldCount = 0; host.innerHTML = sections.map(section => { const fields = Array.isArray(section.fields) ? section.fields : []; fieldCount += fields.length; const sectionComments = Array.isArray(section.comments) && section.comments.length ? `<p>${section.comments.map(line => cfgHtml(line)).join(' ')}</p>` : ''; const rows = fields.map(field => { const searchCorpus = [section.title || '', field.key || '', field.id || '', ...(Array.isArray(field.comments) ? field.comments : [])].join(' ').toLowerCase(); return `<div class='cfgFieldRow' data-config-search='${cfgHtml(searchCorpus)}'><div class='cfgStaticPane'><div class='cfgKeyRow'><strong>${cfgHtml(field.key || '')}</strong><span class='badge'>${cfgHtml(field.from_template === false ? 'Preserved key' : 'Template key')}</span></div><div class='cfgTemplateBox'><div>Template value</div><code>${cfgHtml(field.template_value || '')}</code></div>${configFieldInfoHtml(field.comments || [])}</div><div class='cfgEditPane'><label class='cfgValueLabel' for='${cfgHtml(configFieldInputId(field.id))}'>Current value</label><textarea id='${cfgHtml(configFieldInputId(field.id))}' class='cfgValueInput' data-field-id='${cfgHtml(field.id || '')}' rows='2' spellcheck='false' oninput='markConfigEditorDirty()'>${cfgHtml(field.current_value || '')}</textarea></div></div>`; }).join(''); return `<section class='cfgSection'><div class='cfgSectionHead'><div><h4>${cfgHtml(section.title || 'Section')}</h4>${sectionComments}</div><span class='badge'>Fields: ${fields.length}</span></div>${rows}</section>`; }).join(''); const badge = configEditorFieldCountBadge(); if (badge) badge.innerText = `Fields: ${fieldCount}`; filterConfigEditorFields(); }
+function collectConfigEditorValues() { const values = {}; document.querySelectorAll('.cfgValueInput[data-field-id]').forEach(el => { values[el.getAttribute('data-field-id')] = String(el.value ?? ''); }); return values; }
+function configEditorIsDirty() { const currentValues = collectConfigEditorValues(); const originalValues = configEditorState.originalValues || {}; const currentKeys = Object.keys(currentValues).sort(); const originalKeys = Object.keys(originalValues).sort(); if (currentKeys.length !== originalKeys.length) return true; for (let idx = 0; idx < currentKeys.length; idx += 1) { if (currentKeys[idx] !== originalKeys[idx]) return true; if (String(currentValues[currentKeys[idx]]) !== String(originalValues[currentKeys[idx]])) return true; } return false; }
+function markConfigEditorDirty() { if (!configEditorState.open) return; setConfigEditorStatus(configEditorIsDirty() ? 'Config changes pending' : 'Config unchanged'); }
+function openConfigEditorBackdrop() { const backdrop = configEditorBackdrop(); if (backdrop) backdrop.style.display = 'flex'; configEditorState.open = true; }
+function closeConfigEditorBackdrop() { const backdrop = configEditorBackdrop(); if (backdrop) backdrop.style.display = 'none'; configEditorState.open = false; }
+async function openConfigEditor() { if (configEditorState.loading || configEditorState.saving) return; configEditorState.loading = true; openConfigEditorBackdrop(); showConfigEditorLoading('Loading config template, comments, and current values...'); setConfigEditorStatus('Loading config editor...'); try { const response = await fetch('/api/config-editor'); const payload = await response.json(); if (!payload.ok) throw new Error(payload.message || 'Failed to load config editor data.'); configEditorState.sections = payload.sections || []; configEditorState.originalValues = {}; (payload.sections || []).forEach(section => { (section.fields || []).forEach(field => { configEditorState.originalValues[field.id] = String(field.current_value ?? ''); }); }); hideConfigEditorLoading(); renderConfigEditorSections(); const searchInput = configEditorSearchInput(); if (searchInput) searchInput.value = ''; setConfigEditorStatus('Config editor ready'); } catch (error) { showConfigEditorLoading('Failed to load config editor: ' + error); setConfigEditorStatus('Config editor failed to load'); } finally { configEditorState.loading = false; } }
+function filterConfigEditorFields() { const query = String(configEditorSearchInput()?.value || '').trim().toLowerCase(); document.querySelectorAll('.cfgFieldRow[data-config-search]').forEach(row => { const corpus = String(row.getAttribute('data-config-search') || ''); row.classList.toggle('cfgHidden', !!query && !corpus.includes(query)); }); }
+function configEditorExitChoice(message) { return new Promise(resolve => { const dlg = document.createElement('dialog'); dlg.style.cssText = 'padding:1.5em 1.7em;border-radius:12px;font-family:sans-serif;border:1px solid #c7d4de;min-width:340px;max-width:520px;box-shadow:0 12px 32px rgba(17,31,43,.22)'; dlg.innerHTML = `<p style='margin:0 0 1em;font-size:1.02em;font-weight:600;color:#18384d'>${cfgHtml(message || 'Save config changes?')}</p>` + "<p style='margin:0 0 1.2em;color:#49667b;font-size:0.92em'>Save applies the new config and reloads the review UI. Discard closes the editor without changing config.toml.</p>" + "<div style='display:flex;gap:0.65em;justify-content:flex-end;flex-wrap:wrap'>" + "<button id='_cfg_save' style='padding:0.55em 1.1em;background:#2f6fa3;color:#fff;border:none;border-radius:8px;cursor:pointer'>Save</button>" + "<button id='_cfg_discard' style='padding:0.55em 1.1em;background:#4b5a68;color:#fff;border:none;border-radius:8px;cursor:pointer'>Discard</button>" + "<button id='_cfg_cancel' style='padding:0.55em 1.1em;background:#eef3f7;color:#21384b;border:none;border-radius:8px;cursor:pointer'>Continue Editing</button>" + "</div>"; document.body.appendChild(dlg); dlg.showModal(); const finish = choice => { dlg.close(); dlg.remove(); resolve(choice); }; dlg.querySelector('#_cfg_save').onclick = () => finish('save'); dlg.querySelector('#_cfg_discard').onclick = () => finish('discard'); dlg.querySelector('#_cfg_cancel').onclick = () => finish('cancel'); dlg.addEventListener('cancel', () => finish('cancel')); }); }
+async function requestCloseConfigEditor() { if (!configEditorState.open || configEditorState.loading || configEditorState.saving) { closeConfigEditorBackdrop(); return; } if (!configEditorIsDirty()) { closeConfigEditorBackdrop(); setConfigEditorStatus('Config editor closed'); return; } const choice = await configEditorExitChoice('Save config changes before closing?'); if (choice === 'save') { await saveConfigEditorChanges(); return; } if (choice === 'discard') { closeConfigEditorBackdrop(); setConfigEditorStatus('Config changes discarded'); } }
+async function saveConfigEditorChanges() { if (configEditorState.saving) return false; const values = collectConfigEditorValues(); configEditorState.saving = true; setConfigEditorStatus('Saving config.toml...'); try { const response = await fetch('/api/config-editor-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values }) }); const payload = await response.json(); if (!payload.ok) throw new Error(payload.message || 'Failed to save config.toml.'); configEditorState.originalValues = { ...values }; closeConfigEditorBackdrop(); setConfigEditorStatus(payload.message || 'Config saved. Reloading...'); if (typeof setBusy === 'function') setBusy(true, 'Config saved. Reloading review UI...'); setTimeout(() => { window.location.reload(); }, payload.reload_required ? 1600 : 250); return true; } catch (error) { setConfigEditorStatus('Config save failed'); alert('Config save failed: ' + error); return false; } finally { configEditorState.saving = false; } }
+window.addEventListener('beforeunload', event => { if (!configEditorState.open || !configEditorIsDirty()) return; event.preventDefault(); event.returnValue = ''; });
+configEditorBackdrop()?.addEventListener('click', event => { if (event.target === configEditorBackdrop()) requestCloseConfigEditor(); });
+</script>
+"#.to_string()
+}
+
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
-) -> Result<Option<(String, String, Server, String)>, Box<dyn std::error::Error>> {
+) -> Result<ReviewUiBootstrapOutcome, Box<dyn std::error::Error>> {
     eprintln!("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
     let (server, bind) = bind_review_server(bind_addr_opt)?;
@@ -3474,6 +3941,7 @@ pub fn run_review_ui_bootstrap(
 
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
+    let mut reload_requested = false;
 
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
@@ -3501,6 +3969,80 @@ pub fn run_review_ui_bootstrap(
                 resp = resp.with_header(h);
             }
             let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/config-editor" {
+            let resp_json = match build_config_editor_data("config.toml", "config_template.toml") {
+                Ok(sections) => serde_json::to_string(&ConfigEditorDataResponse {
+                    ok: true,
+                    message: "Config editor data loaded".to_string(),
+                    sections,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"sections\":[]}".to_string()
+                }),
+                Err(error) => serde_json::to_string(&ConfigEditorDataResponse {
+                    ok: false,
+                    message: format!("Failed to load config editor data: {}", error),
+                    sections: Vec::new(),
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"failed to load config editor data\",\"sections\":[]}".to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/config-editor-save" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<SaveConfigEditorRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match save_full_config_values("config.toml", "config_template.toml", &req.values) {
+                    Ok(_) => {
+                        reload_requested = true;
+                        SaveConfigEditorResponse {
+                            ok: true,
+                            message: "config.toml updated. Reloading the review UI now.".to_string(),
+                            reload_required: true,
+                        }
+                    }
+                    Err(error) => SaveConfigEditorResponse {
+                        ok: false,
+                        message: format!("Failed to save config.toml: {}", error),
+                        reload_required: false,
+                    },
+                },
+                Err(error) => SaveConfigEditorResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                    reload_required: false,
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            if reload_requested {
+                break;
+            }
             continue;
         }
 
@@ -3715,10 +4257,22 @@ pub fn run_review_ui_bootstrap(
     }
 
     if logout_requested {
-        return Ok(None);
+        return Ok(ReviewUiBootstrapOutcome::Exit);
     }
 
-    Ok(selected.map(|(db, country)| (db, country, server, bind)))
+    if reload_requested {
+        return Ok(ReviewUiBootstrapOutcome::ReloadRequested);
+    }
+
+    Ok(match selected {
+        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected {
+            db_path,
+            country,
+            server,
+            bind,
+        },
+        None => ReviewUiBootstrapOutcome::Exit,
+    })
 }
 
 pub fn run_review_ui(
@@ -3744,7 +4298,7 @@ pub fn run_review_ui(
     right_unmatched_only_default_checked: bool,
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>> {
     eprintln!("Review UI: preparing data from {}", db_path);
     eprintln!("Review UI: opening database...");
     let conn = crate::db_utils::init_db(db_path)?;
@@ -3824,12 +4378,42 @@ pub fn run_review_ui(
         eprintln!("Review UI: waiting for bootstrap tab to load compare view...");
     }
 
+    let mut reload_requested = false;
+
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
         let req_url = request.url().to_string();
 
         if method == Method::Get && req_url == "/compare-ready" {
             let mut resp = Response::from_string("{\"ready\":true}".to_string());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/config-editor" {
+            let resp_json = match build_config_editor_data("config.toml", "config_template.toml") {
+                Ok(sections) => serde_json::to_string(&ConfigEditorDataResponse {
+                    ok: true,
+                    message: "Config editor data loaded".to_string(),
+                    sections,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"sections\":[]}".to_string()
+                }),
+                Err(error) => serde_json::to_string(&ConfigEditorDataResponse {
+                    ok: false,
+                    message: format!("Failed to load config editor data: {}", error),
+                    sections: Vec::new(),
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"failed to load config editor data\",\"sections\":[]}".to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -4128,6 +4712,52 @@ pub fn run_review_ui(
             continue;
         }
 
+        if method == Method::Post && req_url == "/api/config-editor-save" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<SaveConfigEditorRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match save_full_config_values("config.toml", "config_template.toml", &req.values) {
+                    Ok(_) => {
+                        reload_requested = true;
+                        SaveConfigEditorResponse {
+                            ok: true,
+                            message: "config.toml updated. Reloading the review UI now.".to_string(),
+                            reload_required: true,
+                        }
+                    }
+                    Err(error) => SaveConfigEditorResponse {
+                        ok: false,
+                        message: format!("Failed to save config.toml: {}", error),
+                        reload_required: false,
+                    },
+                },
+                Err(error) => SaveConfigEditorResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                    reload_required: false,
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            if reload_requested {
+                break;
+            }
+            continue;
+        }
+
         if method == Method::Post && req_url == "/generate-pdf-now" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
@@ -4262,7 +4892,11 @@ pub fn run_review_ui(
         let _ = request.respond(Response::empty(StatusCode(404)));
     }
 
-    Ok(())
+    if reload_requested {
+        return Ok(ReviewUiRunOutcome::ReloadRequested);
+    }
+
+    Ok(ReviewUiRunOutcome::Exit)
 }
 
 #[cfg(test)]

@@ -19,7 +19,9 @@ use stamp_album_gen2::{
     cli::Cli,
     config,
     modes::{run_database_mode, run_scraping_mode},
-    review_ui::{run_review_ui, run_review_ui_bootstrap},
+    review_ui::{
+        run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome, ReviewUiRunOutcome,
+    },
     setup::{setup_logging, validate_os},
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -37,74 +39,122 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         eprintln!("Review UI: initializing...");
 
-        let review_cfg = config::load_config("config.toml");
+        enum ReviewUiLaunchState {
+            Bootstrap,
+            Selected {
+                db_path: String,
+                album_name: Option<String>,
+                open_browser: bool,
+                prebound: Option<(tiny_http::Server, String)>,
+            },
+        }
 
-        let (db_path, album_name_opt, open_browser, prebound) =
-            if cli.db_path.is_none() && cli.album_name.is_none() {
-                eprintln!(
-                    "Review UI: no country/database selected on CLI; opening startup selector..."
-                );
-                let selection = run_review_ui_bootstrap(
-                    cli.review_ui_bind.as_deref(),
-                    review_cfg.effective_colnect_inbox_path(),
-                )?;
-
-                let Some((selected_db, selected_country, srv, bind)) = selection else {
-                    eprintln!("No country selected; exiting Review UI startup.");
-                    return Ok(());
-                };
-                eprintln!(
-                    "Review UI: selected '{}' with database {}",
-                    selected_country, selected_db
-                );
-                (
-                    selected_db,
-                    Some(selected_country),
-                    false,
-                    Some((srv, bind)),
-                )
+        let mut launch_state = if cli.db_path.is_none() && cli.album_name.is_none() {
+            ReviewUiLaunchState::Bootstrap
+        } else {
+            let db_path = if let Some(path) = cli.db_path.clone() {
+                path
+            } else if let Some(album_name) = cli.album_name.clone() {
+                let album_dir = album_name.trim().replace(' ', "-");
+                format!("Albums/{0}/{0}.db", album_dir)
             } else {
-                let db_path = if let Some(path) = cli.db_path.clone() {
-                    path
-                } else if let Some(album_name) = cli.album_name.clone() {
-                    let album_dir = album_name.trim().replace(' ', "-");
-                    format!("Albums/{0}/{0}.db", album_dir)
-                } else {
-                    eprintln!("Review UI requires --db-path or --album-name.");
-                    eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
-                    std::process::exit(1);
-                };
-                eprintln!("Review UI: using requested database {}", db_path);
-                (db_path, cli.album_name.clone(), true, None)
+                eprintln!("Review UI requires --db-path or --album-name.");
+                eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
+                std::process::exit(1);
             };
+            eprintln!("Review UI: using requested database {}", db_path);
+            ReviewUiLaunchState::Selected {
+                db_path,
+                album_name: cli.album_name.clone(),
+                open_browser: true,
+                prebound: None,
+            }
+        };
 
-        eprintln!("Review UI: loading compare data. This may take a few seconds...");
+        loop {
+            let review_cfg = config::load_config("config.toml");
+            let current_state = std::mem::replace(&mut launch_state, ReviewUiLaunchState::Bootstrap);
 
-        run_review_ui(
-            &db_path,
-            album_name_opt.as_deref(),
-            prebound,
-            cli.review_ui_bind.as_deref(),
-            open_browser,
-            &review_cfg.effective_default_catalog_code(),
-            review_cfg.review_ui_odd_row_color(),
-            review_cfg.review_ui_even_row_color(),
-            review_cfg.review_ui_series_default_checked(),
-            review_cfg.review_ui_description_default_checked(),
-            review_cfg.review_ui_watermark_default_checked(),
-            review_cfg.review_ui_design_default_checked(),
-            review_cfg.review_ui_engraving_default_checked(),
-            review_cfg.review_ui_perforation_default_checked(),
-            review_cfg.review_ui_context_default_checked(),
-            review_cfg.review_ui_colnect_links_default_checked(),
-            review_cfg.review_ui_colnect_image_url_default_checked(),
-            review_cfg.review_ui_colnect_metadata_default_checked(),
-            review_cfg.review_ui_replace_sg_number_default_checked(),
-            review_cfg.review_ui_right_unmatched_only_default_checked(),
-            review_cfg.albumeasy_auto_pdf_enabled(),
-            review_cfg.effective_albumeasy_cli_path().is_some(),
-        )?;
-        return Ok(());
+            match current_state {
+                ReviewUiLaunchState::Bootstrap => {
+                    eprintln!(
+                        "Review UI: no country/database selected on CLI; opening startup selector..."
+                    );
+                    match run_review_ui_bootstrap(
+                        cli.review_ui_bind.as_deref(),
+                        review_cfg.effective_colnect_inbox_path(),
+                    )? {
+                        ReviewUiBootstrapOutcome::Exit => {
+                            eprintln!("No country selected; exiting Review UI startup.");
+                            return Ok(());
+                        }
+                        ReviewUiBootstrapOutcome::ReloadRequested => {
+                            eprintln!("Review UI: config changed in startup selector; reloading...");
+                            launch_state = ReviewUiLaunchState::Bootstrap;
+                            continue;
+                        }
+                        ReviewUiBootstrapOutcome::Selected {
+                            db_path,
+                            country,
+                            server,
+                            bind,
+                        } => {
+                            eprintln!("Review UI: selected '{}' with database {}", country, db_path);
+                            launch_state = ReviewUiLaunchState::Selected {
+                                db_path,
+                                album_name: Some(country),
+                                open_browser: false,
+                                prebound: Some((server, bind)),
+                            };
+                        }
+                    }
+                }
+                ReviewUiLaunchState::Selected {
+                    db_path,
+                    album_name,
+                    open_browser,
+                    prebound,
+                } => {
+                    eprintln!("Review UI: loading compare data. This may take a few seconds...");
+                    match run_review_ui(
+                        &db_path,
+                        album_name.as_deref(),
+                        prebound,
+                        cli.review_ui_bind.as_deref(),
+                        open_browser,
+                        &review_cfg.effective_default_catalog_code(),
+                        review_cfg.review_ui_odd_row_color(),
+                        review_cfg.review_ui_even_row_color(),
+                        review_cfg.review_ui_series_default_checked(),
+                        review_cfg.review_ui_description_default_checked(),
+                        review_cfg.review_ui_watermark_default_checked(),
+                        review_cfg.review_ui_design_default_checked(),
+                        review_cfg.review_ui_engraving_default_checked(),
+                        review_cfg.review_ui_perforation_default_checked(),
+                        review_cfg.review_ui_context_default_checked(),
+                        review_cfg.review_ui_colnect_links_default_checked(),
+                        review_cfg.review_ui_colnect_image_url_default_checked(),
+                        review_cfg.review_ui_colnect_metadata_default_checked(),
+                        review_cfg.review_ui_replace_sg_number_default_checked(),
+                        review_cfg.review_ui_right_unmatched_only_default_checked(),
+                        review_cfg.albumeasy_auto_pdf_enabled(),
+                        review_cfg.effective_albumeasy_cli_path().is_some(),
+                    )? {
+                        ReviewUiRunOutcome::Exit => return Ok(()),
+                        ReviewUiRunOutcome::ReloadRequested => {
+                            eprintln!("Review UI: config changed in compare view; reloading...");
+                            launch_state = ReviewUiLaunchState::Selected {
+                                db_path,
+                                album_name,
+                                open_browser: false,
+                                prebound: None,
+                            };
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // If requested, initialize (or force-initialize) the config file and exit.
