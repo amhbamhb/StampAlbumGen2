@@ -327,6 +327,19 @@ fn set_attr_if_missing(attrs: &mut GenericAttrs, key: &str, value: Option<String
     }
 }
 
+fn leading_year_from_series(series: &str) -> Option<i32> {
+    let t = series.trim_start();
+    if t.len() < 4 {
+        return None;
+    }
+    let prefix: String = t.chars().take(4).collect();
+    if prefix.chars().all(|c| c.is_ascii_digit()) {
+        prefix.parse::<i32>().ok()
+    } else {
+        None
+    }
+}
+
 /// Fetch stamps for a given `series` from the DB and apply optional
 /// start/end year filtering. Returns a Vec<`Stamp`> suitable for the
 /// generator layout pipeline.
@@ -362,6 +375,21 @@ pub fn fetch_and_filter_stamps(
     } else if let Some(ey) = end_year {
         if ey < 9999 {
             stamps.retain(|st| st.year <= ey);
+        }
+    }
+
+    // Guard against mixed/legacy records where the series title carries an
+    // explicit year (e.g. "1970 ...") that conflicts with row.year.
+    // In ranged runs, trust the explicit series year for inclusion checks.
+    if let (Some(sy), Some(ey)) = (start_year, end_year) {
+        if sy > 0 && ey < 9999 && sy <= ey {
+            stamps.retain(|st| {
+                if let Some(series_year) = leading_year_from_series(&st.series) {
+                    series_year >= sy && series_year <= ey
+                } else {
+                    true
+                }
+            });
         }
     }
 

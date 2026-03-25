@@ -275,29 +275,31 @@ include_details = true
 
 # Fallback comma-list field selection
 # Available: catalog_codes, issued_on, expiry_date, size, themes, printing,
+# printing_type,
 # paper, gum, designers, printers, colors, watermark, format, emission,
 # perforation, face_value, print_run, score, description
-detail_fields = "print_run,themes,designers"
+detail_fields = "print_run,themes,designers,printing_type"
 
 # Optional per-field true/false toggles (takes precedence over detail_fields
-# when at least one key is set).
-#[colnect.fields]
-#catalog_codes = true
-#issued_on = true
-#expiry_date = false
-#size = true
-#themes = true
-#printing = true
-#paper = false
-#gum = false
-#designers = true
-#printers = true
-#colors = true
-#watermark = true
-#format = false
-#emission = false
-#perforation = true
-#face_value = true
-#print_run = true
-#score = true
-#description = false
+# when at least one toggle is true).
+[colnect.fields]
+catalog_codes = false
+issued_on = false
+expiry_date = false
+size = false
+themes = false
+printing = false
+printing_type = false
+paper = false
+gum = false
+designers = false
+printers = false
+colors = false
+watermark = false
+format = false
+emission = false
+perforation = false
+face_value = false
+print_run = false
+score = false
+description = false

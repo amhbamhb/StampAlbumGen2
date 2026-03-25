@@ -73,7 +73,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         loop {
             let review_cfg = config::load_config("config.toml");
-            let current_state = std::mem::replace(&mut launch_state, ReviewUiLaunchState::Bootstrap);
+            let current_state =
+                std::mem::replace(&mut launch_state, ReviewUiLaunchState::Bootstrap);
 
             match current_state {
                 ReviewUiLaunchState::Bootstrap => {
@@ -89,7 +90,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             return Ok(());
                         }
                         ReviewUiBootstrapOutcome::ReloadRequested => {
-                            eprintln!("Review UI: config changed in startup selector; reloading...");
+                            eprintln!(
+                                "Review UI: config changed in startup selector; reloading..."
+                            );
                             launch_state = ReviewUiLaunchState::Bootstrap;
                             continue;
                         }
@@ -99,7 +102,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             server,
                             bind,
                         } => {
-                            eprintln!("Review UI: selected '{}' with database {}", country, db_path);
+                            eprintln!(
+                                "Review UI: selected '{}' with database {}",
+                                country, db_path
+                            );
                             launch_state = ReviewUiLaunchState::Selected {
                                 db_path,
                                 album_name: Some(country),
@@ -149,6 +155,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 open_browser: false,
                                 prebound: None,
                             };
+                            continue;
+                        }
+                        ReviewUiRunOutcome::ReturnToStartRequested => {
+                            eprintln!(
+                                "Review UI: return-to-start requested from compare view; opening startup selector..."
+                            );
+                            launch_state = ReviewUiLaunchState::Bootstrap;
                             continue;
                         }
                     }

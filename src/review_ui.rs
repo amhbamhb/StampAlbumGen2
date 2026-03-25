@@ -169,6 +169,10 @@ struct BootstrapStartResponse {
 #[derive(Debug, Deserialize)]
 struct BootstrapGeneratePdfRequest {
     country: String,
+    #[serde(default)]
+    start_year: Option<i32>,
+    #[serde(default)]
+    end_year: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -269,6 +273,10 @@ struct ShutdownRequest {
     generate_album: bool,
     #[serde(default)]
     generate_pdf: bool,
+    #[serde(default)]
+    start_year: Option<i32>,
+    #[serde(default)]
+    end_year: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -357,6 +365,7 @@ pub enum ReviewUiBootstrapOutcome {
 pub enum ReviewUiRunOutcome {
     Exit,
     ReloadRequested,
+    ReturnToStartRequested,
 }
 
 fn path_to_file_url(path: &Path) -> Option<String> {
@@ -574,6 +583,13 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
         <button onclick='importColnectFiles()'>Import Colnect</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
+    </div>
+    <div class='row' style='align-items:center;gap:0.5em;flex-wrap:wrap;'>
+        <label for='pdfStartYear' style='margin:0;'>PDF Year Range</label>
+        <input id='pdfStartYear' type='number' placeholder='Start year' min='1840' max='2100' style='width:100px'/>
+        <span style='font-size:0.9em;'>to</span>
+        <input id='pdfEndYear' type='number' placeholder='End year' min='1840' max='2100' style='width:100px'/>
+        <span style='font-size:0.82em;color:#666;'>(leave blank = all years)</span>
         <span id='countryCount' class='badge'>Countries: 0</span>
     </div>
 
@@ -897,14 +913,21 @@ async function generateAlbumPdfNow() {{
         return;
     }}
 
-    if (status) status.innerText = 'Generating album text and PDF for ' + country + '...';
-    setBusy(true, 'Generating album and PDF for ' + country + '...');
+    const startYearVal = document.getElementById('pdfStartYear')?.value.trim();
+    const endYearVal   = document.getElementById('pdfEndYear')?.value.trim();
+    const startYear    = startYearVal ? parseInt(startYearVal, 10) : null;
+    const endYear      = endYearVal   ? parseInt(endYearVal, 10)   : null;
+
+    const yearDesc = (startYear || endYear)
+        ? ` (years ${{startYear || 'start'}}–${{endYear || 'end'}})` : '';
+    if (status) status.innerText = 'Generating album text and PDF for ' + country + yearDesc + '...';
+    setBusy(true, 'Generating album and PDF for ' + country + yearDesc + '...');
 
     try {{
         const r = await fetch('/api/generate-pdf-now', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ country: country }})
+            body: JSON.stringify({{ country: country, start_year: startYear, end_year: endYear }})
         }});
         const j = await r.json();
         setBusy(false, '');
@@ -942,8 +965,8 @@ refreshState();
 {config_editor_assets}
 </body>
 </html>"#,
-    inbox_hint,
-    config_editor_assets = render_config_editor_assets()
+        inbox_hint,
+        config_editor_assets = render_config_editor_assets()
     )
 }
 
@@ -1614,6 +1637,10 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 <button onclick='openConfigEditor()'>Edit Config</button>
                 <button onclick='importColnectFilesReview()'>Import Colnect</button>
                 <button onclick='generatePdfNowReview()'>Generate PDF Now</button>
+                <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
+                <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
+                <span style='font-size:0.9em;'>–</span>
+                <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
                 <label for='defaultCatalogSelect'>Default Catalog</label>
                 <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
                     <option value='sg'>Stanley Gibbons (SG)</option>
@@ -1626,6 +1653,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                     <option value='col'>Colnect (COL)</option>
                 </select>
                 <button onclick='saveCatalogDefaultToConfig()'>Update Config Default</button>
+                <button onclick='returnToStartReviewPage()'>Return To Start Review</button>
                 <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
                 <span id='status' class='badge'>Ready</span>
             </div>
@@ -2469,7 +2497,12 @@ async function closeReviewUi() {{
     const res = await fetch('/shutdown', {{
         method: 'POST',
         headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ generate_album: generateAlbum, generate_pdf: choice.generatePdf }})
+        body: JSON.stringify({{
+            generate_album: generateAlbum,
+            generate_pdf: choice.generatePdf,
+            start_year: (() => {{ const v = document.getElementById('reviewPdfStartYear')?.value.trim(); return v ? parseInt(v, 10) : null; }})(),
+            end_year:   (() => {{ const v = document.getElementById('reviewPdfEndYear')?.value.trim();   return v ? parseInt(v, 10) : null; }})(),
+        }})
     }});
 
     const j = await res.json();
@@ -2484,16 +2517,53 @@ async function closeReviewUi() {{
     setTimeout(() => {{ window.location.href = 'about:blank'; }}, 150);
 }}
 
+async function returnToStartReviewPage() {{
+    const statusEl = document.getElementById('status');
+    const originalText = statusEl?.innerText || 'Ready';
+    if (statusEl) statusEl.innerText = 'Returning to Start Review page...';
+
+    try {{
+        const res = await fetch('/return-to-start', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{}})
+        }});
+        const j = await res.json();
+        if (!j.ok) {{
+            if (statusEl) statusEl.innerText = 'Return to Start failed';
+            alert(j.message || 'Failed to return to Start Review page.');
+            return;
+        }}
+
+        if (statusEl) statusEl.innerText = j.message || 'Returning to Start Review page...';
+        setTimeout(() => {{
+            window.location.href = '/';
+        }}, 400);
+    }} catch (e) {{
+        if (statusEl) statusEl.innerText = 'Return to Start request failed';
+        alert('Return to Start request failed: ' + e);
+    }} finally {{
+        setTimeout(() => {{
+            if (statusEl) statusEl.innerText = originalText;
+        }}, 2200);
+    }}
+}}
+
 async function generatePdfNowReview() {{
     const statusEl = document.getElementById('status');
     const originalText = statusEl?.innerText || 'Ready';
-    if (statusEl) statusEl.innerText = 'Generating album text and PDF...';
+    const startYearVal = document.getElementById('reviewPdfStartYear')?.value.trim();
+    const endYearVal   = document.getElementById('reviewPdfEndYear')?.value.trim();
+    const startYear    = startYearVal ? parseInt(startYearVal, 10) : null;
+    const endYear      = endYearVal   ? parseInt(endYearVal, 10)   : null;
+    const yearDesc     = (startYear || endYear) ? ` (years ${{startYear || 'start'}}–${{endYear || 'end'}})` : '';
+    if (statusEl) statusEl.innerText = 'Generating album text and PDF' + yearDesc + '...';
 
     try {{
         const res = await fetch('/generate-pdf-now', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{}})
+            body: JSON.stringify({{ start_year: startYear, end_year: endYear }})
         }});
         const j = await res.json();
         if (!j.ok) {{
@@ -2594,8 +2664,8 @@ render();
 {config_editor_assets}
 </body>
 </html>"#,
-    json = json,
-    config_editor_assets = render_config_editor_assets()
+        json = json,
+        config_editor_assets = render_config_editor_assets()
     )
 }
 
@@ -3430,35 +3500,21 @@ fn colnect_import_data(
             Ok(stamps) => {
                 let count = stamps.len();
                 match crate::colnect::ingest::ingest_colnect_data_with_mode(
-                    conn,
-                    &stamps,
-                    "sg",
+                    conn, &stamps, "sg",
                     false, // Don't clear existing - we're adding to what's already there
                 ) {
                     Ok(_) => {
                         files_processed += 1;
                         total_stamps_imported += count;
-                        log::info!(
-                            "Imported {} stamps from {}",
-                            count,
-                            csv_file.display()
-                        );
+                        log::info!("Imported {} stamps from {}", count, csv_file.display());
                     }
                     Err(e) => {
-                        errors.push(format!(
-                            "Failed to ingest {}: {}",
-                            csv_file.display(),
-                            e
-                        ));
+                        errors.push(format!("Failed to ingest {}: {}", csv_file.display(), e));
                     }
                 }
             }
             Err(e) => {
-                errors.push(format!(
-                    "Failed to parse {}: {}",
-                    csv_file.display(),
-                    e
-                ));
+                errors.push(format!("Failed to parse {}: {}", csv_file.display(), e));
             }
         }
     }
@@ -3641,7 +3697,11 @@ fn parse_template_config_sections(template_content: &str) -> Vec<ConfigEditorSec
     sections
 }
 
-fn flatten_toml_value_into_map(prefix: &str, value: &toml::Value, out: &mut HashMap<String, String>) {
+fn flatten_toml_value_into_map(
+    prefix: &str,
+    value: &toml::Value,
+    out: &mut HashMap<String, String>,
+) {
     match value {
         toml::Value::Table(table) => {
             for (key, entry) in table {
@@ -3664,8 +3724,8 @@ fn load_current_config_values(
 ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
     let content = fs::read_to_string(config_path)
         .map_err(|e| format!("failed to read {}: {}", config_path, e))?;
-    let parsed: toml::Value = toml::from_str(&content)
-        .map_err(|e| format!("failed to parse {}: {}", config_path, e))?;
+    let parsed: toml::Value =
+        toml::from_str(&content).map_err(|e| format!("failed to parse {}: {}", config_path, e))?;
     let mut values = HashMap::new();
     flatten_toml_value_into_map("", &parsed, &mut values);
     Ok(values)
@@ -3731,7 +3791,10 @@ fn build_config_editor_data(
     Ok(template_sections)
 }
 
-fn render_config_from_template_values(template_content: &str, values: &HashMap<String, String>) -> String {
+fn render_config_from_template_values(
+    template_content: &str,
+    values: &HashMap<String, String>,
+) -> String {
     let mut rendered_lines: Vec<String> = Vec::new();
     let mut current_section_id = String::new();
     let mut template_field_ids = HashSet::new();
@@ -3780,7 +3843,11 @@ fn render_config_from_template_values(template_content: &str, values: &HashMap<S
     }
 
     if !extra_sections.is_empty() {
-        if rendered_lines.last().map(|line| !line.is_empty()).unwrap_or(false) {
+        if rendered_lines
+            .last()
+            .map(|line| !line.is_empty())
+            .unwrap_or(false)
+        {
             rendered_lines.push(String::new());
         }
         rendered_lines.push("###################################".to_string());
@@ -4009,12 +4076,17 @@ pub fn run_review_ui_bootstrap(
 
             let parsed: Result<SaveConfigEditorRequest, _> = serde_json::from_str(&body);
             let response = match parsed {
-                Ok(req) => match save_full_config_values("config.toml", "config_template.toml", &req.values) {
+                Ok(req) => match save_full_config_values(
+                    "config.toml",
+                    "config_template.toml",
+                    &req.values,
+                ) {
                     Ok(_) => {
                         reload_requested = true;
                         SaveConfigEditorResponse {
                             ok: true,
-                            message: "config.toml updated. Reloading the review UI now.".to_string(),
+                            message: "config.toml updated. Reloading the review UI now."
+                                .to_string(),
                             reload_required: true,
                         }
                     }
@@ -4031,11 +4103,12 @@ pub fn run_review_ui_bootstrap(
                 },
             };
 
-            let mut resp = Response::from_string(
-                serde_json::to_string(&response).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}".to_string()
-                }),
-            );
+            let mut resp = Response::from_string(serde_json::to_string(&response).unwrap_or_else(
+                |_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}"
+                        .to_string()
+                },
+            ));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -4146,8 +4219,8 @@ pub fn run_review_ui_bootstrap(
                                         &conn,
                                         &c.country,
                                         None::<fn(usize)>,
-                                        None,
-                                        None,
+                                        req.start_year,
+                                        req.end_year,
                                         Some(true),
                                     );
                                     if let Some(pdf_path) = artifacts.generated_pdf_path.as_ref() {
@@ -4212,15 +4285,15 @@ pub fn run_review_ui_bootstrap(
             continue;
         }
 
-            if method == Method::Post && req_url == "/api/colnect-import" {
-                let mut body = String::new();
-                if request.as_reader().read_to_string(&mut body).is_err() {
-                    let _ = request.respond(Response::empty(StatusCode(400)));
-                    continue;
-                }
+        if method == Method::Post && req_url == "/api/colnect-import" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
 
-                let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
-                let resp_json = match parsed {
+            let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
                     Ok(_req) => serde_json::to_string(&ColnectImportResponse {
                         ok: false,
                         message: "Bootstrap stage: please select a country and open Review UI first, then use Import Colnect".to_string(),
@@ -4245,13 +4318,13 @@ pub fn run_review_ui_bootstrap(
                     }),
                 };
 
-                let mut resp = Response::from_string(resp_json);
-                if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                    resp = resp.with_header(h);
-                }
-                let _ = request.respond(resp);
-                continue;
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
             }
+            let _ = request.respond(resp);
+            continue;
+        }
 
         let _ = request.respond(Response::empty(StatusCode(404)));
     }
@@ -4379,6 +4452,7 @@ pub fn run_review_ui(
     }
 
     let mut reload_requested = false;
+    let mut return_to_start_requested = false;
 
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
@@ -4678,10 +4752,7 @@ pub fn run_review_ui(
                     ) {
                         Ok(saved) => serde_json::to_string(&UpdateDefaultCatalogResponse {
                             ok: true,
-                            message: format!(
-                                "Updated config default_catalog_code to '{}'",
-                                saved
-                            ),
+                            message: format!("Updated config default_catalog_code to '{}'", saved),
                         })
                         .unwrap_or_else(|_| {
                             "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
@@ -4699,9 +4770,7 @@ pub fn run_review_ui(
                     ok: false,
                     message: format!("invalid request: {}", e),
                 })
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"invalid request\"}".to_string()
-                }),
+                .unwrap_or_else(|_| "{\"ok\":false,\"message\":\"invalid request\"}".to_string()),
             };
 
             let mut resp = Response::from_string(resp_json);
@@ -4721,12 +4790,17 @@ pub fn run_review_ui(
 
             let parsed: Result<SaveConfigEditorRequest, _> = serde_json::from_str(&body);
             let response = match parsed {
-                Ok(req) => match save_full_config_values("config.toml", "config_template.toml", &req.values) {
+                Ok(req) => match save_full_config_values(
+                    "config.toml",
+                    "config_template.toml",
+                    &req.values,
+                ) {
                     Ok(_) => {
                         reload_requested = true;
                         SaveConfigEditorResponse {
                             ok: true,
-                            message: "config.toml updated. Reloading the review UI now.".to_string(),
+                            message: "config.toml updated. Reloading the review UI now."
+                                .to_string(),
                             reload_required: true,
                         }
                     }
@@ -4743,11 +4817,12 @@ pub fn run_review_ui(
                 },
             };
 
-            let mut resp = Response::from_string(
-                serde_json::to_string(&response).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}".to_string()
-                }),
-            );
+            let mut resp = Response::from_string(serde_json::to_string(&response).unwrap_or_else(
+                |_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}"
+                        .to_string()
+                },
+            ));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -4758,6 +4833,19 @@ pub fn run_review_ui(
             continue;
         }
 
+        if method == Method::Post && req_url == "/return-to-start" {
+            return_to_start_requested = true;
+            let mut resp = Response::from_string(
+                "{\"ok\":true,\"message\":\"Returning to Start Review page...\"}"
+                    .to_string(),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            break;
+        }
+
         if method == Method::Post && req_url == "/generate-pdf-now" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
@@ -4765,7 +4853,12 @@ pub fn run_review_ui(
                 continue;
             }
 
-            let _parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
+            let parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
+            let (req_start_year, req_end_year) = parsed_body.as_ref().ok().map(|v| {
+                let sy = v.get("start_year").and_then(|x| x.as_i64()).map(|x| x as i32);
+                let ey = v.get("end_year").and_then(|x| x.as_i64()).map(|x| x as i32);
+                (sy, ey)
+            }).unwrap_or((None, None));
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -4773,8 +4866,8 @@ pub fn run_review_ui(
                     &conn,
                     &album_name,
                     None::<fn(usize)>,
-                    None,
-                    None,
+                    req_start_year,
+                    req_end_year,
                     Some(true),
                 )
             })) {
@@ -4830,8 +4923,8 @@ pub fn run_review_ui(
                                     &conn,
                                     &album_name,
                                     None::<fn(usize)>,
-                                    None,
-                                    None,
+                                        req.start_year,
+                                        req.end_year,
                                     Some(req.generate_pdf),
                                 )
                             }));
@@ -4894,6 +4987,10 @@ pub fn run_review_ui(
 
     if reload_requested {
         return Ok(ReviewUiRunOutcome::ReloadRequested);
+    }
+
+    if return_to_start_requested {
+        return Ok(ReviewUiRunOutcome::ReturnToStartRequested);
     }
 
     Ok(ReviewUiRunOutcome::Exit)

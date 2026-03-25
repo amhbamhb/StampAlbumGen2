@@ -347,6 +347,7 @@ pub struct ColnectFieldToggles {
     pub size: Option<bool>,
     pub themes: Option<bool>,
     pub printing: Option<bool>,
+    pub printing_type: Option<bool>,
     pub paper: Option<bool>,
     pub gum: Option<bool>,
     pub designers: Option<bool>,
@@ -424,7 +425,7 @@ impl Config {
             include_country: Some(true),
             include_date: Some(true),
             stamp_detail_layout: Some("separate_rows".to_string()),
-            colnect_detail_fields: Some("print_run,themes,designers".to_string()),
+            colnect_detail_fields: Some("print_run,themes,designers,printing_type".to_string()),
             review_ui: Some(ReviewUiConfig {
                 odd_row_color: Some("#ffffff".to_string()),
                 even_row_color: Some("#e6eef4".to_string()),
@@ -572,7 +573,7 @@ impl Config {
             .as_ref()
             .and_then(|c| c.detail_fields.as_deref())
             .or(self.colnect_detail_fields.as_deref())
-            .unwrap_or("print_run,themes,designers")
+            .unwrap_or("print_run,themes,designers,printing_type")
     }
 
     /// Effective enabled Colnect detail fields.
@@ -583,13 +584,14 @@ impl Config {
     /// 4) built-in default list
     pub fn effective_colnect_detail_field_set(&self) -> std::collections::HashSet<String> {
         if let Some(fields) = self.colnect.as_ref().and_then(|c| c.fields.as_ref()) {
-            let any_set = [
+            let any_true = [
                 fields.catalog_codes,
                 fields.issued_on,
                 fields.expiry_date,
                 fields.size,
                 fields.themes,
                 fields.printing,
+                fields.printing_type,
                 fields.paper,
                 fields.gum,
                 fields.designers,
@@ -605,9 +607,9 @@ impl Config {
                 fields.description,
             ]
             .iter()
-            .any(|v| v.is_some());
+            .any(|v| v.unwrap_or(false));
 
-            if any_set {
+            if any_true {
                 let mut set = std::collections::HashSet::new();
                 if fields.catalog_codes.unwrap_or(false) {
                     set.insert("catalog_codes".to_string());
@@ -626,6 +628,9 @@ impl Config {
                 }
                 if fields.printing.unwrap_or(false) {
                     set.insert("printing".to_string());
+                }
+                if fields.printing_type.unwrap_or(false) {
+                    set.insert("printing_type".to_string());
                 }
                 if fields.paper.unwrap_or(false) {
                     set.insert("paper".to_string());
@@ -1739,6 +1744,38 @@ print_run = true
         assert!(fields.contains("face_value"));
         assert!(fields.contains("print_run"));
         assert!(!fields.contains("printing"));
+    }
+
+    #[test]
+    fn colnect_printing_type_alias_is_supported() {
+        let cfg_toml = r#"
+[colnect]
+detail_fields = "themes"
+
+[colnect.fields]
+printing_type = true
+"#;
+
+        let cfg: Config = toml::from_str(cfg_toml).expect("config should parse");
+        let fields = cfg.effective_colnect_detail_field_set();
+        assert!(fields.contains("printing_type"));
+    }
+
+    #[test]
+    fn colnect_all_false_toggles_fall_back_to_detail_fields() {
+        let cfg_toml = r#"
+[colnect]
+detail_fields = "print_run,printing"
+
+[colnect.fields]
+print_run = false
+printing = false
+"#;
+
+        let cfg: Config = toml::from_str(cfg_toml).expect("config should parse");
+        let fields = cfg.effective_colnect_detail_field_set();
+        assert!(fields.contains("print_run"));
+        assert!(fields.contains("printing"));
     }
 }
 
