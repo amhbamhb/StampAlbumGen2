@@ -130,7 +130,11 @@ fn format_number_with_commas(s: &str) -> String {
     }
 
     let normalized = digits.trim_start_matches('0');
-    let digits = if normalized.is_empty() { "0" } else { normalized };
+    let digits = if normalized.is_empty() {
+        "0"
+    } else {
+        normalized
+    };
 
     if digits.len() <= 3 {
         return digits.to_string();
@@ -274,9 +278,9 @@ fn pad_centre_body_for_side_columns(
     // Only add padding if side columns wrap to multiple lines
     // Add +1 safety margin only when there's actual wrapping to prevent overflow
     let pad_lines = if side_lines > 1 {
-        side_lines.saturating_sub(1) + 1  // Base padding + 1 safety line
+        side_lines.saturating_sub(1) + 1 // Base padding + 1 safety line
     } else {
-        0  // No padding for single-line sides
+        0 // No padding for single-line sides
     };
 
     if top_block.trim().is_empty() {

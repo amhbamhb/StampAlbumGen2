@@ -244,6 +244,80 @@ struct AddColnectStampResponse {
 }
 
 #[derive(Debug, Deserialize)]
+struct SaveLeftStampRequest {
+    rowid: i64,
+    sg_number: String,
+    year: i32,
+    series: String,
+    description: String,
+    watermark: String,
+    design: String,
+    engraving: String,
+    perforation: String,
+    context: String,
+    image_mode: Option<String>,
+    upload_data_url: Option<String>,
+    upload_filename: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct SaveLeftStampResponse {
+    ok: bool,
+    message: String,
+    updated_left: Option<LeftStamp>,
+}
+
+#[derive(Debug, Deserialize)]
+struct AddLeftStampRequest {
+    source_rowid: Option<i64>,
+    sg_number: String,
+    year: i32,
+    series: String,
+    description: String,
+    watermark: String,
+    design: String,
+    engraving: String,
+    perforation: String,
+    context: String,
+    image_mode: Option<String>,
+    upload_data_url: Option<String>,
+    upload_filename: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct AddLeftStampResponse {
+    ok: bool,
+    message: String,
+    added_left: Option<LeftStamp>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DeleteLeftStampRequest {
+    rowid: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct DeleteLeftStampResponse {
+    ok: bool,
+    message: String,
+    deleted_rowid: Option<i64>,
+    restored_colnect_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ClearLeftColnectLinkRequest {
+    rowid: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct ClearLeftColnectLinkResponse {
+    ok: bool,
+    message: String,
+    updated_left: Option<LeftStamp>,
+    restored_colnect_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct DeleteColnectCandidateRequest {
     colnect_id: String,
 }
@@ -1555,6 +1629,18 @@ body {{
 .filtersCard {{ border: 1px solid #dbe4ec; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: #f8fbfe; padding: 10px; margin-bottom: 12px; }}
 .filtersTitle {{ margin: 0 0 8px 0; font-size: 13px; color: #1f4663; }}
 .filtersGrid {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
+.leftActionBanner {{ border: 1px solid #e5dccd; border-left: 5px solid var(--accent-amber); border-radius: 10px; background: linear-gradient(180deg, #fffaf2 0%, #fffdf8 100%); padding: 10px; margin-bottom: 8px; }}
+.leftActionTop {{ display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }}
+.leftActionTop strong {{ color: #5d4116; }}
+.leftActionText {{ margin: 0; color: #6c5530; font-size: 12px; line-height: 1.45; }}
+.leftActionBtns {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }}
+.leftActionNote {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }}
+.leftEditorGrid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 8px; }}
+.leftEditorGrid label, .leftEditorStack label {{ display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #284357; }}
+.leftEditorStack {{ display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }}
+.leftEditorStack textarea {{ min-height: 74px; resize: vertical; }}
+.leftEditorModes {{ display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }}
+.leftEditorHint {{ margin: 0 0 4px 0; color: #5d6f7f; font-size: 12px; }}
 .row {{ display: flex; gap: 16px; align-items: stretch; }}
 .col {{ flex: 1; min-width: 280px; display: flex; flex-direction: column; }}
 .colNav {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }}
@@ -1587,7 +1673,7 @@ button.neutral {{ background: #4b5a68; border-color: #4b5a68; color: #ffffff; }}
 button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 .badge {{ display: inline-block; padding: 2px 8px; border: 1px solid #d3dfe9; border-radius: 999px; background: #f8fbfe; font-size: 12px; color: #2d4760; }}
 .modal-backdrop {{ position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1000; }}
-.modal {{ background: #fff; border-radius: 10px; border: 1px solid #ddd; width: min(640px, 95vw); padding: 14px; box-sizing: border-box; }}
+.modal {{ background: #fff; border-radius: 10px; border: 1px solid #ddd; width: min(700px, 96vw); max-height: 88vh; overflow-y: auto; padding: 14px; box-sizing: border-box; }}
 .modal h4 {{ margin: 0 0 10px 0; }}
 .modal .rowx {{ display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }}
 .modal .rowx label {{ display: inline-flex; align-items: center; gap: 6px; }}
@@ -1600,6 +1686,10 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 </head>
 <body>
 <div class='wrap'>
+    <div class='top'>
+        <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
+        <span class='badge'>Switch country without closing Review UI</span>
+    </div>
     <div id='startGuide' class='startGuide'>
         <h2>Start Review Session</h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
@@ -1653,7 +1743,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                     <option value='col'>Colnect (COL)</option>
                 </select>
                 <button onclick='saveCatalogDefaultToConfig()'>Update Config Default</button>
-                <button onclick='returnToStartReviewPage()'>Return To Start Review</button>
+                <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
                 <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
                 <span id='status' class='badge'>Ready</span>
             </div>
@@ -1674,24 +1764,46 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
         <label><input type='checkbox' id='f_replace_sg'/> replace SG number</label>
         <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
+                <label>order
+                        <select id='sortMode' onchange='changeSortMode()'>
+                                <option value='sg'>SG number (default)</option>
+                                <option value='year_sg'>Year then SG</option>
+                                <option value='series_sg'>Series then SG</option>
+                                <option value='rowid'>DB row id</option>
+                                <option value='colnect_id'>Colnect ID</option>
+                        </select>
+                </label>
       </div>
     </div>
   <div id='comparePanels' class='row'>
     <div class='col'>
             <div class='colNav'>
+                                <button class='navBtn' onclick='firstLeft()'>First</button>
+                                <button class='navBtn' onclick='jumpLeft(-50)'>-50</button>
+                                <button class='navBtn' onclick='jumpLeft(-10)'>-10</button>
                 <button class='navBtn' onclick='prevLeft()'>Prev Left</button>
                 <button class='navBtn' onclick='nextLeft()'>Next Left</button>
+                                <button class='navBtn' onclick='jumpLeft(10)'>+10</button>
+                                <button class='navBtn' onclick='jumpLeft(50)'>+50</button>
+                                <button class='navBtn' onclick='lastLeft()'>Last</button>
             </div>
             <div class='titleRow'>
                 <h3>Left: StampWorld Base</h3>
                 <span id='leftPos' class='badge'></span>
             </div>
+                        <div id='leftActionBanner' class='leftActionBanner'></div>
       <div id='leftPanel'></div>
     </div>
     <div class='col'>
             <div class='colNav'>
+                <button class='navBtn' onclick='firstRight()'>First</button>
+                <button class='navBtn' onclick='jumpRight(-50)'>-50</button>
+                <button class='navBtn' onclick='jumpRight(-10)'>-10</button>
                 <button class='navBtn' onclick='prevRight()'>Prev Candidate</button>
                 <button class='navBtn' onclick='nextRight()'>Next Candidate</button>
+                <button class='navBtn' onclick='jumpRight(10)'>+10</button>
+                <button class='navBtn' onclick='jumpRight(50)'>+50</button>
+                <button class='navBtn' onclick='lastRight()'>Last</button>
             </div>
             <div class='titleRow'>
                 <h3>Right: Colnect Candidate</h3>
@@ -1729,6 +1841,41 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         </div>
     </div>
 </div>
+
+<div id='leftEditorBackdrop' class='modal-backdrop'>
+    <div class='modal'>
+        <h4 id='leftEditorTitle'>Edit Base Stamp</h4>
+        <p id='leftEditorHint' class='leftEditorHint'>Use this for StampWorld corrections, watermark/reference images, or fixing a bad Colnect placement.</p>
+        <div class='leftEditorGrid'>
+            <label>SG / Ref Code <input id='leftEditorSg' type='text' /></label>
+            <label>Year <input id='leftEditorYear' type='number' /></label>
+            <label>Series <input id='leftEditorSeries' type='text' /></label>
+        </div>
+        <div class='leftEditorStack'>
+            <label>Description <textarea id='leftEditorDescription'></textarea></label>
+            <label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
+            <label>Design <textarea id='leftEditorDesign'></textarea></label>
+            <label>Engraving <textarea id='leftEditorEngraving'></textarea></label>
+            <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
+            <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
+        </div>
+        <div>
+            <div class='leftEditorHint'>Items without an image will not stay visible in the left review list.</div>
+            <div class='leftEditorModes'>
+                <label id='leftModeKeepWrap'><input id='leftModeKeep' type='radio' name='leftImageMode' value='keep' checked onchange='toggleLeftEditorImageOptions()'/> Keep current image</label>
+                <label id='leftModeCurrentWrap'><input id='leftModeCurrent' type='radio' name='leftImageMode' value='current_left' onchange='toggleLeftEditorImageOptions()'/> Use current left image</label>
+                <label><input id='leftModeUpload' type='radio' name='leftImageMode' value='upload' onchange='toggleLeftEditorImageOptions()'/> Upload image</label>
+            </div>
+            <div id='leftUploadRow' class='rowx' style='display:none;'>
+                <label>Upload <input id='leftEditorUploadFile' type='file' accept='image/png,image/jpeg,image/webp'/></label>
+            </div>
+        </div>
+        <div class='rowx' style='justify-content:flex-end; margin-top: 12px;'>
+            <button onclick='closeLeftEditor()'>Cancel</button>
+            <button class='primary' onclick='submitLeftEditor()'>Save</button>
+        </div>
+    </div>
+</div>
 <script>
 const payload = {json};
 let left = payload.left || [];
@@ -1745,6 +1892,9 @@ let deletedCandidatesStack = []; // stack entries: candidate + removedAssignment
 let guideDismissed = false;
 let resolvingRightImageById = {{}};
 let resolvedRightImageById = {{}};
+let leftEditorMode = 'edit';
+let leftEditorSourceRowid = null;
+let sortMode = 'sg';
 
 function removeCandidateFromUi(colnectId) {{
     if (!colnectId) return;
@@ -1872,6 +2022,83 @@ function imageBox(src, label) {{
   return `<div class='imgbox'><div class='imgph'>${{html(label)}}<br/>No image available</div></div>`;
 }}
 
+function leftSortKey(item) {{
+    const year = Number(item?.year || 0);
+    const sg = String(item?.sg_number || '');
+    return [year, sg.toLowerCase(), Number(item?.rowid || 0)];
+}}
+
+function sgSortText(item) {{
+    return normalizeCatalogNumber(String(item?.sg_number || '')).toLowerCase();
+}}
+
+function compareBySortMode(a, b, mode) {{
+    const m = String(mode || 'sg');
+    if (m === 'rowid') {{
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+    if (m === 'year_sg') {{
+        const ay = Number(a?.year || 0);
+        const by = Number(b?.year || 0);
+        if (ay !== by) return ay - by;
+        const asg = sgSortText(a);
+        const bsg = sgSortText(b);
+        if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+    if (m === 'series_sg') {{
+        const aser = String(a?.series || '').toLowerCase();
+        const bser = String(b?.series || '').toLowerCase();
+        if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
+        const asg = sgSortText(a);
+        const bsg = sgSortText(b);
+        if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+    if (m === 'colnect_id') {{
+        const acid = String(a?.colnect_id || '').toLowerCase();
+        const bcid = String(b?.colnect_id || '').toLowerCase();
+        if (acid !== bcid) return acid.localeCompare(bcid, undefined, {{ numeric: true, sensitivity: 'base' }});
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+
+    const asg = sgSortText(a);
+    const bsg = sgSortText(b);
+    if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
+    const ay = Number(a?.year || 0);
+    const by = Number(b?.year || 0);
+    if (ay !== by) return ay - by;
+    return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+}}
+
+function sortLeftRows(preferredRowid) {{
+    left.sort((a, b) => compareBySortMode(a, b, sortMode));
+    if (!left.length) {{
+        leftIdx = 0;
+        return;
+    }}
+    const idx = preferredRowid == null ? -1 : left.findIndex(item => String(item.rowid) === String(preferredRowid));
+    if (idx >= 0) {{
+        leftIdx = idx;
+    }} else if (leftIdx >= left.length) {{
+        leftIdx = left.length - 1;
+    }}
+}}
+
+function upsertLeftRow(updatedLeft) {{
+    if (!updatedLeft || updatedLeft.rowid == null) return;
+    const idx = left.findIndex(item => String(item.rowid) === String(updatedLeft.rowid));
+    if (idx >= 0) left[idx] = updatedLeft;
+    else left.push(updatedLeft);
+    sortLeftRows(updatedLeft.rowid);
+}}
+
+function removeLeftRow(rowid) {{
+    const before = left.length;
+    left = left.filter(item => String(item.rowid) !== String(rowid));
+    if (left.length !== before) sortLeftRows(null);
+}}
+
 async function ensureRightImageUrl(r) {{
     if (!r || !b(r.colnect_id) || !b(r.page_url)) return;
     if (b(r.image_abs) || b(r.image_url)) return;
@@ -1953,13 +2180,79 @@ function availableCandidatesForCurrentLeft() {{
   const assignedForCurrent = assignedByLeft[currentLeft.rowid];
     const unmatchedOnly = !!document.getElementById('f_right_unmatched_only')?.checked;
     const matchedInDb = new Set(left.map(s => String(s.colnect_id || '').trim()).filter(v => !!v));
-    return rightAll.filter(c => {{
+    const filtered = rightAll.filter(c => {{
         const keepUsed = (!used.has(c.colnect_id) || c.colnect_id === assignedForCurrent);
         if (!keepUsed) return false;
         if (!unmatchedOnly) return true;
         if (c.colnect_id === assignedForCurrent) return true;
         return !matchedInDb.has(String(c.colnect_id || '').trim());
     }});
+    filtered.sort((a, b) => compareBySortMode(a, b, sortMode));
+    return filtered;
+}}
+
+function normalizeIndex(cur, len) {{
+    if (len <= 0) return 0;
+    if (!Number.isFinite(cur)) return 0;
+    if (cur < 0) return 0;
+    if (cur >= len) return len - 1;
+    return cur;
+}}
+
+function jumpLeft(delta) {{
+    if (!left.length) return;
+    leftIdx = normalizeIndex(leftIdx + Number(delta || 0), left.length);
+    render();
+}}
+
+function firstLeft() {{
+    if (!left.length) return;
+    leftIdx = 0;
+    render();
+}}
+
+function lastLeft() {{
+    if (!left.length) return;
+    leftIdx = left.length - 1;
+    render();
+}}
+
+function jumpRight(delta) {{
+    const l = left[leftIdx];
+    if (!l) return;
+    const avail = availableCandidatesForCurrentLeft();
+    if (!avail.length) return;
+    const key = String(l.rowid);
+    const cur = rightIdxByLeft[key] || 0;
+    rightIdxByLeft[key] = normalizeIndex(cur + Number(delta || 0), avail.length);
+    render();
+}}
+
+function firstRight() {{
+    const l = left[leftIdx];
+    if (!l) return;
+    const avail = availableCandidatesForCurrentLeft();
+    if (!avail.length) return;
+    rightIdxByLeft[String(l.rowid)] = 0;
+    render();
+}}
+
+function lastRight() {{
+    const l = left[leftIdx];
+    if (!l) return;
+    const avail = availableCandidatesForCurrentLeft();
+    if (!avail.length) return;
+    rightIdxByLeft[String(l.rowid)] = avail.length - 1;
+    render();
+}}
+
+function changeSortMode() {{
+    const sel = document.getElementById('sortMode');
+    sortMode = String(sel?.value || 'sg');
+    const currentRowid = left[leftIdx]?.rowid;
+    sortLeftRows(currentRowid);
+    for (const key of Object.keys(rightIdxByLeft)) rightIdxByLeft[key] = 0;
+    render();
 }}
 
 function currentRightCandidate() {{
@@ -2003,6 +2296,15 @@ function render() {{
   if (!left.length) {{
         document.getElementById('leftPos').innerText = 'Left 0/0';
         document.getElementById('rightPos').innerText = 'Candidate 0/0';
+    document.getElementById('leftActionBanner').innerHTML = `
+        <div class='leftActionTop'>
+            <strong>Manual Base Stamp Tools</strong>
+            <span class='badge'>No left rows loaded</span>
+        </div>
+        <p class='leftActionText'>Add a base/reference item here when you need a watermark image or a missing left-side record before matching Colnect data.</p>
+        <div class='leftActionBtns'>
+            <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
+        </div>`;
     document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
     return;
@@ -2016,6 +2318,21 @@ function render() {{
   const l = left[leftIdx];
   const leftImg = b(l.image_abs) ? `/image?path=${{encodeURIComponent(l.image_abs)}}` : l.stampworld_image_url;
   document.getElementById('leftPos').innerText = `Left ${{leftIdx + 1}}/${{left.length}} (rowid=${{l.rowid}})`;
+  document.getElementById('leftActionBanner').innerHTML = `
+        <div class='leftActionTop'>
+            <strong>Manual Base Stamp Tools</strong>
+            <div class='leftActionNote'>
+                <span class='badge'>Current rowid=${{html(l.rowid)}}</span>
+                <span class='badge'>${{b(l.colnect_id) ? `Linked Colnect: ${{html(l.colnect_id)}}` : 'No Colnect link'}}</span>
+            </div>
+        </div>
+        <p class='leftActionText'>Use these when the StampWorld base row is wrong, when a watermark/reference image should live on the left, or when a Colnect import landed on the wrong base row. New left items need an image to remain visible here.</p>
+        <div class='leftActionBtns'>
+            <button onclick='openLeftEditor("edit")'>Edit Current</button>
+            <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
+            <button onclick='clearCurrentLeftColnectLink()' ${{b(l.colnect_id) ? '' : 'disabled'}}>Clear Colnect Link</button>
+            <button class='danger' onclick='deleteCurrentLeft()'>Delete Current</button>
+        </div>`;
   document.getElementById('leftPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
@@ -2316,6 +2633,214 @@ function fileToDataUrl(file) {{
         reader.onerror = () => reject(new Error('failed to read upload file'));
         reader.readAsDataURL(file);
     }});
+}}
+
+function getSelectedLeftImageMode() {{
+    const radios = document.querySelectorAll("input[name='leftImageMode']");
+    for (const radio of radios) {{
+        if (radio.checked) return radio.value;
+    }}
+    return leftEditorMode === 'edit' ? 'keep' : 'upload';
+}}
+
+function toggleLeftEditorImageOptions() {{
+    const mode = getSelectedLeftImageMode();
+    const uploadRow = document.getElementById('leftUploadRow');
+    const keepWrap = document.getElementById('leftModeKeepWrap');
+    const currentWrap = document.getElementById('leftModeCurrentWrap');
+    if (keepWrap) keepWrap.style.display = leftEditorMode === 'edit' ? '' : 'none';
+    if (currentWrap) currentWrap.style.display = leftEditorMode === 'add' ? '' : 'none';
+    if (uploadRow) uploadRow.style.display = mode === 'upload' ? '' : 'none';
+}}
+
+function openLeftEditor(mode) {{
+    leftEditorMode = mode === 'add' ? 'add' : 'edit';
+    const currentLeft = left[leftIdx] || null;
+    leftEditorSourceRowid = currentLeft ? Number(currentLeft.rowid) : null;
+
+    const title = document.getElementById('leftEditorTitle');
+    const hint = document.getElementById('leftEditorHint');
+    if (title) title.innerText = leftEditorMode === 'add' ? 'Add Base / Watermark Item' : 'Edit Base Stamp';
+    if (hint) hint.innerText = leftEditorMode === 'add'
+        ? 'Create a left-side reference row for a missing base stamp or watermark image. Use a short reference code such as WM-1 when this is not a true stamp number.'
+        : 'Correct the current StampWorld base row without leaving the review page.';
+
+    const base = leftEditorMode === 'edit'
+        ? currentLeft
+        : {{
+            sg_number: '',
+            year: currentLeft?.year || 0,
+            series: currentLeft?.series || '',
+            description: '',
+            watermark: '',
+            design: '',
+            engraving: '',
+            perforation: '',
+            context: ''
+        }};
+
+    document.getElementById('leftEditorSg').value = base?.sg_number || '';
+    document.getElementById('leftEditorYear').value = Number(base?.year || 0) || '';
+    document.getElementById('leftEditorSeries').value = base?.series || '';
+    document.getElementById('leftEditorDescription').value = base?.description || '';
+    document.getElementById('leftEditorWatermark').value = base?.watermark || '';
+    document.getElementById('leftEditorDesign').value = base?.design || '';
+    document.getElementById('leftEditorEngraving').value = base?.engraving || '';
+    document.getElementById('leftEditorPerforation').value = base?.perforation || '';
+    document.getElementById('leftEditorContext').value = base?.context || '';
+
+    const keepRadio = document.getElementById('leftModeKeep');
+    const currentRadio = document.getElementById('leftModeCurrent');
+    const uploadRadio = document.getElementById('leftModeUpload');
+    if (leftEditorMode === 'edit') {{
+        if (keepRadio) keepRadio.checked = true;
+    }} else if (currentLeft) {{
+        if (currentRadio) currentRadio.checked = true;
+    }} else if (uploadRadio) {{
+        uploadRadio.checked = true;
+    }}
+    const uploadInput = document.getElementById('leftEditorUploadFile');
+    if (uploadInput) uploadInput.value = '';
+    toggleLeftEditorImageOptions();
+    document.getElementById('leftEditorBackdrop').style.display = 'flex';
+}}
+
+function closeLeftEditor() {{
+    const backdrop = document.getElementById('leftEditorBackdrop');
+    if (backdrop) backdrop.style.display = 'none';
+}}
+
+async function submitLeftEditor() {{
+    const sgNumber = document.getElementById('leftEditorSg')?.value || '';
+    if (!sgNumber.trim()) {{
+        alert('Enter an SG / reference code before saving.');
+        return;
+    }}
+
+    const yearValue = Number(document.getElementById('leftEditorYear')?.value || 0);
+    const mode = getSelectedLeftImageMode();
+    let uploadDataUrl = null;
+    let uploadFilename = null;
+    if (mode === 'upload') {{
+        const file = document.getElementById('leftEditorUploadFile')?.files?.[0];
+        if (!file) {{
+            alert('Choose an image file to upload.');
+            return;
+        }}
+        try {{
+            uploadDataUrl = await fileToDataUrl(file);
+            uploadFilename = file.name || null;
+        }} catch (error) {{
+            alert(String(error));
+            return;
+        }}
+    }}
+
+    const body = {{
+        sg_number: sgNumber,
+        year: Number.isFinite(yearValue) ? yearValue : 0,
+        series: document.getElementById('leftEditorSeries')?.value || '',
+        description: document.getElementById('leftEditorDescription')?.value || '',
+        watermark: document.getElementById('leftEditorWatermark')?.value || '',
+        design: document.getElementById('leftEditorDesign')?.value || '',
+        engraving: document.getElementById('leftEditorEngraving')?.value || '',
+        perforation: document.getElementById('leftEditorPerforation')?.value || '',
+        context: document.getElementById('leftEditorContext')?.value || '',
+        image_mode: mode,
+        upload_data_url: uploadDataUrl,
+        upload_filename: uploadFilename
+    }};
+
+    let endpoint = '/save-left-stamp';
+    if (leftEditorMode === 'edit') {{
+        const currentLeft = left[leftIdx];
+        if (!currentLeft) {{
+            alert('No current left stamp to edit.');
+            return;
+        }}
+        body.rowid = Number(currentLeft.rowid);
+    }} else {{
+        endpoint = '/add-left-stamp';
+        body.source_rowid = leftEditorSourceRowid;
+    }}
+
+    const response = await fetch(endpoint, {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json' }},
+        body: JSON.stringify(body)
+    }});
+    const payload = await response.json();
+    if (!payload.ok) {{
+        alert(payload.message || 'Left-side save failed');
+        return;
+    }}
+
+    const updatedLeft = payload.updated_left || payload.added_left || null;
+    if (updatedLeft) upsertLeftRow(updatedLeft);
+    closeLeftEditor();
+    document.getElementById('status').innerText = payload.message || 'Left-side item saved';
+    render();
+}}
+
+async function deleteCurrentLeft() {{
+    const currentLeft = left[leftIdx];
+    if (!currentLeft) {{
+        document.getElementById('status').innerText = 'No current left stamp to delete';
+        return;
+    }}
+
+    const warning = currentLeft.colnect_id
+        ? `Deleting this row will also return linked Colnect candidate ${{currentLeft.colnect_id}} to the right side.\n\nContinue?`
+        : 'Delete this left-side base/reference row?';
+    if (!confirm(warning)) return;
+
+    const response = await fetch('/delete-left-stamp', {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json' }},
+        body: JSON.stringify({{ rowid: Number(currentLeft.rowid) }})
+    }});
+    const payload = await response.json();
+    if (!payload.ok) {{
+        alert(payload.message || 'Delete failed');
+        return;
+    }}
+
+    if (payload.restored_colnect_id) {{
+        location.reload();
+        return;
+    }}
+
+    if (payload.deleted_rowid != null) removeLeftRow(payload.deleted_rowid);
+    document.getElementById('status').innerText = payload.message || 'Left-side row deleted';
+    render();
+}}
+
+async function clearCurrentLeftColnectLink() {{
+    const currentLeft = left[leftIdx];
+    if (!currentLeft) {{
+        document.getElementById('status').innerText = 'No current left stamp selected';
+        return;
+    }}
+    if (!currentLeft.colnect_id) {{
+        document.getElementById('status').innerText = 'Current left stamp has no linked Colnect data';
+        return;
+    }}
+    if (!confirm(`Clear linked Colnect data from rowid=${{currentLeft.rowid}} and return ${{currentLeft.colnect_id}} to the candidate list?`)) return;
+
+    const response = await fetch('/clear-left-colnect-link', {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json' }},
+        body: JSON.stringify({{ rowid: Number(currentLeft.rowid) }})
+    }});
+    const payload = await response.json();
+    if (!payload.ok) {{
+        alert(payload.message || 'Clear link failed');
+        return;
+    }}
+
+    if (payload.updated_left) upsertLeftRow(payload.updated_left);
+    document.getElementById('status').innerText = payload.message || 'Linked Colnect data cleared';
+    location.reload();
 }}
 
 async function addCurrentColnectAsStamp() {{
@@ -2658,6 +3183,10 @@ const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
 if (defaultCatalogSelect) {{
     defaultCatalogSelect.value = countryDefaultCatalogCode || 'sg';
 }}
+
+const sortModeSelect = document.getElementById('sortMode');
+if (sortModeSelect) sortModeSelect.value = sortMode;
+sortLeftRows(left[leftIdx]?.rowid);
 
 render();
 </script>
@@ -3303,6 +3832,432 @@ fn add_colnect_stamp_to_stamps(
     }
 }
 
+fn restore_colnect_candidate_to_queue(
+    conn: &Connection,
+    colnect_id: &str,
+) -> rusqlite::Result<usize> {
+    if colnect_id.trim().is_empty() {
+        return Ok(0);
+    }
+
+    conn.execute(
+        "UPDATE colnect_stamps
+         SET is_processed = 0
+         WHERE TRIM(COALESCE(colnect_id, '')) = TRIM(?1)",
+        params![colnect_id],
+    )
+}
+
+fn query_stamp_image_path(conn: &Connection, rowid: i64) -> Result<String, String> {
+    conn.query_row(
+        "SELECT COALESCE(image_path, '') FROM stamps WHERE rowid = ?1",
+        params![rowid],
+        |row| row.get::<_, String>(0),
+    )
+    .map_err(|e| format!("failed to read image path from row {}: {}", rowid, e))
+}
+
+fn resolve_left_editor_image_path(
+    conn: &Connection,
+    db_path: &str,
+    album_name: &str,
+    image_mode: Option<&str>,
+    source_rowid: Option<i64>,
+    current_image_path: Option<&str>,
+    upload_data_url: Option<&str>,
+    upload_filename: Option<&str>,
+    file_token: &str,
+) -> Result<String, String> {
+    let mode = image_mode
+        .unwrap_or(if current_image_path.is_some() {
+            "keep"
+        } else {
+            "current_left"
+        })
+        .trim()
+        .to_ascii_lowercase();
+
+    match mode.as_str() {
+        "keep" => Ok(current_image_path.unwrap_or("").trim().to_string()),
+        "current_left" => {
+            let Some(rowid) = source_rowid else {
+                return Err("current-left image mode requires a source row".to_string());
+            };
+            let image_path = query_stamp_image_path(conn, rowid)?;
+            if image_path.trim().is_empty() {
+                return Err(format!("source row {} has no image to reuse", rowid));
+            }
+            Ok(image_path)
+        }
+        "upload" => {
+            let Some(data_url) = upload_data_url else {
+                return Err("upload image mode requires an uploaded file".to_string());
+            };
+            store_uploaded_image_from_data_url(
+                db_path,
+                album_name,
+                file_token,
+                data_url,
+                upload_filename,
+            )
+        }
+        other => Err(format!("unsupported image mode: {}", other)),
+    }
+}
+
+fn save_left_stamp(
+    conn: &Connection,
+    db_path: &str,
+    album_name: &str,
+    req: SaveLeftStampRequest,
+) -> SaveLeftStampResponse {
+    if req.rowid <= 0 {
+        return SaveLeftStampResponse {
+            ok: false,
+            message: "rowid is required".to_string(),
+            updated_left: None,
+        };
+    }
+    if req.sg_number.trim().is_empty() {
+        return SaveLeftStampResponse {
+            ok: false,
+            message: "SG / reference code is required".to_string(),
+            updated_left: None,
+        };
+    }
+
+    let existing_image_path = match query_stamp_image_path(conn, req.rowid) {
+        Ok(value) => value,
+        Err(message) => {
+            return SaveLeftStampResponse {
+                ok: false,
+                message,
+                updated_left: None,
+            }
+        }
+    };
+
+    let image_path = match resolve_left_editor_image_path(
+        conn,
+        db_path,
+        album_name,
+        req.image_mode.as_deref(),
+        Some(req.rowid),
+        Some(existing_image_path.as_str()),
+        req.upload_data_url.as_deref(),
+        req.upload_filename.as_deref(),
+        &req.sg_number,
+    ) {
+        Ok(value) => value,
+        Err(message) => {
+            return SaveLeftStampResponse {
+                ok: false,
+                message,
+                updated_left: None,
+            }
+        }
+    };
+
+    let update_res = conn.execute(
+        "UPDATE stamps
+         SET sg_number = ?1,
+             year = ?2,
+             series = ?3,
+             description = ?4,
+             watermark = ?5,
+             design = ?6,
+             engraving = ?7,
+             perforation = ?8,
+             context = ?9,
+             image_path = ?10,
+             uniq_key = lower(coalesce(country, '')) || '|' || ?3 || '|' || ?1
+         WHERE rowid = ?11",
+        params![
+            req.sg_number.trim(),
+            req.year,
+            req.series.trim(),
+            req.description.trim(),
+            req.watermark.trim(),
+            req.design.trim(),
+            req.engraving.trim(),
+            req.perforation.trim(),
+            req.context.trim(),
+            image_path,
+            req.rowid,
+        ],
+    );
+
+    match update_res {
+        Ok(0) => SaveLeftStampResponse {
+            ok: false,
+            message: format!("no stamp row found for rowid={}", req.rowid),
+            updated_left: None,
+        },
+        Ok(_) => SaveLeftStampResponse {
+            ok: true,
+            message: format!("updated base stamp rowid={}", req.rowid),
+            updated_left: load_left_stamp_by_rowid(conn, db_path, album_name, req.rowid)
+                .ok()
+                .flatten(),
+        },
+        Err(e) => SaveLeftStampResponse {
+            ok: false,
+            message: format!("failed to update rowid={}: {}", req.rowid, e),
+            updated_left: None,
+        },
+    }
+}
+
+fn add_left_stamp(
+    conn: &Connection,
+    db_path: &str,
+    album_name: &str,
+    req: AddLeftStampRequest,
+) -> AddLeftStampResponse {
+    if req.sg_number.trim().is_empty() {
+        return AddLeftStampResponse {
+            ok: false,
+            message: "SG / reference code is required".to_string(),
+            added_left: None,
+        };
+    }
+
+    let country = req
+        .source_rowid
+        .and_then(|rowid| {
+            conn.query_row(
+                "SELECT COALESCE(country, '') FROM stamps WHERE rowid = ?1",
+                params![rowid],
+                |row| row.get::<_, String>(0),
+            )
+            .ok()
+        })
+        .filter(|value| !value.trim().is_empty())
+        .unwrap_or_else(|| album_name.to_string());
+
+    let image_path = match resolve_left_editor_image_path(
+        conn,
+        db_path,
+        album_name,
+        req.image_mode.as_deref(),
+        req.source_rowid,
+        None,
+        req.upload_data_url.as_deref(),
+        req.upload_filename.as_deref(),
+        &req.sg_number,
+    ) {
+        Ok(value) => value,
+        Err(message) => {
+            return AddLeftStampResponse {
+                ok: false,
+                message,
+                added_left: None,
+            }
+        }
+    };
+
+    let catalog_code = crate::config::load_config("config.toml").effective_default_catalog_code();
+    let series = req.series.trim().to_string();
+    let sg_number = req.sg_number.trim().to_string();
+    let uniq_key = format!(
+        "{}|{}|{}",
+        country.trim().to_ascii_lowercase(),
+        series,
+        sg_number
+    );
+
+    let insert_res = conn.execute(
+        "INSERT INTO stamps (
+            country, series, year, sg_number, catalog_code, uniq_key,
+            description, image_path, watermark, design, engraving, perforation, context
+         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
+        params![
+            country,
+            series,
+            req.year,
+            sg_number,
+            catalog_code,
+            uniq_key,
+            req.description.trim(),
+            image_path,
+            req.watermark.trim(),
+            req.design.trim(),
+            req.engraving.trim(),
+            req.perforation.trim(),
+            req.context.trim(),
+        ],
+    );
+
+    match insert_res {
+        Ok(_) => {
+            let rowid = conn.last_insert_rowid();
+            AddLeftStampResponse {
+                ok: true,
+                message: format!("added base/reference item rowid={}", rowid),
+                added_left: load_left_stamp_by_rowid(conn, db_path, album_name, rowid)
+                    .ok()
+                    .flatten(),
+            }
+        }
+        Err(e) => AddLeftStampResponse {
+            ok: false,
+            message: format!("failed to add base/reference item: {}", e),
+            added_left: None,
+        },
+    }
+}
+
+fn delete_left_stamp(conn: &Connection, req: DeleteLeftStampRequest) -> DeleteLeftStampResponse {
+    if req.rowid <= 0 {
+        return DeleteLeftStampResponse {
+            ok: false,
+            message: "rowid is required".to_string(),
+            deleted_rowid: None,
+            restored_colnect_id: None,
+        };
+    }
+
+    let linked_colnect_id = conn
+        .query_row(
+            "SELECT COALESCE(colnect_id, '') FROM stamps WHERE rowid = ?1",
+            params![req.rowid],
+            |row| row.get::<_, String>(0),
+        )
+        .unwrap_or_default();
+
+    match conn.execute("DELETE FROM stamps WHERE rowid = ?1", params![req.rowid]) {
+        Ok(0) => DeleteLeftStampResponse {
+            ok: false,
+            message: format!("no stamp row found for rowid={}", req.rowid),
+            deleted_rowid: None,
+            restored_colnect_id: None,
+        },
+        Ok(_) => {
+            let restored_colnect_id = if linked_colnect_id.trim().is_empty() {
+                None
+            } else {
+                let _ = restore_colnect_candidate_to_queue(conn, &linked_colnect_id);
+                Some(linked_colnect_id.clone())
+            };
+            DeleteLeftStampResponse {
+                ok: true,
+                message: format!("deleted base stamp rowid={}", req.rowid),
+                deleted_rowid: Some(req.rowid),
+                restored_colnect_id,
+            }
+        }
+        Err(e) => DeleteLeftStampResponse {
+            ok: false,
+            message: format!("failed to delete rowid={}: {}", req.rowid, e),
+            deleted_rowid: None,
+            restored_colnect_id: None,
+        },
+    }
+}
+
+fn clear_left_colnect_link(
+    conn: &Connection,
+    db_path: &str,
+    album_name: &str,
+    req: ClearLeftColnectLinkRequest,
+) -> ClearLeftColnectLinkResponse {
+    if req.rowid <= 0 {
+        return ClearLeftColnectLinkResponse {
+            ok: false,
+            message: "rowid is required".to_string(),
+            updated_left: None,
+            restored_colnect_id: None,
+        };
+    }
+
+    let linked_colnect_id = conn
+        .query_row(
+            "SELECT COALESCE(colnect_id, '') FROM stamps WHERE rowid = ?1",
+            params![req.rowid],
+            |row| row.get::<_, String>(0),
+        )
+        .unwrap_or_default();
+
+    let update_res = conn.execute(
+        "UPDATE stamps
+         SET colnect_page_url = '',
+             colnect_image_url = '',
+             colnect_id = '',
+             colnect_name = '',
+             colnect_catalog_codes = '',
+             colnect_country = '',
+             colnect_width = '',
+             colnect_height = '',
+             colnect_format = '',
+             colnect_emission = '',
+             colnect_printing = '',
+             colnect_paper = '',
+             colnect_gum = '',
+             colnect_ord_mi = '',
+             colnect_ord_sn = '',
+             colnect_ord_yt = '',
+             colnect_face_value = '',
+             colnect_currency = '',
+             colnect_ord_sg = '',
+             colnect_expiry_date = '',
+             colnect_print_run = '',
+             colnect_colors = '',
+             colnect_parent_item = '',
+             colnect_variant = '',
+             colnect_overprint_variant = '',
+             colnect_score = '',
+             colnect_accuracy = '',
+             colnect_list = '',
+             colnect_quantity = '',
+             colnect_condition = '',
+             colnect_public_note = '',
+             colnect_private_note = ''
+         WHERE rowid = ?1",
+        params![req.rowid],
+    );
+
+    match update_res {
+        Ok(0) => ClearLeftColnectLinkResponse {
+            ok: false,
+            message: format!("no stamp row found for rowid={}", req.rowid),
+            updated_left: None,
+            restored_colnect_id: None,
+        },
+        Ok(_) => {
+            let restored_colnect_id = if linked_colnect_id.trim().is_empty() {
+                None
+            } else {
+                let _ = restore_colnect_candidate_to_queue(conn, &linked_colnect_id);
+                Some(linked_colnect_id.clone())
+            };
+            ClearLeftColnectLinkResponse {
+                ok: true,
+                message: if let Some(colnect_id) = restored_colnect_id.as_ref() {
+                    format!(
+                        "cleared linked Colnect data from rowid={} and returned {} to the candidate list",
+                        req.rowid, colnect_id
+                    )
+                } else {
+                    format!("rowid={} had no linked Colnect data to clear", req.rowid)
+                },
+                updated_left: load_left_stamp_by_rowid(conn, db_path, album_name, req.rowid)
+                    .ok()
+                    .flatten(),
+                restored_colnect_id,
+            }
+        }
+        Err(e) => ClearLeftColnectLinkResponse {
+            ok: false,
+            message: format!(
+                "failed clearing Colnect data for rowid={}: {}",
+                req.rowid, e
+            ),
+            updated_left: None,
+            restored_colnect_id: None,
+        },
+    }
+}
+
 fn delete_colnect_candidate(
     conn: &Connection,
     req: DeleteColnectCandidateRequest,
@@ -3735,8 +4690,8 @@ fn build_config_editor_data(
     config_path: &str,
     template_path: &str,
 ) -> Result<Vec<ConfigEditorSection>, Box<dyn std::error::Error>> {
-    let template_content = fs::read_to_string(template_path)
-        .map_err(|e| format!("failed to read {}: {}", template_path, e))?;
+    crate::config::ensure_config_and_template_files(config_path, template_path)?;
+    let template_content = crate::config::load_template_content_with_fallback(template_path)?;
     let mut template_sections = parse_template_config_sections(&template_content);
     let current_values = load_current_config_values(config_path)?;
     let mut used_field_ids = HashSet::new();
@@ -3880,8 +4835,8 @@ fn save_full_config_values(
         return Err("no config values were provided".into());
     }
 
-    let template_content = fs::read_to_string(template_path)
-        .map_err(|e| format!("failed to read {}: {}", template_path, e))?;
+    crate::config::ensure_config_and_template_files(config_path, template_path)?;
+    let template_content = crate::config::load_template_content_with_fallback(template_path)?;
     let rendered = render_config_from_template_values(&template_content, values);
 
     toml::from_str::<toml::Value>(&rendered)
@@ -3895,40 +4850,59 @@ fn save_full_config_values(
 fn render_config_editor_assets() -> String {
     r#"
 <style>
-.cfgBackdrop { position: fixed; inset: 0; background: rgba(17, 31, 43, 0.56); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; }
-.cfgDialog { width: min(1280px, 96vw); max-height: 92vh; display: flex; flex-direction: column; background: #ffffff; border: 1px solid #d6e0e8; border-radius: 14px; box-shadow: 0 24px 56px rgba(18, 36, 52, 0.32); overflow: hidden; }
-.cfgHeader, .cfgFooter { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: #f7fbfe; border-bottom: 1px solid #e0e8ef; }
+.cfgBackdrop { position: fixed; inset: 0; background: radial-gradient(circle at 20% 20%, rgba(12, 90, 123, 0.25) 0%, rgba(4, 20, 30, 0.7) 48%, rgba(4, 16, 25, 0.86) 100%); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; backdrop-filter: blur(2px); }
+.cfgDialog { --cfgPrimary: #0b6a87; --cfgPrimaryHover: #09576f; --cfgTextStrong: #14384a; --cfgTextSoft: #3b5f70; --cfgPanel: #f4f9fc; --cfgPanelDeep: #e8f1f7; width: min(1280px, 96vw); max-height: 92vh; display: flex; flex-direction: column; background: linear-gradient(180deg, #ffffff 0%, #f7fbfe 100%); border: 1px solid #bfd0dc; border-radius: 16px; box-shadow: 0 26px 62px rgba(10, 28, 41, 0.45); overflow: hidden; animation: cfgDialogIn 180ms ease-out; }
+.cfgHeader, .cfgFooter { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: linear-gradient(180deg, #f4fafd 0%, #e9f3f9 100%); border-bottom: 1px solid #d3e0ea; }
 .cfgFooter { border-top: 1px solid #e0e8ef; border-bottom: none; }
-.cfgTitleBlock h3 { margin: 0; font-size: 18px; color: #18384d; }
-.cfgTitleBlock p { margin: 4px 0 0 0; font-size: 13px; color: #426078; }
+.cfgTitleBlock h3 { margin: 0; font-size: 20px; letter-spacing: 0.2px; color: var(--cfgTextStrong); }
+.cfgTitleBlock p { margin: 4px 0 0 0; font-size: 13px; color: var(--cfgTextSoft); }
 .cfgActionRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.cfgToolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; border-bottom: 1px solid #e6edf2; background: #ffffff; }
-.cfgToolbar input { min-width: 260px; }
-.cfgBody { overflow: auto; padding: 14px 16px 18px; background: linear-gradient(180deg, #fbfdff 0%, #f5f9fc 100%); }
+.cfgToolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid #d8e4ec; background: linear-gradient(180deg, #ffffff 0%, #f3f8fb 100%); }
+.cfgToolbar input { min-width: 260px; border: 1px solid #bfd0dd; border-radius: 999px; padding: 8px 12px; background: #ffffff; color: #1f4358; }
+.cfgToolbar input:focus { outline: 2px solid rgba(11, 106, 135, 0.18); border-color: #0b6a87; }
+.cfgBody { overflow: auto; padding: 14px 16px 18px; background: linear-gradient(180deg, #f7fbfe 0%, #eef5fa 100%); }
 .cfgLoadState { padding: 24px 10px; color: #36546a; font-size: 14px; }
-.cfgSection { border: 1px solid #dbe4ec; border-radius: 12px; background: #ffffff; box-shadow: 0 6px 18px rgba(31, 59, 82, 0.06); margin-bottom: 14px; overflow: hidden; }
-.cfgSectionHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: #eef5fa; border-bottom: 1px solid #dce7ef; }
-.cfgSectionHead h4 { margin: 0; font-size: 15px; color: #19384e; }
-.cfgSectionHead p { margin: 4px 0 0 0; font-size: 12px; color: #4a697f; }
+.cfgSection { border: 1px solid #ccdae4; border-radius: 12px; background: #ffffff; box-shadow: 0 8px 20px rgba(18, 46, 64, 0.09); margin-bottom: 14px; overflow: hidden; }
+.cfgSectionHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: linear-gradient(90deg, var(--cfgPanel) 0%, var(--cfgPanelDeep) 100%); border-bottom: 1px solid #d4e0e9; }
+.cfgSectionHead h4 { margin: 0; font-size: 15px; color: #163a4d; }
+.cfgSectionHead p { margin: 4px 0 0 0; font-size: 12px; color: #406072; }
 .cfgFieldRow { display: grid; grid-template-columns: minmax(320px, 40%) minmax(320px, 1fr); gap: 14px; padding: 14px; border-top: 1px solid #edf2f6; }
 .cfgFieldRow:first-child { border-top: none; }
 .cfgStaticPane { display: flex; flex-direction: column; gap: 8px; }
 .cfgEditPane { display: flex; flex-direction: column; gap: 6px; }
 .cfgKeyRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.cfgKeyRow strong { font-size: 14px; color: #18384d; }
-.cfgTemplateBox { border: 1px solid #d9e4ec; border-radius: 10px; background: #f8fbfe; padding: 10px; font-size: 12px; color: #355267; }
+.cfgKeyRow strong { font-size: 14px; color: #173b4e; }
+.cfgTemplateBox { border: 1px solid #d2dee8; border-radius: 10px; background: #f6fbff; padding: 10px; font-size: 12px; color: #355267; }
 .cfgTemplateBox code { display: block; white-space: pre-wrap; word-break: break-word; background: #ffffff; border: 1px solid #d7e2eb; border-radius: 8px; padding: 8px; margin-top: 6px; }
 .cfgInfoDetail { border: 1px solid #d7e3ec; border-radius: 10px; background: #fbfdff; }
 .cfgInfoDetail summary { cursor: pointer; padding: 8px 10px; font-size: 12px; font-weight: 600; color: #284b64; }
 .cfgInfoBody { padding: 0 10px 10px; font-size: 12px; color: #46657a; white-space: pre-wrap; }
 .cfgValueLabel { font-size: 12px; font-weight: 600; color: #284b64; }
 .cfgValueInput { width: 100%; min-height: 42px; resize: vertical; padding: 9px 10px; border: 1px solid #cfdbe6; border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; background: #ffffff; box-sizing: border-box; }
-.cfgValueInput:focus { outline: 2px solid rgba(47, 111, 163, 0.18); border-color: #2f6fa3; }
+.cfgValueInput:focus { outline: 2px solid rgba(11, 106, 135, 0.2); border-color: #0b6a87; }
+.cfgDialog .badge { background: #e8f2f9; border: 1px solid #cbdae5; color: #1f4d63; }
+.cfgPrimaryBtn, .cfgSecondaryBtn { border: none; border-radius: 10px; padding: 8px 13px; cursor: pointer; font-weight: 600; font-size: 13px; transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease; }
+.cfgPrimaryBtn { background: linear-gradient(180deg, var(--cfgPrimary) 0%, #0a5f7a 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(11, 106, 135, 0.25); }
+.cfgPrimaryBtn:hover { filter: brightness(1.04); transform: translateY(-1px); }
+.cfgSecondaryBtn { background: #e9f1f6; color: #214356; border: 1px solid #c7d7e2; }
+.cfgSecondaryBtn:hover { background: #dbe8f1; }
+.cfgFooterNote { font-size: 12px; color: #3f6071; max-width: 820px; }
+.cfgConfirmDialog { padding: 18px 20px; border-radius: 14px; border: 1px solid #bfd1de; min-width: 340px; max-width: 530px; box-shadow: 0 18px 42px rgba(10, 28, 41, 0.35); background: linear-gradient(180deg, #ffffff 0%, #f4f9fc 100%); }
+.cfgConfirmDialog::backdrop { background: rgba(4, 20, 30, 0.55); }
+.cfgConfirmTitle { margin: 0 0 10px; font-size: 17px; color: #12364a; }
+.cfgConfirmBody { margin: 0 0 14px; color: #406072; font-size: 13px; line-height: 1.45; }
+.cfgConfirmActions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.cfgDangerBtn { border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; font-weight: 600; color: #ffffff; background: linear-gradient(180deg, #b45342 0%, #943828 100%); }
 .cfgHidden { display: none !important; }
+@keyframes cfgDialogIn {
+    from { opacity: 0; transform: translateY(7px) scale(0.985); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
 @media (max-width: 960px) {
   .cfgFieldRow { grid-template-columns: 1fr; }
   .cfgDialog { width: min(96vw, 96vw); }
   .cfgToolbar input { min-width: 180px; width: 100%; }
+    .cfgHeader, .cfgFooter { align-items: flex-start; }
 }
 </style>
 
@@ -3940,8 +4914,8 @@ fn render_config_editor_assets() -> String {
                 <p>Static template defaults and comments are on the left. Editable current values are on the right.</p>
             </div>
             <div class='cfgActionRow'>
-                <button class='primary' onclick='saveConfigEditorChanges()'>OK / Save</button>
-                <button onclick='requestCloseConfigEditor()'>Cancel</button>
+                <button class='cfgPrimaryBtn' onclick='saveConfigEditorChanges()'>OK / Save</button>
+                <button class='cfgSecondaryBtn' onclick='requestCloseConfigEditor()'>Cancel</button>
             </div>
         </div>
         <div class='cfgToolbar'>
@@ -3954,10 +4928,10 @@ fn render_config_editor_assets() -> String {
             <div id='cfgEditorSections'></div>
         </div>
         <div class='cfgFooter'>
-            <div style='font-size:12px;color:#49667b'>Saving validates the generated config and reloads the review UI so new values take effect.</div>
+            <div class='cfgFooterNote'>Saving validates the generated config and reloads the review UI so new values take effect.</div>
             <div class='cfgActionRow'>
-                <button class='primary' onclick='saveConfigEditorChanges()'>OK / Save</button>
-                <button onclick='requestCloseConfigEditor()'>Cancel</button>
+                <button class='cfgPrimaryBtn' onclick='saveConfigEditorChanges()'>OK / Save</button>
+                <button class='cfgSecondaryBtn' onclick='requestCloseConfigEditor()'>Cancel</button>
             </div>
         </div>
     </div>
@@ -3985,7 +4959,7 @@ function openConfigEditorBackdrop() { const backdrop = configEditorBackdrop(); i
 function closeConfigEditorBackdrop() { const backdrop = configEditorBackdrop(); if (backdrop) backdrop.style.display = 'none'; configEditorState.open = false; }
 async function openConfigEditor() { if (configEditorState.loading || configEditorState.saving) return; configEditorState.loading = true; openConfigEditorBackdrop(); showConfigEditorLoading('Loading config template, comments, and current values...'); setConfigEditorStatus('Loading config editor...'); try { const response = await fetch('/api/config-editor'); const payload = await response.json(); if (!payload.ok) throw new Error(payload.message || 'Failed to load config editor data.'); configEditorState.sections = payload.sections || []; configEditorState.originalValues = {}; (payload.sections || []).forEach(section => { (section.fields || []).forEach(field => { configEditorState.originalValues[field.id] = String(field.current_value ?? ''); }); }); hideConfigEditorLoading(); renderConfigEditorSections(); const searchInput = configEditorSearchInput(); if (searchInput) searchInput.value = ''; setConfigEditorStatus('Config editor ready'); } catch (error) { showConfigEditorLoading('Failed to load config editor: ' + error); setConfigEditorStatus('Config editor failed to load'); } finally { configEditorState.loading = false; } }
 function filterConfigEditorFields() { const query = String(configEditorSearchInput()?.value || '').trim().toLowerCase(); document.querySelectorAll('.cfgFieldRow[data-config-search]').forEach(row => { const corpus = String(row.getAttribute('data-config-search') || ''); row.classList.toggle('cfgHidden', !!query && !corpus.includes(query)); }); }
-function configEditorExitChoice(message) { return new Promise(resolve => { const dlg = document.createElement('dialog'); dlg.style.cssText = 'padding:1.5em 1.7em;border-radius:12px;font-family:sans-serif;border:1px solid #c7d4de;min-width:340px;max-width:520px;box-shadow:0 12px 32px rgba(17,31,43,.22)'; dlg.innerHTML = `<p style='margin:0 0 1em;font-size:1.02em;font-weight:600;color:#18384d'>${cfgHtml(message || 'Save config changes?')}</p>` + "<p style='margin:0 0 1.2em;color:#49667b;font-size:0.92em'>Save applies the new config and reloads the review UI. Discard closes the editor without changing config.toml.</p>" + "<div style='display:flex;gap:0.65em;justify-content:flex-end;flex-wrap:wrap'>" + "<button id='_cfg_save' style='padding:0.55em 1.1em;background:#2f6fa3;color:#fff;border:none;border-radius:8px;cursor:pointer'>Save</button>" + "<button id='_cfg_discard' style='padding:0.55em 1.1em;background:#4b5a68;color:#fff;border:none;border-radius:8px;cursor:pointer'>Discard</button>" + "<button id='_cfg_cancel' style='padding:0.55em 1.1em;background:#eef3f7;color:#21384b;border:none;border-radius:8px;cursor:pointer'>Continue Editing</button>" + "</div>"; document.body.appendChild(dlg); dlg.showModal(); const finish = choice => { dlg.close(); dlg.remove(); resolve(choice); }; dlg.querySelector('#_cfg_save').onclick = () => finish('save'); dlg.querySelector('#_cfg_discard').onclick = () => finish('discard'); dlg.querySelector('#_cfg_cancel').onclick = () => finish('cancel'); dlg.addEventListener('cancel', () => finish('cancel')); }); }
+function configEditorExitChoice(message) { return new Promise(resolve => { const dlg = document.createElement('dialog'); dlg.className = 'cfgConfirmDialog'; dlg.innerHTML = `<h4 class='cfgConfirmTitle'>${cfgHtml(message || 'Save config changes?')}</h4>` + "<p class='cfgConfirmBody'>Save applies the new config and reloads the review UI. Discard closes the editor without changing config.toml.</p>" + "<div class='cfgConfirmActions'>" + "<button id='_cfg_cancel' class='cfgSecondaryBtn'>Continue Editing</button>" + "<button id='_cfg_discard' class='cfgDangerBtn'>Discard</button>" + "<button id='_cfg_save' class='cfgPrimaryBtn'>Save</button>" + "</div>"; document.body.appendChild(dlg); dlg.showModal(); const finish = choice => { dlg.close(); dlg.remove(); resolve(choice); }; dlg.querySelector('#_cfg_save').onclick = () => finish('save'); dlg.querySelector('#_cfg_discard').onclick = () => finish('discard'); dlg.querySelector('#_cfg_cancel').onclick = () => finish('cancel'); dlg.addEventListener('cancel', () => finish('cancel')); }); }
 async function requestCloseConfigEditor() { if (!configEditorState.open || configEditorState.loading || configEditorState.saving) { closeConfigEditorBackdrop(); return; } if (!configEditorIsDirty()) { closeConfigEditorBackdrop(); setConfigEditorStatus('Config editor closed'); return; } const choice = await configEditorExitChoice('Save config changes before closing?'); if (choice === 'save') { await saveConfigEditorChanges(); return; } if (choice === 'discard') { closeConfigEditorBackdrop(); setConfigEditorStatus('Config changes discarded'); } }
 async function saveConfigEditorChanges() { if (configEditorState.saving) return false; const values = collectConfigEditorValues(); configEditorState.saving = true; setConfigEditorStatus('Saving config.toml...'); try { const response = await fetch('/api/config-editor-save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ values }) }); const payload = await response.json(); if (!payload.ok) throw new Error(payload.message || 'Failed to save config.toml.'); configEditorState.originalValues = { ...values }; closeConfigEditorBackdrop(); setConfigEditorStatus(payload.message || 'Config saved. Reloading...'); if (typeof setBusy === 'function') setBusy(true, 'Config saved. Reloading review UI...'); setTimeout(() => { window.location.reload(); }, payload.reload_required ? 1600 : 250); return true; } catch (error) { setConfigEditorStatus('Config save failed'); alert('Config save failed: ' + error); return false; } finally { configEditorState.saving = false; } }
 window.addEventListener('beforeunload', event => { if (!configEditorState.open || !configEditorIsDirty()) return; event.preventDefault(); event.returnValue = ''; });
@@ -4103,12 +5077,11 @@ pub fn run_review_ui_bootstrap(
                 },
             };
 
-            let mut resp = Response::from_string(serde_json::to_string(&response).unwrap_or_else(
-                |_| {
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
                     "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}"
                         .to_string()
-                },
-            ));
+                }));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -4594,6 +5567,146 @@ pub fn run_review_ui(
             continue;
         }
 
+        if method == Method::Post && req_url == "/save-left-stamp" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => serde_json::to_string(&save_left_stamp(
+                    &conn,
+                    db_path,
+                    &album_name,
+                    req,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
+                        .to_string()
+                }),
+                Err(e) => serde_json::to_string(&SaveLeftStampResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    updated_left: None,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"updated_left\":null}"
+                        .to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/add-left-stamp" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<AddLeftStampRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => serde_json::to_string(&add_left_stamp(&conn, db_path, &album_name, req))
+                    .unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
+                            .to_string()
+                    }),
+                Err(e) => serde_json::to_string(&AddLeftStampResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    added_left: None,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"added_left\":null}".to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/delete-left-stamp" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<DeleteLeftStampRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => serde_json::to_string(&delete_left_stamp(&conn, req)).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"deleted_rowid\":null,\"restored_colnect_id\":null}".to_string()
+                }),
+                Err(e) => serde_json::to_string(&DeleteLeftStampResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    deleted_rowid: None,
+                    restored_colnect_id: None,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"deleted_rowid\":null,\"restored_colnect_id\":null}".to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/clear-left-colnect-link" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<ClearLeftColnectLinkRequest, _> = serde_json::from_str(&body);
+            let resp_json = match parsed {
+                Ok(req) => serde_json::to_string(&clear_left_colnect_link(
+                    &conn,
+                    db_path,
+                    &album_name,
+                    req,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null,\"restored_colnect_id\":null}"
+                        .to_string()
+                }),
+                Err(e) => serde_json::to_string(&ClearLeftColnectLinkResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    updated_left: None,
+                    restored_colnect_id: None,
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"updated_left\":null,\"restored_colnect_id\":null}"
+                        .to_string()
+                }),
+            };
+
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/add-colnect-stamp" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
@@ -4817,12 +5930,11 @@ pub fn run_review_ui(
                 },
             };
 
-            let mut resp = Response::from_string(serde_json::to_string(&response).unwrap_or_else(
-                |_| {
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
                     "{\"ok\":false,\"message\":\"serialization failed\",\"reload_required\":false}"
                         .to_string()
-                },
-            ));
+                }));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -4836,8 +5948,7 @@ pub fn run_review_ui(
         if method == Method::Post && req_url == "/return-to-start" {
             return_to_start_requested = true;
             let mut resp = Response::from_string(
-                "{\"ok\":true,\"message\":\"Returning to Start Review page...\"}"
-                    .to_string(),
+                "{\"ok\":true,\"message\":\"Returning to Start Review page...\"}".to_string(),
             );
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -4854,11 +5965,18 @@ pub fn run_review_ui(
             }
 
             let parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
-            let (req_start_year, req_end_year) = parsed_body.as_ref().ok().map(|v| {
-                let sy = v.get("start_year").and_then(|x| x.as_i64()).map(|x| x as i32);
-                let ey = v.get("end_year").and_then(|x| x.as_i64()).map(|x| x as i32);
-                (sy, ey)
-            }).unwrap_or((None, None));
+            let (req_start_year, req_end_year) = parsed_body
+                .as_ref()
+                .ok()
+                .map(|v| {
+                    let sy = v
+                        .get("start_year")
+                        .and_then(|x| x.as_i64())
+                        .map(|x| x as i32);
+                    let ey = v.get("end_year").and_then(|x| x.as_i64()).map(|x| x as i32);
+                    (sy, ey)
+                })
+                .unwrap_or((None, None));
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -4923,8 +6041,8 @@ pub fn run_review_ui(
                                     &conn,
                                     &album_name,
                                     None::<fn(usize)>,
-                                        req.start_year,
-                                        req.end_year,
+                                    req.start_year,
+                                    req.end_year,
                                     Some(req.generate_pdf),
                                 )
                             }));

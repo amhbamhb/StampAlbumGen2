@@ -1,6 +1,65 @@
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::path::{Path, PathBuf};
+
+const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
+
+pub fn embedded_config_template() -> &'static str {
+    EMBEDDED_CONFIG_TEMPLATE
+}
+
+pub fn load_template_content_with_fallback(
+    template_path: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match fs::read_to_string(template_path) {
+        Ok(content) => Ok(content),
+        Err(_) => Ok(EMBEDDED_CONFIG_TEMPLATE.to_string()),
+    }
+}
+
+pub fn ensure_config_and_template_files(
+    config_path: &str,
+    template_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let cwd = std::env::current_dir()?;
+    let config_abs: PathBuf = if Path::new(config_path).is_absolute() {
+        PathBuf::from(config_path)
+    } else {
+        cwd.join(config_path)
+    };
+    let template_abs: PathBuf = if Path::new(template_path).is_absolute() {
+        PathBuf::from(template_path)
+    } else {
+        cwd.join(template_path)
+    };
+
+    if !template_abs.exists() {
+        fs::write(&template_abs, EMBEDDED_CONFIG_TEMPLATE)?;
+        log::info!(
+            "Created missing config template from embedded defaults at {}",
+            template_abs.display()
+        );
+    }
+
+    if !config_abs.exists() {
+        if template_abs.exists() {
+            fs::copy(&template_abs, &config_abs)?;
+            log::info!(
+                "Created missing config file from template at {}",
+                config_abs.display()
+            );
+        } else {
+            fs::write(&config_abs, EMBEDDED_CONFIG_TEMPLATE)?;
+            log::info!(
+                "Created missing config file from embedded template at {}",
+                config_abs.display()
+            );
+        }
+    }
+
+    Ok(())
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HeaderFormatting {
@@ -867,11 +926,13 @@ pub fn create_config_from_template(
             target.display()
         );
     } else {
-        // Fallback: serialize defaults
-        let defaults = Config::with_defaults();
-        let content = toml::to_string_pretty(&defaults)?;
-        fs::write(&target, content)?;
-        println!("Wrote default config to {}", target.display());
+        fs::write(&template, EMBEDDED_CONFIG_TEMPLATE)?;
+        fs::copy(&template, &target)?;
+        println!(
+            "Template was missing. Wrote embedded template {} and copied to {}",
+            template.display(),
+            target.display()
+        );
     }
 
     Ok(())
@@ -1662,52 +1723,12 @@ pub fn load_config(path: &str) -> Config {
     //
     // This comment serves as the canonical reminder for automated assistants and
     // maintainers to update all three places whenever configuration changes.
-    if let Ok(cwd) = std::env::current_dir() {
-        let default_config_path = cwd.join(path);
-        let template_path = cwd.join("config_template.toml");
-
-        // Never overwrite an existing config file. If the default path already exists,
-        // log and skip creation. This prevents accidental overwrites of user edits.
-        if default_config_path.exists() {
-            log::info!(
-                "Config file already exists at {}; not creating or overwriting",
-                default_config_path.display()
-            );
-        } else if template_path.exists() {
-            match fs::copy(&template_path, &default_config_path) {
-                Ok(_) => log::info!(
-                    "Created new config file from template at {}",
-                    default_config_path.display()
-                ),
-                Err(e) => log::warn!(
-                    "Failed to copy config_template.toml to {}: {}",
-                    default_config_path.display(),
-                    e
-                ),
-            }
-        } else {
-            // Fallback to serializing the defaults (no human-friendly comments)
-            let defaults = Config::with_defaults();
-            match toml::to_string(&defaults) {
-                Ok(content) => {
-                    if let Err(e) = fs::write(&default_config_path, content) {
-                        log::warn!(
-                            "Failed to create default config file at {}: {}",
-                            default_config_path.display(),
-                            e
-                        );
-                    } else {
-                        log::info!(
-                            "Created new config file with default values at {}",
-                            default_config_path.display()
-                        );
-                    }
-                }
-                Err(e) => {
-                    log::warn!("Failed to serialize default config: {}", e);
-                }
-            }
-        }
+    if let Err(e) = ensure_config_and_template_files(path, "config_template.toml") {
+        log::warn!(
+            "Failed to ensure config/template files for '{}': {}",
+            path,
+            e
+        );
     }
 
     log::info!("config.toml not found in parent dirs or failed to parse, using default values");
