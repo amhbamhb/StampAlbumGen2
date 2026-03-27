@@ -954,18 +954,39 @@ fn detect_duplicate_keys(content: &str) -> Option<Vec<String>> {
 
     let mut key_counts: HashMap<String, usize> = HashMap::new();
     let mut duplicates: Vec<String> = Vec::new();
+    let mut current_table_path = String::new();
 
     for line in content.lines() {
-        let trimmed = line.trim();
+        let trimmed_no_comment = line.split('#').next().unwrap_or_default().trim();
 
         // Skip comments and empty lines
-        if trimmed.starts_with('#') || trimmed.is_empty() {
+        if trimmed_no_comment.is_empty() {
+            continue;
+        }
+
+        // Track table scope so keys with the same name in different
+        // sections (for example `description` in multiple tables) are not
+        // reported as duplicates.
+        if trimmed_no_comment.starts_with("[[") && trimmed_no_comment.ends_with("]]") {
+            current_table_path = trimmed_no_comment
+                .trim_start_matches("[[")
+                .trim_end_matches("]]")
+                .trim()
+                .to_string();
+            continue;
+        }
+        if trimmed_no_comment.starts_with('[') && trimmed_no_comment.ends_with(']') {
+            current_table_path = trimmed_no_comment
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .trim()
+                .to_string();
             continue;
         }
 
         // Look for key = value patterns (basic detection)
-        if let Some(key_end) = trimmed.find('=') {
-            let key = trimmed[..key_end].trim();
+        if let Some(key_end) = trimmed_no_comment.find('=') {
+            let key = trimmed_no_comment[..key_end].trim();
 
             // Skip if key contains brackets (array/table syntax)
             if key.contains('[') || key.contains(']') {
@@ -974,8 +995,13 @@ fn detect_duplicate_keys(content: &str) -> Option<Vec<String>> {
 
             // Remove quotes if present
             let clean_key = key.trim_matches('"').trim_matches('\'');
+            let scoped_key = if current_table_path.is_empty() {
+                clean_key.to_string()
+            } else {
+                format!("{}.{}", current_table_path, clean_key)
+            };
 
-            *key_counts.entry(clean_key.to_string()).or_insert(0) += 1;
+            *key_counts.entry(scoped_key).or_insert(0) += 1;
         }
     }
 
@@ -1750,7 +1776,7 @@ pub fn load_config(path: &str) -> Config {
 
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::{detect_duplicate_keys, Config};
 
     #[test]
     fn colnect_fields_boolean_toggles_are_parsed() {
@@ -1810,6 +1836,35 @@ printing = false
         let fields = cfg.effective_colnect_detail_field_set();
         assert!(fields.contains("print_run"));
         assert!(fields.contains("printing"));
+    }
+
+    #[test]
+    fn duplicate_detection_ignores_same_key_in_different_sections() {
+        let cfg_toml = r#"
+[stamps]
+description = "A"
+
+[review_ui]
+description = "B"
+"#;
+
+        let duplicates = detect_duplicate_keys(cfg_toml);
+        assert!(
+            duplicates.is_none(),
+            "same key name in different sections must not be treated as duplicate"
+        );
+    }
+
+    #[test]
+    fn duplicate_detection_finds_duplicates_in_same_section() {
+        let cfg_toml = r#"
+[runtime]
+albumeasy_auto_generate_pdf = false
+albumeasy_auto_generate_pdf = true
+"#;
+
+        let duplicates = detect_duplicate_keys(cfg_toml).unwrap_or_default();
+        assert!(duplicates.contains(&"runtime.albumeasy_auto_generate_pdf".to_string()));
     }
 }
 
