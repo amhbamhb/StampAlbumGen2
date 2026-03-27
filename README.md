@@ -17,6 +17,12 @@ Show all available switches:
 ./stamp_album_gen2 --help
 ```
 
+Enable PDF generation diagnostics (DX/support mode):
+
+```bash
+./stamp_album_gen2 --pdf-dx-logging --review-ui --album-name "Great Britain"
+```
+
 Important: when running the binary directly, do not put an extra `--` after `./stamp_album_gen2`.
 
 Correct:
@@ -212,6 +218,12 @@ Force overwrite existing config (creates backup first):
 - `--review-ui-bind <ADDR>`
   Override the listen address for the review UI server.
   Default: `127.0.0.1:7878`.
+
+### Diagnostics
+
+- `--pdf-dx-logging`
+  Enable additional PDF generation diagnostics for support/debugging.
+  Logs are written to `Logs/stamp_album_gen2-*.log`.
 
 ### Built-in Utility
 

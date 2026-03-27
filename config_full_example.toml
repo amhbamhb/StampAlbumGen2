@@ -146,6 +146,9 @@ albumeasy_cli_path = ""
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = false
 
+# DX/support switch for additional PDF generation diagnostics in Logs/
+pdf_dx_logging = false
+
 # --- Review UI defaults ---
 # Alternating row colors for metadata tables in review mode.
 [review_ui]

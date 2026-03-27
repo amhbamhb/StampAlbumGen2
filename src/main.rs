@@ -32,6 +32,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Parse CLI arguments
     let mut cli = Cli::parse();
 
+    let startup_config = config::load_config("config.toml");
+    let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
+    stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
+    if enable_pdf_dx_logging {
+        eprintln!(
+            "PDF DX logging is enabled (via {}); detailed PDF generation diagnostics will be written to Logs/",
+            if cli.pdf_dx_logging {
+                "--pdf-dx-logging"
+            } else {
+                "runtime.pdf_dx_logging=true"
+            }
+        );
+    }
+
     // Review UI mode is intentionally independent from normal source/mode
     // validation to keep the workflow lightweight.
     if cli.review_ui {
@@ -121,6 +135,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     open_browser,
                     prebound,
                 } => {
+                    // Re-load config, merging any album-local config.toml override.
+                    let album_cfg = {
+                        let slug = album_name.as_deref().unwrap_or("").trim().replace(' ', "-");
+                        let album_dir = std::path::Path::new("Albums").join(&slug);
+                        config::load_config_with_override("config.toml", &album_dir)
+                    };
                     eprintln!("Review UI: loading compare data. This may take a few seconds...");
                     match run_review_ui(
                         &db_path,
@@ -128,23 +148,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         prebound,
                         cli.review_ui_bind.as_deref(),
                         open_browser,
-                        &review_cfg.effective_default_catalog_code(),
-                        review_cfg.review_ui_odd_row_color(),
-                        review_cfg.review_ui_even_row_color(),
-                        review_cfg.review_ui_series_default_checked(),
-                        review_cfg.review_ui_description_default_checked(),
-                        review_cfg.review_ui_watermark_default_checked(),
-                        review_cfg.review_ui_design_default_checked(),
-                        review_cfg.review_ui_engraving_default_checked(),
-                        review_cfg.review_ui_perforation_default_checked(),
-                        review_cfg.review_ui_context_default_checked(),
-                        review_cfg.review_ui_colnect_links_default_checked(),
-                        review_cfg.review_ui_colnect_image_url_default_checked(),
-                        review_cfg.review_ui_colnect_metadata_default_checked(),
-                        review_cfg.review_ui_replace_sg_number_default_checked(),
-                        review_cfg.review_ui_right_unmatched_only_default_checked(),
-                        review_cfg.albumeasy_auto_pdf_enabled(),
-                        review_cfg.effective_albumeasy_cli_path().is_some(),
+                        &album_cfg.effective_default_catalog_code(),
+                        album_cfg.review_ui_odd_row_color(),
+                        album_cfg.review_ui_even_row_color(),
+                        album_cfg.review_ui_series_default_checked(),
+                        album_cfg.review_ui_description_default_checked(),
+                        album_cfg.review_ui_watermark_default_checked(),
+                        album_cfg.review_ui_design_default_checked(),
+                        album_cfg.review_ui_engraving_default_checked(),
+                        album_cfg.review_ui_perforation_default_checked(),
+                        album_cfg.review_ui_context_default_checked(),
+                        album_cfg.review_ui_colnect_links_default_checked(),
+                        album_cfg.review_ui_colnect_image_url_default_checked(),
+                        album_cfg.review_ui_colnect_metadata_default_checked(),
+                        album_cfg.review_ui_replace_sg_number_default_checked(),
+                        album_cfg.review_ui_right_unmatched_only_default_checked(),
+                        album_cfg.albumeasy_auto_pdf_enabled(),
+                        album_cfg.effective_albumeasy_cli_path().is_some(),
                     )? {
                         ReviewUiRunOutcome::Exit => return Ok(()),
                         ReviewUiRunOutcome::ReloadRequested => {

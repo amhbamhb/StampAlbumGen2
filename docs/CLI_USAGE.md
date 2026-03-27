@@ -126,6 +126,12 @@ Force overwrite existing config (creates backup first):
 ./stamp_album_gen2 --init-config --force-init-config
 ```
 
+Enable PDF DX diagnostics for support runs:
+
+```bash
+./stamp_album_gen2 --pdf-dx-logging --review-ui --album-name "Great Britain"
+```
+
 ## CLI Switch Reference
 
 ### Core
@@ -191,6 +197,12 @@ Force overwrite existing config (creates backup first):
     Skip files already imported by SHA256 checksum (default behavior).
 - `--colnect-force-reimport`
     Reimport even if checksum already exists in import history.
+
+### Diagnostics
+
+- `--pdf-dx-logging`
+    Enable additional PDF generation diagnostics for support/debugging.
+    Logs are written to `Logs/stamp_album_gen2-*.log`.
 
 ### Built-in Utility
 
