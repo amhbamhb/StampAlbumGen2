@@ -320,9 +320,7 @@ mod tests {
             Duration::from_millis(50),
         );
 
-        writer
-            .join()
-            .expect("delayed writer thread should finish");
+        writer.join().expect("delayed writer thread should finish");
         assert!(
             observed,
             "expected delayed PDF write to be detected within timeout"

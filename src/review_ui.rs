@@ -145,6 +145,7 @@ struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
     album_name: String,
+    show_imageless_left_rows: bool,
     default_catalog_code: String,
     odd_row_color: String,
     even_row_color: String,
@@ -1260,8 +1261,56 @@ fn load_left_stamps(
     conn: &Connection,
     db_path: &str,
     album_name: &str,
+    include_imageless: bool,
 ) -> Result<Vec<LeftStamp>, Box<dyn std::error::Error>> {
-    let mut stmt = conn.prepare(
+    let query = if include_imageless {
+        "SELECT rowid,
+                COALESCE(sg_number, ''),
+                COALESCE(year, 0),
+                COALESCE(series, ''),
+                COALESCE(image_path, ''),
+                COALESCE(stampworld_image_url, ''),
+                COALESCE(description, ''),
+                COALESCE(watermark, ''),
+                COALESCE(design, ''),
+                COALESCE(engraving, ''),
+                COALESCE(perforation, ''),
+            COALESCE(context, ''),
+            COALESCE(colnect_page_url, ''),
+            COALESCE(colnect_image_url, ''),
+            COALESCE(colnect_id, ''),
+            COALESCE(colnect_name, ''),
+            COALESCE(colnect_catalog_codes, ''),
+            COALESCE(colnect_country, ''),
+            COALESCE(colnect_width, ''),
+            COALESCE(colnect_height, ''),
+            COALESCE(colnect_format, ''),
+            COALESCE(colnect_emission, ''),
+            COALESCE(colnect_printing, ''),
+            COALESCE(colnect_paper, ''),
+            COALESCE(colnect_gum, ''),
+            COALESCE(colnect_ord_mi, ''),
+            COALESCE(colnect_ord_sn, ''),
+            COALESCE(colnect_ord_yt, ''),
+            COALESCE(colnect_face_value, ''),
+            COALESCE(colnect_currency, ''),
+            COALESCE(colnect_ord_sg, ''),
+            COALESCE(colnect_expiry_date, ''),
+            COALESCE(colnect_print_run, ''),
+            COALESCE(colnect_colors, ''),
+            COALESCE(colnect_parent_item, ''),
+            COALESCE(colnect_variant, ''),
+            COALESCE(colnect_overprint_variant, ''),
+            COALESCE(colnect_score, ''),
+            COALESCE(colnect_accuracy, ''),
+            COALESCE(colnect_list, ''),
+            COALESCE(colnect_quantity, ''),
+            COALESCE(colnect_condition, ''),
+            COALESCE(colnect_public_note, ''),
+            COALESCE(colnect_private_note, '')
+         FROM stamps
+         ORDER BY year, sg_number"
+    } else {
         "SELECT rowid,
                 COALESCE(sg_number, ''),
                 COALESCE(year, 0),
@@ -1309,8 +1358,9 @@ fn load_left_stamps(
          FROM stamps
          WHERE TRIM(COALESCE(image_path, '')) != ''
            AND LOWER(COALESCE(image_path, '')) NOT LIKE 'images/no_image%'
-         ORDER BY year, sg_number",
-    )?;
+         ORDER BY year, sg_number"
+    };
+    let mut stmt = conn.prepare(query)?;
 
     let rows = stmt.query_map([], |row| {
         let rel_image = row.get::<_, String>(4)?;
@@ -1889,6 +1939,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
         <label><input type='checkbox' id='f_replace_sg'/> replace SG number</label>
         <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
+        <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
                 <label>order
                         <select id='sortMode' onchange='changeSortMode()'>
                                 <option value='sg'>SG number (default)</option>
@@ -2067,6 +2118,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 const payload = {json};
 let left = payload.left || [];
 let rightAll = payload.right || [];
+const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
 let countryDefaultCatalogCode = '';
@@ -2138,6 +2190,16 @@ function row(k, v) {{ return `<tr><td class='k'>${{html(k)}}</td><td class='v'>$
 function allDbRows(fields) {{
     if (!Array.isArray(fields) || !fields.length) return row('DB Fields', '(no fields)');
     return fields.map(f => row(`DB:${{f.key || ''}}`, f.value || '')).join('');
+}}
+function toggleImagelessLeftRows() {{
+    const checkbox = document.getElementById('f_show_imageless_left');
+    const url = new URL(window.location.href);
+    if (checkbox?.checked) {{
+        url.searchParams.set('show_no_image', '1');
+    }} else {{
+        url.searchParams.delete('show_no_image');
+    }}
+    window.location.href = url.pathname + url.search;
 }}
 function catalogDisplayName(code) {{
     const c = String(code || '').trim().toLowerCase();
@@ -2488,7 +2550,7 @@ function render() {{
             <strong>Manual Base Stamp Tools</strong>
             <span class='badge'>No left rows loaded</span>
         </div>
-        <p class='leftActionText'>Add a base/reference item here when you need a watermark image or a missing left-side record before matching Colnect data.</p>
+        <p class='leftActionText'>Add a base/reference item here when you need a watermark image or a missing left-side record before matching Colnect data.${{showImagelessLeftRowsDefault ? ' Image-less rows are currently visible.' : ''}}</p>
         <div class='leftActionBtns'>
             <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
         </div>`;
@@ -2513,7 +2575,7 @@ function render() {{
                 <span class='badge'>${{b(l.colnect_id) ? `Linked Colnect: ${{html(l.colnect_id)}}` : 'No Colnect link'}}</span>
             </div>
         </div>
-        <p class='leftActionText'>Use these when the StampWorld base row is wrong, when a watermark/reference image should live on the left, or when a Colnect import landed on the wrong base row. New left items need an image to remain visible here.</p>
+        <p class='leftActionText'>Use these when the StampWorld base row is wrong, when a watermark/reference image should live on the left, or when a Colnect import landed on the wrong base row.${{showImagelessLeftRowsDefault ? ' Image-less rows are visible in this session.' : ' New left items need an image to remain visible here.'}}</p>
         <div class='leftActionBtns'>
             <button onclick='openLeftEditor("edit")'>Edit Current</button>
             <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
@@ -3482,6 +3544,8 @@ if (defaultCatalogSelect) {{
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;
+const showImagelessLeftToggle = document.getElementById('f_show_imageless_left');
+if (showImagelessLeftToggle) showImagelessLeftToggle.checked = showImagelessLeftRowsDefault;
 sortLeftRows(left[leftIdx]?.rowid);
 
 render();
@@ -3503,6 +3567,71 @@ fn parse_query_param(url: &str, key: &str) -> Option<String> {
         }
     }
     None
+}
+
+fn parse_query_flag(url: &str, key: &str) -> bool {
+    match parse_query_param(url, key) {
+        Some(value) => {
+            let normalized = value.trim().to_ascii_lowercase();
+            normalized.is_empty()
+                || normalized == "1"
+                || normalized == "true"
+                || normalized == "yes"
+                || normalized == "on"
+        }
+        None => false,
+    }
+}
+
+fn build_matcher_payload(
+    conn: &Connection,
+    db_path: &str,
+    album_name: &str,
+    default_catalog_code: &str,
+    odd_row_color: &str,
+    even_row_color: &str,
+    series_default_checked: bool,
+    description_default_checked: bool,
+    watermark_default_checked: bool,
+    design_default_checked: bool,
+    engraving_default_checked: bool,
+    perforation_default_checked: bool,
+    context_default_checked: bool,
+    colnect_links_default_checked: bool,
+    colnect_image_url_default_checked: bool,
+    colnect_metadata_default_checked: bool,
+    replace_sg_number_default_checked: bool,
+    right_unmatched_only_default_checked: bool,
+    albumeasy_auto_generate_pdf_default: bool,
+    albumeasy_cli_configured: bool,
+    show_imageless_left_rows: bool,
+) -> Result<MatcherPayload, Box<dyn std::error::Error>> {
+    let left = load_left_stamps(conn, db_path, album_name, show_imageless_left_rows)?;
+    let right = load_right_candidates(conn, db_path, album_name)?;
+
+    Ok(MatcherPayload {
+        left,
+        right,
+        album_name: album_name.to_string(),
+        show_imageless_left_rows,
+        default_catalog_code: default_catalog_code.to_string(),
+        odd_row_color: odd_row_color.to_string(),
+        even_row_color: even_row_color.to_string(),
+        series_default_checked,
+        description_default_checked,
+        watermark_default_checked,
+        design_default_checked,
+        engraving_default_checked,
+        perforation_default_checked,
+        context_default_checked,
+        colnect_links_default_checked,
+        colnect_image_url_default_checked,
+        colnect_metadata_default_checked,
+        replace_sg_number_default_checked,
+        right_unmatched_only_default_checked,
+        albumeasy_auto_generate_pdf_default,
+        albumeasy_cli_configured,
+    })
 }
 
 fn album_dir_for_ui(db_path: &str, album_name: &str) -> PathBuf {
@@ -6362,29 +6491,18 @@ pub fn run_review_ui(
         })
         .unwrap_or_else(|| "Album".to_string());
 
-    eprintln!("Review UI: loading left StampWorld rows...");
-    let left = load_left_stamps(&conn, db_path, &album_name)?;
-    eprintln!("Review UI: loading right Colnect candidates...");
-    let right = load_right_candidates(&conn, db_path, &album_name)?;
+    let initial_show_imageless_left_rows = false;
     eprintln!(
-        "Review UI: loaded {} left rows and {} right candidates",
-        left.len(),
-        right.len()
+        "Review UI: loading left StampWorld rows (show image-less: {})...",
+        initial_show_imageless_left_rows
     );
-
-    let right_map: HashMap<String, RightCandidate> = right
-        .iter()
-        .cloned()
-        .map(|c| (c.colnect_id.clone(), c))
-        .collect();
-
-    let payload = MatcherPayload {
-        left,
-        right,
-        album_name: album_name.clone(),
-        default_catalog_code: default_catalog_code.to_string(),
-        odd_row_color: odd_row_color.to_string(),
-        even_row_color: even_row_color.to_string(),
+    let payload = build_matcher_payload(
+        &conn,
+        db_path,
+        &album_name,
+        default_catalog_code,
+        odd_row_color,
+        even_row_color,
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -6399,7 +6517,21 @@ pub fn run_review_ui(
         right_unmatched_only_default_checked,
         albumeasy_auto_generate_pdf_default,
         albumeasy_cli_configured,
-    };
+        initial_show_imageless_left_rows,
+    )?;
+    eprintln!(
+        "Review UI: loaded {} left rows and {} right candidates",
+        payload.left.len(),
+        payload.right.len()
+    );
+
+    let right_map: HashMap<String, RightCandidate> = payload
+        .right
+        .iter()
+        .cloned()
+        .map(|c| (c.colnect_id.clone(), c))
+        .collect();
+
     let html = render_html(&payload);
 
     eprintln!("Review UI: starting local web server...");
@@ -6471,8 +6603,46 @@ pub fn run_review_ui(
             continue;
         }
 
-        if method == Method::Get && req_url == "/" {
-            let mut resp = Response::from_string(html.clone());
+        if method == Method::Get && (req_url == "/" || req_url.starts_with("/?")) {
+            let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
+            let html = if show_imageless_left_rows {
+                match build_matcher_payload(
+                    &conn,
+                    db_path,
+                    &album_name,
+                    default_catalog_code,
+                    odd_row_color,
+                    even_row_color,
+                    series_default_checked,
+                    description_default_checked,
+                    watermark_default_checked,
+                    design_default_checked,
+                    engraving_default_checked,
+                    perforation_default_checked,
+                    context_default_checked,
+                    colnect_links_default_checked,
+                    colnect_image_url_default_checked,
+                    colnect_metadata_default_checked,
+                    replace_sg_number_default_checked,
+                    right_unmatched_only_default_checked,
+                    albumeasy_auto_generate_pdf_default,
+                    albumeasy_cli_configured,
+                    show_imageless_left_rows,
+                ) {
+                    Ok(payload) => render_html(&payload),
+                    Err(error) => {
+                        eprintln!(
+                            "Review UI: failed to reload compare payload with image-less rows: {}",
+                            error
+                        );
+                        html.clone()
+                    }
+                }
+            } else {
+                html.clone()
+            };
+
+            let mut resp = Response::from_string(html);
             if let Ok(h) =
                 Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
             {

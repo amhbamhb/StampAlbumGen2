@@ -662,7 +662,8 @@ fn sync_missing_stamps_from_colnect(
     ) -> Result<usize, Box<dyn std::error::Error>> {
         // Populate remote/original URLs for existing stamp rows so downstream
         // fallback image fetch can resolve Colnect page images even when rows
-        // already existed before current Colnect ingest.
+        // already existed before current Colnect ingest. Also backfill missing
+        // Colnect metadata columns without overriding existing non-empty values.
         let updated = conn.execute(
             "UPDATE stamps
              SET remote_image_url = CASE
@@ -694,6 +695,316 @@ fn sync_missing_stamps_from_colnect(
                                                 LIMIT 1
                                         )
                                         ELSE colnect_page_url
+                                 END,
+                 colnect_image_url = CASE
+                                        WHEN TRIM(COALESCE(colnect_image_url, '')) = '' THEN (
+                                                SELECT COALESCE(c.colnect_link, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_image_url
+                                 END,
+                 colnect_id = CASE
+                                        WHEN TRIM(COALESCE(colnect_id, '')) = '' THEN (
+                                                SELECT COALESCE(c.colnect_id, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_id
+                                 END,
+                 colnect_name = CASE
+                                        WHEN TRIM(COALESCE(colnect_name, '')) = '' THEN (
+                                                SELECT COALESCE(c.name, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_name
+                                 END,
+                 colnect_catalog_codes = CASE
+                                        WHEN TRIM(COALESCE(colnect_catalog_codes, '')) = '' THEN (
+                                                SELECT COALESCE(c.catalog_codes, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_catalog_codes
+                                 END,
+                 colnect_country = CASE
+                                        WHEN TRIM(COALESCE(colnect_country, '')) = '' THEN (
+                                                SELECT COALESCE(c.country, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_country
+                                 END,
+                 colnect_width = CASE
+                                        WHEN TRIM(COALESCE(colnect_width, '')) = '' THEN (
+                                                SELECT COALESCE(c.width, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_width
+                                 END,
+                 colnect_height = CASE
+                                        WHEN TRIM(COALESCE(colnect_height, '')) = '' THEN (
+                                                SELECT COALESCE(c.height, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_height
+                                 END,
+                 colnect_format = CASE
+                                        WHEN TRIM(COALESCE(colnect_format, '')) = '' THEN (
+                                                SELECT COALESCE(c.format, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_format
+                                 END,
+                 colnect_emission = CASE
+                                        WHEN TRIM(COALESCE(colnect_emission, '')) = '' THEN (
+                                                SELECT COALESCE(c.emission, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_emission
+                                 END,
+                 colnect_printing = CASE
+                                        WHEN TRIM(COALESCE(colnect_printing, '')) = '' THEN (
+                                                SELECT COALESCE(c.printing, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_printing
+                                 END,
+                 colnect_paper = CASE
+                                        WHEN TRIM(COALESCE(colnect_paper, '')) = '' THEN (
+                                                SELECT COALESCE(c.paper, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_paper
+                                 END,
+                 colnect_gum = CASE
+                                        WHEN TRIM(COALESCE(colnect_gum, '')) = '' THEN (
+                                                SELECT COALESCE(c.gum, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_gum
+                                 END,
+                 colnect_ord_mi = CASE
+                                        WHEN TRIM(COALESCE(colnect_ord_mi, '')) = '' THEN (
+                                                SELECT COALESCE(c.ord_mi, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_ord_mi
+                                 END,
+                 colnect_ord_sn = CASE
+                                        WHEN TRIM(COALESCE(colnect_ord_sn, '')) = '' THEN (
+                                                SELECT COALESCE(c.ord_sn, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_ord_sn
+                                 END,
+                 colnect_ord_yt = CASE
+                                        WHEN TRIM(COALESCE(colnect_ord_yt, '')) = '' THEN (
+                                                SELECT COALESCE(c.ord_yt, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_ord_yt
+                                 END,
+                 colnect_ord_sg = CASE
+                                        WHEN TRIM(COALESCE(colnect_ord_sg, '')) = '' THEN (
+                                                SELECT COALESCE(c.ord_sg, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_ord_sg
+                                 END,
+                 colnect_expiry_date = CASE
+                                        WHEN TRIM(COALESCE(colnect_expiry_date, '')) = '' THEN (
+                                                SELECT COALESCE(c.expiry_date, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_expiry_date
+                                 END,
+                 colnect_print_run = CASE
+                                        WHEN TRIM(COALESCE(colnect_print_run, '')) = '' THEN (
+                                                SELECT COALESCE(c.print_run, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_print_run
+                                 END,
+                 colnect_face_value = CASE
+                                        WHEN TRIM(COALESCE(colnect_face_value, '')) = '' THEN (
+                                                SELECT COALESCE(c.face_value, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_face_value
+                                 END,
+                 colnect_currency = CASE
+                                        WHEN TRIM(COALESCE(colnect_currency, '')) = '' THEN (
+                                                SELECT COALESCE(c.currency, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_currency
+                                 END,
+                 colnect_colors = CASE
+                                        WHEN TRIM(COALESCE(colnect_colors, '')) = '' THEN (
+                                                SELECT COALESCE(c.colors, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_colors
+                                 END,
+                 colnect_parent_item = CASE
+                                        WHEN TRIM(COALESCE(colnect_parent_item, '')) = '' THEN (
+                                                SELECT COALESCE(c.parent_item, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_parent_item
+                                 END,
+                 colnect_variant = CASE
+                                        WHEN TRIM(COALESCE(colnect_variant, '')) = '' THEN (
+                                                SELECT COALESCE(c.variant, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_variant
+                                 END,
+                 colnect_overprint_variant = CASE
+                                        WHEN TRIM(COALESCE(colnect_overprint_variant, '')) = '' THEN (
+                                                SELECT COALESCE(c.overprint_variant, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_overprint_variant
+                                 END,
+                 colnect_score = CASE
+                                        WHEN TRIM(COALESCE(colnect_score, '')) = '' THEN (
+                                                SELECT COALESCE(c.score, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_score
+                                 END,
+                 colnect_accuracy = CASE
+                                        WHEN TRIM(COALESCE(colnect_accuracy, '')) = '' THEN (
+                                                SELECT COALESCE(c.accuracy, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_accuracy
+                                 END,
+                 colnect_list = CASE
+                                        WHEN TRIM(COALESCE(colnect_list, '')) = '' THEN (
+                                                SELECT COALESCE(c.list, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_list
+                                 END,
+                 colnect_quantity = CASE
+                                        WHEN TRIM(COALESCE(colnect_quantity, '')) = '' THEN (
+                                                SELECT COALESCE(c.quantity, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_quantity
+                                 END,
+                 colnect_condition = CASE
+                                        WHEN TRIM(COALESCE(colnect_condition, '')) = '' THEN (
+                                                SELECT COALESCE(c.condition, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_condition
+                                 END,
+                 colnect_public_note = CASE
+                                        WHEN TRIM(COALESCE(colnect_public_note, '')) = '' THEN (
+                                                SELECT COALESCE(c.public_note, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_public_note
+                                 END,
+                 colnect_private_note = CASE
+                                        WHEN TRIM(COALESCE(colnect_private_note, '')) = '' THEN (
+                                                SELECT COALESCE(c.private_note, '')
+                                                FROM colnect_stamps c
+                                                WHERE c.sg_number = stamps.sg_number
+                                                    AND CAST(substr(c.issued_on, 1, 4) AS INTEGER) = stamps.year
+                                                LIMIT 1
+                                        )
+                                        ELSE colnect_private_note
                                  END
              WHERE EXISTS (
                  SELECT 1
@@ -724,6 +1035,14 @@ fn sync_missing_stamps_from_colnect(
             stamps_issued, mint_condition, unused, used, letter_fdc,
             currency, image_path, remote_image_url, original_image_url,
             stampworld_image_url, colnect_page_url, colnect_image_url,
+            colnect_id, colnect_name, colnect_catalog_codes, colnect_country,
+            colnect_width, colnect_height, colnect_format, colnect_emission,
+            colnect_printing, colnect_paper, colnect_gum, colnect_ord_mi,
+            colnect_ord_sn, colnect_ord_yt, colnect_ord_sg, colnect_expiry_date,
+            colnect_print_run, colnect_face_value, colnect_currency, colnect_colors,
+            colnect_parent_item, colnect_variant, colnect_overprint_variant,
+            colnect_score, colnect_accuracy, colnect_list, colnect_quantity,
+            colnect_condition, colnect_public_note, colnect_private_note,
             watermark, design, engraving, perforation, context,
             issue_location, quantity_printed
         )
@@ -759,7 +1078,37 @@ fn sync_missing_stamps_from_colnect(
             colnect_link as original_image_url,
             '' as stampworld_image_url,
             colnect_link as colnect_page_url,
-            '' as colnect_image_url,
+            colnect_link as colnect_image_url,
+            COALESCE(colnect_id, '') as colnect_id,
+            COALESCE(name, '') as colnect_name,
+            COALESCE(catalog_codes, '') as colnect_catalog_codes,
+            COALESCE(country, '') as colnect_country,
+            COALESCE(width, '') as colnect_width,
+            COALESCE(height, '') as colnect_height,
+            COALESCE(format, '') as colnect_format,
+            COALESCE(emission, '') as colnect_emission,
+            COALESCE(printing, '') as colnect_printing,
+            COALESCE(paper, '') as colnect_paper,
+            COALESCE(gum, '') as colnect_gum,
+            COALESCE(ord_mi, '') as colnect_ord_mi,
+            COALESCE(ord_sn, '') as colnect_ord_sn,
+            COALESCE(ord_yt, '') as colnect_ord_yt,
+            COALESCE(ord_sg, '') as colnect_ord_sg,
+            COALESCE(expiry_date, '') as colnect_expiry_date,
+            COALESCE(print_run, '') as colnect_print_run,
+            COALESCE(face_value, '') as colnect_face_value,
+            COALESCE(currency, '') as colnect_currency,
+            COALESCE(colors, '') as colnect_colors,
+            COALESCE(parent_item, '') as colnect_parent_item,
+            COALESCE(variant, '') as colnect_variant,
+            COALESCE(overprint_variant, '') as colnect_overprint_variant,
+            COALESCE(score, '') as colnect_score,
+            COALESCE(accuracy, '') as colnect_accuracy,
+            COALESCE(list, '') as colnect_list,
+            COALESCE(quantity, '') as colnect_quantity,
+            COALESCE(condition, '') as colnect_condition,
+            COALESCE(public_note, '') as colnect_public_note,
+            COALESCE(private_note, '') as colnect_private_note,
             COALESCE(watermark, '') as watermark,
             designers as design,
             printers as engraving,
