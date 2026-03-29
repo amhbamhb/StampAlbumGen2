@@ -5503,7 +5503,6 @@ fn colnect_import_data(
     }
 }
 
-
 /// Write `default_catalog_code` into the album-local config override
 /// (`Albums/<name>/config.toml`), preserving any other per-album overrides
 /// already present and only storing values that differ from the global config.
@@ -5526,17 +5525,25 @@ fn update_default_catalog_code_for_album(
     // Load any existing per-album overrides so they are preserved.
     let album_override_path = album_dir.join("config.toml");
     let mut merged: HashMap<String, String> = if album_override_path.exists() {
-        load_current_config_values(album_override_path.to_str().unwrap_or(""))
-            .unwrap_or_default()
+        load_current_config_values(album_override_path.to_str().unwrap_or("")).unwrap_or_default()
     } else {
         HashMap::new()
     };
 
     // Insert the new code (unquoted – save_album_config_diff normalises it).
-    merged.insert("stamps.default_catalog_code".to_string(), normalized.clone());
+    merged.insert(
+        "stamps.default_catalog_code".to_string(),
+        normalized.clone(),
+    );
 
     // Re-write the album override, keeping only fields that differ from global.
-    save_album_config_diff(album_dir, album_name, global_config_path, template_path, &merged)?;
+    save_album_config_diff(
+        album_dir,
+        album_name,
+        global_config_path,
+        template_path,
+        &merged,
+    )?;
 
     Ok(normalized)
 }
