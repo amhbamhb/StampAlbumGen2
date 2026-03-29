@@ -2,7 +2,9 @@ use super::*;
 use rusqlite::{params, Connection};
 use std::collections::HashMap;
 
-pub(super) fn sync_processed_colnect_candidates(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
+pub(super) fn sync_processed_colnect_candidates(
+    conn: &Connection,
+) -> Result<(), Box<dyn std::error::Error>> {
     conn.execute(
         "UPDATE colnect_stamps
          SET is_processed = CASE
@@ -20,7 +22,6 @@ pub(super) fn sync_processed_colnect_candidates(conn: &Connection) -> Result<(),
     Ok(())
 }
 
-
 pub(super) fn mark_colnect_candidate_processed(
     conn: &Connection,
     colnect_id: &str,
@@ -36,7 +37,6 @@ pub(super) fn mark_colnect_candidate_processed(
         params![colnect_id],
     )
 }
-
 
 pub(super) fn load_left_stamps(
     conn: &Connection,
@@ -205,7 +205,6 @@ pub(super) fn load_left_stamps(
     Ok(out)
 }
 
-
 pub(super) fn load_right_candidates(
     conn: &Connection,
     db_path: &str,
@@ -360,7 +359,6 @@ pub(super) fn load_right_candidates(
     }
     Ok(out)
 }
-
 
 pub(super) fn apply_matches(
     conn: &Connection,
@@ -535,7 +533,6 @@ pub(super) fn apply_matches(
     }
 }
 
-
 pub(super) fn load_left_stamp_by_rowid(
     conn: &Connection,
     db_path: &str,
@@ -648,7 +645,6 @@ pub(super) fn load_left_stamp_by_rowid(
         all_db_fields: load_stamp_all_fields(conn, resolved_rowid).unwrap_or_default(),
     }))
 }
-
 
 pub(super) fn load_right_candidate_by_colnect_id(
     conn: &Connection,
@@ -800,7 +796,6 @@ pub(super) fn load_right_candidate_by_colnect_id(
         catalog_code_pairs: code_pairs,
     }))
 }
-
 
 pub(super) fn add_colnect_stamp_to_stamps(
     conn: &Connection,
@@ -1054,7 +1049,6 @@ pub(super) fn add_colnect_stamp_to_stamps(
     }
 }
 
-
 pub(super) fn restore_colnect_candidate_to_queue(
     conn: &Connection,
     colnect_id: &str,
@@ -1071,7 +1065,6 @@ pub(super) fn restore_colnect_candidate_to_queue(
     )
 }
 
-
 pub(super) fn query_stamp_image_path(conn: &Connection, rowid: i64) -> Result<String, String> {
     conn.query_row(
         "SELECT COALESCE(image_path, '') FROM stamps WHERE rowid = ?1",
@@ -1080,7 +1073,6 @@ pub(super) fn query_stamp_image_path(conn: &Connection, rowid: i64) -> Result<St
     )
     .map_err(|e| format!("failed to read image path from row {}: {}", rowid, e))
 }
-
 
 pub(super) fn resolve_left_editor_image_path(
     conn: &Connection,
@@ -1129,7 +1121,6 @@ pub(super) fn resolve_left_editor_image_path(
         other => Err(format!("unsupported image mode: {}", other)),
     }
 }
-
 
 pub(super) fn save_left_stamp(
     conn: &Connection,
@@ -1309,7 +1300,6 @@ pub(super) fn save_left_stamp(
     }
 }
 
-
 pub(super) fn add_left_stamp(
     conn: &Connection,
     db_path: &str,
@@ -1466,8 +1456,10 @@ pub(super) fn add_left_stamp(
     }
 }
 
-
-pub(super) fn delete_left_stamp(conn: &Connection, req: DeleteLeftStampRequest) -> DeleteLeftStampResponse {
+pub(super) fn delete_left_stamp(
+    conn: &Connection,
+    req: DeleteLeftStampRequest,
+) -> DeleteLeftStampResponse {
     if req.rowid <= 0 {
         return DeleteLeftStampResponse {
             ok: false,
@@ -1514,7 +1506,6 @@ pub(super) fn delete_left_stamp(conn: &Connection, req: DeleteLeftStampRequest) 
         },
     }
 }
-
 
 pub(super) fn clear_left_colnect_link(
     conn: &Connection,
@@ -1619,7 +1610,6 @@ pub(super) fn clear_left_colnect_link(
     }
 }
 
-
 pub(super) fn delete_colnect_candidate(
     conn: &Connection,
     req: DeleteColnectCandidateRequest,
@@ -1663,7 +1653,6 @@ pub(super) fn delete_colnect_candidate(
     }
 }
 
-
 pub(super) fn undo_colnect_delete(
     conn: &Connection,
     req: UndoColnectDeleteRequest,
@@ -1703,4 +1692,3 @@ pub(super) fn undo_colnect_delete(
         restored_rows,
     }
 }
-

@@ -518,7 +518,6 @@ refreshState();
     )
 }
 
-
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let json =
         serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
@@ -2706,4 +2705,3 @@ render();
         config_editor_assets = render_config_editor_assets()
     )
 }
-

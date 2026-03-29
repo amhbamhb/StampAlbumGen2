@@ -12,9 +12,8 @@ use views::{render_bootstrap_html, render_html};
 
 mod config_editor;
 use config_editor::{
-    render_config_editor_assets, build_config_editor_data_for_album,
-    save_album_config_diff, build_config_editor_data, save_full_config_values,
-    update_default_catalog_code_for_album,
+    build_config_editor_data, build_config_editor_data_for_album, render_config_editor_assets,
+    save_album_config_diff, save_full_config_values, update_default_catalog_code_for_album,
 };
 
 mod matcher_service;
@@ -24,9 +23,7 @@ use matcher_service::{
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
 mod http_handlers;
-use http_handlers::{
-    serve_bootstrap_requests, serve_review_requests,
-};
+use http_handlers::{serve_bootstrap_requests, serve_review_requests};
 
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 
@@ -734,9 +731,6 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
     out
 }
 
-
-
-
 fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> String {
     let rel = rel_image_path.trim();
     if rel.is_empty() {
@@ -802,10 +796,6 @@ fn load_stamp_all_fields(
 
     Ok(fields)
 }
-
-
-
-
 
 fn parse_query_param(url: &str, key: &str) -> Option<String> {
     let (_, query) = url.split_once('?')?;
@@ -997,18 +987,6 @@ fn store_uploaded_image_from_data_url(
     Ok(format!("images/{}", file_name))
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 fn colnect_import_data(
     conn: &Connection,
     _req: ColnectImportRequest,
@@ -1156,21 +1134,6 @@ fn colnect_import_data(
 /// (`Albums/<name>/config.toml`), preserving any other per-album overrides
 /// already present and only storing values that differ from the global config.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /// Build config editor data for a country review UI session.
 /// Returns `(sections, has_album_override)` where sections have `current_value`
 /// set to the merged (effective) value and `global_value` / `is_album_override`
@@ -1179,7 +1142,6 @@ fn colnect_import_data(
 /// Write a minimal album-local config.toml that stores only the fields that
 /// differ from the global config.  The file is written into `album_dir`.
 /// Returns the number of fields written (0 = nothing changed vs global).
-
 
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
