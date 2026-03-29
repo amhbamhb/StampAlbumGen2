@@ -237,10 +237,10 @@ page_text_right_vspace = 1.0
 show_progress_indicator = true
 # Used when CLI omits --colnect-inbox for --source colnectexport.
 # The directory is auto-created on startup if missing.
-colnect_inbox_path = "samples/colnect_inbox"
+# colnect_inbox_path = "./AlbumEasy/colnect_inbox"
 # Optional AlbumEasy CLI path for post-generation PDF rendering.
 # Linux example: "/path/to/AlbumEasy/AlbumEasy.sh"
-albumeasy_cli_path = ""
+albumeasy_cli_path = "/home/ray/work/AlbumEasy/AlbumEasy.sh"
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = true
 # DX/support switch for additional PDF generation diagnostics in Logs/
@@ -257,16 +257,16 @@ even_row_color = "#e6eef4"
 # Default checkbox states for field selection
 default_series_checked = true
 default_description_checked = true
-default_watermark_checked = false
-default_design_checked = false
-default_engraving_checked = false
-default_perforation_checked = false
-default_context_checked = false
+default_watermark_checked = true
+default_design_checked = true
+default_engraving_checked = true
+default_perforation_checked = true
+default_context_checked = true
 default_colnect_links_checked = true
 default_colnect_image_url_checked = true
 default_colnect_metadata_checked = true
 default_replace_sg_number_checked = true
-default_right_unmatched_only_checked = false
+default_right_unmatched_only_checked = true
 
 ###################################
 # Colnect

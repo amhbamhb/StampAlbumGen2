@@ -775,6 +775,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
                         <span style='font-size:0.9em;'>–</span>
                         <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
+                        <span id='pdfStatus' class='badge'></span>
                     </div>
                 </div>
                 <div class='sessionSection'>
@@ -2574,8 +2575,8 @@ if (document.body) {{
 }}
 
 async function generatePdfNowReview() {{
-    const statusEl = document.getElementById('status');
-    const originalText = statusEl?.innerText || 'Ready';
+    const statusEl = document.getElementById('pdfStatus');
+    const originalText = statusEl?.innerText || '';
     if (window.__reviewPdfRequestInFlight === true) {{
         if (statusEl) statusEl.innerText = 'PDF generation already in progress. Please wait.';
         return;
