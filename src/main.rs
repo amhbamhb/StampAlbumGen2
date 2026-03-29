@@ -54,7 +54,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         eprintln!("Review UI: initializing...");
 
         enum ReviewUiLaunchState {
-            Bootstrap,
+            Bootstrap {
+                open_browser: bool,
+            },
             Selected {
                 db_path: String,
                 album_name: Option<String>,
@@ -64,7 +66,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let mut launch_state = if cli.db_path.is_none() && cli.album_name.is_none() {
-            ReviewUiLaunchState::Bootstrap
+            ReviewUiLaunchState::Bootstrap { open_browser: true }
         } else {
             let db_path = if let Some(path) = cli.db_path.clone() {
                 path
@@ -88,16 +90,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         loop {
             let review_cfg = config::load_config("config.toml");
             let current_state =
-                std::mem::replace(&mut launch_state, ReviewUiLaunchState::Bootstrap);
+                std::mem::replace(&mut launch_state, ReviewUiLaunchState::Bootstrap { open_browser: true });
 
             match current_state {
-                ReviewUiLaunchState::Bootstrap => {
+                ReviewUiLaunchState::Bootstrap { open_browser } => {
                     eprintln!(
                         "Review UI: no country/database selected on CLI; opening startup selector..."
                     );
                     match run_review_ui_bootstrap(
                         cli.review_ui_bind.as_deref(),
                         review_cfg.effective_colnect_inbox_path(),
+                        open_browser,
                     )? {
                         ReviewUiBootstrapOutcome::Exit => {
                             eprintln!("No country selected; exiting Review UI startup.");
@@ -107,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             eprintln!(
                                 "Review UI: config changed in startup selector; reloading..."
                             );
-                            launch_state = ReviewUiLaunchState::Bootstrap;
+                            launch_state = ReviewUiLaunchState::Bootstrap { open_browser: false };
                             continue;
                         }
                         ReviewUiBootstrapOutcome::Selected {
@@ -181,7 +184,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             eprintln!(
                                 "Review UI: return-to-start requested from compare view; opening startup selector..."
                             );
-                            launch_state = ReviewUiLaunchState::Bootstrap;
+                            launch_state = ReviewUiLaunchState::Bootstrap { open_browser: false };
                             continue;
                         }
                     }

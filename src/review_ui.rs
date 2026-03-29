@@ -722,7 +722,7 @@ fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
 <meta charset='utf-8'>
 <title>Stamp Matcher Setup</title>
 <style>
-body {{ font-family: sans-serif; margin: 20px; background: linear-gradient(180deg, #edf4f8, #f8fbfd); color: #1e3548; }}
+body {{ font-family: sans-serif; margin: 20px; background: linear-gradient(180deg, #edf4f8, #f8fbfd); color: #1e3548; opacity: 0; animation: bootstrapFadeIn 180ms ease-out forwards; }}
 .card {{ max-width: 960px; background: #fff; border: 1px solid #d7e2eb; border-radius: 12px; padding: 16px; box-shadow: 0 10px 24px rgba(28, 56, 82, 0.08); }}
 h1 {{ margin: 0 0 8px 0; }}
 p {{ margin: 0 0 10px 0; color: #395970; }}
@@ -746,6 +746,7 @@ code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padd
 body.busy {{ cursor: progress; }}
 body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-events: none; }}
 @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
+@keyframes bootstrapFadeIn {{ from {{ opacity: 0; transform: translateY(2px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 </style>
 </head>
 <body>
@@ -754,13 +755,20 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
     <p>No database was selected on startup. Pick a country to open its Review UI.</p>
     <div class='row'>
         <label for='countrySel'>Country</label>
-        <select id='countrySel'></select>
+        <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
         <button onclick='refreshState()'>Refresh</button>
         <button onclick='openConfigEditor()'>Edit Config</button>
         <button class='primary' onclick='startReview()'>Open Review</button>
         <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
         <button onclick='importColnectFiles()'>Import Colnect</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
+    </div>
+    <div class='row'>
+        <label for='countrySearch'>Search</label>
+        <input id='countrySearch' type='text' placeholder='Find country...' oninput='updateCountrySearchMatches(true)' />
+        <button onclick='stepCountrySearch(-1)'>Back</button>
+        <button onclick='stepCountrySearch(1)'>Forward</button>
+        <span id='countrySearchStatus' class='badge'>Matches: 0/0</span>
     </div>
     <div class='row' style='align-items:center;gap:0.5em;flex-wrap:wrap;'>
         <label for='pdfStartYear' style='margin:0;'>PDF Year Range</label>
@@ -809,6 +817,71 @@ let countries = [];
 let loadingDotsTimer = null;
 let loadingPhaseTimer = null;
 let bootstrapPdfRequestInFlight = false;
+let countrySearchMatches = [];
+let countrySearchIndex = -1;
+
+function setCountrySearchStatus(text) {{
+    const status = document.getElementById('countrySearchStatus');
+    if (status) status.innerText = text;
+}}
+
+function onCountrySelectionChanged() {{
+    renderCountryPanel();
+    updateCountrySearchMatches(true);
+}}
+
+function updateCountrySearchMatches(preserveCurrentSelection) {{
+    const sel = document.getElementById('countrySel');
+    const searchInput = document.getElementById('countrySearch');
+    if (!sel || !searchInput) return;
+
+    const query = String(searchInput.value || '').trim().toLowerCase();
+    if (!query) {{
+        countrySearchMatches = countries.map(c => c.country);
+    }} else {{
+        countrySearchMatches = countries
+            .filter(c => String(c.country || '').toLowerCase().includes(query))
+            .map(c => c.country);
+    }}
+
+    if (!countrySearchMatches.length) {{
+        countrySearchIndex = -1;
+        setCountrySearchStatus('Matches: 0/0');
+        return;
+    }}
+
+    if (preserveCurrentSelection) {{
+        const selectedCountry = String(sel.value || '');
+        const selectedIdx = countrySearchMatches.findIndex(c => c === selectedCountry);
+        if (selectedIdx >= 0) {{
+            countrySearchIndex = selectedIdx;
+            setCountrySearchStatus(`Matches: ${{countrySearchIndex + 1}}/${{countrySearchMatches.length}}`);
+            return;
+        }}
+    }}
+
+    countrySearchIndex = 0;
+    sel.value = countrySearchMatches[0];
+    renderCountryPanel();
+    setCountrySearchStatus(`Matches: 1/${{countrySearchMatches.length}}`);
+}}
+
+function stepCountrySearch(delta) {{
+    const sel = document.getElementById('countrySel');
+    if (!sel) return;
+
+    if (!countrySearchMatches.length) {{
+        setCountrySearchStatus('Matches: 0/0');
+        return;
+    }}
+
+    if (countrySearchIndex < 0) countrySearchIndex = 0;
+    const total = countrySearchMatches.length;
+    countrySearchIndex = (countrySearchIndex + delta + total) % total;
+    sel.value = countrySearchMatches[countrySearchIndex];
+    renderCountryPanel();
+    setCountrySearchStatus(`Matches: ${{countrySearchIndex + 1}}/${{total}}`);
+}}
 
 function startLoadingPhases(country) {{
     const txt = document.getElementById('loadingText');
@@ -970,6 +1043,7 @@ async function refreshState() {{
         if (!sel.value && countries.length) sel.value = countries[0].country;
         document.getElementById('countryCount').innerText = `Countries: ${{countries.length}}`;
         renderCountryPanel();
+        updateCountrySearchMatches(true);
         status.innerText = countries.length ? 'Select a country and open review.' : 'No country DBs found. Create one by running a StampWorld pull first.';
     }} catch (e) {{
         status.innerText = `Failed to load startup state: ${{e}}`;
@@ -1766,6 +1840,8 @@ body {{
   font-family: sans-serif;
   margin: 16px;
     background: linear-gradient(180deg, #eef4f8 0%, #f7f9fb 100%);
+    opacity: 1;
+    transition: opacity 170ms ease, filter 170ms ease, transform 170ms ease;
   --row-odd-bg: #ffffff;
   --row-even-bg: #e6eef4;
   --row-odd-key-bg: #f1f3f5;
@@ -1776,6 +1852,9 @@ body {{
     --accent-red: #a34545;
     --accent-slate: #4b5a68;
 }}
+body.pageLeaving {{ opacity: 0.2; filter: blur(1px); transform: translateY(2px); }}
+body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
+@keyframes reviewPageIn {{ from {{ opacity: 0.45; transform: translateY(2px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 .wrap {{ background: #ffffff; border: 1px solid #dbe4ec; border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(27, 51, 72, 0.08); }}
 .top {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }}
 .startGuide {{ border: 1px solid #d8e3ed; border-left: 6px solid var(--accent-blue); border-radius: 10px; background: #f5fafe; padding: 12px; margin-bottom: 12px; }}
@@ -1790,6 +1869,19 @@ body {{
 .groupCard.candidate {{ border-left: 5px solid var(--accent-amber); }}
 .groupCard.session {{ border-left: 5px solid var(--accent-slate); }}
 .groupBtns {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+.sessionStack {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; width: 100%; }}
+.sessionSection {{ border: 1px solid #d7e2eb; border-radius: 8px; background: #f9fcff; padding: 8px; }}
+.sessionSection:nth-child(1) {{ background: #f2f8ff; border-color: #cddff2; }}
+.sessionSection:nth-child(2) {{ background: #f2fbf6; border-color: #cfe8da; }}
+.sessionSection:nth-child(3) {{ background: #fff8ef; border-color: #ead8bc; }}
+.sessionSection:nth-child(4) {{ background: #f5f6f8; border-color: #d5dbe3; }}
+.sessionSectionTitle {{ margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #2a4458; letter-spacing: 0.2px; }}
+.sessionRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+.actionRows {{ display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }}
+.actionBar {{ border: 1px solid #dbe4ec; border-radius: 10px; padding: 9px 10px; background: #fbfdff; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
+.actionBar.match {{ border-left: 5px solid var(--accent-green); }}
+.actionBar.candidate {{ border-left: 5px solid var(--accent-amber); }}
+.actionBarTitle {{ font-size: 12px; font-weight: 700; color: #2a4458; margin-right: 6px; }}
 .filtersCard {{ border: 1px solid #dbe4ec; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: #f8fbfe; padding: 10px; margin-bottom: 12px; }}
 .filtersTitle {{ margin: 0 0 8px 0; font-size: 13px; color: #1f4663; }}
 .filtersGrid {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
@@ -1799,6 +1891,40 @@ body {{
 .leftActionText {{ margin: 0; color: #6c5530; font-size: 12px; line-height: 1.45; }}
 .leftActionBtns {{ display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }}
 .leftActionNote {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }}
+.leftSearchRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }}
+.leftSearchRow input {{ width: 220px; max-width: 52vw; padding: 5px 7px; border: 1px solid #c8d5e2; border-radius: 7px; }}
+.leftNavRow {{ display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; background: #fff4e2; border: 1px solid #ead5b4; border-radius: 8px; padding: 6px; }}
+.rightActionBanner {{ border: 1px solid #d6e4f2; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: linear-gradient(180deg, #f4f9ff 0%, #f9fcff 100%); padding: 10px; margin-bottom: 8px; }}
+.rightActionTop {{ display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }}
+.rightActionTop strong {{ color: #214d72; }}
+.rightBottomBlock {{ display: flex; flex-direction: column; gap: 0; }}
+.rightSearchRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }}
+.rightSearchRow input {{ width: 220px; max-width: 52vw; padding: 5px 7px; border: 1px solid #c8d5e2; border-radius: 7px; }}
+.rightNavRow {{ display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; background: #eaf4ff; border: 1px solid #c9ddf2; border-radius: 8px; padding: 6px; }}
+@media (min-width: 981px) {{
+    #comparePanels {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto 1fr;
+        gap: 0 16px;
+        align-items: start;
+    }}
+    #comparePanels .col {{
+        display: grid;
+        grid-template-rows: subgrid;
+        grid-row: 1 / span 3;
+    }}
+    #comparePanels .col:first-child {{ grid-column: 1; }}
+    #comparePanels .col:last-child  {{ grid-column: 2; }}
+    /* Push right search/nav to the bottom of the shared banner row so it
+       sits at the same eye level as the left search/nav (which is naturally
+       at the bottom of the taller left action banner). */
+    .rightActionBanner {{
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }}
+}}
 .leftEditorGrid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 8px; }}
 .leftEditorGrid label, .leftEditorStack label {{ display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #284357; }}
 .leftEditorStack {{ display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }}
@@ -1853,6 +1979,47 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 .modal .rowx {{ display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }}
 .modal .rowx label {{ display: inline-flex; align-items: center; gap: 6px; }}
 .modal input[type='text'], .modal input[type='number'] {{ padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; min-width: 140px; }}
+.opBusyBackdrop {{
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 28, 42, 0.48);
+    z-index: 1500;
+}}
+.opBusyCard {{
+    width: min(560px, 92vw);
+    border: 1px solid #c9d8e6;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 18px 42px rgba(17, 38, 56, 0.25);
+    padding: 14px 16px;
+}}
+.opBusyRow {{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}}
+.opBusySpinner {{
+    width: 18px;
+    height: 18px;
+    border: 3px solid #d7e2eb;
+    border-top-color: #2f6fa3;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    flex: 0 0 auto;
+}}
+.opBusyText {{
+    color: #1f3b52;
+    font-size: 13px;
+    line-height: 1.4;
+}}
+.opBusyDots {{
+    display: inline-block;
+    min-width: 18px;
+    text-align: left;
+}}
 @media (max-width: 980px) {{
     .row {{ flex-direction: column; }}
     .panelBody {{ max-height: 42vh; }}
@@ -1880,47 +2047,51 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         </div>
   </div>
     <div class='controlGroups'>
-        <div class='groupCard match'>
-            <h4>Match Actions</h4>
-            <div class='groupBtns'>
-                <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
-                <button onclick='clearAssignment()'>Clear Assignment</button>
-                <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
-            </div>
-        </div>
-        <div class='groupCard candidate'>
-            <h4>Candidate Management</h4>
-            <div class='groupBtns'>
-                <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
-                <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
-                <button onclick='undoLastDelete()'>Undo Delete</button>
-            </div>
-        </div>
         <div class='groupCard session'>
             <h4>Session</h4>
-            <div class='groupBtns'>
-                <button onclick='openConfigEditor()'>Edit Config</button>
-                <button onclick='importColnectFilesReview()'>Import Colnect</button>
-                <button onclick='generatePdfNowReview()'>Generate PDF Now</button>
-                <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
-                <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
-                <span style='font-size:0.9em;'>–</span>
-                <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
-                <label for='defaultCatalogSelect'>Default Catalog</label>
-                <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
-                    <option value='sg'>Stanley Gibbons (SG)</option>
-                    <option value='sn'>Scott (SN)</option>
-                    <option value='mi'>Michel (MI)</option>
-                    <option value='yt'>Yvert (YT)</option>
-                    <option value='afa'>AFA</option>
-                    <option value='nvp'>NVP</option>
-                    <option value='un'>Unificato (UN)</option>
-                    <option value='col'>Colnect (COL)</option>
-                </select>
-                <button onclick='saveCatalogDefaultToConfig()'>Update Config Default</button>
-                <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
-                <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
-                <span id='status' class='badge'>Ready</span>
+            <div class='sessionStack'>
+                <div class='sessionSection'>
+                    <div class='sessionSectionTitle'>Configuration</div>
+                    <div class='sessionRow'>
+                        <button onclick='openConfigEditor()'>Edit Config</button>
+                        <label for='defaultCatalogSelect'>Default Catalog</label>
+                        <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
+                            <option value='sg'>Stanley Gibbons (SG)</option>
+                            <option value='sn'>Scott (SN)</option>
+                            <option value='mi'>Michel (MI)</option>
+                            <option value='yt'>Yvert (YT)</option>
+                            <option value='afa'>AFA</option>
+                            <option value='nvp'>NVP</option>
+                            <option value='un'>Unificato (UN)</option>
+                            <option value='col'>Colnect (COL)</option>
+                        </select>
+                        <button onclick='saveCatalogDefaultToConfig()'>Update Config Default</button>
+                    </div>
+                </div>
+                <div class='sessionSection'>
+                    <div class='sessionSectionTitle'>Import Colnect</div>
+                    <div class='sessionRow'>
+                        <button onclick='importColnectFilesReview()'>Import Colnect</button>
+                    </div>
+                </div>
+                <div class='sessionSection'>
+                    <div class='sessionSectionTitle'>PDF</div>
+                    <div class='sessionRow'>
+                        <button onclick='generatePdfNowReview()'>Generate PDF Now</button>
+                        <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
+                        <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
+                        <span style='font-size:0.9em;'>–</span>
+                        <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
+                    </div>
+                </div>
+                <div class='sessionSection'>
+                    <div class='sessionSectionTitle'>Navigation</div>
+                    <div class='sessionRow'>
+                        <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
+                        <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
+                        <span id='status' class='badge'>Ready</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1951,18 +2122,22 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 </label>
       </div>
     </div>
+    <div class='actionRows'>
+        <div class='actionBar match'>
+            <span class='actionBarTitle'>Match Actions</span>
+            <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
+            <button onclick='clearAssignment()'>Clear Assignment</button>
+            <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
+        </div>
+        <div class='actionBar candidate'>
+            <span class='actionBarTitle'>Candidate Management</span>
+            <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
+            <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
+            <button onclick='undoLastDelete()'>Undo Delete</button>
+        </div>
+    </div>
   <div id='comparePanels' class='row'>
     <div class='col'>
-            <div class='colNav'>
-                                <button class='navBtn' onclick='firstLeft()'>First</button>
-                                <button class='navBtn' onclick='jumpLeft(-50)'>-50</button>
-                                <button class='navBtn' onclick='jumpLeft(-10)'>-10</button>
-                <button class='navBtn' onclick='prevLeft()'>Prev Left</button>
-                <button class='navBtn' onclick='nextLeft()'>Next Left</button>
-                                <button class='navBtn' onclick='jumpLeft(10)'>+10</button>
-                                <button class='navBtn' onclick='jumpLeft(50)'>+50</button>
-                                <button class='navBtn' onclick='lastLeft()'>Last</button>
-            </div>
             <div class='titleRow'>
                 <h3>Left: StampWorld Base</h3>
                 <span id='leftPos' class='badge'></span>
@@ -1971,20 +2146,11 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
       <div id='leftPanel'></div>
     </div>
     <div class='col'>
-            <div class='colNav'>
-                <button class='navBtn' onclick='firstRight()'>First</button>
-                <button class='navBtn' onclick='jumpRight(-50)'>-50</button>
-                <button class='navBtn' onclick='jumpRight(-10)'>-10</button>
-                <button class='navBtn' onclick='prevRight()'>Prev Candidate</button>
-                <button class='navBtn' onclick='nextRight()'>Next Candidate</button>
-                <button class='navBtn' onclick='jumpRight(10)'>+10</button>
-                <button class='navBtn' onclick='jumpRight(50)'>+50</button>
-                <button class='navBtn' onclick='lastRight()'>Last</button>
-            </div>
             <div class='titleRow'>
                 <h3>Right: Colnect Candidate</h3>
                 <span id='rightPos' class='badge'></span>
             </div>
+                        <div id='rightActionBanner' class='rightActionBanner'></div>
       <div id='rightPanel'></div>
     </div>
   </div>
@@ -2114,6 +2280,17 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         </div>
     </div>
 </div>
+<div id='opBusyBackdrop' class='opBusyBackdrop'>
+    <div class='opBusyCard'>
+        <div class='opBusyRow'>
+            <span class='opBusySpinner'></span>
+            <div class='opBusyText'>
+                <strong id='opBusyTitle'>Working<span id='opBusyDots' class='opBusyDots'></span></strong><br/>
+                <span id='opBusyText'>Please wait...</span>
+            </div>
+        </div>
+    </div>
+</div>
 <script>
 const payload = {json};
 let left = payload.left || [];
@@ -2134,6 +2311,68 @@ let resolvedRightImageById = {{}};
 let leftEditorMode = 'edit';
 let leftEditorSourceRowid = null;
 let sortMode = 'sg';
+let leftSearchMatches = [];
+let leftSearchMatchPos = -1;
+let leftSearchQuery = '';
+let rightSearchQuery = '';
+let opBusyDotsTimer = null;
+window.__returnToStartInFlight = false;
+
+function setOperationBusy(active, message) {{
+    const backdrop = document.getElementById('opBusyBackdrop');
+    const text = document.getElementById('opBusyText');
+    const dots = document.getElementById('opBusyDots');
+    if (!backdrop || !text || !dots) return;
+
+    if (!active) {{
+        backdrop.style.display = 'none';
+        if (opBusyDotsTimer) {{
+            clearInterval(opBusyDotsTimer);
+            opBusyDotsTimer = null;
+        }}
+        dots.innerText = '';
+        return;
+    }}
+
+    text.innerText = message || 'Please wait...';
+    backdrop.style.display = 'flex';
+    if (!opBusyDotsTimer) {{
+        let idx = 0;
+        const frames = ['', '.', '..', '...'];
+        opBusyDotsTimer = setInterval(() => {{
+            idx = (idx + 1) % frames.length;
+            dots.innerText = frames[idx];
+        }}, 260);
+    }}
+}}
+
+async function navigateWithFade(url) {{
+    try {{
+        if (document.body) document.body.classList.add('pageLeaving');
+        await new Promise(resolve => setTimeout(resolve, 140));
+    }} catch (_) {{}}
+    window.location.href = url;
+}}
+
+async function waitForBootstrapReady(maxAttempts, delayMs) {{
+    for (let i = 0; i < maxAttempts; i++) {{
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), Math.max(350, delayMs));
+        try {{
+            const res = await fetch('/bootstrap-state', {{
+                cache: 'no-store',
+                signal: controller.signal,
+            }});
+            if (res.ok) return true;
+        }} catch (_) {{
+            // Ignore transient network errors while the server switches modes.
+        }} finally {{
+            clearTimeout(timer);
+        }}
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+    }}
+    return false;
+}}
 
 function removeCandidateFromUi(colnectId) {{
     if (!colnectId) return;
@@ -2324,6 +2563,7 @@ function sortLeftRows(preferredRowid) {{
     left.sort((a, b) => compareBySortMode(a, b, sortMode));
     if (!left.length) {{
         leftIdx = 0;
+        updateLeftSearchMatches(true);
         return;
     }}
     const idx = preferredRowid == null ? -1 : left.findIndex(item => String(item.rowid) === String(preferredRowid));
@@ -2332,6 +2572,7 @@ function sortLeftRows(preferredRowid) {{
     }} else if (leftIdx >= left.length) {{
         leftIdx = left.length - 1;
     }}
+    updateLeftSearchMatches(true);
 }}
 
 function upsertLeftRow(updatedLeft) {{
@@ -2346,6 +2587,149 @@ function removeLeftRow(rowid) {{
     const before = left.length;
     left = left.filter(item => String(item.rowid) !== String(rowid));
     if (left.length !== before) sortLeftRows(null);
+}}
+
+function setLeftSearchStatus(text) {{
+    const el = document.getElementById('leftSearchStatus');
+    if (el) el.innerText = text;
+}}
+
+function leftSearchText(item) {{
+    const parts = [
+        item?.sg_number,
+        item?.series,
+        item?.description,
+        item?.watermark,
+        item?.context,
+        item?.colnect_id,
+        item?.colnect_name,
+        item?.colnect_catalog_codes,
+        item?.colnect_country,
+        item?.year,
+        item?.rowid,
+    ];
+    return parts
+        .map(v => String(v || '').toLowerCase())
+        .join(' | ');
+}}
+
+function rightSearchText(item) {{
+    const parts = [
+        item?.colnect_id,
+        item?.sg_number,
+        item?.series,
+        item?.name,
+        item?.country,
+        item?.catalog_codes_text,
+        item?.description,
+        item?.watermark,
+        item?.format,
+        item?.emission,
+        item?.printing,
+        item?.paper,
+        item?.gum,
+        item?.context,
+        item?.year,
+    ];
+    return parts
+        .map(v => String(v || '').toLowerCase())
+        .join(' | ');
+}}
+
+function setRightSearchStatus(text) {{
+    const el = document.getElementById('rightSearchStatus');
+    if (el) el.innerText = text;
+}}
+
+function updateRightSearchStatus() {{
+    const l = left[leftIdx];
+    if (!l) {{
+        setRightSearchStatus('Matches: 0/0');
+        return;
+    }}
+    const avail = availableCandidatesForCurrentLeft();
+    if (!avail.length) {{
+        setRightSearchStatus('Matches: 0/0');
+        return;
+    }}
+    const key = String(l.rowid);
+    if (!(key in rightIdxByLeft) || rightIdxByLeft[key] >= avail.length) rightIdxByLeft[key] = 0;
+    setRightSearchStatus(`Matches: ${{(rightIdxByLeft[key] || 0) + 1}}/${{avail.length}}`);
+}}
+
+function onRightSearchInput() {{
+    const input = document.getElementById('rightSearchInput');
+    const selStart = input ? input.selectionStart : null;
+    const selEnd   = input ? input.selectionEnd   : null;
+    if (input) rightSearchQuery = String(input.value || '');
+    const l = left[leftIdx];
+    if (l) rightIdxByLeft[String(l.rowid)] = 0;
+    render();
+    const newInput = document.getElementById('rightSearchInput');
+    if (newInput) {{
+        newInput.focus();
+        if (selStart !== null) newInput.setSelectionRange(selStart, selEnd);
+    }}
+}}
+
+function updateLeftSearchMatches(preserveCurrentSelection) {{
+    const input = document.getElementById('leftSearchInput');
+    if (input) leftSearchQuery = String(input.value || '');
+    const query = String(leftSearchQuery || '').trim().toLowerCase();
+
+    if (!left.length) {{
+        leftSearchMatches = [];
+        leftSearchMatchPos = -1;
+        setLeftSearchStatus('Matches: 0/0');
+        return;
+    }}
+
+    if (!query) {{
+        leftSearchMatches = left.map((_, idx) => idx);
+    }} else {{
+        leftSearchMatches = left
+            .map((item, idx) => (leftSearchText(item).includes(query) ? idx : -1))
+            .filter(idx => idx >= 0);
+    }}
+
+    if (!leftSearchMatches.length) {{
+        leftSearchMatchPos = -1;
+        setLeftSearchStatus('Matches: 0/0');
+        return;
+    }}
+
+    if (preserveCurrentSelection) {{
+        const currentPos = leftSearchMatches.indexOf(leftIdx);
+        if (currentPos >= 0) {{
+            leftSearchMatchPos = currentPos;
+            setLeftSearchStatus(`Matches: ${{leftSearchMatchPos + 1}}/${{leftSearchMatches.length}}`);
+            return;
+        }}
+    }}
+
+    leftSearchMatchPos = 0;
+    leftIdx = leftSearchMatches[0];
+    setLeftSearchStatus(`Matches: 1/${{leftSearchMatches.length}}`);
+}}
+
+function onLeftSearchInput() {{
+    const input = document.getElementById('leftSearchInput');
+    if (input) leftSearchQuery = String(input.value || '');
+    const before = leftIdx;
+    updateLeftSearchMatches(true);
+    if (leftIdx !== before) render();
+}}
+
+function stepLeftSearch(delta) {{
+    updateLeftSearchMatches(true);
+    if (!leftSearchMatches.length) return;
+
+    const total = leftSearchMatches.length;
+    if (leftSearchMatchPos < 0) leftSearchMatchPos = 0;
+    leftSearchMatchPos = (leftSearchMatchPos + delta + total) % total;
+    leftIdx = leftSearchMatches[leftSearchMatchPos];
+    setLeftSearchStatus(`Matches: ${{leftSearchMatchPos + 1}}/${{total}}`);
+    render();
 }}
 
 async function ensureRightImageUrl(r) {{
@@ -2437,7 +2821,10 @@ function availableCandidatesForCurrentLeft() {{
         return !matchedInDb.has(String(c.colnect_id || '').trim());
     }});
     filtered.sort((a, b) => compareBySortMode(a, b, sortMode));
-    return filtered;
+
+    const query = String(rightSearchQuery || '').trim().toLowerCase();
+    if (!query) return filtered;
+    return filtered.filter(item => rightSearchText(item).includes(query));
 }}
 
 function normalizeIndex(cur, len) {{
@@ -2581,7 +2968,50 @@ function render() {{
             <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
             <button onclick='clearCurrentLeftColnectLink()' ${{b(l.colnect_id) ? '' : 'disabled'}}>Clear Colnect Link</button>
             <button class='danger' onclick='deleteCurrentLeft()'>Delete Current</button>
+        </div>
+        <div class='leftSearchRow'>
+            <label for='leftSearchInput'>Search Left</label>
+            <input id='leftSearchInput' type='text' placeholder='SG, series, name...' oninput='onLeftSearchInput()' value='${{html(leftSearchQuery)}}'/>
+            <button onclick='stepLeftSearch(-1)'>Back</button>
+            <button onclick='stepLeftSearch(1)'>Forward</button>
+            <span id='leftSearchStatus' class='badge'>Matches: 0/0</span>
+        </div>
+        <div class='leftNavRow'>
+            <button class='navBtn' onclick='firstLeft()'>First</button>
+            <button class='navBtn' onclick='jumpLeft(-50)'>-50</button>
+            <button class='navBtn' onclick='jumpLeft(-10)'>-10</button>
+            <button class='navBtn' onclick='prevLeft()'>Prev Left</button>
+            <button class='navBtn' onclick='nextLeft()'>Next Left</button>
+            <button class='navBtn' onclick='jumpLeft(10)'>+10</button>
+            <button class='navBtn' onclick='jumpLeft(50)'>+50</button>
+            <button class='navBtn' onclick='lastLeft()'>Last</button>
         </div>`;
+  updateLeftSearchMatches(true);
+  document.getElementById('rightActionBanner').innerHTML = `
+        <div class='rightActionTop'>
+            <strong>Candidate Search And Navigation</strong>
+            <span class='badge'>Filtered by current left row</span>
+        </div>
+        <div class='rightBottomBlock'>
+        <div class='rightSearchRow'>
+            <label for='rightSearchInput'>Search Right</label>
+            <input id='rightSearchInput' type='text' placeholder='ID, SG, name, series...' oninput='onRightSearchInput()' value='${{html(rightSearchQuery)}}'/>
+            <button onclick='jumpRight(-1)'>Back</button>
+            <button onclick='jumpRight(1)'>Forward</button>
+            <span id='rightSearchStatus' class='badge'>Matches: 0/0</span>
+        </div>
+        <div class='rightNavRow'>
+            <button class='navBtn' onclick='firstRight()'>First</button>
+            <button class='navBtn' onclick='jumpRight(-50)'>-50</button>
+            <button class='navBtn' onclick='jumpRight(-10)'>-10</button>
+            <button class='navBtn' onclick='prevRight()'>Prev Candidate</button>
+            <button class='navBtn' onclick='nextRight()'>Next Candidate</button>
+            <button class='navBtn' onclick='jumpRight(10)'>+10</button>
+            <button class='navBtn' onclick='jumpRight(50)'>+50</button>
+            <button class='navBtn' onclick='lastRight()'>Last</button>
+        </div>
+        </div>`;
+  updateRightSearchStatus();
   document.getElementById('leftPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
@@ -2645,11 +3075,13 @@ function render() {{
   if (!r) {{
     document.getElementById('rightPos').innerText = 'No available candidate';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">All candidates already assigned</div>';
+        updateRightSearchStatus();
     return;
   }}
 
   const key = String(l.rowid);
   document.getElementById('rightPos').innerText = `Candidate ${{(rightIdxByLeft[key] || 0) + 1}}/${{avail.length}}`;
+        updateRightSearchStatus();
     ensureRightImageUrl(r);
   const rightImg = b(r.image_abs) ? `/image?path=${{encodeURIComponent(r.image_abs)}}` : r.image_url;
     const catPairs = (r.catalog_code_pairs || []).map(p =>
@@ -2659,7 +3091,7 @@ function render() {{
   document.getElementById('rightPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
-                <div><strong>Candidate Controls</strong></div>
+               
                 <div style='margin-top:8px;'>
                     <label>Catalog Code (for optional SG replace):</label>
                     <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
@@ -3396,7 +3828,14 @@ async function closeReviewUi() {{
 async function returnToStartReviewPage() {{
     const statusEl = document.getElementById('status');
     const originalText = statusEl?.innerText || 'Ready';
-    if (statusEl) statusEl.innerText = 'Returning to Start Review page...';
+    if (window.__returnToStartInFlight) {{
+        if (statusEl) statusEl.innerText = 'Return to Start is already in progress...';
+        return;
+    }}
+    window.__returnToStartInFlight = true;
+
+    if (statusEl) statusEl.innerText = 'Step 1/2: Switching server mode...';
+    setOperationBusy(true, 'Step 1/2: Switching server mode...');
 
     try {{
         const res = await fetch('/return-to-start', {{
@@ -3407,22 +3846,38 @@ async function returnToStartReviewPage() {{
         const j = await res.json();
         if (!j.ok) {{
             if (statusEl) statusEl.innerText = 'Return to Start failed';
+            setOperationBusy(false, '');
             alert(j.message || 'Failed to return to Start Review page.');
             return;
         }}
 
-        if (statusEl) statusEl.innerText = j.message || 'Returning to Start Review page...';
-        setTimeout(() => {{
-            window.location.href = '/';
-        }}, 400);
+        if (statusEl) statusEl.innerText = 'Step 2/2: Loading country selector...';
+        setOperationBusy(true, 'Step 2/2: Loading country selector...');
+
+        const ready = await waitForBootstrapReady(20, 250);
+        if (ready) {{
+            setOperationBusy(true, 'Step 2/2: Loading country selector... Redirecting...');
+            await navigateWithFade('/');
+            return;
+        }}
+
+        setOperationBusy(true, 'Step 2/2: Loading country selector... Redirecting with fallback...');
+        await navigateWithFade('/');
     }} catch (e) {{
         if (statusEl) statusEl.innerText = 'Return to Start request failed';
+        setOperationBusy(false, '');
         alert('Return to Start request failed: ' + e);
     }} finally {{
+        window.__returnToStartInFlight = false;
         setTimeout(() => {{
             if (statusEl) statusEl.innerText = originalText;
         }}, 2200);
     }}
+}}
+
+if (document.body) {{
+    document.body.classList.add('pageEnter');
+    setTimeout(() => document.body.classList.remove('pageEnter'), 260);
 }}
 
 async function generatePdfNowReview() {{
@@ -3634,12 +4089,11 @@ fn build_matcher_payload(
     })
 }
 
-fn album_dir_for_ui(db_path: &str, album_name: &str) -> PathBuf {
-    let album_slug = album_name.trim().replace(' ', "-");
-    let preferred = Path::new("Albums").join(&album_slug);
-    if preferred.exists() {
-        return preferred;
-    }
+fn album_dir_for_ui(db_path: &str, _album_name: &str) -> PathBuf {
+    // Always derive the album directory from the db file's parent.
+    // An earlier version checked for a local relative `Albums/<name>/` path
+    // first, but that caused writes to go to the workspace test directory
+    // instead of the actual album directory when an external db is used.
     Path::new(db_path)
         .parent()
         .map(|p| p.to_path_buf())
@@ -5049,49 +5503,41 @@ fn colnect_import_data(
     }
 }
 
-fn update_default_catalog_code_config(
-    config_path: &str,
+
+/// Write `default_catalog_code` into the album-local config override
+/// (`Albums/<name>/config.toml`), preserving any other per-album overrides
+/// already present and only storing values that differ from the global config.
+fn update_default_catalog_code_for_album(
+    album_dir: &std::path::Path,
+    album_name: &str,
+    global_config_path: &str,
+    template_path: &str,
     requested_code: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let normalized = crate::catalog::normalize_catalog_type(requested_code);
     if normalized.is_empty() {
         return Err("default catalog code cannot be empty".into());
     }
-
     let allowed = ["sg", "sn", "mi", "yt", "afa", "nvp", "un", "col"];
     if !allowed.contains(&normalized.as_str()) {
         return Err(format!("unsupported catalog code: {}", normalized).into());
     }
 
-    let original = fs::read_to_string(config_path)
-        .map_err(|e| format!("failed to read {}: {}", config_path, e))?;
+    // Load any existing per-album overrides so they are preserved.
+    let album_override_path = album_dir.join("config.toml");
+    let mut merged: HashMap<String, String> = if album_override_path.exists() {
+        load_current_config_values(album_override_path.to_str().unwrap_or(""))
+            .unwrap_or_default()
+    } else {
+        HashMap::new()
+    };
 
-    let mut replaced = false;
-    let mut updated_lines = Vec::new();
-    for line in original.lines() {
-        let trimmed = line.trim_start();
-        if !replaced && trimmed.starts_with("default_catalog_code") {
-            updated_lines.push(format!("default_catalog_code = \"{}\"", normalized));
-            replaced = true;
-        } else {
-            updated_lines.push(line.to_string());
-        }
-    }
+    // Insert the new code (unquoted – save_album_config_diff normalises it).
+    merged.insert("stamps.default_catalog_code".to_string(), normalized.clone());
 
-    if !replaced {
-        if !updated_lines.is_empty() && !updated_lines.last().unwrap_or(&String::new()).is_empty() {
-            updated_lines.push(String::new());
-        }
-        updated_lines.push(format!("default_catalog_code = \"{}\"", normalized));
-    }
+    // Re-write the album override, keeping only fields that differ from global.
+    save_album_config_diff(album_dir, album_name, global_config_path, template_path, &merged)?;
 
-    let mut new_content = updated_lines.join("\n");
-    if original.ends_with('\n') {
-        new_content.push('\n');
-    }
-
-    fs::write(config_path, new_content)
-        .map_err(|e| format!("failed to write {}: {}", config_path, e))?;
     Ok(normalized)
 }
 
@@ -6068,6 +6514,7 @@ configEditorBackdrop()?.addEventListener('click', event => { if (event.target ==
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
+    open_browser: bool,
 ) -> Result<ReviewUiBootstrapOutcome, Box<dyn std::error::Error>> {
     eprintln!("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
@@ -6075,7 +6522,9 @@ pub fn run_review_ui_bootstrap(
 
     let url = format!("http://{}/", bind);
     eprintln!("Review UI Setup: {}", url);
-    let _ = webbrowser::open(&url);
+    if open_browser {
+        let _ = webbrowser::open(&url);
+    }
 
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
@@ -7032,15 +7481,19 @@ pub fn run_review_ui(
             }
 
             let parsed: Result<UpdateDefaultCatalogRequest, _> = serde_json::from_str(&body);
+            let album_dir = album_dir_for_ui(db_path, &album_name);
             let resp_json = match parsed {
                 Ok(req) => {
-                    match update_default_catalog_code_config(
+                    match update_default_catalog_code_for_album(
+                        &album_dir,
+                        &album_name,
                         "config.toml",
+                        "config_template.toml",
                         &req.default_catalog_code,
                     ) {
                         Ok(saved) => serde_json::to_string(&UpdateDefaultCatalogResponse {
                             ok: true,
-                            message: format!("Updated config default_catalog_code to '{}'", saved),
+                            message: format!("Updated album default_catalog_code to '{}'", saved),
                         })
                         .unwrap_or_else(|_| {
                             "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
