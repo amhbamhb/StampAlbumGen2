@@ -102,9 +102,11 @@ fn test_generate_album_filters_by_year_exact() {
     );
     let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
     // Should contain only the 1976 stamp (1002) and exclude 1975/1977 (1001/1003).
-    assert!(contents.contains("Scott : 1002"));
-    assert!(!contents.contains("Scott : 1001"));
-    assert!(!contents.contains("Scott : 1003"));
+    // Catalog heading prefix depends on configured default catalog (e.g. SG/Scott),
+    // so assert on the shared heading suffix instead of a hardcoded label.
+    assert!(contents.contains(" : 1002 \\n Perforation"));
+    assert!(!contents.contains(" : 1001 \\n Perforation"));
+    assert!(!contents.contains(" : 1003 \\n Perforation"));
 }
 
 #[test]
@@ -114,7 +116,7 @@ fn test_generate_album_filters_by_year_open_ended() {
     let output_path =
         generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None);
     let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
-    assert!(contents.contains("Scott : 1002"));
-    assert!(contents.contains("Scott : 1003"));
-    assert!(!contents.contains("Scott : 1001"));
+    assert!(contents.contains(" : 1002 \\n Perforation"));
+    assert!(contents.contains(" : 1003 \\n Perforation"));
+    assert!(!contents.contains(" : 1001 \\n Perforation"));
 }
