@@ -349,7 +349,7 @@ pub struct Config {
     // provided on the CLI for `--source colnectexport` runs.
     pub colnect_inbox_path: Option<String>,
     // Optional AlbumEasy CLI path for PDF generation from generated text files.
-    // Example: "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+    // Example: "/path/to/AlbumEasy/AlbumEasy.sh"
     pub albumeasy_cli_path: Option<String>,
     // When true, run AlbumEasy in console mode (-c) after generating the
     // album text file so the PDF is produced automatically.

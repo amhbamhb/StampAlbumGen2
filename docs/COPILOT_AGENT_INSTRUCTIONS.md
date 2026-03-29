@@ -6,7 +6,7 @@ Purpose
 
 Canonical sample file
 
-- Path: /home/ray/program/Rust/StampAlbumGen2/Example-Stampworldwebpage.txt
+- Path: samples/reference/Example-Stampworldwebpage.txt
 - This file contains the canonical HTML structure and example data to be used when parsing and mapping stamp records into the database.
 
 Rules for DB import tasks

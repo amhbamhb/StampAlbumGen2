@@ -140,7 +140,7 @@ placeholder_always_overwrite = true
 colnect_inbox_path = "samples/colnect_inbox"
 
 # Optional AlbumEasy CLI path used for automatic PDF generation from output TXT.
-# Linux example: "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+# Linux example: "/path/to/AlbumEasy/AlbumEasy.sh"
 albumeasy_cli_path = ""
 
 # When true, run: <albumeasy_cli_path> -c <generated_txt>

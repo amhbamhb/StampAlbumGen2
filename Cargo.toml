@@ -58,7 +58,7 @@ serial_test = "0.5"
 
 [package]
 name = "stamp_album_gen2"
-version = "1.6.24"
+version = "1.6.25"
 edition = "2021"
 default-run = "stamp_album_gen2"
 
