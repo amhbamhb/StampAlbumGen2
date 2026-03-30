@@ -53,6 +53,22 @@ fn wrap_preserving_breaks(text: &str, max_chars: usize) -> Vec<String> {
     out
 }
 
+fn wrap_preserving_breaks_keep_empty(text: &str, max_chars: usize) -> Vec<String> {
+    let normalized = text.replace("\\n", "\n");
+    let mut out: Vec<String> = Vec::new();
+    for seg in normalized.split('\n') {
+        let wrapped = wrap_segment_words(seg, max_chars);
+        if wrapped.is_empty() {
+            // Preserve explicit user-entered blank lines (e.g. trailing "\n\n")
+            // so STAMP_HEADING can intentionally add vertical spacing.
+            out.push(String::new());
+        } else {
+            out.extend(wrapped);
+        }
+    }
+    out
+}
+
 fn build_stamp_heading_lines(
     sh_label: &str,
     sgnum: &str,
@@ -70,15 +86,14 @@ fn build_stamp_heading_lines(
     let mut lines: Vec<String> = vec![format!("{} : {}", sh_label.trim(), sgnum.trim())];
 
     if let Some(name) = stamp_name {
-        lines.extend(wrap_preserving_breaks(name, max_chars));
+        lines.extend(wrap_preserving_breaks_keep_empty(name, max_chars));
     }
 
     if include_perforation {
         if let Some(perf) = perforation {
-            let perf_clean = perf.trim();
-            if !perf_clean.is_empty() {
-                lines.extend(wrap_preserving_breaks(
-                    &format!("Perforation: {}", perf_clean),
+            if !perf.trim().is_empty() {
+                lines.extend(wrap_preserving_breaks_keep_empty(
+                    &format!("Perforation: {}", perf),
                     max_chars,
                 ));
             }

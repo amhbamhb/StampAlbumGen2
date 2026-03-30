@@ -400,6 +400,14 @@ pub fn fetch_and_filter_stamps(
         attrs.set("year", &stamp.year.to_string());
         attrs.set("sg_number", &stamp.sg_number);
         attrs.set("type", &stamp.r#type);
+        // Pin catalog_number to the stamps-table sg_number before any Colnect
+        // enrichment runs.  This ensures user edits made in the Review UI are
+        // the source of truth for the STAMP_HEADING catalog number. Colnect
+        // catalog codes are stored separately in colnect_catalog_codes and are
+        // only used as a last resort when the stamps table has no number at all.
+        if !stamp.sg_number.trim().is_empty() {
+            attrs.set("catalog_number", &stamp.sg_number);
+        }
         attrs.set("denomination", &stamp.denomination);
         attrs.set("color", &stamp.color);
         attrs.set("description", &stamp.description);
