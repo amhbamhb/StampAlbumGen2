@@ -32,12 +32,27 @@ code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padd
 .dots {{ display: inline-block; min-width: 18px; text-align: left; }}
 body.busy {{ cursor: progress; }}
 body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-events: none; }}
+.reconnectBanner {{ display: none; margin-bottom: 12px; border: 1px solid #ddc79f; border-left: 5px solid #9b6a20; border-radius: 10px; background: #fff7e8; color: #694314; padding: 10px 12px; }}
+.reconnectBanner.show {{ display: block; }}
+.reconnectBanner.recovered {{ border-color: #b9dec9; border-left-color: #2f8f63; background: #f4fcf8; color: #245641; }}
+.reconnectBanner .title {{ font-weight: 700; margin-bottom: 4px; }}
+.reconnectBanner .meta {{ font-size: 12px; color: #5e7283; }}
+.reconnectBanner .actions {{ display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }}
 @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 @keyframes bootstrapFadeIn {{ from {{ opacity: 0; transform: translateY(2px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 </style>
 </head>
 <body>
 <div class='card'>
+    <div id='reconnectBanner' class='reconnectBanner' role='status' aria-live='polite'>
+        <div id='reconnectBannerTitle' class='title'>Connection lost, retrying...</div>
+        <div id='reconnectBannerText'>The Review UI backend is not responding. Automatic retries are in progress.</div>
+        <div class='actions'>
+            <button type='button' onclick='retryBackendHealthCheck()'>Retry Now</button>
+            <button type='button' onclick='reloadCurrentPage()'>Reload Page</button>
+            <span id='reconnectBannerMeta' class='meta'></span>
+        </div>
+    </div>
     <h1>Start Review UI</h1>
     <p>No database was selected on startup. Pick a country to open its Review UI.</p>
     <div class='row'>
@@ -88,6 +103,21 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         </div>
     </div>
     <div id='status' class='status'></div>
+    <div id='runtimeLogPanel' style='margin-top:10px;border:1px solid #d7e2eb;border-radius:10px;padding:10px;background:#fbfdff;'>
+        <div class='row' style='margin-top:0;justify-content:space-between;'>
+            <strong>Runtime Log</strong>
+            <div class='row' style='margin-top:0;gap:8px;'>
+                <label style='font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;'>
+                    <input id='showRuntimeLog' type='checkbox' checked onchange='toggleRuntimeLogVisibility()' />
+                    Show Log
+                </label>
+                <button onclick='copyRuntimeLog()'>Copy Log</button>
+            </div>
+        </div>
+        <div id='runtimeLogBody'>
+            <textarea id='runtimeLog' readonly style='width:100%;min-height:120px;max-height:220px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>
+        </div>
+    </div>
     <div id='loadingBox' class='loadingBox'>
         <div class='loadingRow'>
             <span class='spinner'></span>
@@ -106,6 +136,204 @@ let loadingPhaseTimer = null;
 let bootstrapPdfRequestInFlight = false;
 let countrySearchMatches = [];
 let countrySearchIndex = -1;
+let runtimeLogTimer = null;
+let backendHealthTimer = null;
+let backendHealthFailures = 0;
+let backendHealthCheckInFlight = false;
+let backendMarkedDisconnected = false;
+let backendRecoveredReloadPending = false;
+const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
+const backendHealthPollMs = 15000;
+const backendHealthFailureThreshold = 2;
+
+function reloadCurrentPage() {{
+    window.location.reload();
+}}
+
+function setReconnectBanner(visible, title, text, recovered) {{
+    const banner = document.getElementById('reconnectBanner');
+    const titleEl = document.getElementById('reconnectBannerTitle');
+    const textEl = document.getElementById('reconnectBannerText');
+    const metaEl = document.getElementById('reconnectBannerMeta');
+    if (!banner || !titleEl || !textEl || !metaEl) return;
+    titleEl.innerText = title || 'Connection lost, retrying...';
+    textEl.innerText = text || 'The Review UI backend is not responding. Automatic retries are in progress.';
+    metaEl.innerText = visible ? ('Checks every ' + Math.round(backendHealthPollMs / 1000) + 's') : '';
+    banner.classList.toggle('show', !!visible);
+    banner.classList.toggle('recovered', !!recovered);
+}}
+
+async function fetchBackendHealth() {{
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
+    try {{
+        const res = await fetch('/health', {{ cache: 'no-store', signal: controller ? controller.signal : undefined }});
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const j = await res.json();
+        if (!j || j.ok !== true) throw new Error('invalid health response');
+        return j;
+    }} finally {{
+        if (timeoutId) clearTimeout(timeoutId);
+    }}
+}}
+
+async function checkBackendHealth() {{
+    if (backendHealthCheckInFlight) return;
+    backendHealthCheckInFlight = true;
+    try {{
+        await fetchBackendHealth();
+        backendHealthFailures = 0;
+        if (backendMarkedDisconnected && !backendRecoveredReloadPending) {{
+            backendRecoveredReloadPending = true;
+            setReconnectBanner(true, 'Connection restored', 'The backend is responding again. Reloading this page now.', true);
+            setTimeout(() => window.location.reload(), 900);
+        }} else if (!backendRecoveredReloadPending) {{
+            setReconnectBanner(false, '', '', false);
+        }}
+        backendMarkedDisconnected = false;
+    }} catch (_) {{
+        backendHealthFailures += 1;
+        if (backendHealthFailures >= backendHealthFailureThreshold) {{
+            backendMarkedDisconnected = true;
+            backendRecoveredReloadPending = false;
+            setReconnectBanner(
+                true,
+                'Connection lost, retrying...',
+                'The Review UI backend is not responding. Automatic retries are in progress. You can wait for recovery or reload now.',
+                false
+            );
+        }}
+    }} finally {{
+        backendHealthCheckInFlight = false;
+    }}
+}}
+
+function startBackendHealthPolling() {{
+    if (backendHealthTimer) clearInterval(backendHealthTimer);
+    checkBackendHealth();
+    backendHealthTimer = setInterval(checkBackendHealth, backendHealthPollMs);
+    window.addEventListener('online', checkBackendHealth);
+    document.addEventListener('visibilitychange', () => {{
+        if (!document.hidden) checkBackendHealth();
+    }});
+}}
+
+function retryBackendHealthCheck() {{
+    checkBackendHealth();
+}}
+
+function isRuntimeLogVisible() {{
+    const cb = document.getElementById('showRuntimeLog');
+    return cb ? !!cb.checked : true;
+}}
+
+function applyRuntimeLogVisibility() {{
+    const body = document.getElementById('runtimeLogBody');
+    if (!body) return;
+    body.style.display = isRuntimeLogVisible() ? '' : 'none';
+}}
+
+function toggleRuntimeLogVisibility() {{
+    applyRuntimeLogVisibility();
+    try {{
+        localStorage.setItem(runtimeLogVisibleStorageKey, isRuntimeLogVisible() ? '1' : '0');
+    }} catch (_) {{}}
+}}
+
+function copyTextToClipboard(text) {{
+    if (navigator.clipboard && navigator.clipboard.writeText) {{
+        return navigator.clipboard.writeText(text);
+    }}
+    return new Promise((resolve, reject) => {{
+        try {{
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            resolve();
+        }} catch (e) {{
+            reject(e);
+        }}
+    }});
+}}
+
+function ensureCopyableAlertDialog() {{
+    if (document.getElementById('copyAlertDialog')) return;
+    const dlg = document.createElement('dialog');
+    dlg.id = 'copyAlertDialog';
+    dlg.style.maxWidth = '760px';
+    dlg.style.width = '92vw';
+    dlg.innerHTML =
+        "<div style='display:flex;flex-direction:column;gap:10px;'>" +
+        "<h3 id='copyAlertTitle' style='margin:0;'>Message</h3>" +
+        "<textarea id='copyAlertText' readonly style='width:100%;min-height:180px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>" +
+        "<div style='display:flex;gap:8px;justify-content:flex-end;'>" +
+        "<button id='copyAlertCopyBtn'>Copy</button>" +
+        "<button id='copyAlertCloseBtn'>Close</button>" +
+        "</div></div>";
+    document.body.appendChild(dlg);
+    dlg.querySelector('#copyAlertCloseBtn').addEventListener('click', () => dlg.close());
+    dlg.querySelector('#copyAlertCopyBtn').addEventListener('click', async () => {{
+        const text = dlg.querySelector('#copyAlertText')?.value || '';
+        try {{
+            await copyTextToClipboard(text);
+        }} catch (_) {{}}
+    }});
+}}
+
+function showCopyableAlert(message, title) {{
+    ensureCopyableAlertDialog();
+    const dlg = document.getElementById('copyAlertDialog');
+    const titleEl = document.getElementById('copyAlertTitle');
+    const textEl = document.getElementById('copyAlertText');
+    if (!dlg || !textEl || !titleEl) return;
+    titleEl.innerText = title || 'Message';
+    textEl.value = String(message || '');
+    if (!dlg.open) dlg.showModal();
+    textEl.focus();
+    textEl.select();
+}}
+
+window.alert = function(message) {{
+    showCopyableAlert(message, 'Message');
+}};
+
+async function refreshRuntimeLog() {{
+    try {{
+        if (!isRuntimeLogVisible()) return;
+        const r = await fetch('/runtime-log');
+        const j = await r.json();
+        const box = document.getElementById('runtimeLog');
+        if (!box) return;
+        const lines = Array.isArray(j?.lines) ? j.lines : [];
+        const atBottom = (box.scrollTop + box.clientHeight + 20) >= box.scrollHeight;
+        box.value = lines.join('\n');
+        if (atBottom) box.scrollTop = box.scrollHeight;
+    }} catch (_) {{}}
+}}
+
+function startRuntimeLogPolling() {{
+    if (runtimeLogTimer) clearInterval(runtimeLogTimer);
+    refreshRuntimeLog();
+    runtimeLogTimer = setInterval(refreshRuntimeLog, 1200);
+}}
+
+async function copyRuntimeLog() {{
+    const box = document.getElementById('runtimeLog');
+    const status = document.getElementById('status');
+    if (!box) return;
+    try {{
+        await copyTextToClipboard(box.value || '');
+        if (status) status.innerText = 'Runtime log copied to clipboard.';
+    }} catch (e) {{
+        if (status) status.innerText = 'Failed to copy runtime log: ' + e;
+    }}
+}}
 
 function setCountrySearchStatus(text) {{
     const status = document.getElementById('countrySearchStatus');
@@ -508,6 +736,15 @@ document.getElementById('swEndYear').addEventListener('change', () => {{
 }});
 
 initYearSelectors();
+ensureCopyableAlertDialog();
+try {{
+    const v = localStorage.getItem(runtimeLogVisibleStorageKey);
+    const cb = document.getElementById('showRuntimeLog');
+    if (cb && (v === '0' || v === '1')) cb.checked = v === '1';
+}} catch (_) {{}}
+applyRuntimeLogVisibility();
+startRuntimeLogPolling();
+startBackendHealthPolling();
 refreshState();
 </script>
 {config_editor_assets}
@@ -712,6 +949,39 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
     min-width: 18px;
     text-align: left;
 }}
+.reconnectBanner {{
+    display: none;
+    border: 1px solid #ddc79f;
+    border-left: 5px solid #9b6a20;
+    border-radius: 10px;
+    background: #fff7e8;
+    color: #694314;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+}}
+.reconnectBanner.show {{
+    display: block;
+}}
+.reconnectBanner.recovered {{
+    border-color: #b9dec9;
+    border-left-color: #2f8f63;
+    background: #f4fcf8;
+    color: #245641;
+}}
+.reconnectBanner .title {{
+    font-weight: 700;
+    margin-bottom: 4px;
+}}
+.reconnectBanner .meta {{
+    font-size: 12px;
+    color: #5e7283;
+}}
+.reconnectBanner .actions {{
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}}
 @media (max-width: 980px) {{
     .row {{ flex-direction: column; }}
     .panelBody {{ max-height: 42vh; }}
@@ -720,6 +990,15 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 </head>
 <body>
 <div class='wrap'>
+    <div id='reconnectBannerCompare' class='reconnectBanner' role='status' aria-live='polite'>
+        <div id='reconnectBannerCompareTitle' class='title'>Connection lost, retrying...</div>
+        <div id='reconnectBannerCompareText'>The Review UI backend is not responding. Automatic retries are in progress.</div>
+        <div class='actions'>
+            <button type='button' onclick='retryBackendHealthCheckCompare()'>Retry Now</button>
+            <button type='button' onclick='reloadCurrentPageCompare()'>Reload Page</button>
+            <span id='reconnectBannerCompareMeta' class='meta'></span>
+        </div>
+    </div>
     <div class='top'>
         <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
         <span class='badge'>Switch country without closing Review UI</span>
@@ -738,6 +1017,21 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
             <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
         </div>
   </div>
+    <div id='runtimeLogComparePanel' style='border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;'>
+        <div style='display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;'>
+            <strong>Runtime Log</strong>
+            <div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;'>
+                <label style='font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;'>
+                    <input id='showRuntimeLogCompare' type='checkbox' checked onchange='toggleRuntimeLogVisibilityCompare()' />
+                    Show Log
+                </label>
+                <button onclick='copyRuntimeLogCompare()'>Copy Log</button>
+            </div>
+        </div>
+        <div id='runtimeLogCompareBody'>
+            <textarea id='runtimeLogCompare' readonly style='width:100%;min-height:120px;max-height:220px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>
+        </div>
+    </div>
     <div class='controlGroups'>
         <div class='groupCard session'>
             <h4>Session</h4>
@@ -1009,7 +1303,205 @@ let leftSearchMatchPos = -1;
 let leftSearchQuery = '';
 let rightSearchQuery = '';
 let opBusyDotsTimer = null;
+let runtimeLogCompareTimer = null;
+let backendHealthCompareTimer = null;
+let backendHealthCompareFailures = 0;
+let backendHealthCompareCheckInFlight = false;
+let backendCompareMarkedDisconnected = false;
+let backendCompareRecoveredReloadPending = false;
+const runtimeLogCompareVisibleStorageKey = 'reviewui.compare.showRuntimeLog';
+const backendHealthComparePollMs = 15000;
+const backendHealthCompareFailureThreshold = 2;
 window.__returnToStartInFlight = false;
+
+function reloadCurrentPageCompare() {{
+    window.location.reload();
+}}
+
+function setReconnectBannerCompare(visible, title, text, recovered) {{
+    const banner = document.getElementById('reconnectBannerCompare');
+    const titleEl = document.getElementById('reconnectBannerCompareTitle');
+    const textEl = document.getElementById('reconnectBannerCompareText');
+    const metaEl = document.getElementById('reconnectBannerCompareMeta');
+    if (!banner || !titleEl || !textEl || !metaEl) return;
+    titleEl.innerText = title || 'Connection lost, retrying...';
+    textEl.innerText = text || 'The Review UI backend is not responding. Automatic retries are in progress.';
+    metaEl.innerText = visible ? ('Checks every ' + Math.round(backendHealthComparePollMs / 1000) + 's') : '';
+    banner.classList.toggle('show', !!visible);
+    banner.classList.toggle('recovered', !!recovered);
+}}
+
+async function fetchBackendHealthCompare() {{
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 4000) : null;
+    try {{
+        const res = await fetch('/health', {{ cache: 'no-store', signal: controller ? controller.signal : undefined }});
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const j = await res.json();
+        if (!j || j.ok !== true) throw new Error('invalid health response');
+        return j;
+    }} finally {{
+        if (timeoutId) clearTimeout(timeoutId);
+    }}
+}}
+
+async function checkBackendHealthCompare() {{
+    if (backendHealthCompareCheckInFlight) return;
+    backendHealthCompareCheckInFlight = true;
+    try {{
+        await fetchBackendHealthCompare();
+        backendHealthCompareFailures = 0;
+        if (backendCompareMarkedDisconnected && !backendCompareRecoveredReloadPending) {{
+            backendCompareRecoveredReloadPending = true;
+            setReconnectBannerCompare(true, 'Connection restored', 'The backend is responding again. Reloading this page now.', true);
+            setTimeout(() => window.location.reload(), 900);
+        }} else if (!backendCompareRecoveredReloadPending) {{
+            setReconnectBannerCompare(false, '', '', false);
+        }}
+        backendCompareMarkedDisconnected = false;
+    }} catch (_) {{
+        backendHealthCompareFailures += 1;
+        if (backendHealthCompareFailures >= backendHealthCompareFailureThreshold) {{
+            backendCompareMarkedDisconnected = true;
+            backendCompareRecoveredReloadPending = false;
+            setReconnectBannerCompare(
+                true,
+                'Connection lost, retrying...',
+                'The Review UI backend is not responding. Automatic retries are in progress. You can wait for recovery or reload now.',
+                false
+            );
+        }}
+    }} finally {{
+        backendHealthCompareCheckInFlight = false;
+    }}
+}}
+
+function startBackendHealthPollingCompare() {{
+    if (backendHealthCompareTimer) clearInterval(backendHealthCompareTimer);
+    checkBackendHealthCompare();
+    backendHealthCompareTimer = setInterval(checkBackendHealthCompare, backendHealthComparePollMs);
+    window.addEventListener('online', checkBackendHealthCompare);
+    document.addEventListener('visibilitychange', () => {{
+        if (!document.hidden) checkBackendHealthCompare();
+    }});
+}}
+
+function retryBackendHealthCheckCompare() {{
+    checkBackendHealthCompare();
+}}
+
+function isRuntimeLogVisibleCompare() {{
+    const cb = document.getElementById('showRuntimeLogCompare');
+    return cb ? !!cb.checked : true;
+}}
+
+function applyRuntimeLogVisibilityCompare() {{
+    const body = document.getElementById('runtimeLogCompareBody');
+    if (!body) return;
+    body.style.display = isRuntimeLogVisibleCompare() ? '' : 'none';
+}}
+
+function toggleRuntimeLogVisibilityCompare() {{
+    applyRuntimeLogVisibilityCompare();
+    try {{
+        localStorage.setItem(runtimeLogCompareVisibleStorageKey, isRuntimeLogVisibleCompare() ? '1' : '0');
+    }} catch (_) {{}}
+}}
+
+function copyTextToClipboardCompare(text) {{
+    if (navigator.clipboard && navigator.clipboard.writeText) {{
+        return navigator.clipboard.writeText(text);
+    }}
+    return new Promise((resolve, reject) => {{
+        try {{
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            resolve();
+        }} catch (e) {{
+            reject(e);
+        }}
+    }});
+}}
+
+function ensureCopyableAlertDialogCompare() {{
+    if (document.getElementById('copyAlertDialogCompare')) return;
+    const dlg = document.createElement('dialog');
+    dlg.id = 'copyAlertDialogCompare';
+    dlg.style.maxWidth = '760px';
+    dlg.style.width = '92vw';
+    dlg.innerHTML =
+        "<div style='display:flex;flex-direction:column;gap:10px;'>" +
+        "<h3 id='copyAlertTitleCompare' style='margin:0;'>Message</h3>" +
+        "<textarea id='copyAlertTextCompare' readonly style='width:100%;min-height:180px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>" +
+        "<div style='display:flex;gap:8px;justify-content:flex-end;'>" +
+        "<button id='copyAlertCopyBtnCompare'>Copy</button>" +
+        "<button id='copyAlertCloseBtnCompare'>Close</button>" +
+        "</div></div>";
+    document.body.appendChild(dlg);
+    dlg.querySelector('#copyAlertCloseBtnCompare').addEventListener('click', () => dlg.close());
+    dlg.querySelector('#copyAlertCopyBtnCompare').addEventListener('click', async () => {{
+        const text = dlg.querySelector('#copyAlertTextCompare')?.value || '';
+        try {{
+            await copyTextToClipboardCompare(text);
+        }} catch (_) {{}}
+    }});
+}}
+
+function showCopyableAlertCompare(message, title) {{
+    ensureCopyableAlertDialogCompare();
+    const dlg = document.getElementById('copyAlertDialogCompare');
+    const titleEl = document.getElementById('copyAlertTitleCompare');
+    const textEl = document.getElementById('copyAlertTextCompare');
+    if (!dlg || !textEl || !titleEl) return;
+    titleEl.innerText = title || 'Message';
+    textEl.value = String(message || '');
+    if (!dlg.open) dlg.showModal();
+    textEl.focus();
+    textEl.select();
+}}
+
+window.alert = function(message) {{
+    showCopyableAlertCompare(message, 'Message');
+}};
+
+async function refreshRuntimeLogCompare() {{
+    try {{
+        if (!isRuntimeLogVisibleCompare()) return;
+        const r = await fetch('/runtime-log');
+        const j = await r.json();
+        const box = document.getElementById('runtimeLogCompare');
+        if (!box) return;
+        const lines = Array.isArray(j?.lines) ? j.lines : [];
+        const atBottom = (box.scrollTop + box.clientHeight + 20) >= box.scrollHeight;
+        box.value = lines.join('\n');
+        if (atBottom) box.scrollTop = box.scrollHeight;
+    }} catch (_) {{}}
+}}
+
+function startRuntimeLogPollingCompare() {{
+    if (runtimeLogCompareTimer) clearInterval(runtimeLogCompareTimer);
+    refreshRuntimeLogCompare();
+    runtimeLogCompareTimer = setInterval(refreshRuntimeLogCompare, 1200);
+}}
+
+async function copyRuntimeLogCompare() {{
+    const box = document.getElementById('runtimeLogCompare');
+    const statusEl = document.getElementById('status');
+    if (!box) return;
+    try {{
+        await copyTextToClipboardCompare(box.value || '');
+        if (statusEl) statusEl.innerText = 'Runtime log copied to clipboard.';
+    }} catch (e) {{
+        if (statusEl) statusEl.innerText = 'Failed to copy runtime log: ' + e;
+    }}
+}}
 
 function setOperationBusy(active, message) {{
     const backdrop = document.getElementById('opBusyBackdrop');
@@ -1413,6 +1905,30 @@ function onLeftSearchInput() {{
     if (leftIdx !== before) render();
 }}
 
+function captureSearchFocusState() {{
+    const active = document.activeElement;
+    if (!active) return null;
+    const id = active.id;
+    if (id !== 'leftSearchInput' && id !== 'rightSearchInput') return null;
+    return {{
+        id,
+        start: typeof active.selectionStart === 'number' ? active.selectionStart : null,
+        end: typeof active.selectionEnd === 'number' ? active.selectionEnd : null,
+    }};
+}}
+
+function restoreSearchFocusState(state) {{
+    if (!state || !state.id) return;
+    const input = document.getElementById(state.id);
+    if (!input) return;
+    input.focus();
+    if (state.start !== null) {{
+        try {{
+            input.setSelectionRange(state.start, state.end);
+        }} catch (_) {{}}
+    }}
+}}
+
 function stepLeftSearch(delta) {{
     updateLeftSearchMatches(true);
     if (!leftSearchMatches.length) return;
@@ -1621,6 +2137,7 @@ function selectedCatalogTypeForCurrent(r) {{
 }}
 
 function render() {{
+    const searchFocusState = captureSearchFocusState();
     updateGuide();
   if (!left.length) {{
         document.getElementById('leftPos').innerText = 'Left 0/0';
@@ -1636,6 +2153,7 @@ function render() {{
         </div>`;
     document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
+    restoreSearchFocusState(searchFocusState);
     return;
   }}
 
@@ -1769,6 +2287,7 @@ function render() {{
     document.getElementById('rightPos').innerText = 'No available candidate';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">All candidates already assigned</div>';
         updateRightSearchStatus();
+    restoreSearchFocusState(searchFocusState);
     return;
   }}
 
@@ -1844,6 +2363,8 @@ function render() {{
 
     const sel = document.getElementById('catalogCodeSelect');
     if (sel && selectedCode) sel.value = selectedCode;
+
+    restoreSearchFocusState(searchFocusState);
 }}
 
 function rememberCatalogCode() {{
@@ -2696,6 +3217,15 @@ const showImagelessLeftToggle = document.getElementById('f_show_imageless_left')
 if (showImagelessLeftToggle) showImagelessLeftToggle.checked = showImagelessLeftRowsDefault;
 sortLeftRows(left[leftIdx]?.rowid);
 
+ensureCopyableAlertDialogCompare();
+try {{
+    const v = localStorage.getItem(runtimeLogCompareVisibleStorageKey);
+    const cb = document.getElementById('showRuntimeLogCompare');
+    if (cb && (v === '0' || v === '1')) cb.checked = v === '1';
+}} catch (_) {{}}
+applyRuntimeLogVisibilityCompare();
+startRuntimeLogPollingCompare();
+startBackendHealthPollingCompare();
 render();
 </script>
 {config_editor_assets}

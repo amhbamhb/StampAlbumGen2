@@ -1,10 +1,11 @@
 use base64::Engine;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, OnceLock};
 use tiny_http::{Header, Method, Response, Server, StatusCode};
 
 mod views;
@@ -26,6 +27,29 @@ mod http_handlers;
 use http_handlers::{serve_bootstrap_requests, serve_review_requests};
 
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
+const RUNTIME_LOG_CAP: usize = 800;
+static REVIEW_UI_RUNTIME_LOG: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
+
+fn runtime_log_buffer() -> &'static Mutex<VecDeque<String>> {
+    REVIEW_UI_RUNTIME_LOG.get_or_init(|| Mutex::new(VecDeque::with_capacity(RUNTIME_LOG_CAP)))
+}
+
+pub fn log_runtime_event(message: &str) {
+    eprintln!("{}", message);
+    if let Ok(mut q) = runtime_log_buffer().lock() {
+        q.push_back(message.to_string());
+        while q.len() > RUNTIME_LOG_CAP {
+            let _ = q.pop_front();
+        }
+    }
+}
+
+pub fn get_runtime_log_lines() -> Vec<String> {
+    runtime_log_buffer()
+        .lock()
+        .map(|q| q.iter().cloned().collect())
+        .unwrap_or_default()
+}
 
 struct PdfGenerationGuard;
 
@@ -1098,6 +1122,11 @@ fn colnect_import_data(
         match crate::colnect::parser::parse_csv(csv_file) {
             Ok(stamps) => {
                 let count = stamps.len();
+                log_runtime_event(&format!(
+                    "Successfully parsed {} stamps from CSV ({})",
+                    count,
+                    csv_file.display()
+                ));
                 match crate::colnect::ingest::ingest_colnect_data_with_mode(
                     conn, &stamps, "sg",
                     false, // Don't clear existing - we're adding to what's already there
@@ -1106,14 +1135,25 @@ fn colnect_import_data(
                         files_processed += 1;
                         total_stamps_imported += count;
                         log::info!("Imported {} stamps from {}", count, csv_file.display());
+                        log_runtime_event(&format!(
+                            "Imported {} stamps from {}",
+                            count,
+                            csv_file.display()
+                        ));
                     }
                     Err(e) => {
                         errors.push(format!("Failed to ingest {}: {}", csv_file.display(), e));
+                        log_runtime_event(&format!(
+                            "Failed to ingest {}: {}",
+                            csv_file.display(),
+                            e
+                        ));
                     }
                 }
             }
             Err(e) => {
                 errors.push(format!("Failed to parse {}: {}", csv_file.display(), e));
+                log_runtime_event(&format!("Failed to parse {}: {}", csv_file.display(), e));
             }
         }
     }
@@ -1148,12 +1188,12 @@ pub fn run_review_ui_bootstrap(
     default_inbox_path: Option<&str>,
     open_browser: bool,
 ) -> Result<ReviewUiBootstrapOutcome, Box<dyn std::error::Error>> {
-    eprintln!("Review UI: starting startup selector...");
+    log_runtime_event("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
     let (server, bind) = bind_review_server(bind_addr_opt)?;
 
     let url = format!("http://{}/", bind);
-    eprintln!("Review UI Setup: {}", url);
+    log_runtime_event(&format!("Review UI Setup: {}", url));
     if open_browser {
         let _ = webbrowser::open(&url);
     }
@@ -1206,8 +1246,8 @@ pub fn run_review_ui(
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
 ) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>> {
-    eprintln!("Review UI: preparing data from {}", db_path);
-    eprintln!("Review UI: opening database...");
+    log_runtime_event(&format!("Review UI: preparing data from {}", db_path));
+    log_runtime_event("Review UI: opening database...");
     let conn = crate::db_utils::init_db(db_path)?;
     let _ = conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_stamps_review_sg_year ON stamps (sg_number, year)",
@@ -1217,7 +1257,7 @@ pub fn run_review_ui(
         "CREATE INDEX IF NOT EXISTS idx_colnect_review_queue ON colnect_stamps (is_deleted, is_processed, issued_on, sg_number)",
         [],
     );
-    eprintln!("Review UI: syncing processed Colnect candidates...");
+    log_runtime_event("Review UI: syncing processed Colnect candidates...");
     sync_processed_colnect_candidates(&conn)?;
 
     let album_name = album_name_opt
@@ -1230,10 +1270,10 @@ pub fn run_review_ui(
         .unwrap_or_else(|| "Album".to_string());
 
     let initial_show_imageless_left_rows = false;
-    eprintln!(
+    log_runtime_event(&format!(
         "Review UI: loading left StampWorld rows (show image-less: {})...",
         initial_show_imageless_left_rows
-    );
+    ));
     let payload = build_matcher_payload(
         &conn,
         db_path,
@@ -1257,11 +1297,11 @@ pub fn run_review_ui(
         albumeasy_cli_configured,
         initial_show_imageless_left_rows,
     )?;
-    eprintln!(
+    log_runtime_event(&format!(
         "Review UI: loaded {} left rows and {} right candidates",
         payload.left.len(),
         payload.right.len()
-    );
+    ));
 
     let right_map: HashMap<String, RightCandidate> = payload
         .right
@@ -1272,7 +1312,7 @@ pub fn run_review_ui(
 
     let html = render_html(&payload);
 
-    eprintln!("Review UI: starting local web server...");
+    log_runtime_event("Review UI: starting local web server...");
     let (server, bind) = if let Some(pb) = prebound_server {
         pb
     } else {
@@ -1280,12 +1320,12 @@ pub fn run_review_ui(
     };
 
     let url = format!("http://{}/", bind);
-    eprintln!("Review UI: {}", url);
+    log_runtime_event(&format!("Review UI: {}", url));
     if open_browser {
-        eprintln!("Review UI: opening browser...");
+        log_runtime_event("Review UI: opening browser...");
         let _ = webbrowser::open(&url);
     } else {
-        eprintln!("Review UI: waiting for bootstrap tab to load compare view...");
+        log_runtime_event("Review UI: waiting for bootstrap tab to load compare view...");
     }
 
     let review_state = serve_review_requests(

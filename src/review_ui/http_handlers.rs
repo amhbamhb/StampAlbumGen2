@@ -45,6 +45,36 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             continue;
         }
 
+        if method == Method::Get && req_url == "/runtime-log" {
+            let mut resp = Response::from_string(
+                serde_json::json!({
+                    "ok": true,
+                    "lines": get_runtime_log_lines()
+                })
+                .to_string(),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/health" {
+            let mut resp = Response::from_string(
+                serde_json::json!({
+                    "ok": true,
+                    "mode": "bootstrap"
+                })
+                .to_string(),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Get && req_url == "/api/config-editor" {
             let resp_json = match build_config_editor_data("config.toml", "config_template.toml") {
                 Ok(sections) => serde_json::to_string(&ConfigEditorDataResponse {
@@ -144,10 +174,10 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                         .find(|c| c.country.eq_ignore_ascii_case(req.country.trim()));
                     match found {
                         Some(c) => {
-                            eprintln!(
+                            log_runtime_event(&format!(
                                 "Review UI: country selected '{}'; preparing compare view from {}",
                                 c.country, c.db_path
-                            );
+                            ));
                             selected = Some((c.db_path.clone(), c.country.clone()));
                             BootstrapStartResponse {
                                 ok: true,
@@ -400,6 +430,36 @@ pub(super) fn serve_review_requests(
         let method = request.method().clone();
         let req_url = request.url().to_string();
 
+        if method == Method::Get && req_url == "/runtime-log" {
+            let mut resp = Response::from_string(
+                serde_json::json!({
+                    "ok": true,
+                    "lines": get_runtime_log_lines()
+                })
+                .to_string(),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/health" {
+            let mut resp = Response::from_string(
+                serde_json::json!({
+                    "ok": true,
+                    "mode": "review"
+                })
+                .to_string(),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Get && req_url == "/compare-ready" {
             let mut resp = Response::from_string("{\"ready\":true}".to_string());
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
@@ -474,10 +534,10 @@ pub(super) fn serve_review_requests(
                 ) {
                     Ok(payload) => render_html(&payload),
                     Err(error) => {
-                        eprintln!(
+                        log_runtime_event(&format!(
                             "Review UI: failed to reload compare payload with image-less rows: {}",
                             error
-                        );
+                        ));
                         html.clone()
                     }
                 }

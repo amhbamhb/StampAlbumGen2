@@ -20,7 +20,8 @@ use stamp_album_gen2::{
     config,
     modes::{run_database_mode, run_scraping_mode},
     review_ui::{
-        run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome, ReviewUiRunOutcome,
+        log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
+        ReviewUiRunOutcome,
     },
     setup::{setup_logging, validate_os},
     validation::{
@@ -51,7 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cli.review_ui {
         validate_os()?;
 
-        eprintln!("Review UI: initializing...");
+        log_runtime_event("Review UI: initializing...");
 
         enum ReviewUiLaunchState {
             Bootstrap {
@@ -78,7 +79,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
                 std::process::exit(1);
             };
-            eprintln!("Review UI: using requested database {}", db_path);
+            log_runtime_event(&format!("Review UI: using requested database {}", db_path));
             ReviewUiLaunchState::Selected {
                 db_path,
                 album_name: cli.album_name.clone(),
@@ -96,7 +97,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             match current_state {
                 ReviewUiLaunchState::Bootstrap { open_browser } => {
-                    eprintln!(
+                    log_runtime_event(
                         "Review UI: no country/database selected on CLI; opening startup selector..."
                     );
                     match run_review_ui_bootstrap(
@@ -105,12 +106,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         open_browser,
                     )? {
                         ReviewUiBootstrapOutcome::Exit => {
-                            eprintln!("No country selected; exiting Review UI startup.");
+                            log_runtime_event("No country selected; exiting Review UI startup.");
                             return Ok(());
                         }
                         ReviewUiBootstrapOutcome::ReloadRequested => {
-                            eprintln!(
-                                "Review UI: config changed in startup selector; reloading..."
+                            log_runtime_event(
+                                "Review UI: config changed in startup selector; reloading...",
                             );
                             launch_state = ReviewUiLaunchState::Bootstrap {
                                 open_browser: false,
@@ -123,10 +124,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             server,
                             bind,
                         } => {
-                            eprintln!(
+                            log_runtime_event(&format!(
                                 "Review UI: selected '{}' with database {}",
                                 country, db_path
-                            );
+                            ));
                             launch_state = ReviewUiLaunchState::Selected {
                                 db_path,
                                 album_name: Some(country),
@@ -148,7 +149,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         let album_dir = std::path::Path::new("Albums").join(&slug);
                         config::load_config_with_override("config.toml", &album_dir)
                     };
-                    eprintln!("Review UI: loading compare data. This may take a few seconds...");
+                    log_runtime_event(
+                        "Review UI: loading compare data. This may take a few seconds...",
+                    );
                     match run_review_ui(
                         &db_path,
                         album_name.as_deref(),
@@ -175,7 +178,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     )? {
                         ReviewUiRunOutcome::Exit => return Ok(()),
                         ReviewUiRunOutcome::ReloadRequested => {
-                            eprintln!("Review UI: config changed in compare view; reloading...");
+                            log_runtime_event(
+                                "Review UI: config changed in compare view; reloading...",
+                            );
                             launch_state = ReviewUiLaunchState::Selected {
                                 db_path,
                                 album_name,
@@ -185,7 +190,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             continue;
                         }
                         ReviewUiRunOutcome::ReturnToStartRequested => {
-                            eprintln!(
+                            log_runtime_event(
                                 "Review UI: return-to-start requested from compare view; opening startup selector..."
                             );
                             launch_state = ReviewUiLaunchState::Bootstrap {
