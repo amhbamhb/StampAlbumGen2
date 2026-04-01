@@ -40,6 +40,7 @@ fn wrap_segment_words(segment: &str, max_chars: usize) -> Vec<String> {
     lines
 }
 
+#[allow(dead_code)]
 fn wrap_preserving_breaks(text: &str, max_chars: usize) -> Vec<String> {
     let normalized = text.replace("\\n", "\n");
     let mut out: Vec<String> = Vec::new();

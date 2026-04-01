@@ -115,7 +115,7 @@ fn file_sha256(path: &std::path::Path) -> Result<String, Box<dyn std::error::Err
         }
         hasher.update(&buf[..n]);
     }
-    Ok(format!("{:x}", hasher.finalize()))
+    Ok(hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect())
 }
 
 fn ensure_colnect_import_history_table(

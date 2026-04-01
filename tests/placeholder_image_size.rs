@@ -1,4 +1,4 @@
-use image::io::Reader as ImageReader;
+use image::ImageReader;
 
 #[test]
 fn placeholder_per_stamp_has_expected_dimensions() {
