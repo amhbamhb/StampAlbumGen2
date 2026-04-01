@@ -982,6 +982,16 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
     margin-top: 8px;
     flex-wrap: wrap;
 }}
+.colnectImportStatus {{ margin-top: 8px; }}
+.colnectImportSpinRow {{ display: flex; align-items: center; gap: 8px; }}
+.colnectImportSpinner {{ width: 14px; height: 14px; border: 2px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; animation: colnectSpin 0.9s linear infinite; flex: 0 0 auto; display: inline-block; }}
+.colnectImportStatusText {{ font-size: 12px; color: #1f3b52; font-weight: 600; }}
+.colnectImportDetail {{ font-size: 11px; color: #5e7283; margin-top: 4px; min-height: 16px; }}
+.colnectImportDone {{ color: #2f8f63 !important; }}
+.colnectImportFail {{ color: #a34545 !important; }}
+@keyframes colnectSpin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
+@keyframes colnectMsgIn {{ from {{ opacity: 0; transform: translateY(3px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+@keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 @media (max-width: 980px) {{
     .row {{ flex-direction: column; }}
     .panelBody {{ max-height: 42vh; }}
@@ -1057,7 +1067,14 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 <div class='sessionSection'>
                     <div class='sessionSectionTitle'>Import Colnect</div>
                     <div class='sessionRow'>
-                        <button onclick='importColnectFilesReview()'>Import Colnect</button>
+                        <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect</button>
+                    </div>
+                    <div id='colnectImportStatus' class='colnectImportStatus' style='display:none;'>
+                        <div class='colnectImportSpinRow'>
+                            <span class='colnectImportSpinner'></span>
+                            <span id='colnectImportStatusText' class='colnectImportStatusText'>Importing...</span>
+                        </div>
+                        <div id='colnectImportDetail' class='colnectImportDetail'></div>
                     </div>
                 </div>
                 <div class='sessionSection'>
@@ -3141,11 +3158,42 @@ async function generatePdfNowReview() {{
 }}
 
 async function importColnectFilesReview() {{
-    const statusEl = document.getElementById('status');
-    const originalText = statusEl?.innerText || 'Ready';
-    
-    if (statusEl) statusEl.innerText = 'Importing Colnect files...';
-    
+    const btn = document.getElementById('importColnectBtn');
+    const statusBox = document.getElementById('colnectImportStatus');
+    const statusText = document.getElementById('colnectImportStatusText');
+    const detailEl = document.getElementById('colnectImportDetail');
+
+    if (btn) btn.disabled = true;
+
+    const progressMsgs = [
+        'Reading inbox files\u2026',
+        'Parsing CSV records\u2026',
+        'Checking for duplicates\u2026',
+        'Writing to database\u2026',
+        'Finalising import\u2026',
+    ];
+    let msgIdx = 0;
+
+    if (statusBox) statusBox.style.display = '';
+    if (statusText) {{
+        statusText.className = 'colnectImportStatusText';
+        statusText.textContent = progressMsgs[0];
+    }}
+    if (detailEl) detailEl.textContent = '';
+
+    const spinner = statusBox ? statusBox.querySelector('.colnectImportSpinner') : null;
+    if (spinner) spinner.style.display = 'inline-block';
+
+    const msgTimer = setInterval(() => {{
+        msgIdx = (msgIdx + 1) % progressMsgs.length;
+        if (statusText) {{
+            statusText.style.animation = 'none';
+            void statusText.offsetWidth;
+            statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
+            statusText.textContent = progressMsgs[msgIdx];
+        }}
+    }}, 900);
+
     try {{
         const r = await fetch('/api/colnect-import', {{
             method: 'POST',
@@ -3153,29 +3201,50 @@ async function importColnectFilesReview() {{
             body: JSON.stringify({{}})
         }});
         const j = await r.json();
-            if (j.ok && j.stamps_imported > 0) {{
-                if (statusEl) statusEl.innerText = 'Imported ' + j.stamps_imported + ' stamps';
-                alert('Successfully imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)!\n\nRefreshing...');
-                setTimeout(() => {{
-                    location.reload();
-                }}, 500);
-            }} else if (j.ok && j.stamps_imported === 0) {{
-                if (statusEl) statusEl.innerText = 'No stamps imported';
-                const msg = j.message || 'No stamps were imported.';
-                const details = (j.errors && j.errors.length > 0)
-                    ? '\n\nCheck inbox path and CSV files:\n' + j.errors.join('\n')
-                    : '\n\nCheck that CSV files exist in the configured colnect_inbox_path in config.toml.';
-                alert(msg + details);
-            }} else {{
-                if (statusEl) statusEl.innerText = 'Import failed';
-                const msg = j.message || 'Import failed';
-                const details = (j.errors && j.errors.length > 0)
-                    ? '\n\nErrors:\n' + j.errors.join('\n')
-                    : '';
-                alert(msg + details);
+        clearInterval(msgTimer);
+        if (spinner) spinner.style.display = 'none';
+
+        if (j.ok && j.stamps_imported > 0) {{
+            if (statusText) {{
+                statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
+                statusText.className = 'colnectImportStatusText colnectImportDone';
+                statusText.textContent = '\u2714 Imported ' + j.stamps_imported + ' stamp' + (j.stamps_imported === 1 ? '' : 's');
             }}
+            if (detailEl) detailEl.textContent = (j.files_processed || 0) + ' file' + (j.files_processed === 1 ? '' : 's') + ' processed \u2014 refreshing...';
+            setTimeout(() => {{ location.reload(); }}, 1200);
+        }} else if (j.ok && j.stamps_imported === 0) {{
+            if (statusText) {{
+                statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
+                statusText.className = 'colnectImportStatusText';
+                statusText.textContent = 'No new stamps found';
+            }}
+            if (detailEl) detailEl.textContent = j.message || 'Check colnect_inbox_path in config.toml.';
+            if (btn) btn.disabled = false;
+            if (j.errors && j.errors.length > 0) {{
+                alert((j.message || 'No stamps imported.') + '\n\nErrors:\n' + j.errors.join('\n'));
+            }}
+        }} else {{
+            if (statusText) {{
+                statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
+                statusText.className = 'colnectImportStatusText colnectImportFail';
+                statusText.textContent = '\u2718 ' + (j.message || 'Import failed');
+            }}
+            if (detailEl) detailEl.textContent = (j.errors && j.errors.length > 0) ? j.errors[0] : '';
+            if (btn) btn.disabled = false;
+            if (j.errors && j.errors.length > 0) {{
+                alert((j.message || 'Import failed') + '\n\nErrors:\n' + j.errors.join('\n'));
+            }}
+        }}
     }} catch (e) {{
-        if (statusEl) statusEl.innerText = 'Import error';
+        clearInterval(msgTimer);
+        if (spinner) spinner.style.display = 'none';
+        if (statusText) {{
+            statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
+            statusText.className = 'colnectImportStatusText colnectImportFail';
+            statusText.textContent = '\u2718 Import error';
+        }}
+        if (detailEl) detailEl.textContent = String(e);
+        if (btn) btn.disabled = false;
         alert('Import error: ' + e);
     }}
 }}
