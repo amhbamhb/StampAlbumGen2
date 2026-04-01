@@ -509,6 +509,7 @@ struct ColnectImportResponse {
     message: String,
     files_processed: usize,
     stamps_imported: usize,
+    stamps_skipped: usize,
     errors: Vec<String>,
 }
 
@@ -1039,6 +1040,7 @@ fn colnect_import_data(
             message: "No colnect inbox path candidates could be resolved".to_string(),
             files_processed: 0,
             stamps_imported: 0,
+            stamps_skipped: 0,
             errors: vec!["No configured path and no album path available".to_string()],
         };
     }
@@ -1106,6 +1108,7 @@ fn colnect_import_data(
             message: "No CSV files found in colnect inbox".to_string(),
             files_processed: 0,
             stamps_imported: 0,
+            stamps_skipped: 0,
             errors,
         };
     }
@@ -1115,31 +1118,47 @@ fn colnect_import_data(
     }
 
     // Parse and ingest CSV files
-    let mut total_stamps_imported = 0;
-    let mut files_processed = 0;
+    let mut total_stamps_imported = 0usize;
+    let mut total_stamps_skipped = 0usize;
+    let mut files_processed = 0usize;
 
     for csv_file in &csv_files {
         match crate::colnect::parser::parse_csv(csv_file) {
             Ok(stamps) => {
                 let count = stamps.len();
-                log_runtime_event(&format!(
-                    "Successfully parsed {} stamps from CSV ({})",
-                    count,
-                    csv_file.display()
-                ));
+                let filename = csv_file
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| csv_file.display().to_string());
+                log_runtime_event(&format!("Parsing {}: {} stamps found", filename, count));
+                let before: usize = conn
+                    .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| r.get::<_, i64>(0))
+                    .unwrap_or(0) as usize;
                 match crate::colnect::ingest::ingest_colnect_data_with_mode(
                     conn, &stamps, "sg",
                     false, // Don't clear existing - we're adding to what's already there
                 ) {
                     Ok(_) => {
+                        let after: usize = conn
+                            .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| r.get::<_, i64>(0))
+                            .unwrap_or(0) as usize;
+                        let new_count = after.saturating_sub(before);
+                        let dup_count = count.saturating_sub(new_count);
                         files_processed += 1;
-                        total_stamps_imported += count;
-                        log::info!("Imported {} stamps from {}", count, csv_file.display());
-                        log_runtime_event(&format!(
-                            "Imported {} stamps from {}",
-                            count,
-                            csv_file.display()
-                        ));
+                        total_stamps_imported += new_count;
+                        total_stamps_skipped += dup_count;
+                        let status_msg = if dup_count == 0 {
+                            format!("{}: {} new stamps imported", filename, new_count)
+                        } else if new_count == 0 {
+                            format!("{}: {} assessed — all already in database", filename, count)
+                        } else {
+                            format!(
+                                "{}: {} new imported, {} already in database",
+                                filename, new_count, dup_count
+                            )
+                        };
+                        log_runtime_event(&status_msg);
+                        log::info!("{}", status_msg);
                     }
                     Err(e) => {
                         errors.push(format!("Failed to ingest {}: {}", csv_file.display(), e));
@@ -1158,14 +1177,29 @@ fn colnect_import_data(
         }
     }
 
-    ColnectImportResponse {
-        ok: errors.is_empty(),
-        message: format!(
+    let summary_message = if total_stamps_skipped > 0 && total_stamps_imported == 0 {
+        format!(
+            "{} assessed across {} file(s) — all already in database",
+            total_stamps_skipped, files_processed
+        )
+    } else if total_stamps_skipped > 0 {
+        format!(
+            "Imported {} new stamps from {} file(s); {} already in database",
+            total_stamps_imported, files_processed, total_stamps_skipped
+        )
+    } else {
+        format!(
             "Imported {} stamps from {} CSV file(s)",
             total_stamps_imported, files_processed
-        ),
+        )
+    };
+
+    ColnectImportResponse {
+        ok: errors.is_empty(),
+        message: summary_message,
         files_processed,
         stamps_imported: total_stamps_imported,
+        stamps_skipped: total_stamps_skipped,
         errors,
     }
 }

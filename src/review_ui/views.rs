@@ -986,7 +986,9 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 .colnectImportSpinRow {{ display: flex; align-items: center; gap: 8px; }}
 .colnectImportSpinner {{ width: 14px; height: 14px; border: 2px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; animation: colnectSpin 0.9s linear infinite; flex: 0 0 auto; display: inline-block; }}
 .colnectImportStatusText {{ font-size: 12px; color: #1f3b52; font-weight: 600; }}
-.colnectImportDetail {{ font-size: 11px; color: #5e7283; margin-top: 4px; min-height: 16px; }}
+.colnectImportLog {{ margin-top: 6px; max-height: 120px; overflow-y: auto; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f2f7fb; border: 1px solid #d3dfe9; border-radius: 6px; padding: 4px 6px; }}
+.colnectLogLine {{ padding: 2px 0; border-bottom: 1px solid #e8eef4; animation: colnectMsgIn 0.2s ease-out; }}
+.colnectLogLine:last-child {{ border-bottom: none; }}
 .colnectImportDone {{ color: #2f8f63 !important; }}
 .colnectImportFail {{ color: #a34545 !important; }}
 @keyframes colnectSpin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
@@ -1074,7 +1076,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                             <span class='colnectImportSpinner'></span>
                             <span id='colnectImportStatusText' class='colnectImportStatusText'>Importing...</span>
                         </div>
-                        <div id='colnectImportDetail' class='colnectImportDetail'></div>
+                        <div id='colnectImportLog' class='colnectImportLog'></div>
                     </div>
                 </div>
                 <div class='sessionSection'>
@@ -3159,40 +3161,55 @@ async function generatePdfNowReview() {{
 
 async function importColnectFilesReview() {{
     const btn = document.getElementById('importColnectBtn');
+    const btn = document.getElementById('importColnectBtn');
     const statusBox = document.getElementById('colnectImportStatus');
     const statusText = document.getElementById('colnectImportStatusText');
-    const detailEl = document.getElementById('colnectImportDetail');
+    const logEl = document.getElementById('colnectImportLog');
 
     if (btn) btn.disabled = true;
-
-    const progressMsgs = [
-        'Reading inbox files\u2026',
-        'Parsing CSV records\u2026',
-        'Checking for duplicates\u2026',
-        'Writing to database\u2026',
-        'Finalising import\u2026',
-    ];
-    let msgIdx = 0;
-
     if (statusBox) statusBox.style.display = '';
-    if (statusText) {{
-        statusText.className = 'colnectImportStatusText';
-        statusText.textContent = progressMsgs[0];
-    }}
-    if (detailEl) detailEl.textContent = '';
+    if (statusText) {{ statusText.className = 'colnectImportStatusText'; statusText.textContent = 'Starting import\u2026'; }}
+    if (logEl) logEl.innerHTML = '';
 
     const spinner = statusBox ? statusBox.querySelector('.colnectImportSpinner') : null;
     if (spinner) spinner.style.display = 'inline-block';
 
-    const msgTimer = setInterval(() => {{
-        msgIdx = (msgIdx + 1) % progressMsgs.length;
-        if (statusText) {{
-            statusText.style.animation = 'none';
-            void statusText.offsetWidth;
-            statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
-            statusText.textContent = progressMsgs[msgIdx];
-        }}
-    }}, 900);
+    // Snapshot current runtime log position so only new lines appear
+    let shownLogCount = 0;
+    try {{
+        const snap = await fetch('/runtime-log', {{ cache: 'no-store' }});
+        const snapJ = await snap.json();
+        shownLogCount = (snapJ.lines || []).length;
+    }} catch (_) {{}}
+
+    const importKeywords = ['parsing', 'parsed', 'imported', 'assessed', 'already', 'ingest', 'csv', 'failed', 'stamp'];
+
+    function appendLogLine(text) {{
+        if (!logEl) return;
+        const el = document.createElement('div');
+        el.className = 'colnectLogLine';
+        el.textContent = text;
+        logEl.appendChild(el);
+        while (logEl.children.length > 12) logEl.removeChild(logEl.firstChild);
+        logEl.scrollTop = logEl.scrollHeight;
+    }}
+
+    async function pollImportLog() {{
+        try {{
+            const r = await fetch('/runtime-log', {{ cache: 'no-store' }});
+            const j = await r.json();
+            const lines = j.lines || [];
+            const newLines = lines.slice(shownLogCount);
+            shownLogCount = lines.length;
+            for (const line of newLines) {{
+                if (importKeywords.some(k => line.toLowerCase().includes(k))) {{
+                    appendLogLine(line);
+                }}
+            }}
+        }} catch (_) {{}}
+    }}
+
+    const logPollTimer = setInterval(pollImportLog, 800);
 
     try {{
         const r = await fetch('/api/colnect-import', {{
@@ -3201,55 +3218,52 @@ async function importColnectFilesReview() {{
             body: JSON.stringify({{}})
         }});
         const j = await r.json();
-        clearInterval(msgTimer);
+        clearInterval(logPollTimer);
+        await pollImportLog(); // final sweep to catch last log lines
         if (spinner) spinner.style.display = 'none';
 
-        if (j.ok && j.stamps_imported > 0) {{
+        const imported = j.stamps_imported || 0;
+        const skipped = j.stamps_skipped || 0;
+
+        if (j.ok && imported > 0) {{
             if (statusText) {{
-                statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
                 statusText.className = 'colnectImportStatusText colnectImportDone';
-                statusText.textContent = '\u2714 Imported ' + j.stamps_imported + ' stamp' + (j.stamps_imported === 1 ? '' : 's');
+                statusText.textContent = '\u2714 Imported ' + imported + ' new stamp' + (imported === 1 ? '' : 's') +
+                    (skipped > 0 ? ', ' + skipped + ' already in database' : '');
             }}
-            if (detailEl) detailEl.textContent = (j.files_processed || 0) + ' file' + (j.files_processed === 1 ? '' : 's') + ' processed \u2014 refreshing...';
-            setTimeout(() => {{ location.reload(); }}, 1200);
-        }} else if (j.ok && j.stamps_imported === 0) {{
+            setTimeout(() => {{ location.reload(); }}, 1500);
+        }} else if (j.ok && imported === 0) {{
             if (statusText) {{
-                statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
                 statusText.className = 'colnectImportStatusText';
-                statusText.textContent = 'No new stamps found';
+                statusText.textContent = skipped > 0
+                    ? '\u2714 ' + skipped + ' assessed \u2014 all already in database'
+                    : 'No new stamps found';
             }}
-            if (detailEl) detailEl.textContent = j.message || 'Check colnect_inbox_path in config.toml.';
             if (btn) btn.disabled = false;
             if (j.errors && j.errors.length > 0) {{
                 alert((j.message || 'No stamps imported.') + '\n\nErrors:\n' + j.errors.join('\n'));
             }}
         }} else {{
             if (statusText) {{
-                statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
                 statusText.className = 'colnectImportStatusText colnectImportFail';
                 statusText.textContent = '\u2718 ' + (j.message || 'Import failed');
             }}
-            if (detailEl) detailEl.textContent = (j.errors && j.errors.length > 0) ? j.errors[0] : '';
             if (btn) btn.disabled = false;
             if (j.errors && j.errors.length > 0) {{
                 alert((j.message || 'Import failed') + '\n\nErrors:\n' + j.errors.join('\n'));
             }}
         }}
     }} catch (e) {{
-        clearInterval(msgTimer);
+        clearInterval(logPollTimer);
         if (spinner) spinner.style.display = 'none';
         if (statusText) {{
-            statusText.style.animation = 'colnectMsgIn 0.2s ease-out';
             statusText.className = 'colnectImportStatusText colnectImportFail';
             statusText.textContent = '\u2718 Import error';
         }}
-        if (detailEl) detailEl.textContent = String(e);
+        appendLogLine('Error: ' + String(e));
         if (btn) btn.disabled = false;
         alert('Import error: ' + e);
     }}
-}}
-
-const seriesToggle = document.getElementById('f_series');
 if (seriesToggle) {{
   seriesToggle.checked = checkboxDefaults.f_series;
   seriesToggle.addEventListener('change', () => {{

@@ -360,10 +360,11 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                         message: "Bootstrap stage: please select a country and open Review UI first, then use Import Colnect".to_string(),
                         files_processed: 0,
                         stamps_imported: 0,
+                        stamps_skipped: 0,
                         errors: vec!["Import not available in bootstrap stage".to_string()],
                     })
                     .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
                             .to_string()
                     }),
                     Err(e) => serde_json::to_string(&ColnectImportResponse {
@@ -371,10 +372,11 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                         message: format!("invalid request: {}", e),
                         files_processed: 0,
                         stamps_imported: 0,
+                        stamps_skipped: 0,
                         errors: vec![format!("invalid request: {}", e)],
                     })
                     .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                        "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
                             .to_string()
                     }),
                 };
@@ -903,7 +905,7 @@ pub(super) fn serve_review_requests(
                     &album_name,
                 ))
                     .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
                             .to_string()
                     }),
                 Err(e) => serde_json::to_string(&ColnectImportResponse {
@@ -911,10 +913,11 @@ pub(super) fn serve_review_requests(
                     message: format!("invalid request: {}", e),
                     files_processed: 0,
                     stamps_imported: 0,
+                    stamps_skipped: 0,
                     errors: vec![format!("invalid request: {}", e)],
                 })
                 .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"errors\":[]}"
+                    "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
                         .to_string()
                 }),
             };
