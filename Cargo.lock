@@ -3116,7 +3116,7 @@ dependencies = [
 
 [[package]]
 name = "stamp_album_gen2"
-version = "1.6.29"
+version = "1.6.30"
 dependencies = [
  "ab_glyph",
  "assert_cmd",
