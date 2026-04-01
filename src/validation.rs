@@ -122,7 +122,8 @@ pub fn validate_source(cli: &crate::cli::Cli) -> Result<String, ValidationError>
                 } else {
                     // Lower confidence: if interactive, prompt the user; if not
                     // interactive (likely running in a script), do not accept.
-                    if atty::is(atty::Stream::Stdin) && atty::is(atty::Stream::Stdout) {
+                    use std::io::IsTerminal;
+                    if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
                         use std::io::{self, Write};
                         eprint!(
                             "Top suggestion is '{}' with score={:.3}. Accept? [y/N]: ",

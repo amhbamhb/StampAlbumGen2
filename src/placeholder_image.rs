@@ -6,7 +6,7 @@
 use crate::image_utils::calc_mm_per_pixel_embedded;
 use image::{GenericImageView, ImageBuffer, Rgba};
 use log::{error, info};
-use rusttype::{point, Font, Scale};
+use ab_glyph::{Font, FontArc, PxScale, ScaleFont, point};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -212,15 +212,15 @@ pub fn generate_transparent_spacer(
 }
 
 /// Try to load a TTF font from a list of likely locations (system fonts or project fonts).
-/// Returns a loaded `rusttype::Font` on success, or `None` if no font could be found.
-fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
+/// Returns a loaded `ab_glyph::FontArc` on success, or `None` if no font could be found.
+fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
     // If caller provided override path, try it first
     if let Some(p) = font_override {
         if Path::new(p).exists() {
             if let Ok(mut f) = File::open(p) {
                 let mut buf = Vec::new();
                 if f.read_to_end(&mut buf).is_ok() {
-                    if let Some(font) = Font::try_from_vec(buf) {
+                    if let Some(font) = FontArc::try_from_vec(buf).ok() {
                         return Some(font);
                     }
                 }
@@ -234,7 +234,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
                 if let Ok(mut f) = File::open(&env_path) {
                     let mut buf = Vec::new();
                     if f.read_to_end(&mut buf).is_ok() {
-                        if let Some(font) = Font::try_from_vec(buf) {
+                        if let Some(font) = FontArc::try_from_vec(buf).ok() {
                             return Some(font);
                         }
                     }
@@ -257,7 +257,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
             if let Ok(mut f) = File::open(path) {
                 let mut buf = Vec::new();
                 if f.read_to_end(&mut buf).is_ok() {
-                    if let Some(font) = Font::try_from_vec(buf) {
+                    if let Some(font) = FontArc::try_from_vec(buf).ok() {
                         return Some(font);
                     }
                 }
@@ -268,7 +268,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<Font<'static>> {
     None
 }
 
-/// Draw anti-aliased text centered at (center_x, center_y) using rusttype.
+/// Draw anti-aliased text centered at (center_x, center_y) using ab_glyph.
 fn draw_text(
     img: &mut ImageBuffer<Rgba<u8>, Vec<u8>>,
     text: &str,
@@ -310,31 +310,41 @@ fn draw_text(
         }
     };
 
-    let scale = Scale::uniform(font_size);
+    let scale = PxScale::from(font_size);
+    let scaled_font = font.as_scaled(scale);
 
-    // Measure text width
-    let v_metrics = font.v_metrics(scale);
-    let glyphs: Vec<_> = font
-        .layout(text, scale, point(0.0, 0.0 + v_metrics.ascent))
-        .collect();
-    let glyph_width = glyphs
-        .iter()
-        .rev()
-        .filter_map(|g| g.pixel_bounding_box().map(|b| b.max.x))
-        .next()
-        .unwrap_or(0);
-    let total_width = glyph_width;
+    // Measure total advance width for centering
+    let total_width: f32 = text
+        .chars()
+        .map(|c| scaled_font.h_advance(scaled_font.glyph_id(c)))
+        .sum();
+    let ascent = scaled_font.ascent();
+    let descent = scaled_font.descent();
 
     // Starting point
-    let start_x = center_x as f32 - (total_width as f32) / 2.0;
-    let baseline = center_y as f32 + (v_metrics.ascent - v_metrics.descent) / 2.0;
+    let start_x = center_x as f32 - total_width / 2.0;
+    let baseline = center_y as f32 + (ascent - descent) / 2.0;
+
+    // Layout glyphs at final render position
+    let mut cursor_x = start_x;
+    let glyphs: Vec<_> = text
+        .chars()
+        .map(|c| {
+            let glyph_id = scaled_font.glyph_id(c);
+            let advance = scaled_font.h_advance(glyph_id);
+            let g = glyph_id.with_scale_and_position(scale, point(cursor_x, baseline));
+            cursor_x += advance;
+            g
+        })
+        .collect();
 
     // Draw each glyph into the image buffer
     for g in glyphs {
-        if let Some(bb) = g.pixel_bounding_box() {
-            g.draw(|gx, gy, gv| {
-                let x = start_x as i32 + bb.min.x + gx as i32;
-                let y = baseline as i32 + bb.min.y + gy as i32;
+        if let Some(outlined) = font.outline_glyph(g) {
+            let bb = outlined.px_bounds();
+            outlined.draw(|gx, gy, gv| {
+                let x = bb.min.x as i32 + gx as i32;
+                let y = bb.min.y as i32 + gy as i32;
                 if x >= 0 && y >= 0 && (x as u32) < img.width() && (y as u32) < img.height() {
                     // Blend gray glyph value into RGBA (simple alpha compositing)
                     let alpha = (gv * 255.0) as u8;
