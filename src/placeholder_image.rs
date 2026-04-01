@@ -4,9 +4,9 @@
 //! This module generates placeholder images for stamps that don't have associated images.
 
 use crate::image_utils::calc_mm_per_pixel_embedded;
+use ab_glyph::{point, Font, FontArc, PxScale, ScaleFont};
 use image::{GenericImageView, ImageBuffer, Rgba};
 use log::{error, info};
-use ab_glyph::{Font, FontArc, PxScale, ScaleFont, point};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
