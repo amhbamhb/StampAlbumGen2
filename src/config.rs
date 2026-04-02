@@ -1,9 +1,14 @@
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::fs;
 use std::path::{Path, PathBuf};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
+
+thread_local! {
+    static SCOPED_ALBUM_CONFIG_DIR: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+}
 
 pub fn embedded_config_template() -> &'static str {
     EMBEDDED_CONFIG_TEMPLATE
@@ -351,6 +356,9 @@ pub struct Config {
     // Optional AlbumEasy CLI path for PDF generation from generated text files.
     // Example: "/path/to/AlbumEasy/AlbumEasy.sh"
     pub albumeasy_cli_path: Option<String>,
+    // Optional Albums root path override used by Review UI bootstrap selector.
+    // Supports either the Albums directory itself or a parent containing Albums.
+    pub bootstrap_albums_root_path: Option<String>,
     // When true, run AlbumEasy in console mode (-c) after generating the
     // album text file so the PDF is produced automatically.
     pub albumeasy_auto_generate_pdf: Option<bool>,
@@ -591,6 +599,7 @@ impl Config {
             show_progress_indicator: Some(true),
             colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
             albumeasy_cli_path: None,
+            bootstrap_albums_root_path: None,
             albumeasy_auto_generate_pdf: Some(false),
             pdf_dx_logging: Some(false),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
@@ -884,6 +893,14 @@ impl Config {
     /// Effective AlbumEasy CLI path for post-generation PDF rendering.
     pub fn effective_albumeasy_cli_path(&self) -> Option<&str> {
         self.albumeasy_cli_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
+    /// Optional persisted Albums root path for Review UI bootstrap.
+    pub fn effective_bootstrap_albums_root_path(&self) -> Option<&str> {
+        self.bootstrap_albums_root_path
             .as_deref()
             .map(str::trim)
             .filter(|s| !s.is_empty())
@@ -1554,6 +1571,11 @@ pub fn load_config(path: &str) -> Config {
                                     cfg.albumeasy_cli_path = defaults.albumeasy_cli_path;
                                     has_missing = true;
                                 }
+                                if cfg.bootstrap_albums_root_path.is_none() {
+                                    cfg.bootstrap_albums_root_path =
+                                        defaults.bootstrap_albums_root_path;
+                                    has_missing = true;
+                                }
                                 if cfg.albumeasy_auto_generate_pdf.is_none() {
                                     cfg.albumeasy_auto_generate_pdf =
                                         defaults.albumeasy_auto_generate_pdf;
@@ -1772,6 +1794,23 @@ pub fn load_config(path: &str) -> Config {
 
     log::info!("config.toml not found in parent dirs or failed to parse, using default values");
     Config::default()
+}
+
+pub fn with_album_config_override<R>(album_dir: &Path, f: impl FnOnce() -> R) -> R {
+    SCOPED_ALBUM_CONFIG_DIR.with(|slot| {
+        let previous = slot.replace(Some(album_dir.to_path_buf()));
+        let result = f();
+        slot.replace(previous);
+        result
+    })
+}
+
+pub fn load_effective_config(path: &str) -> Config {
+    let album_dir = SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.borrow().clone());
+    match album_dir {
+        Some(album_dir) => load_config_with_override(path, &album_dir),
+        None => load_config(path),
+    }
 }
 
 #[cfg(test)]

@@ -3,9 +3,13 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
+use std::thread;
+use std::time::Duration;
 use tiny_http::{Header, Method, Response, Server, StatusCode};
 
 mod views;
@@ -29,9 +33,19 @@ use http_handlers::{serve_bootstrap_requests, serve_review_requests};
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 const RUNTIME_LOG_CAP: usize = 800;
 static REVIEW_UI_RUNTIME_LOG: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
+static STAMPWORLD_JOB_STATE: OnceLock<Mutex<StampWorldJobState>> = OnceLock::new();
+static BOOTSTRAP_ALBUMS_ROOT_OVERRIDE: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
 
 fn runtime_log_buffer() -> &'static Mutex<VecDeque<String>> {
     REVIEW_UI_RUNTIME_LOG.get_or_init(|| Mutex::new(VecDeque::with_capacity(RUNTIME_LOG_CAP)))
+}
+
+fn stampworld_job_state() -> &'static Mutex<StampWorldJobState> {
+    STAMPWORLD_JOB_STATE.get_or_init(|| Mutex::new(StampWorldJobState::Idle))
+}
+
+fn bootstrap_albums_root_override() -> &'static Mutex<Option<PathBuf>> {
+    BOOTSTRAP_ALBUMS_ROOT_OVERRIDE.get_or_init(|| Mutex::new(None))
 }
 
 pub fn log_runtime_event(message: &str) {
@@ -218,6 +232,7 @@ struct BootstrapCountryInfo {
 #[derive(Debug, Serialize)]
 struct BootstrapStateResponse {
     countries: Vec<BootstrapCountryInfo>,
+    albums_root: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -248,6 +263,342 @@ struct BootstrapGeneratePdfResponse {
     message: String,
     generated_output_path: Option<String>,
     generated_pdf_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapStampWorldRunRequest {
+    country: String,
+    start_year: i32,
+    end_year: i32,
+    #[serde(default)]
+    preset: Option<String>,
+    #[serde(default)]
+    extra_flags: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapStampWorldRunResponse {
+    ok: bool,
+    message: String,
+    started: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapStampWorldStatusResponse {
+    ok: bool,
+    running: bool,
+    finished: bool,
+    success: Option<bool>,
+    message: String,
+    country: Option<String>,
+    db_path: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapAlbumEasyStatusResponse {
+    ok: bool,
+    configured: bool,
+    cli_path: Option<String>,
+    path_exists: bool,
+    message: String,
+    download_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapAlbumEasySetPathRequest {
+    cli_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapSetAlbumsRootRequest {
+    path: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapSetAlbumsRootResponse {
+    ok: bool,
+    message: String,
+    albums_root: Option<String>,
+    countries_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapPickAlbumsRootResponse {
+    ok: bool,
+    picked: bool,
+    message: String,
+    albums_root: Option<String>,
+    countries_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapAlbumEasySetPathResponse {
+    ok: bool,
+    message: String,
+}
+
+#[derive(Debug, Clone)]
+enum StampWorldJobState {
+    Idle,
+    Running {
+        country: String,
+        db_path: String,
+    },
+    Finished {
+        success: bool,
+        country: String,
+        db_path: String,
+        message: String,
+    },
+}
+
+fn parse_extra_flags(extra_flags: &Option<String>) -> Vec<String> {
+    extra_flags
+        .as_deref()
+        .unwrap_or("")
+        .split_whitespace()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect()
+}
+
+fn preset_flags(preset: &Option<String>) -> Vec<String> {
+    match preset.as_deref().unwrap_or("basic") {
+        "overwrite_album" => vec!["--overwrite-album".to_string()],
+        "overwrite_all" => vec![
+            "--overwrite-album".to_string(),
+            "--overwrite-images".to_string(),
+        ],
+        "bounded_pages" => vec![
+            "--max-pages".to_string(),
+            "25".to_string(),
+            "--stop-after-no-hits".to_string(),
+            "3".to_string(),
+        ],
+        "accept_typo" => vec!["--yes".to_string()],
+        _ => Vec::new(),
+    }
+}
+
+fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String> {
+    let country = req.country.trim().to_string();
+    let mut args = vec![
+        "--source".to_string(),
+        "stampworld".to_string(),
+        "--site-name".to_string(),
+        country.clone(),
+        "--album-name".to_string(),
+        country,
+        "--start-year".to_string(),
+        req.start_year.to_string(),
+        "--end-year".to_string(),
+        req.end_year.to_string(),
+    ];
+    args.extend(preset_flags(&req.preset));
+    args.extend(parse_extra_flags(&req.extra_flags));
+    args
+}
+
+fn quote_for_log(arg: &str) -> String {
+    if arg.contains(' ') || arg.contains('"') {
+        format!("\"{}\"", arg.replace('"', "\\\""))
+    } else {
+        arg.to_string()
+    }
+}
+
+fn set_stampworld_state(new_state: StampWorldJobState) {
+    if let Ok(mut state) = stampworld_job_state().lock() {
+        *state = new_state;
+    }
+}
+
+fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), String> {
+    let config_path = Path::new("config.toml");
+    let content = fs::read_to_string(config_path)
+        .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
+    let mut root_table = toml::from_str::<toml::Table>(&content)
+        .map_err(|e| format!("invalid TOML in {}: {}", config_path.display(), e))?;
+
+    let runtime_entry = root_table
+        .entry("runtime")
+        .or_insert_with(|| toml::Value::Table(toml::map::Map::new()));
+    if !runtime_entry.is_table() {
+        return Err("config runtime section is not a table".to_string());
+    }
+
+    let runtime_tbl = runtime_entry
+        .as_table_mut()
+        .ok_or_else(|| "failed to access runtime table".to_string())?;
+    match value.map(str::trim).filter(|v| !v.is_empty()) {
+        Some(v) => {
+            runtime_tbl.insert(key.to_string(), toml::Value::String(v.to_string()));
+        }
+        None => {
+            runtime_tbl.remove(key);
+        }
+    }
+
+    let rendered = toml::to_string_pretty(&root_table)
+        .map_err(|e| format!("failed to render updated config TOML: {}", e))?;
+    fs::write(config_path, rendered)
+        .map_err(|e| format!("failed to write {}: {}", config_path.display(), e))?;
+    Ok(())
+}
+
+fn save_runtime_albumeasy_cli_path(cli_path: &str) -> Result<(), String> {
+    let path = cli_path.trim();
+    if path.is_empty() {
+        return Err("AlbumEasy CLI path cannot be empty".to_string());
+    }
+
+    save_runtime_string_setting("albumeasy_cli_path", Some(path))
+}
+
+fn save_runtime_bootstrap_albums_root_path(path: Option<&str>) -> Result<(), String> {
+    save_runtime_string_setting("bootstrap_albums_root_path", path)
+}
+
+fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<String, String> {
+    let country = req.country.trim().to_string();
+    if country.is_empty() {
+        return Err("Country is required".to_string());
+    }
+    if req.start_year > req.end_year {
+        return Err("Start year must be less than or equal to end year".to_string());
+    }
+
+    let slug = country.replace(' ', "-");
+    let db_path = format!("Albums/{0}/{0}.db", slug);
+
+    {
+        let mut state = stampworld_job_state()
+            .lock()
+            .map_err(|_| "Failed to lock StampWorld state".to_string())?;
+        if matches!(&*state, StampWorldJobState::Running { .. }) {
+            return Err("A StampWorld pull is already running".to_string());
+        }
+        *state = StampWorldJobState::Running {
+            country: country.clone(),
+            db_path: db_path.clone(),
+        };
+    }
+
+    let exe =
+        std::env::current_exe().map_err(|e| format!("failed to resolve executable: {}", e))?;
+    let args = build_stampworld_args(&req);
+    let display_cmd = format!(
+        "{} {}",
+        exe.display(),
+        args.iter()
+            .map(|a| quote_for_log(a))
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+    let country_for_thread = country.clone();
+    let db_path_for_thread = db_path.clone();
+
+    log_runtime_event(&format!("StampWorld: starting command {}", display_cmd));
+    log_runtime_event("StampWorld: running. You can watch progress in Runtime Log.");
+
+    thread::spawn(move || {
+        let mut cmd = Command::new(&exe);
+        cmd.args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                let msg = format!("StampWorld: failed to launch command: {}", e);
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: false,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+                return;
+            }
+        };
+
+        let out_handle = child.stdout.take().map(|stdout| {
+            thread::spawn(move || {
+                let reader = BufReader::new(stdout);
+                for line in reader.lines().map_while(Result::ok) {
+                    if !line.trim().is_empty() {
+                        log_runtime_event(&format!("StampWorld: {}", line));
+                    }
+                }
+            })
+        });
+
+        let err_handle = child.stderr.take().map(|stderr| {
+            thread::spawn(move || {
+                let reader = BufReader::new(stderr);
+                for line in reader.lines().map_while(Result::ok) {
+                    if !line.trim().is_empty() {
+                        log_runtime_event(&format!("StampWorld [stderr]: {}", line));
+                    }
+                }
+            })
+        });
+
+        let wait_result = child.wait();
+        if let Some(h) = out_handle {
+            let _ = h.join();
+        }
+        if let Some(h) = err_handle {
+            let _ = h.join();
+        }
+
+        match wait_result {
+            Ok(status) if status.success() => {
+                let msg = format!(
+                    "StampWorld pull completed for {}. Open Review to continue.",
+                    country_for_thread
+                );
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: true,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+            }
+            Ok(status) => {
+                let msg = format!(
+                    "StampWorld pull failed for {} (exit status {}).",
+                    country_for_thread, status
+                );
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: false,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+            }
+            Err(e) => {
+                let msg = format!(
+                    "StampWorld command wait failed for {}: {}",
+                    country_for_thread, e
+                );
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: false,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+            }
+        }
+    });
+
+    Ok(format!(
+        "StampWorld pull started for {}. Command: {}",
+        country, display_cmd
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -615,6 +966,63 @@ fn open_local_path(path: &Path) {
     }
 }
 
+fn try_spawn_browser_command(program: &str, args: &[&str]) -> bool {
+    Command::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .is_ok()
+}
+
+fn try_open_url_once(url: &str) -> bool {
+    if webbrowser::open(url).is_ok() {
+        return true;
+    }
+
+    if try_spawn_browser_command("xdg-open", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("gio", &["open", url]) {
+        return true;
+    }
+    if try_spawn_browser_command("kde-open5", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("kde-open6", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("kde-open", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("sensible-browser", &[url]) {
+        return true;
+    }
+
+    false
+}
+
+fn open_review_ui_url(url: &str) {
+    for attempt in 1..=4 {
+        if try_open_url_once(url) {
+            if attempt > 1 {
+                log_runtime_event(&format!(
+                    "Review UI: browser auto-open succeeded on retry {}.",
+                    attempt
+                ));
+            }
+            return;
+        }
+        thread::sleep(Duration::from_millis(350));
+    }
+
+    log_runtime_event(&format!(
+        "Review UI: automatic browser launch failed. Open this URL manually: {}",
+        url
+    ));
+}
+
 fn mime_from_path(path: &Path) -> &'static str {
     match path
         .extension()
@@ -721,8 +1129,10 @@ fn count_colnect_candidates_in_db(db_path: &Path) -> usize {
 }
 
 fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
-    let albums_root = Path::new("Albums");
-    let Ok(entries) = fs::read_dir(albums_root) else {
+    let Some(albums_root) = resolve_bootstrap_albums_root() else {
+        return Vec::new();
+    };
+    let Ok(entries) = fs::read_dir(&albums_root) else {
         return Vec::new();
     };
 
@@ -754,6 +1164,177 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
 
     out.sort_by(|a, b| a.country.to_lowercase().cmp(&b.country.to_lowercase()));
     out
+}
+
+fn current_bootstrap_albums_root() -> Option<String> {
+    resolve_bootstrap_albums_root().map(|p| p.to_string_lossy().to_string())
+}
+
+fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
+    let title = "Select Albums Root (Albums folder or its parent)";
+    let current = current_bootstrap_albums_root().unwrap_or_else(|| ".".to_string());
+
+    if which::which("zenity").is_ok() {
+        let output = Command::new("zenity")
+            .arg("--file-selection")
+            .arg("--directory")
+            .arg("--title")
+            .arg(title)
+            .arg("--filename")
+            .arg(format!("{}/", current.trim_end_matches('/')))
+            .output()
+            .map_err(|e| format!("failed to launch zenity: {}", e))?;
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return if selected.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(selected))
+            };
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+
+        return Err(format!(
+            "zenity failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    if which::which("kdialog").is_ok() {
+        let output = Command::new("kdialog")
+            .arg("--getexistingdirectory")
+            .arg(&current)
+            .arg("--title")
+            .arg(title)
+            .output()
+            .map_err(|e| format!("failed to launch kdialog: {}", e))?;
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return if selected.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(selected))
+            };
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+
+        return Err(format!(
+            "kdialog failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    Err("No supported folder picker found (install zenity or kdialog)".to_string())
+}
+
+fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        save_runtime_bootstrap_albums_root_path(None)?;
+        let mut guard = bootstrap_albums_root_override()
+            .lock()
+            .map_err(|_| "failed to lock albums root override state".to_string())?;
+        *guard = None;
+        return Ok(current_bootstrap_albums_root());
+    }
+
+    let candidate = PathBuf::from(trimmed);
+    let resolved = normalize_albums_root_candidate(&candidate).ok_or_else(|| {
+        "Path must point to an Albums directory or a folder containing Albums".to_string()
+    })?;
+
+    if !resolved.exists() || !resolved.is_dir() {
+        return Err(format!(
+            "Albums path does not exist or is not a directory: {}",
+            resolved.display()
+        ));
+    }
+
+    save_runtime_bootstrap_albums_root_path(Some(&resolved.to_string_lossy()))?;
+
+    let mut guard = bootstrap_albums_root_override()
+        .lock()
+        .map_err(|_| "failed to lock albums root override state".to_string())?;
+    *guard = Some(resolved.clone());
+    Ok(Some(resolved.to_string_lossy().to_string()))
+}
+
+fn resolve_bootstrap_albums_root() -> Option<PathBuf> {
+    if let Ok(guard) = bootstrap_albums_root_override().lock() {
+        if let Some(path) = guard.as_ref() {
+            if path.exists() && path.is_dir() {
+                return Some(path.clone());
+            }
+        }
+    }
+
+    if let Some(persisted) = crate::config::load_config("config.toml")
+        .effective_bootstrap_albums_root_path()
+        .map(PathBuf::from)
+    {
+        if let Some(albums_dir) = normalize_albums_root_candidate(&persisted) {
+            if let Ok(mut guard) = bootstrap_albums_root_override().lock() {
+                *guard = Some(albums_dir.clone());
+            }
+            return Some(albums_dir);
+        }
+    }
+
+    if let Ok(mut dir) = std::env::current_dir() {
+        for _ in 0..8 {
+            if let Some(albums_dir) = normalize_albums_root_candidate(&dir) {
+                return Some(albums_dir);
+            }
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(mut dir) = exe_path.parent().map(|p| p.to_path_buf()) {
+            for _ in 0..8 {
+                if let Some(albums_dir) = normalize_albums_root_candidate(&dir) {
+                    return Some(albums_dir);
+                }
+                if !dir.pop() {
+                    break;
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn normalize_albums_root_candidate(path: &Path) -> Option<PathBuf> {
+    if !path.exists() || !path.is_dir() {
+        return None;
+    }
+
+    let direct = path.join("Albums");
+    if direct.exists() && direct.is_dir() {
+        return Some(direct);
+    }
+
+    if path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|name| name.eq_ignore_ascii_case("albums"))
+        .unwrap_or(false)
+    {
+        return Some(path.to_path_buf());
+    }
+
+    None
 }
 
 fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> String {
@@ -1132,7 +1713,9 @@ fn colnect_import_data(
                     .unwrap_or_else(|| csv_file.display().to_string());
                 log_runtime_event(&format!("Parsing {}: {} stamps found", filename, count));
                 let before: usize = conn
-                    .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| r.get::<_, i64>(0))
+                    .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| {
+                        r.get::<_, i64>(0)
+                    })
                     .unwrap_or(0) as usize;
                 match crate::colnect::ingest::ingest_colnect_data_with_mode(
                     conn, &stamps, "sg",
@@ -1140,7 +1723,9 @@ fn colnect_import_data(
                 ) {
                     Ok(_) => {
                         let after: usize = conn
-                            .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| r.get::<_, i64>(0))
+                            .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| {
+                                r.get::<_, i64>(0)
+                            })
                             .unwrap_or(0) as usize;
                         let new_count = after.saturating_sub(before);
                         let dup_count = count.saturating_sub(new_count);
@@ -1229,7 +1814,7 @@ pub fn run_review_ui_bootstrap(
     let url = format!("http://{}/", bind);
     log_runtime_event(&format!("Review UI Setup: {}", url));
     if open_browser {
-        let _ = webbrowser::open(&url);
+        open_review_ui_url(&url);
     }
 
     let bootstrap_state = serve_bootstrap_requests(&server, &html);
@@ -1357,7 +1942,7 @@ pub fn run_review_ui(
     log_runtime_event(&format!("Review UI: {}", url));
     if open_browser {
         log_runtime_event("Review UI: opening browser...");
-        let _ = webbrowser::open(&url);
+        open_review_ui_url(&url);
     } else {
         log_runtime_event("Review UI: waiting for bootstrap tab to load compare view...");
     }

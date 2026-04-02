@@ -107,10 +107,32 @@ fn maybe_generate_album_pdf_with_settings(
     }
 
     let started = Instant::now();
-    let status = Command::new(cli_path)
-        .arg("-c")
-        .arg(output_txt_path)
-        .status();
+    let mut cmd = Command::new(cli_path);
+    cmd.arg("-c");
+
+    // Prefer invoking AlbumEasy from the output directory and passing only
+    // the TXT file name. This avoids path-space breakage in external wrapper
+    // scripts that do not quote positional parameters correctly.
+    let txt_arg = if let (Some(parent), Some(file_name)) =
+        (output_txt_path.parent(), output_txt_path.file_name())
+    {
+        cmd.current_dir(parent);
+        PathBuf::from(file_name)
+    } else {
+        output_txt_path.to_path_buf()
+    };
+
+    if pdf_dx_logging_enabled() {
+        log::info!(
+            "[pdf-dx] albumeasy invocation cwd='{}' txt_arg='{}'",
+            cmd.get_current_dir()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| "<process-cwd>".to_string()),
+            txt_arg.display()
+        );
+    }
+
+    let status = cmd.arg(&txt_arg).status();
     match status {
         Ok(s) if s.success() => {
             if pdf_dx_logging_enabled() {
@@ -194,7 +216,7 @@ fn generated_artifacts_from_path(
     output_txt_path: PathBuf,
     generate_pdf_override: Option<bool>,
 ) -> GeneratedAlbumArtifacts {
-    let cfg = crate::config::load_config("config.toml");
+    let cfg = crate::config::load_effective_config("config.toml");
     let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
     let generate_pdf = generate_pdf_override.unwrap_or_else(|| cfg.albumeasy_auto_pdf_enabled());
     let generated_pdf_path =

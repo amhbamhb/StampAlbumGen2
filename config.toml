@@ -5,7 +5,7 @@
 # Physical page size and margins (mm)
 album_page_width_mm = 216.0
 album_page_height_mm = 279.4
-page_top_margin_mm = 10.0
+page_top_margin_mm = 10
 page_bottom_margin_mm = 10.0
 page_left_margin_mm = 10.0
 page_right_margin_mm = 10.0
@@ -237,10 +237,14 @@ page_text_right_vspace = 1.0
 show_progress_indicator = true
 # Used when CLI omits --colnect-inbox for --source colnectexport.
 # The directory is auto-created on startup if missing.
-# colnect_inbox_path = "./AlbumEasy/colnect_inbox"
+colnect_inbox_path = "samples/colnect_inbox"
 # Optional AlbumEasy CLI path for post-generation PDF rendering.
 # Linux example: "/path/to/AlbumEasy/AlbumEasy.sh"
 albumeasy_cli_path = "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+# Optional persisted Review UI startup Albums root override.
+# Set to either the Albums directory itself, or a parent folder containing Albums.
+# Leave empty to use automatic detection from launch path/executable path.
+bootstrap_albums_root_path = ""
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = true
 # DX/support switch for additional PDF generation diagnostics in Logs/

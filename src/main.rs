@@ -23,15 +23,56 @@ use stamp_album_gen2::{
         log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
         ReviewUiRunOutcome,
     },
-    setup::{setup_logging, validate_os},
+    setup::{
+        ensure_linux_desktop_integration, install_linux_desktop_integration, setup_logging,
+        uninstall_linux_desktop_integration, validate_os,
+    },
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
     },
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let launched_without_args = std::env::args_os().nth(1).is_none();
+
     // Parse CLI arguments
     let mut cli = Cli::parse();
+
+    if cli.uninstall_desktop_launcher {
+        match uninstall_linux_desktop_integration() {
+            Ok(report) => {
+                println!(
+                    "{} (desktop entry: {}, icon: {})",
+                    report.summary, report.desktop_entry_path, report.icon_path
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Failed to uninstall desktop launcher artifacts: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    if cli.install_desktop_launcher {
+        match install_linux_desktop_integration() {
+            Ok(report) => {
+                println!(
+                    "{} (desktop entry: {}, icon: {})",
+                    report.summary, report.desktop_entry_path, report.icon_path
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Failed to install desktop launcher artifacts: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    if launched_without_args {
+        cli.review_ui = true;
+    }
 
     let startup_config = config::load_config("config.toml");
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
@@ -51,6 +92,31 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // validation to keep the workflow lightweight.
     if cli.review_ui {
         validate_os()?;
+
+        if launched_without_args {
+            log_runtime_event(
+                "No CLI arguments provided; launching Review UI startup screen by default.",
+            );
+        }
+
+        match ensure_linux_desktop_integration() {
+            Ok(report) => {
+                if report.changed {
+                    log_runtime_event(&format!(
+                        "Desktop integration installed: {} (desktop entry: {}, icon: {})",
+                        report.summary, report.desktop_entry_path, report.icon_path
+                    ));
+                } else {
+                    log_runtime_event(&format!("Desktop integration check: {}", report.summary));
+                }
+            }
+            Err(e) => {
+                log_runtime_event(&format!(
+                    "Desktop integration check failed (non-fatal): {}",
+                    e
+                ));
+            }
+        }
 
         log_runtime_event("Review UI: initializing...");
 
@@ -145,8 +211,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 } => {
                     // Re-load config, merging any album-local config.toml override.
                     let album_cfg = {
-                        let slug = album_name.as_deref().unwrap_or("").trim().replace(' ', "-");
-                        let album_dir = std::path::Path::new("Albums").join(&slug);
+                        let fallback_slug =
+                            album_name.as_deref().unwrap_or("").trim().replace(' ', "-");
+                        let album_dir = std::path::Path::new(&db_path)
+                            .parent()
+                            .map(|p| p.to_path_buf())
+                            .unwrap_or_else(|| std::path::Path::new("Albums").join(&fallback_slug));
                         config::load_config_with_override("config.toml", &album_dir)
                     };
                     log_runtime_event(

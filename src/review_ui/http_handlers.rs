@@ -14,7 +14,7 @@ pub(super) struct ReviewHandlersState {
 pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
-    let mut reload_requested = false;
+    let reload_requested = false;
 
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
@@ -34,9 +34,106 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
         if method == Method::Get && req_url == "/bootstrap-state" {
             let state = BootstrapStateResponse {
                 countries: scan_bootstrap_countries(),
+                albums_root: current_bootstrap_albums_root(),
             };
             let mut resp = Response::from_string(
                 serde_json::to_string(&state).unwrap_or_else(|_| "{\"countries\":[]}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/bootstrap-set-albums-root" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapSetAlbumsRootRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match set_bootstrap_albums_root_override(&req.path) {
+                    Ok(albums_root) => {
+                        let countries_count = scan_bootstrap_countries().len();
+                        BootstrapSetAlbumsRootResponse {
+                            ok: true,
+                            message: if req.path.trim().is_empty() {
+                                "Albums root override cleared; using auto-detection".to_string()
+                            } else {
+                                "Albums root updated".to_string()
+                            },
+                            albums_root,
+                            countries_count,
+                        }
+                    }
+                    Err(error) => BootstrapSetAlbumsRootResponse {
+                        ok: false,
+                        message: error,
+                        albums_root: current_bootstrap_albums_root(),
+                        countries_count: scan_bootstrap_countries().len(),
+                    },
+                },
+                Err(error) => BootstrapSetAlbumsRootResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                    albums_root: current_bootstrap_albums_root(),
+                    countries_count: scan_bootstrap_countries().len(),
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"albums_root\":null,\"countries_count\":0}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/bootstrap-pick-albums-root" {
+            let response = match pick_bootstrap_albums_root_via_dialog() {
+                Ok(Some(path)) => match set_bootstrap_albums_root_override(&path) {
+                    Ok(albums_root) => BootstrapPickAlbumsRootResponse {
+                        ok: true,
+                        picked: true,
+                        message: "Albums root selected".to_string(),
+                        albums_root,
+                        countries_count: scan_bootstrap_countries().len(),
+                    },
+                    Err(error) => BootstrapPickAlbumsRootResponse {
+                        ok: false,
+                        picked: true,
+                        message: error,
+                        albums_root: current_bootstrap_albums_root(),
+                        countries_count: scan_bootstrap_countries().len(),
+                    },
+                },
+                Ok(None) => BootstrapPickAlbumsRootResponse {
+                    ok: true,
+                    picked: false,
+                    message: "Folder selection canceled".to_string(),
+                    albums_root: current_bootstrap_albums_root(),
+                    countries_count: scan_bootstrap_countries().len(),
+                },
+                Err(error) => BootstrapPickAlbumsRootResponse {
+                    ok: false,
+                    picked: false,
+                    message: error,
+                    albums_root: current_bootstrap_albums_root(),
+                    countries_count: scan_bootstrap_countries().len(),
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"picked\":false,\"message\":\"serialization failed\",\"albums_root\":null,\"countries_count\":0}".to_string()
+                }),
             );
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -68,6 +165,191 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                 })
                 .to_string(),
             );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/stampworld-status" {
+            let response = {
+                let state = stampworld_job_state()
+                    .lock()
+                    .ok()
+                    .map(|s| s.clone())
+                    .unwrap_or(StampWorldJobState::Idle);
+
+                match state {
+                    StampWorldJobState::Idle => BootstrapStampWorldStatusResponse {
+                        ok: true,
+                        running: false,
+                        finished: false,
+                        success: None,
+                        message: "No StampWorld job has started yet.".to_string(),
+                        country: None,
+                        db_path: None,
+                    },
+                    StampWorldJobState::Running { country, db_path } => {
+                        BootstrapStampWorldStatusResponse {
+                            ok: true,
+                            running: true,
+                            finished: false,
+                            success: None,
+                            message: format!("StampWorld pull is running for {}...", country),
+                            country: Some(country),
+                            db_path: Some(db_path),
+                        }
+                    }
+                    StampWorldJobState::Finished {
+                        success,
+                        country,
+                        db_path,
+                        message,
+                    } => BootstrapStampWorldStatusResponse {
+                        ok: true,
+                        running: false,
+                        finished: true,
+                        success: Some(success),
+                        message,
+                        country: Some(country),
+                        db_path: Some(db_path),
+                    },
+                }
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"running\":false,\"finished\":false,\"success\":null,\"message\":\"serialization failed\",\"country\":null,\"db_path\":null}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/stampworld-run" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapStampWorldRunRequest, _> = serde_json::from_str(&body);
+            let (response, status_code) = match parsed {
+                Ok(req) => match start_bootstrap_stampworld_job(req) {
+                    Ok(msg) => (
+                        BootstrapStampWorldRunResponse {
+                            ok: true,
+                            message: msg,
+                            started: true,
+                        },
+                        StatusCode(200),
+                    ),
+                    Err(error) => (
+                        BootstrapStampWorldRunResponse {
+                            ok: false,
+                            message: error,
+                            started: false,
+                        },
+                        StatusCode(409),
+                    ),
+                },
+                Err(error) => (
+                    BootstrapStampWorldRunResponse {
+                        ok: false,
+                        message: format!("invalid request: {}", error),
+                        started: false,
+                    },
+                    StatusCode(400),
+                ),
+            };
+
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"started\":false}"
+                        .to_string()
+                }))
+                .with_status_code(status_code);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/albumeasy-status" {
+            let cfg = crate::config::load_config("config.toml");
+            let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
+            let path_exists = cli_path
+                .as_deref()
+                .map(|p| Path::new(p).exists())
+                .unwrap_or(false);
+            let configured = cli_path
+                .as_deref()
+                .map(|p| !p.trim().is_empty())
+                .unwrap_or(false);
+
+            let message = if configured && path_exists {
+                "AlbumEasy CLI is configured and path exists.".to_string()
+            } else if configured {
+                "AlbumEasy CLI path is set but file was not found.".to_string()
+            } else {
+                "AlbumEasy CLI is not configured.".to_string()
+            };
+
+            let response = BootstrapAlbumEasyStatusResponse {
+                ok: true,
+                configured,
+                cli_path,
+                path_exists,
+                message,
+                download_url: "https://www.thestampweb.com/albumeasy/download".to_string(),
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"configured\":false,\"cli_path\":null,\"path_exists\":false,\"message\":\"serialization failed\",\"download_url\":\"https://www.thestampweb.com/albumeasy/download\"}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/albumeasy-set-path" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapAlbumEasySetPathRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match save_runtime_albumeasy_cli_path(&req.cli_path) {
+                    Ok(_) => BootstrapAlbumEasySetPathResponse {
+                        ok: true,
+                        message: "Saved runtime.albumeasy_cli_path in config.toml".to_string(),
+                    },
+                    Err(error) => BootstrapAlbumEasySetPathResponse {
+                        ok: false,
+                        message: error,
+                    },
+                },
+                Err(error) => BootstrapAlbumEasySetPathResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                },
+            };
+
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
+                }));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -121,15 +403,13 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                     "config_template.toml",
                     &req.values,
                 ) {
-                    Ok(_) => {
-                        reload_requested = true;
-                        SaveConfigEditorResponse {
-                            ok: true,
-                            message: "config.toml updated. Reloading the review UI now."
+                    Ok(_) => SaveConfigEditorResponse {
+                        ok: true,
+                        message:
+                            "config.toml updated. New startup actions will use the saved values immediately."
                                 .to_string(),
-                            reload_required: true,
-                        }
-                    }
+                        reload_required: false,
+                    },
                     Err(error) => SaveConfigEditorResponse {
                         ok: false,
                         message: format!("Failed to save config.toml: {}", error),
@@ -276,13 +556,19 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                         Some(c) => {
                             match crate::db_utils::init_db(&c.db_path) {
                                 Ok(conn) => {
-                                    let artifacts = crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                        &conn,
-                                        &c.country,
-                                        None::<fn(usize)>,
-                                        req.start_year,
-                                        req.end_year,
-                                        Some(true),
+                                    let album_dir = album_dir_for_ui(&c.db_path, &c.country);
+                                    let artifacts = crate::config::with_album_config_override(
+                                        &album_dir,
+                                        || {
+                                            crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                                &conn,
+                                                &c.country,
+                                                None::<fn(usize)>,
+                                                req.start_year,
+                                                req.end_year,
+                                                Some(true),
+                                            )
+                                        },
                                     );
                                     if let Some(pdf_path) = artifacts.generated_pdf_path.as_ref() {
                                         open_local_path(pdf_path);
@@ -425,7 +711,7 @@ pub(super) fn serve_review_requests(
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
 ) -> ReviewHandlersState {
-    let mut reload_requested = false;
+    let reload_requested = false;
     let mut return_to_start_requested = false;
 
     for mut request in server.incoming_requests() {
@@ -995,19 +1281,16 @@ pub(super) fn serve_review_requests(
                     "config_template.toml",
                     &req.values,
                 ) {
-                    Ok(n) => {
-                        reload_requested = true;
-                        SaveConfigEditorResponse {
-                            ok: true,
-                            message: format!(
-                                "Album override saved ({} changed field{}) for {}. Reloading now.",
-                                n,
-                                if n == 1 { "" } else { "s" },
-                                album_name
-                            ),
-                            reload_required: true,
-                        }
-                    }
+                    Ok(n) => SaveConfigEditorResponse {
+                        ok: true,
+                        message: format!(
+                            "Album override saved ({} changed field{}) for {}. New generation actions will use it immediately.",
+                            n,
+                            if n == 1 { "" } else { "s" },
+                            album_name
+                        ),
+                        reload_required: false,
+                    },
                     Err(error) => SaveConfigEditorResponse {
                         ok: false,
                         message: format!("Failed to save album config override: {}", error),
@@ -1040,17 +1323,14 @@ pub(super) fn serve_review_requests(
             let override_path = album_dir.join("config.toml");
             let response = if override_path.exists() {
                 match fs::remove_file(&override_path) {
-                    Ok(_) => {
-                        reload_requested = true;
-                        SaveConfigEditorResponse {
-                            ok: true,
-                            message: format!(
-                                "Album config override for {} deleted. Reloading now.",
-                                album_name
-                            ),
-                            reload_required: true,
-                        }
-                    }
+                    Ok(_) => SaveConfigEditorResponse {
+                        ok: true,
+                        message: format!(
+                            "Album config override for {} deleted. Refresh the page if you want to reload the current view.",
+                            album_name
+                        ),
+                        reload_required: false,
+                    },
                     Err(e) => SaveConfigEditorResponse {
                         ok: false,
                         message: format!("Failed to delete album override: {}", e),
@@ -1093,15 +1373,13 @@ pub(super) fn serve_review_requests(
                     "config_template.toml",
                     &req.values,
                 ) {
-                    Ok(_) => {
-                        reload_requested = true;
-                        SaveConfigEditorResponse {
-                            ok: true,
-                            message: "config.toml updated. Reloading the review UI now."
+                    Ok(_) => SaveConfigEditorResponse {
+                        ok: true,
+                        message:
+                            "config.toml updated. New generation actions will use the saved values immediately."
                                 .to_string(),
-                            reload_required: true,
-                        }
-                    }
+                        reload_required: false,
+                    },
                     Err(error) => SaveConfigEditorResponse {
                         ok: false,
                         message: format!("Failed to save config.toml: {}", error),
@@ -1187,14 +1465,17 @@ pub(super) fn serve_review_requests(
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                crate::album_globals::generate_album_output_conn_with_pdf_override(
-                    &conn,
-                    &album_name,
-                    None::<fn(usize)>,
-                    req_start_year,
-                    req_end_year,
-                    Some(true),
-                )
+                let album_dir = album_dir_for_ui(db_path, &album_name);
+                crate::config::with_album_config_override(&album_dir, || {
+                    crate::album_globals::generate_album_output_conn_with_pdf_override(
+                        &conn,
+                        &album_name,
+                        None::<fn(usize)>,
+                        req_start_year,
+                        req_end_year,
+                        Some(true),
+                    )
+                })
             })) {
                 Ok(artifacts) => {
                     generated_output_path = Some(artifacts.output_txt_path.display().to_string());
@@ -1242,17 +1523,21 @@ pub(super) fn serve_review_requests(
             let message = match parsed {
                 Ok(req) => {
                     if req.generate_album {
-                        let generated =
-                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                    &conn,
-                                    &album_name,
-                                    None::<fn(usize)>,
-                                    req.start_year,
-                                    req.end_year,
-                                    Some(req.generate_pdf),
-                                )
-                            }));
+                        let album_dir = album_dir_for_ui(db_path, &album_name);
+                        let generated = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
+                            || {
+                                crate::config::with_album_config_override(&album_dir, || {
+                                    crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                        &conn,
+                                        &album_name,
+                                        None::<fn(usize)>,
+                                        req.start_year,
+                                        req.end_year,
+                                        Some(req.generate_pdf),
+                                    )
+                                })
+                            },
+                        ));
                         match generated {
                             Ok(artifacts) => {
                                 generated_output_path =

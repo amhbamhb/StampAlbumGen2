@@ -143,6 +143,11 @@ colnect_inbox_path = "samples/colnect_inbox"
 # Linux example: "/path/to/AlbumEasy/AlbumEasy.sh"
 albumeasy_cli_path = ""
 
+# Optional persisted Review UI startup Albums root override.
+# Set to either the Albums directory itself, or a parent folder containing Albums.
+# Leave empty to use automatic detection.
+bootstrap_albums_root_path = ""
+
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = false
 

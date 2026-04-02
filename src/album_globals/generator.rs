@@ -8,7 +8,7 @@ use super::helpers::{
 use super::structs::Stamp;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
-use crate::config::load_config;
+use crate::config::load_effective_config;
 use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use log::{error, info, warn};
@@ -366,7 +366,7 @@ where
     let passed_start_year = start_year;
     let passed_end_year = end_year;
     // Load config values from config.toml
-    let config = load_config("config.toml");
+    let config = load_effective_config("config.toml");
     // Check if this is a US1847 sourced album
     let is_us1847 = conn
         .query_row(

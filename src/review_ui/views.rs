@@ -9,22 +9,35 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
 <meta charset='utf-8'>
 <title>Stamp Matcher Setup</title>
 <style>
-body {{ font-family: sans-serif; margin: 20px; background: linear-gradient(180deg, #edf4f8, #f8fbfd); color: #1e3548; opacity: 0; animation: bootstrapFadeIn 180ms ease-out forwards; }}
-.card {{ max-width: 960px; background: #fff; border: 1px solid #d7e2eb; border-radius: 12px; padding: 16px; box-shadow: 0 10px 24px rgba(28, 56, 82, 0.08); }}
+:root {{
+    --bg-top: #fdf5ec;
+    --bg-bottom: #e9f2fb;
+    --card-bg: #ffffff;
+    --card-border: #cfddeb;
+    --accent-main: #1f6fa8;
+    --accent-ink: #14374f;
+    --accent-warn: #a36a24;
+    --accent-good: #2f8f63;
+    --accent-danger: #a34545;
+    --muted-text: #36556b;
+}}
+body {{ font-family: "Noto Sans", "DejaVu Sans", sans-serif; margin: 20px; background: radial-gradient(circle at 15% -20%, var(--bg-top) 0%, #f7f4ef 34%, var(--bg-bottom) 100%); color: var(--accent-ink); opacity: 0; animation: bootstrapFadeIn 180ms ease-out forwards; }}
+.card {{ max-width: 980px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 18px; box-shadow: 0 14px 36px rgba(28, 56, 82, 0.12); }}
 h1 {{ margin: 0 0 8px 0; }}
-p {{ margin: 0 0 10px 0; color: #395970; }}
+p {{ margin: 0 0 10px 0; color: var(--muted-text); }}
 .row {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
-.badge {{ display: inline-block; border: 1px solid #d2dfea; background: #f6fbff; border-radius: 999px; padding: 2px 8px; font-size: 12px; }}
-.panel {{ border: 1px solid #e2e9ef; border-left: 5px solid #2f6fa3; border-radius: 10px; padding: 12px; background: #fbfdff; margin-top: 12px; }}
-.warn {{ border-left-color: #9b6a20; background: #fffaf2; }}
-.ok {{ border-left-color: #2f8f63; background: #f4fcf8; }}
+.badge {{ display: inline-block; border: 1px solid #c6d8ea; background: #f0f8ff; border-radius: 999px; padding: 2px 8px; font-size: 12px; }}
+.panel {{ border: 1px solid #d9e6f1; border-left: 5px solid var(--accent-main); border-radius: 10px; padding: 12px; background: #f9fcff; margin-top: 12px; }}
+.warn {{ border-left-color: var(--accent-warn); background: #fff8ee; }}
+.ok {{ border-left-color: var(--accent-good); background: #f2fbf6; }}
 label {{ font-size: 13px; font-weight: 600; }}
-select, input {{ padding: 7px 8px; border: 1px solid #c8d5e2; border-radius: 8px; min-width: 170px; }}
-button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #c8d5e2; background: #fff; cursor: pointer; }}
-button.primary {{ background: #2f6fa3; color: #fff; border-color: #2f6fa3; }}
-button.danger {{ background: #a34545; color: #fff; border-color: #a34545; }}
-button:hover {{ background: #f1f6fa; }}
-code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
+select, input {{ padding: 7px 8px; border: 1px solid #bcd1e4; border-radius: 8px; min-width: 170px; }}
+button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #bcd1e4; background: #fff; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease; }}
+button.primary {{ background: var(--accent-main); color: #fff; border-color: var(--accent-main); }}
+button.danger {{ background: var(--accent-danger); color: #fff; border-color: var(--accent-danger); }}
+button.accent {{ background: #0f8a6b; color: #fff; border-color: #0f8a6b; }}
+button:hover {{ background: #edf6ff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(21, 66, 95, 0.12); }}
+code {{ background: #edf5fb; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
 .status {{ margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }}
 .loadingBox {{ display: none; margin-top: 12px; padding: 12px; border: 1px solid #d7e2eb; border-left: 5px solid #2f6fa3; border-radius: 10px; background: #f5fafe; }}
 .spinner {{ width: 16px; height: 16px; border: 3px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; display: inline-block; animation: spin 0.9s linear infinite; }}
@@ -54,7 +67,7 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         </div>
     </div>
     <h1>Start Review UI</h1>
-    <p>No database was selected on startup. Pick a country to open its Review UI.</p>
+    <p><strong>Stamp Album Generation</strong> startup. Pick a country to open its Review UI.</p>
     <div class='row'>
         <label for='countrySel'>Country</label>
         <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
@@ -64,6 +77,14 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
         <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
         <button onclick='importColnectFiles()'>Import Colnect</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
+    </div>
+    <div class='row'>
+        <label for='albumsRootPath'>Albums Root</label>
+        <input id='albumsRootPath' type='text' placeholder='Auto-detect from launch path (optional override)' style='min-width:420px;' />
+        <button onclick='browseAlbumsRootPath()'>Browse...</button>
+        <button onclick='setAlbumsRootPath()'>Use Folder</button>
+        <button onclick='clearAlbumsRootPath()'>Auto Detect</button>
+        <span id='albumsRootResolved' class='badge'>Albums root: auto</span>
     </div>
     <div class='row'>
         <label for='countrySearch'>Search</label>
@@ -94,12 +115,34 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <select id='swEndYear'></select>
         </div>
         <div class='row'>
+            <label>Command Preset</label>
+            <select id='swPreset'>
+                <option value='basic'>Basic Pull</option>
+                <option value='overwrite_album'>Overwrite Album Output</option>
+                <option value='overwrite_all'>Overwrite Album + Images</option>
+                <option value='bounded_pages'>Limit Pages (fast test)</option>
+                <option value='accept_typo'>Auto Accept Source Typos</option>
+            </select>
+            <label>Extra Flags</label>
+            <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:290px;' />
+        </div>
+        <div class='row'>
             <span class='badge'>Colnect inbox hint: {}</span>
+        </div>
+        <div class='row'>
+            <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
+            <button id='swOpenReviewBtn' class='primary' onclick='openReviewAfterStampWorld()' style='display:none;'>Open Review</button>
+            <span id='swRunStatus' class='badge'>Not started</span>
         </div>
         <div class='row'>
             <strong>Suggested command:</strong>
             <code id='swCmd'></code>
             <button onclick='copySuggestedCommand()'>Copy</button>
+        </div>
+        <div class='row' style='font-size:12px;color:#37566d;'>
+            <span>AlbumEasy not set? Add CLI path here or install from</span>
+            <a href='https://www.thestampweb.com/albumeasy/download' target='_blank' rel='noopener noreferrer'>AlbumEasy download</a>
+            <button onclick='configureAlbumeasyPath()'>Set AlbumEasy Path</button>
         </div>
     </div>
     <div id='status' class='status'></div>
@@ -142,6 +185,7 @@ let backendHealthFailures = 0;
 let backendHealthCheckInFlight = false;
 let backendMarkedDisconnected = false;
 let backendRecoveredReloadPending = false;
+let stampworldRunPollTimer = null;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
 const backendHealthPollMs = 15000;
 const backendHealthFailureThreshold = 2;
@@ -340,6 +384,63 @@ function setCountrySearchStatus(text) {{
     if (status) status.innerText = text;
 }}
 
+function updateAlbumsRootHint(path) {{
+    const badge = document.getElementById('albumsRootResolved');
+    if (!badge) return;
+    const display = String(path || '').trim();
+    badge.innerText = display ? ('Albums root: ' + display) : 'Albums root: auto';
+}}
+
+async function applyAlbumsRootResponse(j) {{
+    const input = document.getElementById('albumsRootPath');
+    const status = document.getElementById('status');
+    updateAlbumsRootHint(j.albums_root || '');
+    if (input) input.value = j.albums_root || '';
+    if (status) status.innerText = j.message || (j.ok ? 'Albums root updated.' : 'Failed to update Albums root.');
+    if (j.ok && j.picked !== false) await refreshState();
+}}
+
+async function browseAlbumsRootPath() {{
+    const status = document.getElementById('status');
+    if (status) status.innerText = 'Opening folder picker...';
+    try {{
+        const r = await fetch('/bootstrap-pick-albums-root', {{ method: 'POST' }});
+        const j = await r.json();
+        await applyAlbumsRootResponse(j);
+    }} catch (e) {{
+        if (status) status.innerText = 'Failed to open folder picker: ' + e;
+    }}
+}}
+
+async function setAlbumsRootPath() {{
+    const input = document.getElementById('albumsRootPath');
+    const path = String(input?.value || '').trim();
+
+    if (!path) {{
+        await browseAlbumsRootPath();
+        return;
+    }}
+
+    const status = document.getElementById('status');
+    try {{
+        const r = await fetch('/bootstrap-set-albums-root', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ path }})
+        }});
+        const j = await r.json();
+        await applyAlbumsRootResponse(j);
+    }} catch (e) {{
+        if (status) status.innerText = 'Failed to update Albums root: ' + e;
+    }}
+}}
+
+async function clearAlbumsRootPath() {{
+    const input = document.getElementById('albumsRootPath');
+    if (input) input.value = '';
+    await setAlbumsRootPath();
+}}
+
 function onCountrySelectionChanged() {{
     renderCountryPanel();
     updateCountrySearchMatches(true);
@@ -487,11 +588,147 @@ function initYearSelectors() {{
     populateYearSelect('swEndYear', minYear, maxYear, 2026);
 }}
 
+function stampworldPresetFlags() {{
+    const preset = document.getElementById('swPreset')?.value || 'basic';
+    if (preset === 'overwrite_album') return '--overwrite-album';
+    if (preset === 'overwrite_all') return '--overwrite-album --overwrite-images';
+    if (preset === 'bounded_pages') return '--max-pages 25 --stop-after-no-hits 3';
+    if (preset === 'accept_typo') return '--yes';
+    return '';
+}}
+
 function suggestedStampworldCommand(country) {{
     const c = document.getElementById('swCountry').value || country || '';
     const y1 = document.getElementById('swStartYear').value || '1840';
     const y2 = document.getElementById('swEndYear').value || '2026';
-    return `./stamp_album_gen2 --source stampworld --site-name "${{c}}" --album-name "${{c}}" --start-year ${{y1}} --end-year ${{y2}}`;
+    const presetFlags = stampworldPresetFlags();
+    const extraFlags = (document.getElementById('swExtraFlags')?.value || '').trim();
+    const suffix = [presetFlags, extraFlags].filter(Boolean).join(' ');
+    return `./stamp_album_gen2 --source stampworld --site-name "${{c}}" --album-name "${{c}}" --start-year ${{y1}} --end-year ${{y2}}${{suffix ? ' ' + suffix : ''}}`;
+}}
+
+function updateStampWorldRunStatus(text, isRunning, canOpenReview) {{
+    const badge = document.getElementById('swRunStatus');
+    const openBtn = document.getElementById('swOpenReviewBtn');
+    if (badge) badge.innerText = text || 'Not started';
+    if (openBtn) openBtn.style.display = canOpenReview ? '' : 'none';
+    if (isRunning) {{
+        setBusy(true, 'Running StampWorld pull...');
+    }}
+}}
+
+async function pollStampWorldStatus() {{
+    try {{
+        const r = await fetch('/api/stampworld-status');
+        const j = await r.json();
+        if (!j.ok) return;
+        if (j.running) {{
+            updateStampWorldRunStatus(j.message || 'StampWorld pull running...', true, false);
+            return;
+        }}
+
+        if (stampworldRunPollTimer) {{
+            clearInterval(stampworldRunPollTimer);
+            stampworldRunPollTimer = null;
+        }}
+        setBusy(false, '');
+
+        if (j.finished) {{
+            const success = j.success === true;
+            updateStampWorldRunStatus(j.message || (success ? 'Completed' : 'Failed'), false, success);
+            const status = document.getElementById('status');
+            if (status) status.innerText = j.message || (success ? 'StampWorld completed.' : 'StampWorld failed.');
+            if (success && j.country) {{
+                const sel = document.getElementById('countrySel');
+                if (sel && Array.from(sel.options).some(o => o.value === j.country)) sel.value = j.country;
+                renderCountryPanel();
+                await checkAlbumeasyStatusAfterPull();
+            }}
+            await refreshState();
+        }}
+    }} catch (_) {{}}
+}}
+
+async function runStampWorldPull() {{
+    const country = (document.getElementById('swCountry')?.value || '').trim();
+    const startYear = parseInt(document.getElementById('swStartYear')?.value || '1840', 10);
+    const endYear = parseInt(document.getElementById('swEndYear')?.value || '2026', 10);
+    const preset = document.getElementById('swPreset')?.value || 'basic';
+    const extraFlags = (document.getElementById('swExtraFlags')?.value || '').trim();
+    const status = document.getElementById('status');
+
+    if (!country) {{
+        if (status) status.innerText = 'StampWorld country is required.';
+        return;
+    }}
+
+    updateStampWorldRunStatus('Starting StampWorld pull...', true, false);
+    if (status) status.innerText = 'Starting StampWorld pull for ' + country + '...';
+
+    try {{
+        const r = await fetch('/api/stampworld-run', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ country: country, start_year: startYear, end_year: endYear, preset: preset, extra_flags: extraFlags }})
+        }});
+        const j = await r.json();
+        if (!j.ok) {{
+            setBusy(false, '');
+            updateStampWorldRunStatus(j.message || 'Failed to start', false, false);
+            if (status) status.innerText = j.message || 'Failed to start StampWorld pull.';
+            return;
+        }}
+
+        if (status) status.innerText = j.message || 'StampWorld pull started.';
+        if (stampworldRunPollTimer) clearInterval(stampworldRunPollTimer);
+        stampworldRunPollTimer = setInterval(pollStampWorldStatus, 1400);
+        await pollStampWorldStatus();
+    }} catch (e) {{
+        setBusy(false, '');
+        updateStampWorldRunStatus('Failed to start', false, false);
+        if (status) status.innerText = 'StampWorld request failed: ' + e;
+    }}
+}}
+
+function openReviewAfterStampWorld() {{
+    const country = (document.getElementById('swCountry')?.value || '').trim();
+    if (!country) return;
+    const sel = document.getElementById('countrySel');
+    if (sel && Array.from(sel.options).some(o => o.value === country)) {{
+        sel.value = country;
+    }}
+    startReview();
+}}
+
+async function checkAlbumeasyStatusAfterPull() {{
+    try {{
+        const r = await fetch('/api/albumeasy-status');
+        const j = await r.json();
+        if (!j.ok) return;
+        if (j.configured && j.path_exists) return;
+
+        const hint = j.cli_path ? ('Current path: ' + j.cli_path + '\n\n') : '';
+        const answer = prompt(
+            'AlbumEasy CLI is not configured for PDF generation.\n\n' +
+            hint +
+            'Enter full AlbumEasy CLI path now (or leave blank to skip):\n\n' +
+            'Download: ' + (j.download_url || 'https://www.thestampweb.com/albumeasy/download')
+        );
+        if (answer === null || !String(answer).trim()) return;
+
+        const saveResp = await fetch('/api/albumeasy-set-path', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ cli_path: String(answer).trim() }})
+        }});
+        const saveJson = await saveResp.json();
+        const status = document.getElementById('status');
+        if (status) status.innerText = saveJson.message || 'AlbumEasy path updated.';
+    }} catch (_) {{}}
+}}
+
+async function configureAlbumeasyPath() {{
+    await checkAlbumeasyStatusAfterPull();
 }}
 
 async function copySuggestedCommand() {{
@@ -541,6 +778,9 @@ function renderCountryPanel() {{
     document.getElementById('swCountry').value = c.country;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(c.country);
     document.getElementById('stampworldPanel').style.display = (c.colnect_file_count === 0 && c.colnect_candidate_count === 0) ? '' : 'none';
+        if (c.colnect_file_count === 0 && c.colnect_candidate_count === 0) {{
+            updateStampWorldRunStatus('Ready to run', false, false);
+        }}
 }}
 
 async function refreshState() {{
@@ -551,6 +791,10 @@ async function refreshState() {{
         const r = await fetch('/bootstrap-state');
         const j = await r.json();
         countries = j.countries || [];
+        const albumsRoot = String(j.albums_root || '').trim();
+        updateAlbumsRootHint(albumsRoot);
+        const rootInput = document.getElementById('albumsRootPath');
+        if (rootInput && albumsRoot) rootInput.value = albumsRoot;
         const sel = document.getElementById('countrySel');
         const old = sel.value;
         sel.innerHTML = countries.map(c => `<option value="${{c.country}}">${{c.country}}</option>`).join('');
@@ -559,7 +803,13 @@ async function refreshState() {{
         document.getElementById('countryCount').innerText = `Countries: ${{countries.length}}`;
         renderCountryPanel();
         updateCountrySearchMatches(true);
-        status.innerText = countries.length ? 'Select a country and open review.' : 'No country DBs found. Create one by running a StampWorld pull first.';
+        if (countries.length) {{
+            status.innerText = 'Select a country and open review.';
+        }} else {{
+            status.innerText = albumsRoot
+                ? ('No country DBs found under ' + albumsRoot + '. Use Albums Root to switch folders or run a StampWorld pull first.')
+                : 'No country DBs found. The app could not auto-detect Albums; set Albums Root or run a StampWorld pull first.';
+        }}
     }} catch (e) {{
         status.innerText = `Failed to load startup state: ${{e}}`;
     }}
@@ -571,15 +821,51 @@ async function startReview() {{
         document.getElementById('status').innerText = 'Select a country first.';
         return;
     }}
+
+    async function waitForCompareAndRedirect(maxAttempts, delayMs) {{
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {{
+            await new Promise(r => setTimeout(r, delayMs));
+            try {{
+                const rdy = await fetch('/compare-ready', {{ cache: 'no-store' }});
+                if (rdy.ok) {{
+                    window.location.href = '/';
+                    return true;
+                }}
+            }} catch (_) {{}}
+        }}
+        return false;
+    }}
+
     document.getElementById('status').innerText = `Starting Review UI for ${{sel.value}}...`;
     setBusy(true, `Preparing data from ${{sel.value}}`);
     startLoadingPhases(sel.value);
     try {{
-        const r = await fetch('/start-review', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ country: sel.value }})
-        }});
+        let r = null;
+        let lastStartError = null;
+        for (let attempt = 0; attempt < 3; attempt++) {{
+            try {{
+                r = await fetch('/start-review', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    cache: 'no-store',
+                    body: JSON.stringify({{ country: sel.value }})
+                }});
+                lastStartError = null;
+                break;
+            }} catch (e) {{
+                lastStartError = e;
+                if (attempt < 2) await new Promise(res => setTimeout(res, 250));
+            }}
+        }}
+
+        if (!r) {{
+            document.getElementById('status').innerText = 'Switching to compare view... checking server readiness.';
+            document.getElementById('loadingText').innerText = 'Connection briefly dropped while switching modes. Verifying compare view...';
+            const readyAfterDrop = await waitForCompareAndRedirect(24, 250);
+            if (readyAfterDrop) return;
+            throw lastStartError || new Error('Failed to reach /start-review');
+        }}
+
         const j = await r.json();
         if (!j.ok) {{
             setBusy(false, '');
@@ -592,18 +878,8 @@ async function startReview() {{
         // Poll /compare-ready until the review UI server is accepting requests,
         // then redirect. This avoids a race between data loading and the redirect.
         (async function pollReady() {{
-            for (let attempt = 0; attempt < 60; attempt++) {{
-                await new Promise(r => setTimeout(r, 500));
-                try {{
-                    const rdy = await fetch('/compare-ready');
-                    if (rdy.ok) {{
-                        window.location.href = '/';
-                        return;
-                    }}
-                }} catch (_) {{}}
-            }}
-            // Fallback after 30 s: redirect anyway
-            window.location.href = '/';
+            const ready = await waitForCompareAndRedirect(60, 500);
+            if (!ready) window.location.href = '/';
         }})();
     }} catch (e) {{
         setBusy(false, '');
@@ -734,6 +1010,25 @@ document.getElementById('swEndYear').addEventListener('change', () => {{
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 }});
+document.getElementById('swCountry').addEventListener('input', () => {{
+    const country = document.getElementById('countrySel').value;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+}});
+document.getElementById('swPreset').addEventListener('change', () => {{
+    const country = document.getElementById('countrySel').value;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+}});
+document.getElementById('swExtraFlags').addEventListener('input', () => {{
+    const country = document.getElementById('countrySel').value;
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
+}});
+
+document.getElementById('albumsRootPath').addEventListener('keydown', (ev) => {{
+    if (ev.key === 'Enter') {{
+        ev.preventDefault();
+        setAlbumsRootPath();
+    }}
+}});
 
 initYearSelectors();
 ensureCopyableAlertDialog();
@@ -746,6 +1041,7 @@ applyRuntimeLogVisibility();
 startRuntimeLogPolling();
 startBackendHealthPolling();
 refreshState();
+pollStampWorldStatus();
 </script>
 {config_editor_assets}
 </body>
@@ -991,6 +1287,22 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 .colnectLogLine:last-child {{ border-bottom: none; }}
 .colnectImportDone {{ color: #2f8f63 !important; }}
 .colnectImportFail {{ color: #a34545 !important; }}
+.pdfStatusWrap {{
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border: 1px solid #d3dfe9;
+    border-radius: 999px;
+    background: #f8fbfe;
+    min-height: 22px;
+}}
+.pdfStatusText {{
+    font-size: 12px;
+    color: #2d4760;
+}}
+.pdfStatusDone {{ color: #2f8f63; font-weight: 600; }}
+.pdfStatusFail {{ color: #a34545; font-weight: 600; }}
 @keyframes colnectSpin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 @keyframes colnectMsgIn {{ from {{ opacity: 0; transform: translateY(3px); }} to {{ opacity: 1; transform: translateY(0); }} }}
 @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
@@ -1082,12 +1394,15 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 <div class='sessionSection'>
                     <div class='sessionSectionTitle'>PDF</div>
                     <div class='sessionRow'>
-                        <button onclick='generatePdfNowReview()'>Generate PDF Now</button>
+                        <button id='reviewPdfBtn' onclick='generatePdfNowReview()'>Generate PDF Now</button>
                         <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
                         <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
                         <span style='font-size:0.9em;'>–</span>
                         <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
-                        <span id='pdfStatus' class='badge'></span>
+                        <div id='pdfStatusWrap' class='pdfStatusWrap'>
+                            <span id='pdfStatusSpinner' class='colnectImportSpinner'></span>
+                            <span id='pdfStatus' class='pdfStatusText'></span>
+                        </div>
                     </div>
                 </div>
                 <div class='sessionSection'>
@@ -3114,10 +3429,30 @@ if (document.body) {{
 }}
 
 async function generatePdfNowReview() {{
+    const statusWrap = document.getElementById('pdfStatusWrap');
+    const spinnerEl = document.getElementById('pdfStatusSpinner');
     const statusEl = document.getElementById('pdfStatus');
+    const btnEl = document.getElementById('reviewPdfBtn');
+    const startYearInput = document.getElementById('reviewPdfStartYear');
+    const endYearInput = document.getElementById('reviewPdfEndYear');
     const originalText = statusEl?.innerText || '';
+    if (window.__reviewPdfRestoreTimer) {{
+        clearTimeout(window.__reviewPdfRestoreTimer);
+        window.__reviewPdfRestoreTimer = null;
+    }}
+
+    const setPdfUiState = (active, message) => {{
+        if (statusEl && typeof message === 'string') statusEl.innerText = message;
+        if (statusWrap) statusWrap.style.display = (active || !!(statusEl?.innerText || '').trim()) ? 'inline-flex' : 'none';
+        if (spinnerEl) spinnerEl.style.display = active ? 'inline-block' : 'none';
+        if (btnEl) btnEl.disabled = active;
+        if (startYearInput) startYearInput.disabled = active;
+        if (endYearInput) endYearInput.disabled = active;
+    }};
+
     if (window.__reviewPdfRequestInFlight === true) {{
         if (statusEl) statusEl.innerText = 'PDF generation already in progress. Please wait.';
+        if (statusWrap) statusWrap.style.display = 'inline-flex';
         return;
     }}
 
@@ -3126,7 +3461,20 @@ async function generatePdfNowReview() {{
     const startYear    = startYearVal ? parseInt(startYearVal, 10) : null;
     const endYear      = endYearVal   ? parseInt(endYearVal, 10)   : null;
     const yearDesc     = (startYear || endYear) ? ` (years ${{startYear || 'start'}}–${{endYear || 'end'}})` : '';
-    if (statusEl) statusEl.innerText = 'Generating album text and PDF' + yearDesc + '...';
+    if (statusEl) statusEl.classList.remove('pdfStatusDone', 'pdfStatusFail');
+    const phases = [
+        'Preparing PDF request',
+        'Generating album text',
+        'Running AlbumEasy CLI',
+        'Finalizing PDF output'
+    ];
+    let phaseIdx = 0;
+    setPdfUiState(true, phases[phaseIdx] + yearDesc + '...');
+    const phaseTimer = setInterval(() => {{
+        phaseIdx = (phaseIdx + 1) % phases.length;
+        setPdfUiState(true, phases[phaseIdx] + yearDesc + '...');
+    }}, 1200);
+
     window.__reviewPdfRequestInFlight = true;
 
     try {{
@@ -3137,7 +3485,8 @@ async function generatePdfNowReview() {{
         }});
         const j = await res.json();
         if (!j.ok) {{
-            if (statusEl) statusEl.innerText = 'PDF generation failed';
+            if (statusEl) statusEl.classList.add('pdfStatusFail');
+            setPdfUiState(false, 'PDF generation failed');
             alert(j.message || 'PDF generation failed.');
             return;
         }}
@@ -3146,21 +3495,24 @@ async function generatePdfNowReview() {{
             j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
             j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
         ].join('');
-        if (statusEl) statusEl.innerText = j.message || 'PDF generation completed';
+        if (statusEl) statusEl.classList.add('pdfStatusDone');
+        setPdfUiState(false, j.message || 'PDF generation completed');
         alert((j.message || 'PDF generation completed.') + details);
     }} catch (e) {{
-        if (statusEl) statusEl.innerText = 'PDF generation request failed';
+        if (statusEl) statusEl.classList.add('pdfStatusFail');
+        setPdfUiState(false, 'PDF generation request failed');
         alert('PDF generation request failed: ' + e);
     }} finally {{
         window.__reviewPdfRequestInFlight = false;
-        setTimeout(() => {{
-            if (statusEl) statusEl.innerText = originalText;
-        }}, 1600);
+        clearInterval(phaseTimer);
+        window.__reviewPdfRestoreTimer = setTimeout(() => {{
+            if (statusEl) statusEl.classList.remove('pdfStatusDone', 'pdfStatusFail');
+            setPdfUiState(false, originalText);
+        }}, 3500);
     }}
 }}
 
 async function importColnectFilesReview() {{
-    const btn = document.getElementById('importColnectBtn');
     const btn = document.getElementById('importColnectBtn');
     const statusBox = document.getElementById('colnectImportStatus');
     const statusText = document.getElementById('colnectImportStatusText');
@@ -3264,6 +3616,9 @@ async function importColnectFilesReview() {{
         if (btn) btn.disabled = false;
         alert('Import error: ' + e);
     }}
+}}
+
+const seriesToggle = document.getElementById('f_series');
 if (seriesToggle) {{
   seriesToggle.checked = checkboxDefaults.f_series;
   seriesToggle.addEventListener('change', () => {{

@@ -116,4 +116,12 @@ pub struct Cli {
     /// Enable additional PDF generation diagnostics (DX/support logging)
     #[arg(long, default_value_t = false)]
     pub pdf_dx_logging: bool,
+
+    /// Remove Linux desktop launcher and icon created by Stamp Album Gen2, then exit.
+    #[arg(long, default_value_t = false)]
+    pub uninstall_desktop_launcher: bool,
+
+    /// Re-enable and install Linux desktop launcher and icon, then exit.
+    #[arg(long, default_value_t = false)]
+    pub install_desktop_launcher: bool,
 }

@@ -31,7 +31,7 @@ pub fn write_globals<W: Write>(
     };
 
     // Load config so we can emit the values used for header formatting toggles
-    let cfg = crate::config::load_config("config.toml");
+    let cfg = crate::config::load_effective_config("config.toml");
     let cfg_print_flag_cover = cfg.print_flag_cover.unwrap_or(true);
     let cfg_include_design = cfg.include_design.unwrap_or(true);
     let cfg_include_engraving = cfg.include_engraving.unwrap_or(true);
