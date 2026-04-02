@@ -2820,12 +2820,20 @@ async function applyMatches() {{
         body: JSON.stringify({{ matches, fields }})
   }});
   const j = await res.json();
+        const skippedDetails = Array.isArray(j.skipped_details) ? j.skipped_details : [];
     for (const colnectId of (j.processed_colnect_ids || [])) {{
         removeCandidateFromUi(colnectId);
     }}
-  document.getElementById('status').innerText = `Applied: updated=${{j.updated_rows}}, skipped=${{j.skipped_rows}}, errors=${{(j.errors||[]).length}}`;
-  if ((j.errors || []).length) {{
-    alert(j.errors.join('\n'));
+    let statusMsg = `Applied: updated=${{j.updated_rows}}, skipped=${{j.skipped_rows}}, errors=${{(j.errors||[]).length}}`;
+    if (skippedDetails.length) {{
+        statusMsg += ` | first skip: ${{skippedDetails[0]}}`;
+    }}
+    setMatchStatus(statusMsg);
+    const notices = [];
+    if (skippedDetails.length) notices.push('Skipped details:\n' + skippedDetails.join('\n'));
+    if ((j.errors || []).length) notices.push('Errors:\n' + j.errors.join('\n'));
+    if (notices.length) {{
+        alert(notices.join('\n\n'));
   }}
     render();
 }}
