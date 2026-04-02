@@ -1107,6 +1107,8 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .actionBar.match {{ border-left: 5px solid var(--accent-green); }}
 .actionBar.candidate {{ border-left: 5px solid var(--accent-amber); }}
 .actionBarTitle {{ font-size: 12px; font-weight: 700; color: #2a4458; margin-right: 6px; }}
+.actionMessage {{ border: 1px solid #dbe4ec; border-radius: 8px; background: #f7fbff; color: #35566d; padding: 7px 10px; font-size: 12px; min-height: 16px; }}
+.configMessage {{ margin-top: 8px; border: 1px solid #cddff2; border-radius: 8px; background: #f8fcff; color: #2f4f67; padding: 6px 8px; font-size: 12px; min-height: 16px; }}
 .filtersCard {{ border: 1px solid #dbe4ec; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: #f8fbfe; padding: 10px; margin-bottom: 12px; }}
 .filtersTitle {{ margin: 0 0 8px 0; font-size: 13px; color: #1f4663; }}
 .filtersGrid {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
@@ -1377,6 +1379,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         </select>
                         <button onclick='saveCatalogDefaultToConfig()'>Update Local Config Default</button>
                     </div>
+                    <div id='configStatus' class='configMessage'>Ready</div>
                 </div>
                 <div class='sessionSection'>
                     <div class='sessionSectionTitle'>Import Colnect</div>
@@ -1456,6 +1459,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
             <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
             <button onclick='undoLastDelete()'>Undo Delete</button>
         </div>
+        <div id='matchActionStatus' class='actionMessage'>Ready</div>
     </div>
   <div id='comparePanels' class='row'>
     <div class='col'>
@@ -1647,6 +1651,25 @@ const runtimeLogCompareVisibleStorageKey = 'reviewui.compare.showRuntimeLog';
 const backendHealthComparePollMs = 15000;
 const backendHealthCompareFailureThreshold = 2;
 window.__returnToStartInFlight = false;
+
+function setMainStatus(message) {{
+    const statusEl = document.getElementById('status');
+    if (statusEl) statusEl.innerText = message;
+}}
+
+function setMatchStatus(message) {{
+    const matchEl = document.getElementById('matchActionStatus');
+    if (matchEl) matchEl.innerText = message;
+    setMainStatus(message);
+}}
+
+function setConfigStatus(message) {{
+    const configEl = document.getElementById('configStatus');
+    if (configEl) configEl.innerText = message;
+    setMainStatus(message);
+}}
+
+window.setConfigStatus = setConfigStatus;
 
 function reloadCurrentPageCompare() {{
     window.location.reload();
