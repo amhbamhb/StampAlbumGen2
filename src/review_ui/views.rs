@@ -2767,7 +2767,7 @@ function assignCurrent() {{
     if (!l || !r) return;
     rememberCatalogCode();
   assignedByLeft[l.rowid] = r.colnect_id;
-  document.getElementById('status').innerText = `Assigned rowid=${{l.rowid}} -> colnect_id=${{r.colnect_id}}`;
+    setMatchStatus(`Assigned rowid=${{l.rowid}} -> colnect_id=${{r.colnect_id}}`);
   render();
 }}
 function clearAssignment() {{
@@ -2776,7 +2776,7 @@ function clearAssignment() {{
   delete assignedByLeft[l.rowid];
     delete selectedCatalogCodeByLeft[l.rowid];
     delete selectedCatalogTypeByLeft[l.rowid];
-  document.getElementById('status').innerText = `Cleared assignment for rowid=${{l.rowid}}`;
+    setMatchStatus(`Cleared assignment for rowid=${{l.rowid}}`);
   render();
 }}
 
@@ -2796,7 +2796,7 @@ async function applyMatches() {{
     }});
 
     if (!matches.length) {{
-        document.getElementById('status').innerText = 'No assigned matches selected. Use Assign Candidate first.';
+        setMatchStatus('No assigned matches selected. Use Assign Candidate first.');
         return;
     }}
 
@@ -2850,7 +2850,7 @@ function toggleAddImageOptions() {{
 function openAddDialog() {{
     const r = currentRightCandidate();
     if (!r) {{
-        document.getElementById('status').innerText = 'No current candidate to add';
+        setMatchStatus('No current candidate to add');
         return;
     }}
     const preferredCode = selectedCatalogCodeForCurrent(r) || r.sg_number || '';
@@ -3199,7 +3199,7 @@ async function clearCurrentLeftColnectLink() {{
 async function addCurrentColnectAsStamp() {{
     const r = currentRightCandidate();
     if (!r) {{
-        document.getElementById('status').innerText = 'No current candidate to add';
+        setMatchStatus('No current candidate to add');
         return;
     }}
 
@@ -3255,14 +3255,14 @@ async function addCurrentColnectAsStamp() {{
         removeCandidateFromUi(j.processed_colnect_id);
     }}
     closeAddDialog();
-    document.getElementById('status').innerText = j.message || 'Added to stamps';
+    setMatchStatus(j.message || 'Added to stamps');
     render();
 }}
 
 async function deleteCurrentCandidate() {{
     const r = currentRightCandidate();
     if (!r) {{
-        document.getElementById('status').innerText = 'No current candidate to delete';
+        setMatchStatus('No current candidate to delete');
         return;
     }}
 
@@ -3290,14 +3290,14 @@ async function deleteCurrentCandidate() {{
     deletedCandidatesStack.push({{ candidate: r, removedAssignments }});
 
     removeCandidateFromUi(r.colnect_id);
-    document.getElementById('status').innerText = j.message || 'Soft-deleted candidate';
+    setMatchStatus(j.message || 'Soft-deleted candidate');
     render();
 }}
 
 async function undoLastDelete() {{
     const last = deletedCandidatesStack.pop();
     if (!last) {{
-        document.getElementById('status').innerText = 'Nothing to undo';
+        setMatchStatus('Nothing to undo');
         return;
     }}
 
@@ -3321,7 +3321,7 @@ async function undoLastDelete() {{
         if (code) selectedCatalogCodeByLeft[k] = code;
         if (catalogType) selectedCatalogTypeByLeft[k] = catalogType;
     }}
-    document.getElementById('status').innerText = j.message || 'Undo complete';
+    setMatchStatus(j.message || 'Undo complete');
     render();
 }}
 
