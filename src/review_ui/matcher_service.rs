@@ -372,12 +372,17 @@ pub(super) fn apply_matches(
         load_album_config(db_path, album_name).effective_default_catalog_code();
     let mut updated_rows = 0usize;
     let mut skipped_rows = 0usize;
+    let mut skipped_details = Vec::new();
     let mut processed_colnect_ids = Vec::new();
     let mut errors = Vec::new();
 
     for m in matches {
         let Some(c) = right_map.get(&m.colnect_id) else {
             skipped_rows += 1;
+            skipped_details.push(format!(
+                "skipped rowid={} colnect_id={}: candidate not found in current review session",
+                m.left_rowid, m.colnect_id
+            ));
             continue;
         };
 
@@ -517,7 +522,13 @@ pub(super) fn apply_matches(
                     )),
                 }
             }
-            Ok(_) => skipped_rows += 1,
+            Ok(_) => {
+                skipped_rows += 1;
+                skipped_details.push(format!(
+                    "skipped rowid={} colnect_id={}: no DB changes applied (selected fields may already match, or replace SG was not enabled)",
+                    m.left_rowid, m.colnect_id
+                ));
+            }
             Err(e) => errors.push(format!(
                 "failed to apply colnect_id={} to rowid={}: {}",
                 m.colnect_id, m.left_rowid, e
@@ -528,6 +539,7 @@ pub(super) fn apply_matches(
     ApplyMatchesResponse {
         updated_rows,
         skipped_rows,
+        skipped_details,
         processed_colnect_ids,
         errors,
     }

@@ -910,17 +910,18 @@ pub(super) fn serve_review_requests(
                     &right_map,
                 ))
                 .unwrap_or_else(|_| {
-                    "{\"updated_rows\":0,\"skipped_rows\":0,\"processed_colnect_ids\":[],\"errors\":[\"serialization failed\"]}"
+                    "{\"updated_rows\":0,\"skipped_rows\":0,\"skipped_details\":[],\"processed_colnect_ids\":[],\"errors\":[\"serialization failed\"]}"
                         .to_string()
                 }),
                 Err(e) => serde_json::to_string(&ApplyMatchesResponse {
                     updated_rows: 0,
                     skipped_rows: 0,
+                    skipped_details: Vec::new(),
                     processed_colnect_ids: Vec::new(),
                     errors: vec![format!("invalid request: {}", e)],
                 })
                 .unwrap_or_else(|_| {
-                    "{\"updated_rows\":0,\"skipped_rows\":0,\"processed_colnect_ids\":[],\"errors\":[\"invalid request\"]}"
+                    "{\"updated_rows\":0,\"skipped_rows\":0,\"skipped_details\":[],\"processed_colnect_ids\":[],\"errors\":[\"invalid request\"]}"
                         .to_string()
                 }),
             };

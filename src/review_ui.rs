@@ -636,6 +636,7 @@ struct ApplyMatchesEnvelope {
 struct ApplyMatchesResponse {
     updated_rows: usize,
     skipped_rows: usize,
+    skipped_details: Vec<String>,
     processed_colnect_ids: Vec<String>,
     errors: Vec<String>,
 }
