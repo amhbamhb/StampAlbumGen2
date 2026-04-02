@@ -929,7 +929,16 @@ function configEditorAlbumBanner() { return document.getElementById('cfgAlbumBan
 function configEditorSaveTargetBlock() { return document.getElementById('cfgSaveTargetBlock'); }
 function configEditorSaveTargetSelect() { return document.getElementById('cfgSaveTarget'); }
 function configEditorDeleteAlbumBtn() { return document.getElementById('cfgDeleteAlbumBtn'); }
-function setConfigEditorStatus(message) { const badge = configEditorStatusBadge(); if (badge) badge.innerText = message; const statusEl = document.getElementById('status'); if (statusEl) statusEl.innerText = message; }
+function setConfigEditorStatus(message) {
+    const badge = configEditorStatusBadge();
+    if (badge) badge.innerText = message;
+    if (typeof window.setConfigStatus === 'function') {
+        window.setConfigStatus(message);
+        return;
+    }
+    const statusEl = document.getElementById('status');
+    if (statusEl) statusEl.innerText = message;
+}
 function onConfigSaveTargetChanged() { const el = configEditorSaveTargetSelect(); if (!el) return; configEditorState.saveTarget = el.value === 'album' ? 'album' : 'global'; const targetName = configEditorState.saveTarget === 'album' ? `Album override (${configEditorState.albumName || 'current'})` : 'global config.toml'; setConfigEditorStatus(`Save target: ${targetName}`); }
 function refreshConfigEditorModeUi() { const albumName = String(configEditorState.albumName || '').trim(); const inAlbumMode = albumName.length > 0; const titleEl = configEditorTitle(); if (titleEl) titleEl.innerText = inAlbumMode ? `Edit config for ${albumName}` : 'Edit config.toml'; const banner = configEditorAlbumBanner(); if (banner) { if (inAlbumMode) { banner.style.display = 'inline-flex'; banner.innerText = configEditorState.hasAlbumOverride ? `Album override active: ${albumName}` : `Using global config for ${albumName}`; } else { banner.style.display = 'none'; banner.innerText = ''; } } const saveTargetBlock = configEditorSaveTargetBlock(); if (saveTargetBlock) saveTargetBlock.style.display = inAlbumMode ? 'inline-flex' : 'none'; const saveTargetSelect = configEditorSaveTargetSelect(); if (saveTargetSelect) { if (!inAlbumMode) { configEditorState.saveTarget = 'global'; saveTargetSelect.value = 'global'; } else if (configEditorState.saveTarget !== 'global' && configEditorState.saveTarget !== 'album') { configEditorState.saveTarget = 'album'; saveTargetSelect.value = 'album'; } else { saveTargetSelect.value = configEditorState.saveTarget; } const albumOption = saveTargetSelect.querySelector("option[value='album']"); if (albumOption) albumOption.textContent = `Album override - ${albumName || 'current'}`; } const deleteBtn = configEditorDeleteAlbumBtn(); if (deleteBtn) deleteBtn.classList.toggle('cfgHidden', !(inAlbumMode && configEditorState.hasAlbumOverride)); }
 function configFieldInputId(fieldId) { return 'cfg-input-' + String(fieldId || '').replaceAll('.', '__').replaceAll('/', '_'); }

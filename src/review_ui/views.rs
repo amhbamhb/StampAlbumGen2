@@ -2011,14 +2011,13 @@ function changeCountryDefaultCatalog() {{
 
 async function saveCatalogDefaultToConfig() {{
     const sel = document.getElementById('defaultCatalogSelect');
-    const statusEl = document.getElementById('status');
     const code = String(sel?.value || '').toLowerCase();
     if (!code) {{
         alert('Choose a catalog first.');
         return;
     }}
 
-    if (statusEl) statusEl.innerText = 'Updating config default catalog...';
+    setConfigStatus('Updating config default catalog...');
     try {{
         const r = await fetch('/api/default-catalog-config', {{
             method: 'POST',
@@ -2027,14 +2026,14 @@ async function saveCatalogDefaultToConfig() {{
         }});
         const j = await r.json();
         if (j.ok) {{
-            if (statusEl) statusEl.innerText = 'Config default updated';
+            setConfigStatus(j.message || 'Config default updated');
             alert(j.message || 'Config updated.');
         }} else {{
-            if (statusEl) statusEl.innerText = 'Config update failed';
+            setConfigStatus('Config update failed');
             alert(j.message || 'Failed to update config default.');
         }}
     }} catch (e) {{
-        if (statusEl) statusEl.innerText = 'Config update error';
+        setConfigStatus('Config update error');
         alert('Config update error: ' + e);
     }}
 }}
