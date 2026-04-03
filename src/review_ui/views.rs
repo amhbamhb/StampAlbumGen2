@@ -88,7 +88,8 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
     </div>
     <div class='row'>
         <label for='countrySearch'>Search</label>
-        <input id='countrySearch' type='text' placeholder='Find country...' oninput='updateCountrySearchMatches(true)' />
+        <input id='countrySearch' type='text' placeholder='Type to search or enter a new country...' list='countrySearchList' oninput='updateCountrySearchMatches(true)' onchange='applyCountrySearchSelection()' />
+        <datalist id='countrySearchList'></datalist>
         <button onclick='stepCountrySearch(-1)'>Back</button>
         <button onclick='stepCountrySearch(1)'>Forward</button>
         <span id='countrySearchStatus' class='badge'>Matches: 0/0</span>
@@ -104,8 +105,8 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
 
     <div id='countryPanel' class='panel'></div>
     <div id='stampworldPanel' class='panel warn' style='display:none;'>
-        <strong>No Colnect files found for this country.</strong>
-        <p style='margin-top:6px;'>You can run StampWorld pull first, then import Colnect CSV files and come back.</p>
+        <strong id='swPanelLead'>StampWorld pull is available for this country.</strong>
+        <p id='swPanelHint' style='margin-top:6px;'>Use this to pull additional StampWorld data for existing countries or create a new country.</p>
         <div class='row'>
             <label>StampWorld Country</label>
             <input id='swCountry' type='text' />
@@ -143,6 +144,10 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <span>AlbumEasy not set? Add CLI path here or install from</span>
             <a href='https://www.thestampweb.com/albumeasy/download' target='_blank' rel='noopener noreferrer'>AlbumEasy download</a>
             <button onclick='configureAlbumeasyPath()'>Set AlbumEasy Path</button>
+        </div>
+        <div id='swPullLogPanel' style='display:none;margin-top:10px;border:1px solid #e3c27e;border-radius:6px;padding:10px;background:#fffbf0;'>
+            <div style='font-size:13px;font-weight:600;color:#37566d;margin-bottom:8px;'>StampWorld Pull Progress: Real-Time Log</div>
+            <textarea id='swPullLog' readonly style='width:100%;min-height:150px;max-height:280px;resize:vertical;padding:8px;border:1px solid #d7b896;border-radius:6px;font-family:monospace;font-size:11px;background:#fffcf7;color:#333;overflow-y:auto;overflow-x:hidden;'></textarea>
         </div>
     </div>
     <div id='status' class='status'></div>
@@ -442,8 +447,48 @@ async function clearAlbumsRootPath() {{
 }}
 
 function onCountrySelectionChanged() {{
+    const sel = document.getElementById('countrySel');
+    const searchInput = document.getElementById('countrySearch');
+    if (searchInput && sel) searchInput.value = sel.value || '';
     renderCountryPanel();
     updateCountrySearchMatches(true);
+}}
+
+function refreshCountrySearchDatalist(query) {{
+    const list = document.getElementById('countrySearchList');
+    if (!list) return;
+    const q = String(query || '').trim().toLowerCase();
+    const source = q
+        ? countries.filter(c => String(c.country || '').toLowerCase().includes(q))
+        : countries;
+    const top = source.slice(0, 40).map(c => c.country);
+    list.innerHTML = top.map(name => `<option value="${{name}}"></option>`).join('');
+}}
+
+function applyCountrySearchSelection() {{
+    const sel = document.getElementById('countrySel');
+    const searchInput = document.getElementById('countrySearch');
+    const status = document.getElementById('status');
+    if (!sel || !searchInput) return;
+
+    const typed = String(searchInput.value || '').trim();
+    if (!typed) return;
+
+    const exact = countries.find(c => String(c.country || '').toLowerCase() === typed.toLowerCase());
+    if (exact) {{
+        sel.value = exact.country;
+        renderCountryPanel();
+        updateCountrySearchMatches(true);
+        if (status) status.innerText = `Selected ${{exact.country}}.`;
+        return;
+    }}
+
+    const swCountry = document.getElementById('swCountry');
+    if (swCountry) swCountry.value = typed;
+    document.getElementById('stampworldPanel').style.display = '';
+    document.getElementById('swCmd').innerText = suggestedStampworldCommand(typed);
+    setCountrySearchStatus('Matches: 0/0');
+    if (status) status.innerText = `No exact DB match for "${{typed}}". You can run StampWorld pull for this typed country.`;
 }}
 
 function updateCountrySearchMatches(preserveCurrentSelection) {{
@@ -452,6 +497,7 @@ function updateCountrySearchMatches(preserveCurrentSelection) {{
     if (!sel || !searchInput) return;
 
     const query = String(searchInput.value || '').trim().toLowerCase();
+    refreshCountrySearchDatalist(query);
     if (!query) {{
         countrySearchMatches = countries.map(c => c.country);
     }} else {{
@@ -495,6 +541,8 @@ function stepCountrySearch(delta) {{
     const total = countrySearchMatches.length;
     countrySearchIndex = (countrySearchIndex + delta + total) % total;
     sel.value = countrySearchMatches[countrySearchIndex];
+    const searchInput = document.getElementById('countrySearch');
+    if (searchInput) searchInput.value = sel.value;
     renderCountryPanel();
     setCountrySearchStatus(`Matches: ${{countrySearchIndex + 1}}/${{total}}`);
 }}
@@ -624,6 +672,22 @@ async function pollStampWorldStatus() {{
         if (!j.ok) return;
         if (j.running) {{
             updateStampWorldRunStatus(j.message || 'StampWorld pull running...', true, false);
+            
+            // Fetch and display real-time log
+            try {{
+                const logR = await fetch('/api/stampworld-log-tail');
+                const logJ = await logR.json();
+                if (logJ.ok && logJ.lines && logJ.lines.length > 0) {{
+                    const logPanel = document.getElementById('swPullLogPanel');
+                    const logArea = document.getElementById('swPullLog');
+                    if (logPanel && logArea) {{
+                        logPanel.style.display = '';
+                        logArea.innerText = logJ.lines.join('\\n');
+                        logArea.scrollTop = logArea.scrollHeight;
+                    }}
+                }}
+            }} catch (_) {{}}
+            
             return;
         }}
 
@@ -632,6 +696,10 @@ async function pollStampWorldStatus() {{
             stampworldRunPollTimer = null;
         }}
         setBusy(false, '');
+        
+        // Hide log panel when pull finishes
+        const logPanel = document.getElementById('swPullLogPanel');
+        if (logPanel) logPanel.style.display = 'none';
 
         if (j.finished) {{
             const success = j.success === true;
@@ -762,12 +830,19 @@ async function copySuggestedCommand() {{
 function renderCountryPanel() {{
     const sel = document.getElementById('countrySel');
     const c = countries.find(x => x.country === sel.value);
+    const swLead = document.getElementById('swPanelLead');
+    const swHint = document.getElementById('swPanelHint');
+
     if (!c) {{
         document.getElementById('countryPanel').innerHTML = '<em>No countries found under Albums/*/*.db</em>';
         document.getElementById('stampworldPanel').style.display = '';
+        if (swLead) swLead.innerText = 'Run StampWorld pull to create a country database.';
+        if (swHint) swHint.innerText = 'Type any country name below and run StampWorld pull. This field is editable and not limited to existing countries.';
         document.getElementById('swCmd').innerText = suggestedStampworldCommand('');
+        updateStampWorldRunStatus('Ready to run', false, false);
         return;
     }}
+
     document.getElementById('countryPanel').className = c.colnect_file_count > 0 || c.colnect_candidate_count > 0 ? 'panel ok' : 'panel';
     document.getElementById('countryPanel').innerHTML =
         `<strong>${{c.country}}</strong><br/>` +
@@ -777,10 +852,11 @@ function renderCountryPanel() {{
 
     document.getElementById('swCountry').value = c.country;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(c.country);
-    document.getElementById('stampworldPanel').style.display = (c.colnect_file_count === 0 && c.colnect_candidate_count === 0) ? '' : 'none';
-        if (c.colnect_file_count === 0 && c.colnect_candidate_count === 0) {{
-            updateStampWorldRunStatus('Ready to run', false, false);
-        }}
+    document.getElementById('stampworldPanel').style.display = '';
+
+    if (swLead) swLead.innerText = 'Run StampWorld pull for this country (including additional pull).';
+    if (swHint) swHint.innerText = 'You can rerun StampWorld even when data already exists, or edit the country field to pull for a different/new country.';
+    updateStampWorldRunStatus('Ready to run', false, false);
 }}
 
 async function refreshState() {{
@@ -800,6 +876,8 @@ async function refreshState() {{
         sel.innerHTML = countries.map(c => `<option value="${{c.country}}">${{c.country}}</option>`).join('');
         if (old && countries.some(c => c.country === old)) sel.value = old;
         if (!sel.value && countries.length) sel.value = countries[0].country;
+        const searchInput = document.getElementById('countrySearch');
+        if (searchInput && sel.value) searchInput.value = sel.value;
         document.getElementById('countryCount').innerText = `Countries: ${{countries.length}}`;
         renderCountryPanel();
         updateCountrySearchMatches(true);
@@ -2780,10 +2858,73 @@ function clearAssignment() {{
   render();
 }}
 
+function applySuccessfulMatchToLocalLeft(match, candidate, fields) {{
+    if (!match || !candidate || !fields) return;
+    const leftRow = left.find(item => String(item.rowid) === String(match.left_rowid));
+    if (!leftRow) return;
+
+    if (fields.replace_sg_number && match.selected_catalog_code && String(match.selected_catalog_code).trim()) {{
+        leftRow.sg_number = String(match.selected_catalog_code).trim();
+        leftRow.catalog_code = String(match.selected_catalog_type || '').trim();
+    }}
+    if (fields.update_series && candidate.series) leftRow.series = candidate.series;
+    if (fields.update_description && candidate.description) leftRow.description = candidate.description;
+    if (fields.update_watermark && candidate.watermark) leftRow.watermark = candidate.watermark;
+    if (fields.update_design && candidate.design) leftRow.design = candidate.design;
+    if (fields.update_engraving && candidate.engraving) leftRow.engraving = candidate.engraving;
+    if (fields.update_perforation && candidate.perforation) leftRow.perforation = candidate.perforation;
+    if (fields.update_context && candidate.context) leftRow.context = candidate.context;
+
+    if (fields.update_colnect_links) {{
+        if (candidate.page_url) leftRow.colnect_page_url = candidate.page_url;
+    }}
+
+    if (fields.update_colnect_image_url) {{
+        if (candidate.image_url) leftRow.colnect_image_url = candidate.image_url;
+        const remote = String(leftRow.remote_image_url || '').trim();
+        if (candidate.image_url && (!remote || remote.includes('colnect.com/stamps/stamp/'))) {{
+            leftRow.remote_image_url = candidate.image_url;
+        }}
+    }}
+
+    if (fields.update_colnect_metadata) {{
+        leftRow.colnect_id = candidate.colnect_id || leftRow.colnect_id;
+        leftRow.colnect_name = candidate.name || leftRow.colnect_name;
+        leftRow.colnect_catalog_codes = candidate.catalog_codes_text || leftRow.colnect_catalog_codes;
+        leftRow.colnect_country = candidate.country || leftRow.colnect_country;
+        leftRow.colnect_width = match.width || candidate.width || leftRow.colnect_width;
+        leftRow.colnect_height = match.height || candidate.height || leftRow.colnect_height;
+        leftRow.colnect_format = candidate.format || leftRow.colnect_format;
+        leftRow.colnect_emission = candidate.emission || leftRow.colnect_emission;
+        leftRow.colnect_printing = candidate.printing || leftRow.colnect_printing;
+        leftRow.colnect_paper = candidate.paper || leftRow.colnect_paper;
+        leftRow.colnect_gum = candidate.gum || leftRow.colnect_gum;
+        leftRow.colnect_ord_mi = candidate.ord_mi || leftRow.colnect_ord_mi;
+        leftRow.colnect_ord_sn = candidate.ord_sn || leftRow.colnect_ord_sn;
+        leftRow.colnect_ord_yt = candidate.ord_yt || leftRow.colnect_ord_yt;
+        leftRow.colnect_ord_sg = candidate.ord_sg || leftRow.colnect_ord_sg;
+        leftRow.colnect_expiry_date = candidate.expiry_date || leftRow.colnect_expiry_date;
+        leftRow.colnect_print_run = candidate.print_run || leftRow.colnect_print_run;
+        leftRow.colnect_face_value = candidate.face_value || leftRow.colnect_face_value;
+        leftRow.colnect_currency = candidate.currency || leftRow.colnect_currency;
+        leftRow.colnect_colors = candidate.colors || leftRow.colnect_colors;
+        leftRow.colnect_parent_item = candidate.parent_item || leftRow.colnect_parent_item;
+        leftRow.colnect_variant = candidate.variant || leftRow.colnect_variant;
+        leftRow.colnect_overprint_variant = candidate.overprint_variant || leftRow.colnect_overprint_variant;
+        leftRow.colnect_score = candidate.score || leftRow.colnect_score;
+        leftRow.colnect_accuracy = candidate.accuracy || leftRow.colnect_accuracy;
+        leftRow.colnect_list = candidate.list || leftRow.colnect_list;
+        leftRow.colnect_quantity = candidate.quantity || leftRow.colnect_quantity;
+        leftRow.colnect_condition = candidate.condition || leftRow.colnect_condition;
+        leftRow.colnect_public_note = candidate.public_note || leftRow.colnect_public_note;
+        leftRow.colnect_private_note = candidate.private_note || leftRow.colnect_private_note;
+    }}
+}}
+
 async function applyMatches() {{
+    const candidateMap = {{}};
+    rightAll.forEach(c => {{ candidateMap[c.colnect_id] = c; }});
     const matches = Object.entries(assignedByLeft).map(([leftRowid, colnectId]) => {{
-        const candidateMap = {{}};
-        rightAll.forEach(c => {{ candidateMap[c.colnect_id] = c; }});
         const candidate = candidateMap[colnectId];
         return {{
     left_rowid: Number(leftRowid),
@@ -2822,6 +2963,9 @@ async function applyMatches() {{
   const j = await res.json();
         const skippedDetails = Array.isArray(j.skipped_details) ? j.skipped_details : [];
     for (const colnectId of (j.processed_colnect_ids || [])) {{
+        const appliedMatch = matches.find(m => m.colnect_id === colnectId);
+        const appliedCandidate = candidateMap[colnectId];
+        applySuccessfulMatchToLocalLeft(appliedMatch, appliedCandidate, fields);
         removeCandidateFromUi(colnectId);
     }}
     let statusMsg = `Applied: updated=${{j.updated_rows}}, skipped=${{j.skipped_rows}}, errors=${{(j.errors||[]).length}}`;

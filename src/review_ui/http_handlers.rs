@@ -230,6 +230,20 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             continue;
         }
 
+        if method == Method::Get && req_url == "/api/stampworld-log-tail" {
+            let lines = tail_current_log(50); // Get last 50 lines
+            let response = StampWorldLogTailResponse { ok: true, lines };
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response)
+                    .unwrap_or_else(|_| "{\"ok\":false,\"lines\":[]}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/api/stampworld-run" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {

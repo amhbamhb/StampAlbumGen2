@@ -97,6 +97,61 @@ fn stamp_dedupe_fingerprints(stamp: &Stamp) -> Vec<String> {
     keys
 }
 
+fn strip_bracket_tags(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut in_tag = false;
+    for ch in input.chars() {
+        if ch == '[' {
+            in_tag = true;
+            continue;
+        }
+        if in_tag {
+            if ch == ']' {
+                in_tag = false;
+            }
+            continue;
+        }
+        out.push(ch);
+    }
+    out
+}
+
+fn normalize_for_text_dedupe(input: &str) -> String {
+    let cleaned = clean_text(&strip_bracket_tags(input)).to_ascii_lowercase();
+    let mut out = String::with_capacity(cleaned.len());
+    let mut prev_space = false;
+    for ch in cleaned.chars() {
+        let keep = ch.is_ascii_alphanumeric() || ch.is_ascii_whitespace();
+        let normalized = if keep { ch } else { ' ' };
+        if normalized.is_ascii_whitespace() {
+            if !prev_space {
+                out.push(' ');
+                prev_space = true;
+            }
+        } else {
+            out.push(normalized);
+            prev_space = false;
+        }
+    }
+    out.trim().to_string()
+}
+
+fn is_effectively_duplicate_text(base_text: &str, candidate_text: &str) -> bool {
+    let base = normalize_for_text_dedupe(base_text);
+    let candidate = normalize_for_text_dedupe(candidate_text);
+    if base.is_empty() || candidate.is_empty() {
+        return false;
+    }
+    if base == candidate {
+        return true;
+    }
+    // Avoid false positives on short labels/phrases.
+    if base.len() < 32 || candidate.len() < 32 {
+        return false;
+    }
+    base.contains(&candidate) || candidate.contains(&base)
+}
+
 fn is_real_image_path(image_path: &str) -> bool {
     let p = image_path.trim().to_ascii_lowercase();
     !p.is_empty() && !p.contains("no_image")
@@ -2275,7 +2330,12 @@ where
                     }
                     if enabled_fields.contains("description") {
                         if let Some(v) = stamp.attrs.get("colnect_description") {
-                            colnect_parts.push(format!("{}", v));
+                            let cleaned_colnect_desc = clean_text(&strip_bracket_tags(v));
+                            if !cleaned_colnect_desc.trim().is_empty()
+                                && !is_effectively_duplicate_text(&raw_description, &cleaned_colnect_desc)
+                            {
+                                colnect_parts.push(cleaned_colnect_desc);
+                            }
                         }
                     }
                     if enabled_fields.contains("themes") {

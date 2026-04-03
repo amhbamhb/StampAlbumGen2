@@ -65,6 +65,58 @@ pub fn get_runtime_log_lines() -> Vec<String> {
         .unwrap_or_default()
 }
 
+/// Tail the most recent log file in the Logs/ directory, returning the last N lines.
+/// Used during StampWorld pulls to display real-time feedback of DB inserts and progress.
+pub fn tail_current_log(lines_count: usize) -> Vec<String> {
+    // Find the most recent log file in Logs/
+    let logs_dir = std::path::Path::new("Logs");
+    if !logs_dir.exists() {
+        return vec![];
+    }
+
+    let mut log_files: Vec<_> = fs::read_dir(logs_dir)
+        .ok()
+        .and_then(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_name().to_string_lossy().ends_with(".log"))
+                .collect::<Vec<_>>()
+                .into_iter()
+                .filter_map(|e| {
+                    e.metadata()
+                        .ok()
+                        .map(|m| (e.path(), m.modified().unwrap_or(std::time::UNIX_EPOCH)))
+                })
+                .collect::<Vec<_>>()
+                .into()
+        })
+        .unwrap_or_default();
+
+    if log_files.is_empty() {
+        return vec![];
+    }
+
+    // Sort by modification time, most recent first
+    log_files.sort_by(|a, b| b.1.cmp(&a.1));
+    let log_path = &log_files[0].0;
+
+    // Read the last N lines efficiently
+    match fs::File::open(log_path) {
+        Ok(file) => {
+            let reader = BufReader::new(file);
+            let lines: Vec<String> = reader.lines().filter_map(Result::ok).collect();
+            lines
+                .iter()
+                .rev()
+                .take(lines_count)
+                .rev()
+                .cloned()
+                .collect()
+        }
+        Err(_) => vec![],
+    }
+}
+
 struct PdfGenerationGuard;
 
 impl PdfGenerationGuard {
@@ -302,6 +354,12 @@ struct BootstrapAlbumEasyStatusResponse {
     path_exists: bool,
     message: String,
     download_url: String,
+}
+
+#[derive(Debug, Serialize)]
+struct StampWorldLogTailResponse {
+    ok: bool,
+    lines: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
