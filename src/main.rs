@@ -15,6 +15,7 @@
 // }
 
 use clap::{CommandFactory, Parser};
+use std::io::IsTerminal;
 use stamp_album_gen2::{
     cli::Cli,
     config,
@@ -34,6 +35,7 @@ use stamp_album_gen2::{
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let launched_without_args = std::env::args_os().nth(1).is_none();
+    let interactive_terminal = std::io::stdin().is_terminal() && std::io::stderr().is_terminal();
 
     // Parse CLI arguments
     let mut cli = Cli::parse();
@@ -70,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if launched_without_args {
+    if launched_without_args && interactive_terminal {
         cli.review_ui = true;
     }
 
