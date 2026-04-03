@@ -15,7 +15,6 @@
 // }
 
 use clap::{CommandFactory, Parser};
-use std::io::IsTerminal;
 use stamp_album_gen2::{
     cli::Cli,
     config,
@@ -32,6 +31,7 @@ use stamp_album_gen2::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
     },
 };
+use std::io::IsTerminal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let launched_without_args = std::env::args_os().nth(1).is_none();
