@@ -43,6 +43,14 @@ Before creating any commit, all relevant tests must pass.
 2. Do not commit if any test fails.
 3. If tests cannot be executed (environment/tooling issue), do not commit; report the blocker and required fix steps first.
 
+## Rust Safety Rule
+
+Avoid unchecked `unwrap()` in runtime code paths.
+
+1. Do not use `unwrap()` unless the surrounding function guarantees a safe fallback or explicit error/early-return path.
+2. Prefer `?`, `ok_or_else`, `unwrap_or_else`, or explicit `match` with a meaningful error message.
+3. In request handlers and background tasks, return structured errors instead of panicking.
+
 ## Development Test Logging
 
 When running development test commands (especially data-ingest flows), always

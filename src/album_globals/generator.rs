@@ -8,7 +8,7 @@ use super::helpers::{
 use super::structs::Stamp;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
-use crate::config::load_config;
+use crate::config::load_effective_config;
 use crate::db_utils::{get_all_series, get_stamps_by_series, init_db};
 use crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions};
 use log::{error, info, warn};
@@ -97,9 +97,306 @@ fn stamp_dedupe_fingerprints(stamp: &Stamp) -> Vec<String> {
     keys
 }
 
+fn strip_bracket_tags(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut in_tag = false;
+    for ch in input.chars() {
+        if ch == '[' {
+            in_tag = true;
+            continue;
+        }
+        if in_tag {
+            if ch == ']' {
+                in_tag = false;
+            }
+            continue;
+        }
+        out.push(ch);
+    }
+    out
+}
+
+fn normalize_for_text_dedupe(input: &str) -> String {
+    let cleaned = clean_text(&strip_bracket_tags(input)).to_ascii_lowercase();
+    let mut out = String::with_capacity(cleaned.len());
+    let mut prev_space = false;
+    for ch in cleaned.chars() {
+        let keep = ch.is_ascii_alphanumeric() || ch.is_ascii_whitespace();
+        let normalized = if keep { ch } else { ' ' };
+        if normalized.is_ascii_whitespace() {
+            if !prev_space {
+                out.push(' ');
+                prev_space = true;
+            }
+        } else {
+            out.push(normalized);
+            prev_space = false;
+        }
+    }
+    out.trim().to_string()
+}
+
+fn is_effectively_duplicate_text(base_text: &str, candidate_text: &str) -> bool {
+    let base = normalize_for_text_dedupe(base_text);
+    let candidate = normalize_for_text_dedupe(candidate_text);
+    if base.is_empty() || candidate.is_empty() {
+        return false;
+    }
+    if base == candidate {
+        return true;
+    }
+    // Avoid false positives on short labels/phrases.
+    if base.len() < 32 || candidate.len() < 32 {
+        return false;
+    }
+    base.contains(&candidate) || candidate.contains(&base)
+}
+
 fn is_real_image_path(image_path: &str) -> bool {
     let p = image_path.trim().to_ascii_lowercase();
     !p.is_empty() && !p.contains("no_image")
+}
+
+/// Format a number string with thousand separators (commas).
+/// Input: "1000000" Output: "1,000,000"
+/// Also normalizes malformed grouped values (e.g. "4,545,4320" -> "45,454,320").
+/// Leaves non-numeric parts unchanged.
+fn format_number_with_commas(s: &str) -> String {
+    let trimmed = s.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+
+    // Accept digits plus common grouping separators and normalize from raw digits.
+    // If any other character appears, treat as non-numeric and preserve as-is.
+    let mut digits = String::new();
+    for ch in trimmed.chars() {
+        if ch.is_ascii_digit() {
+            digits.push(ch);
+        } else if matches!(ch, ',' | '.' | ' ' | '_' | '\'') {
+            continue;
+        } else {
+            return trimmed.to_string();
+        }
+    }
+
+    if digits.is_empty() {
+        return trimmed.to_string();
+    }
+
+    let normalized = digits.trim_start_matches('0');
+    let digits = if normalized.is_empty() {
+        "0"
+    } else {
+        normalized
+    };
+
+    if digits.len() <= 3 {
+        return digits.to_string();
+    }
+
+    let first_group_len = digits.len() % 3;
+    let mut out = String::with_capacity(digits.len() + (digits.len() / 3));
+
+    if first_group_len > 0 {
+        out.push_str(&digits[..first_group_len]);
+    }
+
+    let mut i = first_group_len;
+    while i < digits.len() {
+        if !out.is_empty() {
+            out.push(',');
+        }
+        out.push_str(&digits[i..i + 3]);
+        i += 3;
+    }
+
+    out
+}
+
+fn count_albumeasy_text_lines(s: &str) -> usize {
+    // AlbumEasy line breaks can be represented as real newlines or escaped "\\n".
+    // Count both so page-fit estimates match rendered PDF height.
+    1 + s.matches('\n').count() + s.matches("\\n").count()
+}
+
+fn estimate_chars_per_line_for_stamp(emit_width: f64, emit_height: f64) -> usize {
+    let approx_char_width_mm = 2.2_f64;
+    let padding_mm = 4.0_f64;
+    let avail_width_mm = if emit_width > padding_mm {
+        emit_width - padding_mm
+    } else {
+        emit_width
+    };
+    let aspect_ratio = if emit_height > 0.0 {
+        emit_width / emit_height
+    } else {
+        1.0
+    };
+    let width_bias = if aspect_ratio >= 1.20 {
+        1.35
+    } else if aspect_ratio >= 1.0 {
+        1.15
+    } else {
+        0.95
+    };
+    let mut chars_per_line =
+        ((avail_width_mm / approx_char_width_mm) * width_bias).floor() as usize;
+    if chars_per_line < 10 {
+        chars_per_line = 10;
+    }
+    chars_per_line
+}
+
+fn wrap_description_for_estimate(s: &str, max_chars: usize) -> String {
+    if s.trim().is_empty() {
+        return String::new();
+    }
+    let target = max_chars.max(18);
+    let soft_limit = target + 8;
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+    for word in s.split_whitespace() {
+        if current.is_empty() {
+            current.push_str(word);
+        } else if current.len() + 1 + word.len() <= soft_limit {
+            current.push(' ');
+            current.push_str(word);
+        } else {
+            lines.push(current);
+            current = word.to_string();
+        }
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines.join("\\n")
+}
+
+fn wrap_left_for_estimate(s: &str, max_chars: usize) -> String {
+    if s.trim().is_empty() {
+        return String::new();
+    }
+    if s.contains('+') && !s.contains(' ') {
+        if let Some(pos) = s.find('+') {
+            let first = s[..pos].to_string();
+            let second = format!("+{}", s[pos + 1..].trim());
+            return format!("{}\\n{}", first, second);
+        }
+    }
+
+    let mut lines: Vec<String> = Vec::new();
+    let mut current = String::new();
+    for word in s.split_whitespace() {
+        if current.is_empty() {
+            current.push_str(word);
+        } else if current.len() + 1 + word.len() <= max_chars {
+            current.push(' ');
+            current.push_str(word);
+        } else {
+            lines.push(current);
+            current = word.to_string();
+        }
+    }
+    if !current.is_empty() {
+        lines.push(current);
+    }
+    lines.join("\\n")
+}
+
+fn count_nonempty_albumeasy_text_lines(s: &str) -> usize {
+    if s.trim().is_empty() {
+        return 0;
+    }
+
+    s.replace("\\n", "\n")
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count()
+}
+
+fn pad_centre_body_for_side_columns(
+    top_block: &str,
+    body: &str,
+    left: &str,
+    right_first_line: &str,
+    right_second_line: &str,
+) -> String {
+    if top_block.trim().is_empty() && body.trim().is_empty() {
+        return String::new();
+    }
+
+    let left_lines = count_nonempty_albumeasy_text_lines(left);
+    let right = format!("{}\n{}", right_first_line, right_second_line);
+    let right_lines = count_nonempty_albumeasy_text_lines(&right);
+    let side_lines = left_lines.max(right_lines);
+    // Only add padding if side columns wrap to multiple lines
+    // Add +1 safety margin only when there's actual wrapping to prevent overflow
+    let pad_lines = if side_lines > 1 {
+        side_lines.saturating_sub(1) + 1 // Base padding + 1 safety line
+    } else {
+        0 // No padding for single-line sides
+    };
+
+    if top_block.trim().is_empty() {
+        if pad_lines == 0 {
+            body.to_string()
+        } else {
+            format!("{}{}", "\\n".repeat(pad_lines), body)
+        }
+    } else if body.trim().is_empty() {
+        top_block.to_string()
+    } else if pad_lines == 0 {
+        format!("{}\\n{}", top_block, body)
+    } else {
+        format!("{}\\n{}{}", top_block, "\\n".repeat(pad_lines), body)
+    }
+}
+
+fn estimate_stamp_body_line_count(
+    raw_left: &str,
+    raw_stamps_issued: &str,
+    raw_description: &str,
+    raw_color: &str,
+    right_first_line: &str,
+    right_second_line: &str,
+    emit_width: f64,
+    emit_height: f64,
+) -> usize {
+    let chars_per_line = estimate_chars_per_line_for_stamp(emit_width, emit_height);
+    let left = wrap_left_for_estimate(raw_left, (chars_per_line / 3).max(4));
+    // In three-column layout, centre column is narrower than full stamp width.
+    // Use reduced width (roughly 35% of full) to match actual rendering where
+    // centre wraps to more lines than the estimator predicts.
+    let centre_width = (chars_per_line / 3).max(10);
+    let wrapped_desc = wrap_description_for_estimate(raw_description, centre_width);
+
+    let top_block = raw_stamps_issued.trim().to_string();
+    let mut centre_blocks: Vec<String> = Vec::new();
+    if !wrapped_desc.trim().is_empty() {
+        centre_blocks.push(wrapped_desc);
+    }
+    if !raw_color.trim().is_empty() {
+        centre_blocks.push(raw_color.trim().to_string());
+    }
+    let centre = pad_centre_body_for_side_columns(
+        &top_block,
+        &centre_blocks.join("\\n"),
+        &left,
+        right_first_line,
+        right_second_line,
+    );
+    let right = format!("{}\\n{}", right_first_line.trim(), right_second_line.trim());
+
+    let left_lines = count_albumeasy_text_lines(&left);
+    let centre_lines = if centre.is_empty() {
+        1
+    } else {
+        count_albumeasy_text_lines(&centre)
+    };
+    let right_lines = count_albumeasy_text_lines(&right);
+
+    left_lines.max(centre_lines).max(right_lines)
 }
 
 // AlbumEasy Output Generation
@@ -124,7 +421,7 @@ where
     let passed_start_year = start_year;
     let passed_end_year = end_year;
     // Load config values from config.toml
-    let config = load_config("config.toml");
+    let config = load_effective_config("config.toml");
     // Check if this is a US1847 sourced album
     let is_us1847 = conn
         .query_row(
@@ -438,6 +735,69 @@ where
             fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
             .expect("Failed to get stamps");
         let mut stamps_vec = stamps_iter;
+        // Re-sort by year + catalog number right before layout emission so
+        // updates applied in Review UI are reflected in final PDF order.
+        let parse_catalog_key = |raw: &str| {
+            let trimmed = raw.trim();
+            let mut end = 0usize;
+            for (idx, ch) in trimmed.char_indices() {
+                if ch.is_ascii_digit() {
+                    end = idx + ch.len_utf8();
+                } else {
+                    break;
+                }
+            }
+
+            if end == 0 {
+                (None, trimmed.to_ascii_lowercase(), trimmed.to_ascii_lowercase())
+            } else {
+                let head = trimmed[..end].parse::<i64>().ok();
+                let tail = trimmed[end..].trim().to_ascii_lowercase();
+                (head, tail, trimmed.to_ascii_lowercase())
+            }
+        };
+        stamps_vec.sort_by(|a, b| {
+            let ay = a
+                .attrs
+                .get("year")
+                .and_then(|v| v.trim().parse::<i32>().ok())
+                .unwrap_or(0);
+            let by = b
+                .attrs
+                .get("year")
+                .and_then(|v| v.trim().parse::<i32>().ok())
+                .unwrap_or(0);
+            let year_cmp = ay.cmp(&by);
+            if year_cmp != std::cmp::Ordering::Equal {
+                return year_cmp;
+            }
+
+            let a_code = a.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
+            let b_code = b.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
+            let (a_num, a_suffix, a_norm) = parse_catalog_key(a_code);
+            let (b_num, b_suffix, b_norm) = parse_catalog_key(b_code);
+            match (a_num, b_num) {
+                (Some(an), Some(bn)) => {
+                    let num_cmp = an.cmp(&bn);
+                    if num_cmp != std::cmp::Ordering::Equal {
+                        return num_cmp;
+                    }
+                    let a_empty = a_suffix.is_empty();
+                    let b_empty = b_suffix.is_empty();
+                    if a_empty != b_empty {
+                        return if a_empty {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
+                        };
+                    }
+                    a_suffix.cmp(&b_suffix).then_with(|| a_norm.cmp(&b_norm))
+                }
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => a_norm.cmp(&b_norm),
+            }
+        });
         // Group stamps into rows (configurable max stamps per row). For rich
         // inline metadata, use a more conservative per-row cap to keep text
         // readable and avoid visual crowding in PDF output.
@@ -1020,20 +1380,72 @@ where
                 let include_perforation_in_heading = config.include_perforation.unwrap_or(true);
                 for stamp in stamps_in_row {
                     let est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
-                    let below_stamp_1 = format!(
-                        "SG {}",
-                        clean_text(stamp.attrs.get("catalog_num").unwrap_or(&"".to_string()))
+                    let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
+                    let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
+                    let estimated_emit_width = est_width_mm + img_new_w + 2.0 * stamp_box_adjust;
+                    let mut raw_left =
+                        clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
+                    if raw_left.trim().is_empty() {
+                        let face = clean_text(
+                            stamp
+                                .attrs
+                                .get("colnect_face_value")
+                                .unwrap_or(&"".to_string()),
+                        );
+                        let cur = clean_text(
+                            stamp
+                                .attrs
+                                .get("colnect_currency")
+                                .unwrap_or(&"".to_string()),
+                        );
+                        if !face.trim().is_empty() {
+                            raw_left = if cur.trim().is_empty() {
+                                face
+                            } else {
+                                format!("{} {}", face, cur)
+                            };
+                        }
+                    }
+                    let mut raw_stamps_issued =
+                        format_number_with_commas(&clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())));
+                    if raw_stamps_issued.trim().is_empty() {
+                        raw_stamps_issued = format_number_with_commas(&clean_text(
+                            stamp
+                                .attrs
+                                .get("colnect_print_run")
+                                .unwrap_or(&"".to_string()),
+                        ));
+                    }
+                    let raw_description =
+                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
+                    let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
+                    let mint_raw = clean_text(
+                        stamp
+                            .attrs
+                            .get("mint_condition")
+                            .unwrap_or(&"".to_string()),
+                    )
+                    .trim()
+                    .to_string();
+                    let unused_raw =
+                        clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string())).trim().to_string();
+                    let used_raw =
+                        clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())).trim().to_string();
+                    let right_first_line = if !mint_raw.is_empty() {
+                        mint_raw.as_str()
+                    } else {
+                        unused_raw.as_str()
+                    };
+                    let text_lines = estimate_stamp_body_line_count(
+                        &raw_left,
+                        &raw_stamps_issued,
+                        &raw_description,
+                        &raw_color,
+                        right_first_line,
+                        &used_raw,
+                        estimated_emit_width,
+                        adj_est_height,
                     );
-                    let below_stamp_2 =
-                        clean_text(stamp.attrs.get("field1").unwrap_or(&"".to_string()));
-                    let below_stamp_3 =
-                        clean_text(stamp.attrs.get("field2").unwrap_or(&"".to_string()));
-                    let text_lines = below_stamp_1.matches('\n').count()
-                        + 1
-                        + below_stamp_2.matches('\n').count()
-                        + 1
-                        + below_stamp_3.matches('\n').count()
-                        + 1;
                     // Apply any configured ALBUM_STAMP_IMG_NEW_SETTING adjustments to the estimated image height
                     // Include the per-side stamp box adjustment when estimating
                     // the visual height consumed by the stamp row. The emitted
@@ -1068,7 +1480,6 @@ where
                         heading_emit_width,
                         sh_size_for_fit,
                     ) as f64;
-                    let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
                     let total_height = adj_est_height
                         + image_spacing
                         + (text_lines as f64) * font_height
@@ -1171,23 +1582,79 @@ where
             let include_perforation_in_heading = config.include_perforation.unwrap_or(true);
             for stamp in stamps_in_row {
                 let est_height_mm = stamp.est_height_mm.unwrap_or(stamp_box_height);
-                // Compose all text below stamp
-                let text_below = [
+                let mut raw_left =
+                    clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
+                if raw_left.trim().is_empty() {
+                    let face = clean_text(
+                        stamp
+                            .attrs
+                            .get("colnect_face_value")
+                            .unwrap_or(&"".to_string()),
+                    );
+                    let cur = clean_text(
+                        stamp
+                            .attrs
+                            .get("colnect_currency")
+                            .unwrap_or(&"".to_string()),
+                    );
+                    if !face.trim().is_empty() {
+                        raw_left = if cur.trim().is_empty() {
+                            face
+                        } else {
+                            format!("{} {}", face, cur)
+                        };
+                    }
+                }
+                let mut raw_stamps_issued =
+                    format_number_with_commas(&clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())));
+                if raw_stamps_issued.trim().is_empty() {
+                    raw_stamps_issued = format_number_with_commas(&clean_text(
+                        stamp
+                            .attrs
+                            .get("colnect_print_run")
+                            .unwrap_or(&"".to_string()),
+                    ));
+                }
+                let raw_description =
+                    clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
+                let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
+                let mint_raw = clean_text(
                     stamp
                         .attrs
-                        .get("catalog_num")
-                        .unwrap_or(&String::new())
-                        .clone(),
-                    stamp.attrs.get("field1").unwrap_or(&String::new()).clone(),
-                    stamp.attrs.get("field2").unwrap_or(&String::new()).clone(),
-                ]
-                .join("\n");
-                let text_lines = text_below.lines().count();
-                let text_height = (text_lines as f64) * font_height;
+                        .get("mint_condition")
+                        .unwrap_or(&"".to_string()),
+                )
+                .trim()
+                .to_string();
+                let unused_raw =
+                    clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string())).trim().to_string();
+                let used_raw =
+                    clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())).trim().to_string();
                 // Apply ALBUM_STAMP_IMG_NEW_SETTING height adjustment and
                 // include stamp box adjustment so the row height used for
                 // page-fit checks matches the actual emitted box height.
                 let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
+                let estimated_emit_width = stamp
+                    .est_width_mm
+                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
+                    + img_new_w
+                    + 2.0 * stamp_box_adjust;
+                let right_first_line = if !mint_raw.is_empty() {
+                    mint_raw.as_str()
+                } else {
+                    unused_raw.as_str()
+                };
+                let text_lines = estimate_stamp_body_line_count(
+                    &raw_left,
+                    &raw_stamps_issued,
+                    &raw_description,
+                    &raw_color,
+                    right_first_line,
+                    &used_raw,
+                    estimated_emit_width,
+                    adj_est_height,
+                );
+                let text_height = (text_lines as f64) * font_height;
                 let heading_emit_width = stamp
                     .est_width_mm
                     .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
@@ -1339,9 +1806,56 @@ where
                         } else {
                             reference_height_mm as f64
                         };
-                        let text_lines = 1usize; // conservative minimal estimate
-                        let text_height = (text_lines as f64) * header_font_h;
+                        let est_width_mm = if let (Some(w_px), Some(_h_px)) =
+                            (stamp.image_width_px, stamp.image_height_px)
+                        {
+                            (w_px as f64) * (mm_per_pixel_w as f64)
+                        } else if let Some((w_mm, _)) = estimate_real_dimensions(
+                            &full_image_path,
+                            mm_per_pixel_w,
+                            mm_per_pixel_h,
+                        ) {
+                            w_mm as f64
+                        } else {
+                            reference_width_mm as f64
+                        };
                         let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
+                        let mut raw_left = clean_text(&stamp.denomination);
+                        if raw_left.trim().is_empty() {
+                            let face = clean_text(&stamp.denomination);
+                            let cur = clean_text(&stamp.currency);
+                            if !face.trim().is_empty() {
+                                raw_left = if cur.trim().is_empty() {
+                                    face
+                                } else {
+                                    format!("{} {}", face, cur)
+                                };
+                            }
+                        }
+                        let raw_stamps_issued = format_number_with_commas(&clean_text(&stamp.stamps_issued));
+                        // StampStub does not carry Colnect attrs here; use DB-resolved stamps_issued only.
+                        let raw_description = clean_text(&stamp.description);
+                        let raw_color = clean_text(&stamp.color);
+                        let mint_raw = clean_text(&stamp.mint_condition).trim().to_string();
+                        let unused_raw = clean_text(&stamp.unused).trim().to_string();
+                        let used_raw = clean_text(&stamp.used).trim().to_string();
+                        let right_first_line = if !mint_raw.is_empty() {
+                            mint_raw.as_str()
+                        } else {
+                            unused_raw.as_str()
+                        };
+                        let estimated_emit_width = est_width_mm + 2.0 * stamp_box_adjust;
+                        let text_lines = estimate_stamp_body_line_count(
+                            &raw_left,
+                            &raw_stamps_issued,
+                            &raw_description,
+                            &raw_color,
+                            right_first_line,
+                            &used_raw,
+                            estimated_emit_width,
+                            adj_est_height,
+                        );
+                        let text_height = (text_lines as f64) * header_font_h;
                         let total_height = adj_est_height
                             + config.image_spacing_mm.unwrap_or(2.0) as f64
                             + text_height;
@@ -1587,8 +2101,29 @@ where
                 // centre/right columns to be overwritten. Prefer splitting at
                 // a '+' when present (keep the '+' with the second line),
                 // otherwise perform a small greedy word-wrap.
-                let raw_left =
+                let mut raw_left =
                     clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
+                if raw_left.trim().is_empty() {
+                    let face = clean_text(
+                        stamp
+                            .attrs
+                            .get("colnect_face_value")
+                            .unwrap_or(&"".to_string()),
+                    );
+                    let cur = clean_text(
+                        stamp
+                            .attrs
+                            .get("colnect_currency")
+                            .unwrap_or(&"".to_string()),
+                    );
+                    if !face.trim().is_empty() {
+                        raw_left = if cur.trim().is_empty() {
+                            face
+                        } else {
+                            format!("{} {}", face, cur)
+                        };
+                    }
+                }
                 // Compute a conservative max chars for the left column from emit_width
                 let approx_char_width_mm_left = 2.6_f64;
                 let padding_mm_left = 4.0_f64;
@@ -1643,8 +2178,16 @@ where
                 // don't overflow adjacent fields in the AlbumEasy output. We approximate
                 // average character width and greedily build lines that fit the
                 // estimated emit_width (mm).
-                let raw_stamps_issued =
-                    clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string()));
+                let mut raw_stamps_issued =
+                    format_number_with_commas(&clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())));
+                if raw_stamps_issued.trim().is_empty() {
+                    raw_stamps_issued = format_number_with_commas(&clean_text(
+                        stamp
+                            .attrs
+                            .get("colnect_print_run")
+                            .unwrap_or(&"".to_string()),
+                    ));
+                }
                 let raw_description =
                     clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
                 let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
@@ -1760,7 +2303,7 @@ where
                     }
                 };
 
-                let wrapped_desc = wrap_description_words(&raw_description, chars_per_line);
+                let wrapped_desc = wrap_description_words(&raw_description, (chars_per_line / 3).max(10));
 
                 // Get layout mode from config
                 let detail_layout = config
@@ -1787,7 +2330,12 @@ where
                     }
                     if enabled_fields.contains("description") {
                         if let Some(v) = stamp.attrs.get("colnect_description") {
-                            colnect_parts.push(format!("{}", v));
+                            let cleaned_colnect_desc = clean_text(&strip_bracket_tags(v));
+                            if !cleaned_colnect_desc.trim().is_empty()
+                                && !is_effectively_duplicate_text(&raw_description, &cleaned_colnect_desc)
+                            {
+                                colnect_parts.push(cleaned_colnect_desc);
+                            }
                         }
                     }
                     if enabled_fields.contains("themes") {
@@ -1795,9 +2343,9 @@ where
                             colnect_parts.push(format!("Themes: {}", v));
                         }
                     }
-                    if enabled_fields.contains("printing") {
+                    if enabled_fields.contains("printing") || enabled_fields.contains("printing_type") {
                         if let Some(v) = stamp.attrs.get("colnect_printing") {
-                            colnect_parts.push(format!("Printing: {}", v));
+                            colnect_parts.push(format!("Printing type: {}", v));
                         }
                     }
                     if enabled_fields.contains("format") {
@@ -1919,17 +2467,14 @@ where
                     wrapped_entries.join("\\n")
                 };
 
-                // Build centre text based on layout mode
-                let centre = match detail_layout {
+                // Build centre text based on layout mode, keeping stamps_issued at the top.
+                let centre_body = match detail_layout {
                     "minimal" => {
                         // Minimal: only face value, no clutter
                         String::new()
                     }
                     "separate_rows" => {
                         let mut blocks: Vec<String> = Vec::new();
-                        if !raw_stamps_issued.is_empty() {
-                            blocks.push(raw_stamps_issued.clone());
-                        }
                         if !wrapped_desc.is_empty() {
                             blocks.push(wrapped_desc.clone());
                         }
@@ -1942,20 +2487,24 @@ where
                         blocks.join("\\n")
                     }
                     _ => {
-                        // Inline (default): everything crammed inside stamp box
-                        match (wrapped_desc.is_empty(), wrapped_colnect.is_empty()) {
-                            (true, true) => format!("{}\\n{}", raw_stamps_issued, raw_color),
-                            (false, true) => {
-                                format!("{}\\n{}\\n{}", raw_stamps_issued, wrapped_desc, raw_color)
-                            }
-                            (true, false) => {
-                                format!("{}\\n\\n{}\\n{}", raw_stamps_issued, wrapped_colnect, raw_color)
-                            }
-                            (false, false) => format!(
-                                "{}\\n{}\\n{}\\n{}",
-                                raw_stamps_issued, wrapped_desc, wrapped_colnect, raw_color
-                            ),
+                        // Inline (default): everything else inside the stamp box below issued count.
+                        let mut blocks: Vec<String> = Vec::new();
+                        if !wrapped_desc.is_empty() {
+                            blocks.push(wrapped_desc.clone());
                         }
+                        if !wrapped_colnect.is_empty() {
+                            if !wrapped_desc.is_empty() {
+                                blocks.push(wrapped_colnect.clone());
+                            } else if !raw_stamps_issued.is_empty() {
+                                blocks.push(format!("\\n{}", wrapped_colnect));
+                            } else {
+                                blocks.push(wrapped_colnect.clone());
+                            }
+                        }
+                        if !raw_color.is_empty() {
+                            blocks.push(raw_color.clone());
+                        }
+                        blocks.join("\\n")
                     }
                 };
 
@@ -2013,6 +2562,13 @@ where
                     .or(v_unused.clone())
                     .unwrap_or_else(|| "".to_string());
                 let second_line = v_used.clone().unwrap_or_else(|| "".to_string());
+                let centre = pad_centre_body_for_side_columns(
+                    &raw_stamps_issued,
+                    &centre_body,
+                    &left,
+                    &first_line,
+                    &second_line,
+                );
                 let right = format!("{}\\n{}", first_line, second_line);
                 if !image_path.is_empty() && Path::new(&full_image_path).exists() {
                     let emit_type = "standard";

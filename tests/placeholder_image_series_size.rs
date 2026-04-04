@@ -1,4 +1,4 @@
-use image::io::Reader as ImageReader;
+use image::ImageReader;
 
 #[test]
 fn placeholder_series_size_matches_hint() {

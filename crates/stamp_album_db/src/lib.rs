@@ -40,7 +40,12 @@ pub struct StampStub {
 }
 
 pub fn get_all_series(conn: &Connection) -> Result<Vec<String>> {
-    let mut stmt = conn.prepare("SELECT DISTINCT series FROM stamps ORDER BY series")?;
+    let mut stmt = conn.prepare(
+        "SELECT series
+         FROM stamps
+         GROUP BY series
+         ORDER BY COALESCE(MIN(NULLIF(year, 0)), 9999) ASC, series COLLATE NOCASE ASC",
+    )?;
     let iter = stmt.query_map([], |row| Ok(row.get::<_, String>(0)?))?;
     let mut res = Vec::new();
     for s in iter {

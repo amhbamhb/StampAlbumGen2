@@ -112,4 +112,16 @@ pub struct Cli {
     /// Bind address for review UI server (default: 127.0.0.1:7878)
     #[arg(long)]
     pub review_ui_bind: Option<String>,
+
+    /// Enable additional PDF generation diagnostics (DX/support logging)
+    #[arg(long, default_value_t = false)]
+    pub pdf_dx_logging: bool,
+
+    /// Remove Linux desktop launcher and icon created by Stamp Album Gen2, then exit.
+    #[arg(long, default_value_t = false)]
+    pub uninstall_desktop_launcher: bool,
+
+    /// Re-enable and install Linux desktop launcher and icon, then exit.
+    #[arg(long, default_value_t = false)]
+    pub install_desktop_launcher: bool,
 }

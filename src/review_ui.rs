@@ -1,10 +1,142 @@
 use base64::Engine;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
+use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, OnceLock};
+use std::thread;
+use std::time::Duration;
 use tiny_http::{Header, Method, Response, Server, StatusCode};
+
+mod views;
+use views::{render_bootstrap_html, render_html};
+
+mod config_editor;
+use config_editor::{
+    build_config_editor_data, build_config_editor_data_for_album, render_config_editor_assets,
+    save_album_config_diff, save_full_config_values, update_default_catalog_code_for_album,
+};
+
+mod matcher_service;
+use matcher_service::{
+    add_colnect_stamp_to_stamps, add_left_stamp, apply_matches, clear_left_colnect_link,
+    delete_colnect_candidate, delete_left_stamp, load_left_stamps, load_right_candidates,
+    save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
+};
+mod http_handlers;
+use http_handlers::{serve_bootstrap_requests, serve_review_requests};
+
+static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
+const RUNTIME_LOG_CAP: usize = 800;
+static REVIEW_UI_RUNTIME_LOG: OnceLock<Mutex<VecDeque<String>>> = OnceLock::new();
+static STAMPWORLD_JOB_STATE: OnceLock<Mutex<StampWorldJobState>> = OnceLock::new();
+static BOOTSTRAP_ALBUMS_ROOT_OVERRIDE: OnceLock<Mutex<Option<PathBuf>>> = OnceLock::new();
+
+fn runtime_log_buffer() -> &'static Mutex<VecDeque<String>> {
+    REVIEW_UI_RUNTIME_LOG.get_or_init(|| Mutex::new(VecDeque::with_capacity(RUNTIME_LOG_CAP)))
+}
+
+fn stampworld_job_state() -> &'static Mutex<StampWorldJobState> {
+    STAMPWORLD_JOB_STATE.get_or_init(|| Mutex::new(StampWorldJobState::Idle))
+}
+
+fn bootstrap_albums_root_override() -> &'static Mutex<Option<PathBuf>> {
+    BOOTSTRAP_ALBUMS_ROOT_OVERRIDE.get_or_init(|| Mutex::new(None))
+}
+
+pub fn log_runtime_event(message: &str) {
+    eprintln!("{}", message);
+    if let Ok(mut q) = runtime_log_buffer().lock() {
+        q.push_back(message.to_string());
+        while q.len() > RUNTIME_LOG_CAP {
+            let _ = q.pop_front();
+        }
+    }
+}
+
+pub fn get_runtime_log_lines() -> Vec<String> {
+    runtime_log_buffer()
+        .lock()
+        .map(|q| q.iter().cloned().collect())
+        .unwrap_or_default()
+}
+
+/// Tail the most recent log file in the Logs/ directory, returning the last N lines.
+/// Used during StampWorld pulls to display real-time feedback of DB inserts and progress.
+pub fn tail_current_log(lines_count: usize) -> Vec<String> {
+    // Find the most recent log file in Logs/
+    let logs_dir = std::path::Path::new("Logs");
+    if !logs_dir.exists() {
+        return vec![];
+    }
+
+    let mut log_files: Vec<_> = fs::read_dir(logs_dir)
+        .ok()
+        .and_then(|entries| {
+            entries
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_name().to_string_lossy().ends_with(".log"))
+                .collect::<Vec<_>>()
+                .into_iter()
+                .filter_map(|e| {
+                    e.metadata()
+                        .ok()
+                        .map(|m| (e.path(), m.modified().unwrap_or(std::time::UNIX_EPOCH)))
+                })
+                .collect::<Vec<_>>()
+                .into()
+        })
+        .unwrap_or_default();
+
+    if log_files.is_empty() {
+        return vec![];
+    }
+
+    // Sort by modification time, most recent first
+    log_files.sort_by(|a, b| b.1.cmp(&a.1));
+    let log_path = &log_files[0].0;
+
+    // Read the last N lines efficiently
+    match fs::File::open(log_path) {
+        Ok(file) => {
+            let reader = BufReader::new(file);
+            let lines: Vec<String> = reader.lines().filter_map(Result::ok).collect();
+            lines
+                .iter()
+                .rev()
+                .take(lines_count)
+                .rev()
+                .cloned()
+                .collect()
+        }
+        Err(_) => vec![],
+    }
+}
+
+struct PdfGenerationGuard;
+
+impl PdfGenerationGuard {
+    fn try_acquire() -> Option<Self> {
+        if PDF_GENERATION_IN_PROGRESS
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+        {
+            Some(Self)
+        } else {
+            None
+        }
+    }
+}
+
+impl Drop for PdfGenerationGuard {
+    fn drop(&mut self) {
+        PDF_GENERATION_IN_PROGRESS.store(false, Ordering::Release);
+    }
+}
 
 #[derive(Debug, Clone, Serialize)]
 struct DbField {
@@ -120,6 +252,8 @@ struct CatalogCodePair {
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
+    album_name: String,
+    show_imageless_left_rows: bool,
     default_catalog_code: String,
     odd_row_color: String,
     even_row_color: String,
@@ -150,6 +284,7 @@ struct BootstrapCountryInfo {
 #[derive(Debug, Serialize)]
 struct BootstrapStateResponse {
     countries: Vec<BootstrapCountryInfo>,
+    albums_root: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -163,6 +298,365 @@ struct BootstrapStartResponse {
     message: String,
     country: Option<String>,
     db_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapGeneratePdfRequest {
+    country: String,
+    #[serde(default)]
+    start_year: Option<i32>,
+    #[serde(default)]
+    end_year: Option<i32>,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapGeneratePdfResponse {
+    ok: bool,
+    message: String,
+    generated_output_path: Option<String>,
+    generated_pdf_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapStampWorldRunRequest {
+    country: String,
+    start_year: i32,
+    end_year: i32,
+    #[serde(default)]
+    preset: Option<String>,
+    #[serde(default)]
+    extra_flags: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapStampWorldRunResponse {
+    ok: bool,
+    message: String,
+    started: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapStampWorldStatusResponse {
+    ok: bool,
+    running: bool,
+    finished: bool,
+    success: Option<bool>,
+    message: String,
+    country: Option<String>,
+    db_path: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapAlbumEasyStatusResponse {
+    ok: bool,
+    configured: bool,
+    cli_path: Option<String>,
+    path_exists: bool,
+    message: String,
+    download_url: String,
+}
+
+#[derive(Debug, Serialize)]
+struct StampWorldLogTailResponse {
+    ok: bool,
+    lines: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapAlbumEasySetPathRequest {
+    cli_path: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapSetAlbumsRootRequest {
+    path: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapSetAlbumsRootResponse {
+    ok: bool,
+    message: String,
+    albums_root: Option<String>,
+    countries_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapPickAlbumsRootResponse {
+    ok: bool,
+    picked: bool,
+    message: String,
+    albums_root: Option<String>,
+    countries_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapAlbumEasySetPathResponse {
+    ok: bool,
+    message: String,
+}
+
+#[derive(Debug, Clone)]
+enum StampWorldJobState {
+    Idle,
+    Running {
+        country: String,
+        db_path: String,
+    },
+    Finished {
+        success: bool,
+        country: String,
+        db_path: String,
+        message: String,
+    },
+}
+
+fn parse_extra_flags(extra_flags: &Option<String>) -> Vec<String> {
+    extra_flags
+        .as_deref()
+        .unwrap_or("")
+        .split_whitespace()
+        .filter(|s| !s.trim().is_empty())
+        .map(|s| s.to_string())
+        .collect()
+}
+
+fn preset_flags(preset: &Option<String>) -> Vec<String> {
+    match preset.as_deref().unwrap_or("basic") {
+        "overwrite_album" => vec!["--overwrite-album".to_string()],
+        "overwrite_all" => vec![
+            "--overwrite-album".to_string(),
+            "--overwrite-images".to_string(),
+        ],
+        "bounded_pages" => vec![
+            "--max-pages".to_string(),
+            "25".to_string(),
+            "--stop-after-no-hits".to_string(),
+            "3".to_string(),
+        ],
+        "accept_typo" => vec!["--yes".to_string()],
+        _ => Vec::new(),
+    }
+}
+
+fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String> {
+    let country = req.country.trim().to_string();
+    let mut args = vec![
+        "--source".to_string(),
+        "stampworld".to_string(),
+        "--site-name".to_string(),
+        country.clone(),
+        "--album-name".to_string(),
+        country,
+        "--start-year".to_string(),
+        req.start_year.to_string(),
+        "--end-year".to_string(),
+        req.end_year.to_string(),
+    ];
+    args.extend(preset_flags(&req.preset));
+    args.extend(parse_extra_flags(&req.extra_flags));
+    args
+}
+
+fn quote_for_log(arg: &str) -> String {
+    if arg.contains(' ') || arg.contains('"') {
+        format!("\"{}\"", arg.replace('"', "\\\""))
+    } else {
+        arg.to_string()
+    }
+}
+
+fn set_stampworld_state(new_state: StampWorldJobState) {
+    if let Ok(mut state) = stampworld_job_state().lock() {
+        *state = new_state;
+    }
+}
+
+fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), String> {
+    let config_path = Path::new("config.toml");
+    let content = fs::read_to_string(config_path)
+        .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
+    let mut root_table = toml::from_str::<toml::Table>(&content)
+        .map_err(|e| format!("invalid TOML in {}: {}", config_path.display(), e))?;
+
+    let runtime_entry = root_table
+        .entry("runtime")
+        .or_insert_with(|| toml::Value::Table(toml::map::Map::new()));
+    if !runtime_entry.is_table() {
+        return Err("config runtime section is not a table".to_string());
+    }
+
+    let runtime_tbl = runtime_entry
+        .as_table_mut()
+        .ok_or_else(|| "failed to access runtime table".to_string())?;
+    match value.map(str::trim).filter(|v| !v.is_empty()) {
+        Some(v) => {
+            runtime_tbl.insert(key.to_string(), toml::Value::String(v.to_string()));
+        }
+        None => {
+            runtime_tbl.remove(key);
+        }
+    }
+
+    let rendered = toml::to_string_pretty(&root_table)
+        .map_err(|e| format!("failed to render updated config TOML: {}", e))?;
+    fs::write(config_path, rendered)
+        .map_err(|e| format!("failed to write {}: {}", config_path.display(), e))?;
+    Ok(())
+}
+
+fn save_runtime_albumeasy_cli_path(cli_path: &str) -> Result<(), String> {
+    let path = cli_path.trim();
+    if path.is_empty() {
+        return Err("AlbumEasy CLI path cannot be empty".to_string());
+    }
+
+    save_runtime_string_setting("albumeasy_cli_path", Some(path))
+}
+
+fn save_runtime_bootstrap_albums_root_path(path: Option<&str>) -> Result<(), String> {
+    save_runtime_string_setting("bootstrap_albums_root_path", path)
+}
+
+fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<String, String> {
+    let country = req.country.trim().to_string();
+    if country.is_empty() {
+        return Err("Country is required".to_string());
+    }
+    if req.start_year > req.end_year {
+        return Err("Start year must be less than or equal to end year".to_string());
+    }
+
+    let slug = country.replace(' ', "-");
+    let db_path = format!("Albums/{0}/{0}.db", slug);
+
+    {
+        let mut state = stampworld_job_state()
+            .lock()
+            .map_err(|_| "Failed to lock StampWorld state".to_string())?;
+        if matches!(&*state, StampWorldJobState::Running { .. }) {
+            return Err("A StampWorld pull is already running".to_string());
+        }
+        *state = StampWorldJobState::Running {
+            country: country.clone(),
+            db_path: db_path.clone(),
+        };
+    }
+
+    let exe =
+        std::env::current_exe().map_err(|e| format!("failed to resolve executable: {}", e))?;
+    let args = build_stampworld_args(&req);
+    let display_cmd = format!(
+        "{} {}",
+        exe.display(),
+        args.iter()
+            .map(|a| quote_for_log(a))
+            .collect::<Vec<_>>()
+            .join(" ")
+    );
+    let country_for_thread = country.clone();
+    let db_path_for_thread = db_path.clone();
+
+    log_runtime_event(&format!("StampWorld: starting command {}", display_cmd));
+    log_runtime_event("StampWorld: running. You can watch progress in Runtime Log.");
+
+    thread::spawn(move || {
+        let mut cmd = Command::new(&exe);
+        cmd.args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped());
+
+        let mut child = match cmd.spawn() {
+            Ok(c) => c,
+            Err(e) => {
+                let msg = format!("StampWorld: failed to launch command: {}", e);
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: false,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+                return;
+            }
+        };
+
+        let out_handle = child.stdout.take().map(|stdout| {
+            thread::spawn(move || {
+                let reader = BufReader::new(stdout);
+                for line in reader.lines().map_while(Result::ok) {
+                    if !line.trim().is_empty() {
+                        log_runtime_event(&format!("StampWorld: {}", line));
+                    }
+                }
+            })
+        });
+
+        let err_handle = child.stderr.take().map(|stderr| {
+            thread::spawn(move || {
+                let reader = BufReader::new(stderr);
+                for line in reader.lines().map_while(Result::ok) {
+                    if !line.trim().is_empty() {
+                        log_runtime_event(&format!("StampWorld [stderr]: {}", line));
+                    }
+                }
+            })
+        });
+
+        let wait_result = child.wait();
+        if let Some(h) = out_handle {
+            let _ = h.join();
+        }
+        if let Some(h) = err_handle {
+            let _ = h.join();
+        }
+
+        match wait_result {
+            Ok(status) if status.success() => {
+                let msg = format!(
+                    "StampWorld pull completed for {}. Open Review to continue.",
+                    country_for_thread
+                );
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: true,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+            }
+            Ok(status) => {
+                let msg = format!(
+                    "StampWorld pull failed for {} (exit status {}).",
+                    country_for_thread, status
+                );
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: false,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+            }
+            Err(e) => {
+                let msg = format!(
+                    "StampWorld command wait failed for {}: {}",
+                    country_for_thread, e
+                );
+                log_runtime_event(&msg);
+                set_stampworld_state(StampWorldJobState::Finished {
+                    success: false,
+                    country: country_for_thread.clone(),
+                    db_path: db_path_for_thread.clone(),
+                    message: msg,
+                });
+            }
+        }
+    });
+
+    Ok(format!(
+        "StampWorld pull started for {}. Command: {}",
+        country, display_cmd
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -200,6 +694,7 @@ struct ApplyMatchesEnvelope {
 struct ApplyMatchesResponse {
     updated_rows: usize,
     skipped_rows: usize,
+    skipped_details: Vec<String>,
     processed_colnect_ids: Vec<String>,
     errors: Vec<String>,
 }
@@ -223,6 +718,150 @@ struct AddColnectStampResponse {
     message: String,
     added_left: Option<LeftStamp>,
     processed_colnect_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(default)]
+struct SaveLeftStampRequest {
+    rowid: i64,
+    sg_number: String,
+    year: i32,
+    series: String,
+    description: String,
+    watermark: String,
+    design: String,
+    engraving: String,
+    perforation: String,
+    context: String,
+    width: String,
+    height: String,
+    colnect_page_url: String,
+    colnect_image_url: String,
+    colnect_id: String,
+    colnect_name: String,
+    colnect_catalog_codes: String,
+    colnect_country: String,
+    colnect_width: String,
+    colnect_height: String,
+    colnect_format: String,
+    colnect_emission: String,
+    colnect_printing: String,
+    colnect_paper: String,
+    colnect_gum: String,
+    colnect_ord_mi: String,
+    colnect_ord_sn: String,
+    colnect_ord_yt: String,
+    colnect_face_value: String,
+    colnect_currency: String,
+    colnect_ord_sg: String,
+    colnect_expiry_date: String,
+    colnect_print_run: String,
+    colnect_colors: String,
+    colnect_parent_item: String,
+    colnect_variant: String,
+    colnect_overprint_variant: String,
+    colnect_score: String,
+    colnect_accuracy: String,
+    colnect_list: String,
+    colnect_quantity: String,
+    colnect_condition: String,
+    colnect_public_note: String,
+    colnect_private_note: String,
+    image_mode: Option<String>,
+    upload_data_url: Option<String>,
+    upload_filename: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct SaveLeftStampResponse {
+    ok: bool,
+    message: String,
+    updated_left: Option<LeftStamp>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+#[serde(default)]
+struct AddLeftStampRequest {
+    source_rowid: Option<i64>,
+    sg_number: String,
+    year: i32,
+    series: String,
+    description: String,
+    watermark: String,
+    design: String,
+    engraving: String,
+    perforation: String,
+    context: String,
+    width: String,
+    height: String,
+    colnect_page_url: String,
+    colnect_image_url: String,
+    colnect_id: String,
+    colnect_name: String,
+    colnect_catalog_codes: String,
+    colnect_country: String,
+    colnect_width: String,
+    colnect_height: String,
+    colnect_format: String,
+    colnect_emission: String,
+    colnect_printing: String,
+    colnect_paper: String,
+    colnect_gum: String,
+    colnect_ord_mi: String,
+    colnect_ord_sn: String,
+    colnect_ord_yt: String,
+    colnect_face_value: String,
+    colnect_currency: String,
+    colnect_ord_sg: String,
+    colnect_expiry_date: String,
+    colnect_print_run: String,
+    colnect_colors: String,
+    colnect_parent_item: String,
+    colnect_variant: String,
+    colnect_overprint_variant: String,
+    colnect_score: String,
+    colnect_accuracy: String,
+    colnect_list: String,
+    colnect_quantity: String,
+    colnect_condition: String,
+    colnect_public_note: String,
+    colnect_private_note: String,
+    image_mode: Option<String>,
+    upload_data_url: Option<String>,
+    upload_filename: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct AddLeftStampResponse {
+    ok: bool,
+    message: String,
+    added_left: Option<LeftStamp>,
+}
+
+#[derive(Debug, Deserialize)]
+struct DeleteLeftStampRequest {
+    rowid: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct DeleteLeftStampResponse {
+    ok: bool,
+    message: String,
+    deleted_rowid: Option<i64>,
+    restored_colnect_id: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ClearLeftColnectLinkRequest {
+    rowid: i64,
+}
+
+#[derive(Debug, Serialize)]
+struct ClearLeftColnectLinkResponse {
+    ok: bool,
+    message: String,
+    updated_left: Option<LeftStamp>,
+    restored_colnect_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -255,6 +894,10 @@ struct ShutdownRequest {
     generate_album: bool,
     #[serde(default)]
     generate_pdf: bool,
+    #[serde(default)]
+    start_year: Option<i32>,
+    #[serde(default)]
+    end_year: Option<i32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -263,6 +906,97 @@ struct ShutdownResponse {
     message: String,
     generated_output_path: Option<String>,
     generated_pdf_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ColnectImportRequest {
+    // Empty request - just triggers import from configured/default colnect folder
+}
+
+#[derive(Debug, Serialize)]
+struct ColnectImportResponse {
+    ok: bool,
+    message: String,
+    files_processed: usize,
+    stamps_imported: usize,
+    stamps_skipped: usize,
+    errors: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct UpdateDefaultCatalogRequest {
+    default_catalog_code: String,
+}
+
+#[derive(Debug, Serialize)]
+struct UpdateDefaultCatalogResponse {
+    ok: bool,
+    message: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct ConfigEditorField {
+    id: String,
+    section_id: String,
+    section_title: String,
+    key: String,
+    template_value: String,
+    current_value: String,
+    /// Value from the global config.toml before any album override is applied.
+    /// Equals `current_value` when there is no album override for this field.
+    global_value: String,
+    /// True when this field is explicitly set in the album-local config.toml.
+    is_album_override: bool,
+    comments: Vec<String>,
+    from_template: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct ConfigEditorSection {
+    id: String,
+    title: String,
+    comments: Vec<String>,
+    fields: Vec<ConfigEditorField>,
+}
+
+#[derive(Debug, Serialize)]
+struct ConfigEditorDataResponse {
+    ok: bool,
+    message: String,
+    sections: Vec<ConfigEditorSection>,
+    /// Empty string when there is no active album (bootstrap UI).
+    album_name: String,
+    /// True when Albums/<album_name>/config.toml already exists.
+    has_album_override: bool,
+}
+
+#[derive(Debug, Deserialize)]
+struct SaveConfigEditorRequest {
+    values: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize)]
+struct SaveConfigEditorResponse {
+    ok: bool,
+    message: String,
+    reload_required: bool,
+}
+
+pub enum ReviewUiBootstrapOutcome {
+    Exit,
+    ReloadRequested,
+    Selected {
+        db_path: String,
+        country: String,
+        server: Server,
+        bind: String,
+    },
+}
+
+pub enum ReviewUiRunOutcome {
+    Exit,
+    ReloadRequested,
+    ReturnToStartRequested,
 }
 
 fn path_to_file_url(path: &Path) -> Option<String> {
@@ -289,6 +1023,63 @@ fn open_local_path(path: &Path) {
             error
         );
     }
+}
+
+fn try_spawn_browser_command(program: &str, args: &[&str]) -> bool {
+    Command::new(program)
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .is_ok()
+}
+
+fn try_open_url_once(url: &str) -> bool {
+    if webbrowser::open(url).is_ok() {
+        return true;
+    }
+
+    if try_spawn_browser_command("xdg-open", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("gio", &["open", url]) {
+        return true;
+    }
+    if try_spawn_browser_command("kde-open5", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("kde-open6", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("kde-open", &[url]) {
+        return true;
+    }
+    if try_spawn_browser_command("sensible-browser", &[url]) {
+        return true;
+    }
+
+    false
+}
+
+fn open_review_ui_url(url: &str) {
+    for attempt in 1..=4 {
+        if try_open_url_once(url) {
+            if attempt > 1 {
+                log_runtime_event(&format!(
+                    "Review UI: browser auto-open succeeded on retry {}.",
+                    attempt
+                ));
+            }
+            return;
+        }
+        thread::sleep(Duration::from_millis(350));
+    }
+
+    log_runtime_event(&format!(
+        "Review UI: automatic browser launch failed. Open this URL manually: {}",
+        url
+    ));
 }
 
 fn mime_from_path(path: &Path) -> &'static str {
@@ -397,8 +1188,10 @@ fn count_colnect_candidates_in_db(db_path: &Path) -> usize {
 }
 
 fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
-    let albums_root = Path::new("Albums");
-    let Ok(entries) = fs::read_dir(albums_root) else {
+    let Some(albums_root) = resolve_bootstrap_albums_root() else {
+        return Vec::new();
+    };
+    let Ok(entries) = fs::read_dir(&albums_root) else {
         return Vec::new();
     };
 
@@ -432,308 +1225,175 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
     out
 }
 
-fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
-    let inbox_hint = default_inbox_path.unwrap_or("samples/colnect_inbox");
-    format!(
-        r#"<!doctype html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Stamp Matcher Setup</title>
-<style>
-body {{ font-family: sans-serif; margin: 20px; background: linear-gradient(180deg, #edf4f8, #f8fbfd); color: #1e3548; }}
-.card {{ max-width: 960px; background: #fff; border: 1px solid #d7e2eb; border-radius: 12px; padding: 16px; box-shadow: 0 10px 24px rgba(28, 56, 82, 0.08); }}
-h1 {{ margin: 0 0 8px 0; }}
-p {{ margin: 0 0 10px 0; color: #395970; }}
-.row {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
-.badge {{ display: inline-block; border: 1px solid #d2dfea; background: #f6fbff; border-radius: 999px; padding: 2px 8px; font-size: 12px; }}
-.panel {{ border: 1px solid #e2e9ef; border-left: 5px solid #2f6fa3; border-radius: 10px; padding: 12px; background: #fbfdff; margin-top: 12px; }}
-.warn {{ border-left-color: #9b6a20; background: #fffaf2; }}
-.ok {{ border-left-color: #2f8f63; background: #f4fcf8; }}
-label {{ font-size: 13px; font-weight: 600; }}
-select, input {{ padding: 7px 8px; border: 1px solid #c8d5e2; border-radius: 8px; min-width: 170px; }}
-button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #c8d5e2; background: #fff; cursor: pointer; }}
-button.primary {{ background: #2f6fa3; color: #fff; border-color: #2f6fa3; }}
-button:hover {{ background: #f1f6fa; }}
-code {{ background: #eef4f8; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
-.status {{ margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }}
-.loadingBox {{ display: none; margin-top: 12px; padding: 12px; border: 1px solid #d7e2eb; border-left: 5px solid #2f6fa3; border-radius: 10px; background: #f5fafe; }}
-.spinner {{ width: 16px; height: 16px; border: 3px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; display: inline-block; animation: spin 0.9s linear infinite; }}
-.loadingRow {{ display: flex; align-items: center; gap: 10px; }}
-.dots {{ display: inline-block; min-width: 18px; text-align: left; }}
-body.busy {{ cursor: progress; }}
-body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-events: none; }}
-@keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
-</style>
-</head>
-<body>
-<div class='card'>
-    <h1>Start Review UI</h1>
-    <p>No database was selected on startup. Pick a country to open its Review UI.</p>
-    <div class='row'>
-        <label for='countrySel'>Country</label>
-        <select id='countrySel'></select>
-        <button onclick='refreshState()'>Refresh</button>
-        <button class='primary' onclick='startReview()'>Open Review</button>
-        <span id='countryCount' class='badge'>Countries: 0</span>
-    </div>
-
-    <div id='countryPanel' class='panel'></div>
-    <div id='stampworldPanel' class='panel warn' style='display:none;'>
-        <strong>No Colnect files found for this country.</strong>
-        <p style='margin-top:6px;'>You can run StampWorld pull first, then import Colnect CSV files and come back.</p>
-        <div class='row'>
-            <label>StampWorld Country</label>
-            <input id='swCountry' type='text' />
-            <label>Start Year</label>
-            <input id='swStartYear' type='number' value='1840' />
-            <label>End Year</label>
-            <input id='swEndYear' type='number' value='2026' />
-        </div>
-        <div class='row'>
-            <span class='badge'>Colnect inbox hint: {}</span>
-        </div>
-        <div class='row'>
-            <strong>Suggested command:</strong>
-            <code id='swCmd'></code>
-        </div>
-    </div>
-    <div id='status' class='status'></div>
-    <div id='loadingBox' class='loadingBox'>
-        <div class='loadingRow'>
-            <span class='spinner'></span>
-            <div>
-                <strong>Preparing Review UI<span id='loadingDotsTitle' class='dots'></span></strong><br/>
-                <span id='loadingText'>Loading country data and opening the compare view. This may take a few seconds.</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-let countries = [];
-let loadingDotsTimer = null;
-let loadingPhaseTimer = null;
-
-function startLoadingPhases(country) {{
-    const txt = document.getElementById('loadingText');
-    if (!txt) return;
-
-    if (loadingPhaseTimer) {{
-        clearInterval(loadingPhaseTimer);
-        loadingPhaseTimer = null;
-    }}
-
-    const phases = [
-        `Preparing data from ${{country}}`,
-        'Opening database...',
-        'Syncing processed Colnect candidates...',
-        'Loading left StampWorld rows...',
-        'Loading right Colnect candidates...',
-        'Starting local web server...',
-        'Opening compare view in browser...'
-    ];
-
-    let idx = 0;
-    txt.innerText = phases[idx];
-    loadingPhaseTimer = setInterval(() => {{
-        idx = (idx + 1) % phases.length;
-        txt.innerText = phases[idx];
-    }}, 900);
-}}
-
-function stopLoadingPhases() {{
-    if (loadingPhaseTimer) {{
-        clearInterval(loadingPhaseTimer);
-        loadingPhaseTimer = null;
-    }}
-}}
-
-function setMovingDots(active) {{
-    const dots = document.getElementById('loadingDotsTitle');
-    if (!dots) return;
-
-    if (!active) {{
-        if (loadingDotsTimer) {{
-            clearInterval(loadingDotsTimer);
-            loadingDotsTimer = null;
-        }}
-        stopLoadingPhases();
-        dots.innerText = '';
-        return;
-    }}
-
-    if (loadingDotsTimer) return;
-    let idx = 0;
-    const frames = ['', '.', '..', '...'];
-    loadingDotsTimer = setInterval(() => {{
-        idx = (idx + 1) % frames.length;
-        dots.innerText = frames[idx];
-    }}, 260);
-}}
-
-function setBusy(isBusy, message) {{
-    document.body.classList.toggle('busy', isBusy);
-    const box = document.getElementById('loadingBox');
-    const txt = document.getElementById('loadingText');
-    if (txt && message) txt.innerText = message;
-    if (box) box.style.display = isBusy ? 'block' : 'none';
-    setMovingDots(isBusy);
-}}
-
-function slugCountry(name) {{
-    return String(name || '').trim().replaceAll(' ', '-');
-}}
-
-function suggestedStampworldCommand(country) {{
-    const c = document.getElementById('swCountry').value || country || '';
-    const y1 = document.getElementById('swStartYear').value || '1840';
-    const y2 = document.getElementById('swEndYear').value || '2026';
-    return `cargo run -- --source stampworld --site-name "${{c}}" --album-name "${{c}}" --start-year ${{y1}} --end-year ${{y2}}`;
-}}
-
-function renderCountryPanel() {{
-    const sel = document.getElementById('countrySel');
-    const c = countries.find(x => x.country === sel.value);
-    if (!c) {{
-        document.getElementById('countryPanel').innerHTML = '<em>No countries found under Albums/*/*.db</em>';
-        document.getElementById('stampworldPanel').style.display = '';
-        document.getElementById('swCmd').innerText = suggestedStampworldCommand('');
-        return;
-    }}
-    document.getElementById('countryPanel').className = c.colnect_file_count > 0 || c.colnect_candidate_count > 0 ? 'panel ok' : 'panel';
-    document.getElementById('countryPanel').innerHTML =
-        `<strong>${{c.country}}</strong><br/>` +
-        `<span class='badge'>DB: ${{c.db_path}}</span> ` +
-        `<span class='badge'>Colnect files: ${{c.colnect_file_count}}</span> ` +
-        `<span class='badge'>DB candidates: ${{c.colnect_candidate_count}}</span>`;
-
-    document.getElementById('swCountry').value = c.country;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(c.country);
-    document.getElementById('stampworldPanel').style.display = (c.colnect_file_count === 0 && c.colnect_candidate_count === 0) ? '' : 'none';
-}}
-
-async function refreshState() {{
-    const status = document.getElementById('status');
-    status.innerText = 'Scanning Albums...';
-    setBusy(false, '');
-    try {{
-        const r = await fetch('/bootstrap-state');
-        const j = await r.json();
-        countries = j.countries || [];
-        const sel = document.getElementById('countrySel');
-        const old = sel.value;
-        sel.innerHTML = countries.map(c => `<option value="${{c.country}}">${{c.country}}</option>`).join('');
-        if (old && countries.some(c => c.country === old)) sel.value = old;
-        if (!sel.value && countries.length) sel.value = countries[0].country;
-        document.getElementById('countryCount').innerText = `Countries: ${{countries.length}}`;
-        renderCountryPanel();
-        status.innerText = countries.length ? 'Select a country and open review.' : 'No country DBs found. Create one by running a StampWorld pull first.';
-    }} catch (e) {{
-        status.innerText = `Failed to load startup state: ${{e}}`;
-    }}
-}}
-
-async function startReview() {{
-    const sel = document.getElementById('countrySel');
-    if (!sel.value) {{
-        document.getElementById('status').innerText = 'Select a country first.';
-        return;
-    }}
-    document.getElementById('status').innerText = `Starting Review UI for ${{sel.value}}...`;
-    setBusy(true, `Preparing data from ${{sel.value}}`);
-    startLoadingPhases(sel.value);
-    try {{
-        const r = await fetch('/start-review', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ country: sel.value }})
-        }});
-        const j = await r.json();
-        if (!j.ok) {{
-            setBusy(false, '');
-            document.getElementById('status').innerText = j.message || 'Failed to start review.';
-            return;
-        }}
-        stopLoadingPhases();
-        document.getElementById('loadingText').innerText = 'Launching compare view...';
-        document.getElementById('status').innerText = j.message || 'Launching review...';
-        // Poll /compare-ready until the review UI server is accepting requests,
-        // then redirect. This avoids a race between data loading and the redirect.
-        (async function pollReady() {{
-            for (let attempt = 0; attempt < 60; attempt++) {{
-                await new Promise(r => setTimeout(r, 500));
-                try {{
-                    const rdy = await fetch('/compare-ready');
-                    if (rdy.ok) {{
-                        window.location.href = '/';
-                        return;
-                    }}
-                }} catch (_) {{}}
-            }}
-            // Fallback after 30 s: redirect anyway
-            window.location.href = '/';
-        }})();
-    }} catch (e) {{
-        setBusy(false, '');
-        document.getElementById('status').innerText = `Failed to start: ${{e}}`;
-    }}
-}}
-
-document.getElementById('countrySel').addEventListener('change', renderCountryPanel);
-document.getElementById('swCountry').addEventListener('input', () => {{
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
-}});
-document.getElementById('swStartYear').addEventListener('input', () => {{
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
-}});
-document.getElementById('swEndYear').addEventListener('input', () => {{
-    const country = document.getElementById('countrySel').value;
-    document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
-}});
-
-refreshState();
-</script>
-</body>
-</html>"#,
-        inbox_hint
-    )
+fn current_bootstrap_albums_root() -> Option<String> {
+    resolve_bootstrap_albums_root().map(|p| p.to_string_lossy().to_string())
 }
 
-fn sync_processed_colnect_candidates(conn: &Connection) -> Result<(), Box<dyn std::error::Error>> {
-    conn.execute(
-        "UPDATE colnect_stamps
-         SET is_processed = CASE
-             WHEN TRIM(COALESCE(colnect_id, '')) != ''
-              AND EXISTS (
-                  SELECT 1
-                  FROM stamps s
-                  WHERE TRIM(COALESCE(s.colnect_id, '')) = TRIM(COALESCE(colnect_stamps.colnect_id, ''))
-                    AND TRIM(COALESCE(s.colnect_id, '')) != ''
-              ) THEN 1
-             ELSE 0
-         END",
-        [],
-    )?;
-    Ok(())
-}
+fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
+    let title = "Select Albums Root (Albums folder or its parent)";
+    let current = current_bootstrap_albums_root().unwrap_or_else(|| ".".to_string());
 
-fn mark_colnect_candidate_processed(
-    conn: &Connection,
-    colnect_id: &str,
-) -> rusqlite::Result<usize> {
-    if colnect_id.trim().is_empty() {
-        return Ok(0);
+    if which::which("zenity").is_ok() {
+        let output = Command::new("zenity")
+            .arg("--file-selection")
+            .arg("--directory")
+            .arg("--title")
+            .arg(title)
+            .arg("--filename")
+            .arg(format!("{}/", current.trim_end_matches('/')))
+            .output()
+            .map_err(|e| format!("failed to launch zenity: {}", e))?;
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return if selected.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(selected))
+            };
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+
+        return Err(format!(
+            "zenity failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
     }
 
-    conn.execute(
-        "UPDATE colnect_stamps
-         SET is_processed = 1
-         WHERE TRIM(COALESCE(colnect_id, '')) = TRIM(?1)",
-        params![colnect_id],
-    )
+    if which::which("kdialog").is_ok() {
+        let output = Command::new("kdialog")
+            .arg("--getexistingdirectory")
+            .arg(&current)
+            .arg("--title")
+            .arg(title)
+            .output()
+            .map_err(|e| format!("failed to launch kdialog: {}", e))?;
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return if selected.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(selected))
+            };
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+
+        return Err(format!(
+            "kdialog failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    Err("No supported folder picker found (install zenity or kdialog)".to_string())
+}
+
+fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        save_runtime_bootstrap_albums_root_path(None)?;
+        let mut guard = bootstrap_albums_root_override()
+            .lock()
+            .map_err(|_| "failed to lock albums root override state".to_string())?;
+        *guard = None;
+        return Ok(current_bootstrap_albums_root());
+    }
+
+    let candidate = PathBuf::from(trimmed);
+    let resolved = normalize_albums_root_candidate(&candidate).ok_or_else(|| {
+        "Path must point to an Albums directory or a folder containing Albums".to_string()
+    })?;
+
+    if !resolved.exists() || !resolved.is_dir() {
+        return Err(format!(
+            "Albums path does not exist or is not a directory: {}",
+            resolved.display()
+        ));
+    }
+
+    save_runtime_bootstrap_albums_root_path(Some(&resolved.to_string_lossy()))?;
+
+    let mut guard = bootstrap_albums_root_override()
+        .lock()
+        .map_err(|_| "failed to lock albums root override state".to_string())?;
+    *guard = Some(resolved.clone());
+    Ok(Some(resolved.to_string_lossy().to_string()))
+}
+
+fn resolve_bootstrap_albums_root() -> Option<PathBuf> {
+    if let Ok(guard) = bootstrap_albums_root_override().lock() {
+        if let Some(path) = guard.as_ref() {
+            if path.exists() && path.is_dir() {
+                return Some(path.clone());
+            }
+        }
+    }
+
+    if let Some(persisted) = crate::config::load_config("config.toml")
+        .effective_bootstrap_albums_root_path()
+        .map(PathBuf::from)
+    {
+        if let Some(albums_dir) = normalize_albums_root_candidate(&persisted) {
+            if let Ok(mut guard) = bootstrap_albums_root_override().lock() {
+                *guard = Some(albums_dir.clone());
+            }
+            return Some(albums_dir);
+        }
+    }
+
+    if let Ok(mut dir) = std::env::current_dir() {
+        for _ in 0..8 {
+            if let Some(albums_dir) = normalize_albums_root_candidate(&dir) {
+                return Some(albums_dir);
+            }
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
+
+    if let Ok(exe_path) = std::env::current_exe() {
+        if let Some(mut dir) = exe_path.parent().map(|p| p.to_path_buf()) {
+            for _ in 0..8 {
+                if let Some(albums_dir) = normalize_albums_root_candidate(&dir) {
+                    return Some(albums_dir);
+                }
+                if !dir.pop() {
+                    break;
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn normalize_albums_root_candidate(path: &Path) -> Option<PathBuf> {
+    if !path.exists() || !path.is_dir() {
+        return None;
+    }
+
+    let direct = path.join("Albums");
+    if direct.exists() && direct.is_dir() {
+        return Some(direct);
+    }
+
+    if path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .map(|name| name.eq_ignore_ascii_case("albums"))
+        .unwrap_or(false)
+    {
+        return Some(path.to_path_buf());
+    }
+
+    None
 }
 
 fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> String {
@@ -802,1407 +1462,6 @@ fn load_stamp_all_fields(
     Ok(fields)
 }
 
-fn load_left_stamps(
-    conn: &Connection,
-    db_path: &str,
-    album_name: &str,
-) -> Result<Vec<LeftStamp>, Box<dyn std::error::Error>> {
-    let mut stmt = conn.prepare(
-        "SELECT rowid,
-                COALESCE(sg_number, ''),
-                COALESCE(year, 0),
-                COALESCE(series, ''),
-                COALESCE(image_path, ''),
-                COALESCE(stampworld_image_url, ''),
-                COALESCE(description, ''),
-                COALESCE(watermark, ''),
-                COALESCE(design, ''),
-                COALESCE(engraving, ''),
-                COALESCE(perforation, ''),
-            COALESCE(context, ''),
-            COALESCE(colnect_page_url, ''),
-            COALESCE(colnect_image_url, ''),
-            COALESCE(colnect_id, ''),
-            COALESCE(colnect_name, ''),
-            COALESCE(colnect_catalog_codes, ''),
-            COALESCE(colnect_country, ''),
-            COALESCE(colnect_width, ''),
-            COALESCE(colnect_height, ''),
-            COALESCE(colnect_format, ''),
-            COALESCE(colnect_emission, ''),
-            COALESCE(colnect_printing, ''),
-            COALESCE(colnect_paper, ''),
-            COALESCE(colnect_gum, ''),
-            COALESCE(colnect_ord_mi, ''),
-            COALESCE(colnect_ord_sn, ''),
-            COALESCE(colnect_ord_yt, ''),
-            COALESCE(colnect_face_value, ''),
-            COALESCE(colnect_currency, ''),
-            COALESCE(colnect_ord_sg, ''),
-            COALESCE(colnect_expiry_date, ''),
-            COALESCE(colnect_print_run, ''),
-            COALESCE(colnect_colors, ''),
-            COALESCE(colnect_parent_item, ''),
-            COALESCE(colnect_variant, ''),
-            COALESCE(colnect_overprint_variant, ''),
-            COALESCE(colnect_score, ''),
-            COALESCE(colnect_accuracy, ''),
-            COALESCE(colnect_list, ''),
-            COALESCE(colnect_quantity, ''),
-            COALESCE(colnect_condition, ''),
-            COALESCE(colnect_public_note, ''),
-            COALESCE(colnect_private_note, '')
-         FROM stamps
-         WHERE TRIM(COALESCE(image_path, '')) != ''
-           AND LOWER(COALESCE(image_path, '')) NOT LIKE 'images/no_image%'
-         ORDER BY year, sg_number",
-    )?;
-
-    let rows = stmt.query_map([], |row| {
-        let rel_image = row.get::<_, String>(4)?;
-        Ok(LeftStamp {
-            rowid: row.get(0)?,
-            sg_number: row.get(1)?,
-            year: row.get(2)?,
-            series: row.get(3)?,
-            image_path: rel_image.clone(),
-            image_abs: resolve_image_abs(db_path, album_name, &rel_image),
-            stampworld_image_url: row.get(5)?,
-            description: row.get(6)?,
-            watermark: row.get(7)?,
-            design: row.get(8)?,
-            engraving: row.get(9)?,
-            perforation: row.get(10)?,
-            context: row.get(11)?,
-            colnect_page_url: row.get(12)?,
-            colnect_image_url: row.get(13)?,
-            colnect_id: row.get(14)?,
-            colnect_name: row.get(15)?,
-            colnect_catalog_codes: row.get(16)?,
-            colnect_country: row.get(17)?,
-            colnect_width: row.get(18)?,
-            colnect_height: row.get(19)?,
-            colnect_format: row.get(20)?,
-            colnect_emission: row.get(21)?,
-            colnect_printing: row.get(22)?,
-            colnect_paper: row.get(23)?,
-            colnect_gum: row.get(24)?,
-            colnect_ord_mi: row.get(25)?,
-            colnect_ord_sn: row.get(26)?,
-            colnect_ord_yt: row.get(27)?,
-            colnect_face_value: row.get(28)?,
-            colnect_currency: row.get(29)?,
-            colnect_ord_sg: row.get(30)?,
-            colnect_expiry_date: row.get(31)?,
-            colnect_print_run: row.get(32)?,
-            colnect_colors: row.get(33)?,
-            colnect_parent_item: row.get(34)?,
-            colnect_variant: row.get(35)?,
-            colnect_overprint_variant: row.get(36)?,
-            colnect_score: row.get(37)?,
-            colnect_accuracy: row.get(38)?,
-            colnect_list: row.get(39)?,
-            colnect_quantity: row.get(40)?,
-            colnect_condition: row.get(41)?,
-            colnect_public_note: row.get(42)?,
-            colnect_private_note: row.get(43)?,
-            all_db_fields: Vec::new(),
-        })
-    })?;
-
-    let mut out = Vec::new();
-    for r in rows {
-        out.push(r?);
-    }
-    for stamp in &mut out {
-        stamp.all_db_fields = load_stamp_all_fields(conn, stamp.rowid).unwrap_or_default();
-    }
-    Ok(out)
-}
-
-fn load_right_candidates(
-    conn: &Connection,
-    db_path: &str,
-    album_name: &str,
-) -> Result<Vec<RightCandidate>, Box<dyn std::error::Error>> {
-    let mut code_stmt = conn.prepare(
-        "SELECT COALESCE(colnect_id, ''), COALESCE(catalog_type, ''), COALESCE(code, '')
-         FROM colnect_catalog_codes",
-    )?;
-    let code_rows = code_stmt.query_map([], |row| {
-        Ok((
-            row.get::<_, String>(0)?,
-            row.get::<_, String>(1)?,
-            row.get::<_, String>(2)?,
-        ))
-    })?;
-    let mut code_map: HashMap<String, Vec<CatalogCodePair>> = HashMap::new();
-    for r in code_rows {
-        let (cid, ctype, code) = r?;
-        if cid.trim().is_empty() || code.trim().is_empty() {
-            continue;
-        }
-        code_map.entry(cid).or_default().push(CatalogCodePair {
-            catalog_type: ctype,
-            code,
-        });
-    }
-
-    let mut stmt = conn.prepare(
-        "SELECT COALESCE(c.colnect_id, ''),
-                COALESCE(c.sg_number, ''),
-                CAST(substr(COALESCE(c.issued_on, ''), 1, 4) AS INTEGER),
-                COALESCE(c.series, ''),
-                COALESCE(c.colnect_link, ''),
-                COALESCE(c.description, ''),
-                COALESCE(c.name, ''),
-                COALESCE(c.watermark, ''),
-                COALESCE(c.designers, ''),
-                COALESCE(c.printers, ''),
-                COALESCE(c.perforation, ''),
-                COALESCE(c.themes, ''),
-                COALESCE(c.catalog_codes, ''),
-                COALESCE(c.country, ''),
-                COALESCE(c.width, ''),
-                COALESCE(c.height, ''),
-                COALESCE(c.format, ''),
-                COALESCE(c.emission, ''),
-                COALESCE(c.printing, ''),
-                COALESCE(c.paper, ''),
-                COALESCE(c.gum, ''),
-                COALESCE(c.ord_mi, ''),
-                COALESCE(c.ord_sn, ''),
-                COALESCE(c.ord_yt, ''),
-                COALESCE(c.ord_sg, ''),
-                COALESCE(c.expiry_date, ''),
-                COALESCE(c.print_run, ''),
-                COALESCE(c.face_value, ''),
-                COALESCE(c.currency, ''),
-                COALESCE(c.colors, ''),
-                COALESCE(c.parent_item, ''),
-                COALESCE(c.variant, ''),
-                COALESCE(c.overprint_variant, ''),
-                COALESCE(c.score, ''),
-                COALESCE(c.accuracy, ''),
-                COALESCE(c.list, ''),
-                COALESCE(c.quantity, ''),
-                COALESCE(c.condition, ''),
-                COALESCE(c.public_note, ''),
-                COALESCE(c.private_note, ''),
-                COALESCE((
-                    SELECT s.image_path
-                    FROM stamps s
-                    WHERE s.sg_number = c.sg_number
-                      AND s.year = CAST(substr(COALESCE(c.issued_on, ''), 1, 4) AS INTEGER)
-                      AND TRIM(COALESCE(s.image_path, '')) != ''
-                    LIMIT 1
-                 ), '')
-         FROM colnect_stamps c
-         WHERE COALESCE(c.is_deleted, 0) = 0
-                     AND COALESCE(c.is_processed, 0) = 0
-         ORDER BY CAST(substr(COALESCE(c.issued_on, ''), 1, 4) AS INTEGER), c.sg_number",
-    )?;
-
-    let rows = stmt.query_map([], |row| {
-        let page_url = row.get::<_, String>(4)?;
-        // Resolve Colnect image URLs lazily in the browser to avoid N network
-        // requests during startup for every candidate.
-        let image_url = String::new();
-        let description = {
-            let d = row.get::<_, String>(5)?;
-            if d.trim().is_empty() {
-                row.get::<_, String>(6)?
-            } else {
-                d
-            }
-        };
-        let image_path = row.get::<_, String>(40)?;
-
-        let colnect_id = row.get::<_, String>(0)?;
-
-        Ok(RightCandidate {
-            colnect_id: colnect_id.clone(),
-            sg_number: row.get(1)?,
-            year: row.get(2)?,
-            series: row.get(3)?,
-            page_url,
-            image_url,
-            image_path: image_path.clone(),
-            image_abs: resolve_image_abs(db_path, album_name, &image_path),
-            name: row.get(6)?,
-            description,
-            watermark: row.get(7)?,
-            design: row.get(8)?,
-            engraving: row.get(9)?,
-            perforation: row.get(10)?,
-            context: row.get(11)?,
-            catalog_codes_text: row.get(12)?,
-            country: row.get(13)?,
-            width: row.get(14)?,
-            height: row.get(15)?,
-            format: row.get(16)?,
-            emission: row.get(17)?,
-            printing: row.get(18)?,
-            paper: row.get(19)?,
-            gum: row.get(20)?,
-            ord_mi: row.get(21)?,
-            ord_sn: row.get(22)?,
-            ord_yt: row.get(23)?,
-            ord_sg: row.get(24)?,
-            expiry_date: row.get(25)?,
-            print_run: row.get(26)?,
-            face_value: row.get(27)?,
-            currency: row.get(28)?,
-            colors: row.get(29)?,
-            parent_item: row.get(30)?,
-            variant: row.get(31)?,
-            overprint_variant: row.get(32)?,
-            score: row.get(33)?,
-            accuracy: row.get(34)?,
-            list: row.get(35)?,
-            quantity: row.get(36)?,
-            condition: row.get(37)?,
-            public_note: row.get(38)?,
-            private_note: row.get(39)?,
-            catalog_code_pairs: code_map.get(&colnect_id).cloned().unwrap_or_default(),
-        })
-    })?;
-
-    let mut out = Vec::new();
-    for r in rows {
-        out.push(r?);
-    }
-    Ok(out)
-}
-
-fn apply_matches(
-    conn: &Connection,
-    matches: Vec<SelectedMatch>,
-    fields: FieldSelection,
-    right_map: &HashMap<String, RightCandidate>,
-) -> ApplyMatchesResponse {
-    let default_catalog_code =
-        crate::config::load_config("config.toml").effective_default_catalog_code();
-    let mut updated_rows = 0usize;
-    let mut skipped_rows = 0usize;
-    let mut processed_colnect_ids = Vec::new();
-    let mut errors = Vec::new();
-
-    for m in matches {
-        let Some(c) = right_map.get(&m.colnect_id) else {
-            skipped_rows += 1;
-            continue;
-        };
-
-        let selected_catalog_code =
-            crate::catalog::normalize_catalog_number(&m.selected_catalog_code.unwrap_or_default());
-        let selected_catalog_type = m
-            .selected_catalog_type
-            .as_deref()
-            .map(crate::catalog::normalize_catalog_type)
-            .unwrap_or_else(|| {
-                crate::catalog::infer_catalog_type_for_number(
-                    &c.catalog_codes_text,
-                    &selected_catalog_code,
-                    &default_catalog_code,
-                )
-            });
-        let selected_width = m.width.as_deref().unwrap_or(c.width.as_str());
-        let selected_height = m.height.as_deref().unwrap_or(c.height.as_str());
-
-        let res = conn.execute(
-            "UPDATE stamps
-             SET sg_number = CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?2 ELSE sg_number END,
-                 catalog_code = CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?3 ELSE catalog_code END,
-                      series = CASE WHEN ?4 = 1 AND ?5 != '' THEN ?5 ELSE series END,
-                 uniq_key = lower(coalesce(country,'')) || '|' ||
-                                     CASE WHEN ?4 = 1 AND ?5 != '' THEN ?5 ELSE coalesce(series,'') END || '|' ||
-                            CASE WHEN ?1 = 1 AND TRIM(?2) != '' THEN ?2 ELSE coalesce(sg_number,'') END,
-                      description = CASE WHEN ?6 = 1 AND ?7 != '' THEN ?7 ELSE description END,
-                      watermark = CASE WHEN ?8 = 1 AND ?9 != '' THEN ?9 ELSE watermark END,
-                      design = CASE WHEN ?10 = 1 AND ?11 != '' THEN ?11 ELSE design END,
-                      engraving = CASE WHEN ?12 = 1 AND ?13 != '' THEN ?13 ELSE engraving END,
-                      perforation = CASE WHEN ?14 = 1 AND ?15 != '' THEN ?15 ELSE perforation END,
-                      context = CASE WHEN ?16 = 1 AND ?17 != '' THEN ?17 ELSE context END,
-                      colnect_page_url = CASE WHEN ?18 = 1 AND ?19 != '' THEN ?19 ELSE colnect_page_url END,
-                      original_image_url = CASE WHEN ?18 = 1 AND ?19 != '' THEN ?19 ELSE original_image_url END,
-                      colnect_image_url = CASE WHEN ?20 = 1 AND ?21 != '' THEN ?21 ELSE colnect_image_url END,
-                 remote_image_url = CASE
-                          WHEN (?20 = 1) AND (?21 != '') AND (TRIM(COALESCE(remote_image_url, '')) = '' OR remote_image_url LIKE '%colnect.com/stamps/stamp/%') THEN ?21
-                    ELSE remote_image_url
-                 END,
-                      colnect_id = CASE WHEN ?22 = 1 THEN ?23 ELSE colnect_id END,
-                      colnect_name = CASE WHEN ?22 = 1 THEN ?24 ELSE colnect_name END,
-                      colnect_catalog_codes = CASE WHEN ?22 = 1 THEN ?25 ELSE colnect_catalog_codes END,
-                      colnect_country = CASE WHEN ?22 = 1 THEN ?26 ELSE colnect_country END,
-                      colnect_width = CASE WHEN ?22 = 1 THEN ?27 ELSE colnect_width END,
-                      colnect_height = CASE WHEN ?22 = 1 THEN ?28 ELSE colnect_height END,
-                      colnect_format = CASE WHEN ?22 = 1 THEN ?29 ELSE colnect_format END,
-                      colnect_emission = CASE WHEN ?22 = 1 THEN ?30 ELSE colnect_emission END,
-                      colnect_printing = CASE WHEN ?22 = 1 THEN ?31 ELSE colnect_printing END,
-                      colnect_paper = CASE WHEN ?22 = 1 THEN ?32 ELSE colnect_paper END,
-                      colnect_gum = CASE WHEN ?22 = 1 THEN ?33 ELSE colnect_gum END,
-                      colnect_ord_mi = CASE WHEN ?22 = 1 THEN ?34 ELSE colnect_ord_mi END,
-                      colnect_ord_sn = CASE WHEN ?22 = 1 THEN ?35 ELSE colnect_ord_sn END,
-                      colnect_ord_yt = CASE WHEN ?22 = 1 THEN ?36 ELSE colnect_ord_yt END,
-                      colnect_ord_sg = CASE WHEN ?22 = 1 THEN ?37 ELSE colnect_ord_sg END,
-                      colnect_expiry_date = CASE WHEN ?22 = 1 THEN ?38 ELSE colnect_expiry_date END,
-                      colnect_print_run = CASE WHEN ?22 = 1 THEN ?39 ELSE colnect_print_run END,
-                      colnect_face_value = CASE WHEN ?22 = 1 THEN ?40 ELSE colnect_face_value END,
-                      colnect_currency = CASE WHEN ?22 = 1 THEN ?41 ELSE colnect_currency END,
-                      colnect_colors = CASE WHEN ?22 = 1 THEN ?42 ELSE colnect_colors END,
-                      colnect_parent_item = CASE WHEN ?22 = 1 THEN ?43 ELSE colnect_parent_item END,
-                      colnect_variant = CASE WHEN ?22 = 1 THEN ?44 ELSE colnect_variant END,
-                      colnect_overprint_variant = CASE WHEN ?22 = 1 THEN ?45 ELSE colnect_overprint_variant END,
-                      colnect_score = CASE WHEN ?22 = 1 THEN ?46 ELSE colnect_score END,
-                      colnect_accuracy = CASE WHEN ?22 = 1 THEN ?47 ELSE colnect_accuracy END,
-                      colnect_list = CASE WHEN ?22 = 1 THEN ?48 ELSE colnect_list END,
-                      colnect_quantity = CASE WHEN ?22 = 1 THEN ?49 ELSE colnect_quantity END,
-                      colnect_condition = CASE WHEN ?22 = 1 THEN ?50 ELSE colnect_condition END,
-                      colnect_public_note = CASE WHEN ?22 = 1 THEN ?51 ELSE colnect_public_note END,
-                      colnect_private_note = CASE WHEN ?22 = 1 THEN ?52 ELSE colnect_private_note END
-                 WHERE rowid = ?53",
-            params![
-                if fields.replace_sg_number { 1 } else { 0 },
-                selected_catalog_code,
-                selected_catalog_type,
-                if fields.update_series { 1 } else { 0 },
-                c.series,
-                if fields.update_description { 1 } else { 0 },
-                c.description,
-                if fields.update_watermark { 1 } else { 0 },
-                c.watermark,
-                if fields.update_design { 1 } else { 0 },
-                c.design,
-                if fields.update_engraving { 1 } else { 0 },
-                c.engraving,
-                if fields.update_perforation { 1 } else { 0 },
-                c.perforation,
-                if fields.update_context { 1 } else { 0 },
-                c.context,
-                if fields.update_colnect_links { 1 } else { 0 },
-                c.page_url,
-                if fields.update_colnect_image_url { 1 } else { 0 },
-                c.image_url,
-                if fields.update_colnect_metadata { 1 } else { 0 },
-                c.colnect_id,
-                c.name,
-                c.catalog_codes_text,
-                c.country,
-                selected_width,
-                selected_height,
-                c.format,
-                c.emission,
-                c.printing,
-                c.paper,
-                c.gum,
-                c.ord_mi,
-                c.ord_sn,
-                c.ord_yt,
-                c.ord_sg,
-                c.expiry_date,
-                c.print_run,
-                c.face_value,
-                c.currency,
-                c.colors,
-                c.parent_item,
-                c.variant,
-                c.overprint_variant,
-                c.score,
-                c.accuracy,
-                c.list,
-                c.quantity,
-                c.condition,
-                c.public_note,
-                c.private_note,
-                m.left_rowid,
-            ],
-        );
-
-        match res {
-            Ok(n) if n > 0 => {
-                updated_rows += 1;
-                match mark_colnect_candidate_processed(conn, &m.colnect_id) {
-                    Ok(_) => processed_colnect_ids.push(m.colnect_id.clone()),
-                    Err(e) => errors.push(format!(
-                        "updated rowid={} but failed to mark colnect_id={} processed: {}",
-                        m.left_rowid, m.colnect_id, e
-                    )),
-                }
-            }
-            Ok(_) => skipped_rows += 1,
-            Err(e) => errors.push(format!(
-                "failed to apply colnect_id={} to rowid={}: {}",
-                m.colnect_id, m.left_rowid, e
-            )),
-        }
-    }
-
-    ApplyMatchesResponse {
-        updated_rows,
-        skipped_rows,
-        processed_colnect_ids,
-        errors,
-    }
-}
-
-fn render_html(payload: &MatcherPayload) -> String {
-    let json =
-        serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
-    format!(
-        r#"<!doctype html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Stamp Matcher UI</title>
-<style>
-body {{
-  font-family: sans-serif;
-  margin: 16px;
-    background: linear-gradient(180deg, #eef4f8 0%, #f7f9fb 100%);
-  --row-odd-bg: #ffffff;
-  --row-even-bg: #e6eef4;
-  --row-odd-key-bg: #f1f3f5;
-  --row-even-key-bg: #d7e2eb;
-    --accent-blue: #2f6fa3;
-    --accent-green: #2f8f63;
-    --accent-amber: #9b6a20;
-    --accent-red: #a34545;
-    --accent-slate: #4b5a68;
-}}
-.wrap {{ background: #ffffff; border: 1px solid #dbe4ec; border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(27, 51, 72, 0.08); }}
-.top {{ display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }}
-.startGuide {{ border: 1px solid #d8e3ed; border-left: 6px solid var(--accent-blue); border-radius: 10px; background: #f5fafe; padding: 12px; margin-bottom: 12px; }}
-.startGuide h2 {{ margin: 0 0 4px 0; font-size: 18px; color: #173952; }}
-.startGuide p {{ margin: 0; color: #35566d; font-size: 13px; }}
-.guideStats {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
-.guideActions {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px; }}
-.controlGroups {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-bottom: 10px; }}
-.groupCard {{ border: 1px solid #dbe4ec; border-radius: 10px; background: #fbfdff; padding: 10px; }}
-.groupCard h4 {{ margin: 0 0 8px 0; font-size: 13px; letter-spacing: 0.2px; }}
-.groupCard.match {{ border-left: 5px solid var(--accent-green); }}
-.groupCard.candidate {{ border-left: 5px solid var(--accent-amber); }}
-.groupCard.session {{ border-left: 5px solid var(--accent-slate); }}
-.groupBtns {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
-.filtersCard {{ border: 1px solid #dbe4ec; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: #f8fbfe; padding: 10px; margin-bottom: 12px; }}
-.filtersTitle {{ margin: 0 0 8px 0; font-size: 13px; color: #1f4663; }}
-.filtersGrid {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
-.row {{ display: flex; gap: 16px; align-items: stretch; }}
-.col {{ flex: 1; min-width: 280px; display: flex; flex-direction: column; }}
-.colNav {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }}
-.titleRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }}
-.titleRow h3 {{ margin: 0; }}
-.panelCard {{ display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; background: #fff; overflow: hidden; min-height: 0; }}
-.panelHead {{ padding: 10px; border-bottom: 1px solid #ececec; background: #fbfcfd; font-size: 12px; }}
-.panelBody {{ padding: 8px; overflow: auto; max-height: 56vh; }}
-.imgbox {{ min-height: 260px; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; background: #fff; }}
-img {{ max-width: 260px; max-height: 260px; border: 1px solid #ccc; background: #fff; }}
-.imgph {{ width: 260px; height: 260px; border: 1px dashed #bbb; background: #f7f7f7; color: #666; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; padding: 8px; box-sizing: border-box; }}
-.kv {{ width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }}
-.kv td {{ border: 1px solid #e1e6ea; padding: 4px 6px; vertical-align: top; }}
-.kv tr:nth-child(odd) td {{ background: var(--row-odd-bg); }}
-.kv tr:nth-child(even) td {{ background: var(--row-even-bg); }}
-.kv tr:nth-child(odd) td.k {{ background: var(--row-odd-key-bg); }}
-.kv tr:nth-child(even) td.k {{ background: var(--row-even-key-bg); }}
-.kv td.k {{ width: 36%; font-weight: 600; }}
-.kv td.v {{ width: 64%; word-break: break-word; }}
-button {{ padding: 6px 10px; border-radius: 8px; border: 1px solid #c9d5e2; background: #ffffff; color: #1f3448; cursor: pointer; }}
-button:hover {{ background: #f1f6fa; }}
-button.primary {{ background: #2f6fa3; border-color: #2f6fa3; color: #ffffff; }}
-button.primary:hover {{ background: #285f8a; }}
-button.success {{ background: #2f8f63; border-color: #2f8f63; color: #ffffff; }}
-button.success:hover {{ background: #287953; }}
-button.warn {{ background: #f0e1c6; border-color: #ddc79f; color: #694314; }}
-button.danger {{ background: #a34545; border-color: #a34545; color: #ffffff; }}
-button.danger:hover {{ background: #8f3939; }}
-button.neutral {{ background: #4b5a68; border-color: #4b5a68; color: #ffffff; }}
-button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
-.badge {{ display: inline-block; padding: 2px 8px; border: 1px solid #d3dfe9; border-radius: 999px; background: #f8fbfe; font-size: 12px; color: #2d4760; }}
-.modal-backdrop {{ position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1000; }}
-.modal {{ background: #fff; border-radius: 10px; border: 1px solid #ddd; width: min(640px, 95vw); padding: 14px; box-sizing: border-box; }}
-.modal h4 {{ margin: 0 0 10px 0; }}
-.modal .rowx {{ display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }}
-.modal .rowx label {{ display: inline-flex; align-items: center; gap: 6px; }}
-.modal input[type='text'], .modal input[type='number'] {{ padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; min-width: 140px; }}
-@media (max-width: 980px) {{
-    .row {{ flex-direction: column; }}
-    .panelBody {{ max-height: 42vh; }}
-}}
-</style>
-</head>
-<body>
-<div class='wrap'>
-    <div id='startGuide' class='startGuide'>
-        <h2>Start Review Session</h2>
-        <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
-        <div class='guideStats'>
-            <span id='statLeftCount' class='badge'>Left: 0</span>
-            <span id='statRightCount' class='badge'>Candidates: 0</span>
-            <span id='statAssignedCount' class='badge'>Assigned: 0</span>
-        </div>
-        <div class='guideActions'>
-            <button class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
-            <button onclick='scrollToFilters()'>Review Field Options</button>
-            <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
-        </div>
-  </div>
-    <div class='controlGroups'>
-        <div class='groupCard match'>
-            <h4>Match Actions</h4>
-            <div class='groupBtns'>
-                <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
-                <button onclick='clearAssignment()'>Clear Assignment</button>
-                <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
-            </div>
-        </div>
-        <div class='groupCard candidate'>
-            <h4>Candidate Management</h4>
-            <div class='groupBtns'>
-                <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
-                <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
-                <button onclick='undoLastDelete()'>Undo Delete</button>
-            </div>
-        </div>
-        <div class='groupCard session'>
-            <h4>Session</h4>
-            <div class='groupBtns'>
-                <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
-                <span id='status' class='badge'>Ready</span>
-            </div>
-        </div>
-    </div>
-        <div id='filtersCard' class='filtersCard'>
-            <h4 class='filtersTitle'>Field Update Options</h4>
-            <div class='filtersGrid'>
-        <label><input type='checkbox' id='f_series'/> series</label>
-        <label><input type='checkbox' id='f_description' checked/> description</label>
-        <label><input type='checkbox' id='f_watermark'/> watermark</label>
-        <label><input type='checkbox' id='f_design'/> design</label>
-        <label><input type='checkbox' id='f_engraving'/> engraving</label>
-        <label><input type='checkbox' id='f_perforation'/> perforation</label>
-        <label><input type='checkbox' id='f_context'/> context</label>
-        <label><input type='checkbox' id='f_links' checked/> colnect links</label>
-        <label><input type='checkbox' id='f_image_url' checked/> colnect image url</label>
-        <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
-        <label><input type='checkbox' id='f_replace_sg'/> replace SG number</label>
-        <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
-      </div>
-    </div>
-  <div id='comparePanels' class='row'>
-    <div class='col'>
-            <div class='colNav'>
-                <button class='navBtn' onclick='prevLeft()'>Prev Left</button>
-                <button class='navBtn' onclick='nextLeft()'>Next Left</button>
-            </div>
-            <div class='titleRow'>
-                <h3>Left: StampWorld Base</h3>
-                <span id='leftPos' class='badge'></span>
-            </div>
-      <div id='leftPanel'></div>
-    </div>
-    <div class='col'>
-            <div class='colNav'>
-                <button class='navBtn' onclick='prevRight()'>Prev Candidate</button>
-                <button class='navBtn' onclick='nextRight()'>Next Candidate</button>
-            </div>
-            <div class='titleRow'>
-                <h3>Right: Colnect Candidate</h3>
-                <span id='rightPos' class='badge'></span>
-            </div>
-      <div id='rightPanel'></div>
-    </div>
-  </div>
-</div>
-
-<div id='addModalBackdrop' class='modal-backdrop'>
-    <div class='modal'>
-        <h4>Add Colnect Candidate To stamps</h4>
-        <div class='rowx'>
-            <label><span id='addCatalogLabel'>Catalog</span> <input id='addSg' type='text' /></label>
-            <label>Year <input id='addYear' type='number' /></label>
-            <label>Series <input id='addSeries' type='text' /></label>
-        </div>
-        <div class='rowx'>
-            <label><input id='addAssociateImage' type='checkbox' checked onchange='toggleAddImageOptions()'/> Associate image</label>
-        </div>
-        <div id='addImageOptions'>
-            <div class='rowx'>
-                <label><input type='radio' name='addImageMode' value='current_left' checked onchange='toggleAddImageOptions()'/> Use current left image</label>
-                <label><input type='radio' name='addImageMode' value='upload' onchange='toggleAddImageOptions()'/> Upload image file</label>
-                <label><input type='radio' name='addImageMode' value='none' onchange='toggleAddImageOptions()'/> No image</label>
-            </div>
-            <div class='rowx' id='uploadRow' style='display:none;'>
-                <label>Upload <input id='addUploadFile' type='file' accept='image/png,image/jpeg,image/webp'/></label>
-            </div>
-        </div>
-        <div class='rowx' style='justify-content:flex-end; margin-top: 12px;'>
-            <button onclick='closeAddDialog()'>Cancel</button>
-            <button onclick='addCurrentColnectAsStamp()'>Add</button>
-        </div>
-    </div>
-</div>
-<script>
-const payload = {json};
-let left = payload.left || [];
-let rightAll = payload.right || [];
-const defaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
-let leftIdx = 0;
-let rightIdxByLeft = {{}};
-let assignedByLeft = {{}}; // left_rowid -> colnect_id
-let selectedCatalogCodeByLeft = {{}}; // left_rowid -> chosen code
-let selectedCatalogTypeByLeft = {{}}; // left_rowid -> chosen catalog family
-let deletedCandidatesStack = []; // stack entries: candidate + removedAssignments
-let guideDismissed = false;
-let resolvingRightImageById = {{}};
-let resolvedRightImageById = {{}};
-
-function removeCandidateFromUi(colnectId) {{
-    if (!colnectId) return;
-    rightAll = rightAll.filter(c => c.colnect_id !== colnectId);
-    Object.keys(assignedByLeft).forEach(k => {{
-        if (assignedByLeft[k] === colnectId) delete assignedByLeft[k];
-    }});
-    Object.keys(selectedCatalogCodeByLeft).forEach(k => {{
-        if (!assignedByLeft[k]) delete selectedCatalogCodeByLeft[k];
-    }});
-    Object.keys(selectedCatalogTypeByLeft).forEach(k => {{
-        if (!assignedByLeft[k]) delete selectedCatalogTypeByLeft[k];
-    }});
-    for (const key of Object.keys(rightIdxByLeft)) {{
-        rightIdxByLeft[key] = 0;
-    }}
-    for (let i = deletedCandidatesStack.length - 1; i >= 0; i -= 1) {{
-        if (deletedCandidatesStack[i]?.candidate?.colnect_id === colnectId) {{
-            deletedCandidatesStack.splice(i, 1);
-        }}
-    }}
-}}
-const rowOddColor = (payload.odd_row_color || '').trim() || '#ffffff';
-const rowEvenColor = (payload.even_row_color || '').trim() || '#e6eef4';
-const checkboxDefaults = {{
-  f_series: payload.series_default_checked !== false,
-  f_description: payload.description_default_checked !== false,
-  f_watermark: payload.watermark_default_checked !== false,
-  f_design: payload.design_default_checked !== false,
-  f_engraving: payload.engraving_default_checked !== false,
-  f_perforation: payload.perforation_default_checked !== false,
-  f_context: payload.context_default_checked !== false,
-  f_links: payload.colnect_links_default_checked !== false,
-  f_image_url: payload.colnect_image_url_default_checked !== false,
-  f_colnect_meta: payload.colnect_metadata_default_checked !== false,
-  f_replace_sg: payload.replace_sg_number_default_checked !== false,
-  f_right_unmatched_only: payload.right_unmatched_only_default_checked !== false
-}};
-const pdfGenerationDefaults = {{
-    enabledByDefault: payload.albumeasy_auto_generate_pdf_default !== false,
-    cliConfigured: payload.albumeasy_cli_configured !== false
-}};
-document.documentElement.style.setProperty('--row-odd-bg', rowOddColor);
-document.documentElement.style.setProperty('--row-even-bg', rowEvenColor);
-
-function b(v) {{ return !!v && String(v).trim().length > 0; }}
-function fmt(v) {{ return b(v) ? String(v) : '(no info)'; }}
-function html(v) {{ return String(v)
-  .replaceAll('&','&amp;')
-  .replaceAll('<','&lt;')
-  .replaceAll('>','&gt;')
-  .replaceAll('"','&quot;'); }}
-function row(k, v) {{ return `<tr><td class='k'>${{html(k)}}</td><td class='v'>${{html(fmt(v))}}</td></tr>`; }}
-function allDbRows(fields) {{
-    if (!Array.isArray(fields) || !fields.length) return row('DB Fields', '(no fields)');
-    return fields.map(f => row(`DB:${{f.key || ''}}`, f.value || '')).join('');
-}}
-function catalogDisplayName(code) {{
-    const c = String(code || '').trim().toLowerCase();
-    if (c === 'sn') return 'Scott';
-    if (c === 'sg') return 'Stanley Gibbons';
-    if (c === 'mi') return 'Michel';
-    if (c === 'yt') return 'Yvert';
-    if (c === 'afa') return 'AFA';
-    if (c === 'nvp') return 'NVP';
-    if (c === 'un') return 'Unificato';
-    if (c === 'col') return 'Colnect';
-    return c ? c.toUpperCase() : 'Catalog';
-}}
-function normalizeCatalogNumber(v) {{
-    let s = String(v || '').trim();
-    if (!s) return '';
-    const colonIdx = s.indexOf(':');
-    if (colonIdx >= 0) s = s.slice(colonIdx + 1).trim();
-    const m = s.match(/^([A-Za-z]+)\s+(.+)$/);
-    if (m && m[2]) return String(m[2]).trim();
-    return s;
-}}
-function imageBox(src, label) {{
-  if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
-  return `<div class='imgbox'><div class='imgph'>${{html(label)}}<br/>No image available</div></div>`;
-}}
-
-async function ensureRightImageUrl(r) {{
-    if (!r || !b(r.colnect_id) || !b(r.page_url)) return;
-    if (b(r.image_abs) || b(r.image_url)) return;
-
-    const key = String(r.colnect_id);
-    if (key in resolvedRightImageById) {{
-        r.image_url = resolvedRightImageById[key] || '';
-        return;
-    }}
-    if (resolvingRightImageById[key]) return;
-
-    resolvingRightImageById[key] = true;
-    try {{
-        const res = await fetch(`/resolve-colnect-image?page_url=${{encodeURIComponent(r.page_url)}}`);
-        const j = await res.json();
-        const url = (j && j.ok && b(j.image_url)) ? String(j.image_url) : '';
-        resolvedRightImageById[key] = url;
-        r.image_url = url;
-
-        const current = currentRightCandidate();
-        if (current && String(current.colnect_id) === key) {{
-            render();
-        }}
-    }} catch (_) {{
-        resolvedRightImageById[key] = '';
-    }} finally {{
-        delete resolvingRightImageById[key];
-    }}
-}}
-
-function dismissStartGuide() {{
-    guideDismissed = true;
-    const guide = document.getElementById('startGuide');
-    if (guide) guide.style.display = 'none';
-}}
-
-function scrollToFilters() {{
-    document.getElementById('filtersCard')?.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
-}}
-
-function scrollToPanels() {{
-    document.getElementById('comparePanels')?.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
-}}
-
-function updateGuide() {{
-    const leftCount = left.length;
-    const rightCount = rightAll.length;
-    const assignedCount = Object.keys(assignedByLeft).length;
-
-    const leftBadge = document.getElementById('statLeftCount');
-    const rightBadge = document.getElementById('statRightCount');
-    const assignedBadge = document.getElementById('statAssignedCount');
-    if (leftBadge) leftBadge.innerText = `Left: ${{leftCount}}`;
-    if (rightBadge) rightBadge.innerText = `Candidates: ${{rightCount}}`;
-    if (assignedBadge) assignedBadge.innerText = `Assigned: ${{assignedCount}}`;
-
-    const guide = document.getElementById('startGuide');
-    if (!guide) return;
-    if (guideDismissed) {{
-        guide.style.display = 'none';
-        return;
-    }}
-    guide.style.display = '';
-}}
-
-function usedColnectIds(exceptLeftRowId) {{
-  const used = new Set();
-  for (const [l, cid] of Object.entries(assignedByLeft)) {{
-    if (String(exceptLeftRowId) === String(l)) continue;
-    used.add(cid);
-  }}
-  return used;
-}}
-
-function availableCandidatesForCurrentLeft() {{
-  if (!left.length) return [];
-  const currentLeft = left[leftIdx];
-  const used = usedColnectIds(currentLeft.rowid);
-  const assignedForCurrent = assignedByLeft[currentLeft.rowid];
-    const unmatchedOnly = !!document.getElementById('f_right_unmatched_only')?.checked;
-    const matchedInDb = new Set(left.map(s => String(s.colnect_id || '').trim()).filter(v => !!v));
-    return rightAll.filter(c => {{
-        const keepUsed = (!used.has(c.colnect_id) || c.colnect_id === assignedForCurrent);
-        if (!keepUsed) return false;
-        if (!unmatchedOnly) return true;
-        if (c.colnect_id === assignedForCurrent) return true;
-        return !matchedInDb.has(String(c.colnect_id || '').trim());
-    }});
-}}
-
-function currentRightCandidate() {{
-  const avail = availableCandidatesForCurrentLeft();
-  if (!avail.length) return null;
-  const key = String(left[leftIdx].rowid);
-  if (!(key in rightIdxByLeft) || rightIdxByLeft[key] >= avail.length) rightIdxByLeft[key] = 0;
-  return avail[rightIdxByLeft[key]];
-}}
-
-function selectedCatalogCodeForCurrent(r) {{
-    const l = left[leftIdx];
-    if (!l || !r) return '';
-    const existing = selectedCatalogCodeByLeft[l.rowid] || '';
-    if (existing) return existing;
-    const pairs = r.catalog_code_pairs || [];
-    if (!pairs.length) return '';
-    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
-    return preferred ? preferred.code : (pairs[0].code || '');
-}}
-
-function selectedCatalogTypeForCurrent(r) {{
-    const l = left[leftIdx];
-    if (!l || !r) return '';
-    const existingType = selectedCatalogTypeByLeft[l.rowid] || '';
-    if (existingType) return String(existingType).toLowerCase();
-    const selectedCode = selectedCatalogCodeForCurrent(r);
-    const pairs = r.catalog_code_pairs || [];
-    if (!pairs.length) return '';
-    const matched = pairs.find(p => String(p.code || '') === String(selectedCode || ''));
-    if (matched && matched.catalog_type) return String(matched.catalog_type).toLowerCase();
-    const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === defaultCatalogCode);
-    if (preferred && preferred.catalog_type) return String(preferred.catalog_type).toLowerCase();
-    return String(pairs[0].catalog_type || '').toLowerCase();
-}}
-
-function render() {{
-    updateGuide();
-  if (!left.length) {{
-        document.getElementById('leftPos').innerText = 'Left 0/0';
-        document.getElementById('rightPos').innerText = 'Candidate 0/0';
-    document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
-    document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
-    return;
-  }}
-
-  const seriesEl = document.getElementById('f_series');
-  if (seriesEl && !seriesEl.dataset.userTouched) {{
-    seriesEl.checked = checkboxDefaults.f_series;
-  }}
-
-  const l = left[leftIdx];
-  const leftImg = b(l.image_abs) ? `/image?path=${{encodeURIComponent(l.image_abs)}}` : l.stampworld_image_url;
-  document.getElementById('leftPos').innerText = `Left ${{leftIdx + 1}}/${{left.length}} (rowid=${{l.rowid}})`;
-  document.getElementById('leftPanel').innerHTML = `
-        <div class='panelCard'>
-            <div class='panelHead'>
-                <strong>Base Stamp</strong> SG=${{html(fmt(l.sg_number))}} | Year=${{html(fmt(l.year))}} | Series=${{html(fmt(l.series))}}
-            </div>
-            <div class='panelBody'>
-                ${{imageBox(leftImg, 'StampWorld image')}}
-                <table class='kv'>
-                    ${{row('SG', l.sg_number)}}
-                    ${{row('Year', l.year)}}
-                    ${{row('Series', l.series)}}
-                    ${{row('Image Path', l.image_path)}}
-                    ${{row('StampWorld URL', l.stampworld_image_url)}}
-                    ${{row('Description', l.description)}}
-                    ${{row('Watermark', l.watermark)}}
-                    ${{row('Design', l.design)}}
-                    ${{row('Engraving', l.engraving)}}
-                    ${{row('Perforation', l.perforation)}}
-                    ${{row('Context', l.context)}}
-                    ${{row('colnect_page_url', l.colnect_page_url)}}
-                    ${{row('colnect_image_url', l.colnect_image_url)}}
-                    ${{row('colnect_id', l.colnect_id)}}
-                    ${{row('colnect_name', l.colnect_name)}}
-                    ${{row('colnect_catalog_codes', l.colnect_catalog_codes)}}
-                    ${{row('colnect_country', l.colnect_country)}}
-                    ${{row('colnect_width', l.colnect_width)}}
-                    ${{row('colnect_height', l.colnect_height)}}
-                    ${{row('colnect_format', l.colnect_format)}}
-                    ${{row('colnect_emission', l.colnect_emission)}}
-                    ${{row('colnect_printing', l.colnect_printing)}}
-                    ${{row('colnect_paper', l.colnect_paper)}}
-                    ${{row('colnect_gum', l.colnect_gum)}}
-                    ${{row('colnect_ord_mi', l.colnect_ord_mi)}}
-                    ${{row('colnect_ord_sn', l.colnect_ord_sn)}}
-                    ${{row('colnect_ord_yt', l.colnect_ord_yt)}}
-                    ${{row('colnect_face_value', l.colnect_face_value)}}
-                    ${{row('colnect_currency', l.colnect_currency)}}
-                    ${{row('colnect_ord_sg', l.colnect_ord_sg)}}
-                    ${{row('colnect_expiry_date', l.colnect_expiry_date)}}
-                    ${{row('colnect_print_run', l.colnect_print_run)}}
-                    ${{row('colnect_colors', l.colnect_colors)}}
-                    ${{row('colnect_parent_item', l.colnect_parent_item)}}
-                    ${{row('colnect_variant', l.colnect_variant)}}
-                    ${{row('colnect_overprint_variant', l.colnect_overprint_variant)}}
-                    ${{row('colnect_score', l.colnect_score)}}
-                    ${{row('colnect_accuracy', l.colnect_accuracy)}}
-                    ${{row('colnect_list', l.colnect_list)}}
-                    ${{row('colnect_quantity', l.colnect_quantity)}}
-                    ${{row('colnect_condition', l.colnect_condition)}}
-                    ${{row('colnect_public_note', l.colnect_public_note)}}
-                    ${{row('colnect_private_note', l.colnect_private_note)}}
-                    ${{allDbRows(l.all_db_fields)}}
-                    ${{row('Assigned Colnect ID', assignedByLeft[l.rowid] || '(none)')}}
-                </table>
-            </div>
-        </div>
-  `;
-
-  const avail = availableCandidatesForCurrentLeft();
-  const r = currentRightCandidate();
-  if (!r) {{
-    document.getElementById('rightPos').innerText = 'No available candidate';
-    document.getElementById('rightPanel').innerHTML = '<div class="imgph">All candidates already assigned</div>';
-    return;
-  }}
-
-  const key = String(l.rowid);
-  document.getElementById('rightPos').innerText = `Candidate ${{(rightIdxByLeft[key] || 0) + 1}}/${{avail.length}}`;
-    ensureRightImageUrl(r);
-  const rightImg = b(r.image_abs) ? `/image?path=${{encodeURIComponent(r.image_abs)}}` : r.image_url;
-    const catPairs = (r.catalog_code_pairs || []).map(p =>
-        `<option value='${{html(p.code)}}' data-cat='${{html(p.catalog_type)}}'>${{html(catalogDisplayName(p.catalog_type))}} (${{html(String(p.catalog_type || '').toUpperCase())}}): ${{html(p.code)}}</option>`
-    ).join('');
-    const selectedCode = selectedCatalogCodeForCurrent(r);
-  document.getElementById('rightPanel').innerHTML = `
-        <div class='panelCard'>
-            <div class='panelHead'>
-                <div><strong>Candidate Controls</strong></div>
-                <div style='margin-top:8px;'>
-                    <label>Catalog Code (for optional SG replace):</label>
-                    <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
-                        <option value=''>-- none --</option>
-                        ${{catPairs}}
-                    </select>
-                </div>
-            </div>
-            <div class='panelBody'>
-                ${{imageBox(rightImg, 'Colnect candidate image')}}
-                <table class='kv'>
-                    ${{row('Colnect ID', r.colnect_id)}}
-                    ${{row('SG', r.sg_number)}}
-            ${{row('Catalog Codes Text', r.catalog_codes_text)}}
-                    ${{row('Year', r.year)}}
-            ${{row('Country', r.country)}}
-                    ${{row('Series', r.series)}}
-                    ${{row('Page URL', r.page_url)}}
-                    ${{row('Image URL', r.image_url)}}
-            ${{row('Name', r.name)}}
-                    ${{row('Description', r.description)}}
-                    ${{row('Watermark', r.watermark)}}
-            ${{row('Format', r.format)}}
-            ${{row('Emission', r.emission)}}
-            ${{row('Printing', r.printing)}}
-            ${{row('Paper', r.paper)}}
-            ${{row('Gum', r.gum)}}
-            ${{row('Width', r.width)}}
-            ${{row('Height', r.height)}}
-            ${{row('Face Value', r.face_value)}}
-            ${{row('Currency', r.currency)}}
-            ${{row('Colors', r.colors)}}
-      ${{row('Design', r.design)}}
-      ${{row('Engraving', r.engraving)}}
-      ${{row('Perforation', r.perforation)}}
-            ${{row('ORD SG', r.ord_sg)}}
-            ${{row('ORD MI', r.ord_mi)}}
-            ${{row('ORD SN', r.ord_sn)}}
-            ${{row('ORD YT', r.ord_yt)}}
-            ${{row('Print Run', r.print_run)}}
-            ${{row('Expiry Date', r.expiry_date)}}
-            ${{row('Parent Item', r.parent_item)}}
-            ${{row('Variant', r.variant)}}
-            ${{row('Overprint Variant', r.overprint_variant)}}
-            ${{row('Score', r.score)}}
-            ${{row('Accuracy', r.accuracy)}}
-            ${{row('List', r.list)}}
-            ${{row('Quantity', r.quantity)}}
-            ${{row('Condition', r.condition)}}
-            ${{row('Public Note', r.public_note)}}
-            ${{row('Private Note', r.private_note)}}
-                    ${{row('Context', r.context)}}
-                </table>
-            </div>
-        </div>
-  `;
-
-    const sel = document.getElementById('catalogCodeSelect');
-    if (sel && selectedCode) sel.value = selectedCode;
-}}
-
-function rememberCatalogCode() {{
-    const l = left[leftIdx];
-    if (!l) return;
-    const sel = document.getElementById('catalogCodeSelect');
-    if (!sel) return;
-    selectedCatalogCodeByLeft[l.rowid] = sel.value || '';
-    const selectedOpt = sel.options[sel.selectedIndex];
-    selectedCatalogTypeByLeft[l.rowid] = selectedOpt?.dataset?.cat || '';
-}}
-
-function prevLeft() {{
-  if (!left.length) return;
-  leftIdx = (leftIdx - 1 + left.length) % left.length;
-  render();
-}}
-function nextLeft() {{
-  if (!left.length) return;
-  leftIdx = (leftIdx + 1) % left.length;
-  render();
-}}
-function prevRight() {{
-  const l = left[leftIdx];
-  const avail = availableCandidatesForCurrentLeft();
-  if (!avail.length) return;
-  const key = String(l.rowid);
-  const cur = rightIdxByLeft[key] || 0;
-  rightIdxByLeft[key] = (cur - 1 + avail.length) % avail.length;
-  render();
-}}
-function nextRight() {{
-  const l = left[leftIdx];
-  const avail = availableCandidatesForCurrentLeft();
-  if (!avail.length) return;
-  const key = String(l.rowid);
-  const cur = rightIdxByLeft[key] || 0;
-  rightIdxByLeft[key] = (cur + 1) % avail.length;
-  render();
-}}
-function assignCurrent() {{
-  const l = left[leftIdx];
-  const r = currentRightCandidate();
-    if (!l || !r) return;
-    rememberCatalogCode();
-  assignedByLeft[l.rowid] = r.colnect_id;
-  document.getElementById('status').innerText = `Assigned rowid=${{l.rowid}} -> colnect_id=${{r.colnect_id}}`;
-  render();
-}}
-function clearAssignment() {{
-  const l = left[leftIdx];
-  if (!l) return;
-  delete assignedByLeft[l.rowid];
-    delete selectedCatalogCodeByLeft[l.rowid];
-    delete selectedCatalogTypeByLeft[l.rowid];
-  document.getElementById('status').innerText = `Cleared assignment for rowid=${{l.rowid}}`;
-  render();
-}}
-
-async function applyMatches() {{
-    const matches = Object.entries(assignedByLeft).map(([leftRowid, colnectId]) => {{
-        const candidateMap = {{}};
-        rightAll.forEach(c => {{ candidateMap[c.colnect_id] = c; }});
-        const candidate = candidateMap[colnectId];
-        return {{
-    left_rowid: Number(leftRowid),
-        colnect_id: colnectId,
-                selected_catalog_code: selectedCatalogCodeByLeft[leftRowid] || null,
-            selected_catalog_type: selectedCatalogTypeByLeft[leftRowid] || null,
-                width: candidate?.width || null,
-                height: candidate?.height || null
-        }};
-    }});
-
-    if (!matches.length) {{
-        document.getElementById('status').innerText = 'No assigned matches selected. Use Assign Candidate first.';
-        return;
-    }}
-
-    const fields = {{
-        update_series: !!document.getElementById('f_series')?.checked,
-        update_description: !!document.getElementById('f_description')?.checked,
-        update_watermark: !!document.getElementById('f_watermark')?.checked,
-        update_design: !!document.getElementById('f_design')?.checked,
-        update_engraving: !!document.getElementById('f_engraving')?.checked,
-        update_perforation: !!document.getElementById('f_perforation')?.checked,
-        update_context: !!document.getElementById('f_context')?.checked,
-        update_colnect_links: !!document.getElementById('f_links')?.checked,
-        update_colnect_image_url: !!document.getElementById('f_image_url')?.checked,
-        update_colnect_metadata: !!document.getElementById('f_colnect_meta')?.checked,
-        replace_sg_number: !!document.getElementById('f_replace_sg')?.checked
-    }};
-
-  const res = await fetch('/apply-matches', {{
-    method: 'POST',
-    headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ matches, fields }})
-  }});
-  const j = await res.json();
-    for (const colnectId of (j.processed_colnect_ids || [])) {{
-        removeCandidateFromUi(colnectId);
-    }}
-  document.getElementById('status').innerText = `Applied: updated=${{j.updated_rows}}, skipped=${{j.skipped_rows}}, errors=${{(j.errors||[]).length}}`;
-  if ((j.errors || []).length) {{
-    alert(j.errors.join('\n'));
-  }}
-    render();
-}}
-
-function getSelectedAddImageMode() {{
-    const radios = document.querySelectorAll("input[name='addImageMode']");
-    for (const r of radios) {{
-        if (r.checked) return r.value;
-    }}
-    return 'current_left';
-}}
-
-function toggleAddImageOptions() {{
-    const assoc = !!document.getElementById('addAssociateImage')?.checked;
-    const options = document.getElementById('addImageOptions');
-    if (options) options.style.display = assoc ? '' : 'none';
-    const uploadRow = document.getElementById('uploadRow');
-    const mode = getSelectedAddImageMode();
-    if (uploadRow) uploadRow.style.display = assoc && mode === 'upload' ? '' : 'none';
-}}
-
-function openAddDialog() {{
-    const r = currentRightCandidate();
-    if (!r) {{
-        document.getElementById('status').innerText = 'No current candidate to add';
-        return;
-    }}
-    const preferredCode = selectedCatalogCodeForCurrent(r) || r.sg_number || '';
-    const preferredType = selectedCatalogTypeForCurrent(r) || defaultCatalogCode || '';
-    const labelText = preferredType
-        ? `${{catalogDisplayName(preferredType)}} (${{String(preferredType).toUpperCase()}})`
-        : 'Catalog';
-    const labelEl = document.getElementById('addCatalogLabel');
-    if (labelEl) labelEl.innerText = labelText;
-    document.getElementById('addSg').value = normalizeCatalogNumber(preferredCode);
-    document.getElementById('addYear').value = Number.isFinite(r.year) ? r.year : '';
-    document.getElementById('addSeries').value = r.series || '';
-    document.getElementById('addAssociateImage').checked = true;
-    const radioCurrent = document.querySelector("input[name='addImageMode'][value='current_left']");
-    if (radioCurrent) radioCurrent.checked = true;
-    const upload = document.getElementById('addUploadFile');
-    if (upload) upload.value = '';
-    toggleAddImageOptions();
-    document.getElementById('addModalBackdrop').style.display = 'flex';
-}}
-
-function closeAddDialog() {{
-    const modal = document.getElementById('addModalBackdrop');
-    if (modal) modal.style.display = 'none';
-}}
-
-function fileToDataUrl(file) {{
-    return new Promise((resolve, reject) => {{
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = () => reject(new Error('failed to read upload file'));
-        reader.readAsDataURL(file);
-    }});
-}}
-
-async function addCurrentColnectAsStamp() {{
-    const r = currentRightCandidate();
-    if (!r) {{
-        document.getElementById('status').innerText = 'No current candidate to add';
-        return;
-    }}
-
-    const assoc = !!document.getElementById('addAssociateImage')?.checked;
-    const mode = getSelectedAddImageMode();
-    const l = left[leftIdx];
-
-    let uploadDataUrl = null;
-    let uploadFilename = null;
-    if (assoc && mode === 'upload') {{
-        const input = document.getElementById('addUploadFile');
-        const file = input?.files?.[0];
-        if (!file) {{
-            alert('Choose an image file to upload, or switch image mode.');
-            return;
-        }}
-        try {{
-            uploadDataUrl = await fileToDataUrl(file);
-            uploadFilename = file.name || null;
-        }} catch (e) {{
-            alert(String(e));
-            return;
-        }}
-    }}
-
-    const body = {{
-        colnect_id: r.colnect_id,
-        source_left_rowid: l ? Number(l.rowid) : null,
-        target_sg_number: document.getElementById('addSg')?.value || r.sg_number || '',
-        target_year: Number(document.getElementById('addYear')?.value || r.year || 0),
-        target_series: document.getElementById('addSeries')?.value || r.series || '',
-        associate_image: assoc,
-        image_mode: assoc ? mode : 'none',
-        upload_data_url: uploadDataUrl,
-        upload_filename: uploadFilename
-    }};
-
-    const res = await fetch('/add-colnect-stamp', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify(body)
-    }});
-    const j = await res.json();
-    if (!j.ok) {{
-        alert(j.message || 'Add failed');
-        return;
-    }}
-
-    if (j.added_left) {{
-        left.push(j.added_left);
-    }}
-    if (j.processed_colnect_id) {{
-        removeCandidateFromUi(j.processed_colnect_id);
-    }}
-    closeAddDialog();
-    document.getElementById('status').innerText = j.message || 'Added to stamps';
-    render();
-}}
-
-async function deleteCurrentCandidate() {{
-    const r = currentRightCandidate();
-    if (!r) {{
-        document.getElementById('status').innerText = 'No current candidate to delete';
-        return;
-    }}
-
-    if (!confirm(`Soft delete colnect candidate ${{r.colnect_id}} from colnect_stamps?`)) {{
-        return;
-    }}
-
-    const res = await fetch('/delete-colnect-candidate', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ colnect_id: r.colnect_id }})
-    }});
-    const j = await res.json();
-    if (!j.ok) {{
-        alert(j.message || 'Delete failed');
-        return;
-    }}
-
-    const removedAssignments = [];
-    Object.keys(assignedByLeft).forEach(k => {{
-        if (assignedByLeft[k] === r.colnect_id) {{
-            removedAssignments.push([k, assignedByLeft[k], selectedCatalogCodeByLeft[k] || '', selectedCatalogTypeByLeft[k] || '']);
-        }}
-    }});
-    deletedCandidatesStack.push({{ candidate: r, removedAssignments }});
-
-    removeCandidateFromUi(r.colnect_id);
-    document.getElementById('status').innerText = j.message || 'Soft-deleted candidate';
-    render();
-}}
-
-async function undoLastDelete() {{
-    const last = deletedCandidatesStack.pop();
-    if (!last) {{
-        document.getElementById('status').innerText = 'Nothing to undo';
-        return;
-    }}
-
-    const res = await fetch('/undo-colnect-delete', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ colnect_id: last.candidate.colnect_id }})
-    }});
-    const j = await res.json();
-    if (!j.ok) {{
-        deletedCandidatesStack.push(last);
-        alert(j.message || 'Undo failed');
-        return;
-    }}
-
-    if (!rightAll.some(c => c.colnect_id === last.candidate.colnect_id)) {{
-        rightAll.push(last.candidate);
-    }}
-    for (const [k, cid, code, catalogType] of last.removedAssignments || []) {{
-        assignedByLeft[k] = cid;
-        if (code) selectedCatalogCodeByLeft[k] = code;
-        if (catalogType) selectedCatalogTypeByLeft[k] = catalogType;
-    }}
-    document.getElementById('status').innerText = j.message || 'Undo complete';
-    render();
-}}
-
-async function closeReviewUi() {{
-    // Show a 3-button modal: Generate & Close | Close Only | Cancel
-    const choice = await new Promise(resolve => {{
-        const defaultPdfChecked = pdfGenerationDefaults.enabledByDefault && pdfGenerationDefaults.cliConfigured;
-        const pdfOptionHtml =
-            '<label style="display:flex;align-items:flex-start;gap:0.65em;margin:0 0 1.1em;text-align:left;font-size:0.95em;line-height:1.4">' +
-            `<input id="_dlg_pdf" type="checkbox" ${{defaultPdfChecked ? 'checked' : ''}} ${{pdfGenerationDefaults.cliConfigured ? '' : 'disabled'}} style="margin-top:0.2em" />` +
-            '<span>Generate PDF with AlbumEasy CLI <code>-c</code> and open it after generation</span>' +
-            '</label>' +
-            (pdfGenerationDefaults.cliConfigured
-                ? ''
-                : '<div style="margin:-0.45em 0 1.1em;text-align:left;color:#8a3b12;font-size:0.9em">AlbumEasy CLI is not configured. Set runtime.albumeasy_cli_path in config.toml to enable this.</div>');
-        const dlg = document.createElement('dialog');
-        dlg.style.cssText = [
-            'padding:1.8em 2.2em',
-            'border-radius:10px',
-            'font-family:sans-serif',
-            'border:1px solid #bbb',
-            'min-width:320px',
-            'text-align:center',
-            'box-shadow:0 4px 24px rgba(0,0,0,.25)',
-        ].join(';');
-        dlg.innerHTML =
-            '<p style="margin:0 0 1.2em;font-size:1.05em;font-weight:500">Close Review UI?</p>' +
-            pdfOptionHtml +
-            '<div style="display:flex;gap:0.6em;justify-content:center;flex-wrap:wrap">' +
-            '<button id="_dlg_gen"  style="padding:0.5em 1.1em;background:#1a73e8;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Generate &amp; Close</button>' +
-            '<button id="_dlg_cls"  style="padding:0.5em 1.1em;background:#555;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Close / End</button>' +
-            '<button id="_dlg_cxl" style="padding:0.5em 1.1em;background:#e9e9e9;color:#333;border:none;border-radius:5px;cursor:pointer;font-size:.95em">Cancel</button>' +
-            '</div>';
-        document.body.appendChild(dlg);
-        dlg.showModal();
-        const done = v => {{
-            const generatePdf = v === 'generate' && !!dlg.querySelector('#_dlg_pdf')?.checked;
-            dlg.close();
-            dlg.remove();
-            resolve({{ choice: v, generatePdf }});
-        }};
-        dlg.querySelector('#_dlg_gen').onclick  = () => done('generate');
-        dlg.querySelector('#_dlg_cls').onclick  = () => done('close');
-        dlg.querySelector('#_dlg_cxl').onclick  = () => done('cancel');
-        dlg.addEventListener('cancel', () => done('cancel')); // Esc key
-    }});
-
-    if (choice.choice === 'cancel') return;
-
-    const generateAlbum = choice.choice === 'generate';
-    const res = await fetch('/shutdown', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{ generate_album: generateAlbum, generate_pdf: choice.generatePdf }})
-    }});
-
-    const j = await res.json();
-    const details = [
-        j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
-        j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
-    ].join('');
-    alert((j.message || 'Review UI shutdown request sent.') + details);
-
-    // window.close may be blocked for tabs not opened by script; provide fallback.
-    window.close();
-    setTimeout(() => {{ window.location.href = 'about:blank'; }}, 150);
-}}
-
-const seriesToggle = document.getElementById('f_series');
-if (seriesToggle) {{
-  seriesToggle.checked = checkboxDefaults.f_series;
-  seriesToggle.addEventListener('change', () => {{
-    seriesToggle.dataset.userTouched = '1';
-  }});
-}}
-
-// Apply all checkbox defaults from config
-for (const [checkboxId, checked] of Object.entries(checkboxDefaults)) {{
-  const el = document.getElementById(checkboxId);
-  if (el) {{
-    el.checked = checked;
-    el.addEventListener('change', () => {{
-      el.dataset.userTouched = '1';
-    }});
-  }}
-}}
-
-render();
-</script>
-</body>
-</html>"#,
-        json = json
-    )
-}
-
 fn parse_query_param(url: &str, key: &str) -> Option<String> {
     let (_, query) = url.split_once('?')?;
     for pair in query.split('&') {
@@ -2214,16 +1473,88 @@ fn parse_query_param(url: &str, key: &str) -> Option<String> {
     None
 }
 
-fn album_dir_for_ui(db_path: &str, album_name: &str) -> PathBuf {
-    let album_slug = album_name.trim().replace(' ', "-");
-    let preferred = Path::new("Albums").join(&album_slug);
-    if preferred.exists() {
-        return preferred;
+fn parse_query_flag(url: &str, key: &str) -> bool {
+    match parse_query_param(url, key) {
+        Some(value) => {
+            let normalized = value.trim().to_ascii_lowercase();
+            normalized.is_empty()
+                || normalized == "1"
+                || normalized == "true"
+                || normalized == "yes"
+                || normalized == "on"
+        }
+        None => false,
     }
+}
+
+fn build_matcher_payload(
+    conn: &Connection,
+    db_path: &str,
+    album_name: &str,
+    default_catalog_code: &str,
+    odd_row_color: &str,
+    even_row_color: &str,
+    series_default_checked: bool,
+    description_default_checked: bool,
+    watermark_default_checked: bool,
+    design_default_checked: bool,
+    engraving_default_checked: bool,
+    perforation_default_checked: bool,
+    context_default_checked: bool,
+    colnect_links_default_checked: bool,
+    colnect_image_url_default_checked: bool,
+    colnect_metadata_default_checked: bool,
+    replace_sg_number_default_checked: bool,
+    right_unmatched_only_default_checked: bool,
+    albumeasy_auto_generate_pdf_default: bool,
+    albumeasy_cli_configured: bool,
+    show_imageless_left_rows: bool,
+) -> Result<MatcherPayload, Box<dyn std::error::Error>> {
+    let left = load_left_stamps(conn, db_path, album_name, show_imageless_left_rows)?;
+    let right = load_right_candidates(conn, db_path, album_name)?;
+
+    Ok(MatcherPayload {
+        left,
+        right,
+        album_name: album_name.to_string(),
+        show_imageless_left_rows,
+        default_catalog_code: default_catalog_code.to_string(),
+        odd_row_color: odd_row_color.to_string(),
+        even_row_color: even_row_color.to_string(),
+        series_default_checked,
+        description_default_checked,
+        watermark_default_checked,
+        design_default_checked,
+        engraving_default_checked,
+        perforation_default_checked,
+        context_default_checked,
+        colnect_links_default_checked,
+        colnect_image_url_default_checked,
+        colnect_metadata_default_checked,
+        replace_sg_number_default_checked,
+        right_unmatched_only_default_checked,
+        albumeasy_auto_generate_pdf_default,
+        albumeasy_cli_configured,
+    })
+}
+
+fn album_dir_for_ui(db_path: &str, _album_name: &str) -> PathBuf {
+    // Always derive the album directory from the db file's parent.
+    // An earlier version checked for a local relative `Albums/<name>/` path
+    // first, but that caused writes to go to the workspace test directory
+    // instead of the actual album directory when an external db is used.
     Path::new(db_path)
         .parent()
         .map(|p| p.to_path_buf())
         .unwrap_or_else(|| PathBuf::from("."))
+}
+
+/// Load config, merging any album-local `config.toml` override on top of the
+/// global one.  This is the preferred way to obtain a `Config` inside any
+/// handler that already knows `db_path` and `album_name`.
+fn load_album_config(db_path: &str, album_name: &str) -> crate::config::Config {
+    let album_dir = album_dir_for_ui(db_path, album_name);
+    crate::config::load_config_with_override("config.toml", &album_dir)
 }
 
 fn safe_filename_token(raw: &str) -> String {
@@ -2321,716 +1652,252 @@ fn store_uploaded_image_from_data_url(
     Ok(format!("images/{}", file_name))
 }
 
-fn load_left_stamp_by_rowid(
+fn colnect_import_data(
     conn: &Connection,
+    _req: ColnectImportRequest,
     db_path: &str,
     album_name: &str,
-    rowid: i64,
-) -> Result<Option<LeftStamp>, Box<dyn std::error::Error>> {
-    let mut stmt = conn.prepare(
-        "SELECT rowid,
-                COALESCE(sg_number, ''),
-                COALESCE(year, 0),
-                COALESCE(series, ''),
-                COALESCE(image_path, ''),
-                COALESCE(stampworld_image_url, ''),
-                COALESCE(description, ''),
-                COALESCE(watermark, ''),
-                COALESCE(design, ''),
-                COALESCE(engraving, ''),
-                COALESCE(perforation, ''),
-                COALESCE(context, ''),
-                  COALESCE(colnect_page_url, ''),
-                  COALESCE(colnect_image_url, ''),
-                COALESCE(colnect_id, ''),
-                COALESCE(colnect_name, ''),
-                COALESCE(colnect_catalog_codes, ''),
-                COALESCE(colnect_country, ''),
-                  COALESCE(colnect_width, ''),
-                  COALESCE(colnect_height, ''),
-                  COALESCE(colnect_format, ''),
-                  COALESCE(colnect_emission, ''),
-                  COALESCE(colnect_printing, ''),
-                  COALESCE(colnect_paper, ''),
-                  COALESCE(colnect_gum, ''),
-                  COALESCE(colnect_ord_mi, ''),
-                  COALESCE(colnect_ord_sn, ''),
-                  COALESCE(colnect_ord_yt, ''),
-                COALESCE(colnect_face_value, ''),
-                COALESCE(colnect_currency, ''),
-                COALESCE(colnect_ord_sg, ''),
-                  COALESCE(colnect_expiry_date, ''),
-                COALESCE(colnect_print_run, ''),
-                  COALESCE(colnect_colors, ''),
-                  COALESCE(colnect_parent_item, ''),
-                  COALESCE(colnect_variant, ''),
-                  COALESCE(colnect_overprint_variant, ''),
-                  COALESCE(colnect_score, ''),
-                  COALESCE(colnect_accuracy, ''),
-                  COALESCE(colnect_list, ''),
-                  COALESCE(colnect_quantity, ''),
-                  COALESCE(colnect_condition, ''),
-                COALESCE(colnect_public_note, ''),
-                COALESCE(colnect_private_note, '')
-         FROM stamps
-         WHERE rowid = ?1
-         LIMIT 1",
-    )?;
+) -> ColnectImportResponse {
+    // Load config and resolve candidate inbox paths.
+    // Priority:
+    // 1) configured colnect_inbox_path (if present)
+    // 2) active album folder (<album>/colnect)
+    let config = load_album_config(db_path, album_name);
 
-    let mut rows = stmt.query(params![rowid])?;
-    let Some(row) = rows.next()? else {
-        return Ok(None);
-    };
-
-    let rel_image: String = row.get(4)?;
-    let resolved_rowid: i64 = row.get(0)?;
-    Ok(Some(LeftStamp {
-        rowid: resolved_rowid,
-        sg_number: row.get(1)?,
-        year: row.get(2)?,
-        series: row.get(3)?,
-        image_path: rel_image.clone(),
-        image_abs: resolve_image_abs(db_path, album_name, &rel_image),
-        stampworld_image_url: row.get(5)?,
-        description: row.get(6)?,
-        watermark: row.get(7)?,
-        design: row.get(8)?,
-        engraving: row.get(9)?,
-        perforation: row.get(10)?,
-        context: row.get(11)?,
-        colnect_page_url: row.get(12)?,
-        colnect_image_url: row.get(13)?,
-        colnect_id: row.get(14)?,
-        colnect_name: row.get(15)?,
-        colnect_catalog_codes: row.get(16)?,
-        colnect_country: row.get(17)?,
-        colnect_width: row.get(18)?,
-        colnect_height: row.get(19)?,
-        colnect_format: row.get(20)?,
-        colnect_emission: row.get(21)?,
-        colnect_printing: row.get(22)?,
-        colnect_paper: row.get(23)?,
-        colnect_gum: row.get(24)?,
-        colnect_ord_mi: row.get(25)?,
-        colnect_ord_sn: row.get(26)?,
-        colnect_ord_yt: row.get(27)?,
-        colnect_face_value: row.get(28)?,
-        colnect_currency: row.get(29)?,
-        colnect_ord_sg: row.get(30)?,
-        colnect_expiry_date: row.get(31)?,
-        colnect_print_run: row.get(32)?,
-        colnect_colors: row.get(33)?,
-        colnect_parent_item: row.get(34)?,
-        colnect_variant: row.get(35)?,
-        colnect_overprint_variant: row.get(36)?,
-        colnect_score: row.get(37)?,
-        colnect_accuracy: row.get(38)?,
-        colnect_list: row.get(39)?,
-        colnect_quantity: row.get(40)?,
-        colnect_condition: row.get(41)?,
-        colnect_public_note: row.get(42)?,
-        colnect_private_note: row.get(43)?,
-        all_db_fields: load_stamp_all_fields(conn, resolved_rowid).unwrap_or_default(),
-    }))
-}
-
-fn load_right_candidate_by_colnect_id(
-    conn: &Connection,
-    db_path: &str,
-    album_name: &str,
-    colnect_id: &str,
-) -> Result<Option<RightCandidate>, Box<dyn std::error::Error>> {
-    let mut code_stmt = conn.prepare(
-        "SELECT COALESCE(catalog_type, ''), COALESCE(code, '')
-         FROM colnect_catalog_codes
-         WHERE COALESCE(colnect_id, '') = ?1",
-    )?;
-    let code_rows = code_stmt.query_map(params![colnect_id], |row| {
-        Ok(CatalogCodePair {
-            catalog_type: row.get(0)?,
-            code: row.get(1)?,
-        })
-    })?;
-    let mut code_pairs = Vec::new();
-    for r in code_rows {
-        let p = r?;
-        if p.code.trim().is_empty() {
-            continue;
-        }
-        code_pairs.push(p);
+    let mut inbox_candidates: Vec<PathBuf> = Vec::new();
+    if let Some(configured_path) = config.effective_colnect_inbox_path() {
+        inbox_candidates.push(PathBuf::from(configured_path));
     }
 
-    let mut stmt = conn.prepare(
-        "SELECT COALESCE(c.colnect_id, ''),
-                COALESCE(c.sg_number, ''),
-                CAST(substr(COALESCE(c.issued_on, ''), 1, 4) AS INTEGER),
-                COALESCE(c.series, ''),
-                COALESCE(c.colnect_link, ''),
-                COALESCE(c.description, ''),
-                COALESCE(c.name, ''),
-                COALESCE(c.watermark, ''),
-                COALESCE(c.designers, ''),
-                COALESCE(c.printers, ''),
-                COALESCE(c.perforation, ''),
-                COALESCE(c.themes, ''),
-                COALESCE(c.catalog_codes, ''),
-                COALESCE(c.country, ''),
-                COALESCE(c.width, ''),
-                COALESCE(c.height, ''),
-                COALESCE(c.format, ''),
-                COALESCE(c.emission, ''),
-                COALESCE(c.printing, ''),
-                COALESCE(c.paper, ''),
-                COALESCE(c.gum, ''),
-                COALESCE(c.ord_mi, ''),
-                COALESCE(c.ord_sn, ''),
-                COALESCE(c.ord_yt, ''),
-                COALESCE(c.ord_sg, ''),
-                COALESCE(c.expiry_date, ''),
-                COALESCE(c.print_run, ''),
-                COALESCE(c.face_value, ''),
-                COALESCE(c.currency, ''),
-                COALESCE(c.colors, ''),
-                COALESCE(c.parent_item, ''),
-                COALESCE(c.variant, ''),
-                COALESCE(c.overprint_variant, ''),
-                COALESCE(c.score, ''),
-                COALESCE(c.accuracy, ''),
-                COALESCE(c.list, ''),
-                COALESCE(c.quantity, ''),
-                COALESCE(c.condition, ''),
-                COALESCE(c.public_note, ''),
-                COALESCE(c.private_note, ''),
-                COALESCE((
-                    SELECT s.image_path
-                    FROM stamps s
-                    WHERE s.sg_number = c.sg_number
-                      AND s.year = CAST(substr(COALESCE(c.issued_on, ''), 1, 4) AS INTEGER)
-                      AND TRIM(COALESCE(s.image_path, '')) != ''
-                    LIMIT 1
-                ), '')
-                 FROM colnect_stamps c
-                 WHERE COALESCE(c.colnect_id, '') = ?1
-                     AND COALESCE(c.is_deleted, 0) = 0
-                     AND COALESCE(c.is_processed, 0) = 0
-         LIMIT 1",
-    )?;
+    let album_colnect_dir = album_dir_for_ui(db_path, album_name).join("colnect");
+    if !inbox_candidates.iter().any(|p| p == &album_colnect_dir) {
+        inbox_candidates.push(album_colnect_dir);
+    }
 
-    let mut rows = stmt.query(params![colnect_id])?;
-    let Some(row) = rows.next()? else {
-        return Ok(None);
-    };
-
-    let page_url: String = row.get(4)?;
-    let image_url = if !page_url.trim().is_empty() {
-        crate::colnect::image_fetcher::resolve_colnect_image_url(&page_url).unwrap_or_default()
-    } else {
-        String::new()
-    };
-    let description = {
-        let d: String = row.get(5)?;
-        if d.trim().is_empty() {
-            row.get::<_, String>(6)?
-        } else {
-            d
-        }
-    };
-    let image_path: String = row.get(40)?;
-
-    Ok(Some(RightCandidate {
-        colnect_id: row.get(0)?,
-        sg_number: row.get(1)?,
-        year: row.get(2)?,
-        series: row.get(3)?,
-        page_url,
-        image_url,
-        image_path: image_path.clone(),
-        image_abs: resolve_image_abs(db_path, album_name, &image_path),
-        description,
-        watermark: row.get(7)?,
-        design: row.get(8)?,
-        engraving: row.get(9)?,
-        perforation: row.get(10)?,
-        context: row.get(11)?,
-        name: row.get(6)?,
-        catalog_codes_text: row.get(12)?,
-        country: row.get(13)?,
-        width: row.get(14)?,
-        height: row.get(15)?,
-        format: row.get(16)?,
-        emission: row.get(17)?,
-        printing: row.get(18)?,
-        paper: row.get(19)?,
-        gum: row.get(20)?,
-        ord_mi: row.get(21)?,
-        ord_sn: row.get(22)?,
-        ord_yt: row.get(23)?,
-        ord_sg: row.get(24)?,
-        expiry_date: row.get(25)?,
-        print_run: row.get(26)?,
-        face_value: row.get(27)?,
-        currency: row.get(28)?,
-        colors: row.get(29)?,
-        parent_item: row.get(30)?,
-        variant: row.get(31)?,
-        overprint_variant: row.get(32)?,
-        score: row.get(33)?,
-        accuracy: row.get(34)?,
-        list: row.get(35)?,
-        quantity: row.get(36)?,
-        condition: row.get(37)?,
-        public_note: row.get(38)?,
-        private_note: row.get(39)?,
-        catalog_code_pairs: code_pairs,
-    }))
-}
-
-fn add_colnect_stamp_to_stamps(
-    conn: &Connection,
-    db_path: &str,
-    album_name: &str,
-    req: AddColnectStampRequest,
-) -> AddColnectStampResponse {
-    if req.colnect_id.trim().is_empty() {
-        return AddColnectStampResponse {
+    if inbox_candidates.is_empty() {
+        return ColnectImportResponse {
             ok: false,
-            message: "colnect_id is required".to_string(),
-            added_left: None,
-            processed_colnect_id: None,
+            message: "No colnect inbox path candidates could be resolved".to_string(),
+            files_processed: 0,
+            stamps_imported: 0,
+            stamps_skipped: 0,
+            errors: vec!["No configured path and no album path available".to_string()],
         };
     }
 
-    let candidate =
-        match load_right_candidate_by_colnect_id(conn, db_path, album_name, &req.colnect_id) {
-            Ok(Some(c)) => c,
-            Ok(None) => {
-                return AddColnectStampResponse {
-                    ok: false,
-                    message: format!("colnect candidate not found for id={}", req.colnect_id),
-                    added_left: None,
-                    processed_colnect_id: None,
+    // Find CSV files in the first candidate folder that actually contains CSV files.
+    let mut csv_files = Vec::new();
+    let mut errors = Vec::new();
+    let mut checked_dirs: Vec<String> = Vec::new();
+    let mut used_inbox_dir: Option<PathBuf> = None;
+
+    for inbox_dir in inbox_candidates {
+        checked_dirs.push(inbox_dir.display().to_string());
+
+        if !inbox_dir.exists() {
+            errors.push(format!("Directory not found: {}", inbox_dir.display()));
+            continue;
+        }
+
+        let mut local_csvs = Vec::new();
+        match std::fs::read_dir(&inbox_dir) {
+            Ok(entries) => {
+                for entry_result in entries {
+                    match entry_result {
+                        Ok(entry) => {
+                            let path = entry.path();
+                            if path.is_file() {
+                                if let Some(ext) = path.extension() {
+                                    if ext.eq_ignore_ascii_case("csv") {
+                                        local_csvs.push(path);
+                                    }
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            errors.push(format!(
+                                "Failed to read directory entry in {}: {}",
+                                inbox_dir.display(),
+                                e
+                            ));
+                        }
+                    }
                 }
             }
             Err(e) => {
-                return AddColnectStampResponse {
-                    ok: false,
-                    message: format!("failed to load colnect candidate: {}", e),
-                    added_left: None,
-                    processed_colnect_id: None,
-                }
+                errors.push(format!(
+                    "Failed to read colnect inbox directory {}: {}",
+                    inbox_dir.display(),
+                    e
+                ));
+                continue;
             }
-        };
+        }
 
-    let existing = conn.query_row(
-        "SELECT COUNT(*) FROM stamps WHERE TRIM(COALESCE(colnect_id, '')) = ?1",
-        params![candidate.colnect_id.clone()],
-        |row| row.get::<_, i64>(0),
-    );
-    if let Ok(count) = existing {
-        if count > 0 {
-            return AddColnectStampResponse {
-                ok: false,
-                message: format!(
-                    "stamp with colnect_id={} already exists in stamps",
-                    candidate.colnect_id
-                ),
-                added_left: None,
-                processed_colnect_id: None,
-            };
+        if !local_csvs.is_empty() {
+            used_inbox_dir = Some(inbox_dir);
+            csv_files = local_csvs;
+            break;
         }
     }
 
-    let mut image_path = String::new();
-    if req.associate_image {
-        let mode = req
-            .image_mode
-            .as_deref()
-            .unwrap_or("current_left")
-            .to_ascii_lowercase();
-        if mode == "current_left" {
-            if let Some(left_rowid) = req.source_left_rowid {
-                match conn.query_row(
-                    "SELECT COALESCE(image_path, '') FROM stamps WHERE rowid = ?1",
-                    params![left_rowid],
-                    |row| row.get::<_, String>(0),
+    if csv_files.is_empty() {
+        errors.push(format!("Checked folders: {}", checked_dirs.join(" | ")));
+        return ColnectImportResponse {
+            ok: true,
+            message: "No CSV files found in colnect inbox".to_string(),
+            files_processed: 0,
+            stamps_imported: 0,
+            stamps_skipped: 0,
+            errors,
+        };
+    }
+
+    if let Some(dir) = used_inbox_dir {
+        log::info!("Colnect import using inbox folder: {}", dir.display());
+    }
+
+    // Parse and ingest CSV files
+    let mut total_stamps_imported = 0usize;
+    let mut total_stamps_skipped = 0usize;
+    let mut files_processed = 0usize;
+
+    for csv_file in &csv_files {
+        match crate::colnect::parser::parse_csv(csv_file) {
+            Ok(stamps) => {
+                let count = stamps.len();
+                let filename = csv_file
+                    .file_name()
+                    .map(|n| n.to_string_lossy().into_owned())
+                    .unwrap_or_else(|| csv_file.display().to_string());
+                log_runtime_event(&format!("Parsing {}: {} stamps found", filename, count));
+                let before: usize = conn
+                    .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| {
+                        r.get::<_, i64>(0)
+                    })
+                    .unwrap_or(0) as usize;
+                match crate::colnect::ingest::ingest_colnect_data_with_mode(
+                    conn, &stamps, "sg",
+                    false, // Don't clear existing - we're adding to what's already there
                 ) {
-                    Ok(v) if !v.trim().is_empty() => {
-                        image_path = v;
-                    }
-                    Ok(_) => {}
-                    Err(e) => {
-                        return AddColnectStampResponse {
-                            ok: false,
-                            message: format!(
-                                "failed reading image from source row {}: {}",
-                                left_rowid, e
-                            ),
-                            added_left: None,
-                            processed_colnect_id: None,
+                    Ok(_) => {
+                        let after: usize = conn
+                            .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| {
+                                r.get::<_, i64>(0)
+                            })
+                            .unwrap_or(0) as usize;
+                        let new_count = after.saturating_sub(before);
+                        let dup_count = count.saturating_sub(new_count);
+                        files_processed += 1;
+                        total_stamps_imported += new_count;
+                        total_stamps_skipped += dup_count;
+                        let status_msg = if dup_count == 0 {
+                            format!("{}: {} new stamps imported", filename, new_count)
+                        } else if new_count == 0 {
+                            format!("{}: {} assessed — all already in database", filename, count)
+                        } else {
+                            format!(
+                                "{}: {} new imported, {} already in database",
+                                filename, new_count, dup_count
+                            )
                         };
+                        log_runtime_event(&status_msg);
+                        log::info!("{}", status_msg);
+                    }
+                    Err(e) => {
+                        errors.push(format!("Failed to ingest {}: {}", csv_file.display(), e));
+                        log_runtime_event(&format!(
+                            "Failed to ingest {}: {}",
+                            csv_file.display(),
+                            e
+                        ));
                     }
                 }
             }
-        } else if mode == "upload" {
-            let Some(upload_data_url) = req.upload_data_url.as_deref() else {
-                return AddColnectStampResponse {
-                    ok: false,
-                    message: "upload mode selected but no upload data provided".to_string(),
-                    added_left: None,
-                    processed_colnect_id: None,
-                };
-            };
-            match store_uploaded_image_from_data_url(
-                db_path,
-                album_name,
-                &candidate.colnect_id,
-                upload_data_url,
-                req.upload_filename.as_deref(),
-            ) {
-                Ok(rel_path) => image_path = rel_path,
-                Err(e) => {
-                    return AddColnectStampResponse {
-                        ok: false,
-                        message: e,
-                        added_left: None,
-                        processed_colnect_id: None,
-                    }
-                }
+            Err(e) => {
+                errors.push(format!("Failed to parse {}: {}", csv_file.display(), e));
+                log_runtime_event(&format!("Failed to parse {}: {}", csv_file.display(), e));
             }
         }
     }
 
-    let default_catalog_code =
-        crate::config::load_config("config.toml").effective_default_catalog_code();
-    let sg_number = crate::catalog::normalize_catalog_number(
-        &req.target_sg_number
-            .unwrap_or_else(|| candidate.sg_number.clone()),
-    );
-    let catalog_code = crate::catalog::infer_catalog_type_for_number(
-        &candidate.catalog_codes_text,
-        &sg_number,
-        &default_catalog_code,
-    );
-    let year = req.target_year.unwrap_or(candidate.year);
-    let series = req
-        .target_series
-        .unwrap_or_else(|| candidate.series.clone());
-
-    let insert_res = conn.execute(
-        "INSERT INTO stamps (
-            country, series, year, sg_number, catalog_code, uniq_key,
-            description, image_path, remote_image_url, original_image_url,
-            colnect_page_url, colnect_image_url, colnect_id, colnect_name,
-            colnect_catalog_codes, colnect_country, colnect_width, colnect_height,
-            colnect_format, colnect_emission, colnect_printing, colnect_paper,
-            colnect_gum, colnect_ord_mi, colnect_ord_sn, colnect_ord_yt,
-            colnect_ord_sg, colnect_expiry_date, colnect_print_run, colnect_face_value,
-            colnect_currency, colnect_colors, colnect_parent_item, colnect_variant,
-            colnect_overprint_variant, colnect_score, colnect_accuracy, colnect_list,
-            colnect_quantity, colnect_condition, colnect_public_note, colnect_private_note,
-            watermark, design, engraving, perforation, context
-         ) VALUES (
-                ?1, ?2, ?3, ?4, ?5, ?6,
-                ?7, ?8, ?9, ?10,
-                ?11, ?12, ?13, ?14,
-                ?15, ?16, ?17, ?18,
-                ?19, ?20, ?21, ?22,
-                ?23, ?24, ?25, ?26,
-                ?27, ?28, ?29, ?30,
-                ?31, ?32, ?33, ?34,
-                ?35, ?36, ?37, ?38,
-                ?39, ?40, ?41, ?42,
-                ?43, ?44, ?45, ?46, ?47
-         )",
-        params![
-            candidate.country,
-            series.clone(),
-            year,
-            sg_number.clone(),
-            catalog_code,
-            format!(
-                "{}|{}|{}",
-                candidate.country.trim().to_ascii_lowercase(),
-                series,
-                sg_number
-            ),
-            candidate.description,
-            image_path,
-            candidate.image_url,
-            candidate.page_url,
-            candidate.page_url,
-            candidate.image_url,
-            candidate.colnect_id,
-            candidate.name,
-            candidate.catalog_codes_text,
-            candidate.country,
-            candidate.width,
-            candidate.height,
-            candidate.format,
-            candidate.emission,
-            candidate.printing,
-            candidate.paper,
-            candidate.gum,
-            candidate.ord_mi,
-            candidate.ord_sn,
-            candidate.ord_yt,
-            candidate.ord_sg,
-            candidate.expiry_date,
-            candidate.print_run,
-            candidate.face_value,
-            candidate.currency,
-            candidate.colors,
-            candidate.parent_item,
-            candidate.variant,
-            candidate.overprint_variant,
-            candidate.score,
-            candidate.accuracy,
-            candidate.list,
-            candidate.quantity,
-            candidate.condition,
-            candidate.public_note,
-            candidate.private_note,
-            candidate.watermark,
-            candidate.design,
-            candidate.engraving,
-            candidate.perforation,
-            candidate.context,
-        ],
-    );
-
-    if let Err(e) = insert_res {
-        return AddColnectStampResponse {
-            ok: false,
-            message: format!("failed to insert into stamps: {}", e),
-            added_left: None,
-            processed_colnect_id: None,
-        };
-    }
-
-    let rowid = conn.last_insert_rowid();
-    let added_left = load_left_stamp_by_rowid(conn, db_path, album_name, rowid)
-        .ok()
-        .flatten();
-
-    let processed_colnect_id = match mark_colnect_candidate_processed(conn, &req.colnect_id) {
-        Ok(_) => Some(req.colnect_id.clone()),
-        Err(_) => None,
-    };
-
-    let message = if processed_colnect_id.is_some() {
+    let summary_message = if total_stamps_skipped > 0 && total_stamps_imported == 0 {
         format!(
-            "added colnect_id={} into stamps rowid={}",
-            req.colnect_id, rowid
+            "{} assessed across {} file(s) — all already in database",
+            total_stamps_skipped, files_processed
+        )
+    } else if total_stamps_skipped > 0 {
+        format!(
+            "Imported {} new stamps from {} file(s); {} already in database",
+            total_stamps_imported, files_processed, total_stamps_skipped
         )
     } else {
         format!(
-            "added colnect_id={} into stamps rowid={} (warning: candidate was not marked processed until next UI sync)",
-            req.colnect_id, rowid
+            "Imported {} stamps from {} CSV file(s)",
+            total_stamps_imported, files_processed
         )
     };
 
-    AddColnectStampResponse {
-        ok: true,
-        message,
-        added_left,
-        processed_colnect_id,
+    ColnectImportResponse {
+        ok: errors.is_empty(),
+        message: summary_message,
+        files_processed,
+        stamps_imported: total_stamps_imported,
+        stamps_skipped: total_stamps_skipped,
+        errors,
     }
 }
 
-fn delete_colnect_candidate(
-    conn: &Connection,
-    req: DeleteColnectCandidateRequest,
-) -> DeleteColnectCandidateResponse {
-    if req.colnect_id.trim().is_empty() {
-        return DeleteColnectCandidateResponse {
-            ok: false,
-            message: "colnect_id is required".to_string(),
-            deleted_stamp_rows: 0,
-            deleted_code_rows: 0,
-        };
-    }
+/// Write `default_catalog_code` into the album-local config override
+/// (`Albums/<name>/config.toml`), preserving any other per-album overrides
+/// already present and only storing values that differ from the global config.
 
-    let deleted_stamp_rows = match conn.execute(
-        "UPDATE colnect_stamps
-         SET is_deleted = 1,
-             deleted_at = ?2
-         WHERE COALESCE(colnect_id, '') = ?1
-           AND COALESCE(is_deleted, 0) = 0",
-        params![req.colnect_id.clone(), chrono::Utc::now().to_rfc3339()],
-    ) {
-        Ok(n) => n,
-        Err(e) => {
-            return DeleteColnectCandidateResponse {
-                ok: false,
-                message: format!("failed soft-deleting colnect candidate: {}", e),
-                deleted_stamp_rows: 0,
-                deleted_code_rows: 0,
-            };
-        }
-    };
+/// Build config editor data for a country review UI session.
+/// Returns `(sections, has_album_override)` where sections have `current_value`
+/// set to the merged (effective) value and `global_value` / `is_album_override`
+/// populated correctly.
 
-    DeleteColnectCandidateResponse {
-        ok: true,
-        message: format!(
-            "soft-deleted colnect_id={} (rows={})",
-            req.colnect_id, deleted_stamp_rows
-        ),
-        deleted_stamp_rows,
-        deleted_code_rows: 0,
-    }
-}
-
-fn undo_colnect_delete(
-    conn: &Connection,
-    req: UndoColnectDeleteRequest,
-) -> UndoColnectDeleteResponse {
-    if req.colnect_id.trim().is_empty() {
-        return UndoColnectDeleteResponse {
-            ok: false,
-            message: "colnect_id is required".to_string(),
-            restored_rows: 0,
-        };
-    }
-
-    let restored_rows = match conn.execute(
-        "UPDATE colnect_stamps
-         SET is_deleted = 0,
-             deleted_at = ''
-         WHERE COALESCE(colnect_id, '') = ?1
-           AND COALESCE(is_deleted, 0) = 1",
-        params![req.colnect_id.clone()],
-    ) {
-        Ok(n) => n,
-        Err(e) => {
-            return UndoColnectDeleteResponse {
-                ok: false,
-                message: format!("failed undoing soft delete: {}", e),
-                restored_rows: 0,
-            };
-        }
-    };
-
-    UndoColnectDeleteResponse {
-        ok: true,
-        message: format!(
-            "restored colnect_id={} (rows={})",
-            req.colnect_id, restored_rows
-        ),
-        restored_rows,
-    }
-}
+/// Write a minimal album-local config.toml that stores only the fields that
+/// differ from the global config.  The file is written into `album_dir`.
+/// Returns the number of fields written (0 = nothing changed vs global).
 
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
-) -> Result<Option<(String, String, Server, String)>, Box<dyn std::error::Error>> {
-    eprintln!("Review UI: starting startup selector...");
+    open_browser: bool,
+) -> Result<ReviewUiBootstrapOutcome, Box<dyn std::error::Error>> {
+    log_runtime_event("Review UI: starting startup selector...");
     let html = render_bootstrap_html(default_inbox_path);
     let (server, bind) = bind_review_server(bind_addr_opt)?;
 
     let url = format!("http://{}/", bind);
-    eprintln!("Review UI Setup: {}", url);
-    let _ = webbrowser::open(&url);
-
-    let mut selected: Option<(String, String)> = None;
-
-    for mut request in server.incoming_requests() {
-        let method = request.method().clone();
-        let req_url = request.url().to_string();
-
-        if method == Method::Get && req_url == "/" {
-            let mut resp = Response::from_string(html.clone());
-            if let Ok(h) =
-                Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
-            {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Get && req_url == "/bootstrap-state" {
-            let state = BootstrapStateResponse {
-                countries: scan_bootstrap_countries(),
-            };
-            let mut resp = Response::from_string(
-                serde_json::to_string(&state).unwrap_or_else(|_| "{\"countries\":[]}".to_string()),
-            );
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/start-review" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<BootstrapStartRequest, _> = serde_json::from_str(&body);
-            let response = match parsed {
-                Ok(req) => {
-                    let countries = scan_bootstrap_countries();
-                    let found = countries
-                        .into_iter()
-                        .find(|c| c.country.eq_ignore_ascii_case(req.country.trim()));
-                    match found {
-                        Some(c) => {
-                            eprintln!(
-                                "Review UI: country selected '{}'; preparing compare view from {}",
-                                c.country, c.db_path
-                            );
-                            selected = Some((c.db_path.clone(), c.country.clone()));
-                            BootstrapStartResponse {
-                                ok: true,
-                                message: format!(
-                                    "Selected {}. Preparing Review UI now...",
-                                    c.country
-                                ),
-                                country: Some(c.country),
-                                db_path: Some(c.db_path),
-                            }
-                        }
-                        None => BootstrapStartResponse {
-                            ok: false,
-                            message: "Selected country not found or missing DB".to_string(),
-                            country: None,
-                            db_path: None,
-                        },
-                    }
-                }
-                Err(e) => BootstrapStartResponse {
-                    ok: false,
-                    message: format!("invalid request: {}", e),
-                    country: None,
-                    db_path: None,
-                },
-            };
-
-            let mut resp = Response::from_string(
-                serde_json::to_string(&response).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"country\":null,\"db_path\":null}"
-                        .to_string()
-                }),
-            );
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-
-            if selected.is_some() {
-                break;
-            }
-            continue;
-        }
-
-        let _ = request.respond(Response::empty(StatusCode(404)));
+    log_runtime_event(&format!("Review UI Setup: {}", url));
+    if open_browser {
+        open_review_ui_url(&url);
     }
 
-    Ok(selected.map(|(db, country)| (db, country, server, bind)))
+    let bootstrap_state = serve_bootstrap_requests(&server, &html);
+    let selected = bootstrap_state.selected;
+    let logout_requested = bootstrap_state.logout_requested;
+    let reload_requested = bootstrap_state.reload_requested;
+
+    if logout_requested {
+        return Ok(ReviewUiBootstrapOutcome::Exit);
+    }
+
+    if reload_requested {
+        return Ok(ReviewUiBootstrapOutcome::ReloadRequested);
+    }
+
+    Ok(match selected {
+        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected {
+            db_path,
+            country,
+            server,
+            bind,
+        },
+        None => ReviewUiBootstrapOutcome::Exit,
+    })
 }
 
 pub fn run_review_ui(
@@ -3056,9 +1923,9 @@ pub fn run_review_ui(
     right_unmatched_only_default_checked: bool,
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
-) -> Result<(), Box<dyn std::error::Error>> {
-    eprintln!("Review UI: preparing data from {}", db_path);
-    eprintln!("Review UI: opening database...");
+) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>> {
+    log_runtime_event(&format!("Review UI: preparing data from {}", db_path));
+    log_runtime_event("Review UI: opening database...");
     let conn = crate::db_utils::init_db(db_path)?;
     let _ = conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_stamps_review_sg_year ON stamps (sg_number, year)",
@@ -3068,7 +1935,7 @@ pub fn run_review_ui(
         "CREATE INDEX IF NOT EXISTS idx_colnect_review_queue ON colnect_stamps (is_deleted, is_processed, issued_on, sg_number)",
         [],
     );
-    eprintln!("Review UI: syncing processed Colnect candidates...");
+    log_runtime_event("Review UI: syncing processed Colnect candidates...");
     sync_processed_colnect_candidates(&conn)?;
 
     let album_name = album_name_opt
@@ -3080,28 +1947,18 @@ pub fn run_review_ui(
         })
         .unwrap_or_else(|| "Album".to_string());
 
-    eprintln!("Review UI: loading left StampWorld rows...");
-    let left = load_left_stamps(&conn, db_path, &album_name)?;
-    eprintln!("Review UI: loading right Colnect candidates...");
-    let right = load_right_candidates(&conn, db_path, &album_name)?;
-    eprintln!(
-        "Review UI: loaded {} left rows and {} right candidates",
-        left.len(),
-        right.len()
-    );
-
-    let right_map: HashMap<String, RightCandidate> = right
-        .iter()
-        .cloned()
-        .map(|c| (c.colnect_id.clone(), c))
-        .collect();
-
-    let payload = MatcherPayload {
-        left,
-        right,
-        default_catalog_code: default_catalog_code.to_string(),
-        odd_row_color: odd_row_color.to_string(),
-        even_row_color: even_row_color.to_string(),
+    let initial_show_imageless_left_rows = false;
+    log_runtime_event(&format!(
+        "Review UI: loading left StampWorld rows (show image-less: {})...",
+        initial_show_imageless_left_rows
+    ));
+    let payload = build_matcher_payload(
+        &conn,
+        db_path,
+        &album_name,
+        default_catalog_code,
+        odd_row_color,
+        even_row_color,
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -3116,10 +1973,24 @@ pub fn run_review_ui(
         right_unmatched_only_default_checked,
         albumeasy_auto_generate_pdf_default,
         albumeasy_cli_configured,
-    };
+        initial_show_imageless_left_rows,
+    )?;
+    log_runtime_event(&format!(
+        "Review UI: loaded {} left rows and {} right candidates",
+        payload.left.len(),
+        payload.right.len()
+    ));
+
+    let right_map: HashMap<String, RightCandidate> = payload
+        .right
+        .iter()
+        .cloned()
+        .map(|c| (c.colnect_id.clone(), c))
+        .collect();
+
     let html = render_html(&payload);
 
-    eprintln!("Review UI: starting local web server...");
+    log_runtime_event("Review UI: starting local web server...");
     let (server, bind) = if let Some(pb) = prebound_server {
         pb
     } else {
@@ -3127,315 +1998,58 @@ pub fn run_review_ui(
     };
 
     let url = format!("http://{}/", bind);
-    eprintln!("Review UI: {}", url);
+    log_runtime_event(&format!("Review UI: {}", url));
     if open_browser {
-        eprintln!("Review UI: opening browser...");
-        let _ = webbrowser::open(&url);
+        log_runtime_event("Review UI: opening browser...");
+        open_review_ui_url(&url);
     } else {
-        eprintln!("Review UI: waiting for bootstrap tab to load compare view...");
+        log_runtime_event("Review UI: waiting for bootstrap tab to load compare view...");
     }
 
-    for mut request in server.incoming_requests() {
-        let method = request.method().clone();
-        let req_url = request.url().to_string();
+    let review_state = serve_review_requests(
+        &server,
+        &conn,
+        db_path,
+        &album_name,
+        &html,
+        &right_map,
+        default_catalog_code,
+        odd_row_color,
+        even_row_color,
+        series_default_checked,
+        description_default_checked,
+        watermark_default_checked,
+        design_default_checked,
+        engraving_default_checked,
+        perforation_default_checked,
+        context_default_checked,
+        colnect_links_default_checked,
+        colnect_image_url_default_checked,
+        colnect_metadata_default_checked,
+        replace_sg_number_default_checked,
+        right_unmatched_only_default_checked,
+        albumeasy_auto_generate_pdf_default,
+        albumeasy_cli_configured,
+    );
+    let reload_requested = review_state.reload_requested;
+    let return_to_start_requested = review_state.return_to_start_requested;
 
-        if method == Method::Get && req_url == "/compare-ready" {
-            let mut resp = Response::from_string("{\"ready\":true}".to_string());
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Get && req_url == "/" {
-            let mut resp = Response::from_string(html.clone());
-            if let Ok(h) =
-                Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
-            {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Get && req_url.starts_with("/image?") {
-            let Some(path) = parse_query_param(&req_url, "path") else {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            };
-            let p = PathBuf::from(path);
-            if !p.exists() {
-                let _ = request.respond(Response::empty(StatusCode(404)));
-                continue;
-            }
-            match fs::File::open(&p) {
-                Ok(f) => {
-                    let mut resp = Response::from_file(f);
-                    if let Ok(h) =
-                        Header::from_bytes(&b"Content-Type"[..], mime_from_path(&p).as_bytes())
-                    {
-                        resp = resp.with_header(h);
-                    }
-                    let _ = request.respond(resp);
-                }
-                Err(_) => {
-                    let _ = request.respond(Response::empty(StatusCode(500)));
-                }
-            }
-            continue;
-        }
-
-        if method == Method::Get && req_url.starts_with("/resolve-colnect-image?") {
-            let Some(page_url) = parse_query_param(&req_url, "page_url") else {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            };
-
-            let image_url = crate::colnect::image_fetcher::resolve_colnect_image_url(&page_url)
-                .unwrap_or_default();
-            let resp_json = serde_json::json!({
-                "ok": !image_url.trim().is_empty(),
-                "image_url": image_url,
-            })
-            .to_string();
-
-            let mut resp = Response::from_string(resp_json);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/apply-matches" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<ApplyMatchesEnvelope, _> = serde_json::from_str(&body);
-            let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&apply_matches(
-                    &conn,
-                    req.matches,
-                    req.fields,
-                    &right_map,
-                ))
-                .unwrap_or_else(|_| {
-                    "{\"updated_rows\":0,\"skipped_rows\":0,\"processed_colnect_ids\":[],\"errors\":[\"serialization failed\"]}"
-                        .to_string()
-                }),
-                Err(e) => serde_json::to_string(&ApplyMatchesResponse {
-                    updated_rows: 0,
-                    skipped_rows: 0,
-                    processed_colnect_ids: Vec::new(),
-                    errors: vec![format!("invalid request: {}", e)],
-                })
-                .unwrap_or_else(|_| {
-                    "{\"updated_rows\":0,\"skipped_rows\":0,\"processed_colnect_ids\":[],\"errors\":[\"invalid request\"]}"
-                        .to_string()
-                }),
-            };
-
-            let mut resp = Response::from_string(resp_json);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/add-colnect-stamp" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<AddColnectStampRequest, _> = serde_json::from_str(&body);
-            let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&add_colnect_stamp_to_stamps(
-                    &conn,
-                    db_path,
-                    &album_name,
-                    req,
-                ))
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null,\"processed_colnect_id\":null}"
-                        .to_string()
-                }),
-                Err(e) => serde_json::to_string(&AddColnectStampResponse {
-                    ok: false,
-                    message: format!("invalid request: {}", e),
-                    added_left: None,
-                    processed_colnect_id: None,
-                })
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"invalid request\",\"added_left\":null,\"processed_colnect_id\":null}".to_string()
-                }),
-            };
-
-            let mut resp = Response::from_string(resp_json);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/delete-colnect-candidate" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<DeleteColnectCandidateRequest, _> = serde_json::from_str(&body);
-            let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&delete_colnect_candidate(&conn, req)).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"deleted_stamp_rows\":0,\"deleted_code_rows\":0}".to_string()
-                }),
-                Err(e) => serde_json::to_string(&DeleteColnectCandidateResponse {
-                    ok: false,
-                    message: format!("invalid request: {}", e),
-                    deleted_stamp_rows: 0,
-                    deleted_code_rows: 0,
-                })
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"invalid request\",\"deleted_stamp_rows\":0,\"deleted_code_rows\":0}".to_string()
-                }),
-            };
-
-            let mut resp = Response::from_string(resp_json);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/undo-colnect-delete" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<UndoColnectDeleteRequest, _> = serde_json::from_str(&body);
-            let resp_json = match parsed {
-                Ok(req) => {
-                    serde_json::to_string(&undo_colnect_delete(&conn, req)).unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}"
-                            .to_string()
-                    })
-                }
-                Err(e) => serde_json::to_string(&UndoColnectDeleteResponse {
-                    ok: false,
-                    message: format!("invalid request: {}", e),
-                    restored_rows: 0,
-                })
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"invalid request\",\"restored_rows\":0}".to_string()
-                }),
-            };
-
-            let mut resp = Response::from_string(resp_json);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/shutdown" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<ShutdownRequest, _> = serde_json::from_str(&body);
-            let mut generated_output_path = None;
-            let mut generated_pdf_path = None;
-            let message = match parsed {
-                Ok(req) => {
-                    if req.generate_album {
-                        let generated =
-                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                                crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                    &conn,
-                                    &album_name,
-                                    None::<fn(usize)>,
-                                    None,
-                                    None,
-                                    Some(req.generate_pdf),
-                                )
-                            }));
-                        match generated {
-                            Ok(artifacts) => {
-                                generated_output_path =
-                                    Some(artifacts.output_txt_path.display().to_string());
-                                if let Some(pdf_path) = artifacts.generated_pdf_path {
-                                    open_local_path(&pdf_path);
-                                    generated_pdf_path = Some(pdf_path.display().to_string());
-                                }
-                                match (req.generate_pdf, generated_pdf_path.is_some()) {
-                                    (true, true) => {
-                                        "Review UI closed. Album text and PDF generation completed."
-                                            .to_string()
-                                    }
-                                    (true, false) => {
-                                        "Review UI closed. Album text generation completed, but no PDF was opened. Check AlbumEasy CLI configuration or logs."
-                                            .to_string()
-                                    }
-                                    (false, _) => {
-                                        "Review UI closed. Album text generation completed without PDF generation."
-                                            .to_string()
-                                    }
-                                }
-                            }
-                            Err(_) => {
-                                "Review UI closed. Album generation failed unexpectedly (panic)."
-                                    .to_string()
-                            }
-                        }
-                    } else {
-                        "Review UI closed without album generation.".to_string()
-                    }
-                }
-                Err(e) => format!("Review UI closed (invalid shutdown payload: {}).", e),
-            };
-
-            let resp_json = serde_json::to_string(&ShutdownResponse {
-                ok: true,
-                message,
-                generated_output_path,
-                generated_pdf_path,
-            })
-            .unwrap_or_else(|_| {
-                "{\"ok\":true,\"message\":\"Review UI closed\",\"generated_output_path\":null,\"generated_pdf_path\":null}"
-                    .to_string()
-            });
-
-            let mut resp = Response::from_string(resp_json);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            break;
-        }
-
-        let _ = request.respond(Response::empty(StatusCode(404)));
+    if reload_requested {
+        return Ok(ReviewUiRunOutcome::ReloadRequested);
     }
 
-    Ok(())
+    if return_to_start_requested {
+        return Ok(ReviewUiRunOutcome::ReturnToStartRequested);
+    }
+
+    Ok(ReviewUiRunOutcome::Exit)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{mark_colnect_candidate_processed, sync_processed_colnect_candidates};
+    use super::matcher_service::{
+        mark_colnect_candidate_processed, sync_processed_colnect_candidates,
+    };
     use rusqlite::Connection;
 
     #[test]

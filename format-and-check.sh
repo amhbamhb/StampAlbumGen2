@@ -7,6 +7,21 @@ set -e  # Exit on any error
 # setting TEST_TIMEOUT in the environment when invoking the script.
 TEST_TIMEOUT=${TEST_TIMEOUT:-600}
 
+echo "🔎 Verifying config baseline files..."
+if [ ! -f "config_template.toml" ]; then
+    echo "❌ Missing config_template.toml in repo root."
+    echo "Please restore it before running checks."
+    exit 1
+fi
+
+if [ ! -f "config.toml" ]; then
+    echo "🛠️  config.toml missing; creating it from config_template.toml"
+    cp "config_template.toml" "config.toml"
+fi
+
+echo "✅ Config baseline files present"
+echo ""
+
 echo "� Checking current formatting status..."
 
 # First check if formatting is needed

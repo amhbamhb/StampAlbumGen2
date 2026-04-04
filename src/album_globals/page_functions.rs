@@ -85,7 +85,7 @@ pub fn new_row<W: std::io::Write>(
     // Load configuration and compute the real usable height so page breaks
     // reflect current settings (margins, borders, padding, etc.). Fall back
     // to conservative defaults when config keys are missing.
-    let cfg = crate::config::load_config("config.toml");
+    let cfg = crate::config::load_effective_config("config.toml");
     let usable_height = crate::album_globals::globals::compute_usable_height(&cfg);
     // Conservative buffer (mm) reserved at bottom of page to avoid footer bleed
     let conservative_buffer = cfg.page_fit_conservative_buffer_mm.unwrap_or(2.0) as f64;

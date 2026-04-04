@@ -34,7 +34,7 @@
 //! }
 //! ```
 
-use image::{io::Reader as ImageReader, GenericImageView};
+use image::{GenericImageView, ImageReader};
 use std::path::Path;
 
 // Embedded reference image data - compiled into the binary at build time

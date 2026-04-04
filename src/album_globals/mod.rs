@@ -23,6 +23,52 @@ pub use structs::{GenericAttrs, Stamp};
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::{Duration, Instant, SystemTime};
+
+static PDF_DX_LOGGING_ENABLED: AtomicBool = AtomicBool::new(false);
+
+pub fn set_pdf_dx_logging_enabled(enabled: bool) {
+    PDF_DX_LOGGING_ENABLED.store(enabled, Ordering::Release);
+}
+
+pub fn pdf_dx_logging_enabled() -> bool {
+    PDF_DX_LOGGING_ENABLED.load(Ordering::Acquire)
+}
+
+fn wait_for_generated_pdf_with_timing(
+    expected_pdf_path: &Path,
+    previous_modified: Option<SystemTime>,
+    timeout: Duration,
+    poll_every: Duration,
+) -> bool {
+    let deadline = Instant::now() + timeout;
+    while Instant::now() < deadline {
+        if let Ok(meta) = std::fs::metadata(expected_pdf_path) {
+            if meta.len() > 0 {
+                let is_newer = match (previous_modified, meta.modified()) {
+                    (Some(prev), Ok(current)) => current > prev,
+                    (None, Ok(_)) => true,
+                    (_, Err(_)) => true,
+                };
+                if is_newer {
+                    return true;
+                }
+            }
+        }
+        std::thread::sleep(poll_every);
+    }
+    false
+}
+
+fn wait_for_generated_pdf(expected_pdf_path: &Path, previous_modified: Option<SystemTime>) -> bool {
+    wait_for_generated_pdf_with_timing(
+        expected_pdf_path,
+        previous_modified,
+        Duration::from_secs(8),
+        Duration::from_millis(200),
+    )
+}
 
 #[derive(Debug, Clone)]
 pub struct GeneratedAlbumArtifacts {
@@ -47,21 +93,82 @@ fn maybe_generate_album_pdf_with_settings(
     };
 
     let expected_pdf_path = output_txt_path.with_extension("pdf");
-    let status = Command::new(cli_path)
-        .arg("-c")
-        .arg(output_txt_path)
-        .status();
+    let previous_modified = std::fs::metadata(&expected_pdf_path)
+        .ok()
+        .and_then(|m| m.modified().ok());
+    if pdf_dx_logging_enabled() {
+        log::info!(
+            "[pdf-dx] invoking AlbumEasy CLI='{}' output_txt='{}' expected_pdf='{}' previous_pdf_mtime_present={}",
+            cli_path,
+            output_txt_path.display(),
+            expected_pdf_path.display(),
+            previous_modified.is_some()
+        );
+    }
+
+    let started = Instant::now();
+    let mut cmd = Command::new(cli_path);
+    cmd.arg("-c");
+
+    // Prefer invoking AlbumEasy from the output directory and passing only
+    // the TXT file name. This avoids path-space breakage in external wrapper
+    // scripts that do not quote positional parameters correctly.
+    let txt_arg = if let (Some(parent), Some(file_name)) =
+        (output_txt_path.parent(), output_txt_path.file_name())
+    {
+        cmd.current_dir(parent);
+        PathBuf::from(file_name)
+    } else {
+        output_txt_path.to_path_buf()
+    };
+
+    if pdf_dx_logging_enabled() {
+        log::info!(
+            "[pdf-dx] albumeasy invocation cwd='{}' txt_arg='{}'",
+            cmd.get_current_dir()
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| "<process-cwd>".to_string()),
+            txt_arg.display()
+        );
+    }
+
+    let status = cmd.arg(&txt_arg).status();
     match status {
         Ok(s) if s.success() => {
+            if pdf_dx_logging_enabled() {
+                log::info!(
+                    "[pdf-dx] AlbumEasy CLI succeeded in {} ms for '{}'",
+                    started.elapsed().as_millis(),
+                    output_txt_path.display()
+                );
+            }
             log::info!(
                 "AlbumEasy CLI completed successfully for {}",
                 output_txt_path.display()
             );
-            if expected_pdf_path.exists() {
+            if wait_for_generated_pdf(&expected_pdf_path, previous_modified) {
+                if pdf_dx_logging_enabled() {
+                    let meta = std::fs::metadata(&expected_pdf_path).ok();
+                    let bytes = meta.as_ref().map(|m| m.len()).unwrap_or(0);
+                    log::info!(
+                        "[pdf-dx] generated PDF ready path='{}' size_bytes={} total_elapsed_ms={}",
+                        expected_pdf_path.display(),
+                        bytes,
+                        started.elapsed().as_millis()
+                    );
+                }
                 Some(expected_pdf_path)
             } else {
+                if pdf_dx_logging_enabled() {
+                    log::warn!(
+                        "[pdf-dx] timeout waiting for fresh PDF path='{}' timeout_ms={} total_elapsed_ms={}",
+                        expected_pdf_path.display(),
+                        Duration::from_secs(8).as_millis(),
+                        started.elapsed().as_millis()
+                    );
+                }
                 log::warn!(
-                    "AlbumEasy CLI reported success for {} but no PDF was found at {}",
+                    "AlbumEasy CLI reported success for {} but a newly generated PDF was not observed at {} within timeout",
                     output_txt_path.display(),
                     expected_pdf_path.display()
                 );
@@ -69,6 +176,14 @@ fn maybe_generate_album_pdf_with_settings(
             }
         }
         Ok(s) => {
+            if pdf_dx_logging_enabled() {
+                log::warn!(
+                    "[pdf-dx] AlbumEasy CLI failed status='{}' elapsed_ms={} output_txt='{}'",
+                    s,
+                    started.elapsed().as_millis(),
+                    output_txt_path.display()
+                );
+            }
             log::warn!(
                 "AlbumEasy CLI exited with status {} for {}",
                 s,
@@ -77,6 +192,15 @@ fn maybe_generate_album_pdf_with_settings(
             None
         }
         Err(e) => {
+            if pdf_dx_logging_enabled() {
+                log::warn!(
+                    "[pdf-dx] failed to launch AlbumEasy CLI='{}' elapsed_ms={} output_txt='{}' error='{}'",
+                    cli_path,
+                    started.elapsed().as_millis(),
+                    output_txt_path.display(),
+                    e
+                );
+            }
             log::warn!(
                 "Failed to run AlbumEasy CLI '{}' for {}: {}",
                 cli_path,
@@ -92,7 +216,7 @@ fn generated_artifacts_from_path(
     output_txt_path: PathBuf,
     generate_pdf_override: Option<bool>,
 ) -> GeneratedAlbumArtifacts {
-    let cfg = crate::config::load_config("config.toml");
+    let cfg = crate::config::load_effective_config("config.toml");
     let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
     let generate_pdf = generate_pdf_override.unwrap_or_else(|| cfg.albumeasy_auto_pdf_enabled());
     let generated_pdf_path =
@@ -185,4 +309,43 @@ where
     let path =
         generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year);
     generated_artifacts_from_path(path, None).output_txt_path
+}
+
+#[cfg(test)]
+mod tests {
+    use super::wait_for_generated_pdf_with_timing;
+    use std::fs;
+    use std::time::{Duration, SystemTime};
+
+    #[test]
+    fn wait_for_generated_pdf_detects_delayed_new_write() {
+        let temp_dir = tempfile::tempdir().expect("tempdir should be created");
+        let pdf_path = temp_dir.path().join("album.pdf");
+
+        fs::write(&pdf_path, b"old").expect("seed file should be written");
+        let previous_modified = fs::metadata(&pdf_path)
+            .ok()
+            .and_then(|m| m.modified().ok())
+            .or(Some(SystemTime::now()));
+
+        std::thread::sleep(Duration::from_millis(150));
+        let delayed_path = pdf_path.clone();
+        let writer = std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(250));
+            fs::write(delayed_path, b"new-content").expect("delayed file write should succeed");
+        });
+
+        let observed = wait_for_generated_pdf_with_timing(
+            &pdf_path,
+            previous_modified,
+            Duration::from_secs(2),
+            Duration::from_millis(50),
+        );
+
+        writer.join().expect("delayed writer thread should finish");
+        assert!(
+            observed,
+            "expected delayed PDF write to be detected within timeout"
+        );
+    }
 }

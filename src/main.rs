@@ -19,92 +19,261 @@ use stamp_album_gen2::{
     cli::Cli,
     config,
     modes::{run_database_mode, run_scraping_mode},
-    review_ui::{run_review_ui, run_review_ui_bootstrap},
-    setup::{setup_logging, validate_os},
+    review_ui::{
+        log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
+        ReviewUiRunOutcome,
+    },
+    setup::{
+        ensure_linux_desktop_integration, install_linux_desktop_integration, setup_logging,
+        uninstall_linux_desktop_integration, validate_os,
+    },
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
     },
 };
+use std::io::IsTerminal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let launched_without_args = std::env::args_os().nth(1).is_none();
+    let interactive_terminal = std::io::stdin().is_terminal() && std::io::stderr().is_terminal();
+
     // Parse CLI arguments
     let mut cli = Cli::parse();
+
+    if cli.uninstall_desktop_launcher {
+        match uninstall_linux_desktop_integration() {
+            Ok(report) => {
+                println!(
+                    "{} (desktop entry: {}, icon: {})",
+                    report.summary, report.desktop_entry_path, report.icon_path
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Failed to uninstall desktop launcher artifacts: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    if cli.install_desktop_launcher {
+        match install_linux_desktop_integration() {
+            Ok(report) => {
+                println!(
+                    "{} (desktop entry: {}, icon: {})",
+                    report.summary, report.desktop_entry_path, report.icon_path
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Failed to install desktop launcher artifacts: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    if launched_without_args && interactive_terminal {
+        cli.review_ui = true;
+    }
+
+    let startup_config = config::load_config("config.toml");
+    let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
+    stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
+    if enable_pdf_dx_logging {
+        eprintln!(
+            "PDF DX logging is enabled (via {}); detailed PDF generation diagnostics will be written to Logs/",
+            if cli.pdf_dx_logging {
+                "--pdf-dx-logging"
+            } else {
+                "runtime.pdf_dx_logging=true"
+            }
+        );
+    }
 
     // Review UI mode is intentionally independent from normal source/mode
     // validation to keep the workflow lightweight.
     if cli.review_ui {
         validate_os()?;
 
-        eprintln!("Review UI: initializing...");
+        if launched_without_args {
+            log_runtime_event(
+                "No CLI arguments provided; launching Review UI startup screen by default.",
+            );
+        }
 
-        let review_cfg = config::load_config("config.toml");
-
-        let (db_path, album_name_opt, open_browser, prebound) =
-            if cli.db_path.is_none() && cli.album_name.is_none() {
-                eprintln!(
-                    "Review UI: no country/database selected on CLI; opening startup selector..."
-                );
-                let selection = run_review_ui_bootstrap(
-                    cli.review_ui_bind.as_deref(),
-                    review_cfg.effective_colnect_inbox_path(),
-                )?;
-
-                let Some((selected_db, selected_country, srv, bind)) = selection else {
-                    eprintln!("No country selected; exiting Review UI startup.");
-                    return Ok(());
-                };
-                eprintln!(
-                    "Review UI: selected '{}' with database {}",
-                    selected_country, selected_db
-                );
-                (
-                    selected_db,
-                    Some(selected_country),
-                    false,
-                    Some((srv, bind)),
-                )
-            } else {
-                let db_path = if let Some(path) = cli.db_path.clone() {
-                    path
-                } else if let Some(album_name) = cli.album_name.clone() {
-                    let album_dir = album_name.trim().replace(' ', "-");
-                    format!("Albums/{0}/{0}.db", album_dir)
+        match ensure_linux_desktop_integration() {
+            Ok(report) => {
+                if report.changed {
+                    log_runtime_event(&format!(
+                        "Desktop integration installed: {} (desktop entry: {}, icon: {})",
+                        report.summary, report.desktop_entry_path, report.icon_path
+                    ));
                 } else {
-                    eprintln!("Review UI requires --db-path or --album-name.");
-                    eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
-                    std::process::exit(1);
-                };
-                eprintln!("Review UI: using requested database {}", db_path);
-                (db_path, cli.album_name.clone(), true, None)
+                    log_runtime_event(&format!("Desktop integration check: {}", report.summary));
+                }
+            }
+            Err(e) => {
+                log_runtime_event(&format!(
+                    "Desktop integration check failed (non-fatal): {}",
+                    e
+                ));
+            }
+        }
+
+        log_runtime_event("Review UI: initializing...");
+
+        enum ReviewUiLaunchState {
+            Bootstrap {
+                open_browser: bool,
+            },
+            Selected {
+                db_path: String,
+                album_name: Option<String>,
+                open_browser: bool,
+                prebound: Option<(tiny_http::Server, String)>,
+            },
+        }
+
+        let mut launch_state = if cli.db_path.is_none() && cli.album_name.is_none() {
+            ReviewUiLaunchState::Bootstrap { open_browser: true }
+        } else {
+            let db_path = if let Some(path) = cli.db_path.clone() {
+                path
+            } else if let Some(album_name) = cli.album_name.clone() {
+                let album_dir = album_name.trim().replace(' ', "-");
+                format!("Albums/{0}/{0}.db", album_dir)
+            } else {
+                eprintln!("Review UI requires --db-path or --album-name.");
+                eprintln!("Example: --review-ui --db-path Albums/Malta/Malta.db");
+                std::process::exit(1);
             };
+            log_runtime_event(&format!("Review UI: using requested database {}", db_path));
+            ReviewUiLaunchState::Selected {
+                db_path,
+                album_name: cli.album_name.clone(),
+                open_browser: true,
+                prebound: None,
+            }
+        };
 
-        eprintln!("Review UI: loading compare data. This may take a few seconds...");
+        loop {
+            let review_cfg = config::load_config("config.toml");
+            let current_state = std::mem::replace(
+                &mut launch_state,
+                ReviewUiLaunchState::Bootstrap { open_browser: true },
+            );
 
-        run_review_ui(
-            &db_path,
-            album_name_opt.as_deref(),
-            prebound,
-            cli.review_ui_bind.as_deref(),
-            open_browser,
-            &review_cfg.effective_default_catalog_code(),
-            review_cfg.review_ui_odd_row_color(),
-            review_cfg.review_ui_even_row_color(),
-            review_cfg.review_ui_series_default_checked(),
-            review_cfg.review_ui_description_default_checked(),
-            review_cfg.review_ui_watermark_default_checked(),
-            review_cfg.review_ui_design_default_checked(),
-            review_cfg.review_ui_engraving_default_checked(),
-            review_cfg.review_ui_perforation_default_checked(),
-            review_cfg.review_ui_context_default_checked(),
-            review_cfg.review_ui_colnect_links_default_checked(),
-            review_cfg.review_ui_colnect_image_url_default_checked(),
-            review_cfg.review_ui_colnect_metadata_default_checked(),
-            review_cfg.review_ui_replace_sg_number_default_checked(),
-            review_cfg.review_ui_right_unmatched_only_default_checked(),
-            review_cfg.albumeasy_auto_pdf_enabled(),
-            review_cfg.effective_albumeasy_cli_path().is_some(),
-        )?;
-        return Ok(());
+            match current_state {
+                ReviewUiLaunchState::Bootstrap { open_browser } => {
+                    log_runtime_event(
+                        "Review UI: no country/database selected on CLI; opening startup selector..."
+                    );
+                    match run_review_ui_bootstrap(
+                        cli.review_ui_bind.as_deref(),
+                        review_cfg.effective_colnect_inbox_path(),
+                        open_browser,
+                    )? {
+                        ReviewUiBootstrapOutcome::Exit => {
+                            log_runtime_event("No country selected; exiting Review UI startup.");
+                            return Ok(());
+                        }
+                        ReviewUiBootstrapOutcome::ReloadRequested => {
+                            log_runtime_event(
+                                "Review UI: config changed in startup selector; reloading...",
+                            );
+                            launch_state = ReviewUiLaunchState::Bootstrap {
+                                open_browser: false,
+                            };
+                            continue;
+                        }
+                        ReviewUiBootstrapOutcome::Selected {
+                            db_path,
+                            country,
+                            server,
+                            bind,
+                        } => {
+                            log_runtime_event(&format!(
+                                "Review UI: selected '{}' with database {}",
+                                country, db_path
+                            ));
+                            launch_state = ReviewUiLaunchState::Selected {
+                                db_path,
+                                album_name: Some(country),
+                                open_browser: false,
+                                prebound: Some((server, bind)),
+                            };
+                        }
+                    }
+                }
+                ReviewUiLaunchState::Selected {
+                    db_path,
+                    album_name,
+                    open_browser,
+                    prebound,
+                } => {
+                    // Re-load config, merging any album-local config.toml override.
+                    let album_cfg = {
+                        let fallback_slug =
+                            album_name.as_deref().unwrap_or("").trim().replace(' ', "-");
+                        let album_dir = std::path::Path::new(&db_path)
+                            .parent()
+                            .map(|p| p.to_path_buf())
+                            .unwrap_or_else(|| std::path::Path::new("Albums").join(&fallback_slug));
+                        config::load_config_with_override("config.toml", &album_dir)
+                    };
+                    log_runtime_event(
+                        "Review UI: loading compare data. This may take a few seconds...",
+                    );
+                    match run_review_ui(
+                        &db_path,
+                        album_name.as_deref(),
+                        prebound,
+                        cli.review_ui_bind.as_deref(),
+                        open_browser,
+                        &album_cfg.effective_default_catalog_code(),
+                        album_cfg.review_ui_odd_row_color(),
+                        album_cfg.review_ui_even_row_color(),
+                        album_cfg.review_ui_series_default_checked(),
+                        album_cfg.review_ui_description_default_checked(),
+                        album_cfg.review_ui_watermark_default_checked(),
+                        album_cfg.review_ui_design_default_checked(),
+                        album_cfg.review_ui_engraving_default_checked(),
+                        album_cfg.review_ui_perforation_default_checked(),
+                        album_cfg.review_ui_context_default_checked(),
+                        album_cfg.review_ui_colnect_links_default_checked(),
+                        album_cfg.review_ui_colnect_image_url_default_checked(),
+                        album_cfg.review_ui_colnect_metadata_default_checked(),
+                        album_cfg.review_ui_replace_sg_number_default_checked(),
+                        album_cfg.review_ui_right_unmatched_only_default_checked(),
+                        album_cfg.albumeasy_auto_pdf_enabled(),
+                        album_cfg.effective_albumeasy_cli_path().is_some(),
+                    )? {
+                        ReviewUiRunOutcome::Exit => return Ok(()),
+                        ReviewUiRunOutcome::ReloadRequested => {
+                            log_runtime_event(
+                                "Review UI: config changed in compare view; reloading...",
+                            );
+                            launch_state = ReviewUiLaunchState::Selected {
+                                db_path,
+                                album_name,
+                                open_browser: false,
+                                prebound: None,
+                            };
+                            continue;
+                        }
+                        ReviewUiRunOutcome::ReturnToStartRequested => {
+                            log_runtime_event(
+                                "Review UI: return-to-start requested from compare view; opening startup selector..."
+                            );
+                            launch_state = ReviewUiLaunchState::Bootstrap {
+                                open_browser: false,
+                            };
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // If requested, initialize (or force-initialize) the config file and exit.

@@ -496,8 +496,8 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
                 .map_err(|e| format!("usvg parse error: {}", e))?;
             // Compute pixel dimensions. usvg expresses size in px units but as
             // floating point; convert to u32 for Pixmap.
-            let width = rtree.size.width().ceil() as u32;
-            let height = rtree.size.height().ceil() as u32;
+            let width = rtree.size().width().ceil() as u32;
+            let height = rtree.size().height().ceil() as u32;
             if width == 0 || height == 0 {
                 return Err("SVG has zero width or height".into());
             }
@@ -519,8 +519,8 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
                 .unwrap_or(4.0);
 
             // Logical SVG size in px (floating)
-            let svg_w = rtree.size.width();
-            let svg_h = rtree.size.height();
+            let svg_w = rtree.size().width() as f64;
+            let svg_h = rtree.size().height() as f64;
             if svg_w == 0.0 || svg_h == 0.0 {
                 return Err("SVG has zero logical width/height".into());
             }
@@ -542,16 +542,13 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
             // Create pixmap and render
             let mut pixmap = tiny_skia::Pixmap::new(render_w, render_h)
                 .ok_or_else(|| "failed to allocate pixmap for high-res render")?;
-            let pixmap_mut = pixmap.as_mut();
 
             // Compute scale factor to map SVG logical units to rendered pixels
             let scale_x = (render_w as f64) / svg_w;
             let scale_y = (render_h as f64) / svg_h;
             // Use a uniform scale to preserve aspect (they should be equal)
             let transform = tiny_skia::Transform::from_scale(scale_x as f32, scale_y as f32);
-            let fit_to = usvg::FitTo::Original;
-            resvg::render(&rtree, fit_to, transform, pixmap_mut)
-                .ok_or_else(|| "resvg render failed")?;
+            resvg::render(&rtree, transform, &mut pixmap.as_mut());
 
             // Convert tiny-skia pixmap into an image::RgbaImage directly
             // and downsample in-memory using the image crate. This avoids
@@ -594,8 +591,8 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
                 }
                 usvg::Tree::from_data(&svg_bytes, &opt)
             } {
-                let svg_w = tree.size.width();
-                let svg_h = tree.size.height();
+                let svg_w = tree.size().width() as f64;
+                let svg_h = tree.size().height() as f64;
                 if svg_w > 0.0 && svg_h > 0.0 {
                     let target_width: u32 = std::env::var("COAT_TARGET_WIDTH")
                         .ok()

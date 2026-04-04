@@ -111,7 +111,12 @@ pub fn get_all_series(
         match order {
             "first_sg" => {
                 let mut stmt = conn.prepare(
-                    "SELECT series FROM stamps GROUP BY series ORDER BY MIN(CAST(sg_number AS INTEGER)) ASC",
+                    "SELECT series
+                     FROM stamps
+                     GROUP BY series
+                     ORDER BY COALESCE(MIN(NULLIF(year, 0)), 9999) ASC,
+                              MIN(CAST(sg_number AS INTEGER)) ASC,
+                              series COLLATE NOCASE ASC",
                 )?;
                 let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
                 let mut res = Vec::new();
@@ -122,7 +127,12 @@ pub fn get_all_series(
             }
             "first_sg_desc" => {
                 let mut stmt = conn.prepare(
-                    "SELECT series FROM stamps GROUP BY series ORDER BY MIN(CAST(sg_number AS INTEGER)) DESC",
+                    "SELECT series
+                     FROM stamps
+                     GROUP BY series
+                     ORDER BY COALESCE(MIN(NULLIF(year, 0)), 9999) ASC,
+                              MIN(CAST(sg_number AS INTEGER)) DESC,
+                              series COLLATE NOCASE ASC",
                 )?;
                 let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
                 let mut res = Vec::new();

@@ -1,6 +1,70 @@
 use log::{debug, info};
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::fs;
+use std::path::{Path, PathBuf};
+
+const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
+
+thread_local! {
+    static SCOPED_ALBUM_CONFIG_DIR: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
+}
+
+pub fn embedded_config_template() -> &'static str {
+    EMBEDDED_CONFIG_TEMPLATE
+}
+
+pub fn load_template_content_with_fallback(
+    template_path: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    match fs::read_to_string(template_path) {
+        Ok(content) => Ok(content),
+        Err(_) => Ok(EMBEDDED_CONFIG_TEMPLATE.to_string()),
+    }
+}
+
+pub fn ensure_config_and_template_files(
+    config_path: &str,
+    template_path: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let cwd = std::env::current_dir()?;
+    let config_abs: PathBuf = if Path::new(config_path).is_absolute() {
+        PathBuf::from(config_path)
+    } else {
+        cwd.join(config_path)
+    };
+    let template_abs: PathBuf = if Path::new(template_path).is_absolute() {
+        PathBuf::from(template_path)
+    } else {
+        cwd.join(template_path)
+    };
+
+    if !template_abs.exists() {
+        fs::write(&template_abs, EMBEDDED_CONFIG_TEMPLATE)?;
+        log::info!(
+            "Created missing config template from embedded defaults at {}",
+            template_abs.display()
+        );
+    }
+
+    if !config_abs.exists() {
+        if template_abs.exists() {
+            fs::copy(&template_abs, &config_abs)?;
+            log::info!(
+                "Created missing config file from template at {}",
+                config_abs.display()
+            );
+        } else {
+            fs::write(&config_abs, EMBEDDED_CONFIG_TEMPLATE)?;
+            log::info!(
+                "Created missing config file from embedded template at {}",
+                config_abs.display()
+            );
+        }
+    }
+
+    Ok(())
+}
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HeaderFormatting {
@@ -290,11 +354,17 @@ pub struct Config {
     // provided on the CLI for `--source colnectexport` runs.
     pub colnect_inbox_path: Option<String>,
     // Optional AlbumEasy CLI path for PDF generation from generated text files.
-    // Example: "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+    // Example: "/path/to/AlbumEasy/AlbumEasy.sh"
     pub albumeasy_cli_path: Option<String>,
+    // Optional Albums root path override used by Review UI bootstrap selector.
+    // Supports either the Albums directory itself or a parent containing Albums.
+    pub bootstrap_albums_root_path: Option<String>,
     // When true, run AlbumEasy in console mode (-c) after generating the
     // album text file so the PDF is produced automatically.
     pub albumeasy_auto_generate_pdf: Option<bool>,
+    // When true, emit additional PDF generation diagnostics to logs.
+    // This is intended as a support/DX switch for shipped binaries.
+    pub pdf_dx_logging: Option<bool>,
 
     // Wikipedia content configuration
     // Path to Wikipedia cache database
@@ -347,6 +417,7 @@ pub struct ColnectFieldToggles {
     pub size: Option<bool>,
     pub themes: Option<bool>,
     pub printing: Option<bool>,
+    pub printing_type: Option<bool>,
     pub paper: Option<bool>,
     pub gum: Option<bool>,
     pub designers: Option<bool>,
@@ -424,7 +495,7 @@ impl Config {
             include_country: Some(true),
             include_date: Some(true),
             stamp_detail_layout: Some("separate_rows".to_string()),
-            colnect_detail_fields: Some("print_run,themes,designers".to_string()),
+            colnect_detail_fields: Some("print_run,themes,designers,printing_type".to_string()),
             review_ui: Some(ReviewUiConfig {
                 odd_row_color: Some("#ffffff".to_string()),
                 even_row_color: Some("#e6eef4".to_string()),
@@ -528,7 +599,9 @@ impl Config {
             show_progress_indicator: Some(true),
             colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
             albumeasy_cli_path: None,
+            bootstrap_albums_root_path: None,
             albumeasy_auto_generate_pdf: Some(false),
+            pdf_dx_logging: Some(false),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
             content_wiki_font_size: Some(12),
@@ -572,7 +645,7 @@ impl Config {
             .as_ref()
             .and_then(|c| c.detail_fields.as_deref())
             .or(self.colnect_detail_fields.as_deref())
-            .unwrap_or("print_run,themes,designers")
+            .unwrap_or("print_run,themes,designers,printing_type")
     }
 
     /// Effective enabled Colnect detail fields.
@@ -583,13 +656,14 @@ impl Config {
     /// 4) built-in default list
     pub fn effective_colnect_detail_field_set(&self) -> std::collections::HashSet<String> {
         if let Some(fields) = self.colnect.as_ref().and_then(|c| c.fields.as_ref()) {
-            let any_set = [
+            let any_true = [
                 fields.catalog_codes,
                 fields.issued_on,
                 fields.expiry_date,
                 fields.size,
                 fields.themes,
                 fields.printing,
+                fields.printing_type,
                 fields.paper,
                 fields.gum,
                 fields.designers,
@@ -605,9 +679,9 @@ impl Config {
                 fields.description,
             ]
             .iter()
-            .any(|v| v.is_some());
+            .any(|v| v.unwrap_or(false));
 
-            if any_set {
+            if any_true {
                 let mut set = std::collections::HashSet::new();
                 if fields.catalog_codes.unwrap_or(false) {
                     set.insert("catalog_codes".to_string());
@@ -626,6 +700,9 @@ impl Config {
                 }
                 if fields.printing.unwrap_or(false) {
                     set.insert("printing".to_string());
+                }
+                if fields.printing_type.unwrap_or(false) {
+                    set.insert("printing_type".to_string());
                 }
                 if fields.paper.unwrap_or(false) {
                     set.insert("paper".to_string());
@@ -821,10 +898,23 @@ impl Config {
             .filter(|s| !s.is_empty())
     }
 
+    /// Optional persisted Albums root path for Review UI bootstrap.
+    pub fn effective_bootstrap_albums_root_path(&self) -> Option<&str> {
+        self.bootstrap_albums_root_path
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+    }
+
     /// True when generated album text should be passed to AlbumEasy CLI (-c)
     /// to produce PDF output automatically.
     pub fn albumeasy_auto_pdf_enabled(&self) -> bool {
         self.albumeasy_auto_generate_pdf.unwrap_or(false)
+    }
+
+    /// True when additional PDF generation diagnostics should be emitted.
+    pub fn pdf_dx_logging_enabled(&self) -> bool {
+        self.pdf_dx_logging.unwrap_or(false)
     }
 }
 
@@ -862,11 +952,13 @@ pub fn create_config_from_template(
             target.display()
         );
     } else {
-        // Fallback: serialize defaults
-        let defaults = Config::with_defaults();
-        let content = toml::to_string_pretty(&defaults)?;
-        fs::write(&target, content)?;
-        println!("Wrote default config to {}", target.display());
+        fs::write(&template, EMBEDDED_CONFIG_TEMPLATE)?;
+        fs::copy(&template, &target)?;
+        println!(
+            "Template was missing. Wrote embedded template {} and copied to {}",
+            template.display(),
+            target.display()
+        );
     }
 
     Ok(())
@@ -879,18 +971,39 @@ fn detect_duplicate_keys(content: &str) -> Option<Vec<String>> {
 
     let mut key_counts: HashMap<String, usize> = HashMap::new();
     let mut duplicates: Vec<String> = Vec::new();
+    let mut current_table_path = String::new();
 
     for line in content.lines() {
-        let trimmed = line.trim();
+        let trimmed_no_comment = line.split('#').next().unwrap_or_default().trim();
 
         // Skip comments and empty lines
-        if trimmed.starts_with('#') || trimmed.is_empty() {
+        if trimmed_no_comment.is_empty() {
+            continue;
+        }
+
+        // Track table scope so keys with the same name in different
+        // sections (for example `description` in multiple tables) are not
+        // reported as duplicates.
+        if trimmed_no_comment.starts_with("[[") && trimmed_no_comment.ends_with("]]") {
+            current_table_path = trimmed_no_comment
+                .trim_start_matches("[[")
+                .trim_end_matches("]]")
+                .trim()
+                .to_string();
+            continue;
+        }
+        if trimmed_no_comment.starts_with('[') && trimmed_no_comment.ends_with(']') {
+            current_table_path = trimmed_no_comment
+                .trim_start_matches('[')
+                .trim_end_matches(']')
+                .trim()
+                .to_string();
             continue;
         }
 
         // Look for key = value patterns (basic detection)
-        if let Some(key_end) = trimmed.find('=') {
-            let key = trimmed[..key_end].trim();
+        if let Some(key_end) = trimmed_no_comment.find('=') {
+            let key = trimmed_no_comment[..key_end].trim();
 
             // Skip if key contains brackets (array/table syntax)
             if key.contains('[') || key.contains(']') {
@@ -899,8 +1012,13 @@ fn detect_duplicate_keys(content: &str) -> Option<Vec<String>> {
 
             // Remove quotes if present
             let clean_key = key.trim_matches('"').trim_matches('\'');
+            let scoped_key = if current_table_path.is_empty() {
+                clean_key.to_string()
+            } else {
+                format!("{}.{}", current_table_path, clean_key)
+            };
 
-            *key_counts.entry(clean_key.to_string()).or_insert(0) += 1;
+            *key_counts.entry(scoped_key).or_insert(0) += 1;
         }
     }
 
@@ -1453,9 +1571,18 @@ pub fn load_config(path: &str) -> Config {
                                     cfg.albumeasy_cli_path = defaults.albumeasy_cli_path;
                                     has_missing = true;
                                 }
+                                if cfg.bootstrap_albums_root_path.is_none() {
+                                    cfg.bootstrap_albums_root_path =
+                                        defaults.bootstrap_albums_root_path;
+                                    has_missing = true;
+                                }
                                 if cfg.albumeasy_auto_generate_pdf.is_none() {
                                     cfg.albumeasy_auto_generate_pdf =
                                         defaults.albumeasy_auto_generate_pdf;
+                                    has_missing = true;
+                                }
+                                if cfg.pdf_dx_logging.is_none() {
+                                    cfg.pdf_dx_logging = defaults.pdf_dx_logging;
                                     has_missing = true;
                                 }
                                 if cfg.wikipedia_cache_db_path.is_none() {
@@ -1657,61 +1784,38 @@ pub fn load_config(path: &str) -> Config {
     //
     // This comment serves as the canonical reminder for automated assistants and
     // maintainers to update all three places whenever configuration changes.
-    if let Ok(cwd) = std::env::current_dir() {
-        let default_config_path = cwd.join(path);
-        let template_path = cwd.join("config_template.toml");
-
-        // Never overwrite an existing config file. If the default path already exists,
-        // log and skip creation. This prevents accidental overwrites of user edits.
-        if default_config_path.exists() {
-            log::info!(
-                "Config file already exists at {}; not creating or overwriting",
-                default_config_path.display()
-            );
-        } else if template_path.exists() {
-            match fs::copy(&template_path, &default_config_path) {
-                Ok(_) => log::info!(
-                    "Created new config file from template at {}",
-                    default_config_path.display()
-                ),
-                Err(e) => log::warn!(
-                    "Failed to copy config_template.toml to {}: {}",
-                    default_config_path.display(),
-                    e
-                ),
-            }
-        } else {
-            // Fallback to serializing the defaults (no human-friendly comments)
-            let defaults = Config::with_defaults();
-            match toml::to_string(&defaults) {
-                Ok(content) => {
-                    if let Err(e) = fs::write(&default_config_path, content) {
-                        log::warn!(
-                            "Failed to create default config file at {}: {}",
-                            default_config_path.display(),
-                            e
-                        );
-                    } else {
-                        log::info!(
-                            "Created new config file with default values at {}",
-                            default_config_path.display()
-                        );
-                    }
-                }
-                Err(e) => {
-                    log::warn!("Failed to serialize default config: {}", e);
-                }
-            }
-        }
+    if let Err(e) = ensure_config_and_template_files(path, "config_template.toml") {
+        log::warn!(
+            "Failed to ensure config/template files for '{}': {}",
+            path,
+            e
+        );
     }
 
     log::info!("config.toml not found in parent dirs or failed to parse, using default values");
     Config::default()
 }
 
+pub fn with_album_config_override<R>(album_dir: &Path, f: impl FnOnce() -> R) -> R {
+    SCOPED_ALBUM_CONFIG_DIR.with(|slot| {
+        let previous = slot.replace(Some(album_dir.to_path_buf()));
+        let result = f();
+        slot.replace(previous);
+        result
+    })
+}
+
+pub fn load_effective_config(path: &str) -> Config {
+    let album_dir = SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.borrow().clone());
+    match album_dir {
+        Some(album_dir) => load_config_with_override(path, &album_dir),
+        None => load_config(path),
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::Config;
+    use super::{detect_duplicate_keys, Config};
 
     #[test]
     fn colnect_fields_boolean_toggles_are_parsed() {
@@ -1740,9 +1844,234 @@ print_run = true
         assert!(fields.contains("print_run"));
         assert!(!fields.contains("printing"));
     }
+
+    #[test]
+    fn colnect_printing_type_alias_is_supported() {
+        let cfg_toml = r#"
+[colnect]
+detail_fields = "themes"
+
+[colnect.fields]
+printing_type = true
+"#;
+
+        let cfg: Config = toml::from_str(cfg_toml).expect("config should parse");
+        let fields = cfg.effective_colnect_detail_field_set();
+        assert!(fields.contains("printing_type"));
+    }
+
+    #[test]
+    fn colnect_all_false_toggles_fall_back_to_detail_fields() {
+        let cfg_toml = r#"
+[colnect]
+detail_fields = "print_run,printing"
+
+[colnect.fields]
+print_run = false
+printing = false
+"#;
+
+        let cfg: Config = toml::from_str(cfg_toml).expect("config should parse");
+        let fields = cfg.effective_colnect_detail_field_set();
+        assert!(fields.contains("print_run"));
+        assert!(fields.contains("printing"));
+    }
+
+    #[test]
+    fn duplicate_detection_ignores_same_key_in_different_sections() {
+        let cfg_toml = r#"
+[stamps]
+description = "A"
+
+[review_ui]
+description = "B"
+"#;
+
+        let duplicates = detect_duplicate_keys(cfg_toml);
+        assert!(
+            duplicates.is_none(),
+            "same key name in different sections must not be treated as duplicate"
+        );
+    }
+
+    #[test]
+    fn duplicate_detection_finds_duplicates_in_same_section() {
+        let cfg_toml = r#"
+[runtime]
+albumeasy_auto_generate_pdf = false
+albumeasy_auto_generate_pdf = true
+"#;
+
+        let duplicates = detect_duplicate_keys(cfg_toml).unwrap_or_default();
+        assert!(duplicates.contains(&"runtime.albumeasy_auto_generate_pdf".to_string()));
+    }
 }
 
 use std::collections::HashMap;
+
+/// Recursively merge two `toml::Value` trees.  When both sides are tables the
+/// overlay's keys win (scalars/arrays are replaced; inner tables are merged
+/// recurively).  For any non-table type the overlay always wins.
+fn deep_merge_toml_values(base: toml::Value, overlay: toml::Value) -> toml::Value {
+    match (base, overlay) {
+        (toml::Value::Table(mut base_table), toml::Value::Table(overlay_table)) => {
+            for (key, overlay_val) in overlay_table {
+                if let Some(base_val) = base_table.get(&key).cloned() {
+                    base_table.insert(key, deep_merge_toml_values(base_val, overlay_val));
+                } else {
+                    base_table.insert(key, overlay_val);
+                }
+            }
+            toml::Value::Table(base_table)
+        }
+        // For non-table types the overlay wins unconditionally.
+        (_, overlay) => overlay,
+    }
+}
+
+/// Load the global `config.toml` and, if a `config.toml` also exists inside
+/// `album_dir`, deep-merge it on top so that per-album settings override the
+/// global defaults.
+///
+/// The album-local file does **not** need to be a complete config.  Any key
+/// present in the album file overrides the corresponding global value; missing
+/// keys simply keep their global value.  The file supports the same section
+/// groupings as the global config (`[stamps]`, `[runtime]`, `[colnect]`, …).
+///
+/// Examples – create `Albums/Great-Britain/config.toml` containing only:
+/// ```toml
+/// default_catalog_code = "sg"
+/// stamp_heading_label = "Stanley Gibbons"
+/// ```
+/// and run generation for Great Britain.  All other settings still come from
+/// the global `config.toml`.
+pub fn load_config_with_override(global_path: &str, album_dir: &std::path::Path) -> Config {
+    // Always load the global config first (handles search-up-path, defaults, etc.)
+    let base = load_config(global_path);
+
+    // Look for an album-local override file.
+    let override_path = album_dir.join("config.toml");
+    if !override_path.exists() {
+        return base;
+    }
+
+    let override_content = match fs::read_to_string(&override_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!(
+                "WARNING: Cannot read album config override '{}': {}. Using global config.",
+                override_path.display(),
+                e
+            );
+            return base;
+        }
+    };
+
+    let mut override_val: toml::Value = match toml::from_str(&override_content) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!(
+                "WARNING: Album config override '{}' has invalid TOML: {}. Using global config.",
+                override_path.display(),
+                e
+            );
+            return base;
+        }
+    };
+
+    // Apply the same section-promotion logic as load_config so the album
+    // override can use convenience groupings like [stamps] or [runtime].
+    let promotable_sections = [
+        "page",
+        "stamps",
+        "layout",
+        "header",
+        "footer",
+        "colors",
+        "flag_cover",
+        "data_sources",
+        "wikipedia",
+        "images",
+        "text_templates",
+        "runtime",
+    ];
+    if let Some(hf_table) = override_val
+        .get("header_formatting")
+        .and_then(|v| v.as_table())
+        .cloned()
+    {
+        if let Some(tbl) = override_val.as_table_mut() {
+            for (k, v) in hf_table.iter() {
+                if tbl.get(k).is_none() {
+                    tbl.insert(k.clone(), v.clone());
+                }
+            }
+        }
+    }
+    for section in promotable_sections.iter() {
+        if let Some(sec_table) = override_val
+            .get(*section)
+            .and_then(|v| v.as_table())
+            .cloned()
+        {
+            if let Some(tbl) = override_val.as_table_mut() {
+                for (k, v) in sec_table.iter() {
+                    if tbl.get(k).is_none() {
+                        tbl.insert(k.clone(), v.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    // Serialize the (already-defaulted) base Config to toml::Value so we can
+    // deep-merge the override on top of it.
+    let base_str = match toml::to_string(&base) {
+        Ok(s) => s,
+        Err(e) => {
+            log::warn!(
+                "Failed to serialize base config for album override merge: {}. Using global config.",
+                e
+            );
+            return base;
+        }
+    };
+    let mut base_val: toml::Value = match toml::from_str(&base_str) {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!(
+                "Failed to re-parse base config as toml::Value for merge: {}. Using global config.",
+                e
+            );
+            return base;
+        }
+    };
+
+    // Overlay: album keys win over global keys.
+    base_val = deep_merge_toml_values(base_val, override_val);
+
+    // Deserialize the merged value into a final Config.
+    match toml::to_string(&base_val)
+        .map_err(|e| e.to_string())
+        .and_then(|s| toml::from_str::<Config>(&s).map_err(|e| e.to_string()))
+    {
+        Ok(merged) => {
+            info!(
+                "Applied album config override from '{}'",
+                override_path.display()
+            );
+            merged
+        }
+        Err(e) => {
+            eprintln!(
+                "WARNING: Failed to apply album config override '{}': {}. Using global config.",
+                override_path.display(),
+                e
+            );
+            base
+        }
+    }
+}
 
 /// Load a simple mapping file that allows users to override site_name -> canonical_slug
 /// Example TOML:
