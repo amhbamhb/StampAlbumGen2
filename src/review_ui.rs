@@ -1035,27 +1035,36 @@ fn try_spawn_browser_command(program: &str, args: &[&str]) -> bool {
         .is_ok()
 }
 
+fn try_spawn_browser_command_any(programs: &[&str], args: &[&str]) -> bool {
+    for program in programs {
+        if try_spawn_browser_command(program, args) {
+            return true;
+        }
+    }
+    false
+}
+
 fn try_open_url_once(url: &str) -> bool {
     if webbrowser::open(url).is_ok() {
         return true;
     }
 
-    if try_spawn_browser_command("xdg-open", &[url]) {
+    if try_spawn_browser_command_any(&["xdg-open", "/usr/bin/xdg-open", "/bin/xdg-open"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("gio", &["open", url]) {
+    if try_spawn_browser_command_any(&["gio", "/usr/bin/gio", "/bin/gio"], &["open", url]) {
         return true;
     }
-    if try_spawn_browser_command("kde-open5", &[url]) {
+    if try_spawn_browser_command_any(&["kde-open5", "/usr/bin/kde-open5"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("kde-open6", &[url]) {
+    if try_spawn_browser_command_any(&["kde-open6", "/usr/bin/kde-open6"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("kde-open", &[url]) {
+    if try_spawn_browser_command_any(&["kde-open", "/usr/bin/kde-open"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("sensible-browser", &[url]) {
+    if try_spawn_browser_command_any(&["sensible-browser", "/usr/bin/sensible-browser"], &[url]) {
         return true;
     }
 

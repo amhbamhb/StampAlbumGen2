@@ -24,8 +24,10 @@ use stamp_album_gen2::{
         ReviewUiRunOutcome,
     },
     setup::{
-        ensure_linux_desktop_integration, install_linux_desktop_integration, setup_logging,
-        uninstall_linux_desktop_integration, validate_os,
+        align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
+        install_linux_desktop_integration, setup_logging, startup_probe_path,
+        uninstall_linux_desktop_integration, validate_os, write_startup_probe,
+        write_startup_probe_snapshot,
     },
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -34,11 +36,41 @@ use stamp_album_gen2::{
 use std::io::IsTerminal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let launched_without_args = std::env::args_os().nth(1).is_none();
+    let raw_args: Vec<String> = std::env::args_os()
+        .map(|a| a.to_string_lossy().to_string())
+        .collect();
+    let launched_without_args = raw_args.len() <= 1;
     let interactive_terminal = std::io::stdin().is_terminal() && std::io::stderr().is_terminal();
+    // Detect a GUI desktop session launched without a terminal (e.g. file manager click).
+    // Explicitly excluded when the binary lives inside a `target/` directory, which means
+    // we are running under `cargo test` or a dev build — in that context we never want to
+    // auto-launch the Review UI just because DISPLAY is set.
+    let running_from_target = std::env::current_exe()
+        .map(|p| {
+            p.components().any(|c| {
+                c.as_os_str()
+                    .to_string_lossy()
+                    .eq_ignore_ascii_case("target")
+            })
+        })
+        .unwrap_or(false);
+    let gui_session = !interactive_terminal
+        && !running_from_target
+        && (std::env::var("DISPLAY")
+            .map(|v| !v.trim().is_empty())
+            .unwrap_or(false)
+            || std::env::var("WAYLAND_DISPLAY")
+                .map(|v| !v.trim().is_empty())
+                .unwrap_or(false));
+    write_startup_probe(
+        "startup.begin",
+        &format!("probe_path={}", startup_probe_path().to_string_lossy()),
+    );
+    write_startup_probe_snapshot(&raw_args, launched_without_args, interactive_terminal);
 
     // Parse CLI arguments
     let mut cli = Cli::parse();
+    write_startup_probe("cli.parse", "CLI arguments parsed successfully");
 
     if cli.uninstall_desktop_launcher {
         match uninstall_linux_desktop_integration() {
@@ -72,13 +104,46 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    if launched_without_args && interactive_terminal {
+    let aligned_runtime_dir = match align_process_working_dir_to_runtime_layout() {
+        Ok(dir) => {
+            let detail = dir
+                .as_ref()
+                .map(|p| format!("aligned_to={}", p.to_string_lossy()))
+                .unwrap_or_else(|| "alignment_not_needed".to_string());
+            write_startup_probe("runtime.align", &detail);
+            dir
+        }
+        Err(e) => {
+            write_startup_probe("runtime.align.error", &e.to_string());
+            return Err(Box::new(e));
+        }
+    };
+
+    if launched_without_args && (interactive_terminal || gui_session) {
         cli.review_ui = true;
+        write_startup_probe(
+            "review_ui.auto_enable",
+            &format!(
+                "enabled_by={}",
+                if interactive_terminal {
+                    "interactive_terminal"
+                } else {
+                    "gui_session"
+                }
+            ),
+        );
     }
 
     let startup_config = config::load_config("config.toml");
+    write_startup_probe("config.load", "loaded config.toml");
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
+    if let Some(path) = aligned_runtime_dir.as_ref() {
+        eprintln!(
+            "Runtime working directory aligned to {}",
+            path.to_string_lossy()
+        );
+    }
     if enable_pdf_dx_logging {
         eprintln!(
             "PDF DX logging is enabled (via {}); detailed PDF generation diagnostics will be written to Logs/",
@@ -93,6 +158,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Review UI mode is intentionally independent from normal source/mode
     // validation to keep the workflow lightweight.
     if cli.review_ui {
+        write_startup_probe("review_ui.enter", "starting review-ui mode");
         validate_os()?;
 
         if launched_without_args {
@@ -121,6 +187,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         log_runtime_event("Review UI: initializing...");
+        write_startup_probe("review_ui.bootstrap", "initializing startup selector flow");
 
         enum ReviewUiLaunchState {
             Bootstrap {
@@ -295,6 +362,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Load config early to check for progress indicator setting
     let config = config::load_config("config.toml");
+    write_startup_probe("config.load", "loaded config.toml for non-review flow");
     let show_progress = config.show_progress_indicator.unwrap_or(true);
 
     // For Colnect inbox mode, allow config.toml to provide a default inbox
@@ -327,7 +395,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Setup logging
-    setup_logging()?;
+    match setup_logging() {
+        Ok(_) => {
+            write_startup_probe("logging.setup", "flexi_logger initialized");
+        }
+        Err(e) => {
+            write_startup_probe("logging.setup.error", &e.to_string());
+            return Err(Box::new(e));
+        }
+    }
 
     // Validate OS
     validate_os()?;
