@@ -227,7 +227,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
     }
     let desktop_contents = format!(
         "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Gen2\nComment=Open Stamp Album Gen2 Review UI\nExec={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
-        exec_path,
+        format!("{} --review-ui", exec_path),
         icon_path.to_string_lossy()
     );
 
