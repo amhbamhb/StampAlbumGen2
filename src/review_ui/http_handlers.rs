@@ -1255,6 +1255,20 @@ pub(super) fn serve_review_requests(
             continue;
         }
 
+        if method == Method::Post && req_url == "/api/review-pick-colnect-file" {
+            let result = pick_and_copy_colnect_file_for_db(db_path);
+            let mut resp =
+                Response::from_string(serde_json::to_string(&result).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"picked\":false,\"message\":\"serialization error\"}"
+                        .to_string()
+                }));
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/api/default-catalog-config" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
@@ -1502,6 +1516,12 @@ pub(super) fn serve_review_requests(
                     (sy, ey)
                 })
                 .unwrap_or((None, None));
+            let req_open_pdf = parsed_body
+                .as_ref()
+                .ok()
+                .and_then(|v| v.get("open_pdf"))
+                .and_then(|x| x.as_bool())
+                .unwrap_or(false);
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -1520,9 +1540,16 @@ pub(super) fn serve_review_requests(
                 Ok(artifacts) => {
                     generated_output_path = Some(artifacts.output_txt_path.display().to_string());
                     if let Some(pdf_path) = artifacts.generated_pdf_path {
-                        open_local_path(&pdf_path);
+                        if req_open_pdf {
+                            open_local_path(&pdf_path);
+                        }
                         generated_pdf_path = Some(pdf_path.display().to_string());
-                        "Album text and PDF generation completed.".to_string()
+                        if req_open_pdf {
+                            "Album text and PDF generation completed; opened PDF preview."
+                                .to_string()
+                        } else {
+                            "Album text and PDF generation completed.".to_string()
+                        }
                     } else {
                         "Album text generated, but no PDF was produced. Check AlbumEasy CLI configuration/logs."
                             .to_string()
@@ -1543,6 +1570,64 @@ pub(super) fn serve_review_requests(
             });
 
             let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/open-local-path" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
+            let path_str = parsed_body
+                .as_ref()
+                .ok()
+                .and_then(|v| v.get("path"))
+                .and_then(|v| v.as_str())
+                .map(|s| s.trim().to_string())
+                .unwrap_or_default();
+
+            let (status_code, response_json) = if path_str.is_empty() {
+                (
+                    StatusCode(400),
+                    serde_json::json!({ "ok": false, "message": "Missing PDF path." }).to_string(),
+                )
+            } else {
+                let path = std::path::Path::new(&path_str);
+                let is_pdf = path
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| ext.eq_ignore_ascii_case("pdf"))
+                    .unwrap_or(false);
+
+                if !is_pdf {
+                    (
+                        StatusCode(400),
+                        serde_json::json!({ "ok": false, "message": "Preview only supports PDF files." }).to_string(),
+                    )
+                } else if !path.exists() || !path.is_file() {
+                    (
+                        StatusCode(404),
+                        serde_json::json!({ "ok": false, "message": "PDF file not found." })
+                            .to_string(),
+                    )
+                } else {
+                    open_local_path(path);
+                    (
+                        StatusCode(200),
+                        serde_json::json!({ "ok": true, "message": "Opened PDF preview." })
+                            .to_string(),
+                    )
+                }
+            };
+
+            let mut resp = Response::from_string(response_json).with_status_code(status_code);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }

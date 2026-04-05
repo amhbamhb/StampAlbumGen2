@@ -253,6 +253,8 @@ struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
     album_name: String,
+    colnect_dir: String,
+    colnect_file_count: usize,
     show_imageless_left_rows: bool,
     default_catalog_code: String,
     odd_row_color: String,
@@ -1337,13 +1339,44 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
     };
 
     let colnect_dir = PathBuf::from(&info.colnect_dir);
+    let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
+    let title = format!("Select Colnect CSV for {}", country);
+    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+}
+
+fn pick_and_copy_colnect_file_for_db(db_path: &str) -> BootstrapPickColnectFileResponse {
+    let fail = |msg: String| BootstrapPickColnectFileResponse {
+        ok: false,
+        picked: false,
+        message: msg,
+        file_name: None,
+        dest_path: None,
+        colnect_dir: None,
+    };
+
+    let colnect_dir = Path::new(db_path)
+        .parent()
+        .map(|p| p.join("colnect"))
+        .unwrap_or_else(|| PathBuf::from("colnect"));
+    let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
+    let title = "Select Colnect CSV for current country".to_string();
+    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+}
+
+fn pick_and_copy_colnect_file_to_dir<F>(
+    colnect_dir: &Path,
+    title: &str,
+    colnect_dir_str: &str,
+    fail: F,
+) -> BootstrapPickColnectFileResponse
+where
+    F: Fn(String) -> BootstrapPickColnectFileResponse,
+{
     if !colnect_dir.exists() {
-        if let Err(e) = fs::create_dir_all(&colnect_dir) {
+        if let Err(e) = fs::create_dir_all(colnect_dir) {
             return fail(format!("Could not create colnect dir: {}", e));
         }
     }
-    let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
-    let title = format!("Select Colnect CSV for {}", country);
     let starting = format!("{}/", colnect_dir_str.trim_end_matches('/'));
 
     let pick_result: Result<Option<String>, String> = (|| {
@@ -1414,7 +1447,7 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
             message: "Cancelled".to_string(),
             file_name: None,
             dest_path: None,
-            colnect_dir: Some(colnect_dir_str),
+            colnect_dir: Some(colnect_dir_str.to_string()),
         },
         Ok(Some(src_path)) => {
             let src = PathBuf::from(&src_path);
@@ -1430,7 +1463,7 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
                     message: format!("Copied '{}' to colnect dir", file_name),
                     file_name: Some(file_name),
                     dest_path: Some(dest.to_string_lossy().to_string()),
-                    colnect_dir: Some(colnect_dir_str),
+                    colnect_dir: Some(colnect_dir_str.to_string()),
                 },
                 Err(e) => fail(format!("Copy failed: {}", e)),
             }
@@ -1661,6 +1694,13 @@ fn build_matcher_payload(
         left,
         right,
         album_name: album_name.to_string(),
+        colnect_dir: album_dir_for_ui(db_path, album_name)
+            .join("colnect")
+            .to_string_lossy()
+            .to_string(),
+        colnect_file_count: count_colnect_csv_files_rec(
+            &album_dir_for_ui(db_path, album_name).join("colnect"),
+        ),
         show_imageless_left_rows,
         default_catalog_code: default_catalog_code.to_string(),
         odd_row_color: odd_row_color.to_string(),
