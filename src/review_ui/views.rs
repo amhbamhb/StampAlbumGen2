@@ -53,6 +53,23 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
 .reconnectBanner .actions {{ display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }}
 @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 @keyframes bootstrapFadeIn {{ from {{ opacity: 0; transform: translateY(2px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+.introPanel {{ border: 1px solid #cfe3f5; border-radius: 10px; background: linear-gradient(135deg,#f6fbff 0%,#eef5fd 100%); margin: 0 0 14px 0; overflow: hidden; }}
+.introPanel summary {{ display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--accent-main); list-style: none; user-select: none; border-radius: 10px; transition: background 140ms; }}
+.introPanel summary::-webkit-details-marker {{ display: none; }}
+.introPanel summary:hover {{ background: rgba(31,111,168,0.07); }}
+.introPanel summary .introArrow {{ font-size: 10px; transition: transform 200ms; flex-shrink: 0; }}
+details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg); }}
+.introPanel summary .introDimTag {{ font-size: 11px; font-weight: 400; color: var(--muted-text); margin-left: auto; }}
+.introPanelBody {{ padding: 2px 14px 12px 38px; }}
+.introPanelBody p {{ margin: 4px 0 8px 0; font-size: 13.5px; }}
+.introPanelBody a {{ color: var(--accent-main); }}
+.hintRow {{ display: flex; gap: 10px; align-items: flex-start; margin: 7px 0; padding: 8px 10px; background: rgba(255,255,255,0.75); border-radius: 7px; border: 1px solid #ddeef9; font-size: 13px; color: var(--muted-text); }}
+.hintIcon {{ font-size: 15px; flex-shrink: 0; margin-top: 1px; }}
+.colnectCopyPanel {{ border: 1px solid #d9e6f1; border-left: 5px solid #7b4ea3; border-radius: 10px; padding: 12px; background: #fdf8ff; margin-top: 12px; }}
+.colnectCopyLog {{ margin-top: 8px; max-height: 130px; overflow-y: auto; font-size: 11px; font-family: ui-monospace, monospace; background: #f4f0fa; border: 1px solid #d5c8ea; border-radius: 6px; padding: 5px 7px; }}
+.colnectCopyStatus {{ margin-top: 8px; font-size: 13px; padding: 6px 10px; border-radius: 6px; background: #ede8f8; border: 1px solid #c9baee; min-height: 26px; }}
+.colnectCopyStatus.ok {{ background: #f2fbf6; border-color: #b9dec9; color: #245641; }}
+.colnectCopyStatus.fail {{ background: #fff3f3; border-color: #e8b4b4; color: #7a2020; }}
 </style>
 </head>
 <body>
@@ -66,8 +83,17 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <span id='reconnectBannerMeta' class='meta'></span>
         </div>
     </div>
-    <h1>Start Review UI</h1>
-    <p><strong>Stamp Album Generation</strong> startup. Pick a country to open its Review UI.</p>
+    <h1>Stamp Album Generation 2</h1>
+    <h2>Start Review UI</h2>
+    <details id='introPanel' class='introPanel' open>
+      <summary><span class='introArrow'>&#9660;</span> About this app &amp; setup hints <span class='introDimTag'>click to expand / collapse</span></summary>
+      <div class='introPanelBody'>
+        <p><strong>Stamp Album Generation</strong> startup. Pick a country to open its Review UI.</p>
+        <p>This program could not be completed without the incredible Album Easy program by Bundu Technology Ltd. <a href='https://www.thestampweb.com/albumeasy' target='_blank' rel='noopener noreferrer'>AlbumEasy</a></p>
+        <div class='hintRow'><span class='hintIcon'>&#128193;</span><span>If you have not yet set up your Albums Root folder, you can do so now or let it auto-detect on launch. The Albums Root is where the generated albums and related data will be stored. You can change this later in the config editor.</span></div>
+        <div class='hintRow'><span class='hintIcon'>&#128236;</span><span>If you have a Colnect inbox export and want to use it for the review, you can import it now or later from the config editor. The default expected format is the &ldquo;Export for AlbumEasy&rdquo; option from Colnect.</span></div>
+      </div>
+    </details>
     <div class='row'>
         <label for='countrySel'>Country</label>
         <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
@@ -150,6 +176,18 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <textarea id='swPullLog' readonly style='width:100%;min-height:150px;max-height:280px;resize:vertical;padding:8px;border:1px solid #d7b896;border-radius:6px;font-family:monospace;font-size:11px;background:#fffcf7;color:#333;overflow-y:auto;overflow-x:hidden;'></textarea>
         </div>
     </div>
+    <div id='colnectCopyPanel' class='colnectCopyPanel' style='display:none;'>
+        <strong>Import Colnect Files</strong>
+        <div class='row' style='margin-top:8px;'>
+            <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>
+            <span id='colnectCopyCountBadge' class='badge'>Files: 0</span>
+        </div>
+        <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
+            Destination: <code id='colnectDirPath'>(select a country)</code>
+        </div>
+        <div id='colnectCopyStatus' class='colnectCopyStatus' style='display:none;'></div>
+        <div id='colnectCopyLog' class='colnectCopyLog' style='display:none;'></div>
+    </div>
     <div id='status' class='status'></div>
     <div id='runtimeLogPanel' style='margin-top:10px;border:1px solid #d7e2eb;border-radius:10px;padding:10px;background:#fbfdff;'>
         <div class='row' style='margin-top:0;justify-content:space-between;'>
@@ -192,7 +230,19 @@ let backendMarkedDisconnected = false;
 let backendRecoveredReloadPending = false;
 let stampworldRunPollTimer = null;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
+const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
 const backendHealthPollMs = 15000;
+(function() {{
+  try {{
+    const ip = document.getElementById('introPanel');
+    if (ip) {{
+      if (localStorage.getItem(introPanelStorageKey) === 'closed') ip.removeAttribute('open');
+      ip.addEventListener('toggle', function() {{
+        try {{ localStorage.setItem(introPanelStorageKey, ip.open ? 'open' : 'closed'); }} catch(_) {{}}
+      }});
+    }}
+  }} catch(_) {{}}
+}})();
 const backendHealthFailureThreshold = 2;
 
 function reloadCurrentPage() {{
@@ -857,6 +907,58 @@ function renderCountryPanel() {{
     if (swLead) swLead.innerText = 'Run StampWorld pull for this country (including additional pull).';
     if (swHint) swHint.innerText = 'You can rerun StampWorld even when data already exists, or edit the country field to pull for a different/new country.';
     updateStampWorldRunStatus('Ready to run', false, false);
+
+    const dirPathEl = document.getElementById('colnectDirPath');
+    const countBadge = document.getElementById('colnectCopyCountBadge');
+    const copyPanel = document.getElementById('colnectCopyPanel');
+    if (dirPathEl) dirPathEl.innerText = c.colnect_dir || '(unknown)';
+    if (countBadge) countBadge.innerText = 'Files: ' + (c.colnect_file_count || 0);
+    if (copyPanel) copyPanel.style.display = '';
+}}
+
+async function pickAndCopyColnectFile() {{
+    const country = document.getElementById('countrySel').value;
+    if (!country) {{ appendColnectCopyLog('Select a country first.'); return; }}
+    const btn = document.getElementById('colnectPickBtn');
+    const statusEl = document.getElementById('colnectCopyStatus');
+    const logEl = document.getElementById('colnectCopyLog');
+    if (btn) btn.disabled = true;
+    if (statusEl) {{ statusEl.className = 'colnectCopyStatus'; statusEl.style.display = ''; statusEl.textContent = 'Opening file picker\u2026'; }}
+    if (logEl) logEl.style.display = '';
+    try {{
+        const r = await fetch('/api/bootstrap-pick-colnect-file', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ country }})
+        }});
+        const j = await r.json();
+        if (j.ok && j.picked) {{
+            if (statusEl) {{ statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 Copied: ' + (j.file_name || ''); }}
+            appendColnectCopyLog('\u2714 ' + (j.message || 'File copied'));
+            await refreshState();
+        }} else if (j.ok && !j.picked) {{
+            if (statusEl) statusEl.textContent = 'Cancelled';
+        }} else {{
+            if (statusEl) {{ statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 ' + (j.message || 'Failed'); }}
+            appendColnectCopyLog('\u2718 ' + (j.message || 'Failed'));
+        }}
+    }} catch (e) {{
+        if (statusEl) {{ statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 Error: ' + e; }}
+        appendColnectCopyLog('Error: ' + e);
+    }} finally {{
+        if (btn) btn.disabled = false;
+    }}
+}}
+
+function appendColnectCopyLog(text) {{
+    const logEl = document.getElementById('colnectCopyLog');
+    if (!logEl) return;
+    if (logEl.style.display === 'none') logEl.style.display = '';
+    const el = document.createElement('div');
+    el.textContent = new Date().toLocaleTimeString() + ' ' + text;
+    logEl.appendChild(el);
+    while (logEl.children.length > 20) logEl.removeChild(logEl.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
 }}
 
 async function refreshState() {{
