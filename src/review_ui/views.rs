@@ -53,6 +53,26 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
 .reconnectBanner .actions {{ display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }}
 @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 @keyframes bootstrapFadeIn {{ from {{ opacity: 0; transform: translateY(2px); }} to {{ opacity: 1; transform: translateY(0); }} }}
+.introPanel {{ border: 1px solid #cfe3f5; border-radius: 10px; background: linear-gradient(135deg,#f6fbff 0%,#eef5fd 100%); margin: 0 0 14px 0; overflow: hidden; }}
+.introPanel summary {{ display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--accent-main); list-style: none; user-select: none; border-radius: 10px; transition: background 140ms; }}
+.introPanel summary::-webkit-details-marker {{ display: none; }}
+.introPanel summary:hover {{ background: rgba(31,111,168,0.07); }}
+.introPanel summary .introArrow {{ font-size: 10px; transition: transform 200ms; flex-shrink: 0; }}
+details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg); }}
+.introPanel summary .introDimTag {{ font-size: 11px; font-weight: 400; color: var(--muted-text); margin-left: auto; }}
+.introPanelBody {{ padding: 2px 14px 12px 38px; }}
+.introPanelBody p {{ margin: 4px 0 8px 0; font-size: 13.5px; }}
+.introPanelBody a {{ color: var(--accent-main); }}
+.hintRow {{ display: flex; gap: 10px; align-items: flex-start; margin: 7px 0; padding: 8px 10px; background: rgba(255,255,255,0.75); border-radius: 7px; border: 1px solid #ddeef9; font-size: 13px; color: var(--muted-text); }}
+.hintIcon {{ font-size: 15px; flex-shrink: 0; margin-top: 1px; }}
+.colnectCopyPanel {{ border: 1px solid #d9e6f1; border-left: 5px solid #7b4ea3; border-radius: 10px; padding: 12px; background: #fdf8ff; margin-top: 12px; }}
+.colnectCopyLog {{ margin-top: 8px; max-height: 130px; overflow-y: auto; font-size: 11px; font-family: ui-monospace, monospace; background: #f4f0fa; border: 1px solid #d5c8ea; border-radius: 6px; padding: 5px 7px; }}
+.colnectCopyStatus {{ margin-top: 8px; font-size: 13px; padding: 6px 10px; border-radius: 6px; background: #ede8f8; border: 1px solid #c9baee; min-height: 26px; }}
+.colnectCopyStatus.ok {{ background: #f2fbf6; border-color: #b9dec9; color: #245641; }}
+.colnectCopyStatus.fail {{ background: #fff3f3; border-color: #e8b4b4; color: #7a2020; }}
+#colnectDirPath {{ display: block; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }}
+#colnectCopyLog .line {{ border-bottom: 1px solid #e4dff1; padding: 2px 0; white-space: pre-wrap; word-break: break-word; }}
+#colnectCopyLog .line:last-child {{ border-bottom: none; }}
 </style>
 </head>
 <body>
@@ -66,8 +86,17 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <span id='reconnectBannerMeta' class='meta'></span>
         </div>
     </div>
-    <h1>Start Review UI</h1>
-    <p><strong>Stamp Album Generation</strong> startup. Pick a country to open its Review UI.</p>
+    <h1>Stamp Album Generation 2</h1>
+    <h2>Start Review UI</h2>
+    <details id='introPanel' class='introPanel' open>
+      <summary><span class='introArrow'>&#9660;</span> About this app &amp; setup hints <span class='introDimTag'>click to expand / collapse</span></summary>
+      <div class='introPanelBody'>
+        <p><strong>Stamp Album Generation</strong> startup. Pick a country to open its Review UI.</p>
+        <p>This program could not be completed without the incredible Album Easy program by Bundu Technology Ltd. <a href='https://www.thestampweb.com/albumeasy' target='_blank' rel='noopener noreferrer'>AlbumEasy</a></p>
+        <div class='hintRow'><span class='hintIcon'>&#128193;</span><span>If you have not yet set up your Albums Root folder, you can do so now or let it auto-detect on launch. The Albums Root is where the generated albums and related data will be stored. You can change this later in the config editor.</span></div>
+        <div class='hintRow'><span class='hintIcon'>&#128236;</span><span>If you have a Colnect inbox export and want to use it for the review, you can import it now or later from the config editor. The default expected format is the &ldquo;Export for AlbumEasy&rdquo; option from Colnect.</span></div>
+      </div>
+    </details>
     <div class='row'>
         <label for='countrySel'>Country</label>
         <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
@@ -150,6 +179,18 @@ body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-ev
             <textarea id='swPullLog' readonly style='width:100%;min-height:150px;max-height:280px;resize:vertical;padding:8px;border:1px solid #d7b896;border-radius:6px;font-family:monospace;font-size:11px;background:#fffcf7;color:#333;overflow-y:auto;overflow-x:hidden;'></textarea>
         </div>
     </div>
+    <div id='colnectCopyPanel' class='colnectCopyPanel'>
+        <strong>Import Colnect Files</strong>
+        <div class='row' style='margin-top:8px;'>
+            <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>
+            <span id='colnectCopyCountBadge' class='badge'>Files: 0</span>
+        </div>
+        <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
+            Destination: <code id='colnectDirPath'>(select a country)</code>
+        </div>
+        <div id='colnectCopyStatus' class='colnectCopyStatus'>Ready</div>
+        <div id='colnectCopyLog' class='colnectCopyLog'></div>
+    </div>
     <div id='status' class='status'></div>
     <div id='runtimeLogPanel' style='margin-top:10px;border:1px solid #d7e2eb;border-radius:10px;padding:10px;background:#fbfdff;'>
         <div class='row' style='margin-top:0;justify-content:space-between;'>
@@ -192,7 +233,19 @@ let backendMarkedDisconnected = false;
 let backendRecoveredReloadPending = false;
 let stampworldRunPollTimer = null;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
+const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
 const backendHealthPollMs = 15000;
+(function() {{
+  try {{
+    const ip = document.getElementById('introPanel');
+    if (ip) {{
+      if (localStorage.getItem(introPanelStorageKey) === 'closed') ip.removeAttribute('open');
+      ip.addEventListener('toggle', function() {{
+        try {{ localStorage.setItem(introPanelStorageKey, ip.open ? 'open' : 'closed'); }} catch(_) {{}}
+      }});
+    }}
+  }} catch(_) {{}}
+}})();
 const backendHealthFailureThreshold = 2;
 
 function reloadCurrentPage() {{
@@ -836,6 +889,16 @@ function renderCountryPanel() {{
     if (!c) {{
         document.getElementById('countryPanel').innerHTML = '<em>No countries found under Albums/*/*.db</em>';
         document.getElementById('stampworldPanel').style.display = '';
+        const dirPathEl = document.getElementById('colnectDirPath');
+        const countBadge = document.getElementById('colnectCopyCountBadge');
+        const copyStatus = document.getElementById('colnectCopyStatus');
+        if (dirPathEl) dirPathEl.innerText = '(select a country)';
+        if (countBadge) countBadge.innerText = 'Files: 0';
+        if (copyStatus) {{
+            copyStatus.className = 'colnectCopyStatus';
+            copyStatus.style.display = '';
+            copyStatus.textContent = 'Select a country to import Colnect CSV files.';
+        }}
         if (swLead) swLead.innerText = 'Run StampWorld pull to create a country database.';
         if (swHint) swHint.innerText = 'Type any country name below and run StampWorld pull. This field is editable and not limited to existing countries.';
         document.getElementById('swCmd').innerText = suggestedStampworldCommand('');
@@ -857,6 +920,56 @@ function renderCountryPanel() {{
     if (swLead) swLead.innerText = 'Run StampWorld pull for this country (including additional pull).';
     if (swHint) swHint.innerText = 'You can rerun StampWorld even when data already exists, or edit the country field to pull for a different/new country.';
     updateStampWorldRunStatus('Ready to run', false, false);
+
+    const dirPathEl = document.getElementById('colnectDirPath');
+    const countBadge = document.getElementById('colnectCopyCountBadge');
+    if (dirPathEl) dirPathEl.innerText = c.colnect_dir || '(unknown)';
+    if (countBadge) countBadge.innerText = 'Files: ' + (c.colnect_file_count || 0);
+}}
+
+async function pickAndCopyColnectFile() {{
+    const country = document.getElementById('countrySel').value;
+    if (!country) {{ appendColnectCopyLog('Select a country first.'); return; }}
+    const btn = document.getElementById('colnectPickBtn');
+    const statusEl = document.getElementById('colnectCopyStatus');
+    const logEl = document.getElementById('colnectCopyLog');
+    if (btn) btn.disabled = true;
+    if (statusEl) {{ statusEl.className = 'colnectCopyStatus'; statusEl.style.display = ''; statusEl.textContent = 'Opening file picker\u2026'; }}
+    if (logEl) logEl.style.display = '';
+    try {{
+        const r = await fetch('/api/bootstrap-pick-colnect-file', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ country }})
+        }});
+        const j = await r.json();
+        if (j.ok && j.picked) {{
+            if (statusEl) {{ statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 Copied: ' + (j.file_name || ''); }}
+            appendColnectCopyLog('\u2714 ' + (j.message || 'File copied'));
+            await refreshState();
+        }} else if (j.ok && !j.picked) {{
+            if (statusEl) statusEl.textContent = 'Cancelled';
+        }} else {{
+            if (statusEl) {{ statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 ' + (j.message || 'Failed'); }}
+            appendColnectCopyLog('\u2718 ' + (j.message || 'Failed'));
+        }}
+    }} catch (e) {{
+        if (statusEl) {{ statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 Error: ' + e; }}
+        appendColnectCopyLog('Error: ' + e);
+    }} finally {{
+        if (btn) btn.disabled = false;
+    }}
+}}
+
+function appendColnectCopyLog(text) {{
+    const logEl = document.getElementById('colnectCopyLog');
+    if (!logEl) return;
+    const el = document.createElement('div');
+    el.className = 'line';
+    el.textContent = new Date().toLocaleTimeString() + ' ' + text;
+    logEl.appendChild(el);
+    while (logEl.children.length > 120) logEl.removeChild(logEl.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
 }}
 
 async function refreshState() {{
@@ -982,14 +1095,46 @@ async function importColnectFiles() {{
     const sel = document.getElementById('countrySel');
     const country = sel.value;
     const status = document.getElementById('status');
+    const statusBox = document.getElementById('colnectCopyStatus');
+    const logEl = document.getElementById('colnectCopyLog');
     
     if (!country) {{
         if (status) status.innerText = 'Select a country first.';
+        if (statusBox) {{
+            statusBox.className = 'colnectCopyStatus fail';
+            statusBox.textContent = 'Select a country first.';
+        }}
         return;
     }}
 
     if (status) status.innerText = 'Importing Colnect files for ' + country + '...';
     setBusy(true, 'Importing Colnect CSV files for ' + country + '...');
+    if (statusBox) {{
+        statusBox.className = 'colnectCopyStatus';
+        statusBox.textContent = 'Starting import for ' + country + '...';
+    }}
+    appendColnectCopyLog('--- import started for ' + country + ' ---');
+
+    let shownLogCount = 0;
+
+    async function pollImportLog() {{
+        try {{
+            const r = await fetch('/runtime-log', {{ cache: 'no-store' }});
+            const j = await r.json();
+            const lines = j.lines || [];
+            const newLines = lines.slice(shownLogCount);
+            shownLogCount = lines.length;
+            for (const line of newLines) {{
+                appendColnectCopyLog(line);
+                if (statusBox) {{
+                    statusBox.className = 'colnectCopyStatus';
+                    statusBox.textContent = line;
+                }}
+            }}
+        }} catch (_) {{}}
+    }}
+
+    const logPollTimer = setInterval(pollImportLog, 700);
 
     try {{
         const r = await fetch('/api/colnect-import', {{
@@ -998,10 +1143,18 @@ async function importColnectFiles() {{
             body: JSON.stringify({{}})
         }});
         const j = await r.json();
+        clearInterval(logPollTimer);
+        await pollImportLog();
         setBusy(false, '');
+
         if (j.ok && j.stamps_imported > 0) {{
-            if (status) status.innerText = 'Imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)';
-            alert('Successfully imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s).');
+            const doneMsg = 'Imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)';
+            if (status) status.innerText = doneMsg;
+            if (statusBox) {{
+                statusBox.className = 'colnectCopyStatus ok';
+                statusBox.textContent = doneMsg;
+            }}
+            appendColnectCopyLog('✔ ' + doneMsg);
             await refreshState();
         }} else if (j.ok && j.stamps_imported === 0) {{
             const msg = j.message || 'No stamps were imported.';
@@ -1009,19 +1162,38 @@ async function importColnectFiles() {{
                 ? '\n\nDetails:\n' + j.errors.join('\n')
                 : '\n\nOpen the Review UI for this country and verify the configured colnect inbox path.';
             if (status) status.innerText = 'No stamps imported';
-            alert(msg + details);
+            if (statusBox) {{
+                statusBox.className = 'colnectCopyStatus';
+                statusBox.textContent = msg;
+            }}
+            appendColnectCopyLog(msg);
+            if (j.errors && j.errors.length > 0) {{
+                for (const err of j.errors) appendColnectCopyLog('! ' + err);
+            }} else {{
+                appendColnectCopyLog(details.replace(/^\n+/, ''));
+            }}
         }} else {{
             const msg = j.message || 'Import failed';
             const details = (j.errors && j.errors.length > 0)
                 ? '\n\nErrors:\n' + j.errors.join('\n')
                 : '';
             if (status) status.innerText = 'Import unavailable: ' + msg;
-            alert(msg + details);
+            if (statusBox) {{
+                statusBox.className = 'colnectCopyStatus fail';
+                statusBox.textContent = msg;
+            }}
+            appendColnectCopyLog('✘ ' + msg);
+            if (details) appendColnectCopyLog(details.replace(/^\n+/, ''));
         }}
     }} catch (e) {{
+        clearInterval(logPollTimer);
         setBusy(false, '');
         if (status) status.innerText = 'Import error';
-        alert('Import error: ' + e);
+        if (statusBox) {{
+            statusBox.className = 'colnectCopyStatus fail';
+            statusBox.textContent = 'Import error: ' + e;
+        }}
+        appendColnectCopyLog('Error: ' + e);
     }}
 }}
 
@@ -1173,20 +1345,24 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .groupCard.session {{ border-left: 5px solid var(--accent-slate); }}
 .groupBtns {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
 .sessionStack {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; width: 100%; }}
-.sessionSection {{ border: 1px solid #d7e2eb; border-radius: 8px; background: #f9fcff; padding: 8px; }}
-.sessionSection:nth-child(1) {{ background: #f2f8ff; border-color: #cddff2; }}
-.sessionSection:nth-child(2) {{ background: #f2fbf6; border-color: #cfe8da; }}
-.sessionSection:nth-child(3) {{ background: #fff8ef; border-color: #ead8bc; }}
-.sessionSection:nth-child(4) {{ background: #f5f6f8; border-color: #d5dbe3; }}
+.sessionSection {{ border-radius: 8px; padding: 8px; }}
+.sessionSectionBlue {{ border: 1px solid #cddff2; background: #f2f8ff; }}
+.sessionSectionGreen {{ border: 1px solid #cfe8da; background: #f2fbf6; }}
+.sessionSectionAmber {{ border: 1px solid #ead8bc; background: #fff8ef; }}
+.sessionSectionSlate {{ border: 1px solid #d5dbe3; background: #f5f6f8; }}
 .sessionSectionTitle {{ margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #2a4458; letter-spacing: 0.2px; }}
 .sessionRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+.sessionStatusBox {{ margin-top: 8px; min-height: 16px; font-size: 12px; border-radius: 8px; border-left-width: 4px; border-left-style: solid; padding: 6px 8px; }}
+.sessionStatusBlue {{ border: 1px solid #cddff2; border-left: 4px solid #2f6fa3; background: #f8fcff; color: #2f4f67; }}
+.sessionStatusGreen {{ border: 1px solid #cfe8da; border-left: 4px solid #2f8f63; background: #f4fcf8; color: #245641; }}
+.sessionStatusAmber {{ border: 1px solid #ead8bc; border-left: 4px solid #c08a2b; background: #fffaf2; color: #694314; }}
+.sessionStatusSlate {{ border: 1px solid #d5dbe3; border-left: 4px solid #5c6b78; background: #f7f8fa; color: #334b60; }}
 .actionRows {{ display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }}
 .actionBar {{ border: 1px solid #dbe4ec; border-radius: 10px; padding: 9px 10px; background: #fbfdff; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
 .actionBar.match {{ border-left: 5px solid var(--accent-green); }}
 .actionBar.candidate {{ border-left: 5px solid var(--accent-amber); }}
 .actionBarTitle {{ font-size: 12px; font-weight: 700; color: #2a4458; margin-right: 6px; }}
 .actionMessage {{ border: 1px solid #dbe4ec; border-radius: 8px; background: #f7fbff; color: #35566d; padding: 7px 10px; font-size: 12px; min-height: 16px; }}
-.configMessage {{ margin-top: 8px; border: 1px solid #cddff2; border-radius: 8px; background: #f8fcff; color: #2f4f67; padding: 6px 8px; font-size: 12px; min-height: 16px; }}
 .filtersCard {{ border: 1px solid #dbe4ec; border-left: 5px solid var(--accent-blue); border-radius: 10px; background: #f8fbfe; padding: 10px; margin-bottom: 12px; }}
 .filtersTitle {{ margin: 0 0 8px 0; font-size: 13px; color: #1f4663; }}
 .filtersGrid {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
@@ -1361,25 +1537,23 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 .colnectImportStatus {{ margin-top: 8px; }}
 .colnectImportSpinRow {{ display: flex; align-items: center; gap: 8px; }}
 .colnectImportSpinner {{ width: 14px; height: 14px; border: 2px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; animation: colnectSpin 0.9s linear infinite; flex: 0 0 auto; display: inline-block; }}
-.colnectImportStatusText {{ font-size: 12px; color: #1f3b52; font-weight: 600; }}
+.colnectImportStatusText {{ font-size: 12px; color: inherit; font-weight: 600; }}
 .colnectImportLog {{ margin-top: 6px; max-height: 120px; overflow-y: auto; font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f2f7fb; border: 1px solid #d3dfe9; border-radius: 6px; padding: 4px 6px; }}
 .colnectLogLine {{ padding: 2px 0; border-bottom: 1px solid #e8eef4; animation: colnectMsgIn 0.2s ease-out; }}
 .colnectLogLine:last-child {{ border-bottom: none; }}
+.reviewColnectDirPath {{ display: block; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }}
 .colnectImportDone {{ color: #2f8f63 !important; }}
 .colnectImportFail {{ color: #a34545 !important; }}
 .pdfStatusWrap {{
-    display: none;
+    display: flex;
     align-items: center;
     gap: 6px;
-    padding: 2px 8px;
-    border: 1px solid #d3dfe9;
-    border-radius: 999px;
-    background: #f8fbfe;
+    padding: 6px 8px;
     min-height: 22px;
 }}
 .pdfStatusText {{
     font-size: 12px;
-    color: #2d4760;
+    color: inherit;
 }}
 .pdfStatusDone {{ color: #2f8f63; font-weight: 600; }}
 .pdfStatusFail {{ color: #a34545; font-weight: 600; }}
@@ -1440,7 +1614,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <div class='groupCard session'>
             <h4>Session</h4>
             <div class='sessionStack'>
-                <div class='sessionSection'>
+                <div class='sessionSection sessionSectionBlue'>
                     <div class='sessionSectionTitle'>Configuration</div>
                     <div class='sessionRow'>
                         <button onclick='openConfigEditor()'>Edit Local Config</button>
@@ -1457,42 +1631,52 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         </select>
                         <button onclick='saveCatalogDefaultToConfig()'>Update Local Config Default</button>
                     </div>
-                    <div id='configStatus' class='configMessage'>Ready</div>
+                    <div id='configStatus' class='sessionStatusBox sessionStatusBlue'>Ready</div>
                 </div>
-                <div class='sessionSection'>
+                <div class='sessionSection sessionSectionGreen'>
                     <div class='sessionSectionTitle'>Import Colnect</div>
                     <div class='sessionRow'>
+                        <button id='importColnectPickBtn' onclick='pickAndCopyColnectFileReview()'>Browse &amp; Copy Colnect File&#8230;</button>
                         <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect</button>
+                        <span id='reviewColnectCopyCountBadge' class='badge'>Files: 0</span>
                     </div>
-                    <div id='colnectImportStatus' class='colnectImportStatus' style='display:none;'>
+                    <div style='margin-top:6px;font-size:12px;color:#35566d;'>
+                        Destination: <code id='reviewColnectDirPath' class='reviewColnectDirPath'>(unknown)</code>
+                    </div>
+                    <div id='colnectImportStatus' class='colnectImportStatus sessionStatusBox sessionStatusGreen'>
                         <div class='colnectImportSpinRow'>
-                            <span class='colnectImportSpinner'></span>
-                            <span id='colnectImportStatusText' class='colnectImportStatusText'>Importing...</span>
+                            <span class='colnectImportSpinner' style='display:none;'></span>
+                            <span id='colnectImportStatusText' class='colnectImportStatusText'>Ready</span>
                         </div>
-                        <div id='colnectImportLog' class='colnectImportLog'></div>
+                        <div id='colnectImportLog' class='colnectImportLog' style='display:none;'></div>
                     </div>
                 </div>
-                <div class='sessionSection'>
+                <div class='sessionSection sessionSectionAmber'>
                     <div class='sessionSectionTitle'>PDF</div>
                     <div class='sessionRow'>
                         <button id='reviewPdfBtn' onclick='generatePdfNowReview()'>Generate PDF Now</button>
+                        <button id='reviewPdfPreviewBtn' onclick='previewLastPdfReview()' style='display:none;'>Preview Last PDF</button>
                         <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
                         <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
                         <span style='font-size:0.9em;'>–</span>
                         <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
-                        <div id='pdfStatusWrap' class='pdfStatusWrap'>
-                            <span id='pdfStatusSpinner' class='colnectImportSpinner'></span>
-                            <span id='pdfStatus' class='pdfStatusText'></span>
-                        </div>
+                        <label for='reviewPdfAlwaysShow' style='font-size:0.9em;display:inline-flex;align-items:center;gap:6px;'>
+                            <input id='reviewPdfAlwaysShow' type='checkbox' onchange='togglePdfAlwaysOpenPreference()'/>
+                            Always open PDF after generation
+                        </label>
+                    </div>
+                    <div id='pdfStatusWrap' class='pdfStatusWrap sessionStatusBox sessionStatusAmber'>
+                        <span id='pdfStatusSpinner' class='colnectImportSpinner' style='display:none;'></span>
+                        <span id='pdfStatus' class='pdfStatusText'>Ready</span>
                     </div>
                 </div>
-                <div class='sessionSection'>
+                <div class='sessionSection sessionSectionSlate'>
                     <div class='sessionSectionTitle'>Navigation</div>
                     <div class='sessionRow'>
                         <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
                         <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
-                        <span id='status' class='badge'>Ready</span>
                     </div>
+                    <div id='status' class='sessionStatusBox sessionStatusSlate'>Ready</div>
                 </div>
             </div>
         </div>
@@ -1698,6 +1882,8 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 const payload = {json};
 let left = payload.left || [];
 let rightAll = payload.right || [];
+const reviewColnectDir = String(payload.colnect_dir || '');
+let reviewColnectFileCount = Number(payload.colnect_file_count || 0);
 const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
@@ -1726,9 +1912,77 @@ let backendHealthCompareCheckInFlight = false;
 let backendCompareMarkedDisconnected = false;
 let backendCompareRecoveredReloadPending = false;
 const runtimeLogCompareVisibleStorageKey = 'reviewui.compare.showRuntimeLog';
+const reviewPdfAlwaysOpenStorageKey = 'reviewui.pdf.always_open';
 const backendHealthComparePollMs = 15000;
 const backendHealthCompareFailureThreshold = 2;
+let reviewLastGeneratedPdfPath = '';
 window.__returnToStartInFlight = false;
+
+function updatePdfPreviewControls() {{
+    const previewBtn = document.getElementById('reviewPdfPreviewBtn');
+    if (!previewBtn) return;
+    const hasPdf = !!String(reviewLastGeneratedPdfPath || '').trim();
+    previewBtn.style.display = hasPdf ? '' : 'none';
+    previewBtn.disabled = !hasPdf;
+}}
+
+function togglePdfAlwaysOpenPreference() {{
+    const cb = document.getElementById('reviewPdfAlwaysShow');
+    if (!cb) return;
+    try {{
+        localStorage.setItem(reviewPdfAlwaysOpenStorageKey, cb.checked ? '1' : '0');
+    }} catch (_) {{}}
+}}
+
+async function previewLastPdfReview() {{
+    const statusEl = document.getElementById('pdfStatus');
+    const spinnerEl = document.getElementById('pdfStatusSpinner');
+    const path = String(reviewLastGeneratedPdfPath || '').trim();
+    if (!path) {{
+        if (statusEl) {{
+            statusEl.classList.remove('pdfStatusDone');
+            statusEl.classList.add('pdfStatusFail');
+            statusEl.innerText = 'No generated PDF found yet. Generate PDF first.';
+        }}
+        return;
+    }}
+
+    if (statusEl) {{
+        statusEl.classList.remove('pdfStatusDone', 'pdfStatusFail');
+        statusEl.innerText = 'Opening PDF preview...';
+    }}
+    if (spinnerEl) spinnerEl.style.display = 'inline-block';
+
+    try {{
+        const r = await fetch('/open-local-path', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ path }})
+        }});
+        const j = await r.json();
+        if (j.ok) {{
+            if (statusEl) {{
+                statusEl.classList.remove('pdfStatusFail');
+                statusEl.classList.add('pdfStatusDone');
+                statusEl.innerText = j.message || 'Opened PDF preview.';
+            }}
+        }} else {{
+            if (statusEl) {{
+                statusEl.classList.remove('pdfStatusDone');
+                statusEl.classList.add('pdfStatusFail');
+                statusEl.innerText = j.message || 'Failed to open PDF preview.';
+            }}
+        }}
+    }} catch (e) {{
+        if (statusEl) {{
+            statusEl.classList.remove('pdfStatusDone');
+            statusEl.classList.add('pdfStatusFail');
+            statusEl.innerText = 'Failed to open PDF preview: ' + e;
+        }}
+    }} finally {{
+        if (spinnerEl) spinnerEl.style.display = 'none';
+    }}
+}}
 
 function setMainStatus(message) {{
     const statusEl = document.getElementById('status');
@@ -3607,9 +3861,10 @@ async function generatePdfNowReview() {{
     const spinnerEl = document.getElementById('pdfStatusSpinner');
     const statusEl = document.getElementById('pdfStatus');
     const btnEl = document.getElementById('reviewPdfBtn');
+    const previewBtnEl = document.getElementById('reviewPdfPreviewBtn');
+    const alwaysOpenPdfEl = document.getElementById('reviewPdfAlwaysShow');
     const startYearInput = document.getElementById('reviewPdfStartYear');
     const endYearInput = document.getElementById('reviewPdfEndYear');
-    const originalText = statusEl?.innerText || '';
     if (window.__reviewPdfRestoreTimer) {{
         clearTimeout(window.__reviewPdfRestoreTimer);
         window.__reviewPdfRestoreTimer = null;
@@ -3617,9 +3872,11 @@ async function generatePdfNowReview() {{
 
     const setPdfUiState = (active, message) => {{
         if (statusEl && typeof message === 'string') statusEl.innerText = message;
-        if (statusWrap) statusWrap.style.display = (active || !!(statusEl?.innerText || '').trim()) ? 'inline-flex' : 'none';
+        if (statusWrap) statusWrap.style.display = 'flex';
         if (spinnerEl) spinnerEl.style.display = active ? 'inline-block' : 'none';
         if (btnEl) btnEl.disabled = active;
+        if (previewBtnEl) previewBtnEl.disabled = active || !String(reviewLastGeneratedPdfPath || '').trim();
+        if (alwaysOpenPdfEl) alwaysOpenPdfEl.disabled = active;
         if (startYearInput) startYearInput.disabled = active;
         if (endYearInput) endYearInput.disabled = active;
     }};
@@ -3655,34 +3912,38 @@ async function generatePdfNowReview() {{
         const res = await fetch('/generate-pdf-now', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ start_year: startYear, end_year: endYear }})
+            body: JSON.stringify({{
+                start_year: startYear,
+                end_year: endYear,
+                open_pdf: !!alwaysOpenPdfEl?.checked
+            }})
         }});
         const j = await res.json();
         if (!j.ok) {{
             if (statusEl) statusEl.classList.add('pdfStatusFail');
-            setPdfUiState(false, 'PDF generation failed');
-            alert(j.message || 'PDF generation failed.');
+            setPdfUiState(false, j.message || 'PDF generation failed.');
             return;
         }}
 
-        const details = [
-            j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
-            j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
-        ].join('');
+        reviewLastGeneratedPdfPath = String(j.generated_pdf_path || '');
+        updatePdfPreviewControls();
+
         if (statusEl) statusEl.classList.add('pdfStatusDone');
-        setPdfUiState(false, j.message || 'PDF generation completed');
-        alert((j.message || 'PDF generation completed.') + details);
+        if (reviewLastGeneratedPdfPath.trim()) {{
+            const openedTxt = alwaysOpenPdfEl?.checked
+                ? 'Opened automatically. Use Preview Last PDF to open it again.'
+                : 'Use Preview Last PDF to open it.';
+            setPdfUiState(false, (j.message || 'PDF generation completed.') + ' ' + openedTxt);
+        }} else {{
+            setPdfUiState(false, j.message || 'PDF generation completed, but no PDF was produced.');
+        }}
     }} catch (e) {{
         if (statusEl) statusEl.classList.add('pdfStatusFail');
-        setPdfUiState(false, 'PDF generation request failed');
-        alert('PDF generation request failed: ' + e);
+        setPdfUiState(false, 'PDF generation request failed: ' + e);
     }} finally {{
         window.__reviewPdfRequestInFlight = false;
         clearInterval(phaseTimer);
-        window.__reviewPdfRestoreTimer = setTimeout(() => {{
-            if (statusEl) statusEl.classList.remove('pdfStatusDone', 'pdfStatusFail');
-            setPdfUiState(false, originalText);
-        }}, 3500);
+        window.__reviewPdfRestoreTimer = null;
     }}
 }}
 
@@ -3695,7 +3956,14 @@ async function importColnectFilesReview() {{
     if (btn) btn.disabled = true;
     if (statusBox) statusBox.style.display = '';
     if (statusText) {{ statusText.className = 'colnectImportStatusText'; statusText.textContent = 'Starting import\u2026'; }}
-    if (logEl) logEl.innerHTML = '';
+    if (logEl) {{
+        logEl.style.display = '';
+        const sep = document.createElement('div');
+        sep.className = 'colnectLogLine';
+        sep.textContent = '--- ' + new Date().toLocaleTimeString() + ' import started ---';
+        logEl.appendChild(sep);
+        while (logEl.children.length > 20) logEl.removeChild(logEl.firstChild);
+    }}
 
     const spinner = statusBox ? statusBox.querySelector('.colnectImportSpinner') : null;
     if (spinner) spinner.style.display = 'inline-block';
@@ -3757,7 +4025,8 @@ async function importColnectFilesReview() {{
                 statusText.textContent = '\u2714 Imported ' + imported + ' new stamp' + (imported === 1 ? '' : 's') +
                     (skipped > 0 ? ', ' + skipped + ' already in database' : '');
             }}
-            setTimeout(() => {{ location.reload(); }}, 1500);
+            appendLogLine('✔ ' + (j.message || 'Import completed'));
+            if (btn) btn.disabled = false;
         }} else if (j.ok && imported === 0) {{
             if (statusText) {{
                 statusText.className = 'colnectImportStatusText';
@@ -3766,8 +4035,9 @@ async function importColnectFilesReview() {{
                     : 'No new stamps found';
             }}
             if (btn) btn.disabled = false;
+            appendLogLine(j.message || 'No new stamps found');
             if (j.errors && j.errors.length > 0) {{
-                alert((j.message || 'No stamps imported.') + '\n\nErrors:\n' + j.errors.join('\n'));
+                for (const err of j.errors) appendLogLine('! ' + err);
             }}
         }} else {{
             if (statusText) {{
@@ -3775,8 +4045,9 @@ async function importColnectFilesReview() {{
                 statusText.textContent = '\u2718 ' + (j.message || 'Import failed');
             }}
             if (btn) btn.disabled = false;
+            appendLogLine('✘ ' + (j.message || 'Import failed'));
             if (j.errors && j.errors.length > 0) {{
-                alert((j.message || 'Import failed') + '\n\nErrors:\n' + j.errors.join('\n'));
+                for (const err of j.errors) appendLogLine('! ' + err);
             }}
         }}
     }} catch (e) {{
@@ -3788,7 +4059,94 @@ async function importColnectFilesReview() {{
         }}
         appendLogLine('Error: ' + String(e));
         if (btn) btn.disabled = false;
-        alert('Import error: ' + e);
+    }}
+}}
+
+async function pickAndCopyColnectFileReview() {{
+    const btn = document.getElementById('importColnectPickBtn');
+    const statusBox = document.getElementById('colnectImportStatus');
+    const statusText = document.getElementById('colnectImportStatusText');
+    const logEl = document.getElementById('colnectImportLog');
+    const countBadge = document.getElementById('reviewColnectCopyCountBadge');
+    const destEl = document.getElementById('reviewColnectDirPath');
+
+    if (btn) btn.disabled = true;
+    if (statusBox) statusBox.style.display = '';
+    if (statusText) {{
+        statusText.className = 'colnectImportStatusText';
+        statusText.textContent = 'Opening file picker\u2026';
+    }}
+
+    const spinner = statusBox ? statusBox.querySelector('.colnectImportSpinner') : null;
+    if (spinner) spinner.style.display = 'none';
+
+    if (logEl && !logEl.innerHTML) {{
+        logEl.style.display = '';
+        const line = document.createElement('div');
+        line.className = 'colnectLogLine';
+        line.textContent = 'Ready to pick a CSV and copy to the country colnect folder.';
+        logEl.appendChild(line);
+    }}
+
+    try {{
+        const r = await fetch('/api/review-pick-colnect-file', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{}})
+        }});
+        const j = await r.json();
+
+        if (destEl && j.colnect_dir) destEl.textContent = j.colnect_dir;
+
+        if (j.ok && j.picked) {{
+            reviewColnectFileCount += 1;
+            if (countBadge) countBadge.textContent = 'Files: ' + reviewColnectFileCount;
+            if (statusText) {{
+                statusText.className = 'colnectImportStatusText colnectImportDone';
+                statusText.textContent = '\u2714 Copied: ' + (j.file_name || 'CSV');
+            }}
+            if (logEl) {{
+                const line = document.createElement('div');
+                line.className = 'colnectLogLine';
+                line.textContent = '\u2714 ' + (j.message || 'Copied to destination folder');
+                logEl.appendChild(line);
+                while (logEl.children.length > 12) logEl.removeChild(logEl.firstChild);
+                logEl.scrollTop = logEl.scrollHeight;
+            }}
+        }} else if (j.ok && !j.picked) {{
+            if (statusText) {{
+                statusText.className = 'colnectImportStatusText';
+                statusText.textContent = 'Cancelled';
+            }}
+        }} else {{
+            if (statusText) {{
+                statusText.className = 'colnectImportStatusText colnectImportFail';
+                statusText.textContent = '\u2718 ' + (j.message || 'Copy failed');
+            }}
+            if (logEl) {{
+                const line = document.createElement('div');
+                line.className = 'colnectLogLine';
+                line.textContent = '\u2718 ' + (j.message || 'Copy failed');
+                logEl.appendChild(line);
+                while (logEl.children.length > 12) logEl.removeChild(logEl.firstChild);
+                logEl.scrollTop = logEl.scrollHeight;
+            }}
+        }}
+    }} catch (e) {{
+        if (statusText) {{
+            statusText.className = 'colnectImportStatusText colnectImportFail';
+            statusText.textContent = '\u2718 Copy error';
+        }}
+        if (logEl) {{
+            const line = document.createElement('div');
+            line.className = 'colnectLogLine';
+            line.textContent = 'Error: ' + String(e);
+            logEl.appendChild(line);
+            while (logEl.children.length > 12) logEl.removeChild(logEl.firstChild);
+            logEl.scrollTop = logEl.scrollHeight;
+        }}
+    }} finally {{
+        if (btn) btn.disabled = false;
     }}
 }}
 
@@ -3822,6 +4180,21 @@ const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
 if (defaultCatalogSelect) {{
     defaultCatalogSelect.value = countryDefaultCatalogCode || 'sg';
 }}
+
+const reviewColnectDirPathEl = document.getElementById('reviewColnectDirPath');
+if (reviewColnectDirPathEl) reviewColnectDirPathEl.textContent = reviewColnectDir || '(unknown)';
+const reviewColnectCopyCountBadgeEl = document.getElementById('reviewColnectCopyCountBadge');
+if (reviewColnectCopyCountBadgeEl) reviewColnectCopyCountBadgeEl.textContent = 'Files: ' + reviewColnectFileCount;
+
+const reviewPdfAlwaysShowEl = document.getElementById('reviewPdfAlwaysShow');
+if (reviewPdfAlwaysShowEl) {{
+    try {{
+        reviewPdfAlwaysShowEl.checked = localStorage.getItem(reviewPdfAlwaysOpenStorageKey) === '1';
+    }} catch (_) {{
+        reviewPdfAlwaysShowEl.checked = false;
+    }}
+}}
+updatePdfPreviewControls();
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;

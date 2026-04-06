@@ -987,27 +987,41 @@ pub fn collect_stampworld_data_with_fetcher(
                         let downloaded_path =
                             format!("{}/{}", images_directory, image_res.filename);
                         let target_path = format!("{}/{}", images_directory, target_name);
-                        // Copy into per-row file if necessary
-                        if !std::path::Path::new(&target_path).exists() {
-                            if std::path::Path::new(&downloaded_path).exists() {
-                                match std::fs::copy(&downloaded_path, &target_path) {
-                                    Ok(_) => {
-                                        local_image_path = format!("images/{}", target_name);
-                                    }
-                                    Err(e) => {
-                                        debug!(
-                                            "Failed to copy {} to {}: {}",
-                                            downloaded_path, target_path, e
-                                        );
-                                        local_image_path = format!("images/{}", image_res.filename);
+
+                        let downloaded_exists = std::path::Path::new(&downloaded_path).exists();
+                        let target_exists = std::path::Path::new(&target_path).exists();
+                        if downloaded_exists && downloaded_path != target_path {
+                            if target_exists {
+                                // Canonical target already exists; drop duplicate source file.
+                                let _ = std::fs::remove_file(&downloaded_path);
+                            } else {
+                                match std::fs::rename(&downloaded_path, &target_path) {
+                                    Ok(_) => {}
+                                    Err(rename_err) => {
+                                        match std::fs::copy(&downloaded_path, &target_path) {
+                                            Ok(_) => {
+                                                let _ = std::fs::remove_file(&downloaded_path);
+                                            }
+                                            Err(copy_err) => {
+                                                debug!(
+                                                    "Failed to move {} to {} (rename={}, copy={})",
+                                                    downloaded_path,
+                                                    target_path,
+                                                    rename_err,
+                                                    copy_err
+                                                );
+                                            }
+                                        }
                                     }
                                 }
-                            } else {
-                                // If downloaded path doesn't exist (downloader saved directly to target), use image_res.filename
-                                local_image_path = format!("images/{}", image_res.filename);
                             }
-                        } else {
+                        }
+
+                        if std::path::Path::new(&target_path).exists() {
                             local_image_path = format!("images/{}", target_name);
+                        } else {
+                            // Fallback if downloader already saved to a different final filename.
+                            local_image_path = format!("images/{}", image_res.filename);
                         }
                         remote_image_url = selected_image_url.clone();
                         original_image_url = if image_res.filename.trim().is_empty() {

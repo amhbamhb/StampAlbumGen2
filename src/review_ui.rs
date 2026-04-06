@@ -253,6 +253,8 @@ struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
     album_name: String,
+    colnect_dir: String,
+    colnect_file_count: usize,
     show_imageless_left_rows: bool,
     default_catalog_code: String,
     odd_row_color: String,
@@ -279,6 +281,7 @@ struct BootstrapCountryInfo {
     db_path: String,
     colnect_file_count: usize,
     colnect_candidate_count: usize,
+    colnect_dir: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -387,6 +390,21 @@ struct BootstrapPickAlbumsRootResponse {
     message: String,
     albums_root: Option<String>,
     countries_count: usize,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapPickColnectFileRequest {
+    country: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapPickColnectFileResponse {
+    ok: bool,
+    picked: bool,
+    message: String,
+    file_name: Option<String>,
+    dest_path: Option<String>,
+    colnect_dir: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -1035,27 +1053,36 @@ fn try_spawn_browser_command(program: &str, args: &[&str]) -> bool {
         .is_ok()
 }
 
+fn try_spawn_browser_command_any(programs: &[&str], args: &[&str]) -> bool {
+    for program in programs {
+        if try_spawn_browser_command(program, args) {
+            return true;
+        }
+    }
+    false
+}
+
 fn try_open_url_once(url: &str) -> bool {
     if webbrowser::open(url).is_ok() {
         return true;
     }
 
-    if try_spawn_browser_command("xdg-open", &[url]) {
+    if try_spawn_browser_command_any(&["xdg-open", "/usr/bin/xdg-open", "/bin/xdg-open"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("gio", &["open", url]) {
+    if try_spawn_browser_command_any(&["gio", "/usr/bin/gio", "/bin/gio"], &["open", url]) {
         return true;
     }
-    if try_spawn_browser_command("kde-open5", &[url]) {
+    if try_spawn_browser_command_any(&["kde-open5", "/usr/bin/kde-open5"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("kde-open6", &[url]) {
+    if try_spawn_browser_command_any(&["kde-open6", "/usr/bin/kde-open6"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("kde-open", &[url]) {
+    if try_spawn_browser_command_any(&["kde-open", "/usr/bin/kde-open"], &[url]) {
         return true;
     }
-    if try_spawn_browser_command("sensible-browser", &[url]) {
+    if try_spawn_browser_command_any(&["sensible-browser", "/usr/bin/sensible-browser"], &[url]) {
         return true;
     }
 
@@ -1218,6 +1245,7 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
             db_path: db_path.to_string_lossy().to_string(),
             colnect_file_count,
             colnect_candidate_count,
+            colnect_dir: colnect_dir.to_string_lossy().to_string(),
         });
     }
 
@@ -1292,6 +1320,155 @@ fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
     }
 
     Err("No supported folder picker found (install zenity or kdialog)".to_string())
+}
+
+fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
+    let fail = |msg: String| BootstrapPickColnectFileResponse {
+        ok: false,
+        picked: false,
+        message: msg,
+        file_name: None,
+        dest_path: None,
+        colnect_dir: None,
+    };
+
+    let countries = scan_bootstrap_countries();
+    let info = match countries.iter().find(|c| c.country == country) {
+        Some(i) => i.clone(),
+        None => return fail(format!("Country '{}' not found", country)),
+    };
+
+    let colnect_dir = PathBuf::from(&info.colnect_dir);
+    let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
+    let title = format!("Select Colnect CSV for {}", country);
+    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+}
+
+fn pick_and_copy_colnect_file_for_db(db_path: &str) -> BootstrapPickColnectFileResponse {
+    let fail = |msg: String| BootstrapPickColnectFileResponse {
+        ok: false,
+        picked: false,
+        message: msg,
+        file_name: None,
+        dest_path: None,
+        colnect_dir: None,
+    };
+
+    let colnect_dir = Path::new(db_path)
+        .parent()
+        .map(|p| p.join("colnect"))
+        .unwrap_or_else(|| PathBuf::from("colnect"));
+    let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
+    let title = "Select Colnect CSV for current country".to_string();
+    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+}
+
+fn pick_and_copy_colnect_file_to_dir<F>(
+    colnect_dir: &Path,
+    title: &str,
+    colnect_dir_str: &str,
+    fail: F,
+) -> BootstrapPickColnectFileResponse
+where
+    F: Fn(String) -> BootstrapPickColnectFileResponse,
+{
+    if !colnect_dir.exists() {
+        if let Err(e) = fs::create_dir_all(colnect_dir) {
+            return fail(format!("Could not create colnect dir: {}", e));
+        }
+    }
+    let starting = format!("{}/", colnect_dir_str.trim_end_matches('/'));
+
+    let pick_result: Result<Option<String>, String> = (|| {
+        if which::which("zenity").is_ok() {
+            let output = Command::new("zenity")
+                .arg("--file-selection")
+                .arg("--title")
+                .arg(&title)
+                .arg("--filename")
+                .arg(&starting)
+                .arg("--file-filter")
+                .arg("Colnect CSV | *.csv")
+                .output()
+                .map_err(|e| format!("failed to launch zenity: {}", e))?;
+
+            if output.status.success() {
+                let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                return Ok(if selected.is_empty() {
+                    None
+                } else {
+                    Some(selected)
+                });
+            }
+            if output.status.code() == Some(1) {
+                return Ok(None);
+            }
+            return Err(format!(
+                "zenity failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ));
+        }
+
+        if which::which("kdialog").is_ok() {
+            let output = Command::new("kdialog")
+                .arg("--getopenfilename")
+                .arg(&starting)
+                .arg("*.csv")
+                .arg("--title")
+                .arg(&title)
+                .output()
+                .map_err(|e| format!("failed to launch kdialog: {}", e))?;
+
+            if output.status.success() {
+                let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                return Ok(if selected.is_empty() {
+                    None
+                } else {
+                    Some(selected)
+                });
+            }
+            if output.status.code() == Some(1) {
+                return Ok(None);
+            }
+            return Err(format!(
+                "kdialog failed: {}",
+                String::from_utf8_lossy(&output.stderr).trim()
+            ));
+        }
+
+        Err("No supported file picker found (install zenity or kdialog)".to_string())
+    })();
+
+    match pick_result {
+        Err(e) => fail(e),
+        Ok(None) => BootstrapPickColnectFileResponse {
+            ok: true,
+            picked: false,
+            message: "Cancelled".to_string(),
+            file_name: None,
+            dest_path: None,
+            colnect_dir: Some(colnect_dir_str.to_string()),
+        },
+        Ok(Some(src_path)) => {
+            let src = PathBuf::from(&src_path);
+            let file_name = src
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "file.csv".to_string());
+            let dest = colnect_dir.join(&file_name);
+            match fs::copy(&src, &dest) {
+                Ok(_) => BootstrapPickColnectFileResponse {
+                    ok: true,
+                    picked: true,
+                    message: format!("Copied '{}' to colnect dir", file_name),
+                    file_name: Some(file_name),
+                    dest_path: Some(dest.to_string_lossy().to_string()),
+                    colnect_dir: Some(colnect_dir_str.to_string()),
+                },
+                Err(e) => fail(format!("Copy failed: {}", e)),
+            }
+        }
+    }
 }
 
 fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, String> {
@@ -1517,6 +1694,13 @@ fn build_matcher_payload(
         left,
         right,
         album_name: album_name.to_string(),
+        colnect_dir: album_dir_for_ui(db_path, album_name)
+            .join("colnect")
+            .to_string_lossy()
+            .to_string(),
+        colnect_file_count: count_colnect_csv_files_rec(
+            &album_dir_for_ui(db_path, album_name).join("colnect"),
+        ),
         show_imageless_left_rows,
         default_catalog_code: default_catalog_code.to_string(),
         odd_row_color: odd_row_color.to_string(),

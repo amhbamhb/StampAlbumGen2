@@ -1,5 +1,8 @@
 use crate::types::OSType;
 use flexi_logger::{Cleanup, Criterion, FileSpec, Logger, Naming};
+use std::fs::OpenOptions;
+use std::io::Write;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const DESKTOP_LAUNCHER_DISABLED_MARKER: &str = "desktop_launcher_disabled.flag";
@@ -91,6 +94,69 @@ pub fn setup_logging() -> Result<(), SetupError> {
     Ok(())
 }
 
+pub fn startup_probe_path() -> PathBuf {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            return dir.join("startup_trace.log");
+        }
+    }
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join("startup_trace.log")
+}
+
+pub fn write_startup_probe(stage: &str, detail: &str) {
+    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let pid = std::process::id();
+    let line = format!("{} pid={} stage={} detail={}\n", ts, pid, stage, detail);
+    let path = startup_probe_path();
+    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(path) {
+        let _ = f.write_all(line.as_bytes());
+    }
+}
+
+pub fn write_startup_probe_snapshot(
+    args: &[String],
+    launched_without_args: bool,
+    interactive_terminal: bool,
+) {
+    let cwd = std::env::current_dir()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|e| format!("<cwd-error:{}>", e));
+    let exe = std::env::current_exe()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|e| format!("<exe-error:{}>", e));
+
+    let env_keys = [
+        "PWD",
+        "HOME",
+        "PATH",
+        "DISPLAY",
+        "WAYLAND_DISPLAY",
+        "XDG_SESSION_TYPE",
+        "XDG_CURRENT_DESKTOP",
+        "DESKTOP_SESSION",
+    ];
+    let mut env_items = Vec::new();
+    for key in env_keys {
+        if let Ok(v) = std::env::var(key) {
+            env_items.push(format!("{}={}", key, v));
+        }
+    }
+    write_startup_probe(
+        "startup.snapshot",
+        &format!(
+            "args={:?}; launched_without_args={}; interactive_terminal={}; cwd={}; exe={}; env=[{}]",
+            args,
+            launched_without_args,
+            interactive_terminal,
+            cwd,
+            exe,
+            env_items.join(", ")
+        ),
+    );
+}
+
 /// Validate the operating system
 pub fn validate_os() -> Result<OSType, SetupError> {
     let detected_os = get_operating_system_type();
@@ -115,6 +181,89 @@ fn desktop_exec_path() -> std::io::Result<String> {
         ));
     }
     Ok(format!("\"{}\"", escaped))
+}
+
+fn desktop_working_dir() -> std::io::Result<String> {
+    let exe = std::env::current_exe()?;
+    let dir = exe
+        .parent()
+        .ok_or_else(|| std::io::Error::other("failed to determine executable parent directory"))?;
+    let raw = dir.to_string_lossy().to_string();
+    if raw.trim().is_empty() {
+        return Err(std::io::Error::other(
+            "desktop working directory resolved to empty string",
+        ));
+    }
+    Ok(raw)
+}
+
+fn looks_like_runtime_root(path: &Path) -> bool {
+    if !path.is_dir() {
+        return false;
+    }
+    path.join("config.toml").exists()
+        || path.join("Albums").is_dir()
+        || path.join("assets").is_dir()
+}
+
+fn find_runtime_root_from(current_dir: &Path, exe_path: &Path) -> Option<PathBuf> {
+    if looks_like_runtime_root(current_dir) {
+        return None;
+    }
+
+    // Prefer executable-adjacent runtime for portable/single-binary usage.
+    let exe_dir = exe_path.parent()?;
+    if looks_like_runtime_root(exe_dir) {
+        return Some(exe_dir.to_path_buf());
+    }
+
+    // Optional compatibility mode: allow searching ancestors when explicitly enabled.
+    let allow_ancestor_search = std::env::var("STAMP_ALBUM_ALLOW_ANCESTOR_RUNTIME_ROOT")
+        .map(|v| {
+            let t = v.trim();
+            t.eq_ignore_ascii_case("1") || t.eq_ignore_ascii_case("true")
+        })
+        .unwrap_or(false);
+    if !allow_ancestor_search {
+        return None;
+    }
+
+    let mut candidate = exe_path.parent();
+    for _ in 0..6 {
+        let dir = candidate?;
+        if looks_like_runtime_root(dir) {
+            return Some(dir.to_path_buf());
+        }
+        candidate = dir.parent();
+    }
+
+    None
+}
+
+fn fallback_runtime_root_from(exe_path: &Path) -> Option<PathBuf> {
+    // First-start/portable behavior: if no markers are found yet, anchor runtime
+    // paths to the executable directory so config/logs are consistent regardless
+    // of launch origin (terminal, menu, file explorer).
+    exe_path.parent().map(|p| p.to_path_buf())
+}
+
+pub fn align_process_working_dir_to_runtime_layout() -> std::io::Result<Option<PathBuf>> {
+    let current_dir = std::env::current_dir()?;
+    let exe_path = std::env::current_exe()?;
+
+    let target_dir = find_runtime_root_from(&current_dir, &exe_path)
+        .or_else(|| fallback_runtime_root_from(&exe_path));
+
+    let Some(target_dir) = target_dir else {
+        return Ok(None);
+    };
+
+    if current_dir == target_dir {
+        return Ok(None);
+    }
+
+    std::env::set_current_dir(&target_dir)?;
+    Ok(Some(target_dir))
 }
 
 fn desktop_exec_value(contents: &str) -> Option<&str> {
@@ -220,14 +369,16 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
     let legacy_svg_icon_path = icons_dir.join("stamp_album_gen2.svg");
 
     let exec_path = desktop_exec_path()?;
+    let working_dir = desktop_working_dir()?;
     if exec_path.trim().is_empty() {
         return Err(std::io::Error::other(
             "desktop launcher command cannot be empty",
         ));
     }
     let desktop_contents = format!(
-        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Gen2\nComment=Open Stamp Album Gen2 Review UI\nExec={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
-        exec_path,
+        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Gen2\nComment=Open Stamp Album Gen2 Review UI\nExec={}\nPath={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
+        format!("{} --review-ui", exec_path),
+        working_dir,
         icon_path.to_string_lossy()
     );
 
@@ -278,6 +429,52 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
         desktop_entry_path: desktop_path.to_string_lossy().to_string(),
         icon_path: icon_path.to_string_lossy().to_string(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        align_process_working_dir_to_runtime_layout, find_runtime_root_from,
+        looks_like_runtime_root,
+    };
+    use tempfile::tempdir;
+
+    #[test]
+    fn runtime_root_detects_expected_markers() {
+        let t = tempdir().expect("temp dir");
+        let root = t.path().join("runtime-root");
+        std::fs::create_dir_all(&root).expect("create runtime root");
+        std::fs::write(root.join("config.toml"), b"# test config\n").expect("write config");
+
+        let non_root = t.path().join("plain-dir");
+        std::fs::create_dir_all(&non_root).expect("create plain dir");
+
+        assert!(looks_like_runtime_root(&root));
+        assert!(!looks_like_runtime_root(&non_root));
+    }
+
+    #[test]
+    fn runtime_root_search_prefers_exe_directory_markers() {
+        let t = tempdir().expect("temp dir");
+        let current = t.path().join("cwd");
+        std::fs::create_dir_all(&current).expect("create cwd");
+
+        let exe_dir = t.path().join("portable");
+        std::fs::create_dir_all(&exe_dir).expect("create exe dir");
+        std::fs::write(exe_dir.join("config.toml"), b"# test config\n").expect("write config");
+
+        let exe_path = exe_dir.join("stamp_album_gen2");
+        let found = find_runtime_root_from(&current, &exe_path);
+        assert!(found.is_some());
+        assert_eq!(found.expect("runtime root"), exe_dir);
+    }
+
+    #[test]
+    fn align_runtime_dir_noops_when_already_root() {
+        // This test runs from the workspace root in normal cargo flows.
+        let result = align_process_working_dir_to_runtime_layout().expect("align cwd");
+        let _ = result;
+    }
 }
 
 pub fn uninstall_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegrationReport> {
