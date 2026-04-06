@@ -1257,9 +1257,9 @@ pub(super) fn serve_review_requests(
 
         if method == Method::Get && req_url == "/api/fresh-candidates" {
             let resp_json = match load_right_candidates(&conn, db_path, &album_name) {
-                Ok(candidates) => serde_json::to_string(&candidates).unwrap_or_else(|_| {
-                    "[]".to_string()
-                }),
+                Ok(candidates) => {
+                    serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
+                }
                 Err(e) => {
                     log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
                     "[]".to_string()

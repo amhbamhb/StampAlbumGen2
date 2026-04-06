@@ -1,16 +1,14 @@
 use super::{render_config_editor_assets, MatcherPayload};
 
-
-
 fn render_app_footer_html() -> String {
     let version = env!("CARGO_PKG_VERSION");
     let build = option_env!("BUILD_NUMBER").unwrap_or("local");
     format!(
         "<div class='appFooter' style='margin-top:16px; font-size:12px; color:#5b6f81; text-align:center;'>\
 <div>Copyright &copy; 2025 &#x2013; <span class='copyrightCurrentYear'></span> Laser Spider LLC. All rights reserved.</div>\
-<div style='margin-top:4px;'>LaserSpider Stamp Collector | Version {} (Build {})</div>\
+<div style='margin-top:4px;'>Album Generator 2 | Version {} </div>\
 </div>",
-        version, build
+        version
     )
 }
 
@@ -171,7 +169,7 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
             <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:290px;' />
         </div>
         <div class='row'>
-            <span class='badge'>Colnect inbox hint: {}</span>
+            <span class='badge'>Colnect inbox hint: {inbox_hint}</span>
         </div>
         <div class='row'>
             <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
@@ -1009,7 +1007,7 @@ async function refreshState() {{
         renderCountryPanel();
         updateCountrySearchMatches(true);
         if (countries.length) {{
-            status.innerText = 'Select a country and open review.';
+            status.innerText = '';
         }} else {{
             status.innerText = albumsRoot
                 ? ('No country DBs found under ' + albumsRoot + '. Use Albums Root to switch folders or run a StampWorld pull first.')
@@ -1310,10 +1308,16 @@ document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
     el.textContent = String(new Date().getFullYear());
 }});
 </script>
+{footer_html}
+<script>
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
+</script>
 {config_editor_assets}
 </body>
 </html>"#,
-        inbox_hint,
+        inbox_hint = inbox_hint,
         footer_html = render_app_footer_html(),
         config_editor_assets = render_config_editor_assets()
     )
@@ -1600,7 +1604,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <span class='badge'>Switch country without closing Review UI</span>
     </div>
     <div id='startGuide' class='startGuide'>
-        <h2>Start Review Session</h2>
+        <h2>Start Country Review Session</h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
         <div class='guideStats'>
             <span id='statLeftCount' class='badge'>Left: 0</span>
@@ -3785,7 +3789,6 @@ async function closeReviewUi() {{
             const generatePdf = v === 'generate' && !!dlg.querySelector('#_dlg_pdf')?.checked;
             dlg.close();
             dlg.remove();
-            {footer_html}
             resolve({{ choice: v, generatePdf }});
         }};
         dlg.querySelector('#_dlg_gen').onclick  = () => done('generate');
@@ -4244,6 +4247,12 @@ applyRuntimeLogVisibilityCompare();
 startRuntimeLogPollingCompare();
 startBackendHealthPollingCompare();
 render();
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
+</script>
+{footer_html}
+<script>
 document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
     el.textContent = String(new Date().getFullYear());
 }});
