@@ -6,9 +6,10 @@ fn render_app_footer_html() -> String {
     format!(
         "<div class='appFooter' style='margin-top:16px; font-size:12px; color:#5b6f81; text-align:center;'>\
 <div>Copyright &copy; 2025 &#x2013; <span class='copyrightCurrentYear'></span> Laser Spider LLC. All rights reserved.</div>\
-<div style='margin-top:4px;'>Album Generator 2 | Version {} </div>\
+<div style='margin-top:4px;'>Album Generator 2 | Version {} (Build {})</div>\
 </div>",
-        version
+        version,
+        build
     )
 }
 
@@ -2612,7 +2613,7 @@ function onLeftSearchInput() {{
     if (input) leftSearchQuery = String(input.value || '');
     const before = leftIdx;
     updateLeftSearchMatches(true);
-    if (leftIdx !== before) render();
+    if (leftIdx !== before) render({{ preserveRightScroll: true }});
 }}
 
 function captureSearchFocusState() {{
@@ -2648,7 +2649,7 @@ function stepLeftSearch(delta) {{
     leftSearchMatchPos = (leftSearchMatchPos + delta + total) % total;
     leftIdx = leftSearchMatches[leftSearchMatchPos];
     setLeftSearchStatus(`Matches: ${{leftSearchMatchPos + 1}}/${{total}}`);
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 async function ensureRightImageUrl(r) {{
@@ -2757,19 +2758,19 @@ function normalizeIndex(cur, len) {{
 function jumpLeft(delta) {{
     if (!left.length) return;
     leftIdx = normalizeIndex(leftIdx + Number(delta || 0), left.length);
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 function firstLeft() {{
     if (!left.length) return;
     leftIdx = 0;
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 function lastLeft() {{
     if (!left.length) return;
     leftIdx = left.length - 1;
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 function jumpRight(delta) {{
@@ -2846,8 +2847,20 @@ function selectedCatalogTypeForCurrent(r) {{
     return String(pairs[0].catalog_type || '').toLowerCase();
 }}
 
-function render() {{
+function render(options) {{
     const searchFocusState = captureSearchFocusState();
+    const preserveRightScroll = options && options.preserveRightScroll === true;
+    const rightPanelBefore = document.getElementById('rightPanel');
+    const rightPanelBodyBefore = rightPanelBefore ? rightPanelBefore.querySelector('.panelBody') : null;
+    const savedRightScrollTop = (preserveRightScroll && rightPanelBodyBefore) ? rightPanelBodyBefore.scrollTop : 0;
+
+    function restoreRightPanelScrollIfNeeded() {{
+        if (!preserveRightScroll) return;
+        const rightPanelAfter = document.getElementById('rightPanel');
+        const rightPanelBodyAfter = rightPanelAfter ? rightPanelAfter.querySelector('.panelBody') : null;
+        if (rightPanelBodyAfter) rightPanelBodyAfter.scrollTop = savedRightScrollTop;
+    }}
+
     updateGuide();
   if (!left.length) {{
         document.getElementById('leftPos').innerText = 'Left 0/0';
@@ -2863,6 +2876,7 @@ function render() {{
         </div>`;
     document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
+    restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
     return;
   }}
@@ -2997,6 +3011,7 @@ function render() {{
     document.getElementById('rightPos').innerText = 'No available candidate';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">All candidates already assigned</div>';
         updateRightSearchStatus();
+    restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
     return;
   }}
@@ -3074,6 +3089,7 @@ function render() {{
     const sel = document.getElementById('catalogCodeSelect');
     if (sel && selectedCode) sel.value = selectedCode;
 
+    restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
 }}
 
@@ -3090,12 +3106,12 @@ function rememberCatalogCode() {{
 function prevLeft() {{
   if (!left.length) return;
   leftIdx = (leftIdx - 1 + left.length) % left.length;
-  render();
+  render({{ preserveRightScroll: true }});
 }}
 function nextLeft() {{
   if (!left.length) return;
   leftIdx = (leftIdx + 1) % left.length;
-  render();
+  render({{ preserveRightScroll: true }});
 }}
 function prevRight() {{
   const l = left[leftIdx];
@@ -3817,6 +3833,8 @@ async function closeReviewUi() {{
         j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
     ].join('');
     alert((j.message || 'Review UI shutdown request sent.') + details);
+        // Show friendly closing message
+        document.body.innerHTML = "<div style='font-family:sans-serif;margin:20px;'><h2>Review UI closed</h2><p>You can close this browser tab now.</p></div>";
 
     // window.close may be blocked for tabs not opened by script; provide fallback.
     window.close();
