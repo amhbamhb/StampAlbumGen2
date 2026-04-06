@@ -1,5 +1,19 @@
 use super::{render_config_editor_assets, MatcherPayload};
 
+
+
+fn render_app_footer_html() -> String {
+    let version = env!("CARGO_PKG_VERSION");
+    let build = option_env!("BUILD_NUMBER").unwrap_or("local");
+    format!(
+        "<div class='appFooter' style='margin-top:16px; font-size:12px; color:#5b6f81; text-align:center;'>\
+<div>Copyright &copy; 2025 &#x2013; <span class='copyrightCurrentYear'></span> Laser Spider LLC. All rights reserved.</div>\
+<div style='margin-top:4px;'>LaserSpider Stamp Collector | Version {} (Build {})</div>\
+</div>",
+        version, build
+    )
+}
+
 pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
     let inbox_hint = default_inbox_path.unwrap_or("samples/colnect_inbox");
     format!(
@@ -1292,11 +1306,15 @@ startRuntimeLogPolling();
 startBackendHealthPolling();
 refreshState();
 pollStampWorldStatus();
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
 </script>
 {config_editor_assets}
 </body>
 </html>"#,
         inbox_hint,
+        footer_html = render_app_footer_html(),
         config_editor_assets = render_config_editor_assets()
     )
 }
@@ -3767,6 +3785,7 @@ async function closeReviewUi() {{
             const generatePdf = v === 'generate' && !!dlg.querySelector('#_dlg_pdf')?.checked;
             dlg.close();
             dlg.remove();
+            {footer_html}
             resolve({{ choice: v, generatePdf }});
         }};
         dlg.querySelector('#_dlg_gen').onclick  = () => done('generate');
@@ -4027,6 +4046,19 @@ async function importColnectFilesReview() {{
             }}
             appendLogLine('✔ ' + (j.message || 'Import completed'));
             if (btn) btn.disabled = false;
+            // Refresh right-panel candidates without a full page reload so that
+            // newly imported Colnect stamps appear immediately in the list.
+            try {{
+                const cr = await fetch('/api/fresh-candidates', {{ cache: 'no-store' }});
+                const freshRight = await cr.json();
+                if (Array.isArray(freshRight) && freshRight.length > 0) {{
+                    rightAll = freshRight;
+                    render();
+                    appendLogLine('\u21bb Right panel refreshed (' + freshRight.length + ' candidates)');
+                }}
+            }} catch (_) {{
+                appendLogLine('(Could not auto-refresh right panel \u2014 please reload if list looks stale)');
+            }}
         }} else if (j.ok && imported === 0) {{
             if (statusText) {{
                 statusText.className = 'colnectImportStatusText';
@@ -4212,11 +4244,15 @@ applyRuntimeLogVisibilityCompare();
 startRuntimeLogPollingCompare();
 startBackendHealthPollingCompare();
 render();
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
 </script>
 {config_editor_assets}
 </body>
 </html>"#,
         json = json,
+        footer_html = render_app_footer_html(),
         config_editor_assets = render_config_editor_assets()
     )
 }

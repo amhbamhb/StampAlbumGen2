@@ -1255,6 +1255,24 @@ pub(super) fn serve_review_requests(
             continue;
         }
 
+        if method == Method::Get && req_url == "/api/fresh-candidates" {
+            let resp_json = match load_right_candidates(&conn, db_path, &album_name) {
+                Ok(candidates) => serde_json::to_string(&candidates).unwrap_or_else(|_| {
+                    "[]".to_string()
+                }),
+                Err(e) => {
+                    log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
+                    "[]".to_string()
+                }
+            };
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/api/review-pick-colnect-file" {
             let result = pick_and_copy_colnect_file_for_db(db_path);
             let mut resp =
