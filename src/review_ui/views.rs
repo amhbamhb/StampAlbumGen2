@@ -1880,6 +1880,20 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 <div class='leftEditorSectionBody'>
                     <div class='leftEditorGrid'>
                         <label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /></label>
+                        <label>Catalog Type
+                            <select id='leftEditorCatalogCodeSelect' onchange='toggleLeftEditorCatalogCodeCustom()'>
+                                <option value='sg'>Stanley Gibbons (SG)</option>
+                                <option value='sn'>Scott (SN)</option>
+                                <option value='mi'>Michel (MI)</option>
+                                <option value='yt'>Yvert (YT)</option>
+                                <option value='afa'>AFA</option>
+                                <option value='nvp'>NVP</option>
+                                <option value='un'>Unificato (UN)</option>
+                                <option value='col'>Colnect (COL)</option>
+                                <option value='custom'>Custom...</option>
+                            </select>
+                        </label>
+                        <label id='leftEditorCatalogCodeCustomWrap' style='display:none;'>Custom Catalog Type Code <input id='leftEditorCatalogCodeCustom' type='text' placeholder='e.g. zz' /></label>
                         <label>Year <input id='leftEditorYear' type='number' /></label>
                         <label>Series <input id='leftEditorSeries' type='text' /></label>
                     </div>
