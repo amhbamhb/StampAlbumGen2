@@ -540,6 +540,44 @@ pub fn fetch_and_filter_stamps(
                 }
             }
 
+            // Keep the output heading aligned with an explicitly chosen
+            // catalog family from the Review UI. If the family was saved on the
+            // stamp row, prefer the matching number from Colnect codes; if the
+            // family is missing, infer it from the currently displayed number
+            // before falling back to the album default.
+            let explicit_catalog_code = attrs
+                .get("catalog_code")
+                .map(|v| crate::catalog::normalize_catalog_type(v))
+                .filter(|v| !v.is_empty());
+            let raw_catalog_codes = attrs
+                .get("colnect_catalog_codes")
+                .cloned()
+                .unwrap_or_default();
+            let current_catalog_number = attrs.get("catalog_number").cloned().unwrap_or_default();
+
+            if !raw_catalog_codes.trim().is_empty() {
+                if let Some(explicit_code) = explicit_catalog_code.as_deref() {
+                    if let Some((_, preferred_number)) =
+                        crate::catalog::preferred_catalog_entry(&raw_catalog_codes, explicit_code)
+                    {
+                        attrs.set(
+                            "catalog_number",
+                            &crate::catalog::normalize_catalog_number(&preferred_number),
+                        );
+                        attrs.set("catalog_code", explicit_code);
+                    }
+                } else if !current_catalog_number.trim().is_empty() {
+                    let inferred_catalog_code = crate::catalog::infer_catalog_type_for_number(
+                        &raw_catalog_codes,
+                        &current_catalog_number,
+                        &default_catalog_code,
+                    );
+                    if !inferred_catalog_code.trim().is_empty() {
+                        attrs.set("catalog_code", &inferred_catalog_code);
+                    }
+                }
+            }
+
             if attrs
                 .get("scott_number")
                 .map_or(true, |v| v.trim().is_empty())
