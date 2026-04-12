@@ -64,6 +64,46 @@ fn resolve_runtime_albums_root() -> std::path::PathBuf {
     std::path::PathBuf::from("Albums")
 }
 
+fn infer_and_fix_catalog_codes_for_colnect_rows(
+    conn: &rusqlite::Connection,
+    fallback_catalog_code: &str,
+) -> rusqlite::Result<usize> {
+    let mut select_stmt = conn.prepare(
+        "SELECT rowid, COALESCE(sg_number, ''), COALESCE(colnect_catalog_codes, ''), COALESCE(catalog_code, '')
+         FROM stamps
+         WHERE TRIM(COALESCE(sg_number, '')) != ''
+           AND TRIM(COALESCE(colnect_catalog_codes, '')) != ''",
+    )?;
+
+    let rows = select_stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, i64>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, String>(3)?,
+        ))
+    })?;
+
+    let mut update_stmt = conn.prepare("UPDATE stamps SET catalog_code = ?1 WHERE rowid = ?2")?;
+    let mut updated = 0usize;
+
+    for row in rows {
+        let (rowid, sg_number, raw_codes, existing_catalog_code) = row?;
+        let inferred = crate::catalog::infer_catalog_type_for_number(
+            &raw_codes,
+            &sg_number,
+            fallback_catalog_code,
+        );
+        let existing_norm = crate::catalog::normalize_catalog_type(&existing_catalog_code);
+        if !inferred.is_empty() && inferred != existing_norm {
+            update_stmt.execute(rusqlite::params![inferred, rowid])?;
+            updated += 1;
+        }
+    }
+
+    Ok(updated)
+}
+
 fn has_downloaded_images(images_dir: &std::path::Path) -> bool {
     let Ok(entries) = std::fs::read_dir(images_dir) else {
         return false;
@@ -1161,9 +1201,12 @@ fn sync_missing_stamps_from_colnect(
         rusqlite::params![default_catalog_code],
     )?;
 
+    let catalog_code_corrected =
+        infer_and_fix_catalog_codes_for_colnect_rows(conn, &default_catalog_code)?;
+
     info!(
-        "Inserted {} missing stamp variants from colnect_stamps (after {} remaps, {} link backfills)",
-        inserted, remapped, links_backfilled
+        "Inserted {} missing stamp variants from colnect_stamps (after {} remaps, {} link backfills, {} catalog code corrections)",
+        inserted, remapped, links_backfilled, catalog_code_corrected
     );
     Ok(inserted)
 }
