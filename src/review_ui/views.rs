@@ -2523,6 +2523,42 @@ function normalizeCatalogNumber(v) {{
     if (m && m[2]) return String(m[2]).trim();
     return s;
 }}
+
+function parseCatalogCodePairs(raw) {{
+    const text = String(raw || '');
+    if (!text.trim()) return [];
+    const parts = text.split(/[|,]/);
+    const out = [];
+    for (const part of parts) {{
+        const trimmed = String(part || '').trim();
+        if (!trimmed) continue;
+        const idx = trimmed.indexOf(':');
+        if (idx <= 0) continue;
+        const catalogType = String(trimmed.slice(0, idx)).trim().toLowerCase();
+        const code = String(trimmed.slice(idx + 1)).trim();
+        if (!catalogType || !code) continue;
+        out.push({{ catalogType, code }});
+    }}
+    return out;
+}}
+
+function inferCatalogTypeForNumber(rawCatalogCodes, displayedNumber, fallbackCatalogCode) {{
+    const normalizedDisplay = normalizeCatalogNumber(displayedNumber);
+    const pairs = parseCatalogCodePairs(rawCatalogCodes);
+    for (const pair of pairs) {{
+        if (normalizeCatalogNumber(pair.code) === normalizedDisplay) return pair.catalogType;
+    }}
+    return normalizeCatalogCodeForUi(fallbackCatalogCode) || '';
+}}
+
+function effectiveCatalogCodeForItem(item) {{
+    const inferred = inferCatalogTypeForNumber(
+        item?.colnect_catalog_codes,
+        item?.sg_number,
+        item?.catalog_code || getEffectiveDefaultCatalogCode()
+    );
+    return inferred || normalizeCatalogCodeForUi(item?.catalog_code) || getEffectiveDefaultCatalogCode();
+}}
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
   return `<div class='imgbox'><div class='imgph'>${{html(label)}}<br/>No image available</div></div>`;
