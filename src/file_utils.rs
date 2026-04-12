@@ -6,6 +6,26 @@
 use crate::types::ALBUM_DB_PATH;
 use log::debug;
 
+fn resolve_runtime_albums_root() -> std::path::PathBuf {
+    if let Ok(from_env) = std::env::var("STAMP_ALBUMS_ROOT") {
+        let trimmed = from_env.trim();
+        if !trimmed.is_empty() {
+            return std::path::PathBuf::from(trimmed);
+        }
+    }
+
+    if let Some(from_cfg) =
+        crate::config::load_config("config.toml").effective_bootstrap_albums_root_path()
+    {
+        let trimmed = from_cfg.trim();
+        if !trimmed.is_empty() {
+            return std::path::PathBuf::from(trimmed);
+        }
+    }
+
+    std::path::PathBuf::from("Albums")
+}
+
 /// Sets the database path from CLI arguments
 pub fn set_db_path_from_cli(path: &str) {
     *ALBUM_DB_PATH.lock().unwrap() = path.to_string();
@@ -45,8 +65,6 @@ pub fn find_config_path() -> String {
 
 /// Checks if an image file exists for the given album and image path
 pub fn image_exists(album_name: &str, image_path: &str) -> bool {
-    use std::path::Path;
-
     // Strip "images/" prefix if present
     let clean_image_path = if image_path.starts_with("images/") {
         &image_path[7..] // Remove "images/" prefix
@@ -55,7 +73,7 @@ pub fn image_exists(album_name: &str, image_path: &str) -> bool {
     };
 
     // Construct the full path to the image
-    let image_full_path = Path::new("Albums")
+    let image_full_path = resolve_runtime_albums_root()
         .join(album_name.replace(' ', "-"))
         .join("images")
         .join(clean_image_path);

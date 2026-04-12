@@ -148,6 +148,7 @@ struct DbField {
 struct LeftStamp {
     rowid: i64,
     sg_number: String,
+    catalog_code: String,
     year: i32,
     series: String,
     image_path: String,
@@ -490,6 +491,7 @@ fn set_stampworld_state(new_state: StampWorldJobState) {
 }
 
 fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), String> {
+    ensure_runtime_startup_files()?;
     let config_path = Path::new("config.toml");
     let content = fs::read_to_string(config_path)
         .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
@@ -522,6 +524,17 @@ fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), Str
     Ok(())
 }
 
+fn ensure_runtime_startup_files() -> Result<(), String> {
+    crate::config::ensure_config_and_template_files("config.toml", "config_template.toml")
+        .map_err(|e| format!("failed to initialize startup config files: {}", e))
+}
+
+fn is_directory_empty(path: &Path) -> Result<bool, String> {
+    let mut entries =
+        fs::read_dir(path).map_err(|e| format!("failed to read {}: {}", path.display(), e))?;
+    Ok(entries.next().is_none())
+}
+
 fn save_runtime_albumeasy_cli_path(cli_path: &str) -> Result<(), String> {
     let path = cli_path.trim();
     if path.is_empty() {
@@ -545,7 +558,17 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     }
 
     let slug = country.replace(' ', "-");
-    let db_path = format!("Albums/{0}/{0}.db", slug);
+    let albums_root = resolve_bootstrap_albums_root().unwrap_or_else(|| PathBuf::from("Albums"));
+    let db_path = albums_root
+        .join(&slug)
+        .join(format!("{}.db", slug))
+        .to_string_lossy()
+        .to_string();
+    let command_cwd = albums_root
+        .parent()
+        .map(|p| p.to_path_buf())
+        .or_else(|| std::env::current_dir().ok())
+        .unwrap_or_else(|| PathBuf::from("."));
 
     {
         let mut state = stampworld_job_state()
@@ -573,13 +596,16 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     );
     let country_for_thread = country.clone();
     let db_path_for_thread = db_path.clone();
+    let command_cwd_for_thread = command_cwd.clone();
 
     log_runtime_event(&format!("StampWorld: starting command {}", display_cmd));
     log_runtime_event("StampWorld: running. You can watch progress in Runtime Log.");
 
     thread::spawn(move || {
         let mut cmd = Command::new(&exe);
-        cmd.args(&args)
+        cmd.current_dir(&command_cwd_for_thread)
+            .env("STAMP_ALBUMS_ROOT", &albums_root)
+            .args(&args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
@@ -743,6 +769,7 @@ struct AddColnectStampResponse {
 struct SaveLeftStampRequest {
     rowid: i64,
     sg_number: String,
+    catalog_code: String,
     year: i32,
     series: String,
     description: String,
@@ -802,6 +829,7 @@ struct SaveLeftStampResponse {
 struct AddLeftStampRequest {
     source_rowid: Option<i64>,
     sg_number: String,
+    catalog_code: String,
     year: i32,
     series: String,
     description: String,
@@ -1474,6 +1502,7 @@ where
 fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, String> {
     let trimmed = path.trim();
     if trimmed.is_empty() {
+        ensure_runtime_startup_files()?;
         save_runtime_bootstrap_albums_root_path(None)?;
         let mut guard = bootstrap_albums_root_override()
             .lock()
@@ -1483,9 +1512,23 @@ fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, Stri
     }
 
     let candidate = PathBuf::from(trimmed);
-    let resolved = normalize_albums_root_candidate(&candidate).ok_or_else(|| {
-        "Path must point to an Albums directory or a folder containing Albums".to_string()
-    })?;
+    let resolved = if let Some(path) = normalize_albums_root_candidate(&candidate) {
+        path
+    } else if candidate.exists() && candidate.is_dir() && is_directory_empty(&candidate)? {
+        // For a brand-new empty folder, create an Albums root inside it so
+        // startup behavior matches first-run expectations.
+        candidate.join("Albums")
+    } else {
+        return Err(
+            "Path must point to an Albums directory, a folder containing Albums, or an empty folder"
+                .to_string(),
+        );
+    };
+
+    if !resolved.exists() {
+        fs::create_dir_all(&resolved)
+            .map_err(|e| format!("failed to create Albums root {}: {}", resolved.display(), e))?;
+    }
 
     if !resolved.exists() || !resolved.is_dir() {
         return Err(format!(
@@ -1494,6 +1537,7 @@ fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, Stri
         ));
     }
 
+    ensure_runtime_startup_files()?;
     save_runtime_bootstrap_albums_root_path(Some(&resolved.to_string_lossy()))?;
 
     let mut guard = bootstrap_albums_root_override()

@@ -1,5 +1,19 @@
 use super::{render_config_editor_assets, MatcherPayload};
 
+const BACKEND_NOT_RESPONDING_MESSAGE: &str = "The Review UI backend is not responding. Automatic retries are in progress.   This might be caused by loading of files, especially if you have many colnect files to import .  You can wait for recovery or reload now.";
+
+fn render_app_footer_html() -> String {
+    let version = env!("CARGO_PKG_VERSION");
+    // let build = option_env!("BUILD_NUMBER").unwrap_or("local");
+    format!(
+        "<div class='appFooter' style='margin-top:16px; font-size:12px; color:#5b6f81; text-align:center;'>\
+<div>Copyright &copy; 2025 &#x2013; <span class='copyrightCurrentYear'></span> Laser Spider LLC. All rights reserved.</div>\
+<div style='margin-top:4px;'>Album Generator 2 | Version {} </div>\
+</div>",
+        version
+    )
+}
+
 pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
     let inbox_hint = default_inbox_path.unwrap_or("samples/colnect_inbox");
     format!(
@@ -7,7 +21,8 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
 <html>
 <head>
 <meta charset='utf-8'>
-<title>Stamp Matcher Setup</title>
+<title>Stamp Album Gen 2 Setup</title>
+<link rel='icon' type='image/png' href='/favicon.png'>
 <style>
 :root {{
     --bg-top: #fdf5ec;
@@ -30,6 +45,14 @@ p {{ margin: 0 0 10px 0; color: var(--muted-text); }}
 .panel {{ border: 1px solid #d9e6f1; border-left: 5px solid var(--accent-main); border-radius: 10px; padding: 12px; background: #f9fcff; margin-top: 12px; }}
 .warn {{ border-left-color: var(--accent-warn); background: #fff8ee; }}
 .ok {{ border-left-color: var(--accent-good); background: #f2fbf6; }}
+.albumsRootPanel {{ border: 1px solid #d8e3ed; border-left: 5px solid #2f6fa3; border-radius: 10px; background: linear-gradient(180deg, #f4f9ff 0%, #f9fcff 100%); padding: 12px; margin-top: 12px; }}
+.albumsRootHead {{ display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }}
+.albumsRootHead strong {{ color: #214d72; }}
+.albumsRootHint {{ margin: 0; color: #35566d; font-size: 12px; line-height: 1.45; }}
+.albumsRootActions {{ margin-top: 8px; }}
+.albumsRootStatus {{ margin-top: 8px; min-height: 24px; font-size: 12px; border-radius: 7px; padding: 6px 10px; border: 1px solid #cfe0f0; background: #eff6ff; color: #2f4f67; }}
+.albumsRootStatus.ok {{ border-color: #b9dec9; background: #f2fbf6; color: #245641; }}
+.albumsRootStatus.fail {{ border-color: #e8b4b4; background: #fff3f3; color: #7a2020; }}
 label {{ font-size: 13px; font-weight: 600; }}
 select, input {{ padding: 7px 8px; border: 1px solid #bcd1e4; border-radius: 8px; min-width: 170px; }}
 button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #bcd1e4; background: #fff; cursor: pointer; transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease; }}
@@ -79,14 +102,14 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
 <div class='card'>
     <div id='reconnectBanner' class='reconnectBanner' role='status' aria-live='polite'>
         <div id='reconnectBannerTitle' class='title'>Connection lost, retrying...</div>
-        <div id='reconnectBannerText'>The Review UI backend is not responding. Automatic retries are in progress.</div>
+        <div id='reconnectBannerText'>{backend_not_responding_message}</div>
         <div class='actions'>
             <button type='button' onclick='retryBackendHealthCheck()'>Retry Now</button>
             <button type='button' onclick='reloadCurrentPage()'>Reload Page</button>
             <span id='reconnectBannerMeta' class='meta'></span>
         </div>
     </div>
-    <h1>Stamp Album Generation 2</h1>
+    <h1>Stamp Album Generator 2</h1>
     <h2>Start Review UI</h2>
     <details id='introPanel' class='introPanel' open>
       <summary><span class='introArrow'>&#9660;</span> About this app &amp; setup hints <span class='introDimTag'>click to expand / collapse</span></summary>
@@ -107,13 +130,20 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
         <button onclick='importColnectFiles()'>Import Colnect</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
     </div>
-    <div class='row'>
-        <label for='albumsRootPath'>Albums Root</label>
-        <input id='albumsRootPath' type='text' placeholder='Auto-detect from launch path (optional override)' style='min-width:420px;' />
-        <button onclick='browseAlbumsRootPath()'>Browse...</button>
-        <button onclick='setAlbumsRootPath()'>Use Folder</button>
-        <button onclick='clearAlbumsRootPath()'>Auto Detect</button>
-        <span id='albumsRootResolved' class='badge'>Albums root: auto</span>
+    <div class='albumsRootPanel'>
+        <div class='albumsRootHead'>
+            <strong>Albums Root</strong>
+            <span id='albumsRootResolved' class='badge'>Albums root: auto</span>
+        </div>
+        <p class='albumsRootHint'>Select your Albums root folder (usually named <code>Albums</code>). All startup actions in this page use that location.</p>
+        <div class='row albumsRootActions'>
+            <label for='albumsRootPath'>Folder</label>
+            <input id='albumsRootPath' type='text' placeholder='Type Albums path or pick with folder chooser' style='min-width:420px;' />
+            <button onclick='browseAlbumsRootPath()'>&#128193; Pick Albums Root...</button>
+            <button class='primary' onclick='setAlbumsRootPath()'>&#10003; Apply</button>
+            <button onclick='clearAlbumsRootPath()'>&#8635; Reset</button>
+        </div>
+        <div id='albumsRootStatus' class='albumsRootStatus'>Ready</div>
     </div>
     <div class='row'>
         <label for='countrySearch'>Search</label>
@@ -157,7 +187,7 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
             <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:290px;' />
         </div>
         <div class='row'>
-            <span class='badge'>Colnect inbox hint: {}</span>
+            <span class='badge'>Colnect inbox hint: {inbox_hint}</span>
         </div>
         <div class='row'>
             <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
@@ -232,6 +262,7 @@ let backendHealthCheckInFlight = false;
 let backendMarkedDisconnected = false;
 let backendRecoveredReloadPending = false;
 let stampworldRunPollTimer = null;
+let nativeDialogInFlight = false;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
 const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
 const backendHealthPollMs = 15000;
@@ -259,7 +290,7 @@ function setReconnectBanner(visible, title, text, recovered) {{
     const metaEl = document.getElementById('reconnectBannerMeta');
     if (!banner || !titleEl || !textEl || !metaEl) return;
     titleEl.innerText = title || 'Connection lost, retrying...';
-    textEl.innerText = text || 'The Review UI backend is not responding. Automatic retries are in progress.';
+    textEl.innerText = text || '{backend_not_responding_message}';
     metaEl.innerText = visible ? ('Checks every ' + Math.round(backendHealthPollMs / 1000) + 's') : '';
     banner.classList.toggle('show', !!visible);
     banner.classList.toggle('recovered', !!recovered);
@@ -280,6 +311,7 @@ async function fetchBackendHealth() {{
 }}
 
 async function checkBackendHealth() {{
+    if (nativeDialogInFlight) return;
     if (backendHealthCheckInFlight) return;
     backendHealthCheckInFlight = true;
     try {{
@@ -301,7 +333,7 @@ async function checkBackendHealth() {{
             setReconnectBanner(
                 true,
                 'Connection lost, retrying...',
-                'The Review UI backend is not responding. Automatic retries are in progress. You can wait for recovery or reload now.',
+                '{backend_not_responding_message}',
                 false
             );
         }}
@@ -321,7 +353,25 @@ function startBackendHealthPolling() {{
 }}
 
 function retryBackendHealthCheck() {{
+    if (nativeDialogInFlight) return;
     checkBackendHealth();
+}}
+
+function beginNativeDialog(message) {{
+    nativeDialogInFlight = true;
+    backendHealthFailures = 0;
+    backendMarkedDisconnected = false;
+    backendRecoveredReloadPending = false;
+    setReconnectBanner(false, '', '', false);
+    setAlbumsRootStatus(message || 'Waiting for native folder picker...');
+    const status = document.getElementById('status');
+    if (status) status.innerText = message || 'Waiting for native folder picker...';
+}}
+
+function endNativeDialog() {{
+    nativeDialogInFlight = false;
+    backendHealthFailures = 0;
+    setReconnectBanner(false, '', '', false);
 }}
 
 function isRuntimeLogVisible() {{
@@ -407,6 +457,7 @@ window.alert = function(message) {{
 
 async function refreshRuntimeLog() {{
     try {{
+        if (nativeDialogInFlight) return;
         if (!isRuntimeLogVisible()) return;
         const r = await fetch('/runtime-log');
         const j = await r.json();
@@ -449,24 +500,40 @@ function updateAlbumsRootHint(path) {{
     badge.innerText = display ? ('Albums root: ' + display) : 'Albums root: auto';
 }}
 
+function setAlbumsRootStatus(text, tone) {{
+    const status = document.getElementById('albumsRootStatus');
+    if (!status) return;
+    status.className = 'albumsRootStatus';
+    if (tone === 'ok') status.classList.add('ok');
+    if (tone === 'fail') status.classList.add('fail');
+    status.innerText = text || 'Ready';
+}}
+
 async function applyAlbumsRootResponse(j) {{
     const input = document.getElementById('albumsRootPath');
     const status = document.getElementById('status');
     updateAlbumsRootHint(j.albums_root || '');
     if (input) input.value = j.albums_root || '';
+    setAlbumsRootStatus(
+        j.message || (j.ok ? 'Albums root updated.' : 'Failed to update Albums root.'),
+        j.ok ? 'ok' : 'fail'
+    );
     if (status) status.innerText = j.message || (j.ok ? 'Albums root updated.' : 'Failed to update Albums root.');
     if (j.ok && j.picked !== false) await refreshState();
 }}
 
 async function browseAlbumsRootPath() {{
     const status = document.getElementById('status');
-    if (status) status.innerText = 'Opening folder picker...';
+    beginNativeDialog('Opening native folder picker...');
     try {{
         const r = await fetch('/bootstrap-pick-albums-root', {{ method: 'POST' }});
         const j = await r.json();
         await applyAlbumsRootResponse(j);
     }} catch (e) {{
+        setAlbumsRootStatus('Failed to open folder picker: ' + e, 'fail');
         if (status) status.innerText = 'Failed to open folder picker: ' + e;
+    }} finally {{
+        endNativeDialog();
     }}
 }}
 
@@ -475,11 +542,14 @@ async function setAlbumsRootPath() {{
     const path = String(input?.value || '').trim();
 
     if (!path) {{
-        await browseAlbumsRootPath();
+        setAlbumsRootStatus('Enter a folder path or click Pick Albums Root first.', 'fail');
+        const status = document.getElementById('status');
+        if (status) status.innerText = 'Enter a folder path or click Pick Albums Root first.';
         return;
     }}
 
     const status = document.getElementById('status');
+    setAlbumsRootStatus('Applying Albums root...');
     try {{
         const r = await fetch('/bootstrap-set-albums-root', {{
             method: 'POST',
@@ -489,6 +559,7 @@ async function setAlbumsRootPath() {{
         const j = await r.json();
         await applyAlbumsRootResponse(j);
     }} catch (e) {{
+        setAlbumsRootStatus('Failed to update Albums root: ' + e, 'fail');
         if (status) status.innerText = 'Failed to update Albums root: ' + e;
     }}
 }}
@@ -496,7 +567,20 @@ async function setAlbumsRootPath() {{
 async function clearAlbumsRootPath() {{
     const input = document.getElementById('albumsRootPath');
     if (input) input.value = '';
-    await setAlbumsRootPath();
+    const status = document.getElementById('status');
+    setAlbumsRootStatus('Switching to auto-detect...');
+    try {{
+        const r = await fetch('/bootstrap-set-albums-root', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ path: '' }})
+        }});
+        const j = await r.json();
+        await applyAlbumsRootResponse(j);
+    }} catch (e) {{
+        setAlbumsRootStatus('Failed to clear Albums root override: ' + e, 'fail');
+        if (status) status.innerText = 'Failed to clear Albums root override: ' + e;
+    }}
 }}
 
 function onCountrySelectionChanged() {{
@@ -983,7 +1067,8 @@ async function refreshState() {{
         const albumsRoot = String(j.albums_root || '').trim();
         updateAlbumsRootHint(albumsRoot);
         const rootInput = document.getElementById('albumsRootPath');
-        if (rootInput && albumsRoot) rootInput.value = albumsRoot;
+        if (rootInput) rootInput.value = albumsRoot;
+        setAlbumsRootStatus(albumsRoot ? ('Using: ' + albumsRoot) : 'Using auto-detect Albums root', 'ok');
         const sel = document.getElementById('countrySel');
         const old = sel.value;
         sel.innerHTML = countries.map(c => `<option value="${{c.country}}">${{c.country}}</option>`).join('');
@@ -995,7 +1080,7 @@ async function refreshState() {{
         renderCountryPanel();
         updateCountrySearchMatches(true);
         if (countries.length) {{
-            status.innerText = 'Select a country and open review.';
+            status.innerText = '';
         }} else {{
             status.innerText = albumsRoot
                 ? ('No country DBs found under ' + albumsRoot + '. Use Albums Root to switch folders or run a StampWorld pull first.')
@@ -1292,11 +1377,22 @@ startRuntimeLogPolling();
 startBackendHealthPolling();
 refreshState();
 pollStampWorldStatus();
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
+</script>
+{footer_html}
+<script>
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
 </script>
 {config_editor_assets}
 </body>
 </html>"#,
-        inbox_hint,
+        inbox_hint = inbox_hint,
+        backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
+        footer_html = render_app_footer_html(),
         config_editor_assets = render_config_editor_assets()
     )
 }
@@ -1309,7 +1405,8 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
 <html>
 <head>
 <meta charset='utf-8'>
-<title>Stamp Matcher UI</title>
+<title>Stamp Album Gen 2</title>
+<link rel='icon' type='image/png' href='/favicon.png'>
 <style>
 body {{
   font-family: sans-serif;
@@ -1570,7 +1667,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 <div class='wrap'>
     <div id='reconnectBannerCompare' class='reconnectBanner' role='status' aria-live='polite'>
         <div id='reconnectBannerCompareTitle' class='title'>Connection lost, retrying...</div>
-        <div id='reconnectBannerCompareText'>The Review UI backend is not responding. Automatic retries are in progress.</div>
+        <div id='reconnectBannerCompareText'>{backend_not_responding_message}</div>
         <div class='actions'>
             <button type='button' onclick='retryBackendHealthCheckCompare()'>Retry Now</button>
             <button type='button' onclick='reloadCurrentPageCompare()'>Reload Page</button>
@@ -1582,7 +1679,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <span class='badge'>Switch country without closing Review UI</span>
     </div>
     <div id='startGuide' class='startGuide'>
-        <h2>Start Review Session</h2>
+        <h2>Start Country Review Session</h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
         <div class='guideStats'>
             <span id='statLeftCount' class='badge'>Left: 0</span>
@@ -1694,14 +1791,14 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <label><input type='checkbox' id='f_links' checked/> colnect links</label>
         <label><input type='checkbox' id='f_image_url' checked/> colnect image url</label>
         <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
-        <label><input type='checkbox' id='f_replace_sg'/> replace SG number</label>
+        <label><input type='checkbox' id='f_replace_sg'/> replace catalog number</label>
         <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
         <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
                 <label>order
                         <select id='sortMode' onchange='changeSortMode()'>
-                                <option value='sg'>SG number (default)</option>
-                                <option value='year_sg'>Year then SG</option>
-                                <option value='series_sg'>Series then SG</option>
+                                <option value='sg'>Catalog number (default)</option>
+                                <option value='year_sg'>Year then catalog number</option>
+                                <option value='series_sg'>Series then catalog number</option>
                                 <option value='rowid'>DB row id</option>
                                 <option value='colnect_id'>Colnect ID</option>
                         </select>
@@ -1782,7 +1879,21 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 <h5>Base Stamp Details</h5>
                 <div class='leftEditorSectionBody'>
                     <div class='leftEditorGrid'>
-                        <label>SG / Ref Code <input id='leftEditorSg' type='text' /></label>
+                        <label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /></label>
+                        <label>Catalog Type
+                            <select id='leftEditorCatalogCodeSelect' onchange='toggleLeftEditorCatalogCodeCustom()'>
+                                <option value='sg'>Stanley Gibbons (SG)</option>
+                                <option value='sn'>Scott (SN)</option>
+                                <option value='mi'>Michel (MI)</option>
+                                <option value='yt'>Yvert (YT)</option>
+                                <option value='afa'>AFA</option>
+                                <option value='nvp'>NVP</option>
+                                <option value='un'>Unificato (UN)</option>
+                                <option value='col'>Colnect (COL)</option>
+                                <option value='custom'>Custom...</option>
+                            </select>
+                        </label>
+                        <label id='leftEditorCatalogCodeCustomWrap' style='display:none;'>Custom Catalog Type Code <input id='leftEditorCatalogCodeCustom' type='text' placeholder='e.g. zz' /></label>
                         <label>Year <input id='leftEditorYear' type='number' /></label>
                         <label>Series <input id='leftEditorSeries' type='text' /></label>
                     </div>
@@ -1827,7 +1938,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <label>Ord MI <input id='leftEditorColnectOrdMi' type='text' /></label>
                         <label>Ord SN <input id='leftEditorColnectOrdSn' type='text' /></label>
                         <label>Ord YT <input id='leftEditorColnectOrdYt' type='text' /></label>
-                        <label>Ord SG <input id='leftEditorColnectOrdSg' type='text' /></label>
+                        <label>Ord Catalog (primary) <input id='leftEditorColnectOrdSg' type='text' /></label>
                         <label>Expiry Date <input id='leftEditorColnectExpiryDate' type='text' /></label>
                         <label>Print Run <input id='leftEditorColnectPrintRun' type='text' /></label>
                         <label>Colors <input id='leftEditorColnectColors' type='text' /></label>
@@ -1917,6 +2028,41 @@ const backendHealthComparePollMs = 15000;
 const backendHealthCompareFailureThreshold = 2;
 let reviewLastGeneratedPdfPath = '';
 window.__returnToStartInFlight = false;
+const reviewPdfLastPathStorageKey = 'reviewui.pdf.last_path.' + String(payload.album_name || 'default');
+const reviewPdfLastStatusStorageKey = 'reviewui.pdf.last_status.' + String(payload.album_name || 'default');
+
+function persistPdfUiState(statusText, tone) {{
+    try {{
+        localStorage.setItem(reviewPdfLastPathStorageKey, String(reviewLastGeneratedPdfPath || ''));
+        localStorage.setItem(reviewPdfLastStatusStorageKey, JSON.stringify({{
+            text: String(statusText || ''),
+            tone: String(tone || '')
+        }}));
+    }} catch (_) {{}}
+}}
+
+function restorePdfUiState() {{
+    const statusEl = document.getElementById('pdfStatus');
+    if (!statusEl) return;
+    try {{
+        reviewLastGeneratedPdfPath = String(localStorage.getItem(reviewPdfLastPathStorageKey) || '');
+    }} catch (_) {{
+        reviewLastGeneratedPdfPath = '';
+    }}
+    updatePdfPreviewControls();
+    try {{
+        const raw = localStorage.getItem(reviewPdfLastStatusStorageKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const text = String(parsed?.text || '').trim();
+        const tone = String(parsed?.tone || '').trim();
+        if (!text) return;
+        statusEl.classList.remove('pdfStatusDone', 'pdfStatusFail');
+        if (tone === 'done') statusEl.classList.add('pdfStatusDone');
+        if (tone === 'fail') statusEl.classList.add('pdfStatusFail');
+        statusEl.innerText = text;
+    }} catch (_) {{}}
+}}
 
 function updatePdfPreviewControls() {{
     const previewBtn = document.getElementById('reviewPdfPreviewBtn');
@@ -2014,7 +2160,7 @@ function setReconnectBannerCompare(visible, title, text, recovered) {{
     const metaEl = document.getElementById('reconnectBannerCompareMeta');
     if (!banner || !titleEl || !textEl || !metaEl) return;
     titleEl.innerText = title || 'Connection lost, retrying...';
-    textEl.innerText = text || 'The Review UI backend is not responding. Automatic retries are in progress.';
+    textEl.innerText = text || '{backend_not_responding_message}';
     metaEl.innerText = visible ? ('Checks every ' + Math.round(backendHealthComparePollMs / 1000) + 's') : '';
     banner.classList.toggle('show', !!visible);
     banner.classList.toggle('recovered', !!recovered);
@@ -2035,6 +2181,10 @@ async function fetchBackendHealthCompare() {{
 }}
 
 async function checkBackendHealthCompare() {{
+    if (window.__reviewPdfRequestInFlight === true) {{
+        backendHealthCompareFailures = 0;
+        return;
+    }}
     if (backendHealthCompareCheckInFlight) return;
     backendHealthCompareCheckInFlight = true;
     try {{
@@ -2056,7 +2206,7 @@ async function checkBackendHealthCompare() {{
             setReconnectBannerCompare(
                 true,
                 'Connection lost, retrying...',
-                'The Review UI backend is not responding. Automatic retries are in progress. You can wait for recovery or reload now.',
+                   '{backend_not_responding_message}',
                 false
             );
         }}
@@ -2327,14 +2477,22 @@ function catalogDisplayName(code) {{
     return c ? c.toUpperCase() : 'Catalog';
 }}
 
+function normalizeCatalogCodeForUi(code) {{
+    const c = String(code || '').trim().toLowerCase();
+    const allowed = new Set(['sg', 'sn', 'mi', 'yt', 'afa', 'nvp', 'un', 'col']);
+    return allowed.has(c) ? c : '';
+}}
+
 function getEffectiveDefaultCatalogCode() {{
-    return String(countryDefaultCatalogCode || configDefaultCatalogCode || 'sg').toLowerCase();
+    return normalizeCatalogCodeForUi(countryDefaultCatalogCode)
+        || normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || 'sg';
 }}
 
 function changeCountryDefaultCatalog() {{
     const sel = document.getElementById('defaultCatalogSelect');
     if (!sel) return;
-    countryDefaultCatalogCode = String(sel.value || 'sg').toLowerCase();
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(sel.value) || 'sg';
     try {{
         localStorage.setItem(countryCatalogStorageKey, countryDefaultCatalogCode);
     }} catch (_) {{}}
@@ -2343,7 +2501,7 @@ function changeCountryDefaultCatalog() {{
 
 async function saveCatalogDefaultToConfig() {{
     const sel = document.getElementById('defaultCatalogSelect');
-    const code = String(sel?.value || '').toLowerCase();
+    const code = normalizeCatalogCodeForUi(sel?.value) || '';
     if (!code) {{
         alert('Choose a catalog first.');
         return;
@@ -2374,9 +2532,48 @@ function normalizeCatalogNumber(v) {{
     if (!s) return '';
     const colonIdx = s.indexOf(':');
     if (colonIdx >= 0) s = s.slice(colonIdx + 1).trim();
-    const m = s.match(/^([A-Za-z]+)\s+(.+)$/);
+    // Match 2-3 letter country prefixes like "NO 1" / "CA. 454".
+    const m = s.match(/^([A-Za-z]{{2,3}})\.?\s+(.+)$/);
     if (m && m[2]) return String(m[2]).trim();
     return s;
+}}
+
+function parseCatalogCodePairs(raw) {{
+    const text = String(raw || '');
+    if (!text.trim()) return [];
+    const parts = text.split(/[|,]/);
+    const out = [];
+    for (const part of parts) {{
+        const trimmed = String(part || '').trim();
+        if (!trimmed) continue;
+        const idx = trimmed.indexOf(':');
+        if (idx <= 0) continue;
+        const catalogType = String(trimmed.slice(0, idx)).trim().toLowerCase();
+        const code = String(trimmed.slice(idx + 1)).trim();
+        if (!catalogType || !code) continue;
+        out.push({{ catalogType, code }});
+    }}
+    return out;
+}}
+
+function inferCatalogTypeForNumber(rawCatalogCodes, displayedNumber, fallbackCatalogCode) {{
+    const normalizedDisplay = normalizeCatalogNumber(displayedNumber);
+    const pairs = parseCatalogCodePairs(rawCatalogCodes);
+    for (const pair of pairs) {{
+        if (normalizeCatalogNumber(pair.code) === normalizedDisplay) return pair.catalogType;
+    }}
+    return normalizeCatalogCodeForUi(fallbackCatalogCode) || '';
+}}
+
+function effectiveCatalogCodeForItem(item) {{
+    const explicit = normalizeCatalogCodeForUi(item?.catalog_code);
+    if (explicit) return explicit;
+    const inferred = inferCatalogTypeForNumber(
+        item?.colnect_catalog_codes,
+        item?.sg_number,
+        getEffectiveDefaultCatalogCode()
+    );
+    return inferred || getEffectiveDefaultCatalogCode();
 }}
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
@@ -2590,7 +2787,7 @@ function onLeftSearchInput() {{
     if (input) leftSearchQuery = String(input.value || '');
     const before = leftIdx;
     updateLeftSearchMatches(true);
-    if (leftIdx !== before) render();
+    if (leftIdx !== before) render({{ preserveRightScroll: true }});
 }}
 
 function captureSearchFocusState() {{
@@ -2626,7 +2823,7 @@ function stepLeftSearch(delta) {{
     leftSearchMatchPos = (leftSearchMatchPos + delta + total) % total;
     leftIdx = leftSearchMatches[leftSearchMatchPos];
     setLeftSearchStatus(`Matches: ${{leftSearchMatchPos + 1}}/${{total}}`);
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 async function ensureRightImageUrl(r) {{
@@ -2735,19 +2932,19 @@ function normalizeIndex(cur, len) {{
 function jumpLeft(delta) {{
     if (!left.length) return;
     leftIdx = normalizeIndex(leftIdx + Number(delta || 0), left.length);
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 function firstLeft() {{
     if (!left.length) return;
     leftIdx = 0;
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 function lastLeft() {{
     if (!left.length) return;
     leftIdx = left.length - 1;
-    render();
+    render({{ preserveRightScroll: true }});
 }}
 
 function jumpRight(delta) {{
@@ -2824,8 +3021,29 @@ function selectedCatalogTypeForCurrent(r) {{
     return String(pairs[0].catalog_type || '').toLowerCase();
 }}
 
-function render() {{
+function ordinalValueForCatalog(item, catalogCode) {{
+    const code = normalizeCatalogCodeForUi(catalogCode);
+    if (code === 'sg') return item?.ord_sg || '';
+    if (code === 'sn') return item?.ord_sn || '';
+    if (code === 'mi') return item?.ord_mi || '';
+    if (code === 'yt') return item?.ord_yt || '';
+    return '';
+}}
+
+function render(options) {{
     const searchFocusState = captureSearchFocusState();
+    const preserveRightScroll = options && options.preserveRightScroll === true;
+    const rightPanelBefore = document.getElementById('rightPanel');
+    const rightPanelBodyBefore = rightPanelBefore ? rightPanelBefore.querySelector('.panelBody') : null;
+    const savedRightScrollTop = (preserveRightScroll && rightPanelBodyBefore) ? rightPanelBodyBefore.scrollTop : 0;
+
+    function restoreRightPanelScrollIfNeeded() {{
+        if (!preserveRightScroll) return;
+        const rightPanelAfter = document.getElementById('rightPanel');
+        const rightPanelBodyAfter = rightPanelAfter ? rightPanelAfter.querySelector('.panelBody') : null;
+        if (rightPanelBodyAfter) rightPanelBodyAfter.scrollTop = savedRightScrollTop;
+    }}
+
     updateGuide();
   if (!left.length) {{
         document.getElementById('leftPos').innerText = 'Left 0/0';
@@ -2841,6 +3059,7 @@ function render() {{
         </div>`;
     document.getElementById('leftPanel').innerHTML = '<div class="imgph">No StampWorld rows with real images found</div>';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">No candidates</div>';
+    restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
     return;
   }}
@@ -2851,6 +3070,11 @@ function render() {{
   }}
 
   const l = left[leftIdx];
+    const leftCatalogCode = effectiveCatalogCodeForItem(l);
+    const leftCatalogLabel = catalogDisplayName(leftCatalogCode);
+    const leftCatalogTypeLabel = leftCatalogCode
+        ? `${{leftCatalogLabel}} (${{String(leftCatalogCode).toUpperCase()}})`
+        : leftCatalogLabel;
   const leftImg = b(l.image_abs) ? `/image?path=${{encodeURIComponent(l.image_abs)}}` : l.stampworld_image_url;
   document.getElementById('leftPos').innerText = `Left ${{leftIdx + 1}}/${{left.length}} (rowid=${{l.rowid}})`;
   document.getElementById('leftActionBanner').innerHTML = `
@@ -2870,7 +3094,7 @@ function render() {{
         </div>
         <div class='leftSearchRow'>
             <label for='leftSearchInput'>Search Left</label>
-            <input id='leftSearchInput' type='text' placeholder='SG, series, name...' oninput='onLeftSearchInput()' value='${{html(leftSearchQuery)}}'/>
+            <input id='leftSearchInput' type='text' placeholder='Catalog #, series, name...' oninput='onLeftSearchInput()' value='${{html(leftSearchQuery)}}'/>
             <button onclick='stepLeftSearch(-1)'>Back</button>
             <button onclick='stepLeftSearch(1)'>Forward</button>
             <span id='leftSearchStatus' class='badge'>Matches: 0/0</span>
@@ -2894,7 +3118,7 @@ function render() {{
         <div class='rightBottomBlock'>
         <div class='rightSearchRow'>
             <label for='rightSearchInput'>Search Right</label>
-            <input id='rightSearchInput' type='text' placeholder='ID, SG, name, series...' oninput='onRightSearchInput()' value='${{html(rightSearchQuery)}}'/>
+            <input id='rightSearchInput' type='text' placeholder='ID, catalog #, name, series...' oninput='onRightSearchInput()' value='${{html(rightSearchQuery)}}'/>
             <button onclick='jumpRight(-1)'>Back</button>
             <button onclick='jumpRight(1)'>Forward</button>
             <span id='rightSearchStatus' class='badge'>Matches: 0/0</span>
@@ -2914,12 +3138,13 @@ function render() {{
   document.getElementById('leftPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
-                <strong>Base Stamp</strong> SG=${{html(fmt(l.sg_number))}} | Year=${{html(fmt(l.year))}} | Series=${{html(fmt(l.series))}}
+                <strong>Base Stamp</strong> ${{html(leftCatalogTypeLabel)}} #=${{html(fmt(l.sg_number))}} | Year=${{html(fmt(l.year))}} | Series=${{html(fmt(l.series))}}
             </div>
             <div class='panelBody'>
                 ${{imageBox(leftImg, 'StampWorld image')}}
                 <table class='kv'>
-                    ${{row('SG', l.sg_number)}}
+                    ${{row('Catalog Type', leftCatalogTypeLabel)}}
+                    ${{row('Catalog #', l.sg_number)}}
                     ${{row('Year', l.year)}}
                     ${{row('Series', l.series)}}
                     ${{row('Image Path', l.image_path)}}
@@ -2975,6 +3200,7 @@ function render() {{
     document.getElementById('rightPos').innerText = 'No available candidate';
     document.getElementById('rightPanel').innerHTML = '<div class="imgph">All candidates already assigned</div>';
         updateRightSearchStatus();
+    restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
     return;
   }}
@@ -2984,6 +3210,18 @@ function render() {{
         updateRightSearchStatus();
     ensureRightImageUrl(r);
   const rightImg = b(r.image_abs) ? `/image?path=${{encodeURIComponent(r.image_abs)}}` : r.image_url;
+        const effectiveCatalogCode = getEffectiveDefaultCatalogCode();
+        const effectiveCatalogCodeUpper = String(effectiveCatalogCode || '').toUpperCase();
+        const effectiveCatalogOrdLabel = `Ord Current Catalog (${{effectiveCatalogCodeUpper || 'N/A'}})`;
+        const effectiveCatalogOrdValue = ordinalValueForCatalog(r, effectiveCatalogCode);
+    const rightCatalogType = inferCatalogTypeForNumber(
+        r.catalog_codes_text,
+        r.sg_number,
+        effectiveCatalogCode
+    );
+    const rightCatalogTypeLabel = rightCatalogType
+        ? `${{catalogDisplayName(rightCatalogType)}} (${{String(rightCatalogType).toUpperCase()}})`
+        : 'Catalog';
     const catPairs = (r.catalog_code_pairs || []).map(p =>
         `<option value='${{html(p.code)}}' data-cat='${{html(p.catalog_type)}}'>${{html(catalogDisplayName(p.catalog_type))}} (${{html(String(p.catalog_type || '').toUpperCase())}}): ${{html(p.code)}}</option>`
     ).join('');
@@ -2993,7 +3231,7 @@ function render() {{
             <div class='panelHead'>
                
                 <div style='margin-top:8px;'>
-                    <label>Catalog Code (for optional SG replace):</label>
+                    <label>Catalog code to assign (for catalog number replace):</label>
                     <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
                         <option value=''>-- none --</option>
                         ${{catPairs}}
@@ -3004,7 +3242,7 @@ function render() {{
                 ${{imageBox(rightImg, 'Colnect candidate image')}}
                 <table class='kv'>
                     ${{row('Colnect ID', r.colnect_id)}}
-                    ${{row('SG', r.sg_number)}}
+                    ${{row(rightCatalogTypeLabel + ' #', r.sg_number)}}
             ${{row('Catalog Codes Text', r.catalog_codes_text)}}
                     ${{row('Year', r.year)}}
             ${{row('Country', r.country)}}
@@ -3027,7 +3265,7 @@ function render() {{
       ${{row('Design', r.design)}}
       ${{row('Engraving', r.engraving)}}
       ${{row('Perforation', r.perforation)}}
-            ${{row('ORD SG', r.ord_sg)}}
+            ${{row(effectiveCatalogOrdLabel, effectiveCatalogOrdValue)}}
             ${{row('ORD MI', r.ord_mi)}}
             ${{row('ORD SN', r.ord_sn)}}
             ${{row('ORD YT', r.ord_yt)}}
@@ -3052,6 +3290,7 @@ function render() {{
     const sel = document.getElementById('catalogCodeSelect');
     if (sel && selectedCode) sel.value = selectedCode;
 
+    restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
 }}
 
@@ -3068,12 +3307,12 @@ function rememberCatalogCode() {{
 function prevLeft() {{
   if (!left.length) return;
   leftIdx = (leftIdx - 1 + left.length) % left.length;
-  render();
+  render({{ preserveRightScroll: true }});
 }}
 function nextLeft() {{
   if (!left.length) return;
   leftIdx = (leftIdx + 1) % left.length;
-  render();
+  render({{ preserveRightScroll: true }});
 }}
 function prevRight() {{
   const l = left[leftIdx];
@@ -3310,6 +3549,42 @@ function toggleLeftEditorImageOptions() {{
     if (uploadRow) uploadRow.style.display = mode === 'upload' ? '' : 'none';
 }}
 
+function toggleLeftEditorCatalogCodeCustom() {{
+    const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
+    const customWrap = document.getElementById('leftEditorCatalogCodeCustomWrap');
+    const isCustom = String(selectEl?.value || '') === 'custom';
+    if (customWrap) customWrap.style.display = isCustom ? '' : 'none';
+}}
+
+function setLeftEditorCatalogCodeValue(code) {{
+    const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
+    const customEl = document.getElementById('leftEditorCatalogCodeCustom');
+    if (!selectEl || !customEl) return;
+
+    const raw = String(code || '').trim().toLowerCase();
+    const normalized = normalizeCatalogCodeForUi(raw);
+    if (normalized) {{
+        selectEl.value = normalized;
+        customEl.value = '';
+    }} else if (raw) {{
+        selectEl.value = 'custom';
+        customEl.value = raw;
+    }} else {{
+        selectEl.value = getEffectiveDefaultCatalogCode();
+        customEl.value = '';
+    }}
+    toggleLeftEditorCatalogCodeCustom();
+}}
+
+function getLeftEditorCatalogCodeValue() {{
+    const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
+    const customEl = document.getElementById('leftEditorCatalogCodeCustom');
+    if (String(selectEl?.value || '') === 'custom') {{
+        return String(customEl?.value || '').trim().toLowerCase();
+    }}
+    return String(selectEl?.value || '').trim().toLowerCase();
+}}
+
 function openLeftEditor(mode) {{
     leftEditorMode = mode === 'add' ? 'add' : 'edit';
     const currentLeft = left[leftIdx] || null;
@@ -3326,6 +3601,7 @@ function openLeftEditor(mode) {{
         ? currentLeft
         : {{
             sg_number: '',
+            catalog_code: getEffectiveDefaultCatalogCode(),
             year: currentLeft?.year || 0,
             series: currentLeft?.series || '',
             description: '',
@@ -3371,6 +3647,7 @@ function openLeftEditor(mode) {{
         }};
 
     document.getElementById('leftEditorSg').value = base?.sg_number || '';
+    setLeftEditorCatalogCodeValue(base?.catalog_code);
     document.getElementById('leftEditorYear').value = Number(base?.year || 0) || '';
     document.getElementById('leftEditorSeries').value = base?.series || '';
     document.getElementById('leftEditorDescription').value = base?.description || '';
@@ -3438,7 +3715,7 @@ function closeLeftEditor() {{
 async function submitLeftEditor() {{
     const sgNumber = document.getElementById('leftEditorSg')?.value || '';
     if (!sgNumber.trim()) {{
-        alert('Enter an SG / reference code before saving.');
+        alert('Enter a catalog number / reference code before saving.');
         return;
     }}
 
@@ -3463,6 +3740,7 @@ async function submitLeftEditor() {{
 
     const body = {{
         sg_number: sgNumber,
+        catalog_code: getLeftEditorCatalogCodeValue(),
         year: Number.isFinite(yearValue) ? yearValue : 0,
         series: document.getElementById('leftEditorSeries')?.value || '',
         description: document.getElementById('leftEditorDescription')?.value || '',
@@ -3732,12 +4010,23 @@ async function undoLastDelete() {{
 }}
 
 async function closeReviewUi() {{
+    const statusEl = document.getElementById('status');
+    if (window.__closeReviewInFlight === true) {{
+        if (statusEl) statusEl.innerText = 'Close request already in progress...';
+        return;
+    }}
+
     // Show a 3-button modal: Generate & Close | Close Only | Cancel
+    const CLOSE_PDF_PREF_KEY = 'stampAlbumReviewUiClosePdfEnabled';
     const choice = await new Promise(resolve => {{
-        const defaultPdfChecked = pdfGenerationDefaults.enabledByDefault && pdfGenerationDefaults.cliConfigured;
+        const configDefault = pdfGenerationDefaults.enabledByDefault && pdfGenerationDefaults.cliConfigured;
+        // Persist the user's last preference across sessions; fall back to config default on first use.
+        const savedPref = localStorage.getItem(CLOSE_PDF_PREF_KEY);
+        const pdfChecked = pdfGenerationDefaults.cliConfigured &&
+            (savedPref !== null ? savedPref === 'true' : configDefault);
         const pdfOptionHtml =
             '<label style="display:flex;align-items:flex-start;gap:0.65em;margin:0 0 1.1em;text-align:left;font-size:0.95em;line-height:1.4">' +
-            `<input id="_dlg_pdf" type="checkbox" ${{defaultPdfChecked ? 'checked' : ''}} ${{pdfGenerationDefaults.cliConfigured ? '' : 'disabled'}} style="margin-top:0.2em" />` +
+            `<input id="_dlg_pdf" type="checkbox" ${{pdfChecked ? 'checked' : ''}} ${{pdfGenerationDefaults.cliConfigured ? '' : 'disabled'}} style="margin-top:0.2em" />` +
             '<span>Generate PDF with AlbumEasy CLI <code>-c</code> and open it after generation</span>' +
             '</label>' +
             (pdfGenerationDefaults.cliConfigured
@@ -3764,7 +4053,12 @@ async function closeReviewUi() {{
         document.body.appendChild(dlg);
         dlg.showModal();
         const done = v => {{
-            const generatePdf = v === 'generate' && !!dlg.querySelector('#_dlg_pdf')?.checked;
+            const cbChecked = !!dlg.querySelector('#_dlg_pdf')?.checked;
+            const generatePdf = v === 'generate' && cbChecked;
+            // Persist the checkbox state (even on close/cancel so next open respects it).
+            if (v !== 'cancel') {{
+                try {{ localStorage.setItem(CLOSE_PDF_PREF_KEY, String(cbChecked)); }} catch (_) {{}}
+            }}
             dlg.close();
             dlg.remove();
             resolve({{ choice: v, generatePdf }});
@@ -3778,27 +4072,83 @@ async function closeReviewUi() {{
     if (choice.choice === 'cancel') return;
 
     const generateAlbum = choice.choice === 'generate';
-    const res = await fetch('/shutdown', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{
-            generate_album: generateAlbum,
-            generate_pdf: choice.generatePdf,
-            start_year: (() => {{ const v = document.getElementById('reviewPdfStartYear')?.value.trim(); return v ? parseInt(v, 10) : null; }})(),
-            end_year:   (() => {{ const v = document.getElementById('reviewPdfEndYear')?.value.trim();   return v ? parseInt(v, 10) : null; }})(),
-        }})
-    }});
+    const closeBusyMsg = generateAlbum
+        ? (choice.generatePdf
+            ? 'Generating album text and PDF, then closing Review UI...'
+            : 'Generating album text, then closing Review UI...')
+        : 'Closing Review UI...';
+    window.__closeReviewInFlight = true;
+    if (statusEl) statusEl.innerText = closeBusyMsg;
+    setOperationBusy(true, closeBusyMsg);
 
-    const j = await res.json();
-    const details = [
-        j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
-        j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
+    let j;
+    try {{
+        const res = await fetch('/shutdown', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{
+                generate_album: generateAlbum,
+                generate_pdf: choice.generatePdf,
+                start_year: (() => {{ const v = document.getElementById('reviewPdfStartYear')?.value.trim(); return v ? parseInt(v, 10) : null; }})(),
+                end_year:   (() => {{ const v = document.getElementById('reviewPdfEndYear')?.value.trim();   return v ? parseInt(v, 10) : null; }})(),
+            }})
+        }});
+
+        j = await res.json();
+    }} catch (e) {{
+        setOperationBusy(false, '');
+        window.__closeReviewInFlight = false;
+        if (statusEl) statusEl.innerText = 'Close failed: ' + e;
+        alert('Failed to close Review UI: ' + e);
+        return;
+    }}
+
+    setOperationBusy(false, '');
+    window.__closeReviewInFlight = false;
+
+    // Build a clear alert: include PDF status (generated, skipped, or failed).
+    const parts = [j.message || 'Review UI shutdown request sent.'];
+    if (j.generated_output_path) parts.push(`\nOutput: ${{j.generated_output_path}}`);
+    if (choice.generatePdf) {{
+        if (j.generated_pdf_path) {{
+            parts.push(`\nPDF: ${{j.generated_pdf_path}}`);
+        }} else {{
+            parts.push('\nPDF generation was requested but no PDF was produced. Check that AlbumEasy CLI is configured and the output file is valid.');
+        }}
+    }}
+    alert(parts.join(''));
+
+    const makeFileUrl = path => {{
+        const p = String(path || '').trim();
+        if (!p) return '';
+        const normalized = p.startsWith('/') ? p : ('/' + p);
+        return 'file://' + encodeURI(normalized);
+    }};
+
+    const outputPath = String(j.generated_output_path || '').trim();
+    const pdfPath = String(j.generated_pdf_path || '').trim();
+    const outputUrl = makeFileUrl(outputPath);
+    const pdfUrl = makeFileUrl(pdfPath);
+
+    const openLinksHtml = [
+        outputUrl
+            ? `<p><a href="${{html(outputUrl)}}" target="_blank" rel="noopener">Open generated album text</a><br/><small>${{html(outputPath)}}</small></p>`
+            : '',
+        pdfUrl
+            ? `<p><a href="${{html(pdfUrl)}}" target="_blank" rel="noopener">Open generated PDF</a><br/><small>${{html(pdfPath)}}</small></p>`
+            : ''
     ].join('');
-    alert((j.message || 'Review UI shutdown request sent.') + details);
 
-    // window.close may be blocked for tabs not opened by script; provide fallback.
+    document.body.innerHTML =
+        "<div style='font-family:sans-serif;margin:20px;max-width:780px;'>" +
+        "<h2>Review UI closed</h2>" +
+        `<p>${{html(j.message || 'Review UI shutdown request sent.')}}</p>` +
+        openLinksHtml +
+        "<p>You can close this browser tab now.</p>" +
+        "</div>";
+
+    // Try to close if this tab was script-opened; if blocked, keep the page with links.
     window.close();
-    setTimeout(() => {{ window.location.href = 'about:blank'; }}, 150);
 }}
 
 async function returnToStartReviewPage() {{
@@ -3922,6 +4272,7 @@ async function generatePdfNowReview() {{
         if (!j.ok) {{
             if (statusEl) statusEl.classList.add('pdfStatusFail');
             setPdfUiState(false, j.message || 'PDF generation failed.');
+            persistPdfUiState(j.message || 'PDF generation failed.', 'fail');
             return;
         }}
 
@@ -3933,13 +4284,19 @@ async function generatePdfNowReview() {{
             const openedTxt = alwaysOpenPdfEl?.checked
                 ? 'Opened automatically. Use Preview Last PDF to open it again.'
                 : 'Use Preview Last PDF to open it.';
-            setPdfUiState(false, (j.message || 'PDF generation completed.') + ' ' + openedTxt);
+            const finalMsg = (j.message || 'PDF generation completed.') + ' ' + openedTxt;
+            setPdfUiState(false, finalMsg);
+            persistPdfUiState(finalMsg, 'done');
         }} else {{
-            setPdfUiState(false, j.message || 'PDF generation completed, but no PDF was produced.');
+            const finalMsg = j.message || 'PDF generation completed, but no PDF was produced.';
+            setPdfUiState(false, finalMsg);
+            persistPdfUiState(finalMsg, 'fail');
         }}
     }} catch (e) {{
         if (statusEl) statusEl.classList.add('pdfStatusFail');
-        setPdfUiState(false, 'PDF generation request failed: ' + e);
+        const finalMsg = 'PDF generation request failed: ' + e;
+        setPdfUiState(false, finalMsg);
+        persistPdfUiState(finalMsg, 'fail');
     }} finally {{
         window.__reviewPdfRequestInFlight = false;
         clearInterval(phaseTimer);
@@ -4027,6 +4384,19 @@ async function importColnectFilesReview() {{
             }}
             appendLogLine('✔ ' + (j.message || 'Import completed'));
             if (btn) btn.disabled = false;
+            // Refresh right-panel candidates without a full page reload so that
+            // newly imported Colnect stamps appear immediately in the list.
+            try {{
+                const cr = await fetch('/api/fresh-candidates', {{ cache: 'no-store' }});
+                const freshRight = await cr.json();
+                if (Array.isArray(freshRight) && freshRight.length > 0) {{
+                    rightAll = freshRight;
+                    render();
+                    appendLogLine('\u21bb Right panel refreshed (' + freshRight.length + ' candidates)');
+                }}
+            }} catch (_) {{
+                appendLogLine('(Could not auto-refresh right panel \u2014 please reload if list looks stale)');
+            }}
         }} else if (j.ok && imported === 0) {{
             if (statusText) {{
                 statusText.className = 'colnectImportStatusText';
@@ -4171,14 +4541,17 @@ for (const [checkboxId, checked] of Object.entries(checkboxDefaults)) {{
 
 try {{
     const storedCatalog = String(localStorage.getItem(countryCatalogStorageKey) || '').toLowerCase();
-    countryDefaultCatalogCode = storedCatalog || configDefaultCatalogCode;
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(storedCatalog)
+        || normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || 'sg';
 }} catch (_) {{
-    countryDefaultCatalogCode = configDefaultCatalogCode;
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(configDefaultCatalogCode) || 'sg';
 }}
 
 const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
 if (defaultCatalogSelect) {{
-    defaultCatalogSelect.value = countryDefaultCatalogCode || 'sg';
+    defaultCatalogSelect.value = normalizeCatalogCodeForUi(countryDefaultCatalogCode) || 'sg';
+    if (!defaultCatalogSelect.value) defaultCatalogSelect.value = 'sg';
 }}
 
 const reviewColnectDirPathEl = document.getElementById('reviewColnectDirPath');
@@ -4195,6 +4568,7 @@ if (reviewPdfAlwaysShowEl) {{
     }}
 }}
 updatePdfPreviewControls();
+restorePdfUiState();
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;
@@ -4212,11 +4586,95 @@ applyRuntimeLogVisibilityCompare();
 startRuntimeLogPollingCompare();
 startBackendHealthPollingCompare();
 render();
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
+</script>
+{footer_html}
+<script>
+document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
+    el.textContent = String(new Date().getFullYear());
+}});
 </script>
 {config_editor_assets}
 </body>
 </html>"#,
         json = json,
+        backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
+        footer_html = render_app_footer_html(),
         config_editor_assets = render_config_editor_assets()
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{render_bootstrap_html, render_html};
+    use crate::review_ui::MatcherPayload;
+
+    fn minimal_payload() -> MatcherPayload {
+        MatcherPayload {
+            left: vec![],
+            right: vec![],
+            album_name: "Testland".to_string(),
+            colnect_dir: "Albums/Testland/colnect_inbox".to_string(),
+            colnect_file_count: 0,
+            show_imageless_left_rows: false,
+            default_catalog_code: "sg".to_string(),
+            odd_row_color: "#ffffff".to_string(),
+            even_row_color: "#f2f2f2".to_string(),
+            series_default_checked: true,
+            description_default_checked: true,
+            watermark_default_checked: true,
+            design_default_checked: true,
+            engraving_default_checked: true,
+            perforation_default_checked: true,
+            context_default_checked: true,
+            colnect_links_default_checked: true,
+            colnect_image_url_default_checked: true,
+            colnect_metadata_default_checked: true,
+            replace_sg_number_default_checked: false,
+            right_unmatched_only_default_checked: false,
+            albumeasy_auto_generate_pdf_default: false,
+            albumeasy_cli_configured: false,
+        }
+    }
+
+    #[test]
+    fn bootstrap_html_uses_default_inbox_hint_when_missing() {
+        let html = render_bootstrap_html(None);
+        assert!(html.contains("Colnect inbox hint: samples/colnect_inbox"));
+    }
+
+    #[test]
+    fn bootstrap_html_uses_custom_inbox_hint_when_present() {
+        let html = render_bootstrap_html(Some("Albums/Testland/custom_inbox"));
+        assert!(html.contains("Colnect inbox hint: Albums/Testland/custom_inbox"));
+    }
+
+    #[test]
+    fn bootstrap_html_contains_health_and_runtime_log_hooks() {
+        let html = render_bootstrap_html(None);
+        assert!(html.contains("/health"));
+        assert!(html.contains("/runtime-log"));
+        assert!(html.contains("id='runtimeLog'"));
+    }
+
+    #[test]
+    fn compare_html_embeds_payload_and_core_shell() {
+        let payload = minimal_payload();
+        let html = render_html(&payload);
+        assert!(html.contains("const payload ="));
+        assert!(html.contains("\"album_name\":\"Testland\""));
+        assert!(html.contains("id='leftPanel'"));
+        assert!(html.contains("id='rightPanel'"));
+    }
+
+    #[test]
+    fn compare_html_contains_backend_recovery_banner() {
+        let payload = minimal_payload();
+        let html = render_html(&payload);
+        assert!(html.contains("id='reconnectBannerCompare'"));
+        assert!(html.contains("retryBackendHealthCheckCompare"));
+        assert!(html.contains("Connection lost, retrying..."));
+    }
 }

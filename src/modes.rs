@@ -44,6 +44,66 @@ fn canonical_album_dir_name(name: &str) -> String {
     name.trim().replace(' ', "-")
 }
 
+fn resolve_runtime_albums_root() -> std::path::PathBuf {
+    if let Ok(from_env) = std::env::var("STAMP_ALBUMS_ROOT") {
+        let trimmed = from_env.trim();
+        if !trimmed.is_empty() {
+            return std::path::PathBuf::from(trimmed);
+        }
+    }
+
+    if let Some(from_cfg) =
+        crate::config::load_config("config.toml").effective_bootstrap_albums_root_path()
+    {
+        let trimmed = from_cfg.trim();
+        if !trimmed.is_empty() {
+            return std::path::PathBuf::from(trimmed);
+        }
+    }
+
+    std::path::PathBuf::from("Albums")
+}
+
+fn infer_and_fix_catalog_codes_for_colnect_rows(
+    conn: &rusqlite::Connection,
+    fallback_catalog_code: &str,
+) -> rusqlite::Result<usize> {
+    let mut select_stmt = conn.prepare(
+        "SELECT rowid, COALESCE(sg_number, ''), COALESCE(colnect_catalog_codes, ''), COALESCE(catalog_code, '')
+         FROM stamps
+         WHERE TRIM(COALESCE(sg_number, '')) != ''
+           AND TRIM(COALESCE(colnect_catalog_codes, '')) != ''",
+    )?;
+
+    let rows = select_stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, i64>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+            row.get::<_, String>(3)?,
+        ))
+    })?;
+
+    let mut update_stmt = conn.prepare("UPDATE stamps SET catalog_code = ?1 WHERE rowid = ?2")?;
+    let mut updated = 0usize;
+
+    for row in rows {
+        let (rowid, sg_number, raw_codes, existing_catalog_code) = row?;
+        let inferred = crate::catalog::infer_catalog_type_for_number(
+            &raw_codes,
+            &sg_number,
+            fallback_catalog_code,
+        );
+        let existing_norm = crate::catalog::normalize_catalog_type(&existing_catalog_code);
+        if !inferred.is_empty() && inferred != existing_norm {
+            update_stmt.execute(rusqlite::params![inferred, rowid])?;
+            updated += 1;
+        }
+    }
+
+    Ok(updated)
+}
+
 fn has_downloaded_images(images_dir: &std::path::Path) -> bool {
     let Ok(entries) = std::fs::read_dir(images_dir) else {
         return false;
@@ -224,7 +284,7 @@ fn move_to_country_inbox(
 ) -> Result<std::path::PathBuf, Box<dyn std::error::Error>> {
     // Keep country-specific Colnect source files with the country album DB.
     // Example: Albums/Netherlands/colnect/<csv-file>
-    let country_dir = std::path::Path::new("Albums")
+    let country_dir = resolve_runtime_albums_root()
         .join(canonical_album_dir_name(country))
         .join("colnect");
     std::fs::create_dir_all(&country_dir)?;
@@ -348,7 +408,11 @@ fn run_colnect_inbox_mode(
         };
 
         let album_country = canonical_album_dir_name(&country);
-        let db_path = format!("Albums/{0}/{0}.db", album_country);
+        let db_path = resolve_runtime_albums_root()
+            .join(&album_country)
+            .join(format!("{}.db", album_country))
+            .to_string_lossy()
+            .to_string();
         let db_exists = std::path::Path::new(&db_path).exists();
         if !db_exists && !cli.colnect_create_country_db {
             skipped_missing_db += 1;
@@ -434,7 +498,11 @@ fn run_colnect_inbox_mode(
     let mut generate_failed = 0usize;
     if cli.colnect_generate_after_import {
         for album_country in &imported_countries {
-            let db_path = format!("Albums/{0}/{0}.db", album_country);
+            let db_path = resolve_runtime_albums_root()
+                .join(album_country)
+                .join(format!("{}.db", album_country))
+                .to_string_lossy()
+                .to_string();
             progress.set_message(&format!(
                 "📖 Generating album output for imported country: {}",
                 album_country
@@ -1133,9 +1201,12 @@ fn sync_missing_stamps_from_colnect(
         rusqlite::params![default_catalog_code],
     )?;
 
+    let catalog_code_corrected =
+        infer_and_fix_catalog_codes_for_colnect_rows(conn, &default_catalog_code)?;
+
     info!(
-        "Inserted {} missing stamp variants from colnect_stamps (after {} remaps, {} link backfills)",
-        inserted, remapped, links_backfilled
+        "Inserted {} missing stamp variants from colnect_stamps (after {} remaps, {} link backfills, {} catalog code corrections)",
+        inserted, remapped, links_backfilled, catalog_code_corrected
     );
     Ok(inserted)
 }
@@ -1171,7 +1242,11 @@ pub fn run_database_mode(
 
         if let Some(country) = inferred_country {
             let canonical = canonical_album_dir_name(&country);
-            inferred_db_path = format!("Albums/{0}/{0}.db", canonical);
+            inferred_db_path = resolve_runtime_albums_root()
+                .join(&canonical)
+                .join(format!("{}.db", canonical))
+                .to_string_lossy()
+                .to_string();
             info!("Inferred database path: {}", inferred_db_path);
             &inferred_db_path
         } else {
@@ -1434,8 +1509,16 @@ pub fn run_scraping_mode(
     cfg.album_name = album_name.clone();
     cfg.country = site_name.clone();
     // Keep scrape outputs in a canonical country/site-based folder.
-    cfg.album_path = format!("Albums/{}", canonical_storage_dir);
-    cfg.image_path = format!("Albums/{}/images", canonical_storage_dir);
+    let albums_root = resolve_runtime_albums_root();
+    cfg.album_path = albums_root
+        .join(&canonical_storage_dir)
+        .to_string_lossy()
+        .to_string();
+    cfg.image_path = albums_root
+        .join(&canonical_storage_dir)
+        .join("images")
+        .to_string_lossy()
+        .to_string();
     cfg.year = cli.start_year.to_string();
 
     // Build base URL
@@ -1510,7 +1593,11 @@ pub fn run_scraping_mode(
 
     // Keep Colnect inbox locations ready during StampWorld runs so follow-up
     // Colnect imports can drop files into known paths without manual setup.
-    let default_colnect_inbox = format!("Albums/{}/colnect", canonical_storage_dir);
+    let default_colnect_inbox = albums_root
+        .join(&canonical_storage_dir)
+        .join("colnect")
+        .to_string_lossy()
+        .to_string();
     if let Some(configured_inbox) = cfg_file.effective_colnect_inbox_path() {
         let configured_path = std::path::Path::new(configured_inbox);
         if !configured_path.exists() {

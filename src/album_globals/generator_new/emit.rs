@@ -226,6 +226,37 @@ pub fn resolve_stamp_heading_label(
         )
         .to_string();
     }
+
+    // Backward-compatibility: many existing configs pinned
+    // `stamp_heading_label` to a known catalog family label (e.g.
+    // "Stanley Gibbons") before per-stamp catalog family edits existed.
+    // When a stamp carries an explicit catalog family, prefer that family
+    // label for known catalog-name labels, so row-level Review UI edits are
+    // reflected in PDF output.
+    if let Some(code) = catalog_code {
+        let explicit_code = crate::catalog::normalize_catalog_type(code);
+        if !explicit_code.is_empty() {
+            let configured_norm = configured.to_ascii_lowercase();
+            let known_catalog_labels = [
+                crate::catalog::catalog_display_name("sn"),
+                crate::catalog::catalog_display_name("sg"),
+                crate::catalog::catalog_display_name("mi"),
+                crate::catalog::catalog_display_name("yt"),
+                crate::catalog::catalog_display_name("afa"),
+                crate::catalog::catalog_display_name("nvp"),
+                crate::catalog::catalog_display_name("un"),
+                crate::catalog::catalog_display_name("col"),
+                crate::catalog::catalog_display_name(""),
+            ];
+            if known_catalog_labels
+                .iter()
+                .any(|name| configured_norm == name.to_ascii_lowercase())
+            {
+                return crate::catalog::catalog_display_name(&explicit_code).to_string();
+            }
+        }
+    }
+
     configured.to_string()
 }
 
