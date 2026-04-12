@@ -106,7 +106,7 @@ stamp_heading_font = "HN"
 stamp_heading_size = 6.0
 # "auto" = use the display name for default_catalog_code
 # ""     = hide the label entirely
-stamp_heading_label = "SG"
+stamp_heading_label = "auto"
 
 ###################################
 # Layout

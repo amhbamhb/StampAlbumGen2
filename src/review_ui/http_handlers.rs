@@ -1,5 +1,125 @@
 use super::*;
 
+fn bundled_favicon_png() -> &'static [u8] {
+    include_bytes!("../../assets/icons/favicon.png")
+}
+
+fn is_real_image_path(image_path: &str) -> bool {
+    let p = image_path.trim();
+    !p.is_empty() && !p.to_ascii_lowercase().starts_with("images/no_image")
+}
+
+fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
+    let clean_image_path = if image_path.starts_with("images/") {
+        &image_path[7..]
+    } else {
+        image_path
+    };
+    let album_dir = std::path::Path::new("Albums").join(album_name.replace(' ', "-"));
+    let images_dir = album_dir.join("images");
+    images_dir.join(clean_image_path).exists()
+}
+
+fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
+    let mut stmt = match conn.prepare(
+        "SELECT
+            COALESCE(sg_number, ''),
+            COALESCE(image_path, ''),
+            CASE
+                WHEN TRIM(COALESCE(remote_image_url, '')) != '' THEN TRIM(COALESCE(remote_image_url, ''))
+                WHEN TRIM(COALESCE(colnect_image_url, '')) != '' THEN TRIM(COALESCE(colnect_image_url, ''))
+                WHEN TRIM(COALESCE(original_image_url, '')) != '' THEN TRIM(COALESCE(original_image_url, ''))
+                ELSE ''
+            END AS best_remote_url
+         FROM stamps",
+    ) {
+        Ok(s) => s,
+        Err(_) => return (0, 0),
+    };
+
+    let rows = match stmt.query_map([], |row| {
+        Ok((
+            row.get::<_, String>(0)?,
+            row.get::<_, String>(1)?,
+            row.get::<_, String>(2)?,
+        ))
+    }) {
+        Ok(r) => r,
+        Err(_) => return (0, 0),
+    };
+
+    let mut stubs: Vec<crate::db_utils::StampStub> = Vec::new();
+    let mut real_image_rows = 0usize;
+    let mut existing_real_files_before = 0usize;
+
+    for row in rows.flatten() {
+        let (sg_number, image_path, remote_url) = row;
+        if !is_real_image_path(&image_path) {
+            continue;
+        }
+
+        real_image_rows += 1;
+        if local_image_file_exists(album_name, &image_path) {
+            existing_real_files_before += 1;
+        }
+
+        if remote_url.trim().is_empty() {
+            continue;
+        }
+
+        stubs.push(crate::db_utils::StampStub {
+            year: 0,
+            month: String::new(),
+            month_num: 0,
+            day: String::new(),
+            sg_number: sg_number.clone(),
+            r#type: String::new(),
+            stamp_type: String::new(),
+            denomination: String::new(),
+            color: String::new(),
+            description: String::new(),
+            desc: String::new(),
+            catalog_num: sg_number,
+            stamps_issued: String::new(),
+            mint_condition: String::new(),
+            unused: String::new(),
+            used: String::new(),
+            letter_fdc: String::new(),
+            currency: String::new(),
+            image_path,
+            remote_image_url: remote_url,
+            original_image_url: String::new(),
+            image_width_px: None,
+            image_height_px: None,
+            watermark: String::new(),
+            design: String::new(),
+            engraving: String::new(),
+            perforation: String::new(),
+            series: String::new(),
+            context: String::new(),
+            issue_location: String::new(),
+            quantity_printed: String::new(),
+            multi_perf: false,
+        });
+    }
+
+    let _ = crate::image_downloader::download_missing_stamp_images(&stubs, album_name);
+
+    let mut existing_real_files_after = 0usize;
+    if let Ok(mut verify_stmt) = conn.prepare("SELECT COALESCE(image_path, '') FROM stamps") {
+        if let Ok(paths) = verify_stmt.query_map([], |row| row.get::<_, String>(0)) {
+            for path in paths.flatten() {
+                if is_real_image_path(&path) && local_image_file_exists(album_name, &path) {
+                    existing_real_files_after += 1;
+                }
+            }
+        }
+    }
+
+    let _new_files = existing_real_files_after.saturating_sub(existing_real_files_before);
+    (real_image_rows, existing_real_files_after)
+}
+
 pub(super) struct BootstrapHandlersState {
     pub selected: Option<(String, String)>,
     pub logout_requested: bool,
@@ -19,6 +139,15 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
         let req_url = request.url().to_string();
+
+        if method == Method::Get && (req_url == "/favicon.ico" || req_url == "/favicon.png") {
+            let mut resp = Response::from_data(bundled_favicon_png().to_vec());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"image/png"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
 
         if method == Method::Get && req_url == "/" {
             let mut resp = Response::from_string(html.clone());
@@ -570,6 +699,8 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                         Some(c) => {
                             match crate::db_utils::init_db(&c.db_path) {
                                 Ok(conn) => {
+                                    let (real_image_rows, local_real_files) =
+                                        best_effort_prepare_images_for_pdf(&conn, &c.country);
                                     let album_dir = album_dir_for_ui(&c.db_path, &c.country);
                                     let artifacts = crate::config::with_album_config_override(
                                         &album_dir,
@@ -590,7 +721,14 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
 
                                     serde_json::to_string(&BootstrapGeneratePdfResponse {
                                         ok: true,
-                                        message: format!("Generated album output for {}", c.country),
+                                        message: if real_image_rows > 0 && local_real_files == 0 {
+                                            format!(
+                                                "Generated album output for {}. Warning: no local real stamp images were found, so placeholders may dominate output.",
+                                                c.country
+                                            )
+                                        } else {
+                                            format!("Generated album output for {}", c.country)
+                                        },
                                         generated_output_path: Some(artifacts.output_txt_path.display().to_string()),
                                         generated_pdf_path: artifacts
                                             .generated_pdf_path
@@ -755,6 +893,15 @@ pub(super) fn serve_review_requests(
     for mut request in server.incoming_requests() {
         let method = request.method().clone();
         let req_url = request.url().to_string();
+
+        if method == Method::Get && (req_url == "/favicon.ico" || req_url == "/favicon.png") {
+            let mut resp = Response::from_data(bundled_favicon_png().to_vec());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"image/png"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
 
         if method == Method::Get && req_url == "/runtime-log" {
             let mut resp = Response::from_string(
@@ -1540,6 +1687,9 @@ pub(super) fn serve_review_requests(
                 .and_then(|v| v.get("open_pdf"))
                 .and_then(|x| x.as_bool())
                 .unwrap_or(false);
+
+            let (real_image_rows, local_real_files) =
+                best_effort_prepare_images_for_pdf(&conn, &album_name);
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -1562,7 +1712,9 @@ pub(super) fn serve_review_requests(
                             open_local_path(&pdf_path);
                         }
                         generated_pdf_path = Some(pdf_path.display().to_string());
-                        if req_open_pdf {
+                        if real_image_rows > 0 && local_real_files == 0 {
+                            "Album text and PDF generation completed. Warning: no local real stamp images were found, so placeholders may dominate output.".to_string()
+                        } else if req_open_pdf {
                             "Album text and PDF generation completed; opened PDF preview."
                                 .to_string()
                         } else {
@@ -1666,6 +1818,8 @@ pub(super) fn serve_review_requests(
             let message = match parsed {
                 Ok(req) => {
                     if req.generate_album {
+                        let (real_image_rows, local_real_files) =
+                            best_effort_prepare_images_for_pdf(&conn, &album_name);
                         let album_dir = album_dir_for_ui(db_path, &album_name);
                         let generated = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
                             || {
@@ -1689,7 +1843,10 @@ pub(super) fn serve_review_requests(
                                     open_local_path(&pdf_path);
                                     generated_pdf_path = Some(pdf_path.display().to_string());
                                 }
-                                match (req.generate_pdf, generated_pdf_path.is_some()) {
+                                if real_image_rows > 0 && local_real_files == 0 {
+                                    "Review UI closed. Album/PDF generation completed, but no local real stamp images were found; placeholders may dominate output.".to_string()
+                                } else {
+                                    match (req.generate_pdf, generated_pdf_path.is_some()) {
                                     (true, true) => {
                                         "Review UI closed. Album text and PDF generation completed."
                                             .to_string()
@@ -1702,6 +1859,7 @@ pub(super) fn serve_review_requests(
                                         "Review UI closed. Album text generation completed without PDF generation."
                                             .to_string()
                                     }
+                                }
                                 }
                             }
                             Err(_) => {

@@ -22,9 +22,12 @@ pub fn normalize_catalog_number(raw: &str) -> String {
         value = rest.trim();
     }
 
+    // Colnect numbers often start with a country code prefix like "NO 1" or
+    // "CA. 454". Remove a leading 2-3 letter prefix with optional trailing dot.
     let mut parts = value.split_whitespace();
     if let Some(first) = parts.next() {
-        if first.chars().all(|c| c.is_ascii_alphabetic()) {
+        let code = first.trim_end_matches('.');
+        if (2..=3).contains(&code.len()) && code.chars().all(|c| c.is_ascii_alphabetic()) {
             let rest = value[first.len()..].trim_start();
             if !rest.is_empty() {
                 return rest.to_string();
@@ -97,6 +100,9 @@ mod tests {
     fn strips_country_prefix_from_catalog_number() {
         assert_eq!(normalize_catalog_number("MT A28PL102"), "A28PL102");
         assert_eq!(normalize_catalog_number("Sn: CA 454ai"), "454ai");
+        assert_eq!(normalize_catalog_number("NO 1"), "1");
+        assert_eq!(normalize_catalog_number("Sn: NO. 1"), "1");
+        assert_eq!(normalize_catalog_number("A 12"), "A 12");
     }
 
     #[test]

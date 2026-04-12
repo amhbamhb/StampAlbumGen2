@@ -525,7 +525,7 @@ pub(super) fn apply_matches(
             Ok(_) => {
                 skipped_rows += 1;
                 skipped_details.push(format!(
-                    "skipped rowid={} colnect_id={}: no DB changes applied (selected fields may already match, or replace SG was not enabled)",
+                    "skipped rowid={} colnect_id={}: no DB changes applied (selected fields may already match, or catalog number replace was not enabled)",
                     m.left_rowid, m.colnect_id
                 ));
             }
@@ -1150,7 +1150,7 @@ pub(super) fn save_left_stamp(
     if req.sg_number.trim().is_empty() {
         return SaveLeftStampResponse {
             ok: false,
-            message: "SG / reference code is required".to_string(),
+            message: "Catalog number / reference code is required".to_string(),
             updated_left: None,
         };
     }
@@ -1321,7 +1321,7 @@ pub(super) fn add_left_stamp(
     if req.sg_number.trim().is_empty() {
         return AddLeftStampResponse {
             ok: false,
-            message: "SG / reference code is required".to_string(),
+            message: "Catalog number / reference code is required".to_string(),
             added_left: None,
         };
     }

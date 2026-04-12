@@ -138,7 +138,7 @@ pub fn generate_placeholder_for_stamp_with_bg<P: AsRef<std::path::Path>>(
     }
 
     // Draw title and subtitle centered
-    let title = format!("SG {}", sg_number);
+    let title = format!("Catalog # {}", sg_number);
     let subtitle = if year.is_empty() {
         "".to_string()
     } else {
