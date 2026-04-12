@@ -3599,6 +3599,7 @@ function openLeftEditor(mode) {{
         ? currentLeft
         : {{
             sg_number: '',
+            catalog_code: getEffectiveDefaultCatalogCode(),
             year: currentLeft?.year || 0,
             series: currentLeft?.series || '',
             description: '',
@@ -3644,6 +3645,7 @@ function openLeftEditor(mode) {{
         }};
 
     document.getElementById('leftEditorSg').value = base?.sg_number || '';
+    setLeftEditorCatalogCodeValue(base?.catalog_code);
     document.getElementById('leftEditorYear').value = Number(base?.year || 0) || '';
     document.getElementById('leftEditorSeries').value = base?.series || '';
     document.getElementById('leftEditorDescription').value = base?.description || '';
@@ -3736,6 +3738,7 @@ async function submitLeftEditor() {{
 
     const body = {{
         sg_number: sgNumber,
+        catalog_code: getLeftEditorCatalogCodeValue(),
         year: Number.isFinite(yearValue) ? yearValue : 0,
         series: document.getElementById('leftEditorSeries')?.value || '',
         description: document.getElementById('leftEditorDescription')?.value || '',
