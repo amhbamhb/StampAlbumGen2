@@ -148,6 +148,7 @@ struct DbField {
 struct LeftStamp {
     rowid: i64,
     sg_number: String,
+    catalog_code: String,
     year: i32,
     series: String,
     image_path: String,
@@ -768,6 +769,7 @@ struct AddColnectStampResponse {
 struct SaveLeftStampRequest {
     rowid: i64,
     sg_number: String,
+    catalog_code: String,
     year: i32,
     series: String,
     description: String,
@@ -827,6 +829,7 @@ struct SaveLeftStampResponse {
 struct AddLeftStampRequest {
     source_rowid: Option<i64>,
     sg_number: String,
+    catalog_code: String,
     year: i32,
     series: String,
     description: String,
