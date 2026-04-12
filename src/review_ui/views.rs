@@ -4072,29 +4072,83 @@ async function closeReviewUi() {{
     if (choice.choice === 'cancel') return;
 
     const generateAlbum = choice.choice === 'generate';
-    const res = await fetch('/shutdown', {{
-        method: 'POST',
-        headers: {{ 'Content-Type': 'application/json' }},
-        body: JSON.stringify({{
-            generate_album: generateAlbum,
-            generate_pdf: choice.generatePdf,
-            start_year: (() => {{ const v = document.getElementById('reviewPdfStartYear')?.value.trim(); return v ? parseInt(v, 10) : null; }})(),
-            end_year:   (() => {{ const v = document.getElementById('reviewPdfEndYear')?.value.trim();   return v ? parseInt(v, 10) : null; }})(),
-        }})
-    }});
+    const closeBusyMsg = generateAlbum
+        ? (choice.generatePdf
+            ? 'Generating album text and PDF, then closing Review UI...'
+            : 'Generating album text, then closing Review UI...')
+        : 'Closing Review UI...';
+    window.__closeReviewInFlight = true;
+    if (statusEl) statusEl.innerText = closeBusyMsg;
+    setOperationBusy(true, closeBusyMsg);
 
-    const j = await res.json();
-    const details = [
-        j.generated_output_path ? `\nOutput: ${{j.generated_output_path}}` : '',
-        j.generated_pdf_path ? `\nPDF: ${{j.generated_pdf_path}}` : ''
+    let j;
+    try {{
+        const res = await fetch('/shutdown', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{
+                generate_album: generateAlbum,
+                generate_pdf: choice.generatePdf,
+                start_year: (() => {{ const v = document.getElementById('reviewPdfStartYear')?.value.trim(); return v ? parseInt(v, 10) : null; }})(),
+                end_year:   (() => {{ const v = document.getElementById('reviewPdfEndYear')?.value.trim();   return v ? parseInt(v, 10) : null; }})(),
+            }})
+        }});
+
+        j = await res.json();
+    }} catch (e) {{
+        setOperationBusy(false, '');
+        window.__closeReviewInFlight = false;
+        if (statusEl) statusEl.innerText = 'Close failed: ' + e;
+        alert('Failed to close Review UI: ' + e);
+        return;
+    }}
+
+    setOperationBusy(false, '');
+    window.__closeReviewInFlight = false;
+
+    // Build a clear alert: include PDF status (generated, skipped, or failed).
+    const parts = [j.message || 'Review UI shutdown request sent.'];
+    if (j.generated_output_path) parts.push(`\nOutput: ${{j.generated_output_path}}`);
+    if (choice.generatePdf) {{
+        if (j.generated_pdf_path) {{
+            parts.push(`\nPDF: ${{j.generated_pdf_path}}`);
+        }} else {{
+            parts.push('\nPDF generation was requested but no PDF was produced. Check that AlbumEasy CLI is configured and the output file is valid.');
+        }}
+    }}
+    alert(parts.join(''));
+
+    const makeFileUrl = path => {{
+        const p = String(path || '').trim();
+        if (!p) return '';
+        const normalized = p.startsWith('/') ? p : ('/' + p);
+        return 'file://' + encodeURI(normalized);
+    }};
+
+    const outputPath = String(j.generated_output_path || '').trim();
+    const pdfPath = String(j.generated_pdf_path || '').trim();
+    const outputUrl = makeFileUrl(outputPath);
+    const pdfUrl = makeFileUrl(pdfPath);
+
+    const openLinksHtml = [
+        outputUrl
+            ? `<p><a href="${{html(outputUrl)}}" target="_blank" rel="noopener">Open generated album text</a><br/><small>${{html(outputPath)}}</small></p>`
+            : '',
+        pdfUrl
+            ? `<p><a href="${{html(pdfUrl)}}" target="_blank" rel="noopener">Open generated PDF</a><br/><small>${{html(pdfPath)}}</small></p>`
+            : ''
     ].join('');
-    alert((j.message || 'Review UI shutdown request sent.') + details);
-        // Show friendly closing message
-        document.body.innerHTML = "<div style='font-family:sans-serif;margin:20px;'><h2>Review UI closed</h2><p>You can close this browser tab now.</p></div>";
 
-    // window.close may be blocked for tabs not opened by script; provide fallback.
+    document.body.innerHTML =
+        "<div style='font-family:sans-serif;margin:20px;max-width:780px;'>" +
+        "<h2>Review UI closed</h2>" +
+        `<p>${{html(j.message || 'Review UI shutdown request sent.')}}</p>` +
+        openLinksHtml +
+        "<p>You can close this browser tab now.</p>" +
+        "</div>";
+
+    // Try to close if this tab was script-opened; if blocked, keep the page with links.
     window.close();
-    setTimeout(() => {{ window.location.href = 'about:blank'; }}, 150);
 }}
 
 async function returnToStartReviewPage() {{
