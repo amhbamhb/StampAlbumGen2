@@ -47,6 +47,7 @@ pub(super) fn load_left_stamps(
     let query = if include_imageless {
         "SELECT rowid,
                 COALESCE(sg_number, ''),
+            COALESCE(catalog_code, ''),
                 COALESCE(year, 0),
                 COALESCE(series, ''),
                 COALESCE(image_path, ''),
@@ -94,6 +95,7 @@ pub(super) fn load_left_stamps(
     } else {
         "SELECT rowid,
                 COALESCE(sg_number, ''),
+            COALESCE(catalog_code, ''),
                 COALESCE(year, 0),
                 COALESCE(series, ''),
                 COALESCE(image_path, ''),
@@ -554,6 +556,7 @@ pub(super) fn load_left_stamp_by_rowid(
     let mut stmt = conn.prepare(
         "SELECT rowid,
                 COALESCE(sg_number, ''),
+            COALESCE(catalog_code, ''),
                 COALESCE(year, 0),
                 COALESCE(series, ''),
                 COALESCE(image_path, ''),
