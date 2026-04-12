@@ -2566,12 +2566,14 @@ function inferCatalogTypeForNumber(rawCatalogCodes, displayedNumber, fallbackCat
 }}
 
 function effectiveCatalogCodeForItem(item) {{
+    const explicit = normalizeCatalogCodeForUi(item?.catalog_code);
+    if (explicit) return explicit;
     const inferred = inferCatalogTypeForNumber(
         item?.colnect_catalog_codes,
         item?.sg_number,
-        item?.catalog_code || getEffectiveDefaultCatalogCode()
+        getEffectiveDefaultCatalogCode()
     );
-    return inferred || normalizeCatalogCodeForUi(item?.catalog_code) || getEffectiveDefaultCatalogCode();
+    return inferred || getEffectiveDefaultCatalogCode();
 }}
 function imageBox(src, label) {{
   if (b(src)) return `<div class='imgbox'><img src='${{src}}' alt='${{html(label)}}'/></div>`;
