@@ -2527,6 +2527,67 @@ where
                     clean_text(stamp.attrs.get("sg_number").unwrap_or(&"".to_string()))
                 };
 
+                // Resolve heading catalog family from the stamp row first.
+                // This keeps STAMP_HEADING aligned with Review UI edits even
+                // when in-memory attrs were defaulted earlier in the pipeline.
+                let heading_catalog_code = {
+                    let default_code = crate::catalog::normalize_catalog_type(
+                        &config.effective_default_catalog_code(),
+                    );
+                    let explicit_code = stamp
+                        .attrs
+                        .get("catalog_code")
+                        .map(|v| crate::catalog::normalize_catalog_type(v))
+                        .filter(|v| !v.trim().is_empty());
+
+                    let db_catalog_code = stamp
+                        .attrs
+                        .get("year")
+                        .and_then(|v| v.trim().parse::<i32>().ok())
+                        .and_then(|year| {
+                            let sg_db = stamp
+                                .attrs
+                                .get("sg_number")
+                                .map(|v| v.trim())
+                                .unwrap_or("");
+                            if sg_db.is_empty() {
+                                return None;
+                            }
+                            conn.query_row(
+                                "SELECT COALESCE(catalog_code, '')
+                                 FROM stamps
+                                 WHERE series = ?1
+                                   AND year = ?2
+                                   AND sg_number = ?3
+                                 ORDER BY CASE WHEN image_path = ?4 THEN 0 ELSE 1 END, rowid DESC
+                                 LIMIT 1",
+                                [series, &year.to_string(), sg_db, image_path],
+                                |row| row.get::<_, String>(0),
+                            )
+                            .ok()
+                            .map(|v| crate::catalog::normalize_catalog_type(&v))
+                            .filter(|v| !v.trim().is_empty())
+                        });
+
+                    db_catalog_code
+                        .or(explicit_code)
+                        .unwrap_or(default_code)
+                };
+                let heading_label =
+                    crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
+                        &config,
+                        Some(heading_catalog_code.as_str()),
+                    );
+                let heading_diag_sg = sgnum.replace('"', "'");
+                let heading_diag_code = heading_catalog_code.replace('"', "'");
+                let heading_diag_label = heading_label.replace('"', "'");
+                let heading_diag_series = clean_text(series).replace('"', "'");
+                let _ = writeln!(
+                    output,
+                    "# HEADING_DIAG sg=\"{}\" catalog_code=\"{}\" label=\"{}\" series=\"{}\"",
+                    heading_diag_sg, heading_diag_code, heading_diag_label, heading_diag_series
+                );
+
                 let _safe_sg = left
                     .replace("\\n", " ")
                     .split_whitespace()
