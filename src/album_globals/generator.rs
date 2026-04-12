@@ -2692,10 +2692,6 @@ where
                             .clone()
                             .unwrap_or_else(|| "HN".to_string());
                         let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
-                        let sh_label = crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
-                            &config,
-                            stamp.attrs.get("catalog_code").map(|s| s.as_str()),
-                        );
                         let stamp_name = stamp.attrs.get("colnect_name").map(|s| s.as_str());
                         let heading_perforation = stamp
                             .attrs
@@ -2713,7 +2709,7 @@ where
                             &right,
                             &sh_font,
                             sh_size,
-                            &sh_label,
+                            &heading_label,
                             &sgnum,
                             stamp_name,
                             heading_perforation,
@@ -2865,10 +2861,6 @@ where
                             .clone()
                             .unwrap_or_else(|| "HN".to_string());
                         let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
-                        let sh_label = crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
-                            &config,
-                            stamp.attrs.get("catalog_code").map(|s| s.as_str()),
-                        );
                         let stamp_name = stamp.attrs.get("colnect_name").map(|s| s.as_str());
                         let heading_perforation = stamp
                             .attrs
@@ -2886,7 +2878,7 @@ where
                             &right,
                             &sh_font,
                             sh_size,
-                            &sh_label,
+                            &heading_label,
                             &sgnum,
                             stamp_name,
                             heading_perforation,
@@ -2899,10 +2891,6 @@ where
                             .clone()
                             .unwrap_or_else(|| "HN".to_string());
                         let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
-                        let sh_label = crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
-                            &config,
-                            stamp.attrs.get("catalog_code").map(|s| s.as_str()),
-                        );
                         let stamp_name = stamp.attrs.get("colnect_name").map(|s| s.as_str());
                         let heading_perforation = stamp
                             .attrs
@@ -2920,7 +2908,7 @@ where
                             &right,
                             &sh_font,
                             sh_size,
-                            &sh_label,
+                            &heading_label,
                             &sgnum,
                             stamp_name,
                             heading_perforation,
