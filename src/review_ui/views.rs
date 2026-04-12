@@ -4010,12 +4010,23 @@ async function undoLastDelete() {{
 }}
 
 async function closeReviewUi() {{
+    const statusEl = document.getElementById('status');
+    if (window.__closeReviewInFlight === true) {{
+        if (statusEl) statusEl.innerText = 'Close request already in progress...';
+        return;
+    }}
+
     // Show a 3-button modal: Generate & Close | Close Only | Cancel
+    const CLOSE_PDF_PREF_KEY = 'stampAlbumReviewUiClosePdfEnabled';
     const choice = await new Promise(resolve => {{
-        const defaultPdfChecked = pdfGenerationDefaults.enabledByDefault && pdfGenerationDefaults.cliConfigured;
+        const configDefault = pdfGenerationDefaults.enabledByDefault && pdfGenerationDefaults.cliConfigured;
+        // Persist the user's last preference across sessions; fall back to config default on first use.
+        const savedPref = localStorage.getItem(CLOSE_PDF_PREF_KEY);
+        const pdfChecked = pdfGenerationDefaults.cliConfigured &&
+            (savedPref !== null ? savedPref === 'true' : configDefault);
         const pdfOptionHtml =
             '<label style="display:flex;align-items:flex-start;gap:0.65em;margin:0 0 1.1em;text-align:left;font-size:0.95em;line-height:1.4">' +
-            `<input id="_dlg_pdf" type="checkbox" ${{defaultPdfChecked ? 'checked' : ''}} ${{pdfGenerationDefaults.cliConfigured ? '' : 'disabled'}} style="margin-top:0.2em" />` +
+            `<input id="_dlg_pdf" type="checkbox" ${{pdfChecked ? 'checked' : ''}} ${{pdfGenerationDefaults.cliConfigured ? '' : 'disabled'}} style="margin-top:0.2em" />` +
             '<span>Generate PDF with AlbumEasy CLI <code>-c</code> and open it after generation</span>' +
             '</label>' +
             (pdfGenerationDefaults.cliConfigured
@@ -4042,7 +4053,12 @@ async function closeReviewUi() {{
         document.body.appendChild(dlg);
         dlg.showModal();
         const done = v => {{
-            const generatePdf = v === 'generate' && !!dlg.querySelector('#_dlg_pdf')?.checked;
+            const cbChecked = !!dlg.querySelector('#_dlg_pdf')?.checked;
+            const generatePdf = v === 'generate' && cbChecked;
+            // Persist the checkbox state (even on close/cancel so next open respects it).
+            if (v !== 'cancel') {{
+                try {{ localStorage.setItem(CLOSE_PDF_PREF_KEY, String(cbChecked)); }} catch (_) {{}}
+            }}
             dlg.close();
             dlg.remove();
             resolve({{ choice: v, generatePdf }});
