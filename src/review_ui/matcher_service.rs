@@ -1206,51 +1206,53 @@ pub(super) fn save_left_stamp(
     let update_res = conn.execute(
         "UPDATE stamps
          SET sg_number = ?1,
-             year = ?2,
-             series = ?3,
-             description = ?4,
-             watermark = ?5,
-             design = ?6,
-             engraving = ?7,
-             perforation = ?8,
-             context = ?9,
-             image_path = ?10,
-             colnect_page_url = ?11,
-             colnect_image_url = ?12,
-             colnect_id = ?13,
-             colnect_name = ?14,
-             colnect_catalog_codes = ?15,
-             colnect_country = ?16,
-             colnect_width = ?17,
-             colnect_height = ?18,
-             colnect_format = ?19,
-             colnect_emission = ?20,
-             colnect_printing = ?21,
-             colnect_paper = ?22,
-             colnect_gum = ?23,
-             colnect_ord_mi = ?24,
-             colnect_ord_sn = ?25,
-             colnect_ord_yt = ?26,
-             colnect_face_value = ?27,
-             colnect_currency = ?28,
-             colnect_ord_sg = ?29,
-             colnect_expiry_date = ?30,
-             colnect_print_run = ?31,
-             colnect_colors = ?32,
-             colnect_parent_item = ?33,
-             colnect_variant = ?34,
-             colnect_overprint_variant = ?35,
-             colnect_score = ?36,
-             colnect_accuracy = ?37,
-             colnect_list = ?38,
-             colnect_quantity = ?39,
-             colnect_condition = ?40,
-             colnect_public_note = ?41,
-             colnect_private_note = ?42,
-             uniq_key = lower(coalesce(country, '')) || '|' || ?3 || '|' || ?1
-         WHERE rowid = ?43",
+             catalog_code = ?2,
+             year = ?3,
+             series = ?4,
+             description = ?5,
+             watermark = ?6,
+             design = ?7,
+             engraving = ?8,
+             perforation = ?9,
+             context = ?10,
+             image_path = ?11,
+             colnect_page_url = ?12,
+             colnect_image_url = ?13,
+             colnect_id = ?14,
+             colnect_name = ?15,
+             colnect_catalog_codes = ?16,
+             colnect_country = ?17,
+             colnect_width = ?18,
+             colnect_height = ?19,
+             colnect_format = ?20,
+             colnect_emission = ?21,
+             colnect_printing = ?22,
+             colnect_paper = ?23,
+             colnect_gum = ?24,
+             colnect_ord_mi = ?25,
+             colnect_ord_sn = ?26,
+             colnect_ord_yt = ?27,
+             colnect_face_value = ?28,
+             colnect_currency = ?29,
+             colnect_ord_sg = ?30,
+             colnect_expiry_date = ?31,
+             colnect_print_run = ?32,
+             colnect_colors = ?33,
+             colnect_parent_item = ?34,
+             colnect_variant = ?35,
+             colnect_overprint_variant = ?36,
+             colnect_score = ?37,
+             colnect_accuracy = ?38,
+             colnect_list = ?39,
+             colnect_quantity = ?40,
+             colnect_condition = ?41,
+             colnect_public_note = ?42,
+             colnect_private_note = ?43,
+             uniq_key = lower(coalesce(country, '')) || '|' || ?4 || '|' || ?1
+         WHERE rowid = ?44",
         params![
             req.sg_number.trim(),
+            crate::catalog::normalize_catalog_type(&req.catalog_code),
             req.year,
             req.series.trim(),
             req.description.trim(),
@@ -1365,7 +1367,14 @@ pub(super) fn add_left_stamp(
         }
     };
 
-    let catalog_code = load_album_config(db_path, album_name).effective_default_catalog_code();
+    let catalog_code = {
+        let requested = crate::catalog::normalize_catalog_type(&req.catalog_code);
+        if requested.is_empty() {
+            load_album_config(db_path, album_name).effective_default_catalog_code()
+        } else {
+            requested
+        }
+    };
     let series = req.series.trim().to_string();
     let sg_number = req.sg_number.trim().to_string();
     let uniq_key = format!(
