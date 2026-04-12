@@ -3054,6 +3054,11 @@ function render(options) {{
   }}
 
   const l = left[leftIdx];
+    const leftCatalogCode = effectiveCatalogCodeForItem(l);
+    const leftCatalogLabel = catalogDisplayName(leftCatalogCode);
+    const leftCatalogTypeLabel = leftCatalogCode
+        ? `${{leftCatalogLabel}} (${{String(leftCatalogCode).toUpperCase()}})`
+        : leftCatalogLabel;
   const leftImg = b(l.image_abs) ? `/image?path=${{encodeURIComponent(l.image_abs)}}` : l.stampworld_image_url;
   document.getElementById('leftPos').innerText = `Left ${{leftIdx + 1}}/${{left.length}} (rowid=${{l.rowid}})`;
   document.getElementById('leftActionBanner').innerHTML = `
@@ -3117,11 +3122,12 @@ function render(options) {{
   document.getElementById('leftPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
-                <strong>Base Stamp</strong> Catalog #=${{html(fmt(l.sg_number))}} | Year=${{html(fmt(l.year))}} | Series=${{html(fmt(l.series))}}
+                <strong>Base Stamp</strong> ${{html(leftCatalogTypeLabel)}} #=${{html(fmt(l.sg_number))}} | Year=${{html(fmt(l.year))}} | Series=${{html(fmt(l.series))}}
             </div>
             <div class='panelBody'>
                 ${{imageBox(leftImg, 'StampWorld image')}}
                 <table class='kv'>
+                    ${{row('Catalog Type', leftCatalogTypeLabel)}}
                     ${{row('Catalog #', l.sg_number)}}
                     ${{row('Year', l.year)}}
                     ${{row('Series', l.series)}}
