@@ -3198,6 +3198,14 @@ function render(options) {{
         const effectiveCatalogCodeUpper = String(effectiveCatalogCode || '').toUpperCase();
         const effectiveCatalogOrdLabel = `Ord Current Catalog (${{effectiveCatalogCodeUpper || 'N/A'}})`;
         const effectiveCatalogOrdValue = ordinalValueForCatalog(r, effectiveCatalogCode);
+    const rightCatalogType = inferCatalogTypeForNumber(
+        r.catalog_codes_text,
+        r.sg_number,
+        effectiveCatalogCode
+    );
+    const rightCatalogTypeLabel = rightCatalogType
+        ? `${{catalogDisplayName(rightCatalogType)}} (${{String(rightCatalogType).toUpperCase()}})`
+        : 'Catalog';
     const catPairs = (r.catalog_code_pairs || []).map(p =>
         `<option value='${{html(p.code)}}' data-cat='${{html(p.catalog_type)}}'>${{html(catalogDisplayName(p.catalog_type))}} (${{html(String(p.catalog_type || '').toUpperCase())}}): ${{html(p.code)}}</option>`
     ).join('');
@@ -3218,7 +3226,7 @@ function render(options) {{
                 ${{imageBox(rightImg, 'Colnect candidate image')}}
                 <table class='kv'>
                     ${{row('Colnect ID', r.colnect_id)}}
-                    ${{row('Catalog #', r.sg_number)}}
+                    ${{row(rightCatalogTypeLabel + ' #', r.sg_number)}}
             ${{row('Catalog Codes Text', r.catalog_codes_text)}}
                     ${{row('Year', r.year)}}
             ${{row('Country', r.country)}}
