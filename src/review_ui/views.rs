@@ -3547,6 +3547,42 @@ function toggleLeftEditorImageOptions() {{
     if (uploadRow) uploadRow.style.display = mode === 'upload' ? '' : 'none';
 }}
 
+function toggleLeftEditorCatalogCodeCustom() {{
+    const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
+    const customWrap = document.getElementById('leftEditorCatalogCodeCustomWrap');
+    const isCustom = String(selectEl?.value || '') === 'custom';
+    if (customWrap) customWrap.style.display = isCustom ? '' : 'none';
+}}
+
+function setLeftEditorCatalogCodeValue(code) {{
+    const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
+    const customEl = document.getElementById('leftEditorCatalogCodeCustom');
+    if (!selectEl || !customEl) return;
+
+    const raw = String(code || '').trim().toLowerCase();
+    const normalized = normalizeCatalogCodeForUi(raw);
+    if (normalized) {{
+        selectEl.value = normalized;
+        customEl.value = '';
+    }} else if (raw) {{
+        selectEl.value = 'custom';
+        customEl.value = raw;
+    }} else {{
+        selectEl.value = getEffectiveDefaultCatalogCode();
+        customEl.value = '';
+    }}
+    toggleLeftEditorCatalogCodeCustom();
+}}
+
+function getLeftEditorCatalogCodeValue() {{
+    const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
+    const customEl = document.getElementById('leftEditorCatalogCodeCustom');
+    if (String(selectEl?.value || '') === 'custom') {{
+        return String(customEl?.value || '').trim().toLowerCase();
+    }}
+    return String(selectEl?.value || '').trim().toLowerCase();
+}}
+
 function openLeftEditor(mode) {{
     leftEditorMode = mode === 'add' ? 'add' : 'edit';
     const currentLeft = left[leftIdx] || null;
