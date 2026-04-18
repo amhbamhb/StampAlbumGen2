@@ -833,7 +833,9 @@ where
         let mut series_heights_mm: Vec<f64> = Vec::new();
         for stamp in stamps_vec.iter() {
             let image_path = stamp.image_path.trim();
-            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                .to_string_lossy()
+                .to_string();
             if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
                 series_widths_mm.push((w_px as f64) * (mm_per_pixel_w as f64));
                 series_heights_mm.push((h_px as f64) * (mm_per_pixel_h as f64));
@@ -880,7 +882,9 @@ where
             } else {
                 // Fall back to existing dimension sources
                 let image_path = s.image_path.trim();
-                let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                    .to_string_lossy()
+                    .to_string();
                 // Prefer DB-stored pixel dimensions if available; otherwise fall back
                 // to on-disk image estimation or series-average, finally reference size.
                 // Track where the estimated size came from for diagnostics
@@ -945,7 +949,9 @@ where
             // a placeholder now using the emit box size (est + 2*stamp_box_adjust)
             // so future layout sees consistent sizes.
             let image_path = s.image_path.trim();
-            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                .to_string_lossy()
+                .to_string();
             if s.image_width_px.is_none() && (image_path.is_empty() || !Path::new(&full_image_path).exists()) {
                 let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
                 let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
@@ -1093,8 +1099,9 @@ where
         // let mut row_width = 0.0;
         for stamp in deduped_regular_stamps.into_iter() {
             let image_path = stamp.image_path.trim();
-            let _full_image_path =
-                format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            let _full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                .to_string_lossy()
+                .to_string();
             // Use the est_width_mm precomputed in the pre-pass (should always be present)
             let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
             let _est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
@@ -1782,8 +1789,9 @@ where
                 if let Some(first_row) = next_rows.first() {
                     for stamp in first_row {
                         let image_path = stamp.image_path.trim();
-                        let full_image_path =
-                            format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                        let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                            .to_string_lossy()
+                            .to_string();
                         // Prefer DB-stored pixels when available, otherwise estimate from file
                         let est_height_mm = if let (Some(_w_px), Some(h_px)) =
                             (stamp.image_width_px, stamp.image_height_px)
@@ -2061,8 +2069,9 @@ where
                 // Use correct fields from StampStub
                 // Use image_path from the database directly
                 let image_path = stamp.image_path.trim();
-                let full_image_path =
-                    format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+                let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                    .to_string_lossy()
+                    .to_string();
                 // Use precomputed estimates from the pre-pass so row packing,
                 // page-fit checks, and emitted dimensions stay in sync.
                 let mut est_width_mm = stamp

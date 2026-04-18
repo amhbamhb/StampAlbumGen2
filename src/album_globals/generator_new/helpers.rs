@@ -652,7 +652,9 @@ pub fn estimate_and_ensure_placeholders(
     let mut series_heights_mm: Vec<f64> = Vec::new();
     for stamp in stamps.iter() {
         let image_path = stamp.image_path.trim();
-        let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+        let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+            .to_string_lossy()
+            .to_string();
         if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
             series_widths_mm.push((w_px as f64) * (mm_per_pixel_w as f64));
             series_heights_mm.push((h_px as f64) * (mm_per_pixel_h as f64));
@@ -696,7 +698,9 @@ pub fn estimate_and_ensure_placeholders(
         } else {
             // Fall back to existing logic for image-based or default dimensions
             let image_path = s.image_path.trim();
-            let full_image_path = format!("Albums/{}/{}", album_name.replace(' ', "-"), image_path);
+            let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+                .to_string_lossy()
+                .to_string();
             if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
                 let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
                 let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);

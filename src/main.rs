@@ -25,7 +25,8 @@ use stamp_album_gen2::{
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
-        install_linux_desktop_integration, setup_logging, startup_probe_path,
+        ensure_windows_desktop_integration, install_linux_desktop_integration, setup_logging,
+        startup_probe_path,
         uninstall_linux_desktop_integration, validate_os, write_startup_probe,
         write_startup_probe_snapshot,
     },
@@ -135,6 +136,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let startup_config = config::load_config("config.toml");
+    // Always ensure the template file exists, even when config.toml was found and loaded
+    // successfully. This covers the case where a user deletes config_template.toml after
+    // the initial setup — it will be silently recreated from the embedded defaults on the
+    // next run without touching their existing config.toml.
+    if let Err(e) =
+        config::ensure_config_and_template_files("config.toml", "config_template.toml")
+    {
+        log::warn!("Failed to ensure config template file: {}", e);
+    }
     write_startup_probe("config.load", "loaded config.toml");
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
@@ -181,6 +191,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(e) => {
                 log_runtime_event(&format!(
                     "Desktop integration check failed (non-fatal): {}",
+                    e
+                ));
+            }
+        }
+
+        match ensure_windows_desktop_integration() {
+            Ok(report) => {
+                if report.changed {
+                    log_runtime_event(&format!(
+                        "Desktop shortcut installed: {} (desktop: {}, start_menu: {}, icon: {})",
+                        report.summary,
+                        report.desktop_shortcut_path,
+                        report.start_menu_shortcut_path,
+                        report.icon_path
+                    ));
+                } else {
+                    log_runtime_event(&format!("Desktop shortcut check: {}", report.summary));
+                }
+            }
+            Err(e) => {
+                log_runtime_event(&format!(
+                    "Desktop shortcut check failed (non-fatal): {}",
                     e
                 ));
             }
@@ -314,6 +346,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         album_cfg.review_ui_right_unmatched_only_default_checked(),
                         album_cfg.albumeasy_auto_pdf_enabled(),
                         album_cfg.effective_albumeasy_cli_path().is_some(),
+                        &album_cfg.review_ui_catalog_family_options(),
                     )? {
                         ReviewUiRunOutcome::Exit => return Ok(()),
                         ReviewUiRunOutcome::ReloadRequested => {

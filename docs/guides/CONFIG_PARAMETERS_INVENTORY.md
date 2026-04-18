@@ -114,8 +114,14 @@
 |-----------|------|---------|-------------|
 | `stamp_heading_font` | String | "HN" | Font for stamp headings |
 | `stamp_heading_size` | f32 | 10.0 | Size for stamp headings |
-| `stamp_heading_label` | String | "" | Optional label prefix for stamp headings. When empty (default), no STAMP_HEADING is emitted. Set to a catalog name (e.g., "SG", "Scott") only if mapping to a recognized catalog system. |
+| `stamp_heading_label` | String | "auto" | Label prefix for stamp headings. Use `auto` to follow catalog family dynamically per stamp; set empty string to hide heading labels. |
 | `stamp_heading_in_row_height` | bool | false | Include heading in row height calc |
+
+### Review UI Catalog Families
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `review_ui.catalog_family_options` | String[] | Built-in list | Optional searchable catalog family master list for Review UI selectors. Entry format: `code|label|count`. Stamp-specific families are shown first; remaining families appear under "Other catalogs". Use `sn` label as `Scott Number`. |
 
 ### Content Control & Header Information
 

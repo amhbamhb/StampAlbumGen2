@@ -61,14 +61,20 @@ pub fn collect_stampworld_data_with_fetcher(
     // Previously this used the site name which produced `Albums/<Album>/Switzerland.db`.
     // For per-album runs we want `Albums/<Album>/<Album>.db` so the generator and
     // collector operate on the same file.
-    let images_parent = images_directory.replace("/images", "");
+    let images_parent = std::path::Path::new(images_directory)
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::path::PathBuf::from(images_directory));
     let country_db_name = site_name.replace("/", "-");
-    let album_basename = std::path::Path::new(&images_parent)
+    let album_basename = images_parent
         .file_name()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
         .unwrap_or_else(|| country_db_name.clone());
-    let db_path = format!("{}/{}.db", images_parent, album_basename);
+    let db_path = images_parent
+        .join(format!("{}.db", album_basename))
+        .to_string_lossy()
+        .to_string();
     let conn = match crate::db_utils::init_db(&db_path) {
         Ok(c) => c,
         Err(e) => {

@@ -61,7 +61,7 @@ print_flag_cover = false
 # Tune the small heading displayed above/beside each stamp box.
 stamp_heading_font = "HN"
 stamp_heading_size = 10
-stamp_heading_label = "Scott"
+stamp_heading_label = "auto"
 
 # --- Grouped range handling ---
 expand_grouped_ranges = "placeholders"
@@ -173,3 +173,16 @@ default_colnect_image_url_checked = true
 default_colnect_metadata_checked = true
 default_replace_sg_number_checked = false
 default_right_unmatched_only_checked = false
+
+# Optional catalog family list for searchable Review UI selectors.
+# Entry format: "code|label|count"
+catalog_family_options = [
+	"sn|Scott Number|814224",
+	"sg|Stanley Gibbons|705728",
+	"mi|Michel|1126331",
+	"yt|Yvert et Tellier|925704",
+	"afa|AFA number|116770",
+	"ank|ANK|8320",
+	"un|Unificato|169053",
+	"col|Colnect codes|445975"
+]

@@ -92,6 +92,7 @@ fn wikipedia_ingest_inserts_up_to_max_entries_from_cache() {
         cache_db.to_str().unwrap(),
         album_db.to_str().unwrap(),
         1,
+        "Wikipedia import",
     )
     .expect("ingest should run without error");
 
