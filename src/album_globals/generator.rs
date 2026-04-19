@@ -437,6 +437,30 @@ where
             })
             .unwrap_or(0)
             > 0;
+
+    // The commemorative summary page includes US-specific collecting notes.
+    // Keep it limited to US albums so non-US albums (for example Switzerland)
+    // do not get legacy US summary content injected.
+    let normalized_album_name = album_name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect::<String>()
+        .to_ascii_lowercase();
+    let album_name_suggests_us = matches!(
+        normalized_album_name.as_str(),
+        "us" | "usa" | "unitedstates" | "unitedstatesofamerica"
+    );
+    let country_hint_suggests_us = conn
+        .query_row(
+            "SELECT LOWER(TRIM(country)) FROM stamps WHERE TRIM(COALESCE(country, '')) != '' LIMIT 1",
+            [],
+            |r| r.get::<_, String>(0),
+        )
+        .map(|country| {
+            country == "us" || country == "usa" || country.contains("united states")
+        })
+        .unwrap_or(false);
+    let allow_legacy_us_commemorative_summary = album_name_suggests_us || country_hint_suggests_us;
     // Also obtain canonical defaults so we always fall back to the same
     // values the `Config::with_defaults()` helper exposes. This ensures
     // generator math always uses config-driven values (either user-set or
@@ -1018,7 +1042,7 @@ where
             }
 
             // Emit summary page with all commemoratives
-            if has_commemoratives {
+            if has_commemoratives && allow_legacy_us_commemorative_summary {
                 let all_commemoratives: Vec<Stamp> = [regular_commemoratives, special_stamps].concat();
                 let _ = crate::album_globals::commemorative_generator::emit_summary_page(&mut output, year, &all_commemoratives);
                 page_counter += 1;
