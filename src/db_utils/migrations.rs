@@ -261,6 +261,10 @@ pub fn run_pending_schema_migrations(conn: &Connection) -> Result<()> {
         debug!("Applied schema migration {} ({})", version, name);
     }
 
+    // Always run runtime compatibility repair, even when all migration
+    // versions were already marked as applied.
+    enforce_runtime_schema_compatibility(conn)?;
+
     debug!("Schema is at version {}", LATEST_SCHEMA_VERSION);
     Ok(())
 }
@@ -350,6 +354,52 @@ fn migration_004_us1847_compat_columns(conn: &Connection) -> Result<()> {
         "UPDATE us1847_stamps SET color = '' WHERE color IS NULL",
         [],
     )?;
+    Ok(())
+}
+
+fn enforce_runtime_schema_compatibility(conn: &Connection) -> Result<()> {
+    ensure_columns(conn, "stamps", &CANONICAL_STAMPS_COLUMNS[1..])?;
+    ensure_columns(conn, "colnect_stamps", &COLNECT_STAMPS_MIGRATION_COLUMNS)?;
+    ensure_columns(conn, "us1847_stamps", &[("color", "TEXT DEFAULT ''")])?;
+    ensure_columns(
+        conn,
+        "us1847_series",
+        &[
+            ("design_size_portrait", "TEXT DEFAULT ''"),
+            ("design_size_landscape", "TEXT DEFAULT ''"),
+        ],
+    )?;
+
+    conn.execute(
+        "UPDATE stamps
+         SET uniq_key = lower(coalesce(country,'')) || '|' || coalesce(series,'') || '|' || coalesce(sg_number,'')
+         WHERE uniq_key IS NULL OR uniq_key = ''",
+        [],
+    )?;
+
+    let dup_groups: i64 = conn.query_row(
+        "SELECT COUNT(*)
+         FROM (
+             SELECT uniq_key
+             FROM stamps
+             GROUP BY uniq_key
+             HAVING COUNT(*) > 1
+         )",
+        [],
+        |r| r.get(0),
+    )?;
+    if dup_groups == 0 {
+        conn.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS stamps_unique_uniq_key ON stamps(uniq_key)",
+            [],
+        )?;
+    }
+
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_colnect_stamps_sg_number ON colnect_stamps (sg_number)",
+        [],
+    )?;
+
     Ok(())
 }
 
@@ -575,6 +625,59 @@ mod tests {
             .any(|name| name == "odd_legacy_column"));
         assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
         assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+    }
+
+    #[test]
+    fn run_pending_schema_migrations_repairs_preapplied_but_drifted_schema() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                sg_number TEXT,
+                image_path TEXT
+            )",
+            [],
+        )
+        .expect("create legacy stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (
+                id INTEGER PRIMARY KEY,
+                sg_number TEXT,
+                colnect_id TEXT UNIQUE
+            )",
+            [],
+        )
+        .expect("create legacy colnect_stamps");
+        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_series");
+        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_stamps");
+
+        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
+        conn.execute(
+            "INSERT INTO schema_migrations(version, name) VALUES
+                (1, 'stamps_schema_alignment'),
+                (2, 'stamps_uniq_key_and_indexes'),
+                (3, 'colnect_schema_alignment'),
+                (4, 'us1847_compat_columns')",
+            [],
+        )
+        .expect("seed schema versions");
+
+        run_pending_schema_migrations(&conn).expect("run migrations with pre-applied versions");
+
+        let stamps_columns = column_names(&conn, "stamps");
+        assert!(stamps_columns.iter().any(|name| name == "catalog_code"));
+        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+
+        let colnect_columns = column_names(&conn, "colnect_stamps");
+        assert!(colnect_columns.iter().any(|name| name == "series"));
+
+        let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
+        assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
     }
 }
 
