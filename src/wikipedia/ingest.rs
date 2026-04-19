@@ -95,31 +95,31 @@ pub fn ingest_wikipedia_to_db(
 
                 match crate::db_utils::insert_stamp(
                     &conn,
-                    topic,              // country
-                    &series_name,       // series
-                    0,                  // year unknown
-                    "",                 // month
-                    "0",                // _month_num
-                    "",                 // day
-                    &sg,                // sg_number
-                    "WIKIPEDIA",        // type
-                    "",                 // denomination
-                    "",                 // color
-                    &description,       // description
-                    "",                 // stamps_issued
-                    "",                 // mint_condition
-                    "",                 // unused
-                    "",                 // used
-                    "",                 // letter_fdc
-                    "",                 // currency
-                    "",                 // image_path
-                    "",                 // remote_image_url
-                    "",                 // original_image_url
-                    "",                 // watermark
-                    "",                 // design
-                    "",                 // engraving
-                    "",                 // perforation
-                    series_prefix,      // context
+                    topic,         // country
+                    &series_name,  // series
+                    0,             // year unknown
+                    "",            // month
+                    "0",           // _month_num
+                    "",            // day
+                    &sg,           // sg_number
+                    "WIKIPEDIA",   // type
+                    "",            // denomination
+                    "",            // color
+                    &description,  // description
+                    "",            // stamps_issued
+                    "",            // mint_condition
+                    "",            // unused
+                    "",            // used
+                    "",            // letter_fdc
+                    "",            // currency
+                    "",            // image_path
+                    "",            // remote_image_url
+                    "",            // original_image_url
+                    "",            // watermark
+                    "",            // design
+                    "",            // engraving
+                    "",            // perforation
+                    series_prefix, // context
                 ) {
                     Ok(true) => {
                         inserted += 1;

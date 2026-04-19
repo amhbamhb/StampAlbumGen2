@@ -627,9 +627,8 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
         let mut child = match launch_with_cwd(use_preferred_cwd) {
             Ok(c) => c,
             Err(first_err) => {
-                let should_retry_without_cwd = use_preferred_cwd
-                    && cfg!(windows)
-                    && first_err.raw_os_error() == Some(123);
+                let should_retry_without_cwd =
+                    use_preferred_cwd && cfg!(windows) && first_err.raw_os_error() == Some(123);
                 if should_retry_without_cwd {
                     log_runtime_event(&format!(
                         "StampWorld: launch failed with invalid path syntax (os error 123). Retrying without custom cwd (cwd was {}).",

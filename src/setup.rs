@@ -490,9 +490,8 @@ pub fn ensure_windows_desktop_integration() -> std::io::Result<WindowsDesktopInt
         .ok_or_else(|| std::io::Error::other("failed to determine executable parent directory"))?
         .to_path_buf();
 
-    let desktop_dir = query_windows_desktop_dir().or_else(|| {
-        std::env::var_os("USERPROFILE").map(|v| PathBuf::from(v).join("Desktop"))
-    });
+    let desktop_dir = query_windows_desktop_dir()
+        .or_else(|| std::env::var_os("USERPROFILE").map(|v| PathBuf::from(v).join("Desktop")));
     let desktop_dir = desktop_dir.ok_or_else(|| {
         std::io::Error::new(
             std::io::ErrorKind::NotFound,

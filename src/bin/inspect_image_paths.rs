@@ -23,9 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let images_dir = album_dir.join("images");
 
     let conn = Connection::open(&db_path)?;
-    let mut stmt = conn.prepare(
-        "SELECT COALESCE(image_path, '') FROM stamps ORDER BY rowid"
-    )?;
+    let mut stmt = conn.prepare("SELECT COALESCE(image_path, '') FROM stamps ORDER BY rowid")?;
 
     let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 

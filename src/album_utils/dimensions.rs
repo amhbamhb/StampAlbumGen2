@@ -58,9 +58,10 @@ pub fn calculate_stamp_dimensions(
     // or just a filename; images are stored under Albums/<Album-Name>/images/<file>.
     // We'll prefer a local path first (image_path as-is), then try the album images dir.
     let mut resolved_image_path = image_path.to_string();
-    let album_images_candidate = crate::file_utils::resolve_album_image_path(album_name, image_path)
-        .to_string_lossy()
-        .to_string();
+    let album_images_candidate =
+        crate::file_utils::resolve_album_image_path(album_name, image_path)
+            .to_string_lossy()
+            .to_string();
     // If the straight image_path does not exist, use the album images candidate for measurements.
     if !std::path::Path::new(&resolved_image_path).exists()
         && std::path::Path::new(&album_images_candidate).exists()

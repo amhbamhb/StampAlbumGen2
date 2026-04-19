@@ -167,7 +167,8 @@ pub fn download_missing_stamp_images(
 
     for stamp in stamps {
         if !stamp.image_path.is_empty() && !stamp.remote_image_url.is_empty() {
-            let local_path = crate::file_utils::resolve_album_image_path(album_name, &stamp.image_path);
+            let local_path =
+                crate::file_utils::resolve_album_image_path(album_name, &stamp.image_path);
 
             if !local_path.exists() {
                 total_missing += 1;

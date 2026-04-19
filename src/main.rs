@@ -26,8 +26,7 @@ use stamp_album_gen2::{
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
         ensure_windows_desktop_integration, install_linux_desktop_integration, setup_logging,
-        startup_probe_path,
-        uninstall_linux_desktop_integration, validate_os, write_startup_probe,
+        startup_probe_path, uninstall_linux_desktop_integration, validate_os, write_startup_probe,
         write_startup_probe_snapshot,
     },
     validation::{
@@ -140,8 +139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // successfully. This covers the case where a user deletes config_template.toml after
     // the initial setup — it will be silently recreated from the embedded defaults on the
     // next run without touching their existing config.toml.
-    if let Err(e) =
-        config::ensure_config_and_template_files("config.toml", "config_template.toml")
+    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml")
     {
         log::warn!("Failed to ensure config template file: {}", e);
     }
@@ -211,10 +209,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             Err(e) => {
-                log_runtime_event(&format!(
-                    "Desktop shortcut check failed (non-fatal): {}",
-                    e
-                ));
+                log_runtime_event(&format!("Desktop shortcut check failed (non-fatal): {}", e));
             }
         }
 
