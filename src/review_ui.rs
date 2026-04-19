@@ -2249,7 +2249,13 @@ pub fn run_review_ui(
 
     log_runtime_event(&format!("Review UI: preparing data from {}", db_path));
     log_runtime_event("Review UI: opening database...");
-    let conn = crate::db_utils::init_db(db_path)?;
+    let conn = crate::db_utils::init_db(db_path).map_err(|e| {
+        log_runtime_event(&format!(
+            "Review UI: failed to open database {}: {}",
+            db_path, e
+        ));
+        std::io::Error::other(format!("failed to open review database {}: {}", db_path, e))
+    })?;
     let _ = conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_stamps_review_sg_year ON stamps (sg_number, year)",
         [],
@@ -2259,7 +2265,16 @@ pub fn run_review_ui(
         [],
     );
     log_runtime_event("Review UI: syncing processed Colnect candidates...");
-    sync_processed_colnect_candidates(&conn)?;
+    sync_processed_colnect_candidates(&conn).map_err(|e| {
+        log_runtime_event(&format!(
+            "Review UI: failed while syncing processed Colnect candidates: {}",
+            e
+        ));
+        std::io::Error::other(format!(
+            "failed to sync processed Colnect candidates: {}",
+            e
+        ))
+    })?;
 
     let album_name = album_name_opt
         .map(|s| s.to_string())
@@ -2298,7 +2313,17 @@ pub fn run_review_ui(
         albumeasy_cli_configured,
         catalog_family_options,
         initial_show_imageless_left_rows,
-    )?;
+    )
+    .map_err(|e| {
+        log_runtime_event(&format!(
+            "Review UI: failed to build compare payload for {}: {}",
+            db_path, e
+        ));
+        std::io::Error::other(format!(
+            "failed to prepare review compare payload for {}: {}",
+            db_path, e
+        ))
+    })?;
     log_runtime_event(&format!(
         "Review UI: loaded {} left rows and {} right candidates",
         payload.left.len(),
@@ -2318,7 +2343,13 @@ pub fn run_review_ui(
     let (server, bind) = if let Some(pb) = prebound_server {
         pb
     } else {
-        bind_review_server(bind_addr_opt)?
+        bind_review_server(bind_addr_opt).map_err(|e| {
+            log_runtime_event(&format!(
+                "Review UI: failed to bind local web server: {}",
+                e
+            ));
+            std::io::Error::other(format!("failed to bind review UI server: {}", e))
+        })?
     };
 
     let url = format!("http://{}/", bind);

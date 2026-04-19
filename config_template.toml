@@ -623,6 +623,27 @@ catalog_family_options = [
 	"wad|WADP Numbering System - WNS|91196"
 ]
 
+# Optional catalog family list used by Review UI searchable selectors.
+# Format per entry: "code|label|count" (count is optional)
+#
+# Notes:
+# - Use `sn` for "Scott Number".
+# - Stamp-specific families are shown first in selectors; this list powers
+#   the full fallback list under "Other catalogs".
+# - If empty, built-in defaults are used.
+catalog_family_options = [
+	"sn|Scott Number|814224",
+	"sg|Stanley Gibbons|705728",
+	"mi|Michel|1126331",
+	"yt|Yvert et Tellier|925704",
+	"afa|AFA number|116770",
+	"ank|ANK|8320",
+	"nvp|NVPH|18985",
+	"un|Unificato|169053",
+	"col|Colnect codes|445975",
+	"wad|WADP Numbering System - WNS|91196"
+]
+
 ###################################
 # Colnect Metadata / Field Selection
 ###################################
