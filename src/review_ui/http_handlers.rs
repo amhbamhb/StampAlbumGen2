@@ -1721,8 +1721,12 @@ pub(super) fn serve_review_requests(
                             "Album text and PDF generation completed.".to_string()
                         }
                     } else {
-                        "Album text generated, but no PDF was produced. Check AlbumEasy CLI configuration/logs."
-                            .to_string()
+                        let base = "Album text generated, but no PDF was produced.";
+                        if let Some(reason) = artifacts.pdf_failure_reason {
+                            format!("{} Reason: {}", base, reason)
+                        } else {
+                            format!("{} Check AlbumEasy CLI configuration/logs.", base)
+                        }
                     }
                 }
                 Err(_) => "Album/PDF generation failed unexpectedly (panic).".to_string(),
@@ -1859,8 +1863,12 @@ pub(super) fn serve_review_requests(
                                             .to_string()
                                     }
                                     (true, false) => {
-                                        "Review UI closed. Album text generation completed, but no PDF was opened. Check AlbumEasy CLI configuration or logs."
-                                            .to_string()
+                                        let base = "Review UI closed. Album text generation completed, but no PDF was produced.";
+                                        if let Some(reason) = artifacts.pdf_failure_reason {
+                                            format!("{} Reason: {}", base, reason)
+                                        } else {
+                                            format!("{} Check AlbumEasy CLI configuration or logs.", base)
+                                        }
                                     }
                                     (false, _) => {
                                         "Review UI closed. Album text generation completed without PDF generation."
