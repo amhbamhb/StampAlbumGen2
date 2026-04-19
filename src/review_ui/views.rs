@@ -1797,9 +1797,10 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
                 <label>order
                         <select id='sortMode' onchange='changeSortMode()'>
-                                <option value='sg'>Catalog number (default)</option>
-                                <option value='year_sg'>Year then catalog number</option>
-                                <option value='series_sg'>Series then catalog number</option>
+                        <option value='catalog'>Catalog number (default)</option>
+                        <option value='year_catalog'>Year then catalog number</option>
+                        <option value='series_catalog'>Series then catalog number</option>
+                    <option value='series_date_catalog'>Series then issue date</option>
                                 <option value='rowid'>DB row id</option>
                                 <option value='colnect_id'>Colnect ID</option>
                         </select>
@@ -2001,6 +2002,8 @@ const reviewColnectDir = String(payload.colnect_dir || '');
 let reviewColnectFileCount = Number(payload.colnect_file_count || 0);
 const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
+const configDefaultSortMode = String(payload.default_sort_mode || 'catalog').toLowerCase();
+const reviewCountryName = String(payload.album_name || '').trim();
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
 let countryDefaultCatalogCode = '';
 let leftIdx = 0;
@@ -2014,7 +2017,7 @@ let resolvingRightImageById = {{}};
 let resolvedRightImageById = {{}};
 let leftEditorMode = 'edit';
 let leftEditorSourceRowid = null;
-let sortMode = 'sg';
+let sortMode = normalizeSortMode(configDefaultSortMode);
 let leftSearchMatches = [];
 let leftSearchMatchPos = -1;
 let leftSearchQuery = '';
@@ -2729,12 +2732,42 @@ function sgSortText(item) {{
     return normalizeCatalogNumber(String(item?.sg_number || '')).toLowerCase();
 }}
 
+function normalizeSortMode(mode) {{
+    const m = String(mode || 'catalog').toLowerCase();
+    if (m === 'catalog' || m === 'year_catalog' || m === 'series_catalog' || m === 'series_date_catalog' || m === 'rowid' || m === 'colnect_id') return m;
+    if (m === 'sg') return 'catalog';
+    if (m === 'year_sg') return 'year_catalog';
+    if (m === 'series_sg') return 'series_catalog';
+    if (m === 'series_date_sg') return 'series_date_catalog';
+    return 'catalog';
+}}
+
+function parseIssueDayValue(value) {{
+    const text = String(value || '').trim();
+    if (!text) return 0;
+    const match = text.match(/\d+/);
+    return match ? (Number(match[0]) || 0) : 0;
+}}
+
+function compareIssueDateParts(a, b) {{
+    const ay = Number(a?.year || 0);
+    const by = Number(b?.year || 0);
+    if (ay !== by) return ay - by;
+    const am = Number(a?.month_num || 0);
+    const bm = Number(b?.month_num || 0);
+    if (am !== bm) return am - bm;
+    const ad = parseIssueDayValue(a?.day);
+    const bd = parseIssueDayValue(b?.day);
+    if (ad !== bd) return ad - bd;
+    return 0;
+}}
+
 function compareBySortMode(a, b, mode) {{
-    const m = String(mode || 'sg');
+    const m = normalizeSortMode(mode);
     if (m === 'rowid') {{
         return Number(a?.rowid || 0) - Number(b?.rowid || 0);
     }}
-    if (m === 'year_sg') {{
+    if (m === 'year_catalog') {{
         const ay = Number(a?.year || 0);
         const by = Number(b?.year || 0);
         if (ay !== by) return ay - by;
@@ -2743,10 +2776,21 @@ function compareBySortMode(a, b, mode) {{
         if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
         return Number(a?.rowid || 0) - Number(b?.rowid || 0);
     }}
-    if (m === 'series_sg') {{
+    if (m === 'series_catalog') {{
         const aser = String(a?.series || '').toLowerCase();
         const bser = String(b?.series || '').toLowerCase();
         if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
+        const asg = sgSortText(a);
+        const bsg = sgSortText(b);
+        if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+    if (m === 'series_date_catalog') {{
+        const aser = String(a?.series || '').toLowerCase();
+        const bser = String(b?.series || '').toLowerCase();
+        if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
+        const dateCmp = compareIssueDateParts(a, b);
+        if (dateCmp !== 0) return dateCmp;
         const asg = sgSortText(a);
         const bsg = sgSortText(b);
         if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
@@ -3117,7 +3161,7 @@ function lastRight() {{
 
 function changeSortMode() {{
     const sel = document.getElementById('sortMode');
-    sortMode = String(sel?.value || 'sg');
+    sortMode = normalizeSortMode(String(sel?.value || 'sg'));
     const currentRowid = left[leftIdx]?.rowid;
     sortLeftRows(currentRowid);
     for (const key of Object.keys(rightIdxByLeft)) rightIdxByLeft[key] = 0;
