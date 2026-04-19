@@ -1680,6 +1680,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
     </div>
     <div id='startGuide' class='startGuide'>
         <h2>Start Country Review Session</h2>
+        <h2 ><strong>Current country:</strong> <span id='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
         <div class='guideStats'>
             <span id='statLeftCount' class='badge'>Left: 0</span>
@@ -2034,6 +2035,9 @@ const reviewPdfAlwaysOpenStorageKey = 'reviewui.pdf.always_open';
 const backendHealthComparePollMs = 15000;
 const backendHealthCompareFailureThreshold = 2;
 let reviewLastGeneratedPdfPath = '';
+
+const currentReviewCountryEl = document.getElementById('currentReviewCountry');
+if (currentReviewCountryEl) currentReviewCountryEl.textContent = reviewCountryName || 'Unknown';
 window.__returnToStartInFlight = false;
 const reviewPdfLastPathStorageKey = 'reviewui.pdf.last_path.' + String(payload.album_name || 'default');
 const reviewPdfLastStatusStorageKey = 'reviewui.pdf.last_status.' + String(payload.album_name || 'default');
