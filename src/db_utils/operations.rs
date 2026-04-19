@@ -135,6 +135,11 @@ pub fn insert_stamp(
     } else {
         String::new()
     };
+    let inferred_catalog_code = if !inferred_stampworld_image_url.trim().is_empty() {
+        "sw".to_string()
+    } else {
+        String::new()
+    };
     let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
 
     // Normalize stamps_issued: if dots are used as thousand separators and no commas are present, replace them with commas
@@ -154,7 +159,7 @@ pub fn insert_stamp(
     // should backfill missing columns. Prefer exact country+series+sg matching,
     // but fall back to stable StampWorld identity keys so a later Colnect review
     // edit of series/SG does not cause the same StampWorld row to be inserted again.
-    let existing_select = "SELECT rowid, image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE {predicate} LIMIT 1";
+    let existing_select = "SELECT rowid, image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(catalog_code, ''), COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE {predicate} LIMIT 1";
     let load_existing = |predicate: &str, bind: &[&dyn rusqlite::ToSql]| {
         let sql = existing_select.replace("{predicate}", predicate);
         let mut stmt = conn.prepare(&sql)?;
@@ -179,6 +184,7 @@ pub fn insert_stamp(
                 row.get::<_, Option<String>>(16)?.unwrap_or_default(),
                 row.get::<_, Option<String>>(17)?.unwrap_or_default(),
                 row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(19)?.unwrap_or_default(),
             ))
         })
         .optional()
@@ -230,6 +236,7 @@ pub fn insert_stamp(
         existing_engraving,
         existing_perforation,
         existing_context,
+        existing_catalog_code,
         existing_stampworld_image_url,
         existing_colnect_page_url,
         existing_colnect_image_url,
@@ -301,6 +308,7 @@ pub fn insert_stamp(
             &existing_stampworld_image_url,
             &inferred_stampworld_image_url
         );
+        add_update_if_missing!("catalog_code", &existing_catalog_code, &inferred_catalog_code);
         add_update_if_missing!(
             "colnect_page_url",
             &existing_colnect_page_url,
@@ -399,10 +407,11 @@ pub fn insert_stamp(
             engraving = CASE WHEN (engraving IS NULL OR engraving = '') AND (?14 != '') THEN ?14 ELSE engraving END,
             perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?15 != '') THEN ?15 ELSE perforation END,
             context = CASE WHEN (context IS NULL OR context = '') AND (?16 != '') THEN ?16 ELSE context END,
-            stampworld_image_url = CASE WHEN (stampworld_image_url IS NULL OR stampworld_image_url = '') AND (?17 != '') THEN ?17 ELSE stampworld_image_url END,
-            colnect_page_url = CASE WHEN (colnect_page_url IS NULL OR colnect_page_url = '') AND (?18 != '') THEN ?18 ELSE colnect_page_url END,
-            colnect_image_url = CASE WHEN (colnect_image_url IS NULL OR colnect_image_url = '') AND (?19 != '') THEN ?19 ELSE colnect_image_url END
-            WHERE country = ?20 AND year = ?21 AND sg_number = ?22";
+            catalog_code = CASE WHEN (catalog_code IS NULL OR catalog_code = '') AND (?17 != '') THEN ?17 ELSE catalog_code END,
+            stampworld_image_url = CASE WHEN (stampworld_image_url IS NULL OR stampworld_image_url = '') AND (?18 != '') THEN ?18 ELSE stampworld_image_url END,
+            colnect_page_url = CASE WHEN (colnect_page_url IS NULL OR colnect_page_url = '') AND (?19 != '') THEN ?19 ELSE colnect_page_url END,
+            colnect_image_url = CASE WHEN (colnect_image_url IS NULL OR colnect_image_url = '') AND (?20 != '') THEN ?20 ELSE colnect_image_url END
+            WHERE country = ?21 AND year = ?22 AND sg_number = ?23";
 
         let rows = conn.execute(
             update_sql,
@@ -423,6 +432,7 @@ pub fn insert_stamp(
                 engraving,
                 perforation,
                 context,
+                inferred_catalog_code,
                 inferred_stampworld_image_url,
                 inferred_colnect_page_url,
                 inferred_colnect_image_url,
@@ -441,7 +451,7 @@ pub fn insert_stamp(
     }
 
     // Stamp does not exist; insert new record
-    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key, stampworld_image_url, colnect_page_url, colnect_image_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29)";
+    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key, catalog_code, stampworld_image_url, colnect_page_url, colnect_image_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30)";
     let month_num: i32 = _month_num.parse().unwrap_or(0);
     match conn.execute(
         insert_sql,
@@ -472,6 +482,7 @@ pub fn insert_stamp(
             perforation,
             context,
             uniq_key,
+            inferred_catalog_code,
             inferred_stampworld_image_url,
             inferred_colnect_page_url,
             inferred_colnect_image_url

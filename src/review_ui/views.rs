@@ -1718,6 +1718,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <label for='defaultCatalogSelect'>Local Catalog</label>
                         <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
                             <option value='sg'>Stanley Gibbons (SG)</option>
+                                 <option value='sw'>StampWorld (SW)</option>
                             <option value='sn'>Scott Number (SN)</option>
                             <option value='mi'>Michel (MI)</option>
                             <option value='yt'>Yvert (YT)</option>
@@ -1885,6 +1886,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <label>Catalog Type
                             <select id='leftEditorCatalogCodeSelect' onchange='toggleLeftEditorCatalogCodeCustom()'>
                                 <option value='sg'>Stanley Gibbons (SG)</option>
+                                     <option value='sw'>StampWorld (SW)</option>
                                 <option value='sn'>Scott Number (SN)</option>
                                 <option value='mi'>Michel (MI)</option>
                                 <option value='yt'>Yvert (YT)</option>
@@ -2538,6 +2540,7 @@ function defaultCatalogFamilyOptions() {{
         {{ code: 'safrican', label: 'South African Stamp Catalog', count: 3640 }},
         {{ code: 'sn', label: 'Scott Number', count: 814224 }},
         {{ code: 'sg', label: 'Stanley Gibbons', count: 705728 }},
+        {{ code: 'sw', label: 'StampWorld', count: 0 }},
         {{ code: 'thaistamp', label: 'Thai Stamp Catalogue', count: 3615 }},
         {{ code: 'ukrposhta', label: 'Ukrposhta', count: 3307 }},
         {{ code: 'un', label: 'Unificato', count: 169053 }},
@@ -2580,19 +2583,55 @@ function catalogDisplayName(code) {{
 
 function normalizeCatalogCodeForUi(code) {{
     const c = String(code || '').trim().toLowerCase();
+    if (c === 'stampworld') return 'sw';
+    if (c === 'stanleygibbons' || c === 'stanley_gibbons') return 'sg';
     return c;
+}}
+
+function inferInitialCatalogCodeFromLeftRows() {{
+    if (!Array.isArray(left) || left.length === 0) return '';
+
+    const counts = new Map();
+    const bump = (code) => {{
+        const c = normalizeCatalogCodeForUi(code);
+        if (!c) return;
+        counts.set(c, (counts.get(c) || 0) + 1);
+    }};
+
+    for (const item of left) {{
+        const explicit = normalizeCatalogCodeForUi(item?.catalog_code);
+        if (explicit) {{
+            bump(explicit);
+            continue;
+        }}
+        if (String(item?.stampworld_image_url || '').trim()) {{
+            bump('sw');
+        }}
+    }}
+
+    if (!counts.size) return '';
+    let bestCode = '';
+    let bestCount = -1;
+    for (const [code, count] of counts.entries()) {{
+        if (count > bestCount) {{
+            bestCount = count;
+            bestCode = code;
+        }}
+    }}
+    return bestCode;
 }}
 
 function getEffectiveDefaultCatalogCode() {{
     return normalizeCatalogCodeForUi(countryDefaultCatalogCode)
         || normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || inferInitialCatalogCodeFromLeftRows()
         || 'sg';
 }}
 
 function changeCountryDefaultCatalog() {{
     const sel = document.getElementById('defaultCatalogSelect');
     if (!sel) return;
-    countryDefaultCatalogCode = normalizeCatalogCodeForUi(sel.value) || 'sg';
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(sel.value) || getEffectiveDefaultCatalogCode();
     try {{
         localStorage.setItem(countryCatalogStorageKey, countryDefaultCatalogCode);
     }} catch (_) {{}}
@@ -4875,15 +4914,18 @@ try {{
     const storedCatalog = String(localStorage.getItem(countryCatalogStorageKey) || '').toLowerCase();
     countryDefaultCatalogCode = normalizeCatalogCodeForUi(storedCatalog)
         || normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || inferInitialCatalogCodeFromLeftRows()
         || 'sg';
 }} catch (_) {{
-    countryDefaultCatalogCode = normalizeCatalogCodeForUi(configDefaultCatalogCode) || 'sg';
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || inferInitialCatalogCodeFromLeftRows()
+        || 'sg';
 }}
 
 const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
 if (defaultCatalogSelect) {{
-    defaultCatalogSelect.value = normalizeCatalogCodeForUi(countryDefaultCatalogCode) || 'sg';
-    if (!defaultCatalogSelect.value) defaultCatalogSelect.value = 'sg';
+    defaultCatalogSelect.value = normalizeCatalogCodeForUi(countryDefaultCatalogCode) || getEffectiveDefaultCatalogCode();
+    if (!defaultCatalogSelect.value) defaultCatalogSelect.value = getEffectiveDefaultCatalogCode();
 }}
 
 const reviewColnectDirPathEl = document.getElementById('reviewColnectDirPath');

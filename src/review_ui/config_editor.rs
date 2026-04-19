@@ -16,7 +16,7 @@ pub(super) fn update_default_catalog_code_for_album(
     if normalized.is_empty() {
         return Err("default catalog code cannot be empty".into());
     }
-    let allowed = ["sg", "sn", "mi", "yt", "afa", "nvp", "un", "col"];
+    let allowed = ["sg", "sw", "sn", "mi", "yt", "afa", "nvp", "un", "col"];
     if !allowed.contains(&normalized.as_str()) {
         return Err(format!("unsupported catalog code: {}", normalized).into());
     }
@@ -207,7 +207,7 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
     if key_only == "default_catalog_code" {
         add_unique("Catalog family used for stamp heading and matching preference.");
         add_unique(
-            "Common values: sn=Scott, sg=Stanley Gibbons, mi=Michel, yt=Yvert, col=Colnect.",
+            "Common values: sn=Scott, sg=Stanley Gibbons, sw=StampWorld, mi=Michel, yt=Yvert, col=Colnect.",
         );
     }
 

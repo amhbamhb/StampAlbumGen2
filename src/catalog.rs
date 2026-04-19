@@ -1,11 +1,17 @@
 pub fn normalize_catalog_type(code: &str) -> String {
-    code.trim().to_ascii_lowercase()
+    let normalized = code.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "stampworld" | "sw" => "sw".to_string(),
+        "stanleygibbons" | "stanley_gibbons" | "sg" => "sg".to_string(),
+        _ => normalized,
+    }
 }
 
 pub fn catalog_display_name(code: &str) -> &'static str {
     match normalize_catalog_type(code).as_str() {
         "sn" => "Scott",
         "sg" => "Stanley Gibbons",
+        "sw" => "StampWorld",
         "mi" => "Michel",
         "yt" => "Yvert",
         "afa" => "AFA",

@@ -228,8 +228,8 @@ pub fn resolve_stamp_heading_label(
     }
 
     // Backward-compatibility: many existing configs pinned
-    // `stamp_heading_label` to a known catalog family label (e.g.
-    // "Stanley Gibbons") before per-stamp catalog family edits existed.
+    // `stamp_heading_label` to a known catalog family label (for example
+    // legacy "Stanley Gibbons") before per-stamp catalog family edits existed.
     // When a stamp carries an explicit catalog family, prefer that family
     // label for known catalog-name labels, so row-level Review UI edits are
     // reflected in PDF output.
@@ -240,6 +240,7 @@ pub fn resolve_stamp_heading_label(
             let known_catalog_labels = [
                 crate::catalog::catalog_display_name("sn"),
                 crate::catalog::catalog_display_name("sg"),
+                crate::catalog::catalog_display_name("sw"),
                 crate::catalog::catalog_display_name("mi"),
                 crate::catalog::catalog_display_name("yt"),
                 crate::catalog::catalog_display_name("afa"),
@@ -248,9 +249,11 @@ pub fn resolve_stamp_heading_label(
                 crate::catalog::catalog_display_name("col"),
                 crate::catalog::catalog_display_name(""),
             ];
-            if known_catalog_labels
-                .iter()
-                .any(|name| configured_norm == name.to_ascii_lowercase())
+            let is_legacy_sg_label = configured_norm == "stanley gibbons";
+            if is_legacy_sg_label
+                || known_catalog_labels
+                    .iter()
+                    .any(|name| configured_norm == name.to_ascii_lowercase())
             {
                 return crate::catalog::catalog_display_name(&explicit_code).to_string();
             }
