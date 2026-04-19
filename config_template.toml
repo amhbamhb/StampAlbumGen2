@@ -562,7 +562,18 @@ even_row_color = "#e6eef4"
 # Why important:
 # - Reduces noise for common workflows (e.g. hide rarely-used fields by default).
 # - Changes here apply only to the initial state; user selections are not saved.
+# - `default_sort_mode` sets the initial left-panel ordering when Review UI opens.
 #
+# Review UI startup sort order for the left-panel stamp list.
+# Allowed values:
+# - "catalog"             : catalog number
+# - "year_catalog"        : year then catalog number
+# - "series_catalog"      : series then catalog number
+# - "series_date_catalog" : series then issue date then catalog number
+# - "rowid"          : database row id
+# - "colnect_id"     : Colnect ID
+default_sort_mode = "catalog"
+
 # Stamp metadata fields:
 default_series_checked = true         # Series label (grouping name for the stamp set)
 default_description_checked = true    # General description text

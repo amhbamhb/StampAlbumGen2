@@ -444,6 +444,7 @@ pub struct ColnectFieldToggles {
 pub struct ReviewUiConfig {
     pub odd_row_color: Option<String>,
     pub even_row_color: Option<String>,
+    pub default_sort_mode: Option<String>,
     pub default_series_checked: Option<bool>,
     pub default_description_checked: Option<bool>,
     pub default_watermark_checked: Option<bool>,
@@ -510,6 +511,7 @@ impl Config {
             review_ui: Some(ReviewUiConfig {
                 odd_row_color: Some("#ffffff".to_string()),
                 even_row_color: Some("#e6eef4".to_string()),
+                default_sort_mode: Some("catalog".to_string()),
                 default_series_checked: Some(true),
                 default_description_checked: Some(true),
                 default_watermark_checked: Some(false),
@@ -786,6 +788,30 @@ impl Config {
             .map(str::trim)
             .filter(|s| !s.is_empty())
             .unwrap_or("#e6eef4")
+    }
+
+    pub fn review_ui_default_sort_mode(&self) -> String {
+        let mode = self
+            .review_ui
+            .as_ref()
+            .and_then(|r| r.default_sort_mode.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("catalog")
+            .to_ascii_lowercase();
+
+        match mode.as_str() {
+            "catalog" => "catalog".to_string(),
+            "year_catalog" => "year_catalog".to_string(),
+            "series_catalog" => "series_catalog".to_string(),
+            "series_date_catalog" => "series_date_catalog".to_string(),
+            "sg" => "catalog".to_string(),
+            "year_sg" => "year_catalog".to_string(),
+            "series_sg" => "series_catalog".to_string(),
+            "series_date_sg" => "series_date_catalog".to_string(),
+            "rowid" | "colnect_id" => mode,
+            _ => "catalog".to_string(),
+        }
     }
 
     pub fn review_ui_series_default_checked(&self) -> bool {
