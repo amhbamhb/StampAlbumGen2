@@ -4994,6 +4994,7 @@ mod tests {
             colnect_file_count: 0,
             show_imageless_left_rows: false,
             default_catalog_code: "sg".to_string(),
+            default_sort_mode: "catalog".to_string(),
             odd_row_color: "#ffffff".to_string(),
             even_row_color: "#f2f2f2".to_string(),
             series_default_checked: true,

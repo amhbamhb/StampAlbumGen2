@@ -352,6 +352,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         cli.review_ui_bind.as_deref(),
                         open_browser,
                         &album_cfg.effective_default_catalog_code(),
+                        &album_cfg.review_ui_default_sort_mode(),
                         album_cfg.review_ui_odd_row_color(),
                         album_cfg.review_ui_even_row_color(),
                         album_cfg.review_ui_series_default_checked(),
