@@ -768,7 +768,10 @@ pub(super) fn save_album_config_diff(
 
     // Build TOML content with section headers matching the template.
     let mut lines = vec![
-        format!("# StampAlbumGen2 album config override: {}", album_name),
+        format!(
+            "# Stamp Album Generator 2 album config override: {}",
+            album_name
+        ),
         "# Only values that differ from the global config.toml are stored here.".to_string(),
         "# Settings not listed here fall back to the global config.toml.".to_string(),
         String::new(),

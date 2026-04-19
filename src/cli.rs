@@ -6,7 +6,7 @@ use clap::Parser;
     name = "stamp_album_gen2",
     author,
     version,
-    about = "Stamp Album Generator"
+    about = "Stamp Album Generator 2"
 )]
 pub struct Cli {
     /// Source type: stampworld, touchstamps, extractfile, colnectexport, us1847
@@ -117,7 +117,7 @@ pub struct Cli {
     #[arg(long, default_value_t = false)]
     pub pdf_dx_logging: bool,
 
-    /// Remove Linux desktop launcher and icon created by Stamp Album Gen2, then exit.
+    /// Remove Linux desktop launcher and icon created by Stamp Album Generator 2, then exit.
     #[arg(long, default_value_t = false)]
     pub uninstall_desktop_launcher: bool,
 

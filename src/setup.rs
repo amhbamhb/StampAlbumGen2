@@ -447,7 +447,7 @@ fn create_windows_shortcut(
     let icon_ps = escape_powershell_single_quoted(&icon_path.to_string_lossy());
 
     let script = format!(
-        "$wsh = New-Object -ComObject WScript.Shell; $sc = $wsh.CreateShortcut('{shortcut}'); $sc.TargetPath = '{target}'; $sc.Arguments = '--review-ui'; $sc.WorkingDirectory = '{cwd}'; $sc.IconLocation = '{icon},0'; $sc.Description = 'Open Stamp Album Gen2 Review UI'; $sc.Save()",
+        "$wsh = New-Object -ComObject WScript.Shell; $sc = $wsh.CreateShortcut('{shortcut}'); $sc.TargetPath = '{target}'; $sc.Arguments = '--review-ui'; $sc.WorkingDirectory = '{cwd}'; $sc.IconLocation = '{icon},0'; $sc.Description = 'Open Stamp Album Generator 2 Review UI'; $sc.Save()",
         shortcut = shortcut_ps,
         target = target_ps,
         cwd = cwd_ps,
@@ -523,8 +523,8 @@ pub fn ensure_windows_desktop_integration() -> std::io::Result<WindowsDesktopInt
         std::fs::write(&icon_path, bundled_icon)?;
     }
 
-    let desktop_shortcut_path = desktop_dir.join("Stamp Album Gen2.lnk");
-    let start_menu_shortcut_path = programs_dir.join("Stamp Album Gen2.lnk");
+    let desktop_shortcut_path = desktop_dir.join("Stamp Album Generator 2.lnk");
+    let start_menu_shortcut_path = programs_dir.join("Stamp Album Generator 2.lnk");
     let mut changed = false;
 
     if !desktop_shortcut_path.exists() || !start_menu_shortcut_path.exists() {
@@ -593,7 +593,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
         ));
     }
     let desktop_contents = format!(
-        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Gen2\nComment=Open Stamp Album Gen2 Review UI\nExec={}\nPath={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
+        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
         format!("{} --review-ui", exec_path),
         working_dir,
         icon_path.to_string_lossy()

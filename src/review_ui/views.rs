@@ -8,7 +8,7 @@ fn render_app_footer_html() -> String {
     format!(
         "<div class='appFooter' style='margin-top:16px; font-size:12px; color:#5b6f81; text-align:center;'>\
 <div>Copyright &copy; 2025 &#x2013; <span class='copyrightCurrentYear'></span> Laser Spider LLC. All rights reserved.</div>\
-<div style='margin-top:4px;'>Album Generator 2 | Version {} </div>\
+<div style='margin-top:4px;'>Stamp Album Generator 2 | Version {} </div>\
 </div>",
         version
     )
@@ -21,7 +21,7 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
 <html>
 <head>
 <meta charset='utf-8'>
-<title>Stamp Album Gen 2 Setup</title>
+<title>Stamp Album Generator 2 Setup</title>
 <link rel='icon' type='image/png' href='/favicon.png'>
 <style>
 :root {{
@@ -1404,7 +1404,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
 <html>
 <head>
 <meta charset='utf-8'>
-<title>Stamp Album Gen 2</title>
+<title>Stamp Album Generator 2</title>
 <link rel='icon' type='image/png' href='/favicon.png'>
 <style>
 body {{
