@@ -308,7 +308,11 @@ pub fn insert_stamp(
             &existing_stampworld_image_url,
             &inferred_stampworld_image_url
         );
-        add_update_if_missing!("catalog_code", &existing_catalog_code, &inferred_catalog_code);
+        add_update_if_missing!(
+            "catalog_code",
+            &existing_catalog_code,
+            &inferred_catalog_code
+        );
         add_update_if_missing!(
             "colnect_page_url",
             &existing_colnect_page_url,
