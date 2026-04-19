@@ -150,6 +150,8 @@ struct LeftStamp {
     sg_number: String,
     catalog_code: String,
     year: i32,
+    month_num: i32,
+    day: String,
     series: String,
     image_path: String,
     image_abs: String,
