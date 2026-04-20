@@ -133,3 +133,45 @@ Suggested future links:
 - Public binary downloads
 - Documentation pages
 - Source repository (when you decide to publish)
+
+## Automatic release sync to /opt on the GitLab server
+
+If the website host is the same machine as your GitLab server, CI can build binaries, regenerate checksums, and deploy the full site bundle directly to `/opt`.
+
+Added automation components:
+
+- Pipeline jobs in [/.gitlab-ci.yml](../.gitlab-ci.yml)
+- Bundle generator: [/scripts/prepare_site_release_bundle.sh](../scripts/prepare_site_release_bundle.sh)
+- Deployer: [/scripts/deploy_site_to_opt.sh](../scripts/deploy_site_to_opt.sh)
+
+What the pipeline now does in release builds:
+
+1. Builds Linux and Windows binaries.
+2. Rebuilds website download artifacts in `downloads/current/`:
+  - `stamp_album_gen2`
+  - `stamp_album_gen2.exe`
+  - `stamp_album_gen2.sha256`
+  - `stamp_album_gen2.exe.sha256`
+  - `SHA256SUMS.txt`
+  - `CRC32SUMS.txt`
+  - `release-metadata.json`
+3. Packs a deployable site bundle.
+4. Optionally deploys the bundle to `/opt`.
+
+Enable deployment in GitLab CI/CD Variables:
+
+- `SITE_DEPLOY_ENABLED=true`
+- Optional: `SITE_DEPLOY_PATH=/opt/stampalbumgenerator2-site`
+- Optional: `SITE_DEPLOY_OWNER=www-data:www-data`
+- Optional: `SITE_SYSTEMD_SERVICE=stampalbumgenerator2-site`
+
+Recommended runner setup:
+
+1. Use a GitLab **shell runner** on the target host so `/opt` refers to the real host filesystem.
+2. Ensure runner user can write to `SITE_DEPLOY_PATH`.
+3. If `SITE_SYSTEMD_SERVICE` is used, allow service restart rights for the runner user.
+
+Deployment triggers:
+
+- Tags (`vX.Y.Z`) when `SITE_DEPLOY_ENABLED=true`
+- Branch `release` when `SITE_DEPLOY_ENABLED=true`
