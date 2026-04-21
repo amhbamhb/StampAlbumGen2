@@ -59,7 +59,7 @@ fn build_app() -> Router {
     let csp = HeaderName::from_static("content-security-policy");
 
     Router::new()
-        .route_service("/", ServeFile::new(index_file.clone()))
+        .route("/", get(root_handler))
         .route("/healthz", get(healthz))
         .route("/__heartbeat", get(heartbeat))
         .route("/api/version", get(version))
@@ -91,6 +91,10 @@ fn build_app() -> Router {
                 "default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
             ),
         ))
+}
+
+async fn root_handler() -> Html<&'static str> {
+    Html(include_str!("../static/index.html"))
 }
 
 async fn healthz() -> &'static str {
