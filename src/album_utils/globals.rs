@@ -56,7 +56,7 @@ pub fn write_globals<W: Write>(
     let img_preserve = cfg
         .album_stamp_img_new_setting_preserve_aspect
         .unwrap_or(true);
-    let stamp_box_adj = cfg.stamp_box_adjust.unwrap_or(3.0);
+    let stamp_box_adj = cfg.stamp_box_adjust.unwrap_or(0.0);
 
     let mut lines: Vec<String> = Vec::new();
     lines.push(

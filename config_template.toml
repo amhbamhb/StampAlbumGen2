@@ -78,8 +78,11 @@ reference_width_mm = 24.0
 reference_height_mm = 27.0
 # Target box height for stamp image rows
 stamp_box_height = 36.0
-# Fine adjustment applied to computed box sizing
-stamp_box_adjust = -2.0
+# Fine adjustment applied on top of the built-in sizing baseline.
+# 0.0 keeps the default source-aware behavior:
+# - StampWorld/non-Colnect sizing retains the legacy internal shrink.
+# - Colnect real-size imports are not additionally reduced.
+stamp_box_adjust = 0.0
 
 # Colnect image-dimension adjustments (mm)
 colnect_width_adjust_mm = 1.0
@@ -621,27 +624,6 @@ default_right_unmatched_only_checked = false  # Show only unmatched right-panel 
 #   un  = Unificato (Italian catalog)
 #   col = Colnect internal codes (unique to the Colnect database)
 #   wad = WADP / WNS Numbering System (UN postal agency standard)
-catalog_family_options = [
-	"sn|Scott Number|814224",
-	"sg|Stanley Gibbons|705728",
-	"mi|Michel|1126331",
-	"yt|Yvert et Tellier|925704",
-	"afa|AFA number|116770",
-	"ank|ANK|8320",
-	"nvp|NVPH|18985",
-	"un|Unificato|169053",
-	"col|Colnect codes|445975",
-	"wad|WADP Numbering System - WNS|91196"
-]
-
-# Optional catalog family list used by Review UI searchable selectors.
-# Format per entry: "code|label|count" (count is optional)
-#
-# Notes:
-# - Use `sn` for "Scott Number".
-# - Stamp-specific families are shown first in selectors; this list powers
-#   the full fallback list under "Other catalogs".
-# - If empty, built-in defaults are used.
 catalog_family_options = [
 	"sn|Scott Number|814224",
 	"sg|Stanley Gibbons|705728",

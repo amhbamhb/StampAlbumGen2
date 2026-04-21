@@ -17,6 +17,8 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+const LEGACY_NON_COLNECT_STAMP_BOX_ADJUST_MM: f64 = -2.0;
+
 fn json_escape(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('"', "\\\"")
@@ -134,6 +136,28 @@ fn normalize_for_text_dedupe(input: &str) -> String {
         }
     }
     out.trim().to_string()
+}
+
+fn stamp_uses_colnect_real_dimensions(stamp: &Stamp) -> bool {
+    stamp
+        .attrs
+        .get("colnect_width_mm")
+        .and_then(|v| v.parse::<f64>().ok())
+        .is_some()
+        && stamp
+            .attrs
+            .get("colnect_height_mm")
+            .and_then(|v| v.parse::<f64>().ok())
+            .is_some()
+}
+
+fn effective_stamp_box_adjust_mm(config_adjust: f64, has_colnect_real_dimensions: bool) -> f64 {
+    config_adjust
+        + if has_colnect_real_dimensions {
+            0.0
+        } else {
+            LEGACY_NON_COLNECT_STAMP_BOX_ADJUST_MM
+        }
 }
 
 fn is_effectively_duplicate_text(base_text: &str, candidate_text: &str) -> bool {
@@ -691,7 +715,8 @@ where
     let stamp_box_adjust = config
         .stamp_box_adjust
         .unwrap_or(cfg_defaults.stamp_box_adjust.unwrap()) as f64;
-    let avg_emit_w_mm = avg_w_mm + img_new_w + 2.0 * stamp_box_adjust;
+    let avg_emit_w_mm =
+        avg_w_mm + img_new_w + 2.0 * effective_stamp_box_adjust_mm(stamp_box_adjust, false);
     let packing_h = config
         .packing_horizontal_safety_mm
         .unwrap_or(cfg_defaults.packing_horizontal_safety_mm.unwrap()) as f64;
@@ -1150,7 +1175,13 @@ where
                 .iter()
                 .map(|s| {
                     let est_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
-                    let emit_w = est_w + img_new_w + 2.0 * stamp_box_adjust;
+                    let emit_w = est_w
+                        + img_new_w
+                        + 2.0
+                            * effective_stamp_box_adjust_mm(
+                                stamp_box_adjust,
+                                stamp_uses_colnect_real_dimensions(s),
+                            );
                     emit_w + margin
                 })
                 .sum();
@@ -1158,7 +1189,13 @@ where
             // Note: `row_width` already includes the per-stamp `2.0 * stamp_box_adjust` offset for existing
             // stamps. Ensure we include the same adjustment when considering the new stamp so the width
             // check is consistent and prevents placing an oversized placeholder into the row.
-            let new_stamp_footprint = est_width_mm + img_new_w + 2.0 * stamp_box_adjust;
+            let new_stamp_footprint = est_width_mm
+                + img_new_w
+                + 2.0
+                    * effective_stamp_box_adjust_mm(
+                        stamp_box_adjust,
+                        stamp_uses_colnect_real_dimensions(&stamp),
+                    );
             let new_stamp_total = new_stamp_footprint + margin;
             if row.len() >= max_stamps_per_row || row_width + new_stamp_total > usable_width {
                 if !row.is_empty() {
@@ -1412,8 +1449,14 @@ where
                 for stamp in stamps_in_row {
                     let est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
                     let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
-                    let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
-                    let estimated_emit_width = est_width_mm + img_new_w + 2.0 * stamp_box_adjust;
+                    let effective_stamp_box_adjust = effective_stamp_box_adjust_mm(
+                        stamp_box_adjust,
+                        stamp_uses_colnect_real_dimensions(stamp),
+                    );
+                    let adj_est_height =
+                        est_height_mm + img_new_h + 2.0 * effective_stamp_box_adjust;
+                    let estimated_emit_width =
+                        est_width_mm + img_new_w + 2.0 * effective_stamp_box_adjust;
                     let mut raw_left =
                         clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
                     if raw_left.trim().is_empty() {
@@ -1495,8 +1538,8 @@ where
                             .text_line_height_mm
                             .unwrap_or(cfg_defaults.text_line_height_mm.unwrap())
                             as f64;
-                    let heading_emit_width =
-                        stamp.est_width_mm.unwrap_or(reference_width_mm as f64) + 2.0 * stamp_box_adjust;
+                    let heading_emit_width = stamp.est_width_mm.unwrap_or(reference_width_mm as f64)
+                        + 2.0 * effective_stamp_box_adjust;
                     let heading_perforation = stamp
                         .attrs
                         .get("colnect_perforation")
@@ -1613,6 +1656,10 @@ where
             let include_perforation_in_heading = config.include_perforation.unwrap_or(true);
             for stamp in stamps_in_row {
                 let est_height_mm = stamp.est_height_mm.unwrap_or(stamp_box_height);
+                let effective_stamp_box_adjust = effective_stamp_box_adjust_mm(
+                    stamp_box_adjust,
+                    stamp_uses_colnect_real_dimensions(stamp),
+                );
                 let mut raw_left =
                     clean_text(stamp.attrs.get("denomination").unwrap_or(&"".to_string()));
                 if raw_left.trim().is_empty() {
@@ -1664,12 +1711,12 @@ where
                 // Apply ALBUM_STAMP_IMG_NEW_SETTING height adjustment and
                 // include stamp box adjustment so the row height used for
                 // page-fit checks matches the actual emitted box height.
-                let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
+                let adj_est_height = est_height_mm + img_new_h + 2.0 * effective_stamp_box_adjust;
                 let estimated_emit_width = stamp
                     .est_width_mm
                     .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
                     + img_new_w
-                    + 2.0 * stamp_box_adjust;
+                    + 2.0 * effective_stamp_box_adjust;
                 let right_first_line = if !mint_raw.is_empty() {
                     mint_raw.as_str()
                 } else {
@@ -1690,7 +1737,7 @@ where
                     .est_width_mm
                     .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
                     + img_new_w
-                    + 2.0 * stamp_box_adjust;
+                    + 2.0 * effective_stamp_box_adjust;
                 let heading_perforation = stamp
                     .attrs
                     .get("colnect_perforation")
@@ -1851,7 +1898,10 @@ where
                         } else {
                             reference_width_mm as f64
                         };
-                        let adj_est_height = est_height_mm + img_new_h + 2.0 * stamp_box_adjust;
+                        let effective_stamp_box_adjust =
+                            effective_stamp_box_adjust_mm(stamp_box_adjust, false);
+                        let adj_est_height =
+                            est_height_mm + img_new_h + 2.0 * effective_stamp_box_adjust;
                         let mut raw_left = clean_text(&stamp.denomination);
                         if raw_left.trim().is_empty() {
                             let face = clean_text(&stamp.denomination);
@@ -1876,7 +1926,8 @@ where
                         } else {
                             unused_raw.as_str()
                         };
-                        let estimated_emit_width = est_width_mm + 2.0 * stamp_box_adjust;
+                        let estimated_emit_width =
+                            est_width_mm + 2.0 * effective_stamp_box_adjust;
                         let text_lines = estimate_stamp_body_line_count(
                             &raw_left,
                             &raw_stamps_issued,
@@ -2062,7 +2113,13 @@ where
                 let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(0.0) as f64;
                 for s in stamps_in_row.iter() {
                     let est_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
-                    let emit_w = est_w + img_new_w + 2.0 * stamp_box_adjust;
+                    let emit_w = est_w
+                        + img_new_w
+                        + 2.0
+                            * effective_stamp_box_adjust_mm(
+                                stamp_box_adjust,
+                                stamp_uses_colnect_real_dimensions(s),
+                            );
                     row_w += emit_w + margin;
                 }
                 // The computed row_w currently includes a trailing margin; subtract one margin
@@ -2127,8 +2184,12 @@ where
                 //         est_height_mm + 2.0 * stamp_box_adjust
                 //     );
                 // add per-side adjust to the emitted box width/height (STAMP_BOXES_SIZE_ADJUST)
-                let emit_width = est_width_mm + 2.0 * stamp_box_adjust;
-                let emit_height = est_height_mm + 2.0 * stamp_box_adjust;
+                let effective_stamp_box_adjust = effective_stamp_box_adjust_mm(
+                    stamp_box_adjust,
+                    stamp_uses_colnect_real_dimensions(stamp),
+                );
+                let emit_width = est_width_mm + 2.0 * effective_stamp_box_adjust;
+                let emit_height = est_height_mm + 2.0 * effective_stamp_box_adjust;
                 // Left: denomination (may include surcharge like "20+10 (C)").
                 // Wrap/split the denomination so a surcharge does not force the
                 // centre/right columns to be overwritten. Prefer splitting at

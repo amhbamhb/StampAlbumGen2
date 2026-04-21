@@ -4,7 +4,7 @@
 
 # --- Stamp Box Sizing ---
 stamp_box_height = 24.0
-stamp_box_adjust = 3.0
+stamp_box_adjust = 0.0
 
 # --- Colnect Dimension Adjustments ---
 # Separate adjustments for width and height (in mm) to compensate for printing

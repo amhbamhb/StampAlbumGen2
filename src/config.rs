@@ -470,7 +470,7 @@ impl Config {
             reference_width_mm: Some(24.0),
             reference_height_mm: Some(27.0),
             stamp_box_height: Some(30.0),
-            stamp_box_adjust: Some(-3.5),
+            stamp_box_adjust: Some(0.0),
             album_page_width_mm: Some(216.0),
             album_page_height_mm: Some(279.4),
             album_pages_title_font: Some("HN".to_string()),
