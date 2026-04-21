@@ -50,9 +50,9 @@ test:
 build_release:
   stage: build
   script:
-    - apt-get update
-    - apt-get install -y --no-install-recommends mingw-w64
-    - rustup target add x86_64-pc-windows-gnu
+    # - apt-get update
+    # - apt-get install -y --no-install-recommends mingw-w64
+    # - rustup target add x86_64-pc-windows-gnu
     - cargo build --release --bin stamp_album_gen2
     - cargo build --release --target x86_64-pc-windows-gnu --bin stamp_album_gen2
     - mkdir -p artifacts
