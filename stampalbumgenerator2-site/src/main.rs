@@ -1,17 +1,17 @@
+use axum::Router;
 use axum::extract::{DefaultBodyLimit, Path as AxumPath};
 use axum::http::header;
 use axum::http::{HeaderName, HeaderValue, StatusCode};
 use axum::response::Html;
 use axum::routing::get;
-use axum::Router;
 use chrono::{Datelike, Utc};
 use std::env;
 use std::io::ErrorKind;
 use std::net::SocketAddr;
 use std::path::Path;
 use tower_http::compression::CompressionLayer;
-use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::services::{ServeDir, ServeFile};
+use tower_http::set_header::SetResponseHeaderLayer;
 use tracing::info;
 
 const COPYRIGHT_START_YEAR: i32 = 2025;
@@ -146,7 +146,12 @@ mod tests {
     async fn security_headers_are_present_on_root() {
         let app = build_app();
         let response = app
-            .oneshot(Request::builder().uri("/").body(axum::body::Body::empty()).expect("request build failed"))
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .body(axum::body::Body::empty())
+                    .expect("request build failed"),
+            )
             .await
             .expect("app request failed");
 
