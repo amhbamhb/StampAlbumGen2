@@ -5,12 +5,13 @@
 
 use crate::types::ALBUM_DB_PATH;
 use log::debug;
+use std::path::PathBuf;
 
-fn resolve_runtime_albums_root() -> std::path::PathBuf {
+pub fn resolve_runtime_albums_root() -> PathBuf {
     if let Ok(from_env) = std::env::var("STAMP_ALBUMS_ROOT") {
         let trimmed = from_env.trim();
         if !trimmed.is_empty() {
-            return std::path::PathBuf::from(trimmed);
+            return PathBuf::from(trimmed);
         }
     }
 
@@ -19,11 +20,27 @@ fn resolve_runtime_albums_root() -> std::path::PathBuf {
     {
         let trimmed = from_cfg.trim();
         if !trimmed.is_empty() {
-            return std::path::PathBuf::from(trimmed);
+            return PathBuf::from(trimmed);
         }
     }
 
-    std::path::PathBuf::from("Albums")
+    PathBuf::from("Albums")
+}
+
+pub fn resolve_album_dir(album_name: &str) -> PathBuf {
+    resolve_runtime_albums_root().join(album_name.replace(' ', "-"))
+}
+
+pub fn resolve_album_image_path(album_name: &str, image_path: &str) -> PathBuf {
+    let clean_image_path = if image_path.starts_with("images/") {
+        &image_path[7..]
+    } else {
+        image_path
+    };
+
+    resolve_album_dir(album_name)
+        .join("images")
+        .join(clean_image_path)
 }
 
 /// Sets the database path from CLI arguments
@@ -73,10 +90,7 @@ pub fn image_exists(album_name: &str, image_path: &str) -> bool {
     };
 
     // Construct the full path to the image
-    let image_full_path = resolve_runtime_albums_root()
-        .join(album_name.replace(' ', "-"))
-        .join("images")
-        .join(clean_image_path);
+    let image_full_path = resolve_album_image_path(album_name, clean_image_path);
 
     image_full_path.exists()
 }

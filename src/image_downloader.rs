@@ -121,18 +121,7 @@ pub fn download_stamp_image_if_missing(
         return Ok(image_path.to_string());
     }
 
-    // Construct the full local path
-    let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
-    let images_dir = album_dir.join("images");
-
-    // Strip "images/" prefix if present
-    let clean_image_path = if image_path.starts_with("images/") {
-        &image_path[7..] // Remove "images/" prefix
-    } else {
-        image_path
-    };
-
-    let local_path = images_dir.join(clean_image_path);
+    let local_path = crate::file_utils::resolve_album_image_path(album_name, image_path);
 
     // Check if image already exists
     if local_path.exists() {
@@ -178,17 +167,8 @@ pub fn download_missing_stamp_images(
 
     for stamp in stamps {
         if !stamp.image_path.is_empty() && !stamp.remote_image_url.is_empty() {
-            // Strip "images/" prefix if present for path checking
-            let clean_image_path = if stamp.image_path.starts_with("images/") {
-                &stamp.image_path[7..] // Remove "images/" prefix
-            } else {
-                &stamp.image_path
-            };
-
-            // Check if image exists
-            let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
-            let images_dir = album_dir.join("images");
-            let local_path = images_dir.join(clean_image_path);
+            let local_path =
+                crate::file_utils::resolve_album_image_path(album_name, &stamp.image_path);
 
             if !local_path.exists() {
                 total_missing += 1;

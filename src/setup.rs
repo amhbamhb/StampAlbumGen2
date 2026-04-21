@@ -15,6 +15,15 @@ pub struct LinuxDesktopIntegrationReport {
     pub icon_path: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct WindowsDesktopIntegrationReport {
+    pub changed: bool,
+    pub summary: String,
+    pub desktop_shortcut_path: String,
+    pub start_menu_shortcut_path: String,
+    pub icon_path: String,
+}
+
 /// Setup errors that can occur during environment setup
 #[derive(Debug)]
 pub enum SetupError {
@@ -247,9 +256,51 @@ fn fallback_runtime_root_from(exe_path: &Path) -> Option<PathBuf> {
     exe_path.parent().map(|p| p.to_path_buf())
 }
 
+fn runtime_root_from_executable_path(exe_path: &Path) -> Option<PathBuf> {
+    let exe_dir = exe_path.parent()?;
+    if looks_like_runtime_root(exe_dir) {
+        return Some(exe_dir.to_path_buf());
+    }
+
+    let allow_ancestor_search = std::env::var("STAMP_ALBUM_ALLOW_ANCESTOR_RUNTIME_ROOT")
+        .map(|v| {
+            let t = v.trim();
+            t.eq_ignore_ascii_case("1") || t.eq_ignore_ascii_case("true")
+        })
+        .unwrap_or(false);
+    if !allow_ancestor_search {
+        return None;
+    }
+
+    let mut candidate = exe_dir.parent();
+    for _ in 0..6 {
+        let dir = candidate?;
+        if looks_like_runtime_root(dir) {
+            return Some(dir.to_path_buf());
+        }
+        candidate = dir.parent();
+    }
+
+    None
+}
+
 pub fn align_process_working_dir_to_runtime_layout() -> std::io::Result<Option<PathBuf>> {
     let current_dir = std::env::current_dir()?;
     let exe_path = std::env::current_exe()?;
+
+    if looks_like_runtime_root(&current_dir) {
+        // When an external/portable executable is launched from a different
+        // runtime-like directory (for example the workspace root), prefer the
+        // executable-adjacent runtime tree. For dev builds under the workspace,
+        // the executable remains inside the current runtime root, so keep cwd.
+        if let Some(exe_runtime_root) = runtime_root_from_executable_path(&exe_path) {
+            if exe_runtime_root != current_dir && !exe_path.starts_with(&current_dir) {
+                std::env::set_current_dir(&exe_runtime_root)?;
+                return Ok(Some(exe_runtime_root));
+            }
+        }
+        return Ok(None);
+    }
 
     let target_dir = find_runtime_root_from(&current_dir, &exe_path)
         .or_else(|| fallback_runtime_root_from(&exe_path));
@@ -332,6 +383,172 @@ fn bundled_icon_png() -> &'static [u8] {
     include_bytes!("../assets/icons/stamp_album_gen2.png")
 }
 
+fn bundled_windows_icon_ico() -> &'static [u8] {
+    include_bytes!("../assets/icons/generated/stamp-monogram.ico")
+}
+
+fn escape_powershell_single_quoted(text: &str) -> String {
+    text.replace('\'', "''")
+}
+
+fn query_windows_desktop_dir() -> Option<PathBuf> {
+    let output = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-Command")
+        .arg("[Environment]::GetFolderPath('Desktop')")
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    Some(PathBuf::from(trimmed))
+}
+
+fn query_windows_programs_dir() -> Option<PathBuf> {
+    let output = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-Command")
+        .arg("[Environment]::GetFolderPath('Programs')")
+        .output()
+        .ok()?;
+
+    if !output.status.success() {
+        return None;
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    Some(PathBuf::from(trimmed))
+}
+
+fn create_windows_shortcut(
+    shortcut_path: &Path,
+    target: &Path,
+    working_dir: &Path,
+    icon_path: &Path,
+) -> std::io::Result<()> {
+    let target_ps = escape_powershell_single_quoted(&target.to_string_lossy());
+    let cwd_ps = escape_powershell_single_quoted(&working_dir.to_string_lossy());
+    let shortcut_ps = escape_powershell_single_quoted(&shortcut_path.to_string_lossy());
+    let icon_ps = escape_powershell_single_quoted(&icon_path.to_string_lossy());
+
+    let script = format!(
+        "$wsh = New-Object -ComObject WScript.Shell; $sc = $wsh.CreateShortcut('{shortcut}'); $sc.TargetPath = '{target}'; $sc.Arguments = '--review-ui'; $sc.WorkingDirectory = '{cwd}'; $sc.IconLocation = '{icon},0'; $sc.Description = 'Open Stamp Album Generator 2 Review UI'; $sc.Save()",
+        shortcut = shortcut_ps,
+        target = target_ps,
+        cwd = cwd_ps,
+        icon = icon_ps
+    );
+
+    let output = Command::new("powershell")
+        .arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-Command")
+        .arg(script)
+        .output()?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(std::io::Error::other(format!(
+            "failed to create shortcut {}: {}",
+            shortcut_path.display(),
+            stderr.trim()
+        )));
+    }
+
+    Ok(())
+}
+
+pub fn ensure_windows_desktop_integration() -> std::io::Result<WindowsDesktopIntegrationReport> {
+    if !std::env::consts::OS.eq_ignore_ascii_case("windows") {
+        return Ok(WindowsDesktopIntegrationReport {
+            changed: false,
+            summary: "Skipped desktop integration (non-Windows OS).".to_string(),
+            desktop_shortcut_path: String::new(),
+            start_menu_shortcut_path: String::new(),
+            icon_path: String::new(),
+        });
+    }
+
+    let exe = std::env::current_exe()?;
+    let working_dir = exe
+        .parent()
+        .ok_or_else(|| std::io::Error::other("failed to determine executable parent directory"))?
+        .to_path_buf();
+
+    let desktop_dir = query_windows_desktop_dir()
+        .or_else(|| std::env::var_os("USERPROFILE").map(|v| PathBuf::from(v).join("Desktop")));
+    let desktop_dir = desktop_dir.ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "failed to resolve Windows Desktop directory",
+        )
+    })?;
+    std::fs::create_dir_all(&desktop_dir)?;
+
+    let programs_dir = query_windows_programs_dir().or_else(|| {
+        std::env::var_os("APPDATA")
+            .map(|v| PathBuf::from(v).join("Microsoft\\Windows\\Start Menu\\Programs"))
+    });
+    let programs_dir = programs_dir.ok_or_else(|| {
+        std::io::Error::new(
+            std::io::ErrorKind::NotFound,
+            "failed to resolve Windows Start Menu Programs directory",
+        )
+    })?;
+    std::fs::create_dir_all(&programs_dir)?;
+
+    let app_icon_dir = std::env::var_os("LOCALAPPDATA")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| working_dir.clone())
+        .join("StampAlbumGen2");
+    std::fs::create_dir_all(&app_icon_dir)?;
+    let icon_path = app_icon_dir.join("stamp_album_gen2.ico");
+    let bundled_icon = bundled_windows_icon_ico();
+    if std::fs::read(&icon_path).ok().as_deref() != Some(bundled_icon) {
+        std::fs::write(&icon_path, bundled_icon)?;
+    }
+
+    let desktop_shortcut_path = desktop_dir.join("Stamp Album Generator 2.lnk");
+    let start_menu_shortcut_path = programs_dir.join("Stamp Album Generator 2.lnk");
+    let mut changed = false;
+
+    if !desktop_shortcut_path.exists() || !start_menu_shortcut_path.exists() {
+        changed = true;
+    }
+
+    create_windows_shortcut(&desktop_shortcut_path, &exe, &working_dir, &icon_path)?;
+    create_windows_shortcut(&start_menu_shortcut_path, &exe, &working_dir, &icon_path)?;
+
+    let summary = if changed {
+        "Windows desktop and Start Menu shortcuts installed/updated."
+    } else {
+        "Windows desktop and Start Menu shortcuts already configured."
+    };
+
+    Ok(WindowsDesktopIntegrationReport {
+        changed,
+        summary: summary.to_string(),
+        desktop_shortcut_path: desktop_shortcut_path.to_string_lossy().to_string(),
+        start_menu_shortcut_path: start_menu_shortcut_path.to_string_lossy().to_string(),
+        icon_path: icon_path.to_string_lossy().to_string(),
+    })
+}
+
 pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegrationReport> {
     if !std::env::consts::OS.eq_ignore_ascii_case("linux") {
         return Ok(LinuxDesktopIntegrationReport {
@@ -376,7 +593,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
         ));
     }
     let desktop_contents = format!(
-        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Gen2\nComment=Open Stamp Album Gen2 Review UI\nExec={}\nPath={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
+        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
         format!("{} --review-ui", exec_path),
         working_dir,
         icon_path.to_string_lossy()

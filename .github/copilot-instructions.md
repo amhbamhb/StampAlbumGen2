@@ -51,6 +51,15 @@ Avoid unchecked `unwrap()` in runtime code paths.
 2. Prefer `?`, `ok_or_else`, `unwrap_or_else`, or explicit `match` with a meaningful error message.
 3. In request handlers and background tasks, return structured errors instead of panicking.
 
+## Cross-Platform Compatibility Gate
+
+All substantive code changes must remain compatible with both Windows and Linux unless the task explicitly targets only one OS.
+
+1. Prefer portable APIs and path handling (for example, `std::path::Path`/`PathBuf`) over OS-specific string logic.
+2. Avoid shell-specific assumptions in scripts and commands. If platform-specific commands are necessary, provide equivalent Windows and Linux paths/commands.
+3. When touching process launch logic, filesystem operations, or path parsing, validate behavior for both Windows and Linux code paths before finalizing.
+4. If full validation cannot be run on one platform, call this out clearly and keep the implementation conservative and portable.
+
 ## Development Test Logging
 
 When running development test commands (especially data-ingest flows), always

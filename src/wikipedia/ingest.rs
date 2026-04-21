@@ -13,6 +13,7 @@ pub fn ingest_wikipedia_to_db(
     cache_db_path: &str,
     album_db_path: &str,
     max_entries: usize,
+    series_prefix: &str,
 ) -> Result<usize, Box<dyn Error>> {
     info!(
         "ingest_wikipedia_to_db: topic='{}' cache_db='{}' album_db='{}'",
@@ -67,7 +68,15 @@ pub fn ingest_wikipedia_to_db(
             }
 
             let mut inserted = 0usize;
-            let series_name = format!("{} (Wikipedia import)", topic);
+            let series_prefix = {
+                let trimmed = series_prefix.trim();
+                if trimmed.is_empty() {
+                    "Wikipedia import"
+                } else {
+                    trimmed
+                }
+            };
+            let series_name = format!("{} ({})", topic, series_prefix);
 
             for (i, para) in paragraphs.iter().enumerate() {
                 if inserted >= max_entries {
@@ -86,31 +95,31 @@ pub fn ingest_wikipedia_to_db(
 
                 match crate::db_utils::insert_stamp(
                     &conn,
-                    topic,              // country
-                    &series_name,       // series
-                    0,                  // year unknown
-                    "",                 // month
-                    "0",                // _month_num
-                    "",                 // day
-                    &sg,                // sg_number
-                    "WIKIPEDIA",        // type
-                    "",                 // denomination
-                    "",                 // color
-                    &description,       // description
-                    "",                 // stamps_issued
-                    "",                 // mint_condition
-                    "",                 // unused
-                    "",                 // used
-                    "",                 // letter_fdc
-                    "",                 // currency
-                    "",                 // image_path
-                    "",                 // remote_image_url
-                    "",                 // original_image_url
-                    "",                 // watermark
-                    "",                 // design
-                    "",                 // engraving
-                    "",                 // perforation
-                    "Wikipedia import", // context
+                    topic,         // country
+                    &series_name,  // series
+                    0,             // year unknown
+                    "",            // month
+                    "0",           // _month_num
+                    "",            // day
+                    &sg,           // sg_number
+                    "WIKIPEDIA",   // type
+                    "",            // denomination
+                    "",            // color
+                    &description,  // description
+                    "",            // stamps_issued
+                    "",            // mint_condition
+                    "",            // unused
+                    "",            // used
+                    "",            // letter_fdc
+                    "",            // currency
+                    "",            // image_path
+                    "",            // remote_image_url
+                    "",            // original_image_url
+                    "",            // watermark
+                    "",            // design
+                    "",            // engraving
+                    "",            // perforation
+                    series_prefix, // context
                 ) {
                     Ok(true) => {
                         inserted += 1;

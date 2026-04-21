@@ -8,7 +8,7 @@ fn render_app_footer_html() -> String {
     format!(
         "<div class='appFooter' style='margin-top:16px; font-size:12px; color:#5b6f81; text-align:center;'>\
 <div>Copyright &copy; 2025 &#x2013; <span class='copyrightCurrentYear'></span> Laser Spider LLC. All rights reserved.</div>\
-<div style='margin-top:4px;'>Album Generator 2 | Version {} </div>\
+<div style='margin-top:4px;'>Stamp Album Generator 2 | Version {} </div>\
 </div>",
         version
     )
@@ -21,7 +21,7 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
 <html>
 <head>
 <meta charset='utf-8'>
-<title>Stamp Album Gen 2 Setup</title>
+<title>Stamp Album Generator 2 Setup</title>
 <link rel='icon' type='image/png' href='/favicon.png'>
 <style>
 :root {{
@@ -124,7 +124,6 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
         <label for='countrySel'>Country</label>
         <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
         <button onclick='refreshState()'>Refresh</button>
-        <button onclick='openConfigEditor()'>Edit Config</button>
         <button class='primary' onclick='startReview()'>Open Review</button>
         <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
         <button onclick='importColnectFiles()'>Import Colnect</button>
@@ -1405,7 +1404,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
 <html>
 <head>
 <meta charset='utf-8'>
-<title>Stamp Album Gen 2</title>
+<title>Stamp Album Generator 2</title>
 <link rel='icon' type='image/png' href='/favicon.png'>
 <style>
 body {{
@@ -1667,7 +1666,8 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 <div class='wrap'>
     <div id='reconnectBannerCompare' class='reconnectBanner' role='status' aria-live='polite'>
         <div id='reconnectBannerCompareTitle' class='title'>Connection lost, retrying...</div>
-        <div id='reconnectBannerCompareText'>{backend_not_responding_message}</div>
+        <button onclick='refreshState()'>Refresh</button>
+        <button onclick='openConfigEditor()'>Edit Config</button>
         <div class='actions'>
             <button type='button' onclick='retryBackendHealthCheckCompare()'>Retry Now</button>
             <button type='button' onclick='reloadCurrentPageCompare()'>Reload Page</button>
@@ -1680,6 +1680,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
     </div>
     <div id='startGuide' class='startGuide'>
         <h2>Start Country Review Session</h2>
+        <h2 ><strong>Current country:</strong> <span id='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
         <div class='guideStats'>
             <span id='statLeftCount' class='badge'>Left: 0</span>
@@ -1718,7 +1719,8 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <label for='defaultCatalogSelect'>Local Catalog</label>
                         <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
                             <option value='sg'>Stanley Gibbons (SG)</option>
-                            <option value='sn'>Scott (SN)</option>
+                                 <option value='sw'>StampWorld (SW)</option>
+                            <option value='sn'>Scott Number (SN)</option>
                             <option value='mi'>Michel (MI)</option>
                             <option value='yt'>Yvert (YT)</option>
                             <option value='afa'>AFA</option>
@@ -1796,9 +1798,10 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
                 <label>order
                         <select id='sortMode' onchange='changeSortMode()'>
-                                <option value='sg'>Catalog number (default)</option>
-                                <option value='year_sg'>Year then catalog number</option>
-                                <option value='series_sg'>Series then catalog number</option>
+                        <option value='catalog'>Catalog number (default)</option>
+                        <option value='year_catalog'>Year then catalog number</option>
+                        <option value='series_catalog'>Series then catalog number</option>
+                    <option value='series_date_catalog'>Series then issue date</option>
                                 <option value='rowid'>DB row id</option>
                                 <option value='colnect_id'>Colnect ID</option>
                         </select>
@@ -1880,10 +1883,13 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                 <div class='leftEditorSectionBody'>
                     <div class='leftEditorGrid'>
                         <label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /></label>
+                        <label>Catalog Type Search <input id='leftEditorCatalogCodeSearch' type='text' list='leftEditorCatalogCodeSearchList' placeholder='Type to filter catalogs...' oninput='filterLeftEditorCatalogTypeOptions()' onchange='applyLeftEditorCatalogSearchChoice()' onblur='tryApplyLeftEditorCatalogSearchChoice()' /></label>
+                        <datalist id='leftEditorCatalogCodeSearchList'></datalist>
                         <label>Catalog Type
                             <select id='leftEditorCatalogCodeSelect' onchange='toggleLeftEditorCatalogCodeCustom()'>
                                 <option value='sg'>Stanley Gibbons (SG)</option>
-                                <option value='sn'>Scott (SN)</option>
+                                     <option value='sw'>StampWorld (SW)</option>
+                                <option value='sn'>Scott Number (SN)</option>
                                 <option value='mi'>Michel (MI)</option>
                                 <option value='yt'>Yvert (YT)</option>
                                 <option value='afa'>AFA</option>
@@ -1997,6 +2003,8 @@ const reviewColnectDir = String(payload.colnect_dir || '');
 let reviewColnectFileCount = Number(payload.colnect_file_count || 0);
 const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
+const configDefaultSortMode = String(payload.default_sort_mode || 'catalog').toLowerCase();
+const reviewCountryName = String(payload.album_name || '').trim();
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
 let countryDefaultCatalogCode = '';
 let leftIdx = 0;
@@ -2010,7 +2018,7 @@ let resolvingRightImageById = {{}};
 let resolvedRightImageById = {{}};
 let leftEditorMode = 'edit';
 let leftEditorSourceRowid = null;
-let sortMode = 'sg';
+let sortMode = normalizeSortMode(configDefaultSortMode);
 let leftSearchMatches = [];
 let leftSearchMatchPos = -1;
 let leftSearchQuery = '';
@@ -2027,6 +2035,9 @@ const reviewPdfAlwaysOpenStorageKey = 'reviewui.pdf.always_open';
 const backendHealthComparePollMs = 15000;
 const backendHealthCompareFailureThreshold = 2;
 let reviewLastGeneratedPdfPath = '';
+
+const currentReviewCountryEl = document.getElementById('currentReviewCountry');
+if (currentReviewCountryEl) currentReviewCountryEl.textContent = reviewCountryName || 'Unknown';
 window.__returnToStartInFlight = false;
 const reviewPdfLastPathStorageKey = 'reviewui.pdf.last_path.' + String(payload.album_name || 'default');
 const reviewPdfLastStatusStorageKey = 'reviewui.pdf.last_status.' + String(payload.album_name || 'default');
@@ -2464,35 +2475,170 @@ function toggleImagelessLeftRows() {{
     }}
     window.location.href = url.pathname + url.search;
 }}
+
+function parseConfiguredCatalogFamilyOptions(entries) {{
+    const parsed = [];
+    for (const raw of (Array.isArray(entries) ? entries : [])) {{
+        const line = String(raw || '').trim();
+        if (!line) continue;
+        const parts = line.split('|').map(v => String(v || '').trim());
+        if (!parts[0] || !parts[1]) continue;
+        const code = parts[0].toLowerCase();
+        const label = parts[1];
+        const count = parts[2] ? Number(String(parts[2]).replaceAll(',', '')) : 0;
+        parsed.push({{ code, label, count: Number.isFinite(count) ? count : 0 }});
+    }}
+    return parsed;
+}}
+
+function defaultCatalogFamilyOptions() {{
+    return [
+        {{ code: 'afa', label: 'AFA number', count: 116770 }},
+        {{ code: 'afm', label: 'Afinsa-Mundifil', count: 17227 }},
+        {{ code: 'ank', label: 'ANK', count: 8320 }},
+        {{ code: 'barefoot', label: 'Barefoot', count: 17982 }},
+        {{ code: 'belaruspost', label: 'Belarus post Inc.', count: 2530 }},
+        {{ code: 'belgium', label: 'Belgium', count: 26787 }},
+        {{ code: 'bertossa', label: 'Bertossa', count: 2686 }},
+        {{ code: 'bolaffi', label: 'Bolaffi', count: 2354 }},
+        {{ code: 'bw', label: 'Brusden-White', count: 1319 }},
+        {{ code: 'bustamante', label: 'Bustamante', count: 2952 }},
+        {{ code: 'campbellpaterson', label: 'Campbell Paterson', count: 6974 }},
+        {{ code: 'cps', label: 'Chilean Philatelic Society', count: 3018 }},
+        {{ code: 'css', label: 'China Stamp Society', count: 3271 }},
+        {{ code: 'ciardi', label: 'Ciardi', count: 7451 }},
+        {{ code: 'col', label: 'Colnect codes', count: 445975 }},
+        {{ code: 'croatianpost', label: 'Croatian post Inc.', count: 1648 }},
+        {{ code: 'dainippon', label: 'Dai Nippon', count: 1610 }},
+        {{ code: 'durland', label: 'Durland', count: 7995 }},
+        {{ code: 'edifil', label: 'Edifil', count: 15000 }},
+        {{ code: 'facit', label: 'Facit', count: 7964 }},
+        {{ code: 'farahbakhsh', label: 'Farahbakhsh', count: 4292 }},
+        {{ code: 'gotigjalil', label: 'Gotig and Jalil', count: 5772 }},
+        {{ code: 'gz', label: 'Gz (Cefiloza)', count: 9845 }},
+        {{ code: 'hectormena', label: 'Hector Mena', count: 202 }},
+        {{ code: 'hibernian', label: 'Hibernian', count: 3104 }},
+        {{ code: 'iscmalaysia', label: 'ISC Malaysia', count: 5178 }},
+        {{ code: 'isfila', label: 'Isfila', count: 1780 }},
+        {{ code: 'ipf', label: 'Israel Philatelic Federation', count: 2256 }},
+        {{ code: 'karamitsos', label: 'Karamitsos', count: 5526 }},
+        {{ code: 'lapefinland', label: 'LaPe Finland', count: 5046 }},
+        {{ code: 'leotemprano', label: 'Leo Temprano', count: 3336 }},
+        {{ code: 'markapmr', label: 'Markapmr.ru', count: 1681 }},
+        {{ code: 'maury', label: 'Maury', count: 1730 }},
+        {{ code: 'mi', label: 'Michel', count: 1126331 }},
+        {{ code: 'ngo', label: 'Ngo', count: 1753 }},
+        {{ code: 'nilepost', label: 'Nile Post', count: 164 }},
+        {{ code: 'norgeskatalogen', label: 'Norgeskatalogen', count: 3079 }},
+        {{ code: 'nvp', label: 'NVPH', count: 18985 }},
+        {{ code: 'philaindia', label: 'Phila-India', count: 95 }},
+        {{ code: 'phh', label: 'Philatelia Hungarica Catalog', count: 24472 }},
+        {{ code: 'pofis', label: 'POFIS', count: 14007 }},
+        {{ code: 'fischer', label: 'Polish Stamps Catalog (Fischer)', count: 13603 }},
+        {{ code: 'rhm', label: 'RHM', count: 6129 }},
+        {{ code: 'romfilatelia', label: 'Romfilatelia', count: 7402 }},
+        {{ code: 'sakura', label: 'Sakura', count: 14636 }},
+        {{ code: 'sassone', label: 'Sassone', count: 18777 }},
+        {{ code: 'sevenseas', label: 'Seven Seas Stamps', count: 15550 }},
+        {{ code: 'sfk', label: 'SFK Serbia', count: 2820 }},
+        {{ code: 'siddiqui', label: 'Siddiqui Catalogue', count: 1644 }},
+        {{ code: 'slovenika', label: 'Slovenika', count: 2270 }},
+        {{ code: 'soloviev', label: 'Soloviev', count: 7479 }},
+        {{ code: 'safrican', label: 'South African Stamp Catalog', count: 3640 }},
+        {{ code: 'sn', label: 'Scott Number', count: 814224 }},
+        {{ code: 'sg', label: 'Stanley Gibbons', count: 705728 }},
+        {{ code: 'sw', label: 'StampWorld', count: 0 }},
+        {{ code: 'thaistamp', label: 'Thai Stamp Catalogue', count: 3615 }},
+        {{ code: 'ukrposhta', label: 'Ukrposhta', count: 3307 }},
+        {{ code: 'un', label: 'Unificato', count: 169053 }},
+        {{ code: 'vandam', label: 'Van Dam', count: 2613 }},
+        {{ code: 'wad', label: 'WADP Numbering System - WNS', count: 91196 }},
+        {{ code: 'wsp', label: 'World Stamps Project', count: 3152 }},
+        {{ code: 'yang', label: 'Yang', count: 871 }},
+        {{ code: 'yt', label: 'Yvert et Tellier', count: 925704 }},
+        {{ code: 'zagorskiy', label: 'Zagorskiy', count: 14287 }},
+        {{ code: 'zimbrul', label: 'Zimbrul Carpatin', count: 1567 }},
+        {{ code: 'zonnebloem', label: 'Zonnebloem', count: 4948 }},
+        {{ code: 'zumstein', label: 'Zumstein', count: 8559 }}
+    ];
+}}
+
+const reviewCatalogFamilies = (() => {{
+    const merged = new Map();
+    for (const item of defaultCatalogFamilyOptions()) merged.set(item.code, item);
+    for (const item of parseConfiguredCatalogFamilyOptions(payload.catalog_family_options)) merged.set(item.code, item);
+    return Array.from(merged.values()).sort((a, b) => {{
+        const ac = Number(a?.count || 0);
+        const bc = Number(b?.count || 0);
+        if (bc !== ac) return bc - ac;
+        return String(a?.label || '').localeCompare(String(b?.label || ''));
+    }});
+}})();
+const reviewCatalogFamilyByCode = (() => {{
+    const m = new Map();
+    for (const item of reviewCatalogFamilies) m.set(item.code, item);
+    return m;
+}})();
+const reviewCatalogKnownCodes = new Set(reviewCatalogFamilies.map(v => v.code));
+
 function catalogDisplayName(code) {{
     const c = String(code || '').trim().toLowerCase();
-    if (c === 'sn') return 'Scott';
-    if (c === 'sg') return 'Stanley Gibbons';
-    if (c === 'mi') return 'Michel';
-    if (c === 'yt') return 'Yvert';
-    if (c === 'afa') return 'AFA';
-    if (c === 'nvp') return 'NVP';
-    if (c === 'un') return 'Unificato';
-    if (c === 'col') return 'Colnect';
+    const known = reviewCatalogFamilyByCode.get(c);
+    if (known && known.label) return known.label;
     return c ? c.toUpperCase() : 'Catalog';
 }}
 
 function normalizeCatalogCodeForUi(code) {{
     const c = String(code || '').trim().toLowerCase();
-    const allowed = new Set(['sg', 'sn', 'mi', 'yt', 'afa', 'nvp', 'un', 'col']);
-    return allowed.has(c) ? c : '';
+    if (c === 'stampworld') return 'sw';
+    if (c === 'stanleygibbons' || c === 'stanley_gibbons') return 'sg';
+    return c;
+}}
+
+function inferInitialCatalogCodeFromLeftRows() {{
+    if (!Array.isArray(left) || left.length === 0) return '';
+
+    const counts = new Map();
+    const bump = (code) => {{
+        const c = normalizeCatalogCodeForUi(code);
+        if (!c) return;
+        counts.set(c, (counts.get(c) || 0) + 1);
+    }};
+
+    for (const item of left) {{
+        const explicit = normalizeCatalogCodeForUi(item?.catalog_code);
+        if (explicit) {{
+            bump(explicit);
+            continue;
+        }}
+        if (String(item?.stampworld_image_url || '').trim()) {{
+            bump('sw');
+        }}
+    }}
+
+    if (!counts.size) return '';
+    let bestCode = '';
+    let bestCount = -1;
+    for (const [code, count] of counts.entries()) {{
+        if (count > bestCount) {{
+            bestCount = count;
+            bestCode = code;
+        }}
+    }}
+    return bestCode;
 }}
 
 function getEffectiveDefaultCatalogCode() {{
     return normalizeCatalogCodeForUi(countryDefaultCatalogCode)
         || normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || inferInitialCatalogCodeFromLeftRows()
         || 'sg';
 }}
 
 function changeCountryDefaultCatalog() {{
     const sel = document.getElementById('defaultCatalogSelect');
     if (!sel) return;
-    countryDefaultCatalogCode = normalizeCatalogCodeForUi(sel.value) || 'sg';
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(sel.value) || getEffectiveDefaultCatalogCode();
     try {{
         localStorage.setItem(countryCatalogStorageKey, countryDefaultCatalogCode);
     }} catch (_) {{}}
@@ -2590,12 +2736,42 @@ function sgSortText(item) {{
     return normalizeCatalogNumber(String(item?.sg_number || '')).toLowerCase();
 }}
 
+function normalizeSortMode(mode) {{
+    const m = String(mode || 'catalog').toLowerCase();
+    if (m === 'catalog' || m === 'year_catalog' || m === 'series_catalog' || m === 'series_date_catalog' || m === 'rowid' || m === 'colnect_id') return m;
+    if (m === 'sg') return 'catalog';
+    if (m === 'year_sg') return 'year_catalog';
+    if (m === 'series_sg') return 'series_catalog';
+    if (m === 'series_date_sg') return 'series_date_catalog';
+    return 'catalog';
+}}
+
+function parseIssueDayValue(value) {{
+    const text = String(value || '').trim();
+    if (!text) return 0;
+    const match = text.match(/\d+/);
+    return match ? (Number(match[0]) || 0) : 0;
+}}
+
+function compareIssueDateParts(a, b) {{
+    const ay = Number(a?.year || 0);
+    const by = Number(b?.year || 0);
+    if (ay !== by) return ay - by;
+    const am = Number(a?.month_num || 0);
+    const bm = Number(b?.month_num || 0);
+    if (am !== bm) return am - bm;
+    const ad = parseIssueDayValue(a?.day);
+    const bd = parseIssueDayValue(b?.day);
+    if (ad !== bd) return ad - bd;
+    return 0;
+}}
+
 function compareBySortMode(a, b, mode) {{
-    const m = String(mode || 'sg');
+    const m = normalizeSortMode(mode);
     if (m === 'rowid') {{
         return Number(a?.rowid || 0) - Number(b?.rowid || 0);
     }}
-    if (m === 'year_sg') {{
+    if (m === 'year_catalog') {{
         const ay = Number(a?.year || 0);
         const by = Number(b?.year || 0);
         if (ay !== by) return ay - by;
@@ -2604,10 +2780,21 @@ function compareBySortMode(a, b, mode) {{
         if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
         return Number(a?.rowid || 0) - Number(b?.rowid || 0);
     }}
-    if (m === 'series_sg') {{
+    if (m === 'series_catalog') {{
         const aser = String(a?.series || '').toLowerCase();
         const bser = String(b?.series || '').toLowerCase();
         if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
+        const asg = sgSortText(a);
+        const bsg = sgSortText(b);
+        if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+    if (m === 'series_date_catalog') {{
+        const aser = String(a?.series || '').toLowerCase();
+        const bser = String(b?.series || '').toLowerCase();
+        if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
+        const dateCmp = compareIssueDateParts(a, b);
+        if (dateCmp !== 0) return dateCmp;
         const asg = sgSortText(a);
         const bsg = sgSortText(b);
         if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
@@ -2978,7 +3165,7 @@ function lastRight() {{
 
 function changeSortMode() {{
     const sel = document.getElementById('sortMode');
-    sortMode = String(sel?.value || 'sg');
+    sortMode = normalizeSortMode(String(sel?.value || 'sg'));
     const currentRowid = left[leftIdx]?.rowid;
     sortLeftRows(currentRowid);
     for (const key of Object.keys(rightIdxByLeft)) rightIdxByLeft[key] = 0;
@@ -3019,6 +3206,96 @@ function selectedCatalogTypeForCurrent(r) {{
     const preferred = pairs.find(p => String(p.catalog_type || '').toLowerCase() === preferredCode);
     if (preferred && preferred.catalog_type) return String(preferred.catalog_type).toLowerCase();
     return String(pairs[0].catalog_type || '').toLowerCase();
+}}
+
+function rightCatalogFamiliesForCandidate(r) {{
+    const families = [];
+    const seen = new Set();
+    for (const pair of (r?.catalog_code_pairs || [])) {{
+        const code = normalizeCatalogCodeForUi(pair?.catalog_type);
+        if (!code || seen.has(code)) continue;
+        seen.add(code);
+        families.push(code);
+    }}
+    return families;
+}}
+
+function populateRightCatalogSearchSuggestions(items) {{
+    const listEl = document.getElementById('catalogCodeSearchList');
+    if (!listEl) return;
+    listEl.innerHTML = (items || [])
+        .slice(0, 200)
+        .map(item => `<option value='${{html(catalogFamilySearchText(item))}}'></option>`)
+        .join('');
+}}
+
+function applyRightCatalogSearchChoice() {{
+    const inputEl = document.getElementById('catalogCodeSearchInput');
+    const selectEl = document.getElementById('catalogCodeSelect');
+    if (!inputEl || !selectEl) return;
+    const code = parseCatalogCodeFromSearchValue(inputEl.value);
+    if (!code) return;
+
+    const specificOpt = Array.from(selectEl.options).find(opt => String(opt.dataset?.cat || '').toLowerCase() === code && !String(opt.value || '').startsWith('__family__'));
+    if (specificOpt) {{
+        selectEl.value = specificOpt.value;
+        rememberCatalogCode();
+        return;
+    }}
+    const familyValue = `__family__${{code}}`;
+    if (Array.from(selectEl.options).some(opt => opt.value === familyValue)) {{
+        selectEl.value = familyValue;
+        rememberCatalogCode();
+    }}
+}}
+
+function tryApplyRightCatalogSearchChoice() {{
+    // Called on blur: silently try to extract and apply catalog code if possible
+    const inputEl = document.getElementById('catalogCodeSearchInput');
+    if (!inputEl || !inputEl.value.trim()) return;
+    applyRightCatalogSearchChoice(); // Just call the regular function, it silently ignores if no code found
+}}
+
+function buildRightCatalogSelectOptions(r, selectedCode, selectedType) {{
+    const query = String(document.getElementById('catalogCodeSearchInput')?.value || '').trim().toLowerCase();
+    const pairs = Array.isArray(r?.catalog_code_pairs) ? r.catalog_code_pairs : [];
+    const familySet = new Set(rightCatalogFamiliesForCandidate(r));
+    const matchesQuery = (text) => !query || String(text || '').toLowerCase().includes(query);
+
+    const stampSpecific = pairs.filter(p => {{
+        const catCode = normalizeCatalogCodeForUi(p?.catalog_type);
+        const text = `${{catalogDisplayName(catCode)}} ${{String(catCode || '').toUpperCase()}} ${{p?.code || ''}}`;
+        return matchesQuery(text);
+    }});
+
+    const otherFamilies = reviewCatalogFamilies.filter(item => {{
+        if (familySet.has(item.code)) return false;
+        return matchesQuery(`${{item.label}} ${{item.code}}`);
+    }});
+
+    populateRightCatalogSearchSuggestions([
+        ...reviewCatalogFamilies.filter(item => familySet.has(item.code)),
+        ...otherFamilies
+    ]);
+
+    const optionSpecific = stampSpecific.map(p => {{
+        const catCode = normalizeCatalogCodeForUi(p?.catalog_type);
+        const label = `${{catalogDisplayName(catCode)}} (${{String(catCode || '').toUpperCase()}}): ${{p.code || ''}}`;
+        const selected = String(selectedCode || '') === String(p.code || '') ? ' selected' : '';
+        return `<option value='${{html(p.code || '')}}' data-cat='${{html(catCode)}}'${{selected}}>${{html(label)}}</option>`;
+    }}).join('');
+
+    const optionOther = otherFamilies.map(item => {{
+        const value = `__family__${{item.code}}`;
+        const selected = !selectedCode && String(selectedType || '') === String(item.code) ? ' selected' : '';
+        return `<option value='${{html(value)}}' data-cat='${{html(item.code)}}'${{selected}}>${{html(catalogFamilyOptionText(item))}}</option>`;
+    }}).join('');
+
+    return [
+        "<option value=''>-- none --</option>",
+        optionSpecific ? `<optgroup label='For this stamp'>${{optionSpecific}}</optgroup>` : '',
+        optionOther ? `<optgroup label='Other catalogs'>${{optionOther}}</optgroup>` : ''
+    ].join('');
 }}
 
 function ordinalValueForCatalog(item, catalogCode) {{
@@ -3222,19 +3499,20 @@ function render(options) {{
     const rightCatalogTypeLabel = rightCatalogType
         ? `${{catalogDisplayName(rightCatalogType)}} (${{String(rightCatalogType).toUpperCase()}})`
         : 'Catalog';
-    const catPairs = (r.catalog_code_pairs || []).map(p =>
-        `<option value='${{html(p.code)}}' data-cat='${{html(p.catalog_type)}}'>${{html(catalogDisplayName(p.catalog_type))}} (${{html(String(p.catalog_type || '').toUpperCase())}}): ${{html(p.code)}}</option>`
-    ).join('');
+    const rightCatalogQuery = String(document.getElementById('catalogCodeSearchInput')?.value || '');
     const selectedCode = selectedCatalogCodeForCurrent(r);
+    const selectedType = selectedCatalogTypeForCurrent(r);
+    const rightCatalogOptions = buildRightCatalogSelectOptions(r, selectedCode, selectedType);
   document.getElementById('rightPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
                
                 <div style='margin-top:8px;'>
                     <label>Catalog code to assign (for catalog number replace):</label>
+                    <input id='catalogCodeSearchInput' type='text' list='catalogCodeSearchList' value='${{html(rightCatalogQuery)}}' placeholder='Type to filter catalogs...' oninput='render({{ preserveRightScroll: true }})' onchange='applyRightCatalogSearchChoice()' onblur='tryApplyRightCatalogSearchChoice()' style='display:block; margin:6px 0; width:100%; max-width:460px;' />
+                    <datalist id='catalogCodeSearchList'></datalist>
                     <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
-                        <option value=''>-- none --</option>
-                        ${{catPairs}}
+                        ${{rightCatalogOptions}}
                     </select>
                 </div>
             </div>
@@ -3288,7 +3566,13 @@ function render(options) {{
   `;
 
     const sel = document.getElementById('catalogCodeSelect');
-    if (sel && selectedCode) sel.value = selectedCode;
+    if (sel) {{
+        if (selectedCode) {{
+            sel.value = selectedCode;
+        }} else if (selectedType) {{
+            sel.value = `__family__${{selectedType}}`;
+        }}
+    }}
 
     restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
@@ -3299,7 +3583,13 @@ function rememberCatalogCode() {{
     if (!l) return;
     const sel = document.getElementById('catalogCodeSelect');
     if (!sel) return;
-    selectedCatalogCodeByLeft[l.rowid] = sel.value || '';
+    const rawValue = String(sel.value || '');
+    if (rawValue.startsWith('__family__')) {{
+        selectedCatalogCodeByLeft[l.rowid] = '';
+        selectedCatalogTypeByLeft[l.rowid] = rawValue.slice('__family__'.length);
+        return;
+    }}
+    selectedCatalogCodeByLeft[l.rowid] = rawValue;
     const selectedOpt = sel.options[sel.selectedIndex];
     selectedCatalogTypeByLeft[l.rowid] = selectedOpt?.dataset?.cat || '';
 }}
@@ -3556,24 +3846,149 @@ function toggleLeftEditorCatalogCodeCustom() {{
     if (customWrap) customWrap.style.display = isCustom ? '' : 'none';
 }}
 
-function setLeftEditorCatalogCodeValue(code) {{
+function parseCatalogTypesFromRaw(raw) {{
+    const out = [];
+    const seen = new Set();
+    for (const part of String(raw || '').split(/[|,]/)) {{
+        const trimmed = String(part || '').trim();
+        if (!trimmed) continue;
+        const idx = trimmed.indexOf(':');
+        if (idx < 1) continue;
+        const code = normalizeCatalogCodeForUi(trimmed.slice(0, idx));
+        if (!code || seen.has(code)) continue;
+        seen.add(code);
+        out.push(code);
+    }}
+    return out;
+}}
+
+function leftEditorSuggestedCatalogCodes(base) {{
+    const suggested = [];
+    const seen = new Set();
+    const push = (code) => {{
+        const normalized = normalizeCatalogCodeForUi(code);
+        if (!normalized || seen.has(normalized)) return;
+        seen.add(normalized);
+        suggested.push(normalized);
+    }};
+    push(base?.catalog_code);
+    for (const c of parseCatalogTypesFromRaw(base?.colnect_catalog_codes)) push(c);
+    push(getEffectiveDefaultCatalogCode());
+    return suggested;
+}}
+
+function catalogFamilyOptionText(item) {{
+    const countText = Number.isFinite(Number(item?.count || 0)) && Number(item.count) > 0
+        ? ` (${{Number(item.count).toLocaleString()}})`
+        : '';
+    return `${{item.label}} (${{String(item.code || '').toUpperCase()}})${{countText}}`;
+}}
+
+function catalogFamilySearchText(item) {{
+    return `${{item.label}} [${{String(item.code || '').toUpperCase()}}]`;
+}}
+
+function parseCatalogCodeFromSearchValue(v) {{
+    const raw = String(v || '').trim();
+    if (!raw) return '';
+    
+    // Try format: "Label [CODE]" (from datalist selection)
+    let m = raw.match(/\[([^\]]+)\]\s*$/);
+    if (m) return String(m[1] || '').trim().toLowerCase();
+    
+    // Try format: "Label (CODE)" (user might type this)
+    m = raw.match(/\(([A-Za-z0-9]+)\)(?:\s|$)/);
+    if (m) return String(m[1] || '').trim().toLowerCase();
+    
+    // Try to find CODE anywhere in the string (2-4 letter catalog codes)
+    // Look for capital letter codes like WNS, WAD, SG, MI, SN, YT, etc.
+    m = raw.match(/(^|\s|-)([A-Z0-9]{{2,4}})(\s|$|\)|#)/);
+    if (m && m[2]) return String(m[2]).trim().toLowerCase();
+    
+    return '';
+}}
+
+function populateLeftEditorCatalogSearchSuggestions(items) {{
+    const listEl = document.getElementById('leftEditorCatalogCodeSearchList');
+    if (!listEl) return;
+    listEl.innerHTML = (items || [])
+        .slice(0, 200)
+        .map(item => `<option value='${{html(catalogFamilySearchText(item))}}'></option>`)
+        .join('');
+}}
+
+function applyLeftEditorCatalogSearchChoice() {{
+    const searchEl = document.getElementById('leftEditorCatalogCodeSearch');
+    if (!searchEl) return;
+    const code = parseCatalogCodeFromSearchValue(searchEl.value);
+    if (!code) return;
+    rebuildLeftEditorCatalogTypeOptions(code);
+}}
+
+function tryApplyLeftEditorCatalogSearchChoice() {{
+    // Called on blur: silently try to extract and apply catalog code if possible
+    const searchEl = document.getElementById('leftEditorCatalogCodeSearch');
+    if (!searchEl || !searchEl.value.trim()) return;
+    const code = parseCatalogCodeFromSearchValue(searchEl.value);
+    if (!code) return; // Silently ignore if parsing fails
+    rebuildLeftEditorCatalogTypeOptions(code);
+}}
+
+function rebuildLeftEditorCatalogTypeOptions(selectedCode) {{
     const selectEl = document.getElementById('leftEditorCatalogCodeSelect');
     const customEl = document.getElementById('leftEditorCatalogCodeCustom');
+    const searchEl = document.getElementById('leftEditorCatalogCodeSearch');
     if (!selectEl || !customEl) return;
 
-    const raw = String(code || '').trim().toLowerCase();
-    const normalized = normalizeCatalogCodeForUi(raw);
-    if (normalized) {{
+    const query = String(searchEl?.value || '').trim().toLowerCase();
+    const suggested = new Set(leftEditorSuggestedCatalogCodes(window.__leftEditorCatalogBase || null));
+    const visible = reviewCatalogFamilies.filter(item => {{
+        if (!query) return true;
+        return String(item.code || '').toLowerCase().includes(query)
+            || String(item.label || '').toLowerCase().includes(query);
+    }});
+    const suggestedItems = visible.filter(item => suggested.has(item.code));
+    const otherItems = visible.filter(item => !suggested.has(item.code));
+
+    populateLeftEditorCatalogSearchSuggestions(visible);
+
+    const mkOption = (item) => `<option value='${{html(item.code)}}'>${{html(catalogFamilyOptionText(item))}}</option>`;
+    let optionsHtml = '';
+    if (suggestedItems.length) {{
+        optionsHtml += `<optgroup label='For this stamp'>${{suggestedItems.map(mkOption).join('')}}</optgroup>`;
+    }}
+    if (otherItems.length) {{
+        optionsHtml += `<optgroup label='Other catalogs'>${{otherItems.map(mkOption).join('')}}</optgroup>`;
+    }}
+    optionsHtml += "<option value='custom'>Other / Custom...</option>";
+    selectEl.innerHTML = optionsHtml;
+
+    const normalized = normalizeCatalogCodeForUi(selectedCode);
+    if (normalized && reviewCatalogKnownCodes.has(normalized)) {{
         selectEl.value = normalized;
         customEl.value = '';
-    }} else if (raw) {{
+    }} else if (String(selectedCode || '').trim()) {{
         selectEl.value = 'custom';
-        customEl.value = raw;
+        customEl.value = String(selectedCode || '').trim().toLowerCase();
     }} else {{
-        selectEl.value = getEffectiveDefaultCatalogCode();
-        customEl.value = '';
+        const fallback = getEffectiveDefaultCatalogCode();
+        if (reviewCatalogKnownCodes.has(fallback)) {{
+            selectEl.value = fallback;
+        }} else {{
+            selectEl.value = 'custom';
+            customEl.value = fallback;
+        }}
     }}
     toggleLeftEditorCatalogCodeCustom();
+}}
+
+function filterLeftEditorCatalogTypeOptions() {{
+    const current = getLeftEditorCatalogCodeValue();
+    rebuildLeftEditorCatalogTypeOptions(current);
+}}
+
+function setLeftEditorCatalogCodeValue(code) {{
+    rebuildLeftEditorCatalogTypeOptions(code);
 }}
 
 function getLeftEditorCatalogCodeValue() {{
@@ -3645,6 +4060,10 @@ function openLeftEditor(mode) {{
             colnect_public_note: '',
             colnect_private_note: ''
         }};
+
+    window.__leftEditorCatalogBase = base;
+    const catalogSearchInput = document.getElementById('leftEditorCatalogCodeSearch');
+    if (catalogSearchInput) catalogSearchInput.value = '';
 
     document.getElementById('leftEditorSg').value = base?.sg_number || '';
     setLeftEditorCatalogCodeValue(base?.catalog_code);
@@ -4543,15 +4962,18 @@ try {{
     const storedCatalog = String(localStorage.getItem(countryCatalogStorageKey) || '').toLowerCase();
     countryDefaultCatalogCode = normalizeCatalogCodeForUi(storedCatalog)
         || normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || inferInitialCatalogCodeFromLeftRows()
         || 'sg';
 }} catch (_) {{
-    countryDefaultCatalogCode = normalizeCatalogCodeForUi(configDefaultCatalogCode) || 'sg';
+    countryDefaultCatalogCode = normalizeCatalogCodeForUi(configDefaultCatalogCode)
+        || inferInitialCatalogCodeFromLeftRows()
+        || 'sg';
 }}
 
 const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
 if (defaultCatalogSelect) {{
-    defaultCatalogSelect.value = normalizeCatalogCodeForUi(countryDefaultCatalogCode) || 'sg';
-    if (!defaultCatalogSelect.value) defaultCatalogSelect.value = 'sg';
+    defaultCatalogSelect.value = normalizeCatalogCodeForUi(countryDefaultCatalogCode) || getEffectiveDefaultCatalogCode();
+    if (!defaultCatalogSelect.value) defaultCatalogSelect.value = getEffectiveDefaultCatalogCode();
 }}
 
 const reviewColnectDirPathEl = document.getElementById('reviewColnectDirPath');
@@ -4620,6 +5042,7 @@ mod tests {
             colnect_file_count: 0,
             show_imageless_left_rows: false,
             default_catalog_code: "sg".to_string(),
+            default_sort_mode: "catalog".to_string(),
             odd_row_color: "#ffffff".to_string(),
             even_row_color: "#f2f2f2".to_string(),
             series_default_checked: true,
@@ -4636,6 +5059,7 @@ mod tests {
             right_unmatched_only_default_checked: false,
             albumeasy_auto_generate_pdf_default: false,
             albumeasy_cli_configured: false,
+            catalog_family_options: vec![],
         }
     }
 

@@ -10,14 +10,7 @@ fn is_real_image_path(image_path: &str) -> bool {
 }
 
 fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
-    let clean_image_path = if image_path.starts_with("images/") {
-        &image_path[7..]
-    } else {
-        image_path
-    };
-    let album_dir = std::path::Path::new("Albums").join(album_name.replace(' ', "-"));
-    let images_dir = album_dir.join("images");
-    images_dir.join(clean_image_path).exists()
+    crate::file_utils::resolve_album_image_path(album_name, image_path).exists()
 }
 
 fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
@@ -716,7 +709,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                                         },
                                     );
                                     if let Some(pdf_path) = artifacts.generated_pdf_path.as_ref() {
-                                        open_local_path(pdf_path);
+                                        let _ = open_local_path(pdf_path);
                                     }
 
                                     serde_json::to_string(&BootstrapGeneratePdfResponse {
@@ -870,6 +863,7 @@ pub(super) fn serve_review_requests(
     html: &String,
     right_map: &HashMap<String, RightCandidate>,
     default_catalog_code: &str,
+    default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
     series_default_checked: bool,
@@ -886,6 +880,7 @@ pub(super) fn serve_review_requests(
     right_unmatched_only_default_checked: bool,
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
+    catalog_family_options: &[String],
 ) -> ReviewHandlersState {
     let reload_requested = false;
     let mut return_to_start_requested = false;
@@ -987,6 +982,7 @@ pub(super) fn serve_review_requests(
                     db_path,
                     &album_name,
                     default_catalog_code,
+                    default_sort_mode,
                     odd_row_color,
                     even_row_color,
                     series_default_checked,
@@ -1003,6 +999,7 @@ pub(super) fn serve_review_requests(
                     right_unmatched_only_default_checked,
                     albumeasy_auto_generate_pdf_default,
                     albumeasy_cli_configured,
+                    catalog_family_options,
                     show_imageless_left_rows,
                 ) {
                     Ok(payload) => render_html(&payload),
@@ -1708,21 +1705,30 @@ pub(super) fn serve_review_requests(
                 Ok(artifacts) => {
                     generated_output_path = Some(artifacts.output_txt_path.display().to_string());
                     if let Some(pdf_path) = artifacts.generated_pdf_path {
-                        if req_open_pdf {
-                            open_local_path(&pdf_path);
-                        }
+                        let opened_pdf = if req_open_pdf {
+                            open_local_path(&pdf_path)
+                        } else {
+                            false
+                        };
                         generated_pdf_path = Some(pdf_path.display().to_string());
                         if real_image_rows > 0 && local_real_files == 0 {
                             "Album text and PDF generation completed. Warning: no local real stamp images were found, so placeholders may dominate output.".to_string()
-                        } else if req_open_pdf {
+                        } else if req_open_pdf && opened_pdf {
                             "Album text and PDF generation completed; opened PDF preview."
+                                .to_string()
+                        } else if req_open_pdf {
+                            "Album text and PDF generation completed, but opening PDF preview failed."
                                 .to_string()
                         } else {
                             "Album text and PDF generation completed.".to_string()
                         }
                     } else {
-                        "Album text generated, but no PDF was produced. Check AlbumEasy CLI configuration/logs."
-                            .to_string()
+                        let base = "Album text generated, but no PDF was produced.";
+                        if let Some(reason) = artifacts.pdf_failure_reason {
+                            format!("{} Reason: {}", base, reason)
+                        } else {
+                            format!("{} Check AlbumEasy CLI configuration/logs.", base)
+                        }
                     }
                 }
                 Err(_) => "Album/PDF generation failed unexpectedly (panic).".to_string(),
@@ -1788,12 +1794,19 @@ pub(super) fn serve_review_requests(
                             .to_string(),
                     )
                 } else {
-                    open_local_path(path);
-                    (
-                        StatusCode(200),
-                        serde_json::json!({ "ok": true, "message": "Opened PDF preview." })
-                            .to_string(),
-                    )
+                    if open_local_path(path) {
+                        (
+                            StatusCode(200),
+                            serde_json::json!({ "ok": true, "message": "Opened PDF preview." })
+                                .to_string(),
+                        )
+                    } else {
+                        (
+                            StatusCode(500),
+                            serde_json::json!({ "ok": false, "message": "Failed to open PDF in the default viewer/browser." })
+                                .to_string(),
+                        )
+                    }
                 }
             };
 
@@ -1840,7 +1853,7 @@ pub(super) fn serve_review_requests(
                                 generated_output_path =
                                     Some(artifacts.output_txt_path.display().to_string());
                                 if let Some(pdf_path) = artifacts.generated_pdf_path {
-                                    open_local_path(&pdf_path);
+                                    let _ = open_local_path(&pdf_path);
                                     generated_pdf_path = Some(pdf_path.display().to_string());
                                 }
                                 if real_image_rows > 0 && local_real_files == 0 {
@@ -1852,8 +1865,12 @@ pub(super) fn serve_review_requests(
                                             .to_string()
                                     }
                                     (true, false) => {
-                                        "Review UI closed. Album text generation completed, but no PDF was opened. Check AlbumEasy CLI configuration or logs."
-                                            .to_string()
+                                        let base = "Review UI closed. Album text generation completed, but no PDF was produced.";
+                                        if let Some(reason) = artifacts.pdf_failure_reason {
+                                            format!("{} Reason: {}", base, reason)
+                                        } else {
+                                            format!("{} Check AlbumEasy CLI configuration or logs.", base)
+                                        }
                                     }
                                     (false, _) => {
                                         "Review UI closed. Album text generation completed without PDF generation."

@@ -73,10 +73,6 @@ fn clean_text(text: &str) -> String {
 
 /// Emit the header pages with government information
 pub fn emit_header_pages<W: Write>(out: &mut W, year: i32) -> std::io::Result<()> {
-    // Add font definition for commemorative section
-    writeln!(out, "ALBUM_DEFINE_FONT (DJV \"JetBrains Mono\")")?;
-    writeln!(out)?;
-
     // Now emit the informational pages
     writeln!(out, "PAGE_START")?;
     writeln!(
@@ -359,7 +355,7 @@ pub fn emit_summary_page<W: Write>(
     writeln!(out, "PAGE_VSPACE (8.0)")?;
     writeln!(out, "PAGE_TEXT (HB 10 \"Quick Reference\")")?;
     writeln!(out, "PAGE_RULE_H (0.5 0.0 5.0)")?;
-    writeln!(out, "PAGE_TEXT (DJV 8 \"  Scott #  Subject\")")?;
+    writeln!(out, "PAGE_TEXT (HN 8 \"  Scott #  Subject\")")?;
     writeln!(out, "PAGE_RULE_H (0.5 0.0 5.0)")?;
 
     for stamp in stamps {
@@ -375,7 +371,7 @@ pub fn emit_summary_page<W: Write>(
             } else {
                 subject
             };
-            writeln!(out, "PAGE_TEXT (DJV 8 \"  {}   {}\")", sg, subject)?;
+            writeln!(out, "PAGE_TEXT (HN 8 \"  {}   {}\")", sg, subject)?;
         }
     }
 

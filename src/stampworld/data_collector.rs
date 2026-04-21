@@ -61,14 +61,20 @@ pub fn collect_stampworld_data_with_fetcher(
     // Previously this used the site name which produced `Albums/<Album>/Switzerland.db`.
     // For per-album runs we want `Albums/<Album>/<Album>.db` so the generator and
     // collector operate on the same file.
-    let images_parent = images_directory.replace("/images", "");
+    let images_parent = std::path::Path::new(images_directory)
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::path::PathBuf::from(images_directory));
     let country_db_name = site_name.replace("/", "-");
-    let album_basename = std::path::Path::new(&images_parent)
+    let album_basename = images_parent
         .file_name()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
         .unwrap_or_else(|| country_db_name.clone());
-    let db_path = format!("{}/{}.db", images_parent, album_basename);
+    let db_path = images_parent
+        .join(format!("{}.db", album_basename))
+        .to_string_lossy()
+        .to_string();
     let conn = match crate::db_utils::init_db(&db_path) {
         Ok(c) => c,
         Err(e) => {
@@ -532,6 +538,21 @@ pub fn collect_stampworld_data_with_fetcher(
                                                     )
                                                 {
                                                     if inserted {
+                                                        let _ = conn.execute(
+                                                            "UPDATE stamps
+                                                             SET catalog_code = 'sw'
+                                                             WHERE country = ?1
+                                                               AND series = ?2
+                                                               AND year = ?3
+                                                               AND sg_number = ?4
+                                                               AND TRIM(COALESCE(catalog_code, '')) = ''",
+                                                            params![
+                                                                site_name,
+                                                                &series_desc,
+                                                                stamp_year,
+                                                                &ms
+                                                            ],
+                                                        );
                                                         seen_stamps.insert(format!(
                                                             "{}||{}||{}",
                                                             site_name, series_desc, ms
@@ -703,6 +724,21 @@ pub fn collect_stampworld_data_with_fetcher(
                                                         ) {
                                                             Ok(inserted) => {
                                                                 if inserted {
+                                                                    let _ = conn.execute(
+                                                                        "UPDATE stamps
+                                                                         SET catalog_code = 'sw'
+                                                                         WHERE country = ?1
+                                                                           AND series = ?2
+                                                                           AND year = ?3
+                                                                           AND sg_number = ?4
+                                                                           AND TRIM(COALESCE(catalog_code, '')) = ''",
+                                                                        params![
+                                                                            site_name,
+                                                                            &series_desc,
+                                                                            stamp_year,
+                                                                            &sg_number_f
+                                                                        ],
+                                                                    );
                                                                     if emit_row_diag {
                                                                         info!("Detail-fetch inserted stamp {} {}", series_desc, sg_number_f);
                                                                     }
@@ -743,6 +779,21 @@ pub fn collect_stampworld_data_with_fetcher(
                                             ) {
                                                 Ok(inserted) => {
                                                     if inserted {
+                                                        let _ = conn.execute(
+                                                            "UPDATE stamps
+                                                             SET catalog_code = 'sw'
+                                                             WHERE country = ?1
+                                                               AND series = ?2
+                                                               AND year = ?3
+                                                               AND sg_number = ?4
+                                                               AND TRIM(COALESCE(catalog_code, '')) = ''",
+                                                            params![
+                                                                site_name,
+                                                                &series_desc,
+                                                                stamp_year,
+                                                                &s
+                                                            ],
+                                                        );
                                                         if emit_row_diag {
                                                             info!("Inserted placeholder for {} {} (fallback)", series_desc, s);
                                                         }
@@ -780,6 +831,16 @@ pub fn collect_stampworld_data_with_fetcher(
                                         ) {
                                             Ok(inserted) => {
                                                 if inserted {
+                                                    let _ = conn.execute(
+                                                        "UPDATE stamps
+                                                         SET catalog_code = 'sw'
+                                                         WHERE country = ?1
+                                                           AND series = ?2
+                                                           AND year = ?3
+                                                           AND sg_number = ?4
+                                                           AND TRIM(COALESCE(catalog_code, '')) = ''",
+                                                        params![site_name, &series_desc, stamp_year, &s],
+                                                    );
                                                     if emit_row_diag {
                                                         info!(
                                                             "Inserted placeholder for {} {}",
@@ -1257,6 +1318,16 @@ pub fn collect_stampworld_data_with_fetcher(
                 match res {
                     Ok(inserted) => {
                         if inserted {
+                            let _ = conn.execute(
+                                "UPDATE stamps
+                                 SET catalog_code = 'sw'
+                                 WHERE country = ?1
+                                   AND series = ?2
+                                   AND year = ?3
+                                   AND sg_number = ?4
+                                   AND TRIM(COALESCE(catalog_code, '')) = ''",
+                                params![site_name, &series_name, stamp_year, &sg_number],
+                            );
                             // info!("Inserted new stamp: {} | {} | {}", site_name, series_name, sg_number);
                             new_stamps_this_page += 1;
                             seen_stamps.insert(key.clone());
@@ -1297,7 +1368,8 @@ pub fn collect_stampworld_data_with_fetcher(
                                 watermark = CASE WHEN (watermark IS NULL OR watermark = '') AND (?11 != '') THEN ?11 ELSE watermark END,
                                 design = CASE WHEN (design IS NULL OR design = '') AND (?12 != '') THEN ?12 ELSE design END,
                                 engraving = CASE WHEN (engraving IS NULL OR engraving = '') AND (?13 != '') THEN ?13 ELSE engraving END,
-                                perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?14 != '') THEN ?14 ELSE perforation END
+                                perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?14 != '') THEN ?14 ELSE perforation END,
+                                catalog_code = CASE WHEN (catalog_code IS NULL OR catalog_code = '') THEN 'sw' ELSE catalog_code END
                                 WHERE country = ?15 AND series = ?16 AND sg_number = ?17";
                             let params_vec = params![
                                 local_image_path,

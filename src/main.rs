@@ -25,8 +25,8 @@ use stamp_album_gen2::{
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
-        install_linux_desktop_integration, setup_logging, startup_probe_path,
-        uninstall_linux_desktop_integration, validate_os, write_startup_probe,
+        ensure_windows_desktop_integration, install_linux_desktop_integration, setup_logging,
+        startup_probe_path, uninstall_linux_desktop_integration, validate_os, write_startup_probe,
         write_startup_probe_snapshot,
     },
     validation::{
@@ -36,6 +36,24 @@ use stamp_album_gen2::{
 use std::io::IsTerminal;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    std::panic::set_hook(Box::new(|panic_info| {
+        let location = panic_info
+            .location()
+            .map(|loc| format!("{}:{}", loc.file(), loc.line()))
+            .unwrap_or_else(|| "<unknown>".to_string());
+        let payload = if let Some(msg) = panic_info.payload().downcast_ref::<&str>() {
+            (*msg).to_string()
+        } else if let Some(msg) = panic_info.payload().downcast_ref::<String>() {
+            msg.clone()
+        } else {
+            "non-string panic payload".to_string()
+        };
+        let detail = format!("panic at {}: {}", location, payload);
+        eprintln!("{}", detail);
+        write_startup_probe("panic", &detail);
+        log_runtime_event(&format!("FATAL: {}", detail));
+    }));
+
     let raw_args: Vec<String> = std::env::args_os()
         .map(|a| a.to_string_lossy().to_string())
         .collect();
@@ -135,6 +153,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let startup_config = config::load_config("config.toml");
+    // Always ensure the template file exists, even when config.toml was found and loaded
+    // successfully. This covers the case where a user deletes config_template.toml after
+    // the initial setup — it will be silently recreated from the embedded defaults on the
+    // next run without touching their existing config.toml.
+    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml")
+    {
+        log::warn!("Failed to ensure config template file: {}", e);
+    }
     write_startup_probe("config.load", "loaded config.toml");
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
@@ -183,6 +209,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     "Desktop integration check failed (non-fatal): {}",
                     e
                 ));
+            }
+        }
+
+        match ensure_windows_desktop_integration() {
+            Ok(report) => {
+                if report.changed {
+                    log_runtime_event(&format!(
+                        "Desktop shortcut installed: {} (desktop: {}, start_menu: {}, icon: {})",
+                        report.summary,
+                        report.desktop_shortcut_path,
+                        report.start_menu_shortcut_path,
+                        report.icon_path
+                    ));
+                } else {
+                    log_runtime_event(&format!("Desktop shortcut check: {}", report.summary));
+                }
+            }
+            Err(e) => {
+                log_runtime_event(&format!("Desktop shortcut check failed (non-fatal): {}", e));
             }
         }
 
@@ -235,11 +280,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     log_runtime_event(
                         "Review UI: no country/database selected on CLI; opening startup selector..."
                     );
-                    match run_review_ui_bootstrap(
+                    let bootstrap_outcome = match run_review_ui_bootstrap(
                         cli.review_ui_bind.as_deref(),
                         review_cfg.effective_colnect_inbox_path(),
                         open_browser,
-                    )? {
+                    ) {
+                        Ok(outcome) => outcome,
+                        Err(e) => {
+                            let detail = format!("Review UI bootstrap failed: {}", e);
+                            log_runtime_event(&detail);
+                            write_startup_probe("review_ui.bootstrap.error", &detail);
+                            return Err(e);
+                        }
+                    };
+                    match bootstrap_outcome {
                         ReviewUiBootstrapOutcome::Exit => {
                             log_runtime_event("No country selected; exiting Review UI startup.");
                             return Ok(());
@@ -291,13 +345,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     log_runtime_event(
                         "Review UI: loading compare data. This may take a few seconds...",
                     );
-                    match run_review_ui(
+                    let run_outcome = match run_review_ui(
                         &db_path,
                         album_name.as_deref(),
                         prebound,
                         cli.review_ui_bind.as_deref(),
                         open_browser,
                         &album_cfg.effective_default_catalog_code(),
+                        &album_cfg.review_ui_default_sort_mode(),
                         album_cfg.review_ui_odd_row_color(),
                         album_cfg.review_ui_even_row_color(),
                         album_cfg.review_ui_series_default_checked(),
@@ -314,7 +369,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         album_cfg.review_ui_right_unmatched_only_default_checked(),
                         album_cfg.albumeasy_auto_pdf_enabled(),
                         album_cfg.effective_albumeasy_cli_path().is_some(),
-                    )? {
+                        &album_cfg.review_ui_catalog_family_options(),
+                    ) {
+                        Ok(outcome) => outcome,
+                        Err(e) => {
+                            let detail =
+                                format!("Review UI compare startup failed for {}: {}", db_path, e);
+                            log_runtime_event(&detail);
+                            write_startup_probe("review_ui.compare.error", &detail);
+                            return Err(e);
+                        }
+                    };
+                    match run_outcome {
                         ReviewUiRunOutcome::Exit => return Ok(()),
                         ReviewUiRunOutcome::ReloadRequested => {
                             log_runtime_event(

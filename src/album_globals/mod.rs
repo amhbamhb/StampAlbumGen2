@@ -74,22 +74,27 @@ fn wait_for_generated_pdf(expected_pdf_path: &Path, previous_modified: Option<Sy
 pub struct GeneratedAlbumArtifacts {
     pub output_txt_path: PathBuf,
     pub generated_pdf_path: Option<PathBuf>,
+    /// Human-readable reason when PDF generation was attempted but failed.
+    pub pdf_failure_reason: Option<String>,
 }
 
 fn maybe_generate_album_pdf_with_settings(
     output_txt_path: &Path,
     generate_pdf: bool,
     cli_path: Option<&str>,
-) -> Option<PathBuf> {
+) -> (Option<PathBuf>, Option<String>) {
     if !generate_pdf {
-        return None;
+        return (None, None);
     }
 
     let Some(cli_path) = cli_path else {
         log::warn!(
             "AlbumEasy PDF generation is enabled but 'albumeasy_cli_path' is not set in config"
         );
-        return None;
+        return (
+            None,
+            Some("albumeasy_cli_path is not set in config".to_string()),
+        );
     };
 
     let expected_pdf_path = output_txt_path.with_extension("pdf");
@@ -157,7 +162,7 @@ fn maybe_generate_album_pdf_with_settings(
                         started.elapsed().as_millis()
                     );
                 }
-                Some(expected_pdf_path)
+                (Some(expected_pdf_path), None)
             } else {
                 if pdf_dx_logging_enabled() {
                     log::warn!(
@@ -172,7 +177,13 @@ fn maybe_generate_album_pdf_with_settings(
                     output_txt_path.display(),
                     expected_pdf_path.display()
                 );
-                None
+                (
+                    None,
+                    Some(format!(
+                        "AlbumEasy ran but no PDF appeared at '{}' within 8 seconds",
+                        expected_pdf_path.display()
+                    )),
+                )
             }
         }
         Ok(s) => {
@@ -189,7 +200,13 @@ fn maybe_generate_album_pdf_with_settings(
                 s,
                 output_txt_path.display()
             );
-            None
+            (
+                None,
+                Some(format!(
+                    "AlbumEasy CLI '{}' exited with status {}",
+                    cli_path, s
+                )),
+            )
         }
         Err(e) => {
             if pdf_dx_logging_enabled() {
@@ -207,7 +224,13 @@ fn maybe_generate_album_pdf_with_settings(
                 output_txt_path.display(),
                 e
             );
-            None
+            (
+                None,
+                Some(format!(
+                    "Failed to launch AlbumEasy CLI '{}': {}",
+                    cli_path, e
+                )),
+            )
         }
     }
 }
@@ -219,12 +242,13 @@ fn generated_artifacts_from_path(
     let cfg = crate::config::load_effective_config("config.toml");
     let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
     let generate_pdf = generate_pdf_override.unwrap_or_else(|| cfg.albumeasy_auto_pdf_enabled());
-    let generated_pdf_path =
+    let (generated_pdf_path, pdf_failure_reason) =
         maybe_generate_album_pdf_with_settings(&output_txt_path, generate_pdf, cli_path.as_deref());
 
     GeneratedAlbumArtifacts {
         output_txt_path,
         generated_pdf_path,
+        pdf_failure_reason,
     }
 }
 

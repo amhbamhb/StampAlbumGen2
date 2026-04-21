@@ -213,6 +213,13 @@ pub struct Config {
     pub fetch_wikipedia: Option<bool>,
     // Legacy / alternate name: include_wikipedia_content
     pub include_wikipedia_content: Option<bool>,
+    // Controls whether Wikipedia fallback ingest inserts rows into album DB
+    // when scraping returns no stamps.
+    pub wikipedia_ingest_enable: Option<bool>,
+    // Maximum number of placeholder rows inserted by fallback ingest.
+    pub wikipedia_ingest_max_entries: Option<usize>,
+    // Prefix used for fallback ingest series/context labels.
+    pub wikipedia_ingest_series_prefix: Option<String>,
     // Keep-alive alias for preserve aspect ratio flag used in some configs
     pub preserve_aspect: Option<bool>,
     // Alternative alias for aspect ratio preservation (used in some config files)
@@ -437,6 +444,7 @@ pub struct ColnectFieldToggles {
 pub struct ReviewUiConfig {
     pub odd_row_color: Option<String>,
     pub even_row_color: Option<String>,
+    pub default_sort_mode: Option<String>,
     pub default_series_checked: Option<bool>,
     pub default_description_checked: Option<bool>,
     pub default_watermark_checked: Option<bool>,
@@ -449,6 +457,10 @@ pub struct ReviewUiConfig {
     pub default_colnect_metadata_checked: Option<bool>,
     pub default_replace_sg_number_checked: Option<bool>,
     pub default_right_unmatched_only_checked: Option<bool>,
+    // Optional catalog family list for Review UI selectors.
+    // Format per entry: "code|label|count" (count optional)
+    // Example: "sn|Stamp Number|814224"
+    pub catalog_family_options: Option<Vec<String>>,
 }
 
 impl Config {
@@ -458,7 +470,7 @@ impl Config {
             reference_width_mm: Some(24.0),
             reference_height_mm: Some(27.0),
             stamp_box_height: Some(30.0),
-            stamp_box_adjust: Some(-3.5),
+            stamp_box_adjust: Some(0.0),
             album_page_width_mm: Some(216.0),
             album_page_height_mm: Some(279.4),
             album_pages_title_font: Some("HN".to_string()),
@@ -499,6 +511,7 @@ impl Config {
             review_ui: Some(ReviewUiConfig {
                 odd_row_color: Some("#ffffff".to_string()),
                 even_row_color: Some("#e6eef4".to_string()),
+                default_sort_mode: Some("catalog".to_string()),
                 default_series_checked: Some(true),
                 default_description_checked: Some(true),
                 default_watermark_checked: Some(false),
@@ -511,6 +524,7 @@ impl Config {
                 default_colnect_metadata_checked: Some(true),
                 default_replace_sg_number_checked: Some(false),
                 default_right_unmatched_only_checked: Some(false),
+                catalog_family_options: None,
             }),
             max_rows_per_page: Some(5),
             max_page_vspace_mm: Some(10.0),
@@ -533,6 +547,9 @@ impl Config {
             album_stamp_img_new_setting_preserve_aspect: Some(true),
             print_flag_cover: Some(true),
             include_wikipedia_content: Some(true),
+            wikipedia_ingest_enable: Some(true),
+            wikipedia_ingest_max_entries: Some(12),
+            wikipedia_ingest_series_prefix: Some("Wikipedia import".to_string()),
             album_stamp_img_aspect_ratio: Some(true),
             packing_horizontal_safety_mm: Some(5.0),
             packing_vertical_safety_mm: Some(2.0),
@@ -773,6 +790,30 @@ impl Config {
             .unwrap_or("#e6eef4")
     }
 
+    pub fn review_ui_default_sort_mode(&self) -> String {
+        let mode = self
+            .review_ui
+            .as_ref()
+            .and_then(|r| r.default_sort_mode.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("catalog")
+            .to_ascii_lowercase();
+
+        match mode.as_str() {
+            "catalog" => "catalog".to_string(),
+            "year_catalog" => "year_catalog".to_string(),
+            "series_catalog" => "series_catalog".to_string(),
+            "series_date_catalog" => "series_date_catalog".to_string(),
+            "sg" => "catalog".to_string(),
+            "year_sg" => "year_catalog".to_string(),
+            "series_sg" => "series_catalog".to_string(),
+            "series_date_sg" => "series_date_catalog".to_string(),
+            "rowid" | "colnect_id" => mode,
+            _ => "catalog".to_string(),
+        }
+    }
+
     pub fn review_ui_series_default_checked(&self) -> bool {
         self.review_ui
             .as_ref()
@@ -857,6 +898,13 @@ impl Config {
             .unwrap_or(false)
     }
 
+    pub fn review_ui_catalog_family_options(&self) -> Vec<String> {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.catalog_family_options.clone())
+            .unwrap_or_default()
+    }
+
     pub fn effective_default_catalog_code(&self) -> String {
         self.default_catalog_code
             .as_deref()
@@ -864,6 +912,22 @@ impl Config {
             .filter(|s| !s.is_empty())
             .map(crate::catalog::normalize_catalog_type)
             .unwrap_or_else(|| "sg".to_string())
+    }
+
+    pub fn wikipedia_ingest_enabled(&self) -> bool {
+        self.wikipedia_ingest_enable.unwrap_or(true)
+    }
+
+    pub fn effective_wikipedia_ingest_max_entries(&self) -> usize {
+        self.wikipedia_ingest_max_entries.unwrap_or(12)
+    }
+
+    pub fn effective_wikipedia_ingest_series_prefix(&self) -> &str {
+        self.wikipedia_ingest_series_prefix
+            .as_deref()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("Wikipedia import")
     }
 
     pub fn effective_stamp_heading_label(&self) -> String {
@@ -1380,6 +1444,20 @@ pub fn load_config(path: &str) -> Config {
                                 if cfg.include_wikipedia_content.is_none() {
                                     cfg.include_wikipedia_content =
                                         defaults.include_wikipedia_content;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_ingest_enable.is_none() {
+                                    cfg.wikipedia_ingest_enable = defaults.wikipedia_ingest_enable;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_ingest_max_entries.is_none() {
+                                    cfg.wikipedia_ingest_max_entries =
+                                        defaults.wikipedia_ingest_max_entries;
+                                    has_missing = true;
+                                }
+                                if cfg.wikipedia_ingest_series_prefix.is_none() {
+                                    cfg.wikipedia_ingest_series_prefix =
+                                        defaults.wikipedia_ingest_series_prefix;
                                     has_missing = true;
                                 }
                                 if cfg.album_stamp_img_aspect_ratio.is_none() {

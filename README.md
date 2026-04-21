@@ -37,6 +37,14 @@ Incorrect:
 ./stamp_album_gen2 -- --source colnectexport
 ```
 
+## Repository Scope
+
+This repository is the Stamp Gen 2 application repository.
+
+The website project is maintained in a separate repository. For path ownership,
+split details, and optional linkage approaches (sibling checkout or submodule),
+see `docs/PROJECT_PATH_MAP.md`.
+
 ## Common Usage Examples
 
 Generate album output from an existing database:

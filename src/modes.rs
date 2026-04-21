@@ -1714,23 +1714,29 @@ pub fn run_scraping_mode(
                         .wikipedia_cache_db_path
                         .as_deref()
                         .unwrap_or("wikipedia_cache.db");
-                    // Call ingest with a conservative max entries to avoid huge imports
-                    match crate::wikipedia::ingest_wikipedia_to_db(
-                        &site_name,
-                        cache_db_path,
-                        &db_path,
-                        12,
-                    ) {
-                        Ok(inserted) => {
-                            progress.set_message(&format!(
-                                "🔁 Wikipedia ingest inserted {} placeholder rows",
-                                inserted
-                            ));
+                    if cfg_file.wikipedia_ingest_enabled() {
+                        match crate::wikipedia::ingest_wikipedia_to_db(
+                            &site_name,
+                            cache_db_path,
+                            &db_path,
+                            cfg_file.effective_wikipedia_ingest_max_entries(),
+                            cfg_file.effective_wikipedia_ingest_series_prefix(),
+                        ) {
+                            Ok(inserted) => {
+                                progress.set_message(&format!(
+                                    "🔁 Wikipedia ingest inserted {} placeholder rows",
+                                    inserted
+                                ));
+                            }
+                            Err(e) => {
+                                progress.set_message("⚠️ Wikipedia ingest failed");
+                                eprintln!("Wikipedia ingest error: {}", e);
+                            }
                         }
-                        Err(e) => {
-                            progress.set_message("⚠️ Wikipedia ingest failed");
-                            eprintln!("Wikipedia ingest error: {}", e);
-                        }
+                    } else {
+                        progress.set_message(
+                            "ℹ️ Wikipedia fallback ingest disabled by config (wikipedia_ingest_enable=false).",
+                        );
                     }
                 }
             }

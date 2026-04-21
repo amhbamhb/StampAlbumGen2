@@ -150,6 +150,8 @@ struct LeftStamp {
     sg_number: String,
     catalog_code: String,
     year: i32,
+    month_num: i32,
+    day: String,
     series: String,
     image_path: String,
     image_abs: String,
@@ -258,6 +260,7 @@ struct MatcherPayload {
     colnect_file_count: usize,
     show_imageless_left_rows: bool,
     default_catalog_code: String,
+    default_sort_mode: String,
     odd_row_color: String,
     even_row_color: String,
     series_default_checked: bool,
@@ -274,6 +277,7 @@ struct MatcherPayload {
     right_unmatched_only_default_checked: bool,
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
+    catalog_family_options: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -602,25 +606,80 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     log_runtime_event("StampWorld: running. You can watch progress in Runtime Log.");
 
     thread::spawn(move || {
-        let mut cmd = Command::new(&exe);
-        cmd.current_dir(&command_cwd_for_thread)
-            .env("STAMP_ALBUMS_ROOT", &albums_root)
-            .args(&args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped());
+        let albums_root_env = albums_root.to_string_lossy().to_string();
+        let launch_with_cwd = |use_cwd: bool| -> std::io::Result<std::process::Child> {
+            let mut cmd = Command::new(&exe);
+            if use_cwd {
+                cmd.current_dir(&command_cwd_for_thread);
+            }
+            cmd.env("STAMP_ALBUMS_ROOT", &albums_root_env)
+                .args(&args)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped());
+            cmd.spawn()
+        };
 
-        let mut child = match cmd.spawn() {
+        let use_preferred_cwd = command_cwd_for_thread.exists() && command_cwd_for_thread.is_dir();
+        if !use_preferred_cwd {
+            log_runtime_event(&format!(
+                "StampWorld: command cwd is not usable, falling back to process default cwd: {}",
+                command_cwd_for_thread.display()
+            ));
+        }
+
+        let mut child = match launch_with_cwd(use_preferred_cwd) {
             Ok(c) => c,
-            Err(e) => {
-                let msg = format!("StampWorld: failed to launch command: {}", e);
-                log_runtime_event(&msg);
-                set_stampworld_state(StampWorldJobState::Finished {
-                    success: false,
-                    country: country_for_thread.clone(),
-                    db_path: db_path_for_thread.clone(),
-                    message: msg,
-                });
-                return;
+            Err(first_err) => {
+                let should_retry_without_cwd =
+                    use_preferred_cwd && cfg!(windows) && first_err.raw_os_error() == Some(123);
+                if should_retry_without_cwd {
+                    log_runtime_event(&format!(
+                        "StampWorld: launch failed with invalid path syntax (os error 123). Retrying without custom cwd (cwd was {}).",
+                        command_cwd_for_thread.display()
+                    ));
+                    match launch_with_cwd(false) {
+                        Ok(c) => c,
+                        Err(retry_err) => {
+                            let msg = format!(
+                                "StampWorld: failed to launch command after retry: {} (exe={}, cwd={}, args={})",
+                                retry_err,
+                                exe.display(),
+                                command_cwd_for_thread.display(),
+                                args.iter()
+                                    .map(|a| quote_for_log(a))
+                                    .collect::<Vec<_>>()
+                                    .join(" ")
+                            );
+                            log_runtime_event(&msg);
+                            set_stampworld_state(StampWorldJobState::Finished {
+                                success: false,
+                                country: country_for_thread.clone(),
+                                db_path: db_path_for_thread.clone(),
+                                message: msg,
+                            });
+                            return;
+                        }
+                    }
+                } else {
+                    let msg = format!(
+                        "StampWorld: failed to launch command: {} (exe={}, cwd={}, args={})",
+                        first_err,
+                        exe.display(),
+                        command_cwd_for_thread.display(),
+                        args.iter()
+                            .map(|a| quote_for_log(a))
+                            .collect::<Vec<_>>()
+                            .join(" ")
+                    );
+                    log_runtime_event(&msg);
+                    set_stampworld_state(StampWorldJobState::Finished {
+                        success: false,
+                        country: country_for_thread.clone(),
+                        db_path: db_path_for_thread.clone(),
+                        message: msg,
+                    });
+                    return;
+                }
             }
         };
 
@@ -1047,19 +1106,43 @@ pub enum ReviewUiRunOutcome {
 
 fn path_to_file_url(path: &Path) -> Option<String> {
     let canonical = path.canonicalize().ok()?;
-    let encoded = canonical
-        .to_string_lossy()
-        .split('/')
-        .map(|segment| urlencoding::encode(segment).into_owned())
-        .collect::<Vec<_>>()
-        .join("/");
-    Some(format!("file://{}", encoded))
+
+    #[cfg(windows)]
+    {
+        let raw = canonical.to_string_lossy().replace('\\', "/");
+        let normalized = raw.strip_prefix("//?/").unwrap_or(&raw);
+        let encoded = normalized
+            .split('/')
+            .enumerate()
+            .map(|(idx, segment)| {
+                // Keep Windows drive prefix (for example C:) readable in file:/// URLs.
+                if idx == 0 && segment.ends_with(':') {
+                    segment.to_string()
+                } else {
+                    urlencoding::encode(segment).into_owned()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("/");
+        return Some(format!("file:///{}", encoded));
+    }
+
+    #[cfg(not(windows))]
+    {
+        let encoded = canonical
+            .to_string_lossy()
+            .split('/')
+            .map(|segment| urlencoding::encode(segment).into_owned())
+            .collect::<Vec<_>>()
+            .join("/");
+        Some(format!("file://{}", encoded))
+    }
 }
 
-fn open_local_path(path: &Path) {
+fn open_local_path(path: &Path) -> bool {
     let Some(url) = path_to_file_url(path) else {
         log::warn!("Failed to build file URL for {}", path.display());
-        return;
+        return false;
     };
 
     if let Err(error) = webbrowser::open(&url) {
@@ -1068,7 +1151,10 @@ fn open_local_path(path: &Path) {
             path.display(),
             error
         );
+        return false;
     }
+
+    true
 }
 
 fn try_spawn_browser_command(program: &str, args: &[&str]) -> bool {
@@ -1623,9 +1709,7 @@ fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> S
         return String::new();
     }
 
-    let p1 = Path::new("Albums")
-        .join(album_name.replace(' ', "-"))
-        .join(rel);
+    let p1 = crate::file_utils::resolve_album_image_path(album_name, rel);
     if p1.exists() {
         return p1.to_string_lossy().to_string();
     }
@@ -1713,6 +1797,7 @@ fn build_matcher_payload(
     db_path: &str,
     album_name: &str,
     default_catalog_code: &str,
+    default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
     series_default_checked: bool,
@@ -1729,6 +1814,7 @@ fn build_matcher_payload(
     right_unmatched_only_default_checked: bool,
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
+    catalog_family_options: &[String],
     show_imageless_left_rows: bool,
 ) -> Result<MatcherPayload, Box<dyn std::error::Error>> {
     let left = load_left_stamps(conn, db_path, album_name, show_imageless_left_rows)?;
@@ -1747,6 +1833,7 @@ fn build_matcher_payload(
         ),
         show_imageless_left_rows,
         default_catalog_code: default_catalog_code.to_string(),
+        default_sort_mode: default_sort_mode.to_string(),
         odd_row_color: odd_row_color.to_string(),
         even_row_color: even_row_color.to_string(),
         series_default_checked,
@@ -1763,6 +1850,7 @@ fn build_matcher_payload(
         right_unmatched_only_default_checked,
         albumeasy_auto_generate_pdf_default,
         albumeasy_cli_configured,
+        catalog_family_options: catalog_family_options.to_vec(),
     })
 }
 
@@ -2135,6 +2223,7 @@ pub fn run_review_ui(
     bind_addr_opt: Option<&str>,
     open_browser: bool,
     default_catalog_code: &str,
+    default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
     series_default_checked: bool,
@@ -2151,10 +2240,28 @@ pub fn run_review_ui(
     right_unmatched_only_default_checked: bool,
     albumeasy_auto_generate_pdf_default: bool,
     albumeasy_cli_configured: bool,
+    catalog_family_options: &[String],
 ) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>> {
+    if let Some(albums_root) = Path::new(db_path)
+        .parent()
+        .and_then(|album_dir| album_dir.parent())
+    {
+        std::env::set_var("STAMP_ALBUMS_ROOT", albums_root);
+        log_runtime_event(&format!(
+            "Review UI: using albums root {}",
+            albums_root.display()
+        ));
+    }
+
     log_runtime_event(&format!("Review UI: preparing data from {}", db_path));
     log_runtime_event("Review UI: opening database...");
-    let conn = crate::db_utils::init_db(db_path)?;
+    let conn = crate::db_utils::init_db(db_path).map_err(|e| {
+        log_runtime_event(&format!(
+            "Review UI: failed to open database {}: {}",
+            db_path, e
+        ));
+        std::io::Error::other(format!("failed to open review database {}: {}", db_path, e))
+    })?;
     let _ = conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_stamps_review_sg_year ON stamps (sg_number, year)",
         [],
@@ -2164,7 +2271,16 @@ pub fn run_review_ui(
         [],
     );
     log_runtime_event("Review UI: syncing processed Colnect candidates...");
-    sync_processed_colnect_candidates(&conn)?;
+    sync_processed_colnect_candidates(&conn).map_err(|e| {
+        log_runtime_event(&format!(
+            "Review UI: failed while syncing processed Colnect candidates: {}",
+            e
+        ));
+        std::io::Error::other(format!(
+            "failed to sync processed Colnect candidates: {}",
+            e
+        ))
+    })?;
 
     let album_name = album_name_opt
         .map(|s| s.to_string())
@@ -2185,6 +2301,7 @@ pub fn run_review_ui(
         db_path,
         &album_name,
         default_catalog_code,
+        default_sort_mode,
         odd_row_color,
         even_row_color,
         series_default_checked,
@@ -2201,8 +2318,19 @@ pub fn run_review_ui(
         right_unmatched_only_default_checked,
         albumeasy_auto_generate_pdf_default,
         albumeasy_cli_configured,
+        catalog_family_options,
         initial_show_imageless_left_rows,
-    )?;
+    )
+    .map_err(|e| {
+        log_runtime_event(&format!(
+            "Review UI: failed to build compare payload for {}: {}",
+            db_path, e
+        ));
+        std::io::Error::other(format!(
+            "failed to prepare review compare payload for {}: {}",
+            db_path, e
+        ))
+    })?;
     log_runtime_event(&format!(
         "Review UI: loaded {} left rows and {} right candidates",
         payload.left.len(),
@@ -2222,7 +2350,13 @@ pub fn run_review_ui(
     let (server, bind) = if let Some(pb) = prebound_server {
         pb
     } else {
-        bind_review_server(bind_addr_opt)?
+        bind_review_server(bind_addr_opt).map_err(|e| {
+            log_runtime_event(&format!(
+                "Review UI: failed to bind local web server: {}",
+                e
+            ));
+            std::io::Error::other(format!("failed to bind review UI server: {}", e))
+        })?
     };
 
     let url = format!("http://{}/", bind);
@@ -2242,6 +2376,7 @@ pub fn run_review_ui(
         &html,
         &right_map,
         default_catalog_code,
+        default_sort_mode,
         odd_row_color,
         even_row_color,
         series_default_checked,
@@ -2258,6 +2393,7 @@ pub fn run_review_ui(
         right_unmatched_only_default_checked,
         albumeasy_auto_generate_pdf_default,
         albumeasy_cli_configured,
+        catalog_family_options,
     );
     let reload_requested = review_state.reload_requested;
     let return_to_start_requested = review_state.return_to_start_requested;

@@ -24,7 +24,14 @@ pub fn collect_stampworld_data(
 
     // Initialize SQLite database in the album directory for the country
     let country_db_name = _site_name.replace("/", "-");
-    let db_path = format!("{}/{}.db", _images_directory.replace("/images", ""), country_db_name);
+    let images_parent = std::path::Path::new(_images_directory)
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::path::PathBuf::from(_images_directory));
+    let db_path = images_parent
+        .join(format!("{}.db", country_db_name))
+        .to_string_lossy()
+        .to_string();
     let conn = crate::db_utils::init_db(&db_path).expect("Failed to initialize database");
 
     while !done {
