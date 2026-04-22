@@ -1,0 +1,189 @@
+# Full example configuration (versioned example).
+# This file was added from the user's provided config. Edit values locally and
+# copy to `config.toml` in your working directory to apply.
+
+# --- Stamp Box Sizing ---
+stamp_box_height = 24.0
+stamp_box_adjust = 0.0
+
+# --- Colnect Dimension Adjustments ---
+# Separate adjustments for width and height (in mm) to compensate for printing
+colnect_width_adjust_mm = 2.0
+colnect_height_adjust_mm = 2.0
+
+# --- Row & Header Spacing ---
+row_font_spacing = 5.0
+header_font_spacing = 3.0
+
+# --- Reference Page Size ---
+reference_width_mm = 25.0
+reference_height_mm = 30.0
+
+# --- Page layout ---
+album_page_width_mm = 216.0
+album_page_height_mm = 279.4
+page_top_margin_mm = 10.0
+page_bottom_margin_mm = 10.0
+page_left_margin_mm = 10.0
+page_right_margin_mm = 10.0
+page_border_outer = 0.5
+page_border_inner1 = 0.1
+page_border_inner2 = 0.0
+page_border_spacing = 3.0
+album_pages_spacing_h = 0.0
+album_pages_spacing_v = 0.0
+
+median_width_cap_3 = 36.0
+median_width_cap_4 = 30.0
+
+page_fit_conservative_buffer_mm = 11.0
+
+# --- Image / stamp settings ---
+album_stamp_img_new_setting_w_mm = 0.0
+album_stamp_img_new_setting_h_mm = 0.0
+album_stamp_img_new_setting_preserve_aspect = true
+image_spacing_mm = 2.0
+text_line_height_mm = 3.0
+
+# --- Header formatting toggles ---
+include_design = true
+include_engraving = true
+include_watermark = true
+include_perforation = true
+include_catalog_numbers = true
+include_series = true
+include_country = true
+include_date = true
+print_flag_cover = false
+
+# --- Stamp heading formatting ---
+# Emitted for each stamp as: STAMP_HEADING(<FONT> <SIZE> "<LABEL> : <SGNUM>")
+# Tune the small heading displayed above/beside each stamp box.
+stamp_heading_font = "HN"
+stamp_heading_size = 10
+stamp_heading_label = "auto"
+
+# --- Grouped range handling ---
+expand_grouped_ranges = "placeholders"
+
+# --- Other toggles ---
+detailed_page_fit_diagnostics = true
+fetch_wikipedia = false
+row_start_es_enabled = true
+max_rows_per_page = 4
+allow_single_large_stamp_per_page = true
+single_stamp_threshold_pct = 0.6
+usable_height_padding_mm = 0.0
+header_vspace_before_mm = 8.0
+header_vspace_after_mm = 12.5
+
+# --- Flag cover (image) specific overrides ---
+# These keys control the cover page when a flag image is available.
+# Values are in millimetres (mm) where applicable.
+flag_cover_page_vspace_top = 40.0
+flag_cover_img_w_mm = 160.0
+flag_cover_img_h_mm = 80.0
+flag_cover_image_vspace_after = 12.0
+flag_cover_image_title_font = "HN"
+flag_cover_image_title_size = 32.0
+flag_cover_image_title_scale = 1.0
+
+# --- Flag cover (text-only) overrides ---
+flag_cover_text_only_vspace_top = 24.0
+flag_cover_text_only_title_font = "HN"
+flag_cover_text_only_title_size = 48.0
+flag_cover_text_only_title_scale = 1.0
+flag_cover_text_only_vspace_after = 18.0
+
+# --- Page markers and ROW_START_ES formatting (optional) ---
+# These values control small helper markers emitted into generated AlbumEasy
+# output. They are optional; sensible defaults are used when omitted.
+# page_vspace_marker = "(6)"
+# row_start_es_marker = "ROW_START_ES"
+# historical token is not required; use font/size/spacing settings instead
+# row_start_es_font = "6"
+# row_start_es_size = 0.10
+# row_start_es_vspace = 5.0
+
+# --- PAGE_TEXT templates ---
+# Customize the PAGE_TEXT output formatting. Must contain a single `{}` placeholder.
+page_text_format = 'PAGE_TEXT (HN 10 "{}" 1.0)'
+page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+page_text_right_format = 'PAGE_TEXT_RIGHT (HN 10 "{}" 1.0)'
+
+# Optional per-field overrides. If provided these are used to synthesize the
+# full template string and are useful when you want to tune font/size/vspace
+# independently without providing a full format string above. Defaults are
+# used when a value is omitted.
+page_text_font = "HN"
+page_text_size = 10.0
+page_text_vspace = 1.0
+
+page_text_centre_font = "TN"
+page_text_centre_size = 8.0
+page_text_centre_vspace = 1.0
+
+page_text_right_font = "HN"
+page_text_right_size = 10.0
+page_text_right_vspace = 1.0
+
+# Placeholder overwrite behavior (default: true)
+# When true, placeholders generated with explicit mm/mm_per_px mappings will
+# be recreated/overwritten so their pixel dimensions exactly match the
+# emitted STAMP_ADD_IMG box sizes. When false, existing placeholder files
+# will be preserved if their pixel dimensions already match the desired size.
+placeholder_always_overwrite = true
+
+# --- Runtime / Colnect inbox defaults ---
+# Used when CLI omits --colnect-inbox for --source colnectexport.
+# The directory is auto-created on startup if missing.
+colnect_inbox_path = "samples/colnect_inbox"
+
+# Optional AlbumEasy CLI path used for automatic PDF generation from output TXT.
+# Linux example: "/path/to/AlbumEasy/AlbumEasy.sh"
+albumeasy_cli_path = ""
+
+# Optional persisted Review UI startup Albums root override.
+# Set to either the Albums directory itself, or a parent folder containing Albums.
+# Leave empty to use automatic detection.
+bootstrap_albums_root_path = ""
+
+# When true, run: <albumeasy_cli_path> -c <generated_txt>
+albumeasy_auto_generate_pdf = false
+
+# DX/support switch for additional PDF generation diagnostics in Logs/
+pdf_dx_logging = false
+
+# --- Review UI defaults ---
+# Alternating row colors for metadata tables in review mode.
+[review_ui]
+odd_row_color = "#ffffff"
+even_row_color = "#e6eef4"
+default_sort_mode = "catalog"
+
+# Default checkbox states for field selection in review mode
+default_series_checked = true
+default_description_checked = true
+default_watermark_checked = false
+default_design_checked = false
+default_engraving_checked = false
+default_perforation_checked = false
+default_context_checked = false
+default_colnect_links_checked = true
+default_colnect_image_url_checked = true
+default_colnect_metadata_checked = true
+default_replace_sg_number_checked = false
+default_right_unmatched_only_checked = false
+
+# Optional catalog family list for searchable Review UI selectors.
+# Entry format: "code|label|count"
+catalog_family_options = [
+	"sn|Scott Number|814224",
+	"sg|Stanley Gibbons|705728",
+	"mi|Michel|1126331",
+	"yt|Yvert et Tellier|925704",
+	"afa|AFA number|116770",
+	"ank|ANK|8320",
+	"un|Unificato|169053",
+	"col|Colnect codes|445975"
+]

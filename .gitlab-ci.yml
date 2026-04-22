@@ -20,9 +20,11 @@ variables:
   CARGO_INCREMENTAL: "0"
   CARGO_BUILD_JOBS: "2"
   # Optional host deployment from publish job:
-  # - Set WEBSITE_DEPLOY_DIR to enable copying website files to a host path (for example /opt/stampalbumgenerator2-site)
-  # - Set WEBSITE_DEPLOY_MODE to downloads-only (default) or full-site
-  WEBSITE_DEPLOY_MODE: "full-site"
+  # - Set WEBSITE_DEPLOY_DIR as a CI/CD variable to enable deployment
+  #   Example: WEBSITE_DEPLOY_DIR=/opt/stampalbumgenerator2-site
+  # This copies build artifacts directly to the target directory structure:
+  #   $WEBSITE_DEPLOY_DIR/static/downloads/current/
+  #   $WEBSITE_DEPLOY_DIR/APP_VERSION
 
 cache:
   key:
@@ -98,8 +100,17 @@ publish_website_downloads:
   needs:
     - job: build_release
       artifacts: true
+  before_script:
+    - cd "$CI_PROJECT_DIR"
+    - |
+      if [[ ! -d "$CI_PROJECT_DIR/../StampAlbumGen2-website" ]]; then
+        echo "Website repo not found at $CI_PROJECT_DIR/../StampAlbumGen2-website"
+        echo "Cloning website repo..."
+        cd "$CI_PROJECT_DIR/.."
+        git clone https://gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git StampAlbumGen2-website
+      fi
   script:
-    - bash scripts/publish_website_downloads.sh artifacts
+    - bash scripts/publish_website_downloads.sh artifacts ../StampAlbumGen2-website
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_COMMIT_BRANCH == "release"'

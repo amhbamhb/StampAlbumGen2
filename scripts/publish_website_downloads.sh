@@ -4,82 +4,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACTS_DIR="${1:-$ROOT_DIR/artifacts}"
-
-WEBSITE_REPO_PUSH_URL="${WEBSITE_REPO_PUSH_URL:-}"
-WEBSITE_REPO_BRANCH="${WEBSITE_REPO_BRANCH:-main}"
-WEBSITE_GIT_AUTHOR_NAME="${WEBSITE_GIT_AUTHOR_NAME:-StampAlbum CI Publisher}"
-WEBSITE_GIT_AUTHOR_EMAIL="${WEBSITE_GIT_AUTHOR_EMAIL:-ci-publisher@laser-spider.invalid}"
+WEBSITE_REPO_DIR="${2:-$ROOT_DIR/../StampAlbumGen2-website}"
 WEBSITE_DEPLOY_DIR="${WEBSITE_DEPLOY_DIR:-}"
-WEBSITE_DEPLOY_MODE="${WEBSITE_DEPLOY_MODE:-downloads-only}"
 
-print_runner_context() {
-	echo "Runner context:"
-	echo "  CI_RUNNER_DESCRIPTION=${CI_RUNNER_DESCRIPTION:-unknown}"
-	echo "  CI_RUNNER_TAGS=${CI_RUNNER_TAGS:-unknown}"
-	echo "  CI_RUNNER_EXECUTABLE_ARCH=${CI_RUNNER_EXECUTABLE_ARCH:-unknown}"
-	echo "  HOSTNAME=$(hostname 2>/dev/null || echo unknown)"
-	echo "  USER=$(id -un 2>/dev/null || echo unknown)"
-	echo "  PWD=$(pwd)"
-}
-
-check_deploy_capability() {
-	if [[ -z "$WEBSITE_DEPLOY_DIR" ]]; then
-		echo "Deploy capability: WEBSITE_DEPLOY_DIR not set; host deploy disabled."
-		return
-	fi
-
-	local parent_dir
-	parent_dir="$(dirname "$WEBSITE_DEPLOY_DIR")"
-	echo "Deploy capability: target dir is $WEBSITE_DEPLOY_DIR"
-
-	if [[ -d "$WEBSITE_DEPLOY_DIR" ]]; then
-		if [[ ! -w "$WEBSITE_DEPLOY_DIR" ]]; then
-			echo "Error: target dir exists but is not writable by current runner user."
-			exit 3
-		fi
-	else
-		if [[ ! -d "$parent_dir" ]]; then
-			echo "Error: parent dir does not exist: $parent_dir"
-			exit 3
-		fi
-		if [[ ! -w "$parent_dir" ]]; then
-			echo "Error: parent dir is not writable by current runner user: $parent_dir"
-			exit 3
-		fi
-	fi
-
-	mkdir -p "$WEBSITE_DEPLOY_DIR"
-	local probe_file="$WEBSITE_DEPLOY_DIR/.deploy-write-test.$$"
-	if ! ( : > "$probe_file" ); then
-		echo "Error: runner cannot write to $WEBSITE_DEPLOY_DIR"
-		exit 3
-	fi
-	rm -f "$probe_file"
-	echo "Deploy capability: write probe passed for $WEBSITE_DEPLOY_DIR"
-}
-
-print_runner_context
-check_deploy_capability
-
-if [[ -z "$WEBSITE_REPO_PUSH_URL" ]]; then
-	echo "Error: WEBSITE_REPO_PUSH_URL is required."
-	echo "Set it as a protected CI/CD variable with an authenticated HTTPS Git URL for the website repo."
-	exit 2
-fi
-
-if [[ ! -d "$ARTIFACTS_DIR" ]]; then
-	echo "Error: artifacts directory not found: $ARTIFACTS_DIR"
-	exit 2
-fi
-
-LINUX_BINARY="$ARTIFACTS_DIR/stamp_album_gen2"
-WINDOWS_BINARY="$ARTIFACTS_DIR/stamp_album_gen2.exe"
-
-if [[ ! -f "$LINUX_BINARY" ]]; then
-	echo "Error: required Linux binary missing: $LINUX_BINARY"
-	exit 2
-fi
-
+# Parse app version from Cargo.toml
 APP_VERSION="$({ awk '
 	BEGIN { in_pkg=0 }
 	/^\[package\]/ { in_pkg=1; next }
@@ -98,132 +26,111 @@ if [[ -z "$APP_VERSION" ]]; then
 	exit 2
 fi
 
-WORK_DIR="$(mktemp -d)"
-cleanup() {
-	rm -rf "$WORK_DIR"
-}
-trap cleanup EXIT
+# Validate inputs
+if [[ ! -d "$ARTIFACTS_DIR" ]]; then
+	echo "Error: artifacts directory not found: $ARTIFACTS_DIR"
+	exit 2
+fi
 
-WEBSITE_CLONE_DIR="$WORK_DIR/website"
+if [[ ! -d "$WEBSITE_REPO_DIR" ]]; then
+	echo "Error: website repo directory not found: $WEBSITE_REPO_DIR"
+	exit 2
+fi
 
-git clone --depth 1 --branch "$WEBSITE_REPO_BRANCH" "$WEBSITE_REPO_PUSH_URL" "$WEBSITE_CLONE_DIR"
+LINUX_BINARY="$ARTIFACTS_DIR/stamp_album_gen2"
+WINDOWS_BINARY="$ARTIFACTS_DIR/stamp_album_gen2.exe"
 
-DOWNLOAD_DIR="$WEBSITE_CLONE_DIR/static/downloads/current"
-mkdir -p "$DOWNLOAD_DIR"
+if [[ ! -f "$LINUX_BINARY" ]]; then
+	echo "Error: required Linux binary missing: $LINUX_BINARY"
+	exit 2
+fi
 
-cp "$LINUX_BINARY" "$DOWNLOAD_DIR/stamp_album_gen2"
+echo "Publishing app version $APP_VERSION"
+echo "  App artifacts: $ARTIFACTS_DIR"
+echo "  Website repo: $WEBSITE_REPO_DIR"
+echo "  Deploy target: ${WEBSITE_DEPLOY_DIR:-(not set, build-only mode)}"
+
+# Step 1: Build the website
+echo ""
+echo "Building website..."
+(
+	cd "$WEBSITE_REPO_DIR"
+	cargo build --release --bin stampalbumgenerator2-site
+)
+
+# Step 2: Prepare website download directory
+WEBSITE_DOWNLOAD_DIR="$WEBSITE_REPO_DIR/static/downloads/current"
+mkdir -p "$WEBSITE_DOWNLOAD_DIR"
+
+echo "Copying app binaries to website..."
+cp "$LINUX_BINARY" "$WEBSITE_DOWNLOAD_DIR/stamp_album_gen2"
 if [[ -f "$WINDOWS_BINARY" ]]; then
-	cp "$WINDOWS_BINARY" "$DOWNLOAD_DIR/stamp_album_gen2.exe"
-else
-	rm -f "$DOWNLOAD_DIR/stamp_album_gen2.exe"
+	cp "$WINDOWS_BINARY" "$WEBSITE_DOWNLOAD_DIR/stamp_album_gen2.exe"
 fi
 
-# Remove stale checksum artifacts before re-generating.
-rm -f "$DOWNLOAD_DIR/stamp_album_gen2.sha256"
-rm -f "$DOWNLOAD_DIR/stamp_album_gen2.exe.sha256"
-rm -f "$DOWNLOAD_DIR/SHA256SUMS.txt"
-rm -f "$DOWNLOAD_DIR/CRC32SUMS.txt"
-
-sha256sum "$DOWNLOAD_DIR/stamp_album_gen2" | awk '{print $1 "  stamp_album_gen2"}' > "$DOWNLOAD_DIR/stamp_album_gen2.sha256"
-
-if [[ -f "$DOWNLOAD_DIR/stamp_album_gen2.exe" ]]; then
-	sha256sum "$DOWNLOAD_DIR/stamp_album_gen2.exe" | awk '{print $1 "  stamp_album_gen2.exe"}' > "$DOWNLOAD_DIR/stamp_album_gen2.exe.sha256"
+# Step 3: Copy checksums
+echo "Copying checksums..."
+if [[ -f "$ARTIFACTS_DIR/SHA256SUMS.txt" ]]; then
+	cp "$ARTIFACTS_DIR/SHA256SUMS.txt" "$WEBSITE_DOWNLOAD_DIR/SHA256SUMS.txt"
 fi
 
-{
-	cat "$DOWNLOAD_DIR/stamp_album_gen2.sha256"
-	if [[ -f "$DOWNLOAD_DIR/stamp_album_gen2.exe.sha256" ]]; then
-		cat "$DOWNLOAD_DIR/stamp_album_gen2.exe.sha256"
-	fi
-} > "$DOWNLOAD_DIR/SHA256SUMS.txt"
-
-cksum "$DOWNLOAD_DIR/stamp_album_gen2" | awk '{print $1 " " $2 " stamp_album_gen2"}' > "$DOWNLOAD_DIR/CRC32SUMS.txt"
-if [[ -f "$DOWNLOAD_DIR/stamp_album_gen2.exe" ]]; then
-	cksum "$DOWNLOAD_DIR/stamp_album_gen2.exe" | awk '{print $1 " " $2 " stamp_album_gen2.exe"}' >> "$DOWNLOAD_DIR/CRC32SUMS.txt"
+if [[ -f "$ARTIFACTS_DIR/CRC32SUMS.txt" ]]; then
+	cp "$ARTIFACTS_DIR/CRC32SUMS.txt" "$WEBSITE_DOWNLOAD_DIR/CRC32SUMS.txt"
 fi
 
-cat > "$DOWNLOAD_DIR/release-metadata.json" <<EOF
-{
-  "version": "$APP_VERSION",
-  "linuxBinary": "stamp_album_gen2",
-  "windowsBinary": "$(if [[ -f "$DOWNLOAD_DIR/stamp_album_gen2.exe" ]]; then echo 'stamp_album_gen2.exe'; else echo ''; fi)",
-  "checksums": {
-	"sha256Manifest": "SHA256SUMS.txt",
-	"crc32Manifest": "CRC32SUMS.txt",
-	"linuxSha256": "stamp_album_gen2.sha256",
-	"windowsSha256": "$(if [[ -f "$DOWNLOAD_DIR/stamp_album_gen2.exe.sha256" ]]; then echo 'stamp_album_gen2.exe.sha256'; else echo ''; fi)"
-  }
-}
-EOF
+if [[ -f "$ARTIFACTS_DIR/stamp_album_gen2.sha256" ]]; then
+	cp "$ARTIFACTS_DIR/stamp_album_gen2.sha256" "$WEBSITE_DOWNLOAD_DIR/stamp_album_gen2.sha256"
+fi
 
-printf '%s\n' "$APP_VERSION" > "$WEBSITE_CLONE_DIR/APP_VERSION"
+if [[ -f "$ARTIFACTS_DIR/stamp_album_gen2.exe.sha256" ]]; then
+	cp "$ARTIFACTS_DIR/stamp_album_gen2.exe.sha256" "$WEBSITE_DOWNLOAD_DIR/stamp_album_gen2.exe.sha256"
+fi
 
-while IFS= read -r -d '' html_file; do
-	perl -0pi -e 's/(class="js-app-version">)[^<]+/$1'"$APP_VERSION"'/g' "$html_file"
-done < <(find "$WEBSITE_CLONE_DIR/static" -type f -name '*.html' -print0)
+# Step 4: Handle articles (if zipped)
+if [[ -f "$ARTIFACTS_DIR/articles.zip" ]]; then
+	echo "Extracting articles..."
+	mkdir -p "$WEBSITE_REPO_DIR/static/articles"
+	unzip -o "$ARTIFACTS_DIR/articles.zip" -d "$WEBSITE_REPO_DIR/static/articles"
+fi
 
-build_website_runtime() {
-	echo "Building website runtime binary"
-	(
-		cd "$WEBSITE_CLONE_DIR"
-		cargo build --release --bin stampalbumgenerator2-site
-	)
-}
+# Step 5: Update version
+printf '%s\n' "$APP_VERSION" > "$WEBSITE_REPO_DIR/APP_VERSION"
+echo "Updated APP_VERSION to $APP_VERSION"
 
-deploy_to_host_dir() {
-	if [[ -z "$WEBSITE_DEPLOY_DIR" ]]; then
-		echo "WEBSITE_DEPLOY_DIR is not set; skipping host deploy."
-		return
-	fi
-
-	mkdir -p "$WEBSITE_DEPLOY_DIR"
-
-	if [[ "$WEBSITE_DEPLOY_MODE" == "full-site" ]]; then
-		build_website_runtime
-		local release_id release_root current_link
-		release_id="${APP_VERSION}-$(date +%Y%m%d%H%M%S)"
-		release_root="$WEBSITE_DEPLOY_DIR/releases/$release_id"
-		current_link="$WEBSITE_DEPLOY_DIR/current"
-		mkdir -p "$release_root/bin" "$release_root/static"
-		if command -v rsync >/dev/null 2>&1; then
-			rsync -a --delete "$WEBSITE_CLONE_DIR/static/" "$release_root/static/"
-		else
-			cp -a "$WEBSITE_CLONE_DIR/static/." "$release_root/static/"
-		fi
-		cp "$WEBSITE_CLONE_DIR/APP_VERSION" "$release_root/APP_VERSION"
-		cp "$WEBSITE_CLONE_DIR/target/release/stampalbumgenerator2-site" "$release_root/bin/"
-		ln -sfn "$release_root" "$current_link"
-		echo "Deployed full website release to $release_root"
-		echo "Updated symlink $current_link -> $release_root"
-		return
-	fi
-
+# Step 6: Deploy to host directory
+if [[ -n "$WEBSITE_DEPLOY_DIR" ]]; then
+	echo ""
+	echo "Deploying to $WEBSITE_DEPLOY_DIR..."
+	
+	# Create target directories
+	mkdir -p "$WEBSITE_DEPLOY_DIR/bin"
 	mkdir -p "$WEBSITE_DEPLOY_DIR/static/downloads/current"
+	mkdir -p "$WEBSITE_DEPLOY_DIR/static/articles"
+	
+	# Copy website binary
+	cp "$WEBSITE_REPO_DIR/target/release/stampalbumgenerator2-site" "$WEBSITE_DEPLOY_DIR/bin/"
+	
+	# Copy static files
 	if command -v rsync >/dev/null 2>&1; then
-		rsync -a --delete "$WEBSITE_CLONE_DIR/static/downloads/current/" "$WEBSITE_DEPLOY_DIR/static/downloads/current/"
+		rsync -a --delete "$WEBSITE_REPO_DIR/static/" "$WEBSITE_DEPLOY_DIR/static/"
 	else
-		rm -rf "$WEBSITE_DEPLOY_DIR/static/downloads/current"
-		mkdir -p "$WEBSITE_DEPLOY_DIR/static/downloads/current"
-		cp -a "$WEBSITE_CLONE_DIR/static/downloads/current/." "$WEBSITE_DEPLOY_DIR/static/downloads/current/"
+		cp -a "$WEBSITE_REPO_DIR/static/." "$WEBSITE_DEPLOY_DIR/static/"
 	fi
-	cp "$WEBSITE_CLONE_DIR/APP_VERSION" "$WEBSITE_DEPLOY_DIR/APP_VERSION"
-	echo "Deployed release downloads to $WEBSITE_DEPLOY_DIR"
-}
-
-deploy_to_host_dir
-
-cd "$WEBSITE_CLONE_DIR"
-
-git config user.name "$WEBSITE_GIT_AUTHOR_NAME"
-git config user.email "$WEBSITE_GIT_AUTHOR_EMAIL"
-
-if git diff --quiet; then
-	echo "No website release changes detected."
-	exit 0
+	
+	# Copy version
+	cp "$WEBSITE_REPO_DIR/APP_VERSION" "$WEBSITE_DEPLOY_DIR/APP_VERSION"
+	
+	echo "✓ Website binary deployed"
+	echo "✓ Static files deployed"
+	echo "✓ Downloads deployed"
+	if [[ -d "$WEBSITE_DEPLOY_DIR/static/articles" ]] && [[ -n "$(find "$WEBSITE_DEPLOY_DIR/static/articles" -type f 2>/dev/null || true)" ]]; then
+		echo "✓ Articles deployed"
+	fi
+else
+	echo ""
+	echo "Note: WEBSITE_DEPLOY_DIR not set; website files remain in repo only"
+	echo "To deploy, set WEBSITE_DEPLOY_DIR environment variable"
 fi
 
-git add APP_VERSION static/downloads/current static/index.html static/pages
-git commit -m "chore(release): publish app v$APP_VERSION artifacts"
-git push origin "$WEBSITE_REPO_BRANCH"
-
-echo "Published app v$APP_VERSION artifacts to website branch $WEBSITE_REPO_BRANCH"
+echo ""
+echo "✓ Done! App v$APP_VERSION published"

@@ -115,3 +115,5 @@ Cargo.lock
 # VS Code tasks
 .vscode/tasks.json
 demo_outputs/bleeding_risk_scenario.pdf
+artifacts/stamp_album_gen2
+artifacts/stamp_album_gen2.exe.sha256
