@@ -1,10 +1,9 @@
 stages:
   - verify
   - build
-  - publish
 
-# Keep CI simple: validate what should already pass locally, then optionally
-# produce a release artifact for default branch and tags.
+# Keep CI simple: validate locally, then build release artifacts.
+# Deployment is handled separately (manual copy or website repo CI).
 default:
   image: rust:latest
   before_script:
@@ -19,12 +18,6 @@ variables:
   CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
   CARGO_INCREMENTAL: "0"
   CARGO_BUILD_JOBS: "2"
-  # Optional host deployment from publish job:
-  # - Set WEBSITE_DEPLOY_DIR as a CI/CD variable to enable deployment
-  #   Example: WEBSITE_DEPLOY_DIR=/opt/stampalbumgenerator2-site
-  # This copies build artifacts directly to the target directory structure:
-  #   $WEBSITE_DEPLOY_DIR/static/downloads/current/
-  #   $WEBSITE_DEPLOY_DIR/APP_VERSION
 
 cache:
   key:
@@ -96,31 +89,3 @@ build_release:
     - if: '$CI_COMMIT_BRANCH == "release"'
     - if: '$CI_COMMIT_TAG'
 
-publish_website_downloads:
-  stage: publish
-  needs:
-    - job: build_release
-      artifacts: true
-  before_script:
-    - cd "$CI_PROJECT_DIR"
-    - |
-      if [[ ! -d "$CI_PROJECT_DIR/../StampAlbumGen2-website" ]]; then
-        echo "Website repo not found at $CI_PROJECT_DIR/../StampAlbumGen2-website"
-        echo "Cloning website repo..."
-        cd "$CI_PROJECT_DIR/.."
-        WEBSITE_CLONE_URL="https://gitlab-ci-token:${CI_JOB_TOKEN}@gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git"
-        if [[ -n "${WEBSITE_REPO_READ_TOKEN:-}" ]]; then
-          WEBSITE_CLONE_URL="https://oauth2:${WEBSITE_REPO_READ_TOKEN}@gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git"
-        fi
-        git clone "$WEBSITE_CLONE_URL" StampAlbumGen2-website || {
-          echo "ERROR: Unable to clone stampalbumgenerator2-site."
-          echo "Set WEBSITE_REPO_READ_TOKEN (recommended) or allow CI_JOB_TOKEN cross-project read_repository access."
-          exit 1
-        }
-      fi
-  script:
-    - bash scripts/publish_website_downloads.sh artifacts ../StampAlbumGen2-website
-  rules:
-    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-    - if: '$CI_COMMIT_BRANCH == "release"'
-    - if: '$CI_COMMIT_TAG'
