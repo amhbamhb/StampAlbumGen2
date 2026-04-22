@@ -106,9 +106,9 @@ publish_website_downloads:
     - |
       if [[ ! -d "$CI_PROJECT_DIR/../StampAlbumGen2-website" ]]; then
         echo "Website repo not found at $CI_PROJECT_DIR/../StampAlbumGen2-website"
-        echo "Cloning website repo..."
+        echo "Cloning website repo via SSH..."
         cd "$CI_PROJECT_DIR/.."
-        git clone https://gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git StampAlbumGen2-website
+        git clone git@gitinfo.laserspider.info:rust-apps/stampalbumgenerator2-site.git StampAlbumGen2-website
       fi
   script:
     - bash scripts/publish_website_downloads.sh artifacts ../StampAlbumGen2-website
