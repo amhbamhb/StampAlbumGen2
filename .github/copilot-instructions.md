@@ -86,3 +86,14 @@ For Colnect inbox tests, include a country-by-country table with:
 - skipped-duplicate count
 - failed count
 - top failure reason
+
+## Temporary Script Location
+
+When creating temporary or one-off helper scripts, always save them under:
+
+- `/media/ray/320G-2020-06-Program/Rust/Various Scripts/`
+
+Requirements:
+
+1. Use unique timestamped filenames to avoid collisions.
+2. Do not create temp scripts in the repository tree unless explicitly requested.

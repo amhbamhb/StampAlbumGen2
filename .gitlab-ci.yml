@@ -1,6 +1,7 @@
 stages:
   - verify
   - build
+  - publish
 
 # Keep CI simple: validate what should already pass locally, then optionally
 # produce a release artifact for default branch and tags.
@@ -18,6 +19,12 @@ variables:
   CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
   CARGO_INCREMENTAL: "0"
   CARGO_BUILD_JOBS: "2"
+  # Optional host deployment from publish job:
+  # - Set WEBSITE_DEPLOY_DIR as a CI/CD variable to enable deployment
+  #   Example: WEBSITE_DEPLOY_DIR=/opt/stampalbumgenerator2-site
+  # This copies build artifacts directly to the target directory structure:
+  #   $WEBSITE_DEPLOY_DIR/static/downloads/current/
+  #   $WEBSITE_DEPLOY_DIR/APP_VERSION
 
 cache:
   key:
@@ -61,6 +68,21 @@ build_release:
       else
         echo "Skipping Windows cross-build: mingw toolchain not available on runner"
       fi
+    - sha256sum artifacts/stamp_album_gen2 | awk '{print $1 "  stamp_album_gen2"}' > artifacts/stamp_album_gen2.sha256
+    - |
+      if [ -f artifacts/stamp_album_gen2.exe ]; then
+        sha256sum artifacts/stamp_album_gen2.exe | awk '{print $1 "  stamp_album_gen2.exe"}' > artifacts/stamp_album_gen2.exe.sha256
+      fi
+    - |
+      cat artifacts/stamp_album_gen2.sha256 > artifacts/SHA256SUMS.txt
+      if [ -f artifacts/stamp_album_gen2.exe.sha256 ]; then
+        cat artifacts/stamp_album_gen2.exe.sha256 >> artifacts/SHA256SUMS.txt
+      fi
+    - cksum artifacts/stamp_album_gen2 | awk '{print $1 " " $2 " stamp_album_gen2"}' > artifacts/CRC32SUMS.txt
+    - |
+      if [ -f artifacts/stamp_album_gen2.exe ]; then
+        cksum artifacts/stamp_album_gen2.exe | awk '{print $1 " " $2 " stamp_album_gen2.exe"}' >> artifacts/CRC32SUMS.txt
+      fi
     - cp README.md RELEASE_NOTES.md config.toml config_full_example.toml artifacts/
   artifacts:
     name: "stamp_album_gen2-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA"
@@ -68,6 +90,28 @@ build_release:
     expire_in: 14 days
     paths:
       - artifacts/
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_BRANCH == "release"'
+    - if: '$CI_COMMIT_TAG'
+
+publish_website_downloads:
+  stage: publish
+  needs:
+    - job: build_release
+      artifacts: true
+  before_script:
+    - cd "$CI_PROJECT_DIR"
+    - |
+      if [[ ! -d "$CI_PROJECT_DIR/../StampAlbumGen2-website" ]]; then
+        echo "Website repo not found at $CI_PROJECT_DIR/../StampAlbumGen2-website"
+        echo "Cloning website repo..."
+        cd "$CI_PROJECT_DIR/.."
+        git clone https://gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git StampAlbumGen2-website
+      fi
+  script:
+    - bash scripts/publish_website_downloads.sh artifacts ../StampAlbumGen2-website
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
     - if: '$CI_COMMIT_BRANCH == "release"'

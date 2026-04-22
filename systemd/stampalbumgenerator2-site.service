@@ -1,0 +1,36 @@
+[Unit]
+Description=Stamp Album Generator 2 Website Service
+Documentation=https://stampalbumgenerator2.com
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/stampalbumgenerator2-site/current
+ExecStart=/opt/stampalbumgenerator2-site/current/bin/stampalbumgenerator2-site
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=5
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=stamp-album-site
+LimitNOFILE=65536
+
+# Environment variables
+Environment="PORT=3000"
+Environment="RUST_LOG=info"
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/stampalbumgenerator2-site/releases /var/log
+
+[Install]
+WantedBy=multi-user.target
