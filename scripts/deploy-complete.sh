@@ -5,8 +5,13 @@ set -euo pipefail
 
 # Configuration
 DEPLOY_DIR="${1:-/opt/stampalbumgenerator2-site}"
-APP_REPO="/media/ray/program/Rust/StampAlbumGen2"
-WEBSITE_REPO="/media/ray/program/Rust/StampAlbumGen2-website"
+APP_REPO="${2:-/tmp/StampAlbumGen2}"
+WEBSITE_REPO="${3:-/tmp/StampAlbumGen2-website}"
+
+# GitLab URLs
+GITLAB_HOST="gitinfo.laserspider.info"
+APP_REPO_URL="https://${GITLAB_HOST}/rust-apps/rust-stamp_alblum_generate.git"
+WEBSITE_REPO_URL="https://${GITLAB_HOST}/rust-apps/stampalbumgenerator2-site.git"
 
 # Colors for output
 RED='\033[0;31m'
@@ -26,15 +31,32 @@ log_error() {
   echo -e "${RED}[ERROR]${NC} $*" >&2
 }
 
-# Verify repos exist
-if [[ ! -d "$APP_REPO" ]]; then
-  log_error "App repo not found: $APP_REPO"
-  exit 1
-fi
+# =============================================================================
+# Prepare repositories (clone if missing, pull if present)
+# =============================================================================
+prepare_repo() {
+  local repo_path="$1"
+  local repo_url="$2"
+  local repo_name="$3"
+  
+  if [[ ! -d "$repo_path" ]]; then
+    log_info "Cloning $repo_name to $repo_path..."
+    git clone "$repo_url" "$repo_path" || {
+      log_error "Failed to clone $repo_name"
+      exit 1
+    }
+  else
+    log_info "Updating $repo_name at $repo_path..."
+    cd "$repo_path"
+    git fetch origin master 2>/dev/null || git fetch origin main 2>/dev/null || true
+    git checkout -f FETCH_HEAD 2>/dev/null || git pull origin 2>/dev/null || true
+  fi
+}
 
-if [[ ! -d "$WEBSITE_REPO" ]]; then
-  log_error "Website repo not found: $WEBSITE_REPO"
-  exit 1
+# Verify and prepare repos
+if [[ ! -d "$APP_REPO" ]] || [[ ! -d "$WEBSITE_REPO" ]]; then
+  prepare_repo "$APP_REPO" "$APP_REPO_URL" "app repo"
+  prepare_repo "$WEBSITE_REPO" "$WEBSITE_REPO_URL" "website repo"
 fi
 
 log_info "Starting complete deployment to $DEPLOY_DIR"
@@ -221,3 +243,9 @@ echo "  pkill stampalbumgenerator2-site"
 echo "  $DEPLOY_DIR/bin/stampalbumgenerator2-site"
 echo ""
 log_success "All done!"
+echo ""
+log_info "Script can be run on remote server:"
+echo "  ssh user@laserspider.info 'bash /path/to/deploy-complete.sh'"
+echo ""
+log_info "Or with custom repo locations:"
+echo "  bash deploy-complete.sh /opt/stampalbumgenerator2-site /tmp/StampAlbumGen2 /tmp/StampAlbumGen2-website"
