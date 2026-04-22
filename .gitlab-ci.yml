@@ -106,9 +106,17 @@ publish_website_downloads:
     - |
       if [[ ! -d "$CI_PROJECT_DIR/../StampAlbumGen2-website" ]]; then
         echo "Website repo not found at $CI_PROJECT_DIR/../StampAlbumGen2-website"
-        echo "Cloning website repo via SSH..."
+        echo "Cloning website repo..."
         cd "$CI_PROJECT_DIR/.."
-        git clone git@gitinfo.laserspider.info:rust-apps/stampalbumgenerator2-site.git StampAlbumGen2-website
+        WEBSITE_CLONE_URL="https://gitlab-ci-token:${CI_JOB_TOKEN}@gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git"
+        if [[ -n "${WEBSITE_REPO_READ_TOKEN:-}" ]]; then
+          WEBSITE_CLONE_URL="https://oauth2:${WEBSITE_REPO_READ_TOKEN}@gitinfo.laserspider.info/rust-apps/stampalbumgenerator2-site.git"
+        fi
+        git clone "$WEBSITE_CLONE_URL" StampAlbumGen2-website || {
+          echo "ERROR: Unable to clone stampalbumgenerator2-site."
+          echo "Set WEBSITE_REPO_READ_TOKEN (recommended) or allow CI_JOB_TOKEN cross-project read_repository access."
+          exit 1
+        }
       fi
   script:
     - bash scripts/publish_website_downloads.sh artifacts ../StampAlbumGen2-website
