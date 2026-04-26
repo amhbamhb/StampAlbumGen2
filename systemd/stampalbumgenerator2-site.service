@@ -22,7 +22,7 @@ SyslogIdentifier=stamp-album-site
 LimitNOFILE=65536
 
 # Environment variables
-Environment="PORT=3000"
+Environment="PORT=4205"
 Environment="RUST_LOG=info"
 
 # Security hardening
