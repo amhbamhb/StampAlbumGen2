@@ -1251,11 +1251,30 @@ fn bind_review_server(
         return Ok((srv, explicit.to_string()));
     }
 
-    const BASE_PORT: u16 = 7878;
+    // Debug builds use a different base port so a dev instance and a release
+    // instance can run side-by-side without fighting over ports.
+    const RELEASE_BASE: u16 = 7878;
+    const DEBUG_BASE: u16 = 7879;
+    let base_port: u16 = if cfg!(debug_assertions) {
+        DEBUG_BASE
+    } else {
+        RELEASE_BASE
+    };
     const MAX_TRIES: u16 = 10;
+
     let mut last_err = String::new();
     for offset in 0..MAX_TRIES {
-        let candidate = format!("127.0.0.1:{}", BASE_PORT + offset);
+        let candidate = format!("127.0.0.1:{}", base_port + offset);
+
+        // Before attempting to bind, check whether it's already our app.
+        if let Some(url) = probe_for_our_instance(&candidate) {
+            return Err(std::io::Error::other(format!(
+                "__already_running__{}",
+                url
+            ))
+            .into());
+        }
+
         match Server::http(&candidate) {
             Ok(srv) => return Ok((srv, candidate)),
             Err(e) => {
@@ -1268,12 +1287,59 @@ fn bind_review_server(
         "failed to start review UI server: all ports {}-{} are in use (last error: {}). \
                  Kill the existing process with `fuser -k {}/tcp` or specify a free port with \
                  `--review-ui-bind 127.0.0.1:<PORT>`.",
-        BASE_PORT,
-        BASE_PORT + MAX_TRIES - 1,
+        base_port,
+        base_port + MAX_TRIES - 1,
         last_err,
-        BASE_PORT,
+        base_port,
     ))
     .into())
+}
+
+/// If `err` is the sentinel error from `bind_review_server` indicating that
+/// our own app is already listening, extract and return the URL.
+fn already_running_url(err: &Box<dyn std::error::Error>) -> Option<String> {
+    err.to_string()
+        .strip_prefix("__already_running__")
+        .map(|url| url.to_string())
+}
+
+/// Probe `addr` (e.g. `"127.0.0.1:7878"`) with a quick HTTP GET to
+/// `/api/ping`.  Returns `Some(url)` when a running copy of **this**
+/// build type (debug or release) is detected, `None` otherwise.
+///
+/// Uses only `std::net::TcpStream` + raw HTTP — no extra dependencies.
+fn probe_for_our_instance(addr: &str) -> Option<String> {
+    use std::io::{Read, Write};
+    use std::net::TcpStream;
+
+    let mut stream = TcpStream::connect_timeout(
+        &addr.parse().ok()?,
+        Duration::from_millis(150),
+    )
+    .ok()?;
+
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(300)));
+
+    let req = format!(
+        "GET /api/ping HTTP/1.0\r\nHost: {}\r\nConnection: close\r\n\r\n",
+        addr
+    );
+    stream.write_all(req.as_bytes()).ok()?;
+
+    let mut buf = String::new();
+    stream.read_to_string(&mut buf).ok()?;
+
+    // Only care about the body (after the blank line separating headers).
+    let body = buf.split("\r\n\r\n").nth(1).unwrap_or("").trim();
+
+    // Match app name AND build type so a debug and release copy don't steal
+    // each other's port probe.
+    let expected_build = if cfg!(debug_assertions) { "debug" } else { "release" };
+    if body.contains("\"stamp_album_gen2\"") && body.contains(expected_build) {
+        Some(format!("http://{}/", addr))
+    } else {
+        None
+    }
 }
 
 fn is_colnect_csv_file(path: &Path) -> bool {
@@ -2226,9 +2292,26 @@ pub fn run_review_ui_bootstrap(
     open_browser: bool,
 ) -> Result<ReviewUiBootstrapOutcome, Box<dyn std::error::Error>> {
     log_runtime_event("Review UI: starting startup selector...");
-    let html = render_bootstrap_html(default_inbox_path);
-    let (server, bind) = bind_review_server(bind_addr_opt)?;
 
+    let (server, bind) = match bind_review_server(bind_addr_opt) {
+        Ok(pair) => pair,
+        Err(e) => {
+            if let Some(url) = already_running_url(&e) {
+                log_runtime_event(&format!(
+                    "Review UI: instance already running at {} — opening browser",
+                    url
+                ));
+                if open_browser {
+                    open_review_ui_url(&url);
+                }
+                // Nothing more to do; caller treats this as a clean exit.
+                return Ok(ReviewUiBootstrapOutcome::Exit);
+            }
+            return Err(e);
+        }
+    };
+
+    let html = render_bootstrap_html(default_inbox_path);
     let url = format!("http://{}/", bind);
     log_runtime_event(&format!("Review UI Setup: {}", url));
     if open_browser {
@@ -2393,13 +2476,34 @@ pub fn run_review_ui(
     let (server, bind) = if let Some(pb) = prebound_server {
         pb
     } else {
-        bind_review_server(bind_addr_opt).map_err(|e| {
-            log_runtime_event(&format!(
-                "Review UI: failed to bind local web server: {}",
-                e
-            ));
-            std::io::Error::other(format!("failed to bind review UI server: {}", e))
-        })?
+        match bind_review_server(bind_addr_opt) {
+            Ok(pair) => pair,
+            Err(e) => {
+                if let Some(url) = already_running_url(&e) {
+                    log_runtime_event(&format!(
+                        "Review UI: instance already running at {} — opening browser",
+                        url
+                    ));
+                    if open_browser {
+                        open_review_ui_url(&url);
+                    }
+                    return Err(std::io::Error::other(format!(
+                        "Review UI already running at {}",
+                        url
+                    ))
+                    .into());
+                }
+                log_runtime_event(&format!(
+                    "Review UI: failed to bind local web server: {}",
+                    e
+                ));
+                return Err(std::io::Error::other(format!(
+                    "failed to bind review UI server: {}",
+                    e
+                ))
+                .into());
+            }
+        }
     };
 
     let url = format!("http://{}/", bind);

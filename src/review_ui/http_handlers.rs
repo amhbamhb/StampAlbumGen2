@@ -4,6 +4,16 @@ fn bundled_favicon_png() -> &'static [u8] {
     include_bytes!("../../assets/icons/favicon.png")
 }
 
+/// Returns the JSON body for `GET /api/ping`.
+/// Used by `probe_for_our_instance()` on startup to detect a running copy.
+fn ping_response_json() -> String {
+    let build = if cfg!(debug_assertions) { "debug" } else { "release" };
+    format!(
+        "{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}",
+        build
+    )
+}
+
 fn is_real_image_path(image_path: &str) -> bool {
     let p = image_path.trim();
     !p.is_empty() && !p.to_ascii_lowercase().starts_with("images/no_image")
@@ -136,6 +146,15 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
         if method == Method::Get && (req_url == "/favicon.ico" || req_url == "/favicon.png") {
             let mut resp = Response::from_data(bundled_favicon_png().to_vec());
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"image/png"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/ping" {
+            let mut resp = Response::from_string(ping_response_json());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
             let _ = request.respond(resp);
@@ -892,6 +911,15 @@ pub(super) fn serve_review_requests(
         if method == Method::Get && (req_url == "/favicon.ico" || req_url == "/favicon.png") {
             let mut resp = Response::from_data(bundled_favicon_png().to_vec());
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"image/png"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/ping" {
+            let mut resp = Response::from_string(ping_response_json());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
             let _ = request.respond(resp);
