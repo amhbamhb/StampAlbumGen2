@@ -1823,7 +1823,10 @@ pub(super) fn serve_review_requests(
             let folder_str = folder.to_string_lossy();
             let opened = open_folder_in_file_manager(&folder_str);
             let resp_json = if opened {
-                format!("{{\"ok\":true,\"path\":\"{}\"}}", folder_str.replace('\\', "\\\\"))
+                format!(
+                    "{{\"ok\":true,\"path\":\"{}\"}}",
+                    folder_str.replace('\\', "\\\\")
+                )
             } else {
                 format!(
                     "{{\"ok\":false,\"message\":\"could not open folder\",\"path\":\"{}\"}}",
