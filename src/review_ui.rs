@@ -1260,9 +1260,13 @@ fn bind_review_server(
     } else {
         RELEASE_BASE
     };
-    let build_label = if cfg!(debug_assertions) { "debug" } else { "release" };
-    log_runtime_event(&format!(
-        "Review UI: build={}, port range {}-{}",
+    let build_label = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+    log_startup(&format!(
+        "Review UI startup: build={}, port range {}-{}",
         build_label,
         base_port,
         base_port + 9,
@@ -1276,17 +1280,15 @@ fn bind_review_server(
         match probe_port(&candidate) {
             PortProbeResult::OurApp(url) if offset == 0 => {
                 // Base port is already serving our app — reuse it.
-                log_runtime_event(&format!(
+                log_startup(&format!(
                     "Review UI: {} instance already running at {} — reusing",
                     build_label, url
                 ));
-                return Err(
-                    std::io::Error::other(format!("__already_running__{}", url)).into()
-                );
+                return Err(std::io::Error::other(format!("__already_running__{}", url)).into());
             }
             PortProbeResult::OurApp(_) | PortProbeResult::OtherApp => {
                 // Another session (ours or foreign) owns this port — skip it.
-                log_runtime_event(&format!(
+                log_startup(&format!(
                     "Review UI: port {} in use, trying next",
                     base_port + offset
                 ));
@@ -1298,7 +1300,7 @@ fn bind_review_server(
 
         match Server::http(&candidate) {
             Ok(srv) => {
-                log_runtime_event(&format!("Review UI: bound to {}", candidate));
+                log_startup(&format!("Review UI: bound to {}", candidate));
                 return Ok((srv, candidate));
             }
             Err(e) => {
@@ -1338,6 +1340,19 @@ enum PortProbeResult {
 
 /// Probe `addr` with a quick HTTP GET `/api/ping`.
 /// Classifies the result as Free / OurApp / OtherApp.
+/// Append `msg` to a startup log file in the system temp directory.
+/// Useful for diagnosing port selection when the app is launched from a
+/// desktop shortcut with no terminal (Terminal=false).
+fn log_startup(msg: &str) {
+    use std::io::Write;
+    let path = std::env::temp_dir().join("stamp_album_gen2_startup.log");
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+        let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+        let _ = writeln!(f, "[{}] {}", ts, msg);
+    }
+    log_runtime_event(msg);
+}
+
 fn probe_port(addr: &str) -> PortProbeResult {
     use std::io::{Read, Write};
     use std::net::TcpStream;
@@ -1347,13 +1362,12 @@ fn probe_port(addr: &str) -> PortProbeResult {
         Err(_) => return PortProbeResult::Free,
     };
 
-    let mut stream =
-        match TcpStream::connect_timeout(&sock_addr, Duration::from_millis(150)) {
-            Ok(s) => s,
-            Err(_) => return PortProbeResult::Free, // nothing listening
-        };
+    let mut stream = match TcpStream::connect_timeout(&sock_addr, Duration::from_millis(150)) {
+        Ok(s) => s,
+        Err(_) => return PortProbeResult::Free, // nothing listening
+    };
 
-    let _ = stream.set_read_timeout(Some(Duration::from_millis(400)));
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(500)));
 
     let req = format!(
         "GET /api/ping HTTP/1.0\r\nHost: {}\r\nConnection: close\r\n\r\n",
@@ -1363,17 +1377,35 @@ fn probe_port(addr: &str) -> PortProbeResult {
         return PortProbeResult::OtherApp;
     }
 
-    // Read up to 4 KB — enough for our tiny JSON response.
+    // Read in a loop: HTTP/1.0 + Connection:close means the server closes
+    // after the response, but TCP may deliver headers and body in separate
+    // reads, so we accumulate until EOF or timeout.
     let mut buf = vec![0u8; 4096];
-    let n = stream.read(&mut buf).unwrap_or(0);
-    let response = std::str::from_utf8(&buf[..n]).unwrap_or("");
+    let mut total = 0usize;
+    loop {
+        match stream.read(&mut buf[total..]) {
+            Ok(0) => break,
+            Ok(n) => {
+                total += n;
+                if total >= buf.len() {
+                    break;
+                }
+            }
+            Err(_) => break, // read timeout or error — use whatever we got
+        }
+    }
+    let response = std::str::from_utf8(&buf[..total]).unwrap_or("");
 
     // Grab the body after the HTTP header blank line.
     let body = response.split("\r\n\r\n").nth(1).unwrap_or("").trim();
 
-    let expected_build = if cfg!(debug_assertions) { "debug" } else { "release" };
+    let expected_build = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
 
-    if body.contains("\"stamp_album_gen2\"") && body.contains(expected_build) {
+    let result = if body.contains("\"stamp_album_gen2\"") && body.contains(expected_build) {
         PortProbeResult::OurApp(format!("http://{}/", addr))
     } else if body.contains("\"stamp_album_gen2\"") {
         // Our app but wrong build type (e.g. debug is here, we're release).
@@ -1381,7 +1413,16 @@ fn probe_port(addr: &str) -> PortProbeResult {
     } else {
         // Either no response body, 404, or a completely foreign service.
         PortProbeResult::OtherApp
-    }
+    };
+
+    let label = match &result {
+        PortProbeResult::Free => "Free".to_string(),
+        PortProbeResult::OurApp(u) => format!("OurApp({})", u),
+        PortProbeResult::OtherApp => format!("OtherApp (body={:?})", body),
+    };
+    log_startup(&format!("probe_port({}) => {}", addr, label));
+
+    result
 }
 
 fn is_colnect_csv_file(path: &Path) -> bool {
