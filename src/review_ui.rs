@@ -1204,6 +1204,7 @@ fn try_open_url_once(url: &str) -> bool {
 }
 
 fn open_review_ui_url(url: &str) {
+    log_startup(&format!("Review UI: opening browser → {}", url));
     for attempt in 1..=4 {
         if try_open_url_once(url) {
             if attempt > 1 {
@@ -1345,10 +1346,28 @@ enum PortProbeResult {
 /// desktop shortcut with no terminal (Terminal=false).
 fn log_startup(msg: &str) {
     use std::io::Write;
-    let path = std::env::temp_dir().join("stamp_album_gen2_startup.log");
-    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
-        let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
-        let _ = writeln!(f, "[{}] {}", ts, msg);
+    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+
+    // Write to every candidate location — Wayland desktop sessions may use a
+    // different TMPDIR than the interactive shell, so we cover both.
+    let home = std::env::var("HOME")
+        .ok()
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::PathBuf::from("/tmp"));
+    let candidates: &[std::path::PathBuf] = &[
+        std::env::temp_dir().join("stamp_album_gen2_startup.log"),
+        // Home-dir fallback: reachable regardless of TMPDIR.
+        home.join(".local")
+            .join("share")
+            .join("stamp_album_gen2_startup.log"),
+    ];
+    for path in candidates {
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+            let _ = writeln!(f, "[{}] {}", ts, msg);
+        }
     }
     log_runtime_event(msg);
 }
