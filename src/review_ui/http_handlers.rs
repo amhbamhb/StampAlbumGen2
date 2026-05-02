@@ -1818,6 +1818,26 @@ pub(super) fn serve_review_requests(
             continue;
         }
 
+        if method == Method::Post && req_url == "/api/open-country-folder" {
+            let folder = album_dir_for_ui(db_path, &album_name);
+            let folder_str = folder.to_string_lossy();
+            let opened = open_folder_in_file_manager(&folder_str);
+            let resp_json = if opened {
+                format!("{{\"ok\":true,\"path\":\"{}\"}}", folder_str.replace('\\', "\\\\"))
+            } else {
+                format!(
+                    "{{\"ok\":false,\"message\":\"could not open folder\",\"path\":\"{}\"}}",
+                    folder_str.replace('\\', "\\\\")
+                )
+            };
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/shutdown" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {

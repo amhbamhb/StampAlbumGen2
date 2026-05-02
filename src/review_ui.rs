@@ -1865,6 +1865,49 @@ fn album_dir_for_ui(db_path: &str, _album_name: &str) -> PathBuf {
         .unwrap_or_else(|| PathBuf::from("."))
 }
 
+/// Open `path` in the OS file manager. Returns `true` if a command was
+/// successfully spawned. Works on Linux (xdg-open / gio / nautilus) and
+/// Windows (explorer.exe).
+pub(super) fn open_folder_in_file_manager(path: &str) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg(path)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .is_ok()
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        for prog in &[
+            "xdg-open",
+            "/usr/bin/xdg-open",
+            "/bin/xdg-open",
+            "gio",
+            "/usr/bin/gio",
+        ] {
+            let args: &[&str] = if prog.ends_with("gio") {
+                &["open", path]
+            } else {
+                &[path]
+            };
+            let ok = Command::new(prog)
+                .args(args)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn()
+                .is_ok();
+            if ok {
+                return true;
+            }
+        }
+        false
+    }
+}
+
 /// Load config, merging any album-local `config.toml` override on top of the
 /// global one.  This is the preferred way to obtain a `Config` inside any
 /// handler that already knows `db_path` and `album_name`.
