@@ -1260,23 +1260,47 @@ fn bind_review_server(
     } else {
         RELEASE_BASE
     };
-    const MAX_TRIES: u16 = 10;
+    let build_label = if cfg!(debug_assertions) { "debug" } else { "release" };
+    log_runtime_event(&format!(
+        "Review UI: build={}, port range {}-{}",
+        build_label,
+        base_port,
+        base_port + 9,
+    ));
 
+    const MAX_TRIES: u16 = 10;
     let mut last_err = String::new();
     for offset in 0..MAX_TRIES {
         let candidate = format!("127.0.0.1:{}", base_port + offset);
 
-        // Before attempting to bind, check whether it's already our app.
-        if let Some(url) = probe_for_our_instance(&candidate) {
-            return Err(std::io::Error::other(format!(
-                "__already_running__{}",
-                url
-            ))
-            .into());
+        match probe_port(&candidate) {
+            PortProbeResult::OurApp(url) if offset == 0 => {
+                // Base port is already serving our app — reuse it.
+                log_runtime_event(&format!(
+                    "Review UI: {} instance already running at {} — reusing",
+                    build_label, url
+                ));
+                return Err(
+                    std::io::Error::other(format!("__already_running__{}", url)).into()
+                );
+            }
+            PortProbeResult::OurApp(_) | PortProbeResult::OtherApp => {
+                // Another session (ours or foreign) owns this port — skip it.
+                log_runtime_event(&format!(
+                    "Review UI: port {} in use, trying next",
+                    base_port + offset
+                ));
+                last_err = format!("port {} in use", base_port + offset);
+                continue;
+            }
+            PortProbeResult::Free => {}
         }
 
         match Server::http(&candidate) {
-            Ok(srv) => return Ok((srv, candidate)),
+            Ok(srv) => {
+                log_runtime_event(&format!("Review UI: bound to {}", candidate));
+                return Ok((srv, candidate));
+            }
             Err(e) => {
                 last_err = format!("{}", e);
             }
@@ -1303,42 +1327,60 @@ fn already_running_url(err: &Box<dyn std::error::Error>) -> Option<String> {
         .map(|url| url.to_string())
 }
 
-/// Probe `addr` (e.g. `"127.0.0.1:7878"`) with a quick HTTP GET to
-/// `/api/ping`.  Returns `Some(url)` when a running copy of **this**
-/// build type (debug or release) is detected, `None` otherwise.
-///
-/// Uses only `std::net::TcpStream` + raw HTTP — no extra dependencies.
-fn probe_for_our_instance(addr: &str) -> Option<String> {
+enum PortProbeResult {
+    /// Nothing is listening on this port.
+    Free,
+    /// Our app (same build type: debug or release) is listening.
+    OurApp(String),
+    /// Something else is listening (foreign app, other build type, old binary).
+    OtherApp,
+}
+
+/// Probe `addr` with a quick HTTP GET `/api/ping`.
+/// Classifies the result as Free / OurApp / OtherApp.
+fn probe_port(addr: &str) -> PortProbeResult {
     use std::io::{Read, Write};
     use std::net::TcpStream;
 
-    let mut stream = TcpStream::connect_timeout(
-        &addr.parse().ok()?,
-        Duration::from_millis(150),
-    )
-    .ok()?;
+    let sock_addr: std::net::SocketAddr = match addr.parse() {
+        Ok(a) => a,
+        Err(_) => return PortProbeResult::Free,
+    };
 
-    let _ = stream.set_read_timeout(Some(Duration::from_millis(300)));
+    let mut stream =
+        match TcpStream::connect_timeout(&sock_addr, Duration::from_millis(150)) {
+            Ok(s) => s,
+            Err(_) => return PortProbeResult::Free, // nothing listening
+        };
+
+    let _ = stream.set_read_timeout(Some(Duration::from_millis(400)));
 
     let req = format!(
         "GET /api/ping HTTP/1.0\r\nHost: {}\r\nConnection: close\r\n\r\n",
         addr
     );
-    stream.write_all(req.as_bytes()).ok()?;
+    if stream.write_all(req.as_bytes()).is_err() {
+        return PortProbeResult::OtherApp;
+    }
 
-    let mut buf = String::new();
-    stream.read_to_string(&mut buf).ok()?;
+    // Read up to 4 KB — enough for our tiny JSON response.
+    let mut buf = vec![0u8; 4096];
+    let n = stream.read(&mut buf).unwrap_or(0);
+    let response = std::str::from_utf8(&buf[..n]).unwrap_or("");
 
-    // Only care about the body (after the blank line separating headers).
-    let body = buf.split("\r\n\r\n").nth(1).unwrap_or("").trim();
+    // Grab the body after the HTTP header blank line.
+    let body = response.split("\r\n\r\n").nth(1).unwrap_or("").trim();
 
-    // Match app name AND build type so a debug and release copy don't steal
-    // each other's port probe.
     let expected_build = if cfg!(debug_assertions) { "debug" } else { "release" };
+
     if body.contains("\"stamp_album_gen2\"") && body.contains(expected_build) {
-        Some(format!("http://{}/", addr))
+        PortProbeResult::OurApp(format!("http://{}/", addr))
+    } else if body.contains("\"stamp_album_gen2\"") {
+        // Our app but wrong build type (e.g. debug is here, we're release).
+        PortProbeResult::OtherApp
     } else {
-        None
+        // Either no response body, 404, or a completely foreign service.
+        PortProbeResult::OtherApp
     }
 }
 
