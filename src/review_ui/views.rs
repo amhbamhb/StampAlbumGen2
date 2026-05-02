@@ -1691,7 +1691,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
             <button class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
             <button onclick='scrollToFilters()'>Review Field Options</button>
             <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
-            <button onclick='openCountryFolder()'>Open Country Folder</button>
+            <button class='neutral' onclick='openCountryFolder()'>Open Country Folder</button>
         </div>
   </div>
     <div id='runtimeLogComparePanel' style='border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;'>
