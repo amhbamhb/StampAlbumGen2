@@ -16,8 +16,8 @@ pub(super) fn update_default_catalog_code_for_album(
     if normalized.is_empty() {
         return Err("default catalog code cannot be empty".into());
     }
-    let allowed = ["sg", "sw", "sn", "mi", "yt", "afa", "nvp", "un", "col"];
-    if !allowed.contains(&normalized.as_str()) {
+    // Reject codes that look like injection attempts (only allow alphanumeric + underscore).
+    if normalized.len() > 32 || !normalized.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
         return Err(format!("unsupported catalog code: {}", normalized).into());
     }
 

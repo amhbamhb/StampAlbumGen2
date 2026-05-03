@@ -247,6 +247,10 @@ pub fn resolve_stamp_heading_label(
                 crate::catalog::catalog_display_name("nvp"),
                 crate::catalog::catalog_display_name("un"),
                 crate::catalog::catalog_display_name("col"),
+                crate::catalog::catalog_display_name("pol"),
+                crate::catalog::catalog_display_name("nor"),
+                crate::catalog::catalog_display_name("zum"),
+                crate::catalog::catalog_display_name("wad"),
                 crate::catalog::catalog_display_name(""),
             ];
             let is_legacy_sg_label = configured_norm == "stanley gibbons";
