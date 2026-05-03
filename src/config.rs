@@ -39,10 +39,13 @@ pub fn ensure_config_and_template_files(
         cwd.join(template_path)
     };
 
-    if !template_abs.exists() {
+    // Always keep config_template.toml in sync with the embedded defaults so
+    // that users can see newly added options after upgrading. This file is
+    // purely a reference; it is never user-edited.
+    if !template_abs.exists() || std::fs::read_to_string(&template_abs).ok().as_deref() != Some(EMBEDDED_CONFIG_TEMPLATE) {
         fs::write(&template_abs, EMBEDDED_CONFIG_TEMPLATE)?;
         log::info!(
-            "Created missing config template from embedded defaults at {}",
+            "Updated config template from embedded defaults at {}",
             template_abs.display()
         );
     }

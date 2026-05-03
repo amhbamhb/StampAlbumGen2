@@ -175,6 +175,21 @@ pub fn validate_os() -> Result<OSType, SetupError> {
     Ok(detected_os)
 }
 
+/// Returns true when the running binary lives inside a Cargo build tree
+/// (`target/debug/` or `target/release/`). Those binaries should never
+/// overwrite the installed desktop launcher.
+fn is_cargo_build_binary() -> bool {
+    let Ok(exe) = std::env::current_exe() else {
+        return false;
+    };
+    let path = exe.to_string_lossy();
+    // Match both Unix and Windows path separators
+    path.contains("/target/debug/")
+        || path.contains("/target/release/")
+        || path.contains("\\target\\debug\\")
+        || path.contains("\\target\\release\\")
+}
+
 fn desktop_exec_path() -> std::io::Result<String> {
     let exe = std::env::current_exe()?;
     let raw = exe.to_string_lossy().to_string();
@@ -556,6 +571,25 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
             summary: "Skipped desktop integration (non-Linux OS).".to_string(),
             desktop_entry_path: String::new(),
             icon_path: String::new(),
+        });
+    }
+
+    // A Cargo-built binary (target/debug or target/release) must never
+    // overwrite the installed desktop launcher — that would redirect the
+    // desktop shortcut to the dev-tree path on the next click.
+    if is_cargo_build_binary() {
+        let home = user_home_dir().unwrap_or_else(|_| PathBuf::from("/tmp"));
+        return Ok(LinuxDesktopIntegrationReport {
+            changed: false,
+            summary: "Desktop launcher update skipped (Cargo build binary — only installed binaries update the launcher).".to_string(),
+            desktop_entry_path: home
+                .join(".local/share/applications/stamp-album-gen2.desktop")
+                .to_string_lossy()
+                .to_string(),
+            icon_path: home
+                .join(".local/share/icons/hicolor/scalable/apps/stamp_album_gen2.png")
+                .to_string_lossy()
+                .to_string(),
         });
     }
 
