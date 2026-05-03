@@ -42,7 +42,9 @@ pub fn ensure_config_and_template_files(
     // Always keep config_template.toml in sync with the embedded defaults so
     // that users can see newly added options after upgrading. This file is
     // purely a reference; it is never user-edited.
-    if !template_abs.exists() || std::fs::read_to_string(&template_abs).ok().as_deref() != Some(EMBEDDED_CONFIG_TEMPLATE) {
+    if !template_abs.exists()
+        || std::fs::read_to_string(&template_abs).ok().as_deref() != Some(EMBEDDED_CONFIG_TEMPLATE)
+    {
         fs::write(&template_abs, EMBEDDED_CONFIG_TEMPLATE)?;
         log::info!(
             "Updated config template from embedded defaults at {}",
@@ -97,6 +99,7 @@ pub struct Config {
     pub reference_height_mm: Option<f32>,
     pub stamp_box_height: Option<f32>,
     pub stamp_box_adjust: Option<f32>,
+    pub colnect_box_adjust_mm: Option<f32>,
     pub colnect_width_adjust_mm: Option<f32>,
     pub colnect_height_adjust_mm: Option<f32>,
     // Page layout overrides (mm)
@@ -474,6 +477,7 @@ impl Config {
             reference_height_mm: Some(27.0),
             stamp_box_height: Some(30.0),
             stamp_box_adjust: Some(0.0),
+            colnect_box_adjust_mm: Some(0.0),
             album_page_width_mm: Some(216.0),
             album_page_height_mm: Some(279.4),
             album_pages_title_font: Some("HN".to_string()),

@@ -84,6 +84,13 @@ stamp_box_height = 36.0
 # - Colnect real-size imports are not additionally reduced.
 stamp_box_adjust = 0.0
 
+# Fine adjustment applied per-side to Colnect stamps that have real physical
+# dimensions (i.e. stamps imported via Colnect with colnect_width_mm set).
+# Independent of stamp_box_adjust so you can tune StampWorld and Colnect stamps
+# separately. Default 0.0 — Colnect stamps already include accurate dimensions
+# via colnect_width_adjust_mm, so no additional shrink is needed.
+colnect_box_adjust_mm = 0.0
+
 # Colnect image-dimension adjustments (mm)
 colnect_width_adjust_mm = 1.0
 colnect_height_adjust_mm = 3.0
@@ -580,17 +587,17 @@ default_sort_mode = "catalog"
 # Stamp metadata fields:
 default_series_checked = true         # Series label (grouping name for the stamp set)
 default_description_checked = true    # General description text
-default_watermark_checked = false     # Watermark identifier
-default_design_checked = false        # Design/engraver credit
-default_engraving_checked = false     # Engraving method
-default_perforation_checked = false   # Perforation gauge/type
-default_context_checked = false       # Contextual/historical notes
+default_watermark_checked = true     # Watermark identifier
+default_design_checked = true        # Design/engraver credit
+default_engraving_checked = true     # Engraving method
+default_perforation_checked = true   # Perforation gauge/type
+default_context_checked = true       # Contextual/historical notes
 
 # Colnect data fields:
 default_colnect_links_checked = true          # Links back to Colnect stamp page
 default_colnect_image_url_checked = true      # URL of source image on Colnect
 default_colnect_metadata_checked = true       # Full raw Colnect metadata block
-default_replace_sg_number_checked = false     # Replace SG numbers with matched values
+default_replace_sg_number_checked = true     # Replace Catalog numbers with matched values
 default_right_unmatched_only_checked = false  # Show only unmatched right-panel stamps
 
 # CATALOG FAMILY OPTIONS
@@ -711,23 +718,23 @@ detail_fields = "print_run,themes,designers,printing_type"
 # - Easy to enable/disable individual fields without retyping the whole list.
 # - Allows commenting out a field without losing its position.
 [colnect.fields]
-catalog_codes = false   # Cross-catalog identifiers (sn:540, sg:824, etc.)
-issued_on = false       # Official issue/release date
-expiry_date = false     # Withdrawal-from-sale date (often unknown)
-size = false            # Physical stamp size in mm (width x height)
-themes = false          # Subject tags / topical categories
-printing = false        # Printing process (e.g. recess, offset lithography)
-printing_type = false   # Sub-category of printing method
-paper = false           # Paper type or surface
-gum = false             # Gum/adhesive type (PVA, dextrin, etc.)
-designers = false       # Designer name(s)
-printers = false        # Printer/manufacturer name(s)
-colors = false          # Color description from catalog
-watermark = false       # Watermark type and orientation
-format = false          # Stamp format (vertical, horizontal, miniature sheet, etc.)
-emission = false        # Emission category (definitive, commemorative, airmail, etc.)
-perforation = false     # Perforation gauge(s) — e.g. "14 x 13.5"
-face_value = false      # Denomination as printed on stamp
-print_run = false       # Quantity printed (if known)
-score = false           # Colnect community popularity score (0–100)
-description = false     # Free-text description from Colnect page
+catalog_codes = true   # Cross-catalog identifiers (sn:540, sg:824, etc.)
+issued_on = true       # Official issue/release date
+expiry_date = true     # Withdrawal-from-sale date (often unknown)
+size = true            # Physical stamp size in mm (width x height)
+themes = true          # Subject tags / topical categories
+printing = true        # Printing process (e.g. recess, offset lithography)
+printing_type = true   # Sub-category of printing method
+paper = true           # Paper type or surface
+gum = true             # Gum/adhesive type (PVA, dextrin, etc.)
+designers = true       # Designer name(s)
+printers = true        # Printer/manufacturer name(s)
+colors = true          # Color description from catalog
+watermark = true       # Watermark type and orientation
+format = true          # Stamp format (vertical, horizontal, miniature sheet, etc.)
+emission = true        # Emission category (definitive, commemorative, airmail, etc.)
+perforation = true     # Perforation gauge(s) — e.g. "14 x 13.5"
+face_value = true      # Denomination as printed on stamp
+print_run = true       # Quantity printed (if known)
+score = true           # Colnect community popularity score (0–100)
+description = true     # Free-text description from Colnect page

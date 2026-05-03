@@ -4,7 +4,17 @@
 
 # --- Stamp Box Sizing ---
 stamp_box_height = 24.0
+# Fine adjustment applied per-side to StampWorld/non-Colnect stamp boxes (mm).
+# 0.0 keeps the default source-aware behavior where the legacy -2.0mm internal
+# shrink is applied automatically to non-Colnect stamps.
+# Use a negative value to shrink boxes, positive to enlarge them.
 stamp_box_adjust = 0.0
+# Fine adjustment applied per-side to Colnect stamps that have real physical
+# dimensions (i.e. stamps imported via Colnect with colnect_width_mm set).
+# Independent of stamp_box_adjust so you can tune StampWorld and Colnect
+# stamps separately. Default 0.0 — Colnect stamps already include accurate
+# dimensions via colnect_width_adjust_mm, so no additional shrink is needed.
+colnect_box_adjust_mm = 0.0
 
 # --- Colnect Dimension Adjustments ---
 # Separate adjustments for width and height (in mm) to compensate for printing

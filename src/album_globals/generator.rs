@@ -151,13 +151,16 @@ fn stamp_uses_colnect_real_dimensions(stamp: &Stamp) -> bool {
             .is_some()
 }
 
-fn effective_stamp_box_adjust_mm(config_adjust: f64, has_colnect_real_dimensions: bool) -> f64 {
-    config_adjust
-        + if has_colnect_real_dimensions {
-            0.0
-        } else {
-            LEGACY_NON_COLNECT_STAMP_BOX_ADJUST_MM
-        }
+fn effective_stamp_box_adjust_mm(
+    stamp_adjust: f64,
+    colnect_adjust: f64,
+    has_colnect_real_dimensions: bool,
+) -> f64 {
+    if has_colnect_real_dimensions {
+        colnect_adjust
+    } else {
+        stamp_adjust + LEGACY_NON_COLNECT_STAMP_BOX_ADJUST_MM
+    }
 }
 
 fn is_effectively_duplicate_text(base_text: &str, candidate_text: &str) -> bool {
@@ -715,8 +718,11 @@ where
     let stamp_box_adjust = config
         .stamp_box_adjust
         .unwrap_or(cfg_defaults.stamp_box_adjust.unwrap()) as f64;
+    let colnect_box_adjust = config
+        .colnect_box_adjust_mm
+        .unwrap_or(cfg_defaults.colnect_box_adjust_mm.unwrap_or(0.0)) as f64;
     let avg_emit_w_mm =
-        avg_w_mm + img_new_w + 2.0 * effective_stamp_box_adjust_mm(stamp_box_adjust, false);
+        avg_w_mm + img_new_w + 2.0 * effective_stamp_box_adjust_mm(stamp_box_adjust, colnect_box_adjust, false);
     let packing_h = config
         .packing_horizontal_safety_mm
         .unwrap_or(cfg_defaults.packing_horizontal_safety_mm.unwrap()) as f64;
@@ -1180,6 +1186,7 @@ where
                         + 2.0
                             * effective_stamp_box_adjust_mm(
                                 stamp_box_adjust,
+                                colnect_box_adjust,
                                 stamp_uses_colnect_real_dimensions(s),
                             );
                     emit_w + margin
@@ -1194,6 +1201,7 @@ where
                 + 2.0
                     * effective_stamp_box_adjust_mm(
                         stamp_box_adjust,
+                        colnect_box_adjust,
                         stamp_uses_colnect_real_dimensions(&stamp),
                     );
             let new_stamp_total = new_stamp_footprint + margin;
@@ -1451,6 +1459,7 @@ where
                     let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
                     let effective_stamp_box_adjust = effective_stamp_box_adjust_mm(
                         stamp_box_adjust,
+                        colnect_box_adjust,
                         stamp_uses_colnect_real_dimensions(stamp),
                     );
                     let adj_est_height =
@@ -1658,6 +1667,7 @@ where
                 let est_height_mm = stamp.est_height_mm.unwrap_or(stamp_box_height);
                 let effective_stamp_box_adjust = effective_stamp_box_adjust_mm(
                     stamp_box_adjust,
+                    colnect_box_adjust,
                     stamp_uses_colnect_real_dimensions(stamp),
                 );
                 let mut raw_left =
@@ -1899,7 +1909,7 @@ where
                             reference_width_mm as f64
                         };
                         let effective_stamp_box_adjust =
-                            effective_stamp_box_adjust_mm(stamp_box_adjust, false);
+                            effective_stamp_box_adjust_mm(stamp_box_adjust, colnect_box_adjust, false);
                         let adj_est_height =
                             est_height_mm + img_new_h + 2.0 * effective_stamp_box_adjust;
                         let mut raw_left = clean_text(&stamp.denomination);
@@ -2111,6 +2121,7 @@ where
                 let mut row_w = 0.0f64;
                 let margin = config.packing_horizontal_safety_mm.unwrap_or(5.0) as f64;
                 let stamp_box_adjust = config.stamp_box_adjust.unwrap_or(0.0) as f64;
+                let colnect_box_adjust = config.colnect_box_adjust_mm.unwrap_or(0.0) as f64;
                 for s in stamps_in_row.iter() {
                     let est_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
                     let emit_w = est_w
@@ -2118,6 +2129,7 @@ where
                         + 2.0
                             * effective_stamp_box_adjust_mm(
                                 stamp_box_adjust,
+                                colnect_box_adjust,
                                 stamp_uses_colnect_real_dimensions(s),
                             );
                     row_w += emit_w + margin;
@@ -2186,6 +2198,7 @@ where
                 // add per-side adjust to the emitted box width/height (STAMP_BOXES_SIZE_ADJUST)
                 let effective_stamp_box_adjust = effective_stamp_box_adjust_mm(
                     stamp_box_adjust,
+                    colnect_box_adjust,
                     stamp_uses_colnect_real_dimensions(stamp),
                 );
                 let emit_width = est_width_mm + 2.0 * effective_stamp_box_adjust;
