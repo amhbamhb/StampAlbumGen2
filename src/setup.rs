@@ -352,6 +352,27 @@ fn refresh_linux_desktop_caches(applications_dir: &std::path::Path) {
             .status();
     }
 
+    // Refresh the hicolor icon theme cache so Wayland compositors (GNOME Shell,
+    // Mutter) pick up newly installed icons without requiring a re-login.
+    // The cache lives alongside the icons themselves, not in applications/.
+    let hicolor_dir = applications_dir
+        .parent()
+        .map(|d| d.join("icons/hicolor"))
+        .unwrap_or_else(|| {
+            PathBuf::from(std::env::var("HOME").unwrap_or_default())
+                .join(".local/share/icons/hicolor")
+        });
+    for cmd in &["gtk-update-icon-cache", "gtk4-update-icon-cache"] {
+        if command_exists(cmd) {
+            let _ = Command::new(cmd)
+                .arg("-f")
+                .arg("-t")
+                .arg(&hicolor_dir)
+                .status();
+            break; // one is enough
+        }
+    }
+
     if command_exists("kbuildsycoca6") {
         let _ = Command::new("kbuildsycoca6").status();
     } else if command_exists("kbuildsycoca5") {
@@ -363,6 +384,31 @@ fn user_home_dir() -> std::io::Result<std::path::PathBuf> {
     let home = std::env::var("HOME")
         .map_err(|_| std::io::Error::new(std::io::ErrorKind::NotFound, "HOME is not set"))?;
     Ok(std::path::PathBuf::from(home))
+}
+
+/// Mark a `~/Desktop/*.desktop` file as trusted so GNOME Shell / Nautilus
+/// will launch it directly without the "Untrusted application launcher" dialog.
+///
+/// Internally this sets the GIO metadata attribute `metadata::trusted` to
+/// `true` — the same action as right-clicking → "Allow Launching" in
+/// Nautilus.  The `gio` CLI is the portable way to set this attribute without
+/// linking to libgio at compile time.
+fn mark_desktop_file_trusted(path: &std::path::Path) {
+    // Only meaningful on Linux; silently skip elsewhere.
+    if !std::env::consts::OS.eq_ignore_ascii_case("linux") {
+        return;
+    }
+    // `gio set <file> metadata::trusted true`
+    // Available on any Ubuntu / GNOME install; older distros may lack it but
+    // the failure is harmless — the user will just see the trust dialog once.
+    for gio in &["gio", "/usr/bin/gio", "/usr/lib/x86_64-linux-gnu/gio"] {
+        if command_exists(gio) {
+            let _ = Command::new(gio)
+                .args(["set", &path.to_string_lossy(), "metadata::trusted", "true"])
+                .status();
+            return;
+        }
+    }
 }
 
 fn app_state_dir(home: &std::path::Path) -> std::path::PathBuf {
@@ -587,7 +633,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
                 .to_string_lossy()
                 .to_string(),
             icon_path: home
-                .join(".local/share/icons/hicolor/scalable/apps/stamp_album_gen2.png")
+                .join(".local/share/icons/hicolor/256x256/apps/stamp_album_gen2.png")
                 .to_string_lossy()
                 .to_string(),
         });
@@ -604,20 +650,30 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
                 .to_string_lossy()
                 .to_string(),
             icon_path: home
-                .join(".local/share/icons/hicolor/scalable/apps/stamp_album_gen2.png")
+                .join(".local/share/icons/hicolor/256x256/apps/stamp_album_gen2.png")
                 .to_string_lossy()
                 .to_string(),
         });
     }
 
     let applications_dir = home.join(".local/share/applications");
-    let icons_dir = home.join(".local/share/icons/hicolor/scalable/apps");
+    // PNG icons must be in sized hicolor directories, not scalable/ (which is
+    // for SVGs).  256x256 matches the bundled asset; 48x48 covers taskbars.
+    let icons_dir_256 = home.join(".local/share/icons/hicolor/256x256/apps");
+    let icons_dir_48 = home.join(".local/share/icons/hicolor/48x48/apps");
+    let desktop_dir = home.join("Desktop");
     std::fs::create_dir_all(&applications_dir)?;
-    std::fs::create_dir_all(&icons_dir)?;
+    std::fs::create_dir_all(&icons_dir_256)?;
+    std::fs::create_dir_all(&icons_dir_48)?;
 
     let desktop_path = applications_dir.join("stamp-album-gen2.desktop");
-    let icon_path = icons_dir.join("stamp_album_gen2.png");
-    let legacy_svg_icon_path = icons_dir.join("stamp_album_gen2.svg");
+    let icon_path_256 = icons_dir_256.join("stamp_album_gen2.png");
+    let icon_path_48 = icons_dir_48.join("stamp_album_gen2.png");
+
+    // Legacy paths to clean up
+    let legacy_scalable_dir = home.join(".local/share/icons/hicolor/scalable/apps");
+    let legacy_svg_icon_path = legacy_scalable_dir.join("stamp_album_gen2.svg");
+    let legacy_png_icon_path = legacy_scalable_dir.join("stamp_album_gen2.png");
 
     let exec_path = desktop_exec_path()?;
     let working_dir = desktop_working_dir()?;
@@ -626,11 +682,13 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
             "desktop launcher command cannot be empty",
         ));
     }
+    // Use the icon *name* (not an absolute path) so GNOME/Wayland resolves it
+    // through the hicolor icon theme — required for App Details and taskbar
+    // icons to work correctly under Wayland.
     let desktop_contents = format!(
-        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon={}\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
+        "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon=stamp_album_gen2\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
         format!("{} --review-ui", exec_path),
         working_dir,
-        icon_path.to_string_lossy()
     );
 
     let mut changed = false;
@@ -654,15 +712,49 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
         changed = true;
     }
 
+    // Also write the .desktop file to ~/Desktop so it appears as a clickable
+    // icon on the GNOME/Nautilus-managed desktop.  The file must be executable
+    // AND marked trusted via GIO metadata for GNOME/DING to launch it without
+    // the "Untrusted application launcher" warning.
+    if desktop_dir.exists() {
+        let desktop_shortcut = desktop_dir.join("stamp-album-gen2.desktop");
+        let existing_shortcut = std::fs::read_to_string(&desktop_shortcut).ok();
+        if existing_shortcut.as_deref() != Some(desktop_contents.as_str()) {
+            std::fs::write(&desktop_shortcut, desktop_contents.as_bytes())?;
+            changed = true;
+        }
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let _ =
+                std::fs::set_permissions(&desktop_shortcut, std::fs::Permissions::from_mode(0o755));
+        }
+        // Mark the file as trusted in GIO metadata so GNOME Shell / Nautilus
+        // will launch it directly without the "Untrusted application launcher"
+        // prompt.  This is the programmatic equivalent of right-clicking
+        // "Allow Launching" in the Nautilus file manager.
+        mark_desktop_file_trusted(&desktop_dir.join("stamp-album-gen2.desktop"));
+    }
+
     let bundled_icon = bundled_icon_png();
-    let existing_icon = std::fs::read(&icon_path).ok();
-    if existing_icon.as_deref() != Some(bundled_icon) {
-        std::fs::write(&icon_path, bundled_icon)?;
+    let existing_icon_256 = std::fs::read(&icon_path_256).ok();
+    if existing_icon_256.as_deref() != Some(bundled_icon) {
+        std::fs::write(&icon_path_256, bundled_icon)?;
+        changed = true;
+    }
+    let existing_icon_48 = std::fs::read(&icon_path_48).ok();
+    if existing_icon_48.as_deref() != Some(bundled_icon) {
+        std::fs::write(&icon_path_48, bundled_icon)?;
         changed = true;
     }
 
+    // Clean up legacy placements
     if legacy_svg_icon_path.exists() {
-        std::fs::remove_file(&legacy_svg_icon_path)?;
+        let _ = std::fs::remove_file(&legacy_svg_icon_path);
+        changed = true;
+    }
+    if legacy_png_icon_path.exists() {
+        let _ = std::fs::remove_file(&legacy_png_icon_path);
         changed = true;
     }
 
@@ -678,7 +770,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
         changed,
         summary: summary.to_string(),
         desktop_entry_path: desktop_path.to_string_lossy().to_string(),
-        icon_path: icon_path.to_string_lossy().to_string(),
+        icon_path: icon_path_256.to_string_lossy().to_string(),
     })
 }
 
