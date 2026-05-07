@@ -835,30 +835,37 @@ pub fn uninstall_linux_desktop_integration() -> std::io::Result<LinuxDesktopInte
     let applications_dir = home.join(".local/share/applications");
     let desktop_path = applications_dir.join("stamp-album-gen2.desktop");
     let legacy_desktop_path = applications_dir.join("stamp_album_gen2.desktop");
-    let icon_path = home
+    let desktop_shortcut_path = home.join("Desktop/stamp-album-gen2.desktop");
+
+    // All icon placements (current sized dirs + legacy scalable)
+    let icon_256 = home
+        .join(".local/share/icons/hicolor/256x256/apps")
+        .join("stamp_album_gen2.png");
+    let icon_48 = home
+        .join(".local/share/icons/hicolor/48x48/apps")
+        .join("stamp_album_gen2.png");
+    let legacy_icon_png = home
         .join(".local/share/icons/hicolor/scalable/apps")
         .join("stamp_album_gen2.png");
-    let legacy_icon_path = home
+    let legacy_icon_svg = home
         .join(".local/share/icons/hicolor/scalable/apps")
         .join("stamp_album_gen2.svg");
 
     let mut changed = false;
 
-    if desktop_path.exists() {
-        std::fs::remove_file(&desktop_path)?;
-        changed = true;
-    }
-    if icon_path.exists() {
-        std::fs::remove_file(&icon_path)?;
-        changed = true;
-    }
-    if legacy_desktop_path.exists() {
-        std::fs::remove_file(&legacy_desktop_path)?;
-        changed = true;
-    }
-    if legacy_icon_path.exists() {
-        std::fs::remove_file(&legacy_icon_path)?;
-        changed = true;
+    for path in &[
+        &desktop_path,
+        &legacy_desktop_path,
+        &desktop_shortcut_path,
+        &icon_256,
+        &icon_48,
+        &legacy_icon_png,
+        &legacy_icon_svg,
+    ] {
+        if path.exists() {
+            std::fs::remove_file(path)?;
+            changed = true;
+        }
     }
 
     set_desktop_launcher_auto_install_disabled(&home, true)?;
@@ -875,7 +882,7 @@ pub fn uninstall_linux_desktop_integration() -> std::io::Result<LinuxDesktopInte
         changed,
         summary: summary.to_string(),
         desktop_entry_path: desktop_path.to_string_lossy().to_string(),
-        icon_path: icon_path.to_string_lossy().to_string(),
+        icon_path: icon_256.to_string_lossy().to_string(),
     })
 }
 
