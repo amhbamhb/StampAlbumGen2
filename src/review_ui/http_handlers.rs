@@ -7,11 +7,12 @@ fn bundled_favicon_png() -> &'static [u8] {
 /// Returns the JSON body for `GET /api/ping`.
 /// Used by `probe_for_our_instance()` on startup to detect a running copy.
 fn ping_response_json() -> String {
-    let build = if cfg!(debug_assertions) { "debug" } else { "release" };
-    format!(
-        "{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}",
-        build
-    )
+    let build = if cfg!(debug_assertions) {
+        "debug"
+    } else {
+        "release"
+    };
+    format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
 fn is_real_image_path(image_path: &str) -> bool {

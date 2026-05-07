@@ -720,9 +720,11 @@ where
         .unwrap_or(cfg_defaults.stamp_box_adjust.unwrap()) as f64;
     let colnect_box_adjust = config
         .colnect_box_adjust_mm
-        .unwrap_or(cfg_defaults.colnect_box_adjust_mm.unwrap_or(0.0)) as f64;
-    let avg_emit_w_mm =
-        avg_w_mm + img_new_w + 2.0 * effective_stamp_box_adjust_mm(stamp_box_adjust, colnect_box_adjust, false);
+        .unwrap_or(cfg_defaults.colnect_box_adjust_mm.unwrap_or(0.0))
+        as f64;
+    let avg_emit_w_mm = avg_w_mm
+        + img_new_w
+        + 2.0 * effective_stamp_box_adjust_mm(stamp_box_adjust, colnect_box_adjust, false);
     let packing_h = config
         .packing_horizontal_safety_mm
         .unwrap_or(cfg_defaults.packing_horizontal_safety_mm.unwrap()) as f64;
