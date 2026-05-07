@@ -162,6 +162,43 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         log::warn!("Failed to ensure config template file: {}", e);
     }
     write_startup_probe("config.load", "loaded config.toml");
+
+    // Ensure the desktop entry and icon are present on every startup, not just
+    // in Review UI mode.  Both functions are no-ops on the wrong OS, on Cargo
+    // build binaries, and when the user has disabled auto-install.
+    match ensure_linux_desktop_integration() {
+        Ok(report) => {
+            if report.changed {
+                log::info!(
+                    "Desktop integration installed: {} (entry: {}, icon: {})",
+                    report.summary,
+                    report.desktop_entry_path,
+                    report.icon_path
+                );
+            } else {
+                log::debug!("Desktop integration check: {}", report.summary);
+            }
+        }
+        Err(e) => log::warn!("Desktop integration check failed (non-fatal): {}", e),
+    }
+    match ensure_windows_desktop_integration() {
+        Ok(report) => {
+            if report.changed {
+                log::info!(
+                    "Desktop shortcut installed: {} (desktop: {}, start_menu: {}, icon: {})",
+                    report.summary,
+                    report.desktop_shortcut_path,
+                    report.start_menu_shortcut_path,
+                    report.icon_path
+                );
+            } else {
+                log::debug!("Desktop shortcut check: {}", report.summary);
+            }
+        }
+        Err(e) => log::warn!("Desktop shortcut check failed (non-fatal): {}", e),
+    }
+    write_startup_probe("desktop.integration", "desktop integration check complete");
+
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
     if let Some(path) = aligned_runtime_dir.as_ref() {
@@ -191,44 +228,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             log_runtime_event(
                 "No CLI arguments provided; launching Review UI startup screen by default.",
             );
-        }
-
-        match ensure_linux_desktop_integration() {
-            Ok(report) => {
-                if report.changed {
-                    log_runtime_event(&format!(
-                        "Desktop integration installed: {} (desktop entry: {}, icon: {})",
-                        report.summary, report.desktop_entry_path, report.icon_path
-                    ));
-                } else {
-                    log_runtime_event(&format!("Desktop integration check: {}", report.summary));
-                }
-            }
-            Err(e) => {
-                log_runtime_event(&format!(
-                    "Desktop integration check failed (non-fatal): {}",
-                    e
-                ));
-            }
-        }
-
-        match ensure_windows_desktop_integration() {
-            Ok(report) => {
-                if report.changed {
-                    log_runtime_event(&format!(
-                        "Desktop shortcut installed: {} (desktop: {}, start_menu: {}, icon: {})",
-                        report.summary,
-                        report.desktop_shortcut_path,
-                        report.start_menu_shortcut_path,
-                        report.icon_path
-                    ));
-                } else {
-                    log_runtime_event(&format!("Desktop shortcut check: {}", report.summary));
-                }
-            }
-            Err(e) => {
-                log_runtime_event(&format!("Desktop shortcut check failed (non-fatal): {}", e));
-            }
         }
 
         log_runtime_event("Review UI: initializing...");
