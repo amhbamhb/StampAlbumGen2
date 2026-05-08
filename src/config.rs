@@ -989,6 +989,30 @@ impl Config {
     }
 }
 
+/// Compare the keys in the user's config file against the embedded template.
+/// Returns a list of key names that appear in the template but are absent from
+/// the user config, indicating options added since the user last initialised
+/// their config.
+///
+/// Only top-level TOML keys are compared (section headers and comments are
+/// ignored).  The check is purely additive — it never reports keys that exist
+/// in the user config but not in the template.
+pub fn check_config_staleness(user_config_content: &str) -> Vec<String> {
+    fn extract_keys(content: &str) -> std::collections::HashSet<String> {
+        let re = regex::Regex::new(r"(?m)^([a-z_][a-z_0-9]*)\s*=").unwrap();
+        re.captures_iter(content)
+            .map(|c| c[1].to_string())
+            .collect()
+    }
+
+    let template_keys = extract_keys(EMBEDDED_CONFIG_TEMPLATE);
+    let user_keys = extract_keys(user_config_content);
+
+    let mut missing: Vec<String> = template_keys.difference(&user_keys).cloned().collect();
+    missing.sort();
+    missing
+}
+
 /// Create or update the canonical config file from the template or defaults.
 /// If `force` is false and the target file exists, this function will return
 /// Ok(()) without modifying the file. If `force` is true and the file exists,
