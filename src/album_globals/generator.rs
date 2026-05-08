@@ -3089,7 +3089,10 @@ where
                     let _ = writeln!(output, "ROW_START_ES (HN {} 0.5 {:.1})", detail_font_size, detail_vspace);
                     for (detail_text, dwidth) in &row_detail_items {
                         let escaped = detail_text.replace('"', "'");
-                        let _ = writeln!(output, "STAMP_ADD ({:.1} {:.1} \"\" \"\" \"{}\" \"\")",
+                        // Text goes in the 'inside' parameter (3rd), not 'centre below' (5th).
+                        // Using 'centre below' emits an empty frame (black strip) with text
+                        // floating underneath it; 'inside' renders the text within the frame.
+                        let _ = writeln!(output, "STAMP_ADD ({:.1} {:.1} \"{}\" \"\" \"\" \"\")",
                             dwidth, detail_box_h, escaped);
                     }
                 }
