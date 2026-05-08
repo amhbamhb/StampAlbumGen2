@@ -121,9 +121,9 @@ row_font_spacing = 0.1
 header_font_spacing = 2.0
 page_fit_conservative_buffer_mm = 2.0
 # Include stamp heading height in row height calculations
-stamp_heading_in_row_height = false
+stamp_heading_in_row_height = true
 # Include PAGE_VSPACE height in row height calculations
-pages_vspace_in_row_height = false
+pages_vspace_in_row_height = true
 # Marker token for PAGE_VSPACE postprocessor (leave empty to use numeric mm values)
 page_vspace_marker = ""
 
@@ -296,10 +296,7 @@ default_colnect_image_url_checked = true
 default_colnect_metadata_checked = true
 default_replace_sg_number_checked = true
 default_right_unmatched_only_checked = true
-
-###################################
-# Catalog Family Options
-###################################
+# Catalog family definitions displayed in the Review UI: "code|display name|colnect_id"
 catalog_family_options = [
 	"sn|Scott Number|814224",
 	"sg|Stanley Gibbons|705728",

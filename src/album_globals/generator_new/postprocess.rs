@@ -135,8 +135,12 @@ pub fn center_tmp_pages(
         // or when the page already contains the max allowed rows.
         let vertical_safety = config.packing_vertical_safety_mm.unwrap_or(2.0) as f64;
         if rows_on_page >= cfg_max_rows || extra <= vertical_safety {
-            // emit page block unchanged (no centering)
+            // emit page block, stripping any empty PAGE_VSPACE () placeholders
             for l in page_block.iter() {
+                let t = l.trim();
+                if t == "PAGE_VSPACE ()" {
+                    continue;
+                }
                 out_lines.push(l.to_string());
             }
             continue;

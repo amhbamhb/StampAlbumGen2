@@ -117,11 +117,16 @@ pub fn write_header_block<W: Write>(
     _config: &crate::config::Config,
 ) -> std::io::Result<f64> {
     // Emit the leading vspace, header text lines, then trailing vspace.
-    // If the config requests a page_vspace_marker token, emit that
+    // If the config requests a non-empty page_vspace_marker token, emit that
     // instead of numeric PAGE_VSPACE values so the postprocessor can
     // replace tokens with concrete values later.
-    if let Some(marker) = _config.page_vspace_marker.as_ref() {
-        write_page_vspace_marker(out, marker.as_str())?;
+    // An empty marker string is treated as "disabled" (use numeric values).
+    let effective_marker = _config
+        .page_vspace_marker
+        .as_deref()
+        .filter(|m| !m.trim().is_empty());
+    if let Some(marker) = effective_marker {
+        write_page_vspace_marker(out, marker)?;
     } else {
         write_page_vspace(out, v_before)?;
     }
@@ -130,8 +135,8 @@ pub fn write_header_block<W: Write>(
         writeln!(out, "{}", line)?;
     }
 
-    if let Some(marker) = _config.page_vspace_marker.as_ref() {
-        write_page_vspace_marker(out, marker.as_str())?;
+    if let Some(marker) = effective_marker {
+        write_page_vspace_marker(out, marker)?;
     } else {
         write_page_vspace(out, v_after)?;
     }

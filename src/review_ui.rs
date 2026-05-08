@@ -494,10 +494,36 @@ fn set_stampworld_state(new_state: StampWorldJobState) {
     }
 }
 
+fn find_global_config_path() -> Option<std::path::PathBuf> {
+    // Search up from cwd, then from exe location — mirrors load_config() logic.
+    let mut search_dirs: Vec<std::path::PathBuf> = Vec::new();
+    if let Ok(mut dir) = std::env::current_dir() {
+        for _ in 0..8 {
+            search_dirs.push(dir.join("config.toml"));
+            if !dir.pop() {
+                break;
+            }
+        }
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(mut dir) = exe.parent() {
+            for _ in 0..8 {
+                search_dirs.push(dir.join("config.toml"));
+                match dir.parent() {
+                    Some(p) => dir = p,
+                    None => break,
+                }
+            }
+        }
+    }
+    search_dirs.into_iter().find(|p| p.exists())
+}
+
 fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), String> {
     ensure_runtime_startup_files()?;
-    let config_path = Path::new("config.toml");
-    let content = fs::read_to_string(config_path)
+    let config_path = find_global_config_path()
+        .ok_or_else(|| "could not locate config.toml".to_string())?;
+    let content = fs::read_to_string(&config_path)
         .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
     let mut root_table = toml::from_str::<toml::Table>(&content)
         .map_err(|e| format!("invalid TOML in {}: {}", config_path.display(), e))?;
@@ -523,7 +549,7 @@ fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), Str
 
     let rendered = toml::to_string_pretty(&root_table)
         .map_err(|e| format!("failed to render updated config TOML: {}", e))?;
-    fs::write(config_path, rendered)
+    fs::write(&config_path, rendered)
         .map_err(|e| format!("failed to write {}: {}", config_path.display(), e))?;
     Ok(())
 }
