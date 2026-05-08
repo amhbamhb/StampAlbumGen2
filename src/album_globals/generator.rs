@@ -1381,9 +1381,7 @@ where
                             .unwrap_or_default()
                     };
                     let perforation = clean_text(&perforation_raw);
-                    // Skip perforation in header if using separate_rows mode (it's in details)
-                    let detail_layout = config.stamp_detail_layout.as_ref().map(|s| s.as_str()).unwrap_or("inline");
-                    if config.include_perforation.unwrap_or(true) && !perforation.is_empty() && detail_layout != "separate_rows" {
+                    if config.include_perforation.unwrap_or(true) && !perforation.is_empty() {
                         let tmpl = build_page_text_template(&config, "centre");
                         let text = format!("Perforation: {}", perforation);
                         let safe = text.replace('"', "\\\"");
@@ -1417,9 +1415,7 @@ where
                         let safe = text.replace('"', "\\\"");
                         header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
                     }
-                    // Skip design in header if using separate_rows mode (it's in details)
-                    let detail_layout = config.stamp_detail_layout.as_ref().map(|s| s.as_str()).unwrap_or("inline");
-                    if config.include_design.unwrap_or(true) && !design.is_empty() && detail_layout != "separate_rows" {
+                    if config.include_design.unwrap_or(true) && !design.is_empty() {
                         let tmpl = build_page_text_template(&config, "centre");
                         let text = format!("Design: {}", design);
                         let safe = text.replace('"', "\\\"");
@@ -1589,17 +1585,7 @@ where
                                        // matching AlbumEasy's rendering metrics more closely.
                 let conservative_buffer =
                     cfg_defaults.page_fit_conservative_buffer_mm.unwrap_or(2.0) as f64; // canonical default from Config::with_defaults()
-                // In separate_rows mode the detail row box height is not included in
-                // max_row_height above; add the minimum estimate so the series-start fit
-                // check is as accurate as the per-row check at line 2003.
-                let detail_min_h_for_series = if detail_layout == "separate_rows" {
-                    let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as f64;
-                    let detail_line_h_mm = detail_font_size * 0.45;
-                    (detail_line_h_mm + 2.0_f64).max(5.0)
-                } else {
-                    0.0
-                };
-                let conservative_needed = total_header_and_row_height + conservative_buffer + detail_min_h_for_series;
+                let conservative_needed = total_header_and_row_height + conservative_buffer;
                 // debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
                 // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
                 // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
@@ -1787,25 +1773,6 @@ where
                 .unwrap_or(cfg_defaults.packing_vertical_safety_mm.unwrap())
                 as f64;
             let total_row_height = max_row_height + row_font_spacing as f64 + vertical_safety;
-            // In separate_rows mode, a second ROW_START_ES is emitted for the detail row.
-            // We must account for:
-            //   1. The ROW_START_ES vspace (stamp_detail_vspace, typically 3.5mm)
-            //   2. The STAMP_ADD box height in the detail row (minimum 5.0mm for one-line detail)
-            // Both must be in total_row_height so that fit checks and current_height tracking
-            // accurately reflect the space consumed by each stamp row + its detail row.
-            let min_detail_box_h = if detail_layout == "separate_rows" {
-                let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as f64;
-                let detail_line_h_mm = detail_font_size * 0.45;
-                (detail_line_h_mm + 2.0_f64).max(5.0)
-            } else {
-                0.0
-            };
-            let total_row_height = total_row_height
-                + if detail_layout == "separate_rows" {
-                    config.stamp_detail_vspace.unwrap_or(3.5) as f64 + min_detail_box_h
-                } else {
-                    0.0
-                };
             // ROW_START_ES emits a line with configured vspace; account for it
             // in fit checks and consumed height to avoid stranded headers.
             let row_start_es_height = if config.row_start_es_enabled.unwrap_or(true) {
@@ -2188,8 +2155,6 @@ where
 
             let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
 
-            // Collect per-stamp detail text during emission for separate_rows post-processing.
-            let mut row_detail_items: Vec<(String, f64)> = Vec::new();
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {
                 // Use correct fields from StampStub
@@ -2528,14 +2493,7 @@ where
                             colnect_parts.push(format!("Watermark: {}", v));
                         }
                     }
-                    // Perforation is now shown in STAMP_HEADING when enabled.
-                    // Keep it out of inline stamp body text to avoid duplicate clutter.
-                    let show_perforation_in_stamp_body = detail_layout == "separate_rows";
-                    if enabled_fields.contains("perforation") && show_perforation_in_stamp_body {
-                        if let Some(v) = stamp.attrs.get("colnect_perforation") {
-                            colnect_parts.push(format!("Perforation: {}", v));
-                        }
-                    }
+                    // Perforation is shown in STAMP_HEADING; keep it out of stamp body text to avoid duplicate clutter.
                     if enabled_fields.contains("issued_on") {
                         if let Some(v) = stamp.attrs.get("colnect_issued_on") {
                             colnect_parts.push(format!("Issued: {}", v));
@@ -2586,15 +2544,7 @@ where
                     true
                 });
 
-                let wrapped_colnect = if detail_layout == "separate_rows" {
-                    let mut wrapped_entries: Vec<String> = Vec::new();
-                    for entry in &colnect_parts {
-                        if let Some(wrapped) = wrap_label_value(entry, chars_per_line) {
-                            wrapped_entries.push(wrapped);
-                        }
-                    }
-                    wrapped_entries.join("\\n")
-                } else {
+                let wrapped_colnect = {
                     let mut wrapped_entries: Vec<String> = Vec::new();
                     for (idx, entry) in colnect_parts.iter().enumerate() {
                         if let Some(mut wrapped) = wrap_label_value(entry, chars_per_line) {
@@ -2613,27 +2563,9 @@ where
                         // Minimal: only face value, no clutter
                         String::new()
                     }
-                    "separate_rows" => {
-                        // Detail text goes in a separate row below stamps (controlled by
-                        // stamp_detail_font_size and stamp_detail_vspace). The stamp box
-                        // shows only stamps_issued for a clean image-focused look.
-                        let mut blocks: Vec<String> = Vec::new();
-                        if !wrapped_desc.is_empty() {
-                            blocks.push(wrapped_desc.clone());
-                        }
-                        if !wrapped_colnect.is_empty() {
-                            blocks.push(wrapped_colnect.clone());
-                        }
-                        if !raw_color.is_empty() {
-                            blocks.push(raw_color.clone());
-                        }
-                        if !blocks.is_empty() {
-                            row_detail_items.push((blocks.join("\\n"), emit_width));
-                        }
-                        String::new()
-                    }
-                    _ => {
-                        // Inline (default): everything else inside the stamp box below issued count.
+                    "separate_rows" | _ => {
+                        // Inline / separate_rows (now merged): detail text goes in the centre
+                        // parameter of STAMP_ADD_IMG, below the issued count.
                         let mut blocks: Vec<String> = Vec::new();
                         if !wrapped_desc.is_empty() {
                             blocks.push(wrapped_desc.clone());
@@ -3066,43 +2998,7 @@ where
                 }
             }
 
-            // In separate_rows mode, emit a dedicated detail row beneath the stamps.
-            // Each stamp's description/colnect/color is shown in a STAMP_ADD text box
-            // whose font size and row vspace are controlled by stamp_detail_font_size
-            // and stamp_detail_vspace respectively.
-            let mut actual_detail_box_h = min_detail_box_h;
-            if detail_layout == "separate_rows" && !row_detail_items.is_empty() {
-                let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as i32;
-                let detail_vspace = config.stamp_detail_vspace.unwrap_or(3.5) as f64;
-                let detail_line_h_mm = detail_font_size as f64 * 0.45;
-                // Compute box height from the maximum line count across stamps in the row.
-                let max_detail_lines = row_detail_items.iter().map(|(text, _)| {
-                    if text.is_empty() { 0 } else { text.matches("\\n").count() + 1 }
-                }).max().unwrap_or(0);
-                let detail_box_h = if max_detail_lines > 0 {
-                    (max_detail_lines as f64 * detail_line_h_mm + 2.0).max(5.0)
-                } else {
-                    0.0
-                };
-                actual_detail_box_h = detail_box_h;
-                if detail_box_h > 0.0 {
-                    let _ = writeln!(output, "ROW_START_ES (HN {} 0.5 {:.1})", detail_font_size, detail_vspace);
-                    for (detail_text, dwidth) in &row_detail_items {
-                        let escaped = detail_text.replace('"', "'");
-                        // Text goes in the 'inside' parameter (3rd), not 'centre below' (5th).
-                        // Using 'centre below' emits an empty frame (black strip) with text
-                        // floating underneath it; 'inside' renders the text within the frame.
-                        let _ = writeln!(output, "STAMP_ADD ({:.1} {:.1} \"{}\" \"\" \"\" \"\")",
-                            dwidth, detail_box_h, escaped);
-                    }
-                }
-            }
-
-            // total_row_height already includes min_detail_box_h (the minimum 5.0mm estimate
-            // for a one-line detail box). For multi-line detail boxes the actual height may
-            // exceed that estimate; add the excess so current_height stays accurate.
-            let detail_excess = (actual_detail_box_h - min_detail_box_h).max(0.0);
-            current_height += total_row_height + row_start_total_height + detail_excess;
+            current_height += total_row_height + row_start_total_height;
             rows_on_page += 1;
             row_idx += 1;
         }
