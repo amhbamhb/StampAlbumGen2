@@ -112,11 +112,15 @@ series_row_gap_mm = 0.0
 # - separate_rows: details in dedicated row/box area
 # - minimal: no detail metadata
 stamp_detail_layout = "separate_rows"
-# NOTE: stamp_detail_font_size and stamp_detail_vspace are accepted by the
-# config parser but are NOT currently applied by the generator — the font size
-# and vertical spacing in separate_rows mode are hardcoded internally.
-# Keep these values in place so existing configs load without errors.
+# Font size (in points) used for the separate detail row emitted below each stamp
+# when stamp_detail_layout = "separate_rows". This controls the text size for
+# description, catalog codes, color, and other metadata displayed beneath stamps.
+# Default: 6 (small enough to fit several lines without pushing stamps apart)
 stamp_detail_font_size = 6
+# Vertical spacing (mm) used as the vspace in the ROW_START_ES command that opens
+# the detail row. This controls the gap between the stamp image row and the detail
+# text row below it. Only applies when stamp_detail_layout = "separate_rows".
+# Default: 3.5 mm
 stamp_detail_vspace = 3.5
 
 # Large-stamp behavior

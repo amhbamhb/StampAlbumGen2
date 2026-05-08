@@ -1777,6 +1777,16 @@ where
                 .unwrap_or(cfg_defaults.packing_vertical_safety_mm.unwrap())
                 as f64;
             let total_row_height = max_row_height + row_font_spacing as f64 + vertical_safety;
+            // In separate_rows mode, a second ROW_START_ES is emitted for the detail row.
+            // Add its vspace to the height estimate so page-fit checks remain accurate.
+            // The stamp-box text lines that are moved to the detail row roughly offset
+            // the detail row content height, so only the extra vspace is added here.
+            let total_row_height = total_row_height
+                + if detail_layout == "separate_rows" {
+                    config.stamp_detail_vspace.unwrap_or(3.5) as f64
+                } else {
+                    0.0
+                };
             // ROW_START_ES emits a line with configured vspace; account for it
             // in fit checks and consumed height to avoid stranded headers.
             let row_start_es_height = if config.row_start_es_enabled.unwrap_or(true) {
@@ -2159,6 +2169,8 @@ where
 
             let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
 
+            // Collect per-stamp detail text during emission for separate_rows post-processing.
+            let mut row_detail_items: Vec<(String, f64)> = Vec::new();
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {
                 // Use correct fields from StampStub
@@ -2583,6 +2595,9 @@ where
                         String::new()
                     }
                     "separate_rows" => {
+                        // Detail text goes in a separate row below stamps (controlled by
+                        // stamp_detail_font_size and stamp_detail_vspace). The stamp box
+                        // shows only stamps_issued for a clean image-focused look.
                         let mut blocks: Vec<String> = Vec::new();
                         if !wrapped_desc.is_empty() {
                             blocks.push(wrapped_desc.clone());
@@ -2593,7 +2608,10 @@ where
                         if !raw_color.is_empty() {
                             blocks.push(raw_color.clone());
                         }
-                        blocks.join("\\n")
+                        if !blocks.is_empty() {
+                            row_detail_items.push((blocks.join("\\n"), emit_width));
+                        }
+                        String::new()
                     }
                     _ => {
                         // Inline (default): everything else inside the stamp box below issued count.
@@ -3025,6 +3043,33 @@ where
                         );
                         let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
                                 clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
+                    }
+                }
+            }
+
+            // In separate_rows mode, emit a dedicated detail row beneath the stamps.
+            // Each stamp's description/colnect/color is shown in a STAMP_ADD text box
+            // whose font size and row vspace are controlled by stamp_detail_font_size
+            // and stamp_detail_vspace respectively.
+            if detail_layout == "separate_rows" && !row_detail_items.is_empty() {
+                let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as i32;
+                let detail_vspace = config.stamp_detail_vspace.unwrap_or(3.5) as f64;
+                let detail_line_h_mm = detail_font_size as f64 * 0.45;
+                // Compute box height from the maximum line count across stamps in the row.
+                let max_detail_lines = row_detail_items.iter().map(|(text, _)| {
+                    if text.is_empty() { 0 } else { text.matches("\\n").count() + 1 }
+                }).max().unwrap_or(0);
+                let detail_box_h = if max_detail_lines > 0 {
+                    (max_detail_lines as f64 * detail_line_h_mm + 2.0).max(5.0)
+                } else {
+                    0.0
+                };
+                if detail_box_h > 0.0 {
+                    let _ = writeln!(output, "ROW_START_ES (HN {} 0.5 {:.1})", detail_font_size, detail_vspace);
+                    for (detail_text, dwidth) in &row_detail_items {
+                        let escaped = detail_text.replace('"', "'");
+                        let _ = writeln!(output, "STAMP_ADD ({:.1} {:.1} \"\" \"\" \"{}\" \"\")",
+                            dwidth, detail_box_h, escaped);
                     }
                 }
             }
