@@ -1589,7 +1589,17 @@ where
                                        // matching AlbumEasy's rendering metrics more closely.
                 let conservative_buffer =
                     cfg_defaults.page_fit_conservative_buffer_mm.unwrap_or(2.0) as f64; // canonical default from Config::with_defaults()
-                let conservative_needed = total_header_and_row_height + conservative_buffer;
+                // In separate_rows mode the detail row box height is not included in
+                // max_row_height above; add the minimum estimate so the series-start fit
+                // check is as accurate as the per-row check at line 2003.
+                let detail_min_h_for_series = if detail_layout == "separate_rows" {
+                    let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as f64;
+                    let detail_line_h_mm = detail_font_size * 0.45;
+                    (detail_line_h_mm + 2.0_f64).max(5.0)
+                } else {
+                    0.0
+                };
+                let conservative_needed = total_header_and_row_height + conservative_buffer + detail_min_h_for_series;
                 // debug!("[PAGE FIT CHECK] Header block height: {:.2}, vspace before: {:.2}, vspace after: {:.2}, max row height: {:.2}, total needed: {:.2}, buffer: {:.2}, current: {:.2}, usable: {:.2}, will_fit: {}",
                 // header_block_height, vspace_before_header, vspace_after_header, max_row_height, total_header_and_row_height, conservative_buffer, current_height, usable_height, (current_height + conservative_needed <= usable_height));
                 // Peek ahead: if this is a single-row series and next series is also single-row and both fit, combine
@@ -1778,12 +1788,21 @@ where
                 as f64;
             let total_row_height = max_row_height + row_font_spacing as f64 + vertical_safety;
             // In separate_rows mode, a second ROW_START_ES is emitted for the detail row.
-            // Add its vspace to the height estimate so page-fit checks remain accurate.
-            // The stamp-box text lines that are moved to the detail row roughly offset
-            // the detail row content height, so only the extra vspace is added here.
+            // We must account for:
+            //   1. The ROW_START_ES vspace (stamp_detail_vspace, typically 3.5mm)
+            //   2. The STAMP_ADD box height in the detail row (minimum 5.0mm for one-line detail)
+            // Both must be in total_row_height so that fit checks and current_height tracking
+            // accurately reflect the space consumed by each stamp row + its detail row.
+            let min_detail_box_h = if detail_layout == "separate_rows" {
+                let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as f64;
+                let detail_line_h_mm = detail_font_size * 0.45;
+                (detail_line_h_mm + 2.0_f64).max(5.0)
+            } else {
+                0.0
+            };
             let total_row_height = total_row_height
                 + if detail_layout == "separate_rows" {
-                    config.stamp_detail_vspace.unwrap_or(3.5) as f64
+                    config.stamp_detail_vspace.unwrap_or(3.5) as f64 + min_detail_box_h
                 } else {
                     0.0
                 };
@@ -3051,6 +3070,7 @@ where
             // Each stamp's description/colnect/color is shown in a STAMP_ADD text box
             // whose font size and row vspace are controlled by stamp_detail_font_size
             // and stamp_detail_vspace respectively.
+            let mut actual_detail_box_h = min_detail_box_h;
             if detail_layout == "separate_rows" && !row_detail_items.is_empty() {
                 let detail_font_size = config.stamp_detail_font_size.unwrap_or(6) as i32;
                 let detail_vspace = config.stamp_detail_vspace.unwrap_or(3.5) as f64;
@@ -3064,6 +3084,7 @@ where
                 } else {
                     0.0
                 };
+                actual_detail_box_h = detail_box_h;
                 if detail_box_h > 0.0 {
                     let _ = writeln!(output, "ROW_START_ES (HN {} 0.5 {:.1})", detail_font_size, detail_vspace);
                     for (detail_text, dwidth) in &row_detail_items {
@@ -3074,7 +3095,11 @@ where
                 }
             }
 
-            current_height += total_row_height + row_start_total_height;
+            // total_row_height already includes min_detail_box_h (the minimum 5.0mm estimate
+            // for a one-line detail box). For multi-line detail boxes the actual height may
+            // exceed that estimate; add the excess so current_height stays accurate.
+            let detail_excess = (actual_detail_box_h - min_detail_box_h).max(0.0);
+            current_height += total_row_height + row_start_total_height + detail_excess;
             rows_on_page += 1;
             row_idx += 1;
         }
