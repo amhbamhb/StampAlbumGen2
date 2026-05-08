@@ -139,8 +139,23 @@ album_stamp_img_new_setting_w_mm = 3.0
 album_stamp_img_new_setting_h_mm = 3.0
 # Keep source image proportions when true
 album_stamp_img_new_setting_preserve_aspect = true
+# Short alias for album_stamp_img_new_setting_preserve_aspect (takes precedence if set)
+preserve_aspect = true
 # Legacy/global aspect-ratio guard (keep true in most cases)
 album_stamp_img_aspect_ratio = true
+
+# Global scale multiplier applied to ALL size/spacing values before rendering.
+# Use to uniformly scale an entire layout up or down without editing each field.
+# 1.0 = no scaling.  Example: 0.9 shrinks everything 10 %.
+global_scale = 1.0
+
+# Row-height accounting
+# When true, the estimated stamp heading height is included in row height
+# calculations (prevents headings from overlapping subsequent rows).
+stamp_heading_in_row_height = false
+# When true, the page vertical spacer (PAGE_VSPACE) height is included in
+# row height calculations.
+pages_vspace_in_row_height = false
 
 # Stamp heading style
 # Default catalog family used when choosing a catalog number from Colnect.
