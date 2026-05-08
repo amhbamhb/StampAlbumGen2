@@ -262,12 +262,29 @@ print_flag_cover = true
 flag_cover_img_w_mm = 160.0
 flag_cover_img_h_mm = 80.0
 
+# Cover page background color (see [colors] section for supported values).
+# Leave empty to use the default white/unset background.
+flag_cover_background_color = ""
+
+# Cover element rendering order.
+# List which elements appear on the cover and in what order.
+# Recognized values: "coat" (coat of arms), "flag", "name" (country name text).
+# Remove an entry to omit that element from the cover entirely.
+flag_cover_elements = ["coat", "flag", "name"]
+
+# Coat-of-arms image size on the cover (mm).
+# Used when a coat_of_arms image is included in the cover layout.
+flag_cover_coat_img_w_mm = 80.0
+flag_cover_coat_img_h_mm = 80.0
+
 # IMAGE-BASED COVER LAYOUT
 # Top spacing from page content area to the first cover element.
 flag_cover_page_vspace_top = 20.0
 # Vertical gap between the flag image and title text (mm).
 flag_cover_image_vspace_after = 12.0
 # Font token for title shown under/near the flag image.
+# NOTE: flag_cover_image_title_font is accepted but NOT currently applied —
+# the font for image-based cover titles is hardcoded to "TB" internally.
 flag_cover_image_title_font = "HN"
 # Title size (points) for image-based cover.
 flag_cover_image_title_size = 32.0
