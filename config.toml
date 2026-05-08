@@ -59,6 +59,7 @@ reference_width_mm = 24.0
 reference_height_mm = 27.0
 stamp_box_height = 36.0
 stamp_box_adjust = 0.0
+colnect_box_adjust_mm = 0.0
 
 # Colnect image-dimension adjustments (mm)
 colnect_width_adjust_mm = 2.0
@@ -83,6 +84,8 @@ stamp_detail_vspace = 3.5
 allow_single_large_stamp_per_page = true
 single_stamp_threshold_pct = 0.7
 usable_height_padding_mm = 1.0
+# Scale all size/spacing values uniformly (1.0 = no scaling)
+global_scale = 1.0
 
 # Row text/image metrics
 text_line_height_mm = 2.6
@@ -92,6 +95,8 @@ image_spacing_mm = 1.0
 album_stamp_img_new_setting_w_mm = 3.0
 album_stamp_img_new_setting_h_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
+# Short alias (takes precedence if set)
+preserve_aspect = true
 album_stamp_img_aspect_ratio = true
 
 # Stamp heading style
@@ -115,6 +120,12 @@ stamp_heading_label = "auto"
 row_font_spacing = 0.1
 header_font_spacing = 2.0
 page_fit_conservative_buffer_mm = 2.0
+# Include stamp heading height in row height calculations
+stamp_heading_in_row_height = false
+# Include PAGE_VSPACE height in row height calculations
+pages_vspace_in_row_height = false
+# Marker token for PAGE_VSPACE postprocessor (leave empty to use numeric mm values)
+page_vspace_marker = ""
 
 # ROW_START_ES behavior
 row_start_es_enabled = true
@@ -160,6 +171,10 @@ flag_cover_text_only_title_font = "HN"
 flag_cover_text_only_title_size = 48.0
 flag_cover_text_only_title_scale = 1.0
 flag_cover_text_only_vspace_after = 18.0
+flag_cover_background_color = ""
+flag_cover_elements = ["coat", "flag", "name"]
+flag_cover_coat_img_w_mm = 80.0
+flag_cover_coat_img_h_mm = 80.0
 
 ###################################
 # Data Sources
@@ -235,6 +250,15 @@ page_text_right_vspace = 1.0
 ###################################
 [runtime]
 show_progress_indicator = true
+# Date display format for issued_on: "commas" | "slashes" | "iso"
+date_format = "commas"
+# Verbose page-fit accounting diagnostics in output
+detailed_page_fit = false
+detailed_page_fit_diagnostics = false
+# Emit placeholder/missing-image diagnostics in output
+emit_placeholder_diagnostics = false
+# Calibration CSV path for stamp dimension correction (leave empty to disable)
+calibration_csv = ""
 # Used when CLI omits --colnect-inbox for --source colnectexport.
 # The directory is auto-created on startup if missing.
 colnect_inbox_path = "samples/colnect_inbox"
@@ -272,6 +296,22 @@ default_colnect_image_url_checked = true
 default_colnect_metadata_checked = true
 default_replace_sg_number_checked = true
 default_right_unmatched_only_checked = true
+
+###################################
+# Catalog Family Options
+###################################
+catalog_family_options = [
+	"sn|Scott Number|814224",
+	"sg|Stanley Gibbons|705728",
+	"mi|Michel|1126331",
+	"yt|Yvert et Tellier|925704",
+	"afa|AFA number|116770",
+	"ank|ANK|8320",
+	"nvp|NVPH|18985",
+	"un|Unificato|169053",
+	"col|Colnect codes|445975",
+	"wad|WADP Numbering System - WNS|91196"
+]
 
 ###################################
 # Colnect
