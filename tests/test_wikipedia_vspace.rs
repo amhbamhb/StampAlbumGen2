@@ -2,11 +2,9 @@ use stamp_album_gen2::config::Config;
 use stamp_album_gen2::wikipedia::formatters;
 
 #[test]
-fn paragraph_vspace_uses_multiplier_when_unset() {
+fn paragraph_vspace_uses_configured_value() {
     let mut cfg = Config::with_defaults();
-    // unset explicit vspace and set multiplier to 0.15
-    cfg.wikipedia_paragraph_vspace = None;
-    cfg.wikipedia_paragraph_vspace_multiplier = Some(0.15);
+    cfg.wikipedia_paragraph_vspace = Some(1.8);
     cfg.wikipedia_paragraph_font_size = Some(12);
 
     let content = "This is a short paragraph to test vspace formatting.";

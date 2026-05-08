@@ -968,13 +968,7 @@ fn add_wikipedia_section<W: Write>(
                     }
                 } else {
                     // Use config-based default when math spacing is disabled
-                    cfg.wikipedia_paragraph_vspace
-                        .map(|v| v as f64)
-                        .unwrap_or_else(|| {
-                            let multiplier =
-                                cfg.wikipedia_paragraph_vspace_multiplier.unwrap_or(0.15);
-                            (11.0 as f64) * (multiplier as f64)
-                        })
+                    cfg.wikipedia_paragraph_vspace.unwrap_or(2.0) as f64
                 };
 
                 info!(

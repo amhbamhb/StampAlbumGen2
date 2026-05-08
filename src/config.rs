@@ -393,8 +393,6 @@ pub struct Config {
     pub wikipedia_paragraph_alignment: Option<String>,
     pub wikipedia_paragraph_padding: Option<f32>,
     pub wikipedia_paragraph_vspace: Option<f32>,
-    // Multiplier used to compute paragraph vspace when explicit vspace is not set
-    pub wikipedia_paragraph_vspace_multiplier: Option<f32>,
     pub wikipedia_paragraph_right_padding: Option<f32>,
     // Pagination strategy for Wikipedia content: "balanced" | "conservative" | "no_balance"
     pub wikipedia_pagination_strategy: Option<String>,
@@ -637,8 +635,7 @@ impl Config {
             wikipedia_paragraph_font_size: Some(12),
             wikipedia_paragraph_alignment: Some("JUSTIFIED".to_string()),
             wikipedia_paragraph_padding: Some(10.0),
-            wikipedia_paragraph_vspace: None, // Use multiplier instead of fixed value
-            wikipedia_paragraph_vspace_multiplier: Some(0.15), // 15% of font size
+            wikipedia_paragraph_vspace: Some(2.0),
             wikipedia_paragraph_right_padding: Some(10.0),
             wikipedia_pagination_strategy: Some("balanced".to_string()),
             wikipedia_center_content: Some(true),

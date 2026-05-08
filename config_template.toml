@@ -387,14 +387,10 @@ wikipedia_paragraph_alignment = "JUSTIFIED"
 wikipedia_paragraph_padding = 8.0
 wikipedia_paragraph_right_padding = 8.0
 
-# Multiplier for paragraph vertical spacing
-# Typical range: 0.10 .. 0.35
+# Paragraph vertical spacing (mm). Controls the gap between paragraphs.
+# Typical range: 1.0 .. 3.5
 # Lower = denser text, higher = more breathing room
-wikipedia_paragraph_vspace_multiplier = 0.18
-# Explicit paragraph vertical spacing (mm).
-# When set to a non-zero value, this overrides wikipedia_paragraph_vspace_multiplier.
-# 0.0 means use the multiplier instead.
-wikipedia_paragraph_vspace = 0.0
+wikipedia_paragraph_vspace = 2.0
 
 # Section title font/size and spacing
 wikipedia_section_title_font = "HB"
