@@ -112,6 +112,10 @@ series_row_gap_mm = 0.0
 # - separate_rows: details in dedicated row/box area
 # - minimal: no detail metadata
 stamp_detail_layout = "separate_rows"
+# NOTE: stamp_detail_font_size and stamp_detail_vspace are accepted by the
+# config parser but are NOT currently applied by the generator — the font size
+# and vertical spacing in separate_rows mode are hardcoded internally.
+# Keep these values in place so existing configs load without errors.
 stamp_detail_font_size = 6
 stamp_detail_vspace = 3.5
 
@@ -184,7 +188,9 @@ row_start_es_vspace = 6.0
 row_start_es_marker = "ROW_START_ES"
 
 # Row packing diagnostics / centering
-# Center rows when there is free horizontal room
+# NOTE: enable_row_centering is accepted by the config parser but is NOT
+# currently applied — row centering is a prototype feature that has not been
+# implemented in the layout engine.  Leave true for future compatibility.
 enable_row_centering = true
 # Emit diagnostics for stamps-per-row decisions
 show_stamps_per_row = true
@@ -252,6 +258,8 @@ flag_cover_image_title_scale = 1.0
 # Top spacing from page content area to title (mm).
 flag_cover_text_only_vspace_top = 24.0
 # Font token for title in text-only mode.
+# NOTE: flag_cover_text_only_title_font is accepted but NOT currently applied —
+# the font for text-only cover titles is hardcoded to "TB" internally.
 flag_cover_text_only_title_font = "HN"
 # Title size (points) for text-only cover.
 flag_cover_text_only_title_size = 48.0
@@ -317,6 +325,10 @@ expand_grouped_ranges = "placeholders"
 # 4) Optionally enable centering/math spacing tweaks.
 
 # Base font for high-level Wikipedia content blocks
+# NOTE: content_wiki_font and content_wiki_font_size are legacy fields
+# superseded by wikipedia_paragraph_font and wikipedia_paragraph_font_size
+# below.  They are accepted for backward compatibility but are NOT read
+# by the rendering pipeline — update wikipedia_paragraph_font instead.
 content_wiki_font = "HN"
 # Base size (points) for content-level text
 content_wiki_font_size = 12
