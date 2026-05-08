@@ -521,6 +521,60 @@ page_text_right_font = "HN"
 page_text_right_size = 10.0
 page_text_right_vspace = 1.0
 
+# PER-TYPE FORMAT OVERRIDES
+# These optional templates override the generic page_text_centre_format for
+# specific metadata categories (series, date, watermark, engraving).
+# Leave commented/empty to inherit from page_text_centre_format or fallback
+# font/size/vspace values above.
+#
+# Format rules: must contain exactly one "{}" placeholder that is replaced
+# with the actual text at runtime.
+#
+# Examples (uncomment and edit to use):
+# series_page_text_centre_format    = 'PAGE_TEXT_CENTRE (HB 9 "{}" 1.0)'
+# date_page_text_centre_format      = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+# watermark_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+# engraving_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+
+###################################
+# Header Formatting
+###################################
+[header_formatting]
+# Fine-grained controls for how stamp-group headers are formatted.
+# These fields live in a separate sub-section and are NOT promoted to the
+# top-level config — they must be set here in [header_formatting].
+
+# Date display style for stamp issue dates shown in group headers.
+# Allowed values:
+#   "commas" (default) : "Month Day, Year"  e.g. "January 15, 1960"
+#   "dashes"           : "Month - Day - Year"  e.g. "January - 15 - 1960"
+date_format = "commas"
+
+###################################
+# Diagnostics / Advanced
+###################################
+[diagnostics]
+# These options are off by default and are intended for debugging layout and
+# rendering issues.  Enabling them adds verbose output to the generated album
+# files and/or the terminal log.
+
+# Emit per-stamp PAGE_FIT diagnostics for every stamp placed on a page.
+# Useful when stamps are being cut off or rows overflow unexpectedly.
+# detailed_page_fit is a short alias; detailed_page_fit_diagnostics is the
+# canonical name — both control the same feature.
+detailed_page_fit = false
+detailed_page_fit_diagnostics = false
+
+# Emit extra diagnostics for placeholder expansion steps.
+# Helps trace which placeholder tokens are resolved vs left unexpanded.
+emit_placeholder_diagnostics = false
+
+# Path to a DPI calibration CSV file.
+# When set, calibration data from this file is loaded to fine-tune DPI
+# calculations for your specific printer/output environment.
+# Leave empty to skip calibration.
+calibration_csv = ""
+
 ###################################
 # Runtime / Integration Settings
 ###################################
