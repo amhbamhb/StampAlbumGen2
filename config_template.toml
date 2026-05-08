@@ -193,6 +193,12 @@ header_font_spacing = 2.0
 # Conservative page-fit padding before forcing a new page
 page_fit_conservative_buffer_mm = 2.0
 
+# Custom PAGE_VSPACE marker string written into album output.
+# When set, the generator emits this token instead of a numeric PAGE_VSPACE
+# value; a post-processor can then replace the token with concrete numbers.
+# Leave empty to emit standard numeric PAGE_VSPACE values.
+page_vspace_marker = ""
+
 # ROW_START_ES behavior
 # Diagnostic marker row emitted before each series row group
 row_start_es_enabled = true
@@ -364,6 +370,10 @@ wikipedia_paragraph_right_padding = 8.0
 # Typical range: 0.10 .. 0.35
 # Lower = denser text, higher = more breathing room
 wikipedia_paragraph_vspace_multiplier = 0.18
+# Explicit paragraph vertical spacing (mm).
+# When set to a non-zero value, this overrides wikipedia_paragraph_vspace_multiplier.
+# 0.0 means use the multiplier instead.
+wikipedia_paragraph_vspace = 0.0
 
 # Section title font/size and spacing
 wikipedia_section_title_font = "HB"
