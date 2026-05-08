@@ -161,6 +161,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         log::warn!("Failed to ensure config template file: {}", e);
     }
+
+    // Warn the user if their config.toml is missing keys added in this version.
+    if let Ok(user_cfg_content) = std::fs::read_to_string("config.toml") {
+        let missing = config::check_config_staleness(&user_cfg_content);
+        if !missing.is_empty() {
+            eprintln!(
+                "\n⚠  Your config.toml is missing {} option(s) added in this version:\n   {}\n\
+                 Run:  stamp_album_gen2 --init-config   (backs up your current config.toml first)\n",
+                missing.len(),
+                missing.join(", ")
+            );
+        }
+    }
     write_startup_probe("config.load", "loaded config.toml");
 
     // Ensure the desktop entry and icon are present on every startup, not just
