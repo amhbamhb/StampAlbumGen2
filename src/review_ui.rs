@@ -521,8 +521,8 @@ fn find_global_config_path() -> Option<std::path::PathBuf> {
 
 fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), String> {
     ensure_runtime_startup_files()?;
-    let config_path = find_global_config_path()
-        .ok_or_else(|| "could not locate config.toml".to_string())?;
+    let config_path =
+        find_global_config_path().ok_or_else(|| "could not locate config.toml".to_string())?;
     let content = fs::read_to_string(&config_path)
         .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
     let mut root_table = toml::from_str::<toml::Table>(&content)
