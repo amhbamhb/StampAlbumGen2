@@ -380,11 +380,59 @@ fn pad_centre_body_for_side_columns(
     }
 }
 
+/// Estimates the colnect text that would be placed in the centre column for
+/// a given stamp, based on enabled fields in config. Returns an escaped
+/// `\n`-separated string matching the format used in `centre_body`.
+fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -> String {
+    let colnect_enabled = config.colnect_details_enabled();
+    let detail_layout = config
+        .stamp_detail_layout
+        .as_ref()
+        .map(|s| s.as_str())
+        .unwrap_or("inline");
+    if !colnect_enabled || detail_layout == "minimal" {
+        return String::new();
+    }
+    let enabled_fields = config.effective_colnect_detail_field_set();
+    let mut parts: Vec<String> = Vec::new();
+    macro_rules! push_field {
+        ($key:expr, $label:expr) => {
+            if enabled_fields.contains($key) {
+                if let Some(v) = stamp.attrs.get($label) {
+                    if !v.trim().is_empty() {
+                        parts.push(v.trim().to_string());
+                    }
+                }
+            }
+        };
+    }
+    push_field!("catalog_codes", "colnect_catalog_codes");
+    push_field!("description", "colnect_description");
+    push_field!("themes", "colnect_topics");
+    push_field!("printing", "colnect_printing");
+    push_field!("printing_type", "colnect_printing");
+    push_field!("format", "colnect_format");
+    push_field!("emission", "colnect_emission");
+    push_field!("paper", "colnect_paper");
+    push_field!("gum", "colnect_gum");
+    push_field!("designers", "colnect_designers");
+    push_field!("printers", "colnect_printers");
+    push_field!("colors", "colnect_colors");
+    push_field!("watermark", "colnect_watermark");
+    push_field!("issued_on", "colnect_issued_on");
+    push_field!("expiry_date", "colnect_expiry_date");
+    push_field!("size", "colnect_width_mm"); // proxy: if size field exists
+    push_field!("face_value", "colnect_face_value");
+    push_field!("score", "colnect_score");
+    parts.join("\\n")
+}
+
 fn estimate_stamp_body_line_count(
     raw_left: &str,
     raw_stamps_issued: &str,
     raw_description: &str,
     raw_color: &str,
+    raw_colnect: &str,
     right_first_line: &str,
     right_second_line: &str,
     emit_width: f64,
@@ -405,6 +453,24 @@ fn estimate_stamp_body_line_count(
     }
     if !raw_color.trim().is_empty() {
         centre_blocks.push(raw_color.trim().to_string());
+    }
+    // Include colnect lines in the centre column estimate. Each raw_colnect
+    // entry is already `\n`-separated; wrap long entries to the centre width.
+    if !raw_colnect.trim().is_empty() {
+        for part in raw_colnect.split("\\n") {
+            if part.trim().is_empty() {
+                continue;
+            }
+            // Rough wrap: count how many centre_width-char segments the text needs.
+            let chars = part.len();
+            let wrapped_lines = ((chars as f64) / (centre_width as f64)).ceil() as usize;
+            let wrapped_lines = wrapped_lines.max(1);
+            // Push one "line" per wrapped segment (use a placeholder that
+            // count_albumeasy_text_lines counts correctly via \n splitting).
+            for _ in 0..wrapped_lines {
+                centre_blocks.push("x".to_string());
+            }
+        }
     }
     let centre = pad_centre_body_for_side_columns(
         &top_block,
@@ -1522,6 +1588,7 @@ where
                         &raw_stamps_issued,
                         &raw_description,
                         &raw_color,
+                        &estimate_colnect_centre_text(stamp, &config),
                         right_first_line,
                         &used_raw,
                         estimated_emit_width,
@@ -1735,6 +1802,7 @@ where
                     &raw_stamps_issued,
                     &raw_description,
                     &raw_color,
+                    &estimate_colnect_centre_text(stamp, &config),
                     right_first_line,
                     &used_raw,
                     estimated_emit_width,
@@ -1941,6 +2009,7 @@ where
                             &raw_stamps_issued,
                             &raw_description,
                             &raw_color,
+                            "", // StampStub lacks colnect attrs; forward-peek estimate only
                             right_first_line,
                             &used_raw,
                             estimated_emit_width,
