@@ -74,10 +74,10 @@ album_pages_footer_number_after = " of $PAGES$"
 [stamps]
 # Base sizing (mm)
 # Base width/height reference used when real dimensions are unavailable
-reference_width_mm = 24.0
-reference_height_mm = 27.0
+reference_width_mm = 19.0
+reference_height_mm = 25.0
 # Target box height for stamp image rows
-target_stamp_height_mm = 36.0
+target_stamp_height_mm = 25.0
 # Fine adjustment applied on top of each stamp's emitted box size.
 stamp_box_adjust = 0.0
 

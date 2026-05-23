@@ -55,9 +55,9 @@ album_pages_footer_number_after = " of $PAGES$"
 ###################################
 [stamps]
 # Base sizing (mm)
-reference_width_mm = 24.0
-reference_height_mm = 27.0
-target_stamp_height_mm = 27.0
+reference_width_mm = 19.0
+reference_height_mm = 25.0
+target_stamp_height_mm = 25.0
 stamp_box_adjust = 0.0
 
 # Packing limits
@@ -209,7 +209,7 @@ wikipedia_use_math_spacing = true
 [images]
 force_dpi = 96.0
 # sizing_mode: "real_world" (emit physical sizes) or "fit_box" (clamp height to target_stamp_height_mm)
-sizing_mode = "real_world"
+sizing_mode = "fit_box"
 placeholder_always_overwrite = true
 
 ###################################

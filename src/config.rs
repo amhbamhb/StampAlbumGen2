@@ -470,9 +470,9 @@ impl Config {
     /// Returns a Config with all default values set (used for auto-fixing missing config fields)
     pub fn with_defaults() -> Self {
         Config {
-            reference_width_mm: Some(24.0),
-            reference_height_mm: Some(27.0),
-            target_stamp_height_mm: Some(30.0),
+            reference_width_mm: Some(19.0),
+            reference_height_mm: Some(25.0),
+            target_stamp_height_mm: Some(25.0),
             stamp_box_adjust: Some(0.0),
             album_page_width_mm: Some(216.0),
             album_page_height_mm: Some(279.4),
@@ -615,7 +615,7 @@ impl Config {
             stamp_heading_label: Some("auto".to_string()),
             default_catalog_code: Some("sg".to_string()),
             force_dpi: Some(96.0),
-            sizing_mode: Some("real_world".to_string()),
+            sizing_mode: Some("fit_box".to_string()),
             show_progress_indicator: Some(true),
             colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
             albumeasy_cli_path: None,
