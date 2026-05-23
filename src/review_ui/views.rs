@@ -2661,6 +2661,12 @@ async function saveCatalogDefaultToConfig() {{
         return;
     }}
 
+    const targetAlbum = reviewCountryName || 'the current album';
+    const ok = confirm(`Update ${{targetAlbum}}'s config.toml default catalog to '${{code}}'?\n\nThis writes to the album-local config.toml and changes future saves/exports for this album.`);
+    if (!ok) {{
+        return;
+    }}
+
     setConfigStatus('Updating config default catalog...');
     try {{
         const r = await fetch('/api/default-catalog-config', {{
