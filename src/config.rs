@@ -97,11 +97,9 @@ pub struct HeaderFormatting {
 pub struct Config {
     pub reference_width_mm: Option<f32>,
     pub reference_height_mm: Option<f32>,
-    pub stamp_box_height: Option<f32>,
+    /// Maximum stamp height (mm) used when sizing_mode is "fit_box".
+    pub target_stamp_height_mm: Option<f32>,
     pub stamp_box_adjust: Option<f32>,
-    pub colnect_box_adjust_mm: Option<f32>,
-    pub colnect_width_adjust_mm: Option<f32>,
-    pub colnect_height_adjust_mm: Option<f32>,
     // Page layout overrides (mm)
     pub album_page_width_mm: Option<f32>,
     pub album_page_height_mm: Option<f32>,
@@ -208,8 +206,10 @@ pub struct Config {
     // per-row gap is applied (legacy behavior).
     pub series_row_gap_mm: Option<f32>,
     pub max_stamps_per_row: Option<u32>,
-    pub album_stamp_img_new_setting_w_mm: Option<f32>,
-    pub album_stamp_img_new_setting_h_mm: Option<f32>,
+    /// Extra mm added to every stamp box width (applied uniformly, regardless of image source).
+    pub extra_width_mm: Option<f32>,
+    /// Extra mm added to every stamp box height (applied uniformly, regardless of image source).
+    pub extra_height_mm: Option<f32>,
     pub album_stamp_img_new_setting_preserve_aspect: Option<bool>,
     // If false, the generator will skip emitting the large flag/title cover page
     // Default: true (when None or not present)
@@ -354,11 +354,10 @@ pub struct Config {
     // use that instead of the embedded-reference ratio when converting
     // stored pixel dimensions to millimetres.
     pub force_dpi: Option<f32>,
-    // When true, prefer the DPI-derived/DB-stored real-world image sizes and
-    // do NOT scale images down to `stamp_box_height` during emission.
-    // This allows emitted STAMP_ADD_IMG boxes to reflect real-world mm
-    // dimensions (useful when `force_dpi` is set and you want physical sizes).
-    pub preserve_real_image_size: Option<bool>,
+    // Controls how stamp image heights are treated during emission.
+    // "fit_box": scale images down to target_stamp_height_mm when taller.
+    // "real_world": emit the actual DPI-derived/physical dimensions as-is.
+    pub sizing_mode: Option<String>,
 
     // Progress indicator settings
     // When true, show spinning progress indicator with current operation status
@@ -473,9 +472,8 @@ impl Config {
         Config {
             reference_width_mm: Some(24.0),
             reference_height_mm: Some(27.0),
-            stamp_box_height: Some(30.0),
+            target_stamp_height_mm: Some(30.0),
             stamp_box_adjust: Some(0.0),
-            colnect_box_adjust_mm: Some(0.0),
             album_page_width_mm: Some(216.0),
             album_page_height_mm: Some(279.4),
             album_pages_title_font: Some("HN".to_string()),
@@ -547,8 +545,8 @@ impl Config {
             image_spacing_mm: Some(5.0),
             series_row_gap_mm: None,
             max_stamps_per_row: Some(3),
-            album_stamp_img_new_setting_w_mm: Some(6.0),
-            album_stamp_img_new_setting_h_mm: Some(6.0),
+            extra_width_mm: Some(6.0),
+            extra_height_mm: Some(6.0),
             album_stamp_img_new_setting_preserve_aspect: Some(true),
             print_flag_cover: Some(true),
             include_wikipedia_content: Some(true),
@@ -617,7 +615,7 @@ impl Config {
             stamp_heading_label: Some("auto".to_string()),
             default_catalog_code: Some("sg".to_string()),
             force_dpi: Some(96.0),
-            preserve_real_image_size: Some(true),
+            sizing_mode: Some("real_world".to_string()),
             show_progress_indicator: Some(true),
             colnect_inbox_path: Some("samples/colnect_inbox".to_string()),
             albumeasy_cli_path: None,
@@ -1297,8 +1295,8 @@ pub fn load_config(path: &str) -> Config {
                                     cfg.reference_height_mm = defaults.reference_height_mm;
                                     has_missing = true;
                                 }
-                                if cfg.stamp_box_height.is_none() {
-                                    cfg.stamp_box_height = defaults.stamp_box_height;
+                                if cfg.target_stamp_height_mm.is_none() {
+                                    cfg.target_stamp_height_mm = defaults.target_stamp_height_mm;
                                     has_missing = true;
                                 }
                                 if cfg.album_page_width_mm.is_none() {
@@ -1660,9 +1658,8 @@ pub fn load_config(path: &str) -> Config {
                                     cfg.force_dpi = defaults.force_dpi;
                                     has_missing = true;
                                 }
-                                if cfg.preserve_real_image_size.is_none() {
-                                    cfg.preserve_real_image_size =
-                                        defaults.preserve_real_image_size;
+                                if cfg.sizing_mode.is_none() {
+                                    cfg.sizing_mode = defaults.sizing_mode;
                                     has_missing = true;
                                 }
                                 if cfg.show_progress_indicator.is_none() {

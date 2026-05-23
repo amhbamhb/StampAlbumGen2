@@ -57,12 +57,8 @@ album_pages_footer_number_after = " of $PAGES$"
 # Base sizing (mm)
 reference_width_mm = 24.0
 reference_height_mm = 27.0
-stamp_box_height = 36.0
+target_stamp_height_mm = 36.0
 stamp_box_adjust = 0.0
-
-# Colnect image-dimension adjustments (mm)
-colnect_width_adjust_mm = 2.0
-colnect_height_adjust_mm = 4.0
 
 # Packing limits
 max_stamps_per_row = 5
@@ -89,8 +85,8 @@ text_line_height_mm = 2.6
 image_spacing_mm = 1.0
 
 # Global stamp image sizing offsets (mm)
-album_stamp_img_new_setting_w_mm = 3.0
-album_stamp_img_new_setting_h_mm = 3.0
+extra_width_mm = 3.0
+extra_height_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
 album_stamp_img_aspect_ratio = true
 
@@ -198,7 +194,8 @@ wikipedia_use_math_spacing = true
 ###################################
 [images]
 force_dpi = 96.0
-preserve_real_image_size = true
+# sizing_mode: "real_world" (emit physical sizes) or "fit_box" (clamp height to target_stamp_height_mm)
+sizing_mode = "real_world"
 placeholder_always_overwrite = true
 
 ###################################

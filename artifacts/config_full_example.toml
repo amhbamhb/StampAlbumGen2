@@ -3,13 +3,8 @@
 # copy to `config.toml` in your working directory to apply.
 
 # --- Stamp Box Sizing ---
-stamp_box_height = 24.0
+target_stamp_height_mm = 24.0
 stamp_box_adjust = 0.0
-
-# --- Colnect Dimension Adjustments ---
-# Separate adjustments for width and height (in mm) to compensate for printing
-colnect_width_adjust_mm = 2.0
-colnect_height_adjust_mm = 2.0
 
 # --- Row & Header Spacing ---
 row_font_spacing = 5.0
@@ -39,8 +34,8 @@ median_width_cap_4 = 30.0
 page_fit_conservative_buffer_mm = 11.0
 
 # --- Image / stamp settings ---
-album_stamp_img_new_setting_w_mm = 0.0
-album_stamp_img_new_setting_h_mm = 0.0
+extra_width_mm = 0.0
+extra_height_mm = 0.0
 album_stamp_img_new_setting_preserve_aspect = true
 image_spacing_mm = 2.0
 text_line_height_mm = 3.0

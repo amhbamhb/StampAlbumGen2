@@ -77,23 +77,9 @@ album_pages_footer_number_after = " of $PAGES$"
 reference_width_mm = 24.0
 reference_height_mm = 27.0
 # Target box height for stamp image rows
-stamp_box_height = 36.0
-# Fine adjustment applied on top of the built-in sizing baseline.
-# 0.0 keeps the default source-aware behavior:
-# - StampWorld/non-Colnect sizing retains the legacy internal shrink.
-# - Colnect real-size imports are not additionally reduced.
+target_stamp_height_mm = 36.0
+# Fine adjustment applied on top of each stamp's emitted box size.
 stamp_box_adjust = 0.0
-
-# Fine adjustment applied per-side to Colnect stamps that have real physical
-# dimensions (i.e. stamps imported via Colnect with colnect_width_mm set).
-# Independent of stamp_box_adjust so you can tune StampWorld and Colnect stamps
-# separately. Default 0.0 — Colnect stamps already include accurate dimensions
-# via colnect_width_adjust_mm, so no additional shrink is needed.
-colnect_box_adjust_mm = 0.0
-
-# Colnect image-dimension adjustments (mm)
-colnect_width_adjust_mm = 1.0
-colnect_height_adjust_mm = 3.0
 
 # Packing limits
 # Hard cap of stamps placed in one row
@@ -139,11 +125,10 @@ image_spacing_mm = 1.0
 
 # Global stamp image sizing offsets (mm)
 # Width/height offsets applied after base dimension estimation
-album_stamp_img_new_setting_w_mm = 3.0
-album_stamp_img_new_setting_h_mm = 3.0
+extra_width_mm = 3.0
+extra_height_mm = 3.0
 # Keep source image proportions when true
 album_stamp_img_new_setting_preserve_aspect = true
-# Short alias for album_stamp_img_new_setting_preserve_aspect (takes precedence if set)
 preserve_aspect = true
 # Legacy/global aspect-ratio guard (keep true in most cases)
 album_stamp_img_aspect_ratio = true
@@ -432,11 +417,9 @@ wikipedia_use_math_spacing = true
 force_dpi = 96.0
 
 # If true, keep real measured dimensions when available.
-# Why important:
-# - Preserves realistic stamp proportions from source metadata/images.
-# - Reduces distortion caused by aggressive normalization to default box sizes.
-# - Improves visual trust when mixing stamps with very different aspect ratios.
-preserve_real_image_size = true
+# sizing_mode: "real_world" emits physical DPI-derived sizes as-is.
+# "fit_box" clamps stamp height to target_stamp_height_mm.
+sizing_mode = "real_world"
 
 # Rebuild placeholder image files if sizing changes.
 # Why important:
