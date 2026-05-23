@@ -986,8 +986,8 @@ where
         // dimensions during the single-pass layout.
         // -------------------------
         // Get Colnect dimension adjustments from config (default 2.0mm if not set)
-        let colnect_w_adjust = config.colnect_width_adjust_mm.unwrap_or(2.0) as f64;
-        let colnect_h_adjust = config.colnect_height_adjust_mm.unwrap_or(2.0) as f64;
+        let colnect_w_adjust = config.colnect_width_adjust_mm.unwrap_or(0.0) as f64;
+        let colnect_h_adjust = config.colnect_height_adjust_mm.unwrap_or(0.0) as f64;
 
         for s in stamps_vec.iter_mut() {
             // First priority: Check for Colnect dimensions (already in mm)
@@ -2268,8 +2268,8 @@ where
                     colnect_box_adjust,
                     stamp_uses_colnect_real_dimensions(stamp),
                 );
-                let emit_width = est_width_mm + 2.0 * effective_stamp_box_adjust;
-                let emit_height = est_height_mm + 2.0 * effective_stamp_box_adjust;
+                let emit_width = est_width_mm +1.0 * effective_stamp_box_adjust;
+                let emit_height = est_height_mm +1.0 * effective_stamp_box_adjust;
                 // Left: denomination (may include surcharge like "20+10 (C)").
                 // Wrap/split the denomination so a surcharge does not force the
                 // centre/right columns to be overwritten. Prefer splitting at
