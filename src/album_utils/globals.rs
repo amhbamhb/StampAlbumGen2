@@ -51,8 +51,8 @@ pub fn write_globals<W: Write>(
     let border_spacing = cfg.page_border_spacing.unwrap_or(3.0);
     let pages_spacing_h = cfg.album_pages_spacing_h.unwrap_or(0.0);
     let pages_spacing_v = cfg.album_pages_spacing_v.unwrap_or(0.0);
-    let img_new_w = cfg.album_stamp_img_new_setting_w_mm.unwrap_or(6.0);
-    let img_new_h = cfg.album_stamp_img_new_setting_h_mm.unwrap_or(6.0);
+    let img_new_w = cfg.extra_width_mm.unwrap_or(6.0);
+    let img_new_h = cfg.extra_height_mm.unwrap_or(6.0);
     let img_preserve = cfg
         .album_stamp_img_new_setting_preserve_aspect
         .unwrap_or(true);

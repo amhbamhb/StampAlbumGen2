@@ -641,11 +641,10 @@ pub fn estimate_and_ensure_placeholders(
     stamps: &mut [Stamp],
     mm_per_pixel_w: f32,
     mm_per_pixel_h: f32,
-    preserve_real: bool,
-    stamp_box_height: f64,
+    fit_box: bool,
+    target_stamp_height_mm: f64,
     reference_width_mm: f64,
     reference_height_mm: f64,
-    config: &Config,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Compute series averages from available images
     let mut series_widths_mm: Vec<f64> = Vec::new();
@@ -677,8 +676,7 @@ pub fn estimate_and_ensure_placeholders(
     };
 
     // Get Colnect dimension adjustments from config (default 2.0mm if not set)
-    let colnect_w_adjust = config.colnect_width_adjust_mm.unwrap_or(2.0) as f64;
-    let colnect_h_adjust = config.colnect_height_adjust_mm.unwrap_or(2.0) as f64;
+    // (No per-source adjustments; extra_width_mm/extra_height_mm are applied at emission)
 
     for s in stamps.iter_mut() {
         // First priority: Use Colnect dimensions if available (already in mm)
@@ -692,9 +690,9 @@ pub fn estimate_and_ensure_placeholders(
             .and_then(|h| h.parse::<f64>().ok());
 
         if let (Some(w_mm), Some(h_mm)) = (colnect_w, colnect_h) {
-            // Use Colnect dimensions with separate width/height adjustments
-            s.est_width_mm = Some(w_mm + colnect_w_adjust);
-            s.est_height_mm = Some(h_mm + colnect_h_adjust);
+            // Use Colnect real-world dimensions directly (no per-source adjustments)
+            s.est_width_mm = Some(w_mm);
+            s.est_height_mm = Some(h_mm);
         } else {
             // Fall back to existing logic for image-based or default dimensions
             let image_path = s.image_path.trim();
@@ -712,8 +710,8 @@ pub fn estimate_and_ensure_placeholders(
             {
                 let mut w = w_mm as f64;
                 let mut h = h_mm as f64;
-                if !preserve_real && h > stamp_box_height {
-                    let sc = stamp_box_height / h;
+                if fit_box && h > target_stamp_height_mm {
+                    let sc = target_stamp_height_mm / h;
                     w *= sc;
                     h *= sc;
                 }

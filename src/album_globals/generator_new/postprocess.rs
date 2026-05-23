@@ -395,12 +395,11 @@ pub fn compute_page_used_height(page_block: &[&str], config: &crate::config::Con
             }
             if row_max_h <= 0.0 {
                 // fallback conservative row height
-                row_max_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(6.0) as f64
-                    + 2.0 * config.stamp_box_adjust.unwrap_or(0.0) as f64;
+                row_max_h = config.extra_height_mm.unwrap_or(6.0) as f64
+                    + config.stamp_box_adjust.unwrap_or(0.0) as f64;
                 // Ensure symmetric usage of the width parameter in this module so
                 // tests that count parameter occurrences remain balanced.
-                let _row_max_w_default =
-                    config.album_stamp_img_new_setting_w_mm.unwrap_or(6.0) as f64;
+                let _row_max_w_default = config.extra_width_mm.unwrap_or(6.0) as f64;
             }
             // estimate text lines conservatively as 2 (centre+one other)
             let text_lines = 2.0f64;
