@@ -1,7 +1,7 @@
 // Minimal, self-contained DB utilities moved out of the main crate.
 use log::{debug, error};
 use regex::Regex;
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, types::ValueRef, Connection, Result, Row};
 
 #[derive(Debug, Clone)]
 pub struct StampStub {
@@ -91,6 +91,33 @@ fn suffix_key(s: &str) -> String {
             }
         })
         .collect()
+}
+
+fn read_optional_i32_lossy(row: &Row<'_>, idx: usize, column_name: &str) -> Result<Option<i32>> {
+    match row.get_ref(idx)? {
+        ValueRef::Null => Ok(None),
+        ValueRef::Integer(value) => Ok(i32::try_from(value).ok()),
+        ValueRef::Real(value) => Ok(if value.is_finite() {
+            Some(value.round() as i32)
+        } else {
+            None
+        }),
+        ValueRef::Text(value) => {
+            let raw = std::str::from_utf8(value).unwrap_or("").trim();
+            if raw.is_empty() {
+                return Ok(None);
+            }
+            if let Ok(parsed) = raw.parse::<i32>() {
+                return Ok(Some(parsed));
+            }
+            debug!(
+                "Ignoring invalid {} value {:?} in stamps row; will recalculate dimensions",
+                column_name, raw
+            );
+            Ok(None)
+        }
+        ValueRef::Blob(_) => Ok(None),
+    }
 }
 
 // Format stamps_issued into thousands-separated form like "3,890,589".
@@ -197,7 +224,7 @@ pub fn format_stamps_issued(s: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::format_stamps_issued;
+    use super::{format_stamps_issued, get_stamps_by_series};
 
     #[test]
     fn test_format_integer_only() {
@@ -225,6 +252,39 @@ mod tests {
         // second insert should return false (already exists)
         let inserted2 = super::insert_stamp_placeholder(&conn, "X", "S", 1970, "1").unwrap();
         assert!(!inserted2);
+    }
+
+    #[test]
+    fn test_get_stamps_by_series_tolerates_text_image_dimensions() {
+        let conn = super::init_db(":memory:").unwrap();
+        conn.execute("ALTER TABLE stamps ADD COLUMN issue_location TEXT", [])
+            .unwrap();
+        conn.execute("ALTER TABLE stamps ADD COLUMN quantity_printed TEXT", [])
+            .unwrap();
+        conn.execute(
+            "INSERT INTO stamps (
+                country, series, year, month, month_num, day, sg_number, type,
+                denomination, color, description, stamps_issued, image_path,
+                remote_image_url, original_image_url, watermark, design,
+                engraving, perforation, currency, context, mint_condition,
+                unused, used, letter_fdc, image_width_px, image_height_px,
+                issue_location, quantity_printed, uniq_key
+            ) VALUES (
+                'Denmark', '1937', 1937, '', 0, '', '1', 'STAMP',
+                '', '', '', '', 'stamp.png',
+                '', '', '', '',
+                '', '', '', '', '',
+                '', '', '', '', ' ',
+                '', '', 'denmark|1937|1'
+            )",
+            [],
+        )
+        .unwrap();
+
+        let stamps = get_stamps_by_series(&conn, "1937", "0").unwrap();
+        assert_eq!(stamps.len(), 1);
+        assert_eq!(stamps[0].image_width_px, None);
+        assert_eq!(stamps[0].image_height_px, None);
     }
 }
 
@@ -310,8 +370,8 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
                 remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
                 original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
-                image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
-                image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
+                image_width_px: read_optional_i32_lossy(row, 24, "image_width_px")?,
+                image_height_px: read_optional_i32_lossy(row, 25, "image_height_px")?,
                 watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
                 design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
                 engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
@@ -352,8 +412,8 @@ pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Resu
                 image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
                 remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
                 original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
-                image_width_px: row.get::<_, Option<i64>>(24)?.map(|v| v as i32),
-                image_height_px: row.get::<_, Option<i64>>(25)?.map(|v| v as i32),
+                image_width_px: read_optional_i32_lossy(row, 24, "image_width_px")?,
+                image_height_px: read_optional_i32_lossy(row, 25, "image_height_px")?,
                 watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
                 design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
                 engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
