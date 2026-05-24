@@ -3,7 +3,7 @@ use flexi_logger::{Cleanup, Criterion, FileSpec, Logger, Naming};
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 const DESKTOP_LAUNCHER_DISABLED_MARKER: &str = "desktop_launcher_disabled.flag";
 
@@ -349,6 +349,8 @@ fn refresh_linux_desktop_caches(applications_dir: &std::path::Path) {
     if command_exists("update-desktop-database") {
         let _ = Command::new("update-desktop-database")
             .arg(applications_dir)
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .status();
     }
 
@@ -368,15 +370,23 @@ fn refresh_linux_desktop_caches(applications_dir: &std::path::Path) {
                 .arg("-f")
                 .arg("-t")
                 .arg(&hicolor_dir)
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
                 .status();
             break; // one is enough
         }
     }
 
     if command_exists("kbuildsycoca6") {
-        let _ = Command::new("kbuildsycoca6").status();
+        let _ = Command::new("kbuildsycoca6")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     } else if command_exists("kbuildsycoca5") {
-        let _ = Command::new("kbuildsycoca5").status();
+        let _ = Command::new("kbuildsycoca5")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
     }
 }
 
@@ -758,7 +768,9 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
         changed = true;
     }
 
-    refresh_linux_desktop_caches(&applications_dir);
+    if changed {
+        refresh_linux_desktop_caches(&applications_dir);
+    }
 
     let summary = if changed {
         "Desktop launcher and icon installed/updated in ~/.local/share."
