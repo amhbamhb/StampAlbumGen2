@@ -306,6 +306,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     };
                     match bootstrap_outcome {
+                        ReviewUiBootstrapOutcome::AlreadyRunning => {
+                            log_runtime_event(
+                                "Review UI startup handed off to an existing instance.",
+                            );
+                            return Ok(());
+                        }
                         ReviewUiBootstrapOutcome::Exit => {
                             log_runtime_event("No country selected; exiting Review UI startup.");
                             return Ok(());

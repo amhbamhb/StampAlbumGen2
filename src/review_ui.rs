@@ -1128,6 +1128,7 @@ struct SaveConfigEditorResponse {
 
 pub enum ReviewUiBootstrapOutcome {
     Exit,
+    AlreadyRunning,
     ReloadRequested,
     Selected {
         db_path: String,
@@ -2519,8 +2520,8 @@ pub fn run_review_ui_bootstrap(
                 if open_browser {
                     open_review_ui_url(&url);
                 }
-                // Nothing more to do; caller treats this as a clean exit.
-                return Ok(ReviewUiBootstrapOutcome::Exit);
+                // Nothing more to do; caller treats this as a clean handoff.
+                return Ok(ReviewUiBootstrapOutcome::AlreadyRunning);
             }
             return Err(e);
         }
