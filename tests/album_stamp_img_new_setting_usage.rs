@@ -5,7 +5,7 @@ use tempfile::TempDir;
 /// Test to verify that album_stamp_img_new_setting parameters are properly used throughout the codebase
 ///
 /// This test validates:
-/// 1. All three parameters (w_mm, h_mm, preserve_aspect) are defined in config.rs
+/// 1. All three parameters (extra_width_mm, extra_height_mm, preserve_aspect) are defined in config.rs
 /// 2. All three parameters are used consistently throughout the codebase
 /// 3. Missing width parameter usage is identified and documented
 #[test]
@@ -19,11 +19,11 @@ fn test_album_stamp_img_new_setting_parameter_usage() {
 
     // Verify all three parameters are defined in config.rs
     assert!(
-        config_rs.contains("album_stamp_img_new_setting_w_mm: Option<f32>"),
+        config_rs.contains("extra_width_mm: Option<f32>"),
         "Width parameter should be defined in config.rs"
     );
     assert!(
-        config_rs.contains("album_stamp_img_new_setting_h_mm: Option<f32>"),
+        config_rs.contains("extra_height_mm: Option<f32>"),
         "Height parameter should be defined in config.rs"
     );
     assert!(
@@ -32,12 +32,8 @@ fn test_album_stamp_img_new_setting_parameter_usage() {
     );
 
     // Count usage in album_globals.rs
-    let w_mm_count = album_globals_rs
-        .matches("album_stamp_img_new_setting_w_mm")
-        .count();
-    let h_mm_count = album_globals_rs
-        .matches("album_stamp_img_new_setting_h_mm")
-        .count();
+    let w_mm_count = album_globals_rs.matches("extra_width_mm").count();
+    let h_mm_count = album_globals_rs.matches("extra_height_mm").count();
     let preserve_count = album_globals_rs
         .matches("album_stamp_img_new_setting_preserve_aspect")
         .count();
@@ -47,25 +43,19 @@ fn test_album_stamp_img_new_setting_parameter_usage() {
     println!("  h_mm: {}", h_mm_count);
     println!("  preserve_aspect: {}", preserve_count);
 
-    // The height parameter should be used more than width (currently 4 vs 1)
+    // Keep this resilient to refactors while enforcing broad usage.
     assert!(
         h_mm_count >= 4,
         "Height parameter should be used at least 4 times in album_globals.rs"
     );
-
-    // IDENTIFIED ISSUE: Width parameter is only used once, but should be used wherever height is used
-    println!(
-        "ISSUE IDENTIFIED: Width parameter only used {} time(s), but height used {} times",
-        w_mm_count, h_mm_count
+    assert!(
+        w_mm_count >= 4,
+        "Width parameter should be used at least 4 times in album_globals.rs"
     );
 
     // Count usage in album_utils.rs
-    let utils_w_count = album_utils_rs
-        .matches("album_stamp_img_new_setting_w_mm")
-        .count();
-    let utils_h_count = album_utils_rs
-        .matches("album_stamp_img_new_setting_h_mm")
-        .count();
+    let utils_w_count = album_utils_rs.matches("extra_width_mm").count();
+    let utils_h_count = album_utils_rs.matches("extra_height_mm").count();
     let utils_preserve_count = album_utils_rs
         .matches("album_stamp_img_new_setting_preserve_aspect")
         .count();
@@ -96,8 +86,7 @@ fn test_identify_missing_width_usage() {
     let mut missing_width_lines = Vec::new();
 
     for (line_num, line) in lines.iter().enumerate() {
-        if line.contains("album_stamp_img_new_setting_h_mm")
-            && !line.contains("album_stamp_img_new_setting_w_mm")
+        if line.contains("extra_height_mm") && !line.contains("extra_width_mm")
         {
             // Check if the width parameter should also be used on this line or nearby lines
             let line_number = line_num + 1; // Convert to 1-based line numbers
@@ -110,20 +99,7 @@ fn test_identify_missing_width_usage() {
         println!("  Line {}: {}", line_num, line_content);
     }
 
-    // These are the specific lines identified from our grep search
-    let expected_missing_lines = vec![870, 996, 1143];
-
-    for expected_line in expected_missing_lines {
-        let found_missing = missing_width_lines
-            .iter()
-            .any(|(line_num, _)| *line_num == expected_line);
-        if found_missing {
-            println!(
-                "CONFIRMED: Line {} is missing width parameter usage",
-                expected_line
-            );
-        }
-    }
+    // This test is informational only and should not fail on refactors.
 }
 
 /// Test to verify the ALBUM_STAMP_IMG_NEW_SETTING command generation includes all parameters
@@ -140,11 +116,11 @@ fn test_album_stamp_img_new_setting_command_generation() {
 
     // Check that all three variables are properly extracted from config
     assert!(
-        album_utils_rs.contains("let img_new_w = cfg.album_stamp_img_new_setting_w_mm"),
+        album_utils_rs.contains("let img_new_w = cfg.extra_width_mm"),
         "Width should be extracted from config"
     );
     assert!(
-        album_utils_rs.contains("let img_new_h = cfg.album_stamp_img_new_setting_h_mm"),
+        album_utils_rs.contains("let img_new_h = cfg.extra_height_mm"),
         "Height should be extracted from config"
     );
     assert!(
@@ -163,8 +139,8 @@ fn test_config_parameter_loading() {
 
     // Test with custom values
     let config_content = r#"
-album_stamp_img_new_setting_w_mm = 8.5
-album_stamp_img_new_setting_h_mm = 7.2
+extra_width_mm = 8.5
+extra_height_mm = 7.2
 album_stamp_img_new_setting_preserve_aspect = false
 "#;
 

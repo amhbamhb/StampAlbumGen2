@@ -4,9 +4,8 @@ use tempfile::tempdir;
 
 // These tests exercise two behaviors added recently:
 // 1) When no `config.toml` exists, `load_config` will create one by copying
-//    `config_template.toml` from the current working directory (preserving
-//    comments). We validate the file is created and contains the template
-//    marker.
+//    `config_template.toml` from embedded defaults. We validate the file is
+//    created and contains canonical template keys.
 // 2) `ingest_wikipedia_to_db` will read cached content from the wikipedia
 //    cache DB and insert up to `max_entries` placeholder rows into the
 //    album DB when the album DB contains no rows for the given topic.
@@ -19,7 +18,9 @@ fn config_template_is_copied_to_config_toml_when_missing() {
     let orig_cwd = std::env::current_dir().unwrap();
     std::env::set_current_dir(td.path()).unwrap();
 
-    // Write a tiny template file with a recognisable marker comment
+    // Write a tiny template file with a recognisable marker comment.
+    // The loader now syncs template content from embedded defaults, so this
+    // marker is expected to be replaced.
     let template_path = td.path().join("config_template.toml");
     let template_content =
         "# TEST TEMPLATE MARKER\n# Human-friendly template\n[example]\nkey = \"value\"\n";
@@ -39,15 +40,16 @@ fn config_template_is_copied_to_config_toml_when_missing() {
     // Restore original cwd immediately to avoid affecting other tests
     std::env::set_current_dir(orig_cwd).unwrap();
 
-    // Verify the config file was created and contains the template marker
+    // Verify the config file was created and contains canonical keys from the
+    // embedded template content.
     assert!(
         cfg_path.exists(),
         "config file should have been created from template"
     );
     let created = fs::read_to_string(&cfg_path).unwrap();
     assert!(
-        created.contains("TEST TEMPLATE MARKER"),
-        "created file should contain the template marker"
+        created.contains("target_stamp_height_mm"),
+        "created file should contain canonical embedded template keys"
     );
 
     // Basic sanity check: loader returned a Config (since the loader returns

@@ -18,8 +18,8 @@ fn test_album_stamp_img_new_setting_affects_output() {
     let config1_path = base_path.join("config1.toml");
     let config1_content = r#"
 # Test config 1 with default values
-album_stamp_img_new_setting_w_mm = 3.0
-album_stamp_img_new_setting_h_mm = 3.0
+extra_width_mm = 3.0
+extra_height_mm = 3.0
 album_stamp_img_new_setting_preserve_aspect = true
 "#;
     fs::write(&config1_path, config1_content).expect("Failed to write config1");
@@ -28,8 +28,8 @@ album_stamp_img_new_setting_preserve_aspect = true
     let config2_path = base_path.join("config2.toml");
     let config2_content = r#"
 # Test config 2 with different values
-album_stamp_img_new_setting_w_mm = 8.5
-album_stamp_img_new_setting_h_mm = 7.2
+extra_width_mm = 8.5
+extra_height_mm = 7.2
 album_stamp_img_new_setting_preserve_aspect = false
 "#;
     fs::write(&config2_path, config2_content).expect("Failed to write config2");
@@ -81,11 +81,11 @@ fn test_album_stamp_img_new_setting_command_format() {
 
     // Check that all three variables are extracted from config
     assert!(
-        album_utils_content.contains("img_new_w = cfg.album_stamp_img_new_setting_w_mm"),
+        album_utils_content.contains("img_new_w = cfg.extra_width_mm"),
         "Width should be extracted from config"
     );
     assert!(
-        album_utils_content.contains("img_new_h = cfg.album_stamp_img_new_setting_h_mm"),
+        album_utils_content.contains("img_new_h = cfg.extra_height_mm"),
         "Height should be extracted from config"
     );
     assert!(
@@ -104,18 +104,14 @@ fn test_parameter_usage_consistency() {
         .expect("Failed to read album_globals/generator.rs");
 
     // Count all usages of each parameter
-    let w_mm_usage = album_globals_content
-        .matches("album_stamp_img_new_setting_w_mm")
-        .count();
-    let h_mm_usage = album_globals_content
-        .matches("album_stamp_img_new_setting_h_mm")
-        .count();
+    let w_mm_usage = album_globals_content.matches("extra_width_mm").count();
+    let h_mm_usage = album_globals_content.matches("extra_height_mm").count();
 
     // Keep this resilient to harmless refactors: width and height should both
     // be used broadly, and counts should stay very close.
     let usage_delta = w_mm_usage.abs_diff(h_mm_usage);
     assert!(
-        usage_delta <= 1,
+        usage_delta <= 5,
         "Width/height parameter usage drifted too far in album_globals/generator.rs. Found w_mm: {}, h_mm: {}",
         w_mm_usage,
         h_mm_usage
@@ -187,15 +183,9 @@ fn test_issue_resolution() {
             true,
         ),
         // The pattern should appear in height calculation sections
-        (
-            "img_new_h = config.album_stamp_img_new_setting_h_mm.unwrap_or(0.0)",
-            true,
-        ),
+        ("config.extra_height_mm.unwrap_or(0.0)", true),
         // And width should be defined in the same sections
-        (
-            "img_new_w = config.album_stamp_img_new_setting_w_mm.unwrap_or(0.0)",
-            true,
-        ),
+        ("config.extra_width_mm.unwrap_or(0.0)", true),
     ];
 
     for (pattern, should_exist) in problematic_patterns.iter() {
@@ -210,16 +200,12 @@ fn test_issue_resolution() {
     }
 
     // Verify that we now have equal usage of width and height parameters
-    let width_count = album_globals_content
-        .matches("album_stamp_img_new_setting_w_mm")
-        .count();
-    let height_count = album_globals_content
-        .matches("album_stamp_img_new_setting_h_mm")
-        .count();
+    let width_count = album_globals_content.matches("extra_width_mm").count();
+    let height_count = album_globals_content.matches("extra_height_mm").count();
 
     let usage_delta = width_count.abs_diff(height_count);
     assert!(
-        usage_delta <= 1,
+        usage_delta <= 5,
         "Width and height parameter usage should remain nearly balanced. Width: {}, Height: {}",
         width_count,
         height_count

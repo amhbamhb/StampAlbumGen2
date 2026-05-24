@@ -26,7 +26,7 @@ fn test_load_example_config_roundtrip() {
     let cfg = stamp_album_gen2::config::load_config("config.toml");
 
     // Basic assertions for a few keys present in the example
-    assert_eq!(cfg.stamp_box_height.unwrap(), 24.0_f32);
+    assert_eq!(cfg.target_stamp_height_mm.unwrap(), 24.0_f32);
     assert_eq!(cfg.page_fit_conservative_buffer_mm.unwrap(), 11.0_f32);
     assert_eq!(cfg.expand_grouped_ranges.as_deref(), Some("placeholders"));
 
