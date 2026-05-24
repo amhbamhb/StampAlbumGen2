@@ -86,8 +86,7 @@ fn test_identify_missing_width_usage() {
     let mut missing_width_lines = Vec::new();
 
     for (line_num, line) in lines.iter().enumerate() {
-        if line.contains("extra_height_mm") && !line.contains("extra_width_mm")
-        {
+        if line.contains("extra_height_mm") && !line.contains("extra_width_mm") {
             // Check if the width parameter should also be used on this line or nearby lines
             let line_number = line_num + 1; // Convert to 1-based line numbers
             missing_width_lines.push((line_number, line.trim()));
