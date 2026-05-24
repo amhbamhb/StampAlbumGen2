@@ -254,7 +254,7 @@ pdf_dx_logging = false
 # Alternating row colors for right/left metadata tables.
 odd_row_color = "#ffffff"
 even_row_color = "#e6eef4"
-default_sort_mode = "catalog"
+default_sort_mode = "year_series_date_catalog"
 
 # Default checkbox states for field selection
 default_series_checked = true

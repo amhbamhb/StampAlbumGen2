@@ -667,13 +667,14 @@ even_row_color = "#e6eef4"
 #
 # Review UI startup sort order for the left-panel stamp list.
 # Allowed values:
+# - "year_series_date_catalog" : year then issue date in series then catalog number
 # - "catalog"             : catalog number
 # - "year_catalog"        : year then catalog number
 # - "series_catalog"      : series then catalog number
 # - "series_date_catalog" : series then issue date then catalog number
 # - "rowid"          : database row id
 # - "colnect_id"     : Colnect ID
-default_sort_mode = "catalog"
+default_sort_mode = "year_series_date_catalog"
 
 # Stamp metadata fields:
 default_series_checked = true         # Series label (grouping name for the stamp set)

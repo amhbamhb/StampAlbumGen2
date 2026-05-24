@@ -154,7 +154,7 @@ pdf_dx_logging = false
 [review_ui]
 odd_row_color = "#ffffff"
 even_row_color = "#e6eef4"
-default_sort_mode = "catalog"
+default_sort_mode = "year_series_date_catalog"
 
 # Default checkbox states for field selection in review mode
 default_series_checked = true

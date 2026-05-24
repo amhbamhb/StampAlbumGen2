@@ -514,7 +514,7 @@ impl Config {
             review_ui: Some(ReviewUiConfig {
                 odd_row_color: Some("#ffffff".to_string()),
                 even_row_color: Some("#e6eef4".to_string()),
-                default_sort_mode: Some("catalog".to_string()),
+                default_sort_mode: Some("year_series_date_catalog".to_string()),
                 default_series_checked: Some(true),
                 default_description_checked: Some(true),
                 default_watermark_checked: Some(false),
