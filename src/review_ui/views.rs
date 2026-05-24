@@ -1035,28 +1035,28 @@ async function checkAlbumeasyStatusAfterPull() {{
         if (!j.ok) return;
         if (j.configured && j.path_exists) return;
 
-        const hint = j.cli_path ? ('Current path: ' + j.cli_path + '\n\n') : '';
-        const answer = prompt(
-            'AlbumEasy CLI is not configured for PDF generation.\n\n' +
-            hint +
-            'Enter full AlbumEasy CLI path now (or leave blank to skip):\n\n' +
-            'Download: ' + (j.download_url || 'https://www.thestampweb.com/albumeasy/download')
-        );
+        const answer = await showAlbumeasyPathDialog(j);
         if (answer === null || !String(answer).trim()) return;
 
-        const saveResp = await fetch('/api/albumeasy-set-path', {{
-            method: 'POST',
-            headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ cli_path: String(answer).trim() }})
-        }});
-        const saveJson = await saveResp.json();
+        const saveJson = await saveAlbumeasyPath(answer);
         const status = document.getElementById('status');
         if (status) status.innerText = saveJson.message || 'AlbumEasy path updated.';
     }} catch (_) {{}}
 }}
 
 async function configureAlbumeasyPath() {{
-    await checkAlbumeasyStatusAfterPull();
+    try {{
+        const r = await fetch('/api/albumeasy-status');
+        const j = await r.json();
+        if (!j.ok) return;
+
+        const answer = await showAlbumeasyPathDialog(j);
+        if (answer === null || !String(answer).trim()) return;
+
+        const saveJson = await saveAlbumeasyPath(answer);
+        const status = document.getElementById('status');
+        if (status) status.innerText = saveJson.message || 'AlbumEasy path updated.';
+    }} catch (_) {{}}
 }}
 
 async function copySuggestedCommand() {{
