@@ -90,6 +90,18 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
 .introPanelBody {{ padding: 2px 14px 12px 38px; }}
 .introPanelBody p {{ margin: 4px 0 8px 0; font-size: 13.5px; }}
 .introPanelBody a {{ color: var(--accent-main); }}
+.collapsibleSection {{ overflow: hidden; }}
+.collapsibleSection.panel,
+.collapsibleSection.albumsRootPanel,
+.collapsibleSection.colnectCopyPanel {{ padding: 0; }}
+.collapsibleSection summary {{ display: flex; align-items: center; gap: 8px; padding: 10px 14px; cursor: pointer; font-weight: 600; font-size: 14px; color: var(--accent-main); list-style: none; user-select: none; transition: background 140ms; }}
+.collapsibleSection summary::-webkit-details-marker {{ display: none; }}
+.collapsibleSection summary:hover {{ background: rgba(31,111,168,0.07); }}
+.collapsibleSection summary .introArrow {{ font-size: 10px; transition: transform 200ms; flex-shrink: 0; }}
+details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(-90deg); }}
+.collapsibleSection summary .introDimTag {{ font-size: 11px; font-weight: 400; color: var(--muted-text); margin-left: auto; }}
+.collapsibleSectionBody {{ padding: 12px 14px 12px 38px; }}
+.collapsibleSectionBody p {{ margin: 4px 0 8px 0; }}
 .hintRow {{ display: flex; gap: 10px; align-items: flex-start; margin: 7px 0; padding: 8px 10px; background: rgba(255,255,255,0.75); border-radius: 7px; border: 1px solid #ddeef9; font-size: 13px; color: var(--muted-text); }}
 .hintIcon {{ font-size: 15px; flex-shrink: 0; margin-top: 1px; }}
 .colnectCopyPanel {{ border: 1px solid #d9e6f1; border-left: 5px solid #7b4ea3; border-radius: 10px; padding: 12px; background: #fdf8ff; margin-top: 12px; }}
@@ -135,97 +147,87 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
         <button class='btn-import' onclick='importColnectFiles()'>Import Colnect</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
     </div>
-    <div class='albumsRootPanel'>
-        <div class='albumsRootHead'>
-            <strong>Albums Root</strong>
-            <span id='albumsRootResolved' class='badge'>Albums root: auto</span>
-        </div>
-        <p class='albumsRootHint'>Select your Albums root folder (usually named <code>Albums</code>). All startup actions in this page use that location.</p>
-        <div class='row albumsRootActions'>
-            <label for='albumsRootPath'>Folder</label>
-            <input id='albumsRootPath' type='text' placeholder='Type Albums path or pick with folder chooser' style='min-width:420px;' />
-            <button onclick='browseAlbumsRootPath()'>&#128193; Pick Albums Root...</button>
-            <button class='primary' onclick='setAlbumsRootPath()'>&#10003; Apply</button>
-            <button onclick='clearAlbumsRootPath()'>&#8635; Reset</button>
-        </div>
-        <div id='albumsRootStatus' class='albumsRootStatus'>Ready</div>
-    </div>
     <div class='row'>
-        <label for='countrySearch'>Search</label>
-        <input id='countrySearch' type='text' placeholder='Type to search or enter a new country...' list='countrySearchList' oninput='updateCountrySearchMatches(true)' onchange='applyCountrySearchSelection()' />
-        <datalist id='countrySearchList'></datalist>
-        <button onclick='stepCountrySearch(-1)'>Back</button>
-        <button onclick='stepCountrySearch(1)'>Forward</button>
-        <span id='countrySearchStatus' class='badge'>Matches: 0/0</span>
-    </div>
-    <div class='row' style='align-items:center;gap:0.5em;flex-wrap:wrap;'>
-        <label for='pdfStartYear' style='margin:0;'>PDF Year Range</label>
-        <input id='pdfStartYear' type='number' placeholder='Start year' min='1840' max='2100' style='width:100px'/>
-        <span style='font-size:0.9em;'>to</span>
-        <input id='pdfEndYear' type='number' placeholder='End year' min='1840' max='2100' style='width:100px'/>
-        <span style='font-size:0.82em;color:#666;'>(leave blank = all years)</span>
         <span id='countryCount' class='badge'>Countries: 0</span>
     </div>
-
+    <details id='albumsRootPanel' class='albumsRootPanel collapsibleSection' open>
+        <summary><span class='introArrow'>&#9660;</span> Albums Root <span id='albumsRootResolved' class='badge'>Albums root: auto</span> <span class='introDimTag'>click to expand / collapse</span></summary>
+        <div class='collapsibleSectionBody'>
+            <p class='albumsRootHint'>Select your Albums root folder (usually named <code>Albums</code>). All startup actions in this page use that location.</p>
+            <div class='row albumsRootActions'>
+                <label for='albumsRootPath'>Folder</label>
+                <input id='albumsRootPath' type='text' placeholder='Type Albums path or pick with folder chooser' style='min-width:420px;' />
+                <button onclick='browseAlbumsRootPath()'>&#128193; Pick Albums Root...</button>
+                <button class='primary' onclick='setAlbumsRootPath()'>&#10003; Apply</button>
+                <button onclick='clearAlbumsRootPath()'>&#8635; Reset</button>
+            </div>
+            <div id='albumsRootStatus' class='albumsRootStatus'>Ready</div>
+        </div>
+    </details>
     <div id='countryPanel' class='panel'></div>
-    <div id='stampworldPanel' class='panel warn' style='display:none;'>
-        <strong id='swPanelLead'>StampWorld pull is available for this country.</strong>
-        <p id='swPanelHint' style='margin-top:6px;'>Use this to pull additional StampWorld data for existing countries or create a new country.</p>
-        <div class='row'>
-            <label>StampWorld Country</label>
-            <input id='swCountry' type='text' />
-            <label>Start Year</label>
-            <select id='swStartYear'></select>
-            <label>End Year</label>
-            <select id='swEndYear'></select>
+    <details id='stampworldPanel' class='panel warn collapsibleSection' style='display:none;' open>
+        <summary><span class='introArrow'>&#9660;</span> Run StampWorld pull for this country (including additional pull). <span class='introDimTag'>click to expand / collapse</span></summary>
+        <div class='collapsibleSectionBody'>
+            <strong id='swPanelLead'>StampWorld pull is available for this country.</strong>
+            <p id='swPanelHint' style='margin-top:6px;'>Use this to pull additional StampWorld data for existing countries or create a new country.</p>
+            <div class='row'>
+                <label>StampWorld Country</label>
+                <input id='swCountry' type='text' />
+                <label>Start Year</label>
+                <select id='swStartYear'></select>
+                <label>End Year</label>
+                <select id='swEndYear'></select>
+            </div>
+            <div class='row'>
+                <label>Command Preset</label>
+                <select id='swPreset'>
+                    <option value='basic'>Basic Pull</option>
+                    <option value='overwrite_album'>Overwrite Album Output</option>
+                    <option value='overwrite_all'>Overwrite Album + Images</option>
+                    <option value='bounded_pages'>Limit Pages (fast test)</option>
+                    <option value='accept_typo'>Auto Accept Source Typos</option>
+                </select>
+                <label>Extra Flags</label>
+                <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:290px;' />
+            </div>
+            <div class='row'>
+                <span class='badge'>Colnect inbox hint: {inbox_hint}</span>
+            </div>
+            <div class='row'>
+                <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
+                <button id='swOpenReviewBtn' class='primary' onclick='openReviewAfterStampWorld()' style='display:none;'>Open Review</button>
+                <span id='swRunStatus' class='badge'>Not started</span>
+            </div>
+            <div class='row'>
+                <strong>Suggested command:</strong>
+                <code id='swCmd'></code>
+                <button onclick='copySuggestedCommand()'>Copy</button>
+            </div>
+            <div class='row' style='font-size:12px;color:#37566d;'>
+                <span>AlbumEasy not set? Add CLI path here or install from</span>
+                <a href='https://www.thestampweb.com/albumeasy/download' target='_blank' rel='noopener noreferrer'>AlbumEasy download</a>
+                <button onclick='configureAlbumeasyPath()'>Set AlbumEasy Path</button>
+            </div>
+            <div id='swPullLogPanel' style='display:none;margin-top:10px;border:1px solid #e3c27e;border-radius:6px;padding:10px;background:#fffbf0;'>
+                <div style='font-size:13px;font-weight:600;color:#37566d;margin-bottom:8px;'>StampWorld Pull Progress: Real-Time Log</div>
+                <textarea id='swPullLog' readonly style='width:100%;min-height:150px;max-height:280px;resize:vertical;padding:8px;border:1px solid #d7b896;border-radius:6px;font-family:monospace;font-size:11px;background:#fffcf7;color:#333;overflow-y:auto;overflow-x:hidden;'></textarea>
+            </div>
         </div>
-        <div class='row'>
-            <label>Command Preset</label>
-            <select id='swPreset'>
-                <option value='basic'>Basic Pull</option>
-                <option value='overwrite_album'>Overwrite Album Output</option>
-                <option value='overwrite_all'>Overwrite Album + Images</option>
-                <option value='bounded_pages'>Limit Pages (fast test)</option>
-                <option value='accept_typo'>Auto Accept Source Typos</option>
-            </select>
-            <label>Extra Flags</label>
-            <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:290px;' />
+    </details>
+    <details id='colnectCopyPanel' class='colnectCopyPanel collapsibleSection' open>
+        <summary><span class='introArrow'>&#9660;</span> Import Colnect Files <span class='introDimTag'>click to expand / collapse</span></summary>
+        <div class='collapsibleSectionBody'>
+            <div class='row' style='margin-top:8px;'>
+                <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>
+                <span id='colnectCopyCountBadge' class='badge'>Files: 0</span>
+            </div>
+            <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
+                Destination: <code id='colnectDirPath'>(select a country)</code>
+            </div>
+            <div id='colnectCopyStatus' class='colnectCopyStatus'>Ready</div>
+            <div id='colnectCopyLog' class='colnectCopyLog'></div>
         </div>
-        <div class='row'>
-            <span class='badge'>Colnect inbox hint: {inbox_hint}</span>
-        </div>
-        <div class='row'>
-            <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
-            <button id='swOpenReviewBtn' class='primary' onclick='openReviewAfterStampWorld()' style='display:none;'>Open Review</button>
-            <span id='swRunStatus' class='badge'>Not started</span>
-        </div>
-        <div class='row'>
-            <strong>Suggested command:</strong>
-            <code id='swCmd'></code>
-            <button onclick='copySuggestedCommand()'>Copy</button>
-        </div>
-        <div class='row' style='font-size:12px;color:#37566d;'>
-            <span>AlbumEasy not set? Add CLI path here or install from</span>
-            <a href='https://www.thestampweb.com/albumeasy/download' target='_blank' rel='noopener noreferrer'>AlbumEasy download</a>
-            <button onclick='configureAlbumeasyPath()'>Set AlbumEasy Path</button>
-        </div>
-        <div id='swPullLogPanel' style='display:none;margin-top:10px;border:1px solid #e3c27e;border-radius:6px;padding:10px;background:#fffbf0;'>
-            <div style='font-size:13px;font-weight:600;color:#37566d;margin-bottom:8px;'>StampWorld Pull Progress: Real-Time Log</div>
-            <textarea id='swPullLog' readonly style='width:100%;min-height:150px;max-height:280px;resize:vertical;padding:8px;border:1px solid #d7b896;border-radius:6px;font-family:monospace;font-size:11px;background:#fffcf7;color:#333;overflow-y:auto;overflow-x:hidden;'></textarea>
-        </div>
-    </div>
-    <div id='colnectCopyPanel' class='colnectCopyPanel'>
-        <strong>Import Colnect Files</strong>
-        <div class='row' style='margin-top:8px;'>
-            <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>
-            <span id='colnectCopyCountBadge' class='badge'>Files: 0</span>
-        </div>
-        <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
-            Destination: <code id='colnectDirPath'>(select a country)</code>
-        </div>
-        <div id='colnectCopyStatus' class='colnectCopyStatus'>Ready</div>
-        <div id='colnectCopyLog' class='colnectCopyLog'></div>
-    </div>
+    </details>
     <div id='status' class='status'></div>
     <div id='runtimeLogPanel' style='margin-top:10px;border:1px solid #d7e2eb;border-radius:10px;padding:10px;background:#fbfdff;'>
         <div class='row' style='margin-top:0;justify-content:space-between;'>
@@ -270,19 +272,28 @@ let stampworldRunPollTimer = null;
 let nativeDialogInFlight = false;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
 const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
+const albumsRootPanelStorageKey = 'reviewui.bootstrap.albumsRootPanel';
+const stampworldPanelStorageKey = 'reviewui.bootstrap.stampworldPanel';
+const colnectCopyPanelStorageKey = 'reviewui.bootstrap.colnectCopyPanel';
 const selectedCountryStorageKey = 'reviewui.bootstrap.selectedCountry';
 const backendHealthPollMs = 15000;
-(function() {{
-  try {{
-    const ip = document.getElementById('introPanel');
-    if (ip) {{
-      if (localStorage.getItem(introPanelStorageKey) === 'closed') ip.removeAttribute('open');
-      ip.addEventListener('toggle', function() {{
-        try {{ localStorage.setItem(introPanelStorageKey, ip.open ? 'open' : 'closed'); }} catch(_) {{}}
-      }});
-    }}
-  }} catch(_) {{}}
-}})();
+function initCollapsiblePanel(panelId, storageKey) {{
+        try {{
+                const panel = document.getElementById(panelId);
+                if (!panel) return;
+                const savedState = localStorage.getItem(storageKey);
+                if (savedState === 'closed') panel.removeAttribute('open');
+                if (savedState === 'open') panel.setAttribute('open', '');
+                panel.addEventListener('toggle', function() {{
+                        try {{ localStorage.setItem(storageKey, panel.open ? 'open' : 'closed'); }} catch (_) {{}}
+                }});
+        }} catch (_) {{}}
+}}
+
+initCollapsiblePanel('introPanel', introPanelStorageKey);
+initCollapsiblePanel('albumsRootPanel', albumsRootPanelStorageKey);
+initCollapsiblePanel('stampworldPanel', stampworldPanelStorageKey);
+initCollapsiblePanel('colnectCopyPanel', colnectCopyPanelStorageKey);
 const backendHealthFailureThreshold = 2;
 
 function reloadCurrentPage() {{
