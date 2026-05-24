@@ -799,10 +799,11 @@ impl Config {
             .and_then(|r| r.default_sort_mode.as_deref())
             .map(str::trim)
             .filter(|s| !s.is_empty())
-            .unwrap_or("catalog")
+            .unwrap_or("year_series_date_catalog")
             .to_ascii_lowercase();
 
         match mode.as_str() {
+            "year_series_date_catalog" => "year_series_date_catalog".to_string(),
             "catalog" => "catalog".to_string(),
             "year_catalog" => "year_catalog".to_string(),
             "series_catalog" => "series_catalog".to_string(),
@@ -812,7 +813,7 @@ impl Config {
             "series_sg" => "series_catalog".to_string(),
             "series_date_sg" => "series_date_catalog".to_string(),
             "rowid" | "colnect_id" => mode,
-            _ => "catalog".to_string(),
+            _ => "year_series_date_catalog".to_string(),
         }
     }
 
