@@ -1448,6 +1448,10 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .sessionSectionSlate {{ border: 1px solid #d5dbe3; background: #f5f6f8; }}
 .sessionSectionTitle {{ margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #2a4458; letter-spacing: 0.2px; }}
 .sessionRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+.orderSelectGroup {{ display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; max-width: 100%; }}
+.orderSelectGroup label {{ margin: 0; }}
+#sortMode, #reviewPdfSortMode {{ min-width: 260px; width: min(560px, 100%); max-width: 100%; white-space: normal; }}
+#sortMode option, #reviewPdfSortMode option {{ white-space: normal; }}
 .sessionStatusBox {{ margin-top: 8px; min-height: 16px; font-size: 12px; border-radius: 8px; border-left-width: 4px; border-left-style: solid; padding: 6px 8px; }}
 .sessionStatusBlue {{ border: 1px solid #cddff2; border-left: 4px solid #2f6fa3; background: #f8fcff; color: #2f4f67; }}
 .sessionStatusGreen {{ border: 1px solid #cfe8da; border-left: 4px solid #2f8f63; background: #f4fcf8; color: #245641; }}
@@ -1659,6 +1663,8 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 @media (max-width: 980px) {{
     .row {{ flex-direction: column; }}
     .panelBody {{ max-height: 42vh; }}
+    .orderSelectGroup {{ width: 100%; }}
+    #sortMode, #reviewPdfSortMode {{ width: 100%; min-width: 190px; }}
 }}
 </style>
 </head>
@@ -1756,6 +1762,20 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                     <div class='sessionRow'>
                         <button id='reviewPdfBtn' onclick='generatePdfNowReview()'>Generate PDF Now</button>
                         <button id='reviewPdfPreviewBtn' onclick='previewLastPdfReview()' style='display:none;'>Preview Last PDF</button>
+                        <div class='orderSelectGroup'>
+                            <label for='reviewPdfSortMode' style='font-size:0.9em;margin:0 0 0 0.4em;'>Order</label>
+                            <select id='reviewPdfSortMode' onchange='changePdfSortMode()' style='padding:2px 4px;font-size:0.9em;'>
+                                <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)</option>
+                                <option value='catalog'>Catalog number</option>
+                                <option value='year_catalog'>Year then catalog number</option>
+                                <option value='series_catalog'>Series then catalog number</option>
+                                <option value='series_date_catalog'>Series then issue date then catalog number</option>
+                                <option value='rowid'>DB row id</option>
+                                <option value='colnect_id'>Colnect ID</option>
+                            </select>
+                            <button id='reviewPdfSortModeMakeDefaultBtn' type='button' onclick='makePdfSortModeDefault()' style='display:none;'>Make default?</button>
+                            <button id='reviewPdfSortModeResetDefaultBtn' type='button' onclick='resetPdfSortModeDefault()' style='display:none;'>Reset default</button>
+                        </div>
                         <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
                         <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
                         <span style='font-size:0.9em;'>–</span>
@@ -1797,16 +1817,18 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <label><input type='checkbox' id='f_replace_sg'/> replace catalog number</label>
         <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
         <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
-                <label>order
+            <div class='orderSelectGroup'><label>order
                         <select id='sortMode' onchange='changeSortMode()'>
-                        <option value='catalog'>Catalog number (default)</option>
+                        <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)</option>
+                        <option value='catalog'>Catalog number</option>
                         <option value='year_catalog'>Year then catalog number</option>
                         <option value='series_catalog'>Series then catalog number</option>
-                    <option value='series_date_catalog'>Series then issue date</option>
+                    <option value='series_date_catalog'>Series then issue date then catalog number</option>
                                 <option value='rowid'>DB row id</option>
                                 <option value='colnect_id'>Colnect ID</option>
                         </select>
-                </label>
+                </label><button id='sortModeMakeDefaultBtn' type='button' onclick='makeSortModeDefault()' style='display:none;'>Make default?</button>
+                <button id='sortModeResetDefaultBtn' type='button' onclick='resetSortModeDefault()' style='display:none;'>Reset default</button></div>
       </div>
     </div>
     <div class='actionRows'>
@@ -2004,9 +2026,11 @@ const reviewColnectDir = String(payload.colnect_dir || '');
 let reviewColnectFileCount = Number(payload.colnect_file_count || 0);
 const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
-const configDefaultSortMode = String(payload.default_sort_mode || 'catalog').toLowerCase();
+const configDefaultSortMode = String(payload.default_sort_mode || 'year_series_date_catalog').toLowerCase();
 const reviewCountryName = String(payload.album_name || '').trim();
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
+const sortModeDefaultStorageKey = 'reviewui.defaultSortMode.' + String(payload.album_name || 'default');
+const pdfSortModeDefaultStorageKey = 'reviewui.defaultPdfSortMode.' + String(payload.album_name || 'default');
 let countryDefaultCatalogCode = '';
 let leftIdx = 0;
 let rightIdxByLeft = {{}};
@@ -2019,7 +2043,10 @@ let resolvingRightImageById = {{}};
 let resolvedRightImageById = {{}};
 let leftEditorMode = 'edit';
 let leftEditorSourceRowid = null;
-let sortMode = normalizeSortMode(configDefaultSortMode);
+let sortModeDefault = normalizeSortMode(configDefaultSortMode);
+let pdfSortModeDefault = normalizeSortMode(configDefaultSortMode);
+let sortMode = sortModeDefault;
+let pdfSortMode = pdfSortModeDefault;
 let leftSearchMatches = [];
 let leftSearchMatchPos = -1;
 let leftSearchQuery = '';
@@ -2751,13 +2778,25 @@ function sgSortText(item) {{
 }}
 
 function normalizeSortMode(mode) {{
-    const m = String(mode || 'catalog').toLowerCase();
-    if (m === 'catalog' || m === 'year_catalog' || m === 'series_catalog' || m === 'series_date_catalog' || m === 'rowid' || m === 'colnect_id') return m;
+    const m = String(mode || 'year_series_date_catalog').toLowerCase();
+    if (m === 'catalog' || m === 'year_catalog' || m === 'series_catalog' || m === 'series_date_catalog' || m === 'year_series_date_catalog' || m === 'rowid' || m === 'colnect_id') return m;
     if (m === 'sg') return 'catalog';
     if (m === 'year_sg') return 'year_catalog';
     if (m === 'series_sg') return 'series_catalog';
     if (m === 'series_date_sg') return 'series_date_catalog';
-    return 'catalog';
+    return 'year_series_date_catalog';
+}}
+
+function updateSortDefaultButtons() {{
+    const configDefault = normalizeSortMode(configDefaultSortMode);
+    const sortBtn = document.getElementById('sortModeMakeDefaultBtn');
+    if (sortBtn) sortBtn.style.display = (normalizeSortMode(sortMode) !== normalizeSortMode(sortModeDefault)) ? '' : 'none';
+    const sortResetBtn = document.getElementById('sortModeResetDefaultBtn');
+    if (sortResetBtn) sortResetBtn.style.display = (normalizeSortMode(sortModeDefault) !== configDefault) ? '' : 'none';
+    const pdfBtn = document.getElementById('reviewPdfSortModeMakeDefaultBtn');
+    if (pdfBtn) pdfBtn.style.display = (normalizeSortMode(pdfSortMode) !== normalizeSortMode(pdfSortModeDefault)) ? '' : 'none';
+    const pdfResetBtn = document.getElementById('reviewPdfSortModeResetDefaultBtn');
+    if (pdfResetBtn) pdfResetBtn.style.display = (normalizeSortMode(pdfSortModeDefault) !== configDefault) ? '' : 'none';
 }}
 
 function parseIssueDayValue(value) {{
@@ -2804,6 +2843,20 @@ function compareBySortMode(a, b, mode) {{
         return Number(a?.rowid || 0) - Number(b?.rowid || 0);
     }}
     if (m === 'series_date_catalog') {{
+        const aser = String(a?.series || '').toLowerCase();
+        const bser = String(b?.series || '').toLowerCase();
+        if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
+        const dateCmp = compareIssueDateParts(a, b);
+        if (dateCmp !== 0) return dateCmp;
+        const asg = sgSortText(a);
+        const bsg = sgSortText(b);
+        if (asg !== bsg) return asg.localeCompare(bsg, undefined, {{ numeric: true, sensitivity: 'base' }});
+        return Number(a?.rowid || 0) - Number(b?.rowid || 0);
+    }}
+    if (m === 'year_series_date_catalog') {{
+        const ay = Number(a?.year || 0);
+        const by = Number(b?.year || 0);
+        if (ay !== by) return ay - by;
         const aser = String(a?.series || '').toLowerCase();
         const bser = String(b?.series || '').toLowerCase();
         if (aser !== bser) return aser.localeCompare(bser, undefined, {{ numeric: true, sensitivity: 'base' }});
@@ -3190,12 +3243,71 @@ function lastRight() {{
 }}
 
 function changeSortMode() {{
-    const sel = document.getElementById('sortMode');
-    sortMode = normalizeSortMode(String(sel?.value || 'sg'));
+    const src = document.getElementById('sortMode');
+    sortMode = normalizeSortMode(String(src?.value || 'year_series_date_catalog'));
+    updateSortDefaultButtons();
     const currentRowid = left[leftIdx]?.rowid;
     sortLeftRows(currentRowid);
     for (const key of Object.keys(rightIdxByLeft)) rightIdxByLeft[key] = 0;
     render();
+}}
+
+function changePdfSortMode() {{
+    const src = document.getElementById('reviewPdfSortMode');
+    pdfSortMode = normalizeSortMode(String(src?.value || 'year_series_date_catalog'));
+    updateSortDefaultButtons();
+}}
+
+function makeSortModeDefault() {{
+    sortModeDefault = normalizeSortMode(sortMode);
+    try {{
+        localStorage.setItem(sortModeDefaultStorageKey, sortModeDefault);
+    }} catch (_) {{}}
+    updateSortDefaultButtons();
+    const statusEl = document.getElementById('status');
+    if (statusEl) statusEl.innerText = 'Saved Field Update order default.';
+}}
+
+function makePdfSortModeDefault() {{
+    pdfSortModeDefault = normalizeSortMode(pdfSortMode);
+    try {{
+        localStorage.setItem(pdfSortModeDefaultStorageKey, pdfSortModeDefault);
+    }} catch (_) {{}}
+    updateSortDefaultButtons();
+    const statusEl = document.getElementById('pdfStatus');
+    if (statusEl) statusEl.innerText = 'Saved PDF order default.';
+}}
+
+function resetSortModeDefault() {{
+    const configDefault = normalizeSortMode(configDefaultSortMode);
+    sortModeDefault = configDefault;
+    sortMode = configDefault;
+    try {{
+        localStorage.removeItem(sortModeDefaultStorageKey);
+    }} catch (_) {{}}
+    const sel = document.getElementById('sortMode');
+    if (sel) sel.value = sortMode;
+    updateSortDefaultButtons();
+    const currentRowid = left[leftIdx]?.rowid;
+    sortLeftRows(currentRowid);
+    for (const key of Object.keys(rightIdxByLeft)) rightIdxByLeft[key] = 0;
+    render();
+    const statusEl = document.getElementById('status');
+    if (statusEl) statusEl.innerText = 'Reset Field Update order default to config.';
+}}
+
+function resetPdfSortModeDefault() {{
+    const configDefault = normalizeSortMode(configDefaultSortMode);
+    pdfSortModeDefault = configDefault;
+    pdfSortMode = configDefault;
+    try {{
+        localStorage.removeItem(pdfSortModeDefaultStorageKey);
+    }} catch (_) {{}}
+    const sel = document.getElementById('reviewPdfSortMode');
+    if (sel) sel.value = pdfSortMode;
+    updateSortDefaultButtons();
+    const statusEl = document.getElementById('pdfStatus');
+    if (statusEl) statusEl.innerText = 'Reset PDF order default to config.';
 }}
 
 function currentRightCandidate() {{
@@ -4996,6 +5108,20 @@ try {{
         || 'sg';
 }}
 
+try {{
+    sortModeDefault = normalizeSortMode(String(localStorage.getItem(sortModeDefaultStorageKey) || configDefaultSortMode));
+}} catch (_) {{
+    sortModeDefault = normalizeSortMode(configDefaultSortMode);
+}}
+sortMode = sortModeDefault;
+
+try {{
+    pdfSortModeDefault = normalizeSortMode(String(localStorage.getItem(pdfSortModeDefaultStorageKey) || configDefaultSortMode));
+}} catch (_) {{
+    pdfSortModeDefault = normalizeSortMode(configDefaultSortMode);
+}}
+pdfSortMode = pdfSortModeDefault;
+
 const defaultCatalogSelect = document.getElementById('defaultCatalogSelect');
 if (defaultCatalogSelect) {{
     defaultCatalogSelect.value = normalizeCatalogCodeForUi(countryDefaultCatalogCode) || getEffectiveDefaultCatalogCode();
@@ -5020,6 +5146,9 @@ restorePdfUiState();
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;
+const reviewPdfSortModeSelect = document.getElementById('reviewPdfSortMode');
+if (reviewPdfSortModeSelect) reviewPdfSortModeSelect.value = pdfSortMode;
+updateSortDefaultButtons();
 const showImagelessLeftToggle = document.getElementById('f_show_imageless_left');
 if (showImagelessLeftToggle) showImagelessLeftToggle.checked = showImagelessLeftRowsDefault;
 sortLeftRows(left[leftIdx]?.rowid);
