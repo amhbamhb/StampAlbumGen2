@@ -904,6 +904,130 @@ function openReviewAfterStampWorld() {{
     startReview();
 }}
 
+function ensureAlbumeasyPathDialog() {{
+    if (document.getElementById('albumeasyPathDialog')) return;
+
+    const dlg = document.createElement('dialog');
+    dlg.id = 'albumeasyPathDialog';
+    dlg.style.maxWidth = '780px';
+    dlg.style.width = '94vw';
+    dlg.innerHTML =
+        "<div style='display:flex;flex-direction:column;gap:10px;'>" +
+        "<h3 style='margin:0;'>AlbumEasy CLI Setup</h3>" +
+        "<p style='margin:0;'>AlbumEasy CLI is not configured for PDF generation.</p>" +
+        "<label for='albumeasyPathInput' style='font-weight:600;'>Enter full AlbumEasy CLI path now (or leave blank to skip):</label>" +
+        "<div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;'>" +
+        "<input id='albumeasyPathInput' type='text' placeholder='/path/to/albumeasy' style='flex:1;min-width:320px;padding:8px;border:1px solid #c8d5e2;border-radius:8px;' />" +
+        "<button id='albumeasyBrowseBtn' type='button'>Browse...</button>" +
+        "</div>" +
+        "<div id='albumeasyPathHint' style='font-size:12px;color:#555;word-break:break-word;'></div>" +
+        "<div><a id='albumeasyDownloadLink' href='https://www.thestampweb.com/albumeasy/download' target='_blank' rel='noopener noreferrer'>Download: https://www.thestampweb.com/albumeasy/download</a></div>" +
+        "<div id='albumeasyPathStatus' style='font-size:12px;min-height:18px;'></div>" +
+        "<div style='display:flex;gap:8px;justify-content:flex-end;'>" +
+        "<button id='albumeasySkipBtn' type='button'>Skip</button>" +
+        "<button id='albumeasySaveBtn' type='button'>Save Path</button>" +
+        "</div>" +
+        "</div>";
+
+    document.body.appendChild(dlg);
+}}
+
+async function browseAlbumeasyPathFromDialog() {{
+    const input = document.getElementById('albumeasyPathInput');
+    const status = document.getElementById('albumeasyPathStatus');
+    beginNativeDialog('Opening AlbumEasy CLI file picker...');
+    try {{
+        const r = await fetch('/api/albumeasy-pick-path', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ current_path: String(input?.value || '').trim() || null }})
+        }});
+        const j = await r.json();
+        if (j.ok && j.picked && j.cli_path) {{
+            if (input) input.value = String(j.cli_path);
+            if (status) status.innerText = j.message || 'AlbumEasy path selected and saved.';
+            return;
+        }}
+        if (status) status.innerText = j.message || (j.picked ? 'Failed to save picked path.' : 'Cancelled.');
+    }} catch (e) {{
+        if (status) status.innerText = 'Failed to open AlbumEasy picker: ' + e;
+    }} finally {{
+        endNativeDialog();
+    }}
+}}
+
+async function showAlbumeasyPathDialog(statusPayload) {{
+    ensureAlbumeasyPathDialog();
+    const dlg = document.getElementById('albumeasyPathDialog');
+    const input = document.getElementById('albumeasyPathInput');
+    const hint = document.getElementById('albumeasyPathHint');
+    const status = document.getElementById('albumeasyPathStatus');
+    const browseBtn = document.getElementById('albumeasyBrowseBtn');
+    const saveBtn = document.getElementById('albumeasySaveBtn');
+    const skipBtn = document.getElementById('albumeasySkipBtn');
+    const download = document.getElementById('albumeasyDownloadLink');
+
+    if (!dlg || !input || !hint || !status || !browseBtn || !saveBtn || !skipBtn || !download) return null;
+
+    input.value = String(statusPayload?.cli_path || '');
+    hint.innerText = statusPayload?.cli_path ? ('Current path: ' + String(statusPayload.cli_path)) : '';
+    status.innerText = '';
+    const downloadUrl = String(statusPayload?.download_url || 'https://www.thestampweb.com/albumeasy/download');
+    download.href = downloadUrl;
+    download.innerText = 'Download: ' + downloadUrl;
+
+    return await new Promise((resolve) => {{
+        let settled = false;
+        const settle = (value) => {{
+            if (settled) return;
+            settled = true;
+            cleanup();
+            if (dlg.open) dlg.close();
+            resolve(value);
+        }};
+
+        const onBrowse = async () => {{
+            await browseAlbumeasyPathFromDialog();
+        }};
+        const onSave = () => {{
+            settle(String(input.value || '').trim());
+        }};
+        const onSkip = () => {{
+            settle(null);
+        }};
+        const onCancel = () => {{
+            settle(null);
+        }};
+
+        const cleanup = () => {{
+            browseBtn.removeEventListener('click', onBrowse);
+            saveBtn.removeEventListener('click', onSave);
+            skipBtn.removeEventListener('click', onSkip);
+            dlg.removeEventListener('cancel', onCancel);
+            dlg.removeEventListener('close', onCancel);
+        }};
+
+        browseBtn.addEventListener('click', onBrowse);
+        saveBtn.addEventListener('click', onSave);
+        skipBtn.addEventListener('click', onSkip);
+        dlg.addEventListener('cancel', onCancel, {{ once: true }});
+        dlg.addEventListener('close', onCancel, {{ once: true }});
+
+        if (!dlg.open) dlg.showModal();
+        input.focus();
+        input.select();
+    }});
+}}
+
+async function saveAlbumeasyPath(path) {{
+    const saveResp = await fetch('/api/albumeasy-set-path', {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json' }},
+        body: JSON.stringify({{ cli_path: String(path).trim() }})
+    }});
+    return await saveResp.json();
+}}
+
 async function checkAlbumeasyStatusAfterPull() {{
     try {{
         const r = await fetch('/api/albumeasy-status');
