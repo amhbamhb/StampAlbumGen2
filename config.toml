@@ -584,11 +584,8 @@ show_progress_indicator = true
 # Directory scanned for Colnect export CSV files when using:
 # --source colnectexport (without an explicit --colnect-inbox argument).
 #
-# Why important:
-# - Without this, the generator has no default place to look for export files.
-# - The directory is auto-created on first startup if it does not exist.
-# - Relative paths are resolved from the runtime working directory.
-colnect_inbox_path = "samples/colnect_inbox"
+# Leave this unset to let the Review UI prefer each album's local `colnect`
+# folder instead of a shared global inbox.
 
 # Path to the AlbumEasy CLI executable for post-generation PDF rendering.
 # Leave empty to disable automatic PDF rendering (manual AlbumEasy use only).
