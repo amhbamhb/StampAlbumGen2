@@ -59,6 +59,10 @@ button {{ padding: 7px 11px; border-radius: 8px; border: 1px solid #bcd1e4; back
 button.primary {{ background: var(--accent-main); color: #fff; border-color: var(--accent-main); }}
 button.danger {{ background: var(--accent-danger); color: #fff; border-color: var(--accent-danger); }}
 button.accent {{ background: #0f8a6b; color: #fff; border-color: #0f8a6b; }}
+button.btn-refresh {{ background: #6a8faa; color: #fff; border-color: #557888; }}
+button.btn-config {{ background: #7a68c0; color: #fff; border-color: #6554a8; }}
+button.btn-pdf {{ background: #c87c28; color: #fff; border-color: #a8641a; }}
+button.btn-import {{ background: #2da070; color: #fff; border-color: #228458; }}
 button:hover {{ background: #edf6ff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(21, 66, 95, 0.12); }}
 code {{ background: #edf5fb; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }}
 .status {{ margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }}
@@ -123,10 +127,12 @@ details.introPanel:not([open]) summary .introArrow {{ transform: rotate(-90deg);
     <div class='row'>
         <label for='countrySel'>Country</label>
         <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
-        <button onclick='refreshState()'>Refresh</button>
+        
         <button class='primary' onclick='startReview()'>Open Review</button>
-        <button onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
-        <button onclick='importColnectFiles()'>Import Colnect</button>
+        <button class='btn-refresh' onclick='refreshState()'>Refresh</button>
+        <button class='btn-config' onclick='openConfigEditor()'>Edit Config</button>
+        <button class='btn-pdf' onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
+        <button class='btn-import' onclick='importColnectFiles()'>Import Colnect</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
     </div>
     <div class='albumsRootPanel'>
@@ -264,6 +270,7 @@ let stampworldRunPollTimer = null;
 let nativeDialogInFlight = false;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
 const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
+const selectedCountryStorageKey = 'reviewui.bootstrap.selectedCountry';
 const backendHealthPollMs = 15000;
 (function() {{
   try {{
@@ -586,6 +593,7 @@ function onCountrySelectionChanged() {{
     const sel = document.getElementById('countrySel');
     const searchInput = document.getElementById('countrySearch');
     if (searchInput && sel) searchInput.value = sel.value || '';
+    try {{ if (sel && sel.value) localStorage.setItem(selectedCountryStorageKey, sel.value); }} catch(_) {{}}
     renderCountryPanel();
     updateCountrySearchMatches(true);
 }}
@@ -1194,8 +1202,10 @@ async function refreshState() {{
         setAlbumsRootStatus(albumsRoot ? ('Using: ' + albumsRoot) : 'Using auto-detect Albums root', 'ok');
         const sel = document.getElementById('countrySel');
         const old = sel.value;
+        let savedCountry = ''; try {{ savedCountry = localStorage.getItem(selectedCountryStorageKey) || ''; }} catch(_) {{}}
         sel.innerHTML = countries.map(c => `<option value="${{c.country}}">${{c.country}}</option>`).join('');
-        if (old && countries.some(c => c.country === old)) sel.value = old;
+        const preferred = old || savedCountry;
+        if (preferred && countries.some(c => c.country === preferred)) sel.value = preferred;
         if (!sel.value && countries.length) sel.value = countries[0].country;
         const searchInput = document.getElementById('countrySearch');
         if (searchInput && sel.value) searchInput.value = sel.value;
@@ -5360,6 +5370,13 @@ mod tests {
         assert!(html.contains("/health"));
         assert!(html.contains("/runtime-log"));
         assert!(html.contains("id='runtimeLog'"));
+    }
+
+    #[test]
+    fn bootstrap_html_exposes_edit_config_action() {
+        let html = render_bootstrap_html(None);
+        assert!(html.contains("openConfigEditor()"));
+        assert!(html.contains("Edit Config"));
     }
 
     #[test]

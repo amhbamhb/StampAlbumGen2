@@ -526,12 +526,20 @@ fn render_config_from_template_values(
     template_content: &str,
     values: &HashMap<String, String>,
 ) -> String {
+    fn is_multiline_array_start(template_value: &str) -> bool {
+        let t = template_value.trim();
+        t == "[" || (t.starts_with('[') && !t.contains(']'))
+    }
+
     let mut rendered_lines: Vec<String> = Vec::new();
     let mut current_section_id = String::new();
     let mut template_field_ids = HashSet::new();
     let mut template_section_ids = HashSet::new();
 
-    for line in template_content.lines() {
+    let template_lines: Vec<&str> = template_content.lines().collect();
+    let mut idx = 0usize;
+    while idx < template_lines.len() {
+        let line = template_lines[idx];
         let trimmed = line.trim();
         if trimmed.starts_with('[') && trimmed.ends_with(']') {
             current_section_id = trimmed
@@ -541,6 +549,7 @@ fn render_config_from_template_values(
                 .to_string();
             template_section_ids.insert(current_section_id.clone());
             rendered_lines.push(line.to_string());
+            idx += 1;
             continue;
         }
 
@@ -550,14 +559,28 @@ fn render_config_from_template_values(
             let value = values
                 .get(&field_id)
                 .cloned()
-                .unwrap_or(original_value)
+                .unwrap_or_else(|| original_value.clone())
                 .trim()
                 .to_string();
             rendered_lines.push(format!("{} = {}", key, value));
+
+            if is_multiline_array_start(&original_value) {
+                idx += 1;
+                while idx < template_lines.len() {
+                    let next_trimmed = template_lines[idx].trim();
+                    if next_trimmed.starts_with(']') {
+                        break;
+                    }
+                    idx += 1;
+                }
+            }
+
+            idx += 1;
             continue;
         }
 
         rendered_lines.push(line.to_string());
+        idx += 1;
     }
 
     let mut extra_sections_new_tables: BTreeMap<String, Vec<(String, String)>> = BTreeMap::new();
@@ -819,7 +842,7 @@ pub(super) fn save_album_config_diff(
 pub(super) fn render_config_editor_assets() -> String {
     r#"
 <style>
-.cfgBackdrop { position: fixed; inset: 0; background: radial-gradient(circle at 20% 20%, rgba(12, 90, 123, 0.25) 0%, rgba(4, 20, 30, 0.7) 48%, rgba(4, 16, 25, 0.86) 100%); display: none; align-items: center; justify-content: center; z-index: 2000; padding: 16px; backdrop-filter: blur(2px); }
+.cfgBackdrop { position: fixed; inset: 0; background: radial-gradient(circle at 20% 20%, rgba(12, 90, 123, 0.25) 0%, rgba(4, 20, 30, 0.7) 48%, rgba(4, 16, 25, 0.86) 100%); display: none; align-items: flex-start; justify-content: center; z-index: 2000; padding: 16px; padding-top: 24px; backdrop-filter: blur(2px); }
 .cfgDialog { --cfgPrimary: #0b6a87; --cfgPrimaryHover: #09576f; --cfgTextStrong: #14384a; --cfgTextSoft: #3b5f70; --cfgPanel: #f4f9fc; --cfgPanelDeep: #e8f1f7; width: min(1280px, 96vw); max-height: 92vh; display: flex; flex-direction: column; background: linear-gradient(180deg, #ffffff 0%, #f7fbfe 100%); border: 1px solid #bfd0dc; border-radius: 16px; box-shadow: 0 26px 62px rgba(10, 28, 41, 0.45); overflow: hidden; animation: cfgDialogIn 180ms ease-out; }
 .cfgHeader, .cfgFooter { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; background: linear-gradient(180deg, #f4fafd 0%, #e9f3f9 100%); border-bottom: 1px solid #d3e0ea; }
 .cfgFooter { border-top: 1px solid #e0e8ef; border-bottom: none; }
@@ -858,7 +881,7 @@ pub(super) fn render_config_editor_assets() -> String {
 .cfgSaveTarget { display: none; align-items: center; gap: 8px; font-size: 12px; color: #35556a; }
 .cfgSaveTarget select { border: 1px solid #bfd0dd; border-radius: 8px; padding: 6px 8px; color: #1f4358; background: #ffffff; }
 .cfgPrimaryBtn, .cfgSecondaryBtn { border: none; border-radius: 10px; padding: 8px 13px; cursor: pointer; font-weight: 600; font-size: 13px; transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease; }
-.cfgPrimaryBtn { background: linear-gradient(180deg, var(--cfgPrimary) 0%, #0a5f7a 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(11, 106, 135, 0.25); }
+.cfgPrimaryBtn { background: linear-gradient(180deg, var(--cfgPrimary, #0b6a87) 0%, #0a5f7a 100%); color: #ffffff; box-shadow: 0 4px 12px rgba(11, 106, 135, 0.25); }
 .cfgPrimaryBtn:hover { filter: brightness(1.04); transform: translateY(-1px); }
 .cfgSecondaryBtn { background: #e9f1f6; color: #214356; border: 1px solid #c7d7e2; }
 .cfgSecondaryBtn:hover { background: #dbe8f1; }
@@ -870,6 +893,12 @@ pub(super) fn render_config_editor_assets() -> String {
 .cfgConfirmActions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
 .cfgDangerBtn { border: none; border-radius: 10px; padding: 8px 12px; cursor: pointer; font-weight: 600; color: #ffffff; background: linear-gradient(180deg, #b45342 0%, #943828 100%); }
 .cfgHidden { display: none !important; }
+.cfgSectionBody { display: block; }
+.cfgSection.collapsed .cfgSectionBody { display: none; }
+.cfgSectionToggle { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: none; border: none; cursor: pointer; color: #284b64; font-size: 13px; transition: transform 180ms ease; flex-shrink: 0; }
+.cfgSection.collapsed .cfgSectionToggle { transform: rotate(-90deg); }
+.cfgSectionHead { cursor: pointer; }
+.cfgSectionHead:hover { background: linear-gradient(90deg, #e8f2f8 0%, #ddeaf3 100%); }
 @keyframes cfgDialogIn {
     from { opacity: 0; transform: translateY(7px) scale(0.985); }
     to { opacity: 1; transform: translateY(0) scale(1); }
@@ -1015,14 +1044,109 @@ function renderConfigValueInput(field) {
 }
 function showConfigEditorLoading(message) { const loadState = configEditorLoadState(); const host = configEditorSectionsHost(); if (host) host.innerHTML = ''; if (loadState) { loadState.innerText = message; loadState.classList.remove('cfgHidden'); } }
 function hideConfigEditorLoading() { const loadState = configEditorLoadState(); if (loadState) loadState.classList.add('cfgHidden'); }
-function renderConfigEditorSections() { const host = configEditorSectionsHost(); if (!host) return; const sections = Array.isArray(configEditorState.sections) ? configEditorState.sections : []; let fieldCount = 0; host.innerHTML = sections.map(section => { const fields = Array.isArray(section.fields) ? section.fields : []; fieldCount += fields.length; const sectionComments = Array.isArray(section.comments) && section.comments.length ? `<p>${section.comments.map(line => cfgHtml(line)).join(' ')}</p>` : ''; const rows = fields.map(field => { const searchCorpus = [section.title || '', field.key || '', field.id || '', ...(Array.isArray(field.comments) ? field.comments : [])].join(' ').toLowerCase(); const fieldType = configFieldType(field); const albumBadge = field?.is_album_override ? "<span class='badge cfgAlbumBadge'>album override</span>" : ''; return `<div class='cfgFieldRow' data-config-search='${cfgHtml(searchCorpus)}'><div class='cfgStaticPane'><div class='cfgKeyRow'><strong>${cfgHtml(field.key || '')}</strong><span class='badge'>${cfgHtml(field.from_template === false ? 'Preserved key' : 'Template key')}</span>${albumBadge}<span class='cfgTypeTag'>${cfgHtml(fieldType)}</span></div><div class='cfgTemplateBox'><div>Template value</div><code>${cfgHtml(field.template_value || '')}</code></div>${configFieldHelpHtml(field)}</div><div class='cfgEditPane'><label class='cfgValueLabel' for='${cfgHtml(configFieldInputId(field.id))}'>Current value</label>${renderConfigValueInput(field)}</div></div>`; }).join(''); return `<section class='cfgSection'><div class='cfgSectionHead'><div><h4>${cfgHtml(section.title || 'Section')}</h4>${sectionComments}</div><span class='badge'>Fields: ${fields.length}</span></div>${rows}</section>`; }).join(''); const badge = configEditorFieldCountBadge(); if (badge) badge.innerText = `Fields: ${fieldCount}`; filterConfigEditorFields(); }
+function renderConfigEditorSections() {
+    const host = configEditorSectionsHost();
+    if (!host) return;
+
+    const rawSections = Array.isArray(configEditorState.sections) ? configEditorState.sections : [];
+    const startupFieldKeys = new Set(['albumeasy_cli_path']);
+    const startupFields = [];
+    const normalizedSections = [];
+
+    rawSections.forEach(section => {
+        const fields = Array.isArray(section?.fields) ? section.fields : [];
+        const keepFields = [];
+        fields.forEach(field => {
+            const key = String(field?.key || '').trim();
+            const id = String(field?.id || '').trim();
+            const idTail = id.includes('.') ? id.split('.').pop() : id;
+            if (startupFieldKeys.has(key) || startupFieldKeys.has(idTail)) {
+                startupFields.push({ ...field, __startup_section_title: 'Startup Quick Settings' });
+            } else {
+                keepFields.push(field);
+            }
+        });
+        if (keepFields.length) normalizedSections.push({ ...section, fields: keepFields });
+    });
+
+    const sections = [];
+    if (startupFields.length) {
+        sections.push({
+            id: 'startup.quick',
+            title: 'Startup Quick Settings',
+            comments: ['Frequently-used startup values. This section is expanded by default.'],
+            fields: startupFields,
+            __defaultOpen: true,
+        });
+    }
+    sections.push(...normalizedSections);
+
+    let fieldCount = 0;
+    host.innerHTML = sections
+        .map(section => {
+            const fields = Array.isArray(section.fields) ? section.fields : [];
+            fieldCount += fields.length;
+            const sectionId = cfgHtml(section.id || section.title || 'section');
+            const defaultOpen = !!section.__defaultOpen;
+            const collapsedClass = defaultOpen ? '' : ' collapsed';
+            const sectionComments =
+                Array.isArray(section.comments) && section.comments.length
+                    ? `<p>${section.comments.map(line => cfgHtml(line)).join(' ')}</p>`
+                    : '';
+            const rows = fields
+                .map(field => {
+                    const searchCorpus = [
+                        section.title || '',
+                        field.key || '',
+                        field.id || '',
+                        ...(Array.isArray(field.comments) ? field.comments : []),
+                    ]
+                        .join(' ')
+                        .toLowerCase();
+                    const fieldType = configFieldType(field);
+                    const albumBadge = field?.is_album_override
+                        ? "<span class='badge cfgAlbumBadge'>album override</span>"
+                        : '';
+                    return `<div class='cfgFieldRow' data-config-search='${cfgHtml(searchCorpus)}'><div class='cfgStaticPane'><div class='cfgKeyRow'><strong>${cfgHtml(field.key || '')}</strong><span class='badge'>${cfgHtml(field.from_template === false ? 'Preserved key' : 'Template key')}</span>${albumBadge}<span class='cfgTypeTag'>${cfgHtml(fieldType)}</span></div><div class='cfgTemplateBox'><div>Template value</div><code>${cfgHtml(field.template_value || '')}</code></div>${configFieldHelpHtml(field)}</div><div class='cfgEditPane'><label class='cfgValueLabel' for='${cfgHtml(configFieldInputId(field.id))}'>Current value</label>${renderConfigValueInput(field)}</div></div>`;
+                })
+                .join('');
+            return `<section class='cfgSection${collapsedClass}' data-section-id='${sectionId}' data-default-open='${defaultOpen ? '1' : '0'}'><div class='cfgSectionHead' onclick='toggleConfigSection(this.closest(".cfgSection"))'><div style='display:flex;align-items:center;gap:8px;'><button class='cfgSectionToggle' tabindex='-1' aria-label='Toggle section'>▼</button><div><h4>${cfgHtml(section.title || 'Section')}</h4>${sectionComments}</div></div><span class='badge'>Fields: ${fields.length}</span></div><div class='cfgSectionBody'>${rows}</div></section>`;
+        })
+        .join('');
+
+    const badge = configEditorFieldCountBadge();
+    if (badge) badge.innerText = `Fields: ${fieldCount}`;
+    filterConfigEditorFields();
+}
+function toggleConfigSection(sectionEl) { if (!sectionEl) return; sectionEl.classList.toggle('collapsed'); }
 function collectConfigEditorValues() { const values = {}; document.querySelectorAll('.cfgValueInput[data-field-id]').forEach(el => { values[el.getAttribute('data-field-id')] = String(el.value ?? ''); }); return values; }
 function configEditorIsDirty() { const currentValues = collectConfigEditorValues(); const originalValues = configEditorState.originalValues || {}; const currentKeys = Object.keys(currentValues).sort(); const originalKeys = Object.keys(originalValues).sort(); if (currentKeys.length !== originalKeys.length) return true; for (let idx = 0; idx < currentKeys.length; idx += 1) { if (currentKeys[idx] !== originalKeys[idx]) return true; if (String(currentValues[currentKeys[idx]]) !== String(originalValues[currentKeys[idx]])) return true; } return false; }
 function markConfigEditorDirty() { if (!configEditorState.open) return; setConfigEditorStatus(configEditorIsDirty() ? 'Config changes pending' : 'Config unchanged'); }
 function openConfigEditorBackdrop() { const backdrop = configEditorBackdrop(); if (backdrop) backdrop.style.display = 'flex'; configEditorState.open = true; }
 function closeConfigEditorBackdrop() { const backdrop = configEditorBackdrop(); if (backdrop) backdrop.style.display = 'none'; configEditorState.open = false; }
 async function openConfigEditor() { if (configEditorState.loading || configEditorState.saving) return; configEditorState.loading = true; openConfigEditorBackdrop(); showConfigEditorLoading('Loading config template, comments, and current values...'); setConfigEditorStatus('Loading config editor...'); try { const response = await fetch('/api/config-editor'); const payload = await response.json(); if (!payload.ok) throw new Error(payload.message || 'Failed to load config editor data.'); configEditorState.sections = payload.sections || []; configEditorState.originalValues = {}; configEditorState.albumName = String(payload.album_name || ''); configEditorState.hasAlbumOverride = !!payload.has_album_override; configEditorState.saveTarget = configEditorState.albumName ? 'album' : 'global'; (payload.sections || []).forEach(section => { (section.fields || []).forEach(field => { configEditorState.originalValues[field.id] = String(field.current_value ?? ''); }); }); hideConfigEditorLoading(); renderConfigEditorSections(); refreshConfigEditorModeUi(); const searchInput = configEditorSearchInput(); if (searchInput) searchInput.value = ''; setConfigEditorStatus('Config editor ready'); } catch (error) { showConfigEditorLoading('Failed to load config editor: ' + error); setConfigEditorStatus('Config editor failed to load'); } finally { configEditorState.loading = false; } }
-function filterConfigEditorFields() { const query = String(configEditorSearchInput()?.value || '').trim().toLowerCase(); document.querySelectorAll('.cfgFieldRow[data-config-search]').forEach(row => { const corpus = String(row.getAttribute('data-config-search') || ''); row.classList.toggle('cfgHidden', !!query && !corpus.includes(query)); }); }
+function filterConfigEditorFields() {
+    const query = String(configEditorSearchInput()?.value || '').trim().toLowerCase();
+    const sections = document.querySelectorAll('.cfgSection');
+    sections.forEach(section => {
+        const rows = section.querySelectorAll('.cfgFieldRow[data-config-search]');
+        if (!query) {
+            rows.forEach(row => row.classList.remove('cfgHidden'));
+            const isDefaultOpen = section.getAttribute('data-default-open') === '1';
+            section.classList.toggle('collapsed', !isDefaultOpen);
+            return;
+        }
+        let anyVisible = false;
+        rows.forEach(row => {
+            const corpus = String(row.getAttribute('data-config-search') || '');
+            const hidden = !corpus.includes(query);
+            row.classList.toggle('cfgHidden', hidden);
+            if (!hidden) anyVisible = true;
+        });
+        if (anyVisible) section.classList.remove('collapsed');
+        else section.classList.add('collapsed');
+    });
+}
 function configEditorSaveTargetLabel() { return configEditorState.saveTarget === 'album' ? `album override (${configEditorState.albumName || 'current'})` : 'global config.toml'; }
 function configEditorFieldMetaMap() { const fieldMeta = {}; (Array.isArray(configEditorState.sections) ? configEditorState.sections : []).forEach(section => { (Array.isArray(section.fields) ? section.fields : []).forEach(field => { fieldMeta[field.id] = { key: field.key || field.id || 'field', comments: Array.isArray(field.comments) ? field.comments : [], section: section.title || 'Section' }; }); }); return fieldMeta; }
 function configEditorChangeList(values = collectConfigEditorValues()) { const originalValues = configEditorState.originalValues || {}; const metaMap = configEditorFieldMetaMap(); const changes = []; Object.keys(values).forEach(fieldId => { const before = String(originalValues[fieldId] ?? ''); const after = String(values[fieldId] ?? ''); if (before === after) return; const meta = metaMap[fieldId] || { key: fieldId, comments: [], section: 'Section' }; let kind = 'updated'; if (!before && after) kind = 'added'; else if (before && !after) kind = 'removed'; const reason = meta.comments.length ? meta.comments[0] : ''; changes.push({ fieldId, key: meta.key, section: meta.section, before, after, kind, reason }); }); return changes; }
