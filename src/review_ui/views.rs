@@ -1198,6 +1198,20 @@ function appendColnectCopyLog(text) {{
     logEl.scrollTop = logEl.scrollHeight;
 }}
 
+function revealColnectImportSection() {{
+    const panel = document.getElementById('colnectCopyPanel');
+    if (!panel) return;
+    if (!panel.open) {{
+        panel.setAttribute('open', '');
+        try {{ localStorage.setItem(colnectCopyPanelStorageKey, 'open'); }} catch (_) {{}}
+    }}
+    panel.scrollIntoView({{ behavior: 'smooth', block: 'start' }});
+    const summary = panel.querySelector('summary');
+    if (summary && typeof summary.focus === 'function') {{
+        summary.focus();
+    }}
+}}
+
 async function refreshState() {{
     const status = document.getElementById('status');
     status.innerText = 'Scanning Albums...';
@@ -1220,7 +1234,7 @@ async function refreshState() {{
         if (!sel.value && countries.length) sel.value = countries[0].country;
         const searchInput = document.getElementById('countrySearch');
         if (searchInput && sel.value) searchInput.value = sel.value;
-        document.getElementById('countryCount').innerText = `Countries: ${{countries.length}}`;
+        document.getElementById('countryCount').innerText = `Countries current count: ${{countries.length}}`;
         renderCountryPanel();
         updateCountrySearchMatches(true);
         if (countries.length) {{
@@ -1321,6 +1335,7 @@ async function logoutApp() {{
 }}
 
 async function importColnectFiles() {{
+    revealColnectImportSection();
     const sel = document.getElementById('countrySel');
     const country = sel.value;
     const status = document.getElementById('status');
@@ -1369,7 +1384,7 @@ async function importColnectFiles() {{
         const r = await fetch('/api/colnect-import', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{}})
+            body: JSON.stringify({{ country }})
         }});
         const j = await r.json();
         clearInterval(logPollTimer);
@@ -1377,7 +1392,7 @@ async function importColnectFiles() {{
         setBusy(false, '');
 
         if (j.ok && j.stamps_imported > 0) {{
-            const doneMsg = 'Imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)';
+            const doneMsg = j.message || ('Imported ' + j.stamps_imported + ' stamps from ' + j.files_processed + ' file(s)');
             if (status) status.innerText = doneMsg;
             if (statusBox) {{
                 statusBox.className = 'colnectCopyStatus ok';
@@ -1387,19 +1402,15 @@ async function importColnectFiles() {{
             await refreshState();
         }} else if (j.ok && j.stamps_imported === 0) {{
             const msg = j.message || 'No stamps were imported.';
-            const details = (j.errors && j.errors.length > 0)
-                ? '\n\nDetails:\n' + j.errors.join('\n')
-                : '\n\nOpen the Review UI for this country and verify the configured colnect inbox path.';
-            if (status) status.innerText = 'No stamps imported';
+            const finalMsg = 'No stamps imported. ' + msg;
+            if (status) status.innerText = finalMsg;
             if (statusBox) {{
                 statusBox.className = 'colnectCopyStatus';
-                statusBox.textContent = msg;
+                statusBox.textContent = finalMsg;
             }}
-            appendColnectCopyLog(msg);
+            appendColnectCopyLog(finalMsg);
             if (j.errors && j.errors.length > 0) {{
                 for (const err of j.errors) appendColnectCopyLog('! ' + err);
-            }} else {{
-                appendColnectCopyLog(details.replace(/^\n+/, ''));
             }}
         }} else {{
             const msg = j.message || 'Import failed';
