@@ -2329,6 +2329,7 @@ fn colnect_import_data(
     // Find CSV files in the first candidate folder that actually contains CSV files.
     let mut csv_files = Vec::new();
     let mut errors = Vec::new();
+    let mut candidate_scan_errors = Vec::new();
     let mut checked_dirs: Vec<String> = Vec::new();
     let mut used_inbox_dir: Option<PathBuf> = None;
 
@@ -2336,7 +2337,7 @@ fn colnect_import_data(
         checked_dirs.push(inbox_dir.display().to_string());
 
         if !inbox_dir.exists() {
-            errors.push(format!("Directory not found: {}", inbox_dir.display()));
+            candidate_scan_errors.push(format!("Directory not found: {}", inbox_dir.display()));
             continue;
         }
 
@@ -2356,7 +2357,7 @@ fn colnect_import_data(
                             }
                         }
                         Err(e) => {
-                            errors.push(format!(
+                            candidate_scan_errors.push(format!(
                                 "Failed to read directory entry in {}: {}",
                                 inbox_dir.display(),
                                 e
@@ -2366,7 +2367,7 @@ fn colnect_import_data(
                 }
             }
             Err(e) => {
-                errors.push(format!(
+                candidate_scan_errors.push(format!(
                     "Failed to read colnect inbox directory {}: {}",
                     inbox_dir.display(),
                     e
@@ -2383,6 +2384,7 @@ fn colnect_import_data(
     }
 
     if csv_files.is_empty() {
+        errors.extend(candidate_scan_errors);
         errors.push(format!("Checked folders: {}", checked_dirs.join(" | ")));
         return ColnectImportResponse {
             ok: true,
