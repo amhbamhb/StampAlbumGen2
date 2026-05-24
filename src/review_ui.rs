@@ -376,6 +376,11 @@ struct BootstrapAlbumEasySetPathRequest {
 }
 
 #[derive(Debug, Deserialize)]
+struct BootstrapAlbumEasyPickPathRequest {
+    current_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct BootstrapSetAlbumsRootRequest {
     path: String,
 }
@@ -416,6 +421,14 @@ struct BootstrapPickColnectFileResponse {
 struct BootstrapAlbumEasySetPathResponse {
     ok: bool,
     message: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapAlbumEasyPickPathResponse {
+    ok: bool,
+    picked: bool,
+    message: String,
+    cli_path: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -1654,6 +1667,76 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
     let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
     let title = format!("Select Colnect CSV for {}", country);
     pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+}
+
+fn pick_albumeasy_cli_path_via_dialog(
+    current_path: Option<&str>,
+) -> Result<Option<String>, String> {
+    let title = "Select AlbumEasy CLI executable";
+    let start = current_path
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .unwrap_or("/");
+
+    if which::which("zenity").is_ok() {
+        let output = Command::new("zenity")
+            .arg("--file-selection")
+            .arg("--title")
+            .arg(title)
+            .arg("--filename")
+            .arg(start)
+            .output()
+            .map_err(|e| format!("failed to launch zenity: {}", e))?;
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return Ok(if selected.is_empty() {
+                None
+            } else {
+                Some(selected)
+            });
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+
+        return Err(format!(
+            "zenity failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    if which::which("kdialog").is_ok() {
+        let output = Command::new("kdialog")
+            .arg("--getopenfilename")
+            .arg(start)
+            .arg("*")
+            .arg("--title")
+            .arg(title)
+            .output()
+            .map_err(|e| format!("failed to launch kdialog: {}", e))?;
+
+        if output.status.success() {
+            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            return Ok(if selected.is_empty() {
+                None
+            } else {
+                Some(selected)
+            });
+        }
+
+        if output.status.code() == Some(1) {
+            return Ok(None);
+        }
+
+        return Err(format!(
+            "kdialog failed: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        ));
+    }
+
+    Err("No supported file picker found (install zenity or kdialog)".to_string())
 }
 
 fn pick_and_copy_colnect_file_for_db(db_path: &str) -> BootstrapPickColnectFileResponse {

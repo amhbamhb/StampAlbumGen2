@@ -513,6 +513,62 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             continue;
         }
 
+        if method == Method::Post && req_url == "/api/albumeasy-pick-path" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapAlbumEasyPickPathRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match pick_albumeasy_cli_path_via_dialog(req.current_path.as_deref()) {
+                    Ok(Some(path)) => match save_runtime_albumeasy_cli_path(&path) {
+                        Ok(_) => BootstrapAlbumEasyPickPathResponse {
+                            ok: true,
+                            picked: true,
+                            message: "AlbumEasy path selected and saved to config.toml".to_string(),
+                            cli_path: Some(path),
+                        },
+                        Err(error) => BootstrapAlbumEasyPickPathResponse {
+                            ok: false,
+                            picked: true,
+                            message: error,
+                            cli_path: Some(path),
+                        },
+                    },
+                    Ok(None) => BootstrapAlbumEasyPickPathResponse {
+                        ok: true,
+                        picked: false,
+                        message: "Cancelled".to_string(),
+                        cli_path: None,
+                    },
+                    Err(error) => BootstrapAlbumEasyPickPathResponse {
+                        ok: false,
+                        picked: false,
+                        message: error,
+                        cli_path: None,
+                    },
+                },
+                Err(error) => BootstrapAlbumEasyPickPathResponse {
+                    ok: false,
+                    picked: false,
+                    message: format!("invalid request: {}", error),
+                    cli_path: None,
+                },
+            };
+
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"picked\":false,\"message\":\"serialization failed\",\"cli_path\":null}".to_string()
+                }));
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Get && req_url == "/api/config-editor" {
             let resp_json = match build_config_editor_data("config.toml", "config_template.toml") {
                 Ok(sections) => serde_json::to_string(&ConfigEditorDataResponse {
