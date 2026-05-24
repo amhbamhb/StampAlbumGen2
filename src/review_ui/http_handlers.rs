@@ -862,31 +862,78 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
 
             let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                    Ok(_req) => serde_json::to_string(&ColnectImportResponse {
-                        ok: false,
-                        message: "Bootstrap stage: please select a country and open Review UI first, then use Import Colnect".to_string(),
-                        files_processed: 0,
-                        stamps_imported: 0,
-                        stamps_skipped: 0,
-                        errors: vec!["Import not available in bootstrap stage".to_string()],
-                    })
-                    .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
-                            .to_string()
-                    }),
-                    Err(e) => serde_json::to_string(&ColnectImportResponse {
-                        ok: false,
-                        message: format!("invalid request: {}", e),
-                        files_processed: 0,
-                        stamps_imported: 0,
-                        stamps_skipped: 0,
-                        errors: vec![format!("invalid request: {}", e)],
-                    })
-                    .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
-                            .to_string()
-                    }),
-                };
+                Ok(req) => {
+                    let requested_country = req.country.as_deref().unwrap_or("").trim();
+                    if requested_country.is_empty() {
+                        serde_json::to_string(&ColnectImportResponse {
+                            ok: false,
+                            message: "Select a country first, then use Import Colnect.".to_string(),
+                            files_processed: 0,
+                            stamps_imported: 0,
+                            stamps_skipped: 0,
+                            errors: vec!["No country selected for bootstrap Colnect import".to_string()],
+                        })
+                        .unwrap_or_else(|_| {
+                            "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
+                                .to_string()
+                        })
+                    } else {
+                        let found = scan_bootstrap_countries()
+                            .into_iter()
+                            .find(|c| c.country.eq_ignore_ascii_case(requested_country));
+                        match found {
+                            Some(c) => match crate::db_utils::init_db(&c.db_path) {
+                                Ok(conn) => serde_json::to_string(&colnect_import_data(
+                                    &conn,
+                                    req,
+                                    &c.db_path,
+                                    &c.country,
+                                ))
+                                .unwrap_or_else(|_| {
+                                    "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
+                                        .to_string()
+                                }),
+                                Err(e) => serde_json::to_string(&ColnectImportResponse {
+                                    ok: false,
+                                    message: format!("failed to open DB {}: {}", c.db_path, e),
+                                    files_processed: 0,
+                                    stamps_imported: 0,
+                                    stamps_skipped: 0,
+                                    errors: vec![format!("failed to open DB {}: {}", c.db_path, e)],
+                                })
+                                .unwrap_or_else(|_| {
+                                    "{\"ok\":false,\"message\":\"failed to open DB\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
+                                        .to_string()
+                                }),
+                            },
+                            None => serde_json::to_string(&ColnectImportResponse {
+                                ok: false,
+                                message: format!("Selected country '{}' not found.", requested_country),
+                                files_processed: 0,
+                                stamps_imported: 0,
+                                stamps_skipped: 0,
+                                errors: vec![format!("Selected country '{}' not found.", requested_country)],
+                            })
+                            .unwrap_or_else(|_| {
+                                "{\"ok\":false,\"message\":\"selected country not found\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
+                                    .to_string()
+                            }),
+                        }
+                    }
+                }
+                Err(e) => serde_json::to_string(&ColnectImportResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", e),
+                    files_processed: 0,
+                    stamps_imported: 0,
+                    stamps_skipped: 0,
+                    errors: vec![format!("invalid request: {}", e)],
+                })
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"invalid request\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
+                        .to_string()
+                }),
+            };
 
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {

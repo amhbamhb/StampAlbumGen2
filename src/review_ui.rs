@@ -1054,7 +1054,7 @@ struct ShutdownResponse {
 
 #[derive(Debug, Deserialize)]
 struct ColnectImportRequest {
-    // Empty request - just triggers import from configured/default colnect folder
+    country: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
