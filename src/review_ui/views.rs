@@ -1948,6 +1948,48 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <div id='colnectImportLog' class='colnectImportLog' style='display:none;'></div>
                     </div>
                 </div>
+                <div class='sessionSection sessionSectionAmber reviewStampWorldSection'>
+                    <div class='sessionSectionTitle'>StampWorld Pull</div>
+                    <div class='sessionRow reviewSwRow reviewSwCountryRow'>
+                        <label>Current country</label>
+                        <span class='badge'><span id='reviewSwCountry'>Unknown</span></span>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwYearRow'>
+                        <label for='reviewSwStartYear'>Start Year</label>
+                        <select id='reviewSwStartYear'></select>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwYearRow'>
+                        <label for='reviewSwEndYear'>End Year</label>
+                        <select id='reviewSwEndYear'></select>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwPresetRow'>
+                        <label for='reviewSwPreset'>Command Preset</label>
+                        <select id='reviewSwPreset'>
+                            <option value='basic'>Basic Pull</option>
+                            <option value='overwrite_album'>Overwrite Album Output</option>
+                            <option value='overwrite_all'>Overwrite Album + Images</option>
+                            <option value='bounded_pages'>Limit Pages (fast test)</option>
+                            <option value='accept_typo'>Auto Accept Source Typos</option>
+                        </select>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwFlagsRow'>
+                        <label for='reviewSwExtraFlags'>Extra Flags</label>
+                        <input id='reviewSwExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='width:100%;max-width:100%;min-width:0;box-sizing:border-box;' />
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwActionRow'>
+                        <button class='accent' onclick='runReviewStampWorldPull()'>Run StampWorld pull for this country (including additional pull).</button>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwActionRow'>
+                        <span id='reviewSwRunStatus' class='badge'>Not started</span>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwCommandRow'>
+                        <strong>Suggested command:</strong>
+                        <code id='reviewSwCmd'></code>
+                    </div>
+                    <div class='sessionRow reviewSwRow reviewSwCommandRow'>
+                        <button onclick='copyReviewStampWorldCommand()'>Copy</button>
+                    </div>
+                </div>
                 <div class='sessionSection sessionSectionAmber'>
                     <div class='sessionSectionTitle'>PDF</div>
                     <div class='sessionRow'>
