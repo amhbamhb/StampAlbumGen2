@@ -1680,6 +1680,9 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .reviewSwRow label {{ display: block; font-size: 12px; font-weight: 700; color: #31495d; }}
 .reviewSwRow select,
 .reviewSwRow input {{ width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }}
+.reviewSwYearRow {{ display: flex; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; }}
+.reviewSwYearRow label {{ display: inline-block; margin-right: 2px; }}
+.reviewSwYearRow input {{ width: 78px; padding: 2px 4px; font-size: 0.9em; }}
 .reviewSwRow button {{ width: 100%; }}
 .reviewSwCountryRow {{ background: #eef8ff; border-color: #c9dcee; }}
 .reviewSwYearRow {{ background: #f3fff4; border-color: #cfe7d5; }}
@@ -1688,6 +1691,11 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .reviewSwActionRow {{ background: #eff2fb; border-color: #d4dbef; }}
 .reviewSwCommandRow {{ background: #f7f3ff; border-color: #dfd2ee; }}
 .reviewSwCommandRow code {{ display: block; width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }}
+.reviewSwStatusWrap {{ display: flex; align-items: center; gap: 6px; padding: 6px 8px; min-height: 22px; }}
+.reviewSwStatusText {{ font-size: 12px; color: inherit; font-weight: 600; }}
+.reviewSwLogPanel {{ margin-top: 8px; border: 1px solid #e3c27e; border-radius: 6px; padding: 10px; background: #fffbf0; }}
+.reviewSwLogTitle {{ font-size: 13px; font-weight: 600; color: #37566d; margin-bottom: 8px; }}
+.reviewSwLogBox {{ width: 100%; min-height: 150px; max-height: 280px; resize: vertical; padding: 8px; border: 1px solid #d7b896; border-radius: 6px; font-family: monospace; font-size: 11px; background: #fffcf7; color: #333; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; }}
 .orderSelectGroup {{ display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; max-width: 100%; }}
 .orderSelectGroup label {{ margin: 0; }}
 #sortMode, #reviewPdfSortMode {{ min-width: 260px; width: min(560px, 100%); max-width: 100%; white-space: normal; }}
@@ -2005,11 +2013,9 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwYearRow'>
                         <label for='reviewSwStartYear'>Start Year</label>
-                        <select id='reviewSwStartYear'></select>
-                    </div>
-                    <div class='sessionRow reviewSwRow reviewSwYearRow'>
+                        <input id='reviewSwStartYear' type='number' placeholder='Start' min='1840' max='2100' />
                         <label for='reviewSwEndYear'>End Year</label>
-                        <select id='reviewSwEndYear'></select>
+                        <input id='reviewSwEndYear' type='number' placeholder='End' min='1840' max='2100' />
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwPresetRow'>
                         <label for='reviewSwPreset'>Command Preset</label>
@@ -2028,15 +2034,20 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                     <div class='sessionRow reviewSwRow reviewSwActionRow'>
                         <button class='accent' onclick='runReviewStampWorldPull()'>Run StampWorld pull for this country (including additional pull).</button>
                     </div>
-                    <div class='sessionRow reviewSwRow reviewSwActionRow'>
-                        <span id='reviewSwRunStatus' class='badge'>Not started</span>
-                    </div>
                     <div class='sessionRow reviewSwRow reviewSwCommandRow'>
                         <strong>Suggested command:</strong>
                         <code id='reviewSwCmd'></code>
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwCommandRow'>
                         <button onclick='copyReviewStampWorldCommand()'>Copy</button>
+                    </div>
+                    <div id='reviewSwStatusWrap' class='reviewSwStatusWrap sessionStatusBox sessionStatusAmber'>
+                        <span id='reviewSwRunSpinner' class='colnectImportSpinner' style='display:none;'></span>
+                        <span id='reviewSwRunStatus' class='reviewSwStatusText'>Ready</span>
+                    </div>
+                    <div id='reviewSwPullLogPanel' class='reviewSwLogPanel' style='display:none;'>
+                        <div class='reviewSwLogTitle'>StampWorld Pull Progress: Real-Time Log</div>
+                        <textarea id='reviewSwPullLog' readonly class='reviewSwLogBox'></textarea>
                     </div>
                 </div>
                 <div class='sessionSection sessionSectionAmber'>
