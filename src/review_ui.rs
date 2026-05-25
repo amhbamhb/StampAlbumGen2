@@ -702,6 +702,24 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     let command_cwd_for_thread = command_cwd.clone();
 
     log_runtime_event(&format!("StampWorld: starting command {}", display_cmd));
+    log_runtime_event(&format!(
+        "StampWorld: request context country={} start_year={} end_year={} preset={} extra_flags={}",
+        req.country.trim(),
+        req.start_year,
+        req.end_year,
+        req.preset.as_deref().unwrap_or("basic"),
+        req.extra_flags.as_deref().unwrap_or("")
+    ));
+    log_runtime_event(&format!(
+        "StampWorld: resolved paths albums_root={} command_cwd={} db_path={}",
+        albums_root.display(),
+        command_cwd.display(),
+        db_path
+    ));
+    log_runtime_event(&format!(
+        "StampWorld: pre-run db snapshot => {}",
+        stampworld_db_snapshot(&db_path)
+    ));
     log_runtime_event("StampWorld: running. You can watch progress in Runtime Log.");
 
     thread::spawn(move || {
@@ -819,6 +837,10 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
                     country_for_thread
                 );
                 log_runtime_event(&msg);
+                log_runtime_event(&format!(
+                    "StampWorld: post-run db snapshot => {}",
+                    stampworld_db_snapshot(&db_path_for_thread)
+                ));
                 set_stampworld_state(StampWorldJobState::Finished {
                     success: true,
                     country: country_for_thread.clone(),
@@ -832,6 +854,10 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
                     country_for_thread, status
                 );
                 log_runtime_event(&msg);
+                log_runtime_event(&format!(
+                    "StampWorld: failed-run db snapshot => {}",
+                    stampworld_db_snapshot(&db_path_for_thread)
+                ));
                 set_stampworld_state(StampWorldJobState::Finished {
                     success: false,
                     country: country_for_thread.clone(),
@@ -845,6 +871,10 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
                     country_for_thread, e
                 );
                 log_runtime_event(&msg);
+                log_runtime_event(&format!(
+                    "StampWorld: wait-error db snapshot => {}",
+                    stampworld_db_snapshot(&db_path_for_thread)
+                ));
                 set_stampworld_state(StampWorldJobState::Finished {
                     success: false,
                     country: country_for_thread.clone(),
