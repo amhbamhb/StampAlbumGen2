@@ -326,7 +326,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             continue;
         }
 
-        if method == Method::Get && req_url == "/api/stampworld-status" {
+        if method == Method::Get && req_url.starts_with("/api/stampworld-status") {
             let response = {
                 let state = stampworld_job_state()
                     .lock()
@@ -345,12 +345,19 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                         db_path: None,
                     },
                     StampWorldJobState::Running { country, db_path } => {
+                        let live_message = tail_current_log(1)
+                            .into_iter()
+                            .last()
+                            .filter(|line| !line.trim().is_empty())
+                            .unwrap_or_else(|| {
+                                format!("StampWorld pull is running for {}...", country)
+                            });
                         BootstrapStampWorldStatusResponse {
                             ok: true,
                             running: true,
                             finished: false,
                             success: None,
-                            message: format!("StampWorld pull is running for {}...", country),
+                            message: live_message,
                             country: Some(country),
                             db_path: Some(db_path),
                         }
@@ -384,7 +391,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             continue;
         }
 
-        if method == Method::Get && req_url == "/api/stampworld-log-tail" {
+        if method == Method::Get && req_url.starts_with("/api/stampworld-log-tail") {
             let lines = tail_current_log(50); // Get last 50 lines
             let response = StampWorldLogTailResponse { ok: true, lines };
             let mut resp = Response::from_string(
@@ -401,30 +408,48 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
         if method == Method::Post && req_url == "/api/stampworld-run" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
+                log_runtime_event(
+                    "StampWorld API: failed to read request body for /api/stampworld-run",
+                );
                 let _ = request.respond(Response::empty(StatusCode(400)));
                 continue;
             }
 
+            log_runtime_event(&format!(
+                "StampWorld API: /api/stampworld-run request body => {}",
+                body
+            ));
+
             let parsed: Result<BootstrapStampWorldRunRequest, _> = serde_json::from_str(&body);
             let (response, status_code) = match parsed {
-                Ok(req) => match start_bootstrap_stampworld_job(req) {
-                    Ok(msg) => (
-                        BootstrapStampWorldRunResponse {
-                            ok: true,
-                            message: msg,
-                            started: true,
-                        },
-                        StatusCode(200),
-                    ),
-                    Err(error) => (
-                        BootstrapStampWorldRunResponse {
-                            ok: false,
-                            message: error,
-                            started: false,
-                        },
-                        StatusCode(409),
-                    ),
-                },
+                Ok(req) => {
+                    log_runtime_event(&format!(
+                        "StampWorld API: parsed request country={} start_year={} end_year={} preset={} extra_flags={}",
+                        req.country.trim(),
+                        req.start_year,
+                        req.end_year,
+                        req.preset.as_deref().unwrap_or("basic"),
+                        req.extra_flags.as_deref().unwrap_or("")
+                    ));
+                    match start_bootstrap_stampworld_job(req) {
+                        Ok(msg) => (
+                            BootstrapStampWorldRunResponse {
+                                ok: true,
+                                message: msg,
+                                started: true,
+                            },
+                            StatusCode(200),
+                        ),
+                        Err(error) => (
+                            BootstrapStampWorldRunResponse {
+                                ok: false,
+                                message: error,
+                                started: false,
+                            },
+                            StatusCode(409),
+                        ),
+                    }
+                }
                 Err(error) => (
                     BootstrapStampWorldRunResponse {
                         ok: false,
@@ -434,6 +459,14 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                     StatusCode(400),
                 ),
             };
+
+            log_runtime_event(&format!(
+                "StampWorld API: /api/stampworld-run response status={} ok={} started={} message={}",
+                status_code.0,
+                response.ok,
+                response.started,
+                response.message
+            ));
 
             let mut resp =
                 Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
