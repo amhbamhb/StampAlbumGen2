@@ -731,6 +731,9 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
             }
             cmd.env("STAMP_ALBUMS_ROOT", &albums_root_env)
                 .args(&args)
+                // Force non-interactive execution; if confirmation is needed,
+                // the run must provide explicit flags (for example --yes).
+                .stdin(Stdio::null())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped());
             cmd.spawn()
