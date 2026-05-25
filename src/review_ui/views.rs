@@ -273,6 +273,8 @@ let backendHealthCheckInFlight = false;
 let backendMarkedDisconnected = false;
 let backendRecoveredReloadPending = false;
 let stampworldRunPollTimer = null;
+let stampworldPollTick = 0;
+let stampworldRunRequested = false;
 let nativeDialogInFlight = false;
 const runtimeLogVisibleStorageKey = 'reviewui.bootstrap.showRuntimeLog';
 const introPanelStorageKey = 'reviewui.bootstrap.introPanel';
@@ -832,28 +834,59 @@ function updateStampWorldRunStatus(text, isRunning, canOpenReview) {{
 
 async function pollStampWorldStatus() {{
     try {{
-        const r = await fetch('/api/stampworld-status');
+        stampworldPollTick += 1;
+        const status = document.getElementById('status');
+        if (status && stampworldPollTick % 5 === 1) {{
+            status.innerText = `StampWorld status poll #${{stampworldPollTick}}...`;
+        }}
+        const r = await fetch('/api/stampworld-status', {{ cache: 'no-store' }});
         const j = await r.json();
-        if (!j.ok) return;
+        if (!j.ok) {{
+            const msg = j.message || 'StampWorld status poll returned not-ok payload.';
+            updateStampWorldRunStatus(msg, stampworldRunRequested, false);
+            if (status) status.innerText = msg;
+            return;
+        }}
+
+        const noJobStartedYet = !j.running && !j.finished && !j.country && !j.db_path;
+        if (noJobStartedYet && !stampworldRunRequested) {{
+            updateStampWorldRunStatus('Ready to run', false, false);
+            if (status) status.innerText = 'Ready.';
+            setBusy(false, '');
+            return;
+        }}
+
         if (j.running) {{
             updateStampWorldRunStatus(j.message || 'StampWorld pull running...', true, false);
             
             // Fetch and display real-time log
             try {{
-                const logR = await fetch('/api/stampworld-log-tail');
+                const logR = await fetch('/api/stampworld-log-tail', {{ cache: 'no-store' }});
                 const logJ = await logR.json();
                 if (logJ.ok && logJ.lines && logJ.lines.length > 0) {{
                     const logPanel = document.getElementById('swPullLogPanel');
                     const logArea = document.getElementById('swPullLog');
                     if (logPanel && logArea) {{
                         logPanel.style.display = '';
-                        logArea.innerText = logJ.lines.join('\\n');
+                        logArea.value = logJ.lines.join('\\n');
                         logArea.scrollTop = logArea.scrollHeight;
                     }}
                 }}
-            }} catch (_) {{}}
+            }} catch (e) {{
+                const status = document.getElementById('status');
+                const msg = 'StampWorld log poll failed: ' + e;
+                if (status) status.innerText = msg;
+            }}
             
             return;
+        }}
+
+        if (!j.finished) {{
+            // Transient idle state: keep polling instead of stopping immediately.
+            const idleMsg = j.message || 'StampWorld status is idle; waiting for run state...';
+            updateStampWorldRunStatus(idleMsg, stampworldRunRequested, false);
+            if (status) status.innerText = idleMsg;
+            if (stampworldRunRequested && stampworldPollTick < 20) return;
         }}
 
         if (stampworldRunPollTimer) {{
@@ -868,6 +901,7 @@ async function pollStampWorldStatus() {{
 
         if (j.finished) {{
             const success = j.success === true;
+            stampworldRunRequested = false;
             updateStampWorldRunStatus(j.message || (success ? 'Completed' : 'Failed'), false, success);
             const status = document.getElementById('status');
             if (status) status.innerText = j.message || (success ? 'StampWorld completed.' : 'StampWorld failed.');
@@ -878,8 +912,18 @@ async function pollStampWorldStatus() {{
                 await checkAlbumeasyStatusAfterPull();
             }}
             await refreshState();
+        }} else {{
+            const timeoutMsg = 'StampWorld status did not transition from idle. Request may not have started.';
+            stampworldRunRequested = false;
+            updateStampWorldRunStatus(timeoutMsg, false, false);
+            if (status) status.innerText = timeoutMsg;
         }}
-    }} catch (_) {{}}
+    }} catch (e) {{
+        const status = document.getElementById('status');
+        const msg = 'StampWorld status poll failed: ' + e;
+        updateStampWorldRunStatus(msg, stampworldRunRequested, false);
+        if (status) status.innerText = msg;
+    }}
 }}
 
 async function runStampWorldPull() {{
@@ -889,6 +933,7 @@ async function runStampWorldPull() {{
     const preset = document.getElementById('swPreset')?.value || 'basic';
     const extraFlags = (document.getElementById('swExtraFlags')?.value || '').trim();
     const status = document.getElementById('status');
+    stampworldPollTick = 0;
 
     if (!country) {{
         if (status) status.innerText = 'StampWorld country is required.';
@@ -897,6 +942,7 @@ async function runStampWorldPull() {{
 
     updateStampWorldRunStatus('Starting StampWorld pull...', true, false);
     if (status) status.innerText = 'Starting StampWorld pull for ' + country + '...';
+    stampworldRunRequested = true;
 
     try {{
         const r = await fetch('/api/stampworld-run', {{
@@ -906,17 +952,20 @@ async function runStampWorldPull() {{
         }});
         const j = await r.json();
         if (!j.ok) {{
+            stampworldRunRequested = false;
             setBusy(false, '');
             updateStampWorldRunStatus(j.message || 'Failed to start', false, false);
             if (status) status.innerText = j.message || 'Failed to start StampWorld pull.';
             return;
         }}
 
+        updateStampWorldRunStatus('StampWorld pull accepted. Waiting for first status update...', true, false);
         if (status) status.innerText = j.message || 'StampWorld pull started.';
         if (stampworldRunPollTimer) clearInterval(stampworldRunPollTimer);
         stampworldRunPollTimer = setInterval(pollStampWorldStatus, 1400);
         await pollStampWorldStatus();
     }} catch (e) {{
+        stampworldRunRequested = false;
         setBusy(false, '');
         updateStampWorldRunStatus('Failed to start', false, false);
         if (status) status.innerText = 'StampWorld request failed: ' + e;
