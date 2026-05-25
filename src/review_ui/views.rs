@@ -1626,6 +1626,19 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .sessionSectionSlate {{ border: 1px solid #d5dbe3; background: #f5f6f8; }}
 .sessionSectionTitle {{ margin: 0 0 6px 0; font-size: 12px; font-weight: 700; color: #2a4458; letter-spacing: 0.2px; }}
 .sessionRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }}
+.reviewStampWorldSection {{ border: 1px solid #e3c27e; background: linear-gradient(180deg, #fff8ea 0%, #fffdf6 100%); }}
+.reviewSwRow {{ display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid transparent; }}
+.reviewSwRow label {{ display: block; font-size: 12px; font-weight: 700; color: #31495d; }}
+.reviewSwRow select,
+.reviewSwRow input {{ width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; }}
+.reviewSwRow button {{ width: 100%; }}
+.reviewSwCountryRow {{ background: #eef8ff; border-color: #c9dcee; }}
+.reviewSwYearRow {{ background: #f3fff4; border-color: #cfe7d5; }}
+.reviewSwPresetRow {{ background: #fff9ef; border-color: #ead9b6; }}
+.reviewSwFlagsRow {{ background: #fff4f8; border-color: #e8c9d8; }}
+.reviewSwActionRow {{ background: #eff2fb; border-color: #d4dbef; }}
+.reviewSwCommandRow {{ background: #f7f3ff; border-color: #dfd2ee; }}
+.reviewSwCommandRow code {{ display: block; width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }}
 .orderSelectGroup {{ display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; max-width: 100%; }}
 .orderSelectGroup label {{ margin: 0; }}
 #sortMode, #reviewPdfSortMode {{ min-width: 260px; width: min(560px, 100%); max-width: 100%; white-space: normal; }}
