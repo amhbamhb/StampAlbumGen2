@@ -2356,6 +2356,26 @@ const reviewPdfAlwaysOpenStorageKey = 'reviewui.pdf.always_open';
 const backendHealthComparePollMs = 15000;
 const backendHealthCompareFailureThreshold = 2;
 let reviewLastGeneratedPdfPath = '';
+let reviewStampWorldRunPollTimer = null;
+let reviewStampWorldLastStatusMessage = '';
+let reviewStampWorldPollCount = 0;
+let reviewStampWorldRunRequested = false;
+let reviewStampWorldPollFailureCount = 0;
+let reviewStampWorldStatusSyncInFlight = false;
+
+async function fetchJsonNoStoreWithTimeout(url, timeoutMs) {{
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const sep = url.includes('?') ? '&' : '?';
+    const cacheBustedUrl = `${{url}}${{sep}}_ts=${{Date.now()}}`;
+    try {{
+        const r = await fetch(cacheBustedUrl, {{ cache: 'no-store', signal: controller.signal }});
+        const j = await r.json();
+        return {{ r, j }};
+    }} finally {{
+        clearTimeout(timer);
+    }}
+}}
 
 const currentReviewCountryEl = document.getElementById('currentReviewCountry');
 if (currentReviewCountryEl) currentReviewCountryEl.textContent = reviewCountryName || 'Unknown';
@@ -2465,6 +2485,27 @@ async function previewLastPdfReview() {{
 function setMainStatus(message) {{
     const statusEl = document.getElementById('status');
     if (statusEl) statusEl.innerText = message;
+}}
+
+function logRuntimeCompare(message) {{
+    const box = document.getElementById('runtimeLogCompare');
+    if (!box) return;
+    const line = `[Review StampWorld] ${{String(message || '')}}`;
+    const atBottom = (box.scrollTop + box.clientHeight + 20) >= box.scrollHeight;
+    if (box.value && !box.value.endsWith('\n')) box.value += '\n';
+    box.value += line;
+    if (atBottom) box.scrollTop = box.scrollHeight;
+}}
+
+function emitReviewClientLog(message) {{
+    const text = String(message || '').trim();
+    if (!text) return;
+    fetch('/api/review-client-log', {{
+        method: 'POST',
+        headers: {{ 'Content-Type': 'application/json' }},
+        body: JSON.stringify({{ message: text, ts: Date.now() }}),
+        keepalive: true
+    }}).catch(() => {{}});
 }}
 
 function setMatchStatus(message) {{
@@ -2653,6 +2694,15 @@ async function refreshRuntimeLogCompare() {{
         const atBottom = (box.scrollTop + box.clientHeight + 20) >= box.scrollHeight;
         box.value = lines.join('\n');
         if (atBottom) box.scrollTop = box.scrollHeight;
+
+        if ((reviewStampWorldRunRequested || reviewStampWorldRunPollTimer) && !reviewStampWorldStatusSyncInFlight) {{
+            reviewStampWorldStatusSyncInFlight = true;
+            try {{
+                await pollReviewStampWorldStatus();
+            }} finally {{
+                reviewStampWorldStatusSyncInFlight = false;
+            }}
+        }}
     }} catch (_) {{}}
 }}
 
@@ -3458,15 +3508,119 @@ function updateReviewStampWorldCommand() {{
 }}
 
 function updateReviewStampWorldStatus(text, isRunning) {{
-    const badge = document.getElementById('reviewSwRunStatus');
-    if (badge) badge.innerText = text || 'Not started';
+    const statusWrap = document.getElementById('reviewSwStatusWrap');
+    const spinner = document.getElementById('reviewSwRunSpinner');
+    const statusEl = document.getElementById('reviewSwRunStatus');
+    if (statusEl) statusEl.innerText = text || 'Ready';
+    if (spinner) spinner.style.display = isRunning ? 'inline-block' : 'none';
+    if (statusWrap) {{
+        statusWrap.classList.remove('pdfStatusDone', 'pdfStatusFail');
+        if (isRunning) statusWrap.classList.remove('pdfStatusDone', 'pdfStatusFail');
+    }}
     if (isRunning) setBusy(true, 'Running StampWorld pull...');
 }}
 
+async function pollReviewStampWorldStatus() {{
+    try {{
+        const {{ j }} = await fetchJsonNoStoreWithTimeout('/api/stampworld-status', 7000);
+        reviewStampWorldPollFailureCount = 0;
+        if (!j.ok) {{
+            logRuntimeCompare('Status poll returned not-ok payload.');
+            const msg = j.message || 'Status poll returned not-ok payload.';
+            updateReviewStampWorldStatus(msg, reviewStampWorldRunRequested);
+            return;
+        }}
+
+        const noJobStartedYet = !j.running && !j.finished && !j.country && !j.db_path;
+        if (noJobStartedYet && !reviewStampWorldRunRequested) {{
+            updateReviewStampWorldStatus('Ready', false);
+            return;
+        }}
+
+        reviewStampWorldPollCount += 1;
+        if (j.running) {{
+            const statusMessage = j.message || 'StampWorld pull running...';
+            updateReviewStampWorldStatus(statusMessage, true);
+            if (statusMessage !== reviewStampWorldLastStatusMessage || reviewStampWorldPollCount % 8 === 0) {{
+                logRuntimeCompare(`status poll #${{reviewStampWorldPollCount}}: running=true finished=false message="${{statusMessage}}"`);
+                reviewStampWorldLastStatusMessage = statusMessage;
+            }}
+
+            try {{
+                const {{ j: logJ }} = await fetchJsonNoStoreWithTimeout('/api/stampworld-log-tail', 7000);
+                const logPanel = document.getElementById('reviewSwPullLogPanel');
+                const logArea = document.getElementById('reviewSwPullLog');
+                if (logPanel && logArea && logJ.ok && logJ.lines) {{
+                    logPanel.style.display = '';
+                    logArea.value = logJ.lines.join('\n');
+                    logArea.scrollTop = logArea.scrollHeight;
+                    if (reviewStampWorldPollCount % 8 === 0) {{
+                        logRuntimeCompare(`log tail lines received: ${{logJ.lines.length}}`);
+                    }}
+                }}
+            }} catch (e) {{
+                logRuntimeCompare('log tail fetch failed: ' + e);
+                updateReviewStampWorldStatus('StampWorld log poll failed: ' + e, true);
+            }}
+
+            return;
+        }}
+
+        if (!j.finished) {{
+            // Transient idle state: keep polling instead of stopping immediately.
+            const idleMsg = j.message || 'StampWorld status is idle; waiting for run state...';
+            updateReviewStampWorldStatus(idleMsg, reviewStampWorldRunRequested);
+            if (reviewStampWorldRunRequested && reviewStampWorldPollCount < 20) return;
+        }}
+
+        if (reviewStampWorldRunPollTimer) {{
+            clearInterval(reviewStampWorldRunPollTimer);
+            reviewStampWorldRunPollTimer = null;
+        }}
+        setBusy(false, '');
+
+        const logPanel = document.getElementById('reviewSwPullLogPanel');
+        if (logPanel) logPanel.style.display = 'none';
+
+        const finishedMessage = j.message || (j.success === true ? 'StampWorld completed.' : 'StampWorld failed.');
+        logRuntimeCompare(`status poll #${{reviewStampWorldPollCount}}: running=false finished=${{j.finished === true}} success=${{j.success === true}} message="${{finishedMessage}}"`);
+
+        if (j.finished) {{
+            const success = j.success === true;
+            reviewStampWorldRunRequested = false;
+            updateReviewStampWorldStatus(j.message || (success ? 'Completed' : 'Failed'), false);
+        }} else {{
+            const timeoutMsg = 'StampWorld status did not transition from idle. Request may not have started.';
+            reviewStampWorldRunRequested = false;
+            updateReviewStampWorldStatus(timeoutMsg, false);
+        }}
+    }} catch (e) {{
+        reviewStampWorldPollFailureCount += 1;
+        logRuntimeCompare('status poll failed: ' + e);
+        const msg = 'StampWorld status poll failed: ' + e;
+        const shouldStop = reviewStampWorldPollFailureCount >= 3;
+        if (shouldStop) {{
+            reviewStampWorldRunRequested = false;
+            if (reviewStampWorldRunPollTimer) {{
+                clearInterval(reviewStampWorldRunPollTimer);
+                reviewStampWorldRunPollTimer = null;
+            }}
+            setBusy(false, '');
+            updateReviewStampWorldStatus('Lost connection while polling status. Job may still be running; click Run to reattach.', false);
+            emitReviewClientLog('status poll failed repeatedly; auto-stopped spinner');
+            return;
+        }}
+        updateReviewStampWorldStatus(msg, reviewStampWorldRunRequested);
+    }}
+}}
+
 async function runReviewStampWorldPull() {{
+    emitReviewClientLog('runReviewStampWorldPull entered');
     const country = String(reviewCountryName || currentReviewCountryEl?.textContent || '').trim();
     if (!country || country === 'Unknown') {{
-        setMainStatus('Current country is required for StampWorld pull.');
+        updateReviewStampWorldStatus('Current country is required for StampWorld pull.', false);
+        logRuntimeCompare('blocked run request: missing country context on review page.');
+        emitReviewClientLog('run blocked: missing country context');
         return;
     }}
 
@@ -3475,29 +3629,68 @@ async function runReviewStampWorldPull() {{
     const preset = document.getElementById('reviewSwPreset')?.value || 'basic';
     const extraFlags = String(document.getElementById('reviewSwExtraFlags')?.value || '').trim();
 
-    updateReviewStampWorldStatus('Starting StampWorld pull...', true);
-    setMainStatus('Starting StampWorld pull for ' + country + '...');
+    reviewStampWorldPollCount = 0;
+    reviewStampWorldLastStatusMessage = '';
+    reviewStampWorldPollFailureCount = 0;
+    logRuntimeCompare(`run request: country="${{country}}" start_year=${{startYear}} end_year=${{endYear}} preset="${{preset}}" extra_flags="${{extraFlags}}"`);
+    emitReviewClientLog(`run request prepared country=${{country}} start=${{startYear}} end=${{endYear}} preset=${{preset}}`);
+
+    emitReviewClientLog('run preflight: before UI busy state update');
+    try {{
+        updateReviewStampWorldStatus('Starting StampWorld pull...', true);
+    }} catch (e) {{
+        logRuntimeCompare('run preflight UI update failed: ' + e);
+        emitReviewClientLog('run preflight UI update failed: ' + e);
+        updateReviewStampWorldStatus('Starting StampWorld pull (UI preflight warning): ' + e, false);
+    }}
+    emitReviewClientLog('run preflight: after UI busy state update');
+    reviewStampWorldRunRequested = true;
 
     try {{
+        const payload = {{ country: country, start_year: startYear, end_year: endYear, preset: preset, extra_flags: extraFlags }};
+        emitReviewClientLog('run request sending POST /api/stampworld-run');
         const r = await fetch('/api/stampworld-run', {{
             method: 'POST',
             headers: {{ 'Content-Type': 'application/json' }},
-            body: JSON.stringify({{ country: country, start_year: startYear, end_year: endYear, preset: preset, extra_flags: extraFlags }})
+            body: JSON.stringify(payload)
         }});
+        logRuntimeCompare(`run endpoint response: http_status=${{r.status}}`);
+        emitReviewClientLog(`run response received status=${{r.status}}`);
         const j = await r.json();
         if (!j.ok) {{
+            const backendMessage = String(j.message || 'unknown error');
+            const alreadyRunning = r.status === 409 && backendMessage.toLowerCase().includes('already running');
+            if (alreadyRunning) {{
+                reviewStampWorldRunRequested = true;
+                updateReviewStampWorldStatus('A StampWorld pull is already running. Attaching to live status...', true);
+                logRuntimeCompare('run endpoint reported already-running job; attaching to status poll.');
+                emitReviewClientLog('run endpoint already-running; attaching to status poll');
+                if (reviewStampWorldRunPollTimer) clearInterval(reviewStampWorldRunPollTimer);
+                reviewStampWorldRunPollTimer = setInterval(pollReviewStampWorldStatus, 1400);
+                await pollReviewStampWorldStatus();
+                return;
+            }}
+
+            reviewStampWorldRunRequested = false;
             setBusy(false, '');
-            updateReviewStampWorldStatus(j.message || 'Failed to start', false);
-            setMainStatus(j.message || 'Failed to start StampWorld pull.');
+            updateReviewStampWorldStatus(backendMessage || 'Failed to start', false);
+            logRuntimeCompare('run endpoint returned failure: ' + backendMessage);
+            emitReviewClientLog('run response payload not ok: ' + backendMessage);
             return;
         }}
 
-        setMainStatus(j.message || 'StampWorld pull started.');
-        updateReviewStampWorldStatus(j.message || 'StampWorld pull started.', false);
+        updateReviewStampWorldStatus('StampWorld pull accepted. Waiting for first status update...', true);
+        logRuntimeCompare('run endpoint started job: ' + (j.message || 'started'));
+        emitReviewClientLog('run accepted by backend: ' + (j.message || 'started'));
+        if (reviewStampWorldRunPollTimer) clearInterval(reviewStampWorldRunPollTimer);
+        reviewStampWorldRunPollTimer = setInterval(pollReviewStampWorldStatus, 1400);
+        await pollReviewStampWorldStatus();
     }} catch (e) {{
+        reviewStampWorldRunRequested = false;
         setBusy(false, '');
-        updateReviewStampWorldStatus('Failed to start', false);
-        setMainStatus('StampWorld request failed: ' + e);
+        updateReviewStampWorldStatus('StampWorld request failed: ' + e, false);
+        logRuntimeCompare('run request exception: ' + e);
+        emitReviewClientLog('run request exception: ' + e);
     }}
 }}
 
@@ -3551,12 +3744,12 @@ function initReviewStampWorldPanel() {{
     const currentCountry = String(reviewCountryName || currentReviewCountryEl?.textContent || '').trim() || 'Unknown';
     const countryLabel = document.getElementById('reviewSwCountry');
     if (countryLabel) countryLabel.textContent = currentCountry;
-    const minYear = 1840;
-    const maxYear = new Date().getFullYear();
-    populateYearSelect('reviewSwStartYear', minYear, maxYear, 1840);
-    populateYearSelect('reviewSwEndYear', minYear, maxYear, 2026);
+    const startYearInput = document.getElementById('reviewSwStartYear');
+    const endYearInput = document.getElementById('reviewSwEndYear');
+    if (startYearInput && !startYearInput.value) startYearInput.value = '1840';
+    if (endYearInput && !endYearInput.value) endYearInput.value = String(new Date().getFullYear());
     updateReviewStampWorldCommand();
-    updateReviewStampWorldStatus('Ready to run', false);
+    updateReviewStampWorldStatus('Ready', false);
 }}
 
 function usedColnectIds(exceptLeftRowId) {{
