@@ -71,7 +71,7 @@ code {{ background: #edf5fb; border: 1px solid #d4e2ee; border-radius: 6px; padd
 .loadingRow {{ display: flex; align-items: center; gap: 10px; }}
 .dots {{ display: inline-block; min-width: 18px; text-align: left; }}
 body.busy {{ cursor: progress; }}
-body.busy button, body.busy select, body.busy input {{ opacity: 0.65; pointer-events: none; }}
+body.busy button, body.busy select, body.busy input {{ opacity: 0.65; }}
 .reconnectBanner {{ display: none; margin-bottom: 12px; border: 1px solid #ddc79f; border-left: 5px solid #9b6a20; border-radius: 10px; background: #fff7e8; color: #694314; padding: 10px 12px; }}
 .reconnectBanner.show {{ display: block; }}
 .reconnectBanner.recovered {{ border-color: #b9dec9; border-left-color: #2f8f63; background: #f4fcf8; color: #245641; }}
@@ -2689,6 +2689,10 @@ function setOperationBusy(active, message) {{
             dots.innerText = frames[idx];
         }}, 260);
     }}
+}}
+
+function setBusy(active, message) {{
+    setOperationBusy(active, message);
 }}
 
 async function navigateWithFade(url) {{
