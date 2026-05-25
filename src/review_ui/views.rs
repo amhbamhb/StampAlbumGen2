@@ -170,9 +170,13 @@ details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(
         <div class='collapsibleSectionBody'>
             <strong id='swPanelLead'>StampWorld pull is available for this country.</strong>
             <p id='swPanelHint' style='margin-top:6px;'>Use this to pull additional StampWorld data for existing countries or create a new country.</p>
-            <div class='row'>
+            <div class='row' id='swCountryRow'>
                 <label>StampWorld Country</label>
                 <input id='swCountry' type='text' />
+            </div>
+            <div class='row' id='swCountryFixedRow' style='display:none;'>
+                <label>StampWorld Country</label>
+                <span id='swCountryFixed' class='badge'></span>
                 <label>Start Year</label>
                 <select id='swStartYear'></select>
                 <label>End Year</label>
@@ -203,7 +207,7 @@ details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(
                 <code id='swCmd'></code>
                 <button onclick='copySuggestedCommand()'>Copy</button>
             </div>
-            <div class='row' style='font-size:12px;color:#37566d;'>
+            <div class='row' id='swAlbumeasyRow' style='font-size:12px;color:#37566d;'>
                 <span>AlbumEasy not set? Add CLI path here or install from</span>
                 <a href='https://www.thestampweb.com/albumeasy/download' target='_blank' rel='noopener noreferrer'>AlbumEasy download</a>
                 <button onclick='configureAlbumeasyPath()'>Set AlbumEasy Path</button>
@@ -639,7 +643,13 @@ function applyCountrySearchSelection() {{
     }}
 
     const swCountry = document.getElementById('swCountry');
+    const swCountryRow = document.getElementById('swCountryRow');
+    const swCountryFixedRow = document.getElementById('swCountryFixedRow');
+    const swAlbumeasyRow = document.getElementById('swAlbumeasyRow');
     if (swCountry) swCountry.value = typed;
+    if (swCountryRow) swCountryRow.style.display = '';
+    if (swCountryFixedRow) swCountryFixedRow.style.display = 'none';
+    if (swAlbumeasyRow) swAlbumeasyRow.style.display = '';
     document.getElementById('stampworldPanel').style.display = '';
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(typed);
     setCountrySearchStatus('Matches: 0/0');
@@ -1115,9 +1125,13 @@ function renderCountryPanel() {{
     if (!c) {{
         document.getElementById('countryPanel').innerHTML = '<em>No countries found under Albums/*/*.db</em>';
         document.getElementById('stampworldPanel').style.display = '';
+        const swCountryRow = document.getElementById('swCountryRow');
+        const swCountryFixedRow = document.getElementById('swCountryFixedRow');
         const dirPathEl = document.getElementById('colnectDirPath');
         const countBadge = document.getElementById('colnectCopyCountBadge');
         const copyStatus = document.getElementById('colnectCopyStatus');
+        if (swCountryRow) swCountryRow.style.display = '';
+        if (swCountryFixedRow) swCountryFixedRow.style.display = 'none';
         if (dirPathEl) dirPathEl.innerText = '(select a country)';
         if (countBadge) countBadge.innerText = 'Files: 0';
         if (copyStatus) {{
@@ -1139,7 +1153,15 @@ function renderCountryPanel() {{
         `<span class='badge'>Colnect files: ${{c.colnect_file_count}}</span> ` +
         `<span class='badge'>DB candidates: ${{c.colnect_candidate_count}}</span>`;
 
+    const swCountryRow = document.getElementById('swCountryRow');
+    const swCountryFixedRow = document.getElementById('swCountryFixedRow');
+    const swCountryFixed = document.getElementById('swCountryFixed');
+    const swAlbumeasyRow = document.getElementById('swAlbumeasyRow');
     document.getElementById('swCountry').value = c.country;
+    if (swCountryFixed) swCountryFixed.innerText = c.country;
+    if (swCountryRow) swCountryRow.style.display = 'none';
+    if (swCountryFixedRow) swCountryFixedRow.style.display = '';
+    if (swAlbumeasyRow) swAlbumeasyRow.style.display = 'none';
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(c.country);
     document.getElementById('stampworldPanel').style.display = '';
 
