@@ -169,6 +169,18 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             {
                 resp = resp.with_header(h);
             }
+            if let Ok(h) = Header::from_bytes(
+                &b"Cache-Control"[..],
+                &b"no-store, no-cache, must-revalidate, max-age=0"[..],
+            ) {
+                resp = resp.with_header(h);
+            }
+            if let Ok(h) = Header::from_bytes(&b"Pragma"[..], &b"no-cache"[..]) {
+                resp = resp.with_header(h);
+            }
+            if let Ok(h) = Header::from_bytes(&b"Expires"[..], &b"0"[..]) {
+                resp = resp.with_header(h);
+            }
             let _ = request.respond(resp);
             continue;
         }
@@ -1151,6 +1163,18 @@ pub(super) fn serve_review_requests(
             if let Ok(h) =
                 Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
             {
+                resp = resp.with_header(h);
+            }
+            if let Ok(h) = Header::from_bytes(
+                &b"Cache-Control"[..],
+                &b"no-store, no-cache, must-revalidate, max-age=0"[..],
+            ) {
+                resp = resp.with_header(h);
+            }
+            if let Ok(h) = Header::from_bytes(&b"Pragma"[..], &b"no-cache"[..]) {
+                resp = resp.with_header(h);
+            }
+            if let Ok(h) = Header::from_bytes(&b"Expires"[..], &b"0"[..]) {
                 resp = resp.with_header(h);
             }
             let _ = request.respond(resp);
