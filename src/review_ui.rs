@@ -68,6 +68,25 @@ pub fn get_runtime_log_lines() -> Vec<String> {
 /// Tail the most recent log file in the Logs/ directory, returning the last N lines.
 /// Used during StampWorld pulls to display real-time feedback of DB inserts and progress.
 pub fn tail_current_log(lines_count: usize) -> Vec<String> {
+    // Prefer in-memory runtime events first. These are emitted immediately by the
+    // Review UI process and include child stdout/stderr forwarding for StampWorld runs.
+    let runtime_lines = get_runtime_log_lines();
+    if !runtime_lines.is_empty() {
+        let stampworld_lines: Vec<String> = runtime_lines
+            .into_iter()
+            .filter(|line| line.to_ascii_lowercase().contains("stampworld"))
+            .collect();
+        if !stampworld_lines.is_empty() {
+            return stampworld_lines
+                .iter()
+                .rev()
+                .take(lines_count)
+                .rev()
+                .cloned()
+                .collect();
+        }
+    }
+
     // Find the most recent log file in Logs/
     let logs_dir = std::path::Path::new("Logs");
     if !logs_dir.exists() {
@@ -505,6 +524,47 @@ fn set_stampworld_state(new_state: StampWorldJobState) {
     if let Ok(mut state) = stampworld_job_state().lock() {
         *state = new_state;
     }
+}
+
+fn stampworld_db_snapshot(db_path: &str) -> String {
+    let db = Path::new(db_path);
+    if !db.exists() {
+        return format!("db_exists=false path={}", db.display());
+    }
+
+    let size = fs::metadata(db).map(|m| m.len()).unwrap_or(0);
+    let conn = match Connection::open(db) {
+        Ok(c) => c,
+        Err(e) => {
+            return format!(
+                "db_exists=true open_ok=false size_bytes={} path={} open_error={}",
+                size,
+                db.display(),
+                e
+            )
+        }
+    };
+
+    let stamps = conn
+        .query_row("SELECT COUNT(*) FROM stamps", [], |r| r.get::<_, i64>(0))
+        .ok();
+    let colnect = conn
+        .query_row("SELECT COUNT(*) FROM colnect_stamps", [], |r| {
+            r.get::<_, i64>(0)
+        })
+        .ok();
+
+    format!(
+        "db_exists=true open_ok=true size_bytes={} stamps_count={} colnect_stamps_count={} path={}",
+        size,
+        stamps
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        colnect
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "n/a".to_string()),
+        db.display()
+    )
 }
 
 fn find_global_config_path() -> Option<std::path::PathBuf> {
