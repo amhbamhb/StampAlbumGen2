@@ -198,7 +198,7 @@ details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(
                 <span class='badge'>Colnect inbox hint: {inbox_hint}</span>
             </div>
             <div class='row'>
-                <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
+                <button class='accent' onclick='runStampWorldPull()'>Run StampWorld pull for this country (including additional pull).</button>
                 <button id='swOpenReviewBtn' class='primary' onclick='openReviewAfterStampWorld()' style='display:none;'>Open Review</button>
                 <span id='swRunStatus' class='badge'>Not started</span>
             </div>
@@ -3483,6 +3483,18 @@ function updateGuide() {{
     guide.style.display = '';
 }}
 
+function initReviewStampWorldPanel() {{
+    const currentCountry = String(reviewCountryName || currentReviewCountryEl?.textContent || '').trim() || 'Unknown';
+    const countryLabel = document.getElementById('reviewSwCountry');
+    if (countryLabel) countryLabel.textContent = currentCountry;
+    const minYear = 1840;
+    const maxYear = new Date().getFullYear();
+    populateYearSelect('reviewSwStartYear', minYear, maxYear, 1840);
+    populateYearSelect('reviewSwEndYear', minYear, maxYear, 2026);
+    updateReviewStampWorldCommand();
+    updateReviewStampWorldStatus('Ready to run', false);
+}}
+
 function usedColnectIds(exceptLeftRowId) {{
   const used = new Set();
   for (const [l, cid] of Object.entries(assignedByLeft)) {{
@@ -5469,6 +5481,7 @@ if (reviewPdfAlwaysShowEl) {{
 }}
 updatePdfPreviewControls();
 restorePdfUiState();
+initReviewStampWorldPanel();
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;
@@ -5488,6 +5501,10 @@ try {{
 applyRuntimeLogVisibilityCompare();
 startRuntimeLogPollingCompare();
 startBackendHealthPollingCompare();
+document.getElementById('reviewSwStartYear')?.addEventListener('change', updateReviewStampWorldCommand);
+document.getElementById('reviewSwEndYear')?.addEventListener('change', updateReviewStampWorldCommand);
+document.getElementById('reviewSwPreset')?.addEventListener('change', updateReviewStampWorldCommand);
+document.getElementById('reviewSwExtraFlags')?.addEventListener('input', updateReviewStampWorldCommand);
 render();
 document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
     el.textContent = String(new Date().getFullYear());
