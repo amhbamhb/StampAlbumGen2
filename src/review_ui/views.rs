@@ -3369,6 +3369,99 @@ async function openCountryFolder() {{
     }}
 }}
 
+function reviewStampworldPresetFlags() {{
+    const preset = document.getElementById('reviewSwPreset')?.value || 'basic';
+    if (preset === 'overwrite_album') return '--overwrite-album';
+    if (preset === 'overwrite_all') return '--overwrite-album --overwrite-images';
+    if (preset === 'bounded_pages') return '--max-pages 25 --stop-after-no-hits 3';
+    if (preset === 'accept_typo') return '--yes';
+    return '';
+}}
+
+function reviewSuggestedStampworldCommand() {{
+    const country = String(reviewCountryName || currentReviewCountryEl?.textContent || '').trim();
+    const startYear = document.getElementById('reviewSwStartYear')?.value || '1840';
+    const endYear = document.getElementById('reviewSwEndYear')?.value || '2026';
+    const presetFlags = reviewStampworldPresetFlags();
+    const extraFlags = String(document.getElementById('reviewSwExtraFlags')?.value || '').trim();
+    const suffix = [presetFlags, extraFlags].filter(Boolean).join(' ');
+    return `./stamp_album_gen2 --source stampworld --site-name "${{country}}" --album-name "${{country}}" --start-year ${{startYear}} --end-year ${{endYear}}${{suffix ? ' ' + suffix : ''}}`;
+}}
+
+function updateReviewStampWorldCommand() {{
+    const cmd = document.getElementById('reviewSwCmd');
+    if (cmd) cmd.innerText = reviewSuggestedStampworldCommand();
+}}
+
+function updateReviewStampWorldStatus(text, isRunning) {{
+    const badge = document.getElementById('reviewSwRunStatus');
+    if (badge) badge.innerText = text || 'Not started';
+    if (isRunning) setBusy(true, 'Running StampWorld pull...');
+}}
+
+async function runReviewStampWorldPull() {{
+    const country = String(reviewCountryName || currentReviewCountryEl?.textContent || '').trim();
+    if (!country || country === 'Unknown') {{
+        setMainStatus('Current country is required for StampWorld pull.');
+        return;
+    }}
+
+    const startYear = parseInt(document.getElementById('reviewSwStartYear')?.value || '1840', 10);
+    const endYear = parseInt(document.getElementById('reviewSwEndYear')?.value || '2026', 10);
+    const preset = document.getElementById('reviewSwPreset')?.value || 'basic';
+    const extraFlags = String(document.getElementById('reviewSwExtraFlags')?.value || '').trim();
+
+    updateReviewStampWorldStatus('Starting StampWorld pull...', true);
+    setMainStatus('Starting StampWorld pull for ' + country + '...');
+
+    try {{
+        const r = await fetch('/api/stampworld-run', {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ country: country, start_year: startYear, end_year: endYear, preset: preset, extra_flags: extraFlags }})
+        }});
+        const j = await r.json();
+        if (!j.ok) {{
+            setBusy(false, '');
+            updateReviewStampWorldStatus(j.message || 'Failed to start', false);
+            setMainStatus(j.message || 'Failed to start StampWorld pull.');
+            return;
+        }}
+
+        setMainStatus(j.message || 'StampWorld pull started.');
+        updateReviewStampWorldStatus(j.message || 'StampWorld pull started.', false);
+    }} catch (e) {{
+        setBusy(false, '');
+        updateReviewStampWorldStatus('Failed to start', false);
+        setMainStatus('StampWorld request failed: ' + e);
+    }}
+}}
+
+function copyReviewStampWorldCommand() {{
+    const cmd = document.getElementById('reviewSwCmd')?.innerText || '';
+    const status = document.getElementById('status');
+    if (!cmd.trim()) {{
+        if (status) status.innerText = 'No command available to copy.';
+        return;
+    }}
+
+    navigator.clipboard?.writeText
+        ? navigator.clipboard.writeText(cmd)
+        : Promise.resolve().then(() => {{
+            const ta = document.createElement('textarea');
+            ta.value = cmd;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }}).then(() => undefined);
+
+    if (status) status.innerText = 'Suggested command copied to clipboard.';
+}}
+
 function updateGuide() {{
     const leftCount = left.length;
     const rightCount = rightAll.length;
