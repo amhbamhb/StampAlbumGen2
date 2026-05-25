@@ -5306,11 +5306,19 @@ async function closeReviewUi() {{
 async function returnToStartReviewPage() {{
     const statusEl = document.getElementById('status');
     const originalText = statusEl?.innerText || 'Ready';
+    if (reviewStampWorldRunRequested) {{
+        const msg = 'Cannot return to country selection while a StampWorld pull is running.';
+        if (statusEl) statusEl.innerText = msg;
+        alert(msg);
+        return;
+    }}
     if (window.__returnToStartInFlight) {{
         if (statusEl) statusEl.innerText = 'Return to Start is already in progress...';
         return;
     }}
     window.__returnToStartInFlight = true;
+
+    logRuntimeCompare('return-to-start requested from compare page UI');
 
     if (statusEl) statusEl.innerText = 'Step 1/2: Switching server mode...';
     setOperationBusy(true, 'Step 1/2: Switching server mode...');

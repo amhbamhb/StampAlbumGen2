@@ -1997,6 +1997,28 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Post && req_url == "/return-to-start" {
+            let stampworld_running = stampworld_job_state()
+                .lock()
+                .ok()
+                .map(|state| matches!(&*state, StampWorldJobState::Running { .. }))
+                .unwrap_or(false);
+
+            if stampworld_running {
+                log_runtime_event(
+                    "Review UI: blocked return-to-start request because StampWorld pull is still running.",
+                );
+                let mut resp = Response::from_string(
+                    "{\"ok\":false,\"message\":\"Cannot return to country selection while StampWorld pull is running.\"}".to_string(),
+                )
+                .with_status_code(StatusCode(409));
+                if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                    resp = resp.with_header(h);
+                }
+                let _ = request.respond(resp);
+                continue;
+            }
+
+            log_runtime_event("Review UI: processing return-to-start request from compare view.");
             return_to_start_requested = true;
             let mut resp = Response::from_string(
                 "{\"ok\":true,\"message\":\"Returning to Start Review page...\"}".to_string(),
