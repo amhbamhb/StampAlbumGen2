@@ -1105,6 +1105,190 @@ pub(super) fn serve_review_requests(
             continue;
         }
 
+        if method == Method::Get && req_url.starts_with("/api/stampworld-status") {
+            let response = {
+                let state = stampworld_job_state()
+                    .lock()
+                    .ok()
+                    .map(|s| s.clone())
+                    .unwrap_or(StampWorldJobState::Idle);
+
+                match state {
+                    StampWorldJobState::Idle => BootstrapStampWorldStatusResponse {
+                        ok: true,
+                        running: false,
+                        finished: false,
+                        success: None,
+                        message: "No StampWorld job has started yet.".to_string(),
+                        country: None,
+                        db_path: None,
+                    },
+                    StampWorldJobState::Running { country, db_path } => {
+                        let live_message = tail_current_log(1)
+                            .into_iter()
+                            .last()
+                            .filter(|line| !line.trim().is_empty())
+                            .unwrap_or_else(|| {
+                                format!("StampWorld pull is running for {}...", country)
+                            });
+                        BootstrapStampWorldStatusResponse {
+                            ok: true,
+                            running: true,
+                            finished: false,
+                            success: None,
+                            message: live_message,
+                            country: Some(country),
+                            db_path: Some(db_path),
+                        }
+                    }
+                    StampWorldJobState::Finished {
+                        success,
+                        country,
+                        db_path,
+                        message,
+                    } => BootstrapStampWorldStatusResponse {
+                        ok: true,
+                        running: false,
+                        finished: true,
+                        success: Some(success),
+                        message,
+                        country: Some(country),
+                        db_path: Some(db_path),
+                    },
+                }
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"running\":false,\"finished\":false,\"success\":null,\"message\":\"serialization failed\",\"country\":null,\"db_path\":null}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url.starts_with("/api/stampworld-log-tail") {
+            let lines = tail_current_log(50);
+            let response = StampWorldLogTailResponse { ok: true, lines };
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response)
+                    .unwrap_or_else(|_| "{\"ok\":false,\"lines\":[]}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/review-client-log" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let message = serde_json::from_str::<serde_json::Value>(&body)
+                .ok()
+                .and_then(|v| {
+                    v.get("message")
+                        .and_then(|m| m.as_str())
+                        .map(|s| s.trim().to_string())
+                })
+                .filter(|s| !s.is_empty())
+                .unwrap_or_else(|| body.trim().to_string());
+
+            if !message.is_empty() {
+                log_runtime_event(&format!("Review client: {}", message));
+            }
+
+            let mut resp = Response::from_string("{\"ok\":true}".to_string());
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/stampworld-run" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                log_runtime_event(
+                    "StampWorld API: failed to read request body for /api/stampworld-run",
+                );
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            log_runtime_event(&format!(
+                "StampWorld API: /api/stampworld-run request body => {}",
+                body
+            ));
+
+            let parsed: Result<BootstrapStampWorldRunRequest, _> = serde_json::from_str(&body);
+            let (response, status_code) = match parsed {
+                Ok(req) => {
+                    log_runtime_event(&format!(
+                        "StampWorld API: parsed request country={} start_year={} end_year={} preset={} extra_flags={}",
+                        req.country.trim(),
+                        req.start_year,
+                        req.end_year,
+                        req.preset.as_deref().unwrap_or("basic"),
+                        req.extra_flags.as_deref().unwrap_or("")
+                    ));
+                    match start_bootstrap_stampworld_job(req) {
+                        Ok(msg) => (
+                            BootstrapStampWorldRunResponse {
+                                ok: true,
+                                message: msg,
+                                started: true,
+                            },
+                            StatusCode(200),
+                        ),
+                        Err(error) => (
+                            BootstrapStampWorldRunResponse {
+                                ok: false,
+                                message: error,
+                                started: false,
+                            },
+                            StatusCode(409),
+                        ),
+                    }
+                }
+                Err(error) => (
+                    BootstrapStampWorldRunResponse {
+                        ok: false,
+                        message: format!("invalid request: {}", error),
+                        started: false,
+                    },
+                    StatusCode(400),
+                ),
+            };
+
+            log_runtime_event(&format!(
+                "StampWorld API: /api/stampworld-run response status={} ok={} started={} message={}",
+                status_code.0,
+                response.ok,
+                response.started,
+                response.message
+            ));
+
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"started\":false}"
+                        .to_string()
+                }))
+                .with_status_code(status_code);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Get && req_url == "/compare-ready" {
             let mut resp = Response::from_string("{\"ready\":true}".to_string());
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
