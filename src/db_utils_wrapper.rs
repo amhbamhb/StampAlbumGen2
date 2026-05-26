@@ -104,11 +104,33 @@ pub fn get_all_series(
     _series_order: Option<&str>,
 ) -> rusqlite::Result<Vec<String>> {
     // Support legacy `series_order` options used by callers/tests.
-    // - None: delegate to the DB crate (alphabetical)
+    // - None / Some("first_date"): order by earliest year/month/day in series
     // - Some("first_sg"): order by the numeric minimum of sg_number per series (ascending)
     // - Some("first_sg_desc"): same but descending
     if let Some(order) = _series_order {
         match order {
+            "first_date" => {
+                let mut stmt = conn.prepare(
+                    "SELECT series
+                     FROM stamps
+                     GROUP BY series
+                     ORDER BY MIN(
+                                printf(
+                                    '%04d-%02d-%02d',
+                                    CASE WHEN COALESCE(year, 0) > 0 THEN year ELSE 9999 END,
+                                    CASE WHEN COALESCE(month_num, 0) > 0 THEN month_num ELSE 99 END,
+                                    CASE WHEN CAST(COALESCE(day, '') AS INTEGER) > 0 THEN CAST(day AS INTEGER) ELSE 99 END
+                                )
+                              ) ASC,
+                              series COLLATE NOCASE ASC",
+                )?;
+                let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+                let mut res = Vec::new();
+                for s in rows {
+                    res.push(s?);
+                }
+                return Ok(res);
+            }
             "first_sg" => {
                 let mut stmt = conn.prepare(
                     "SELECT series
@@ -142,13 +164,13 @@ pub fn get_all_series(
                 return Ok(res);
             }
             _ => {
-                // Unknown ordering - fall back to crate default alphabetical
-                return stamp_album_db::get_all_series(conn);
+                // Unknown ordering - fall back to first_date behavior.
+                return get_all_series(conn, Some("first_date"));
             }
         }
     }
-    // No ordering requested: delegate to the DB crate which returns Vec<String>.
-    stamp_album_db::get_all_series(conn)
+    // No explicit order requested: default to first-date chronology.
+    get_all_series(conn, Some("first_date"))
 }
 
 /// Delegate get_stamps_by_country_series to crate
