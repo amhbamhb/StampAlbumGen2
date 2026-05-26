@@ -74,7 +74,7 @@ pub fn for_each_series<F>(conn: &Connection, _order: Option<&str>, mut cb: F) ->
 where
     F: FnMut(usize, &str),
 {
-    let series = stamp_album_db::get_all_series(conn)?;
+    let series = crate::db_utils::get_all_series(conn, _order)?;
     for (i, s) in series.iter().enumerate() {
         cb(i, s);
     }
