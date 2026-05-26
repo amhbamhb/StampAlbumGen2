@@ -34,6 +34,16 @@ fn normalize_digits(v: &str) -> String {
     v.chars().filter(|c| c.is_ascii_digit()).collect()
 }
 
+fn parse_sort_day(v: Option<&String>) -> i32 {
+    let Some(raw) = v else {
+        return 0;
+    };
+
+    let trimmed = raw.trim();
+    let digits: String = trimmed.chars().take_while(|c| c.is_ascii_digit()).collect();
+    digits.parse::<i32>().unwrap_or(0)
+}
+
 fn stamp_date_key(stamp: &Stamp) -> String {
     let year = stamp
         .attrs
@@ -823,7 +833,7 @@ where
             fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
             .expect("Failed to get stamps");
         let mut stamps_vec = stamps_iter;
-        // Re-sort by year + catalog number right before layout emission so
+        // Re-sort by year + issue date + catalog number right before layout emission so
         // updates applied in Review UI are reflected in final PDF order.
         let parse_catalog_key = |raw: &str| {
             let trimmed = raw.trim();
@@ -858,6 +868,28 @@ where
             let year_cmp = ay.cmp(&by);
             if year_cmp != std::cmp::Ordering::Equal {
                 return year_cmp;
+            }
+
+            let am = a
+                .attrs
+                .get("month_num")
+                .and_then(|v| v.trim().parse::<i32>().ok())
+                .unwrap_or(0);
+            let bm = b
+                .attrs
+                .get("month_num")
+                .and_then(|v| v.trim().parse::<i32>().ok())
+                .unwrap_or(0);
+            let month_cmp = am.cmp(&bm);
+            if month_cmp != std::cmp::Ordering::Equal {
+                return month_cmp;
+            }
+
+            let ad = parse_sort_day(a.attrs.get("day"));
+            let bd = parse_sort_day(b.attrs.get("day"));
+            let day_cmp = ad.cmp(&bd);
+            if day_cmp != std::cmp::Ordering::Equal {
+                return day_cmp;
             }
 
             let a_code = a.attrs.get("sg_number").map(|s| s.as_str()).unwrap_or("");
