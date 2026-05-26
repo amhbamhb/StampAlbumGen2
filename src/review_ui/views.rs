@@ -2805,6 +2805,40 @@ function removeCandidateFromUi(colnectId) {{
         }}
     }}
 }}
+
+function pruneAssignmentsToExistingCandidates() {{
+    const valid = new Set((rightAll || []).map(c => c.colnect_id));
+    Object.keys(assignedByLeft).forEach(k => {{
+        if (!valid.has(assignedByLeft[k])) delete assignedByLeft[k];
+    }});
+    Object.keys(selectedCatalogCodeByLeft).forEach(k => {{
+        if (!assignedByLeft[k]) delete selectedCatalogCodeByLeft[k];
+    }});
+    Object.keys(selectedCatalogTypeByLeft).forEach(k => {{
+        if (!assignedByLeft[k]) delete selectedCatalogTypeByLeft[k];
+    }});
+}}
+
+async function refreshRightCandidatesRealtime(restoredColnectId = null) {{
+    try {{
+        const cr = await fetch('/api/fresh-candidates', {{ cache: 'no-store' }});
+        const freshRight = await cr.json();
+        if (!Array.isArray(freshRight)) return false;
+        rightAll = freshRight;
+        pruneAssignmentsToExistingCandidates();
+        for (const key of Object.keys(rightIdxByLeft)) {{
+            const idx = Number(rightIdxByLeft[key] || 0);
+            if (!Number.isFinite(idx) || idx < 0 || idx >= rightAll.length) rightIdxByLeft[key] = 0;
+        }}
+        if (restoredColnectId && !rightAll.some(c => c.colnect_id === restoredColnectId)) {{
+            setMatchStatus('Updated, but restored candidate is filtered out or unavailable right now.');
+        }}
+        render();
+        return true;
+    }} catch (_) {{
+        return false;
+    }}
+}}
 const rowOddColor = (payload.odd_row_color || '').trim() || '#ffffff';
 const rowEvenColor = (payload.even_row_color || '').trim() || '#e6eef4';
 const checkboxDefaults = {{
@@ -4994,12 +5028,11 @@ async function deleteCurrentLeft() {{
         return;
     }}
 
-    if (payload.restored_colnect_id) {{
-        location.reload();
-        return;
-    }}
-
     if (payload.deleted_rowid != null) removeLeftRow(payload.deleted_rowid);
+    if (payload.restored_colnect_id) {{
+        const refreshed = await refreshRightCandidatesRealtime(payload.restored_colnect_id);
+        if (!refreshed) setMatchStatus('Candidate restored; press Refresh if right list looks stale.');
+    }}
     document.getElementById('status').innerText = payload.message || 'Left-side row deleted';
     render();
 }}
@@ -5029,7 +5062,12 @@ async function clearCurrentLeftColnectLink() {{
 
     if (payload.updated_left) upsertLeftRow(payload.updated_left);
     document.getElementById('status').innerText = payload.message || 'Linked Colnect data cleared';
-    location.reload();
+    if (payload.restored_colnect_id) {{
+        const refreshed = await refreshRightCandidatesRealtime(payload.restored_colnect_id);
+        if (!refreshed) setMatchStatus('Candidate restored; press Refresh if right list looks stale.');
+    }} else {{
+        render();
+    }}
 }}
 
 async function addCurrentColnectAsStamp() {{
@@ -5089,6 +5127,7 @@ async function addCurrentColnectAsStamp() {{
     }}
     if (j.processed_colnect_id) {{
         removeCandidateFromUi(j.processed_colnect_id);
+        const _ = await refreshRightCandidatesRealtime();
     }}
     closeAddDialog();
     setMatchStatus(j.message || 'Added to stamps');
@@ -5149,7 +5188,8 @@ async function undoLastDelete() {{
         return;
     }}
 
-    if (!rightAll.some(c => c.colnect_id === last.candidate.colnect_id)) {{
+    let refreshed = await refreshRightCandidatesRealtime(last.candidate.colnect_id);
+    if (!refreshed && !rightAll.some(c => c.colnect_id === last.candidate.colnect_id)) {{
         rightAll.push(last.candidate);
     }}
     for (const [k, cid, code, catalogType] of last.removedAssignments || []) {{
@@ -5547,12 +5587,11 @@ async function importColnectFilesReview() {{
             // Refresh right-panel candidates without a full page reload so that
             // newly imported Colnect stamps appear immediately in the list.
             try {{
-                const cr = await fetch('/api/fresh-candidates', {{ cache: 'no-store' }});
-                const freshRight = await cr.json();
-                if (Array.isArray(freshRight) && freshRight.length > 0) {{
-                    rightAll = freshRight;
-                    render();
-                    appendLogLine('\u21bb Right panel refreshed (' + freshRight.length + ' candidates)');
+                const refreshed = await refreshRightCandidatesRealtime();
+                if (refreshed) {{
+                    appendLogLine('\u21bb Right panel refreshed (' + rightAll.length + ' candidates)');
+                }} else {{
+                    appendLogLine('(Could not auto-refresh right panel - please reload if list looks stale)');
                 }}
             }} catch (_) {{
                 appendLogLine('(Could not auto-refresh right panel \u2014 please reload if list looks stale)');
