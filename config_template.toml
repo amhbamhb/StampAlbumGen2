@@ -419,7 +419,8 @@ force_dpi = 96.0
 # If true, keep real measured dimensions when available.
 # sizing_mode: "real_world" emits physical DPI-derived sizes as-is.
 # "fit_box" clamps stamp height to target_stamp_height_mm.
-sizing_mode = "real_world"
+# Keep fit_box here so fresh installs do not render StampWorld imports oversized.
+sizing_mode = "fit_box"
 
 # Rebuild placeholder image files if sizing changes.
 # Why important:

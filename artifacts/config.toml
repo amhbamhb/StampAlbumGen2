@@ -195,7 +195,7 @@ wikipedia_use_math_spacing = true
 [images]
 force_dpi = 96.0
 # sizing_mode: "real_world" (emit physical sizes) or "fit_box" (clamp height to target_stamp_height_mm)
-sizing_mode = "real_world"
+sizing_mode = "fit_box"
 placeholder_always_overwrite = true
 
 ###################################

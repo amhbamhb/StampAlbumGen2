@@ -71,3 +71,12 @@ fn test_create_config_from_template_force_backups_and_overwrites() {
 
     assert!(found_backup, "Expected to find a timestamped backup file");
 }
+
+#[test]
+fn test_template_defaults_use_fit_box_sizing() {
+    let template = include_str!("../config_template.toml");
+    assert!(
+        template.contains("sizing_mode = \"fit_box\""),
+        "Freshly initialized configs should default to fit_box sizing"
+    );
+}
