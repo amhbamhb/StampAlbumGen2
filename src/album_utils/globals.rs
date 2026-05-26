@@ -502,6 +502,11 @@ pub fn write_globals<W: Write>(
         let after_vspace_default = cfg.flag_cover_image_vspace_after.unwrap_or(12.0);
 
         if any_present {
+            // Isolate cover image settings so coat/flag rendering does not
+            // affect subsequent stamp pages.
+            let _ = writeln!(writer, "ALBUM_STAMP_SETTINGS_SAVE");
+            // Force cover images to preserve source proportions.
+            let _ = writeln!(writer, "ALBUM_STAMP_IMG_ASPECT_RATIO (true)");
             let _ = layout::write_page_vspace(writer, top_vspace as f64);
         }
 
@@ -627,6 +632,10 @@ pub fn write_globals<W: Write>(
                 );
                 let _ = layout::write_page_vspace(writer, after_vspace as f64);
             }
+
+            // Restore the stamp settings state so cover-specific image
+            // behavior does not leak into regular stamp pages.
+            let _ = writeln!(writer, "ALBUM_STAMP_SETTINGS_RESTORE");
         }
 
         // After cover, emit a page separator so normal globals follow
