@@ -579,7 +579,7 @@ impl Config {
             flag_cover_text_only_title_size: Some(48.0),
             flag_cover_text_only_title_scale: Some(1.0),
             flag_cover_text_only_vspace_after: Some(18.0),
-            series_order: Some("first_sg".to_string()),
+            series_order: Some("first_date".to_string()),
             page_vspace_marker: Some("6".to_string()),
             row_start_es_marker: Some("ROW_START_ES".to_string()),
             page_text_format: Some(r#"PAGE_TEXT (HN 10 "{}" 1.0)"#.to_string()),

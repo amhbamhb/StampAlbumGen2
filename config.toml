@@ -204,8 +204,8 @@ row_start_es_marker = "ROW_START_ES"
 enable_row_centering = true
 # Emit diagnostics for stamps-per-row decisions
 show_stamps_per_row = true
-# Order strategy for series sorting (for example first_sg)
-series_order = "first_sg"
+# Order strategy for series sorting: first_date, first_sg, first_sg_desc, alpha
+series_order = "first_date"
 
 ###################################
 # Colors

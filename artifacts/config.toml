@@ -123,7 +123,7 @@ row_start_es_marker = "ROW_START_ES"
 # Row packing diagnostics / centering
 enable_row_centering = true
 show_stamps_per_row = true
-series_order = "first_sg"
+series_order = "first_date"
 
 ###################################
 # Colors
