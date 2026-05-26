@@ -44,7 +44,15 @@ pub fn get_all_series(conn: &Connection) -> Result<Vec<String>> {
         "SELECT series
          FROM stamps
          GROUP BY series
-         ORDER BY COALESCE(MIN(NULLIF(year, 0)), 9999) ASC, series COLLATE NOCASE ASC",
+         ORDER BY MIN(
+                    printf(
+                        '%04d-%02d-%02d',
+                        CASE WHEN COALESCE(year, 0) > 0 THEN year ELSE 9999 END,
+                        CASE WHEN COALESCE(month_num, 0) > 0 THEN month_num ELSE 99 END,
+                        CASE WHEN CAST(COALESCE(day, '') AS INTEGER) > 0 THEN CAST(day AS INTEGER) ELSE 99 END
+                    )
+                  ) ASC,
+                  series COLLATE NOCASE ASC",
     )?;
     let iter = stmt.query_map([], |row| Ok(row.get::<_, String>(0)?))?;
     let mut res = Vec::new();
