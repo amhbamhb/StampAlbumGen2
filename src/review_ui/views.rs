@@ -2017,16 +2017,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 </head>
 <body>
 <div class='wrap'>
-    <div id='reconnectBannerCompare' class='reconnectBanner' role='status' aria-live='polite'>
-        <div id='reconnectBannerCompareTitle' class='title'>Connection lost, retrying...</div>
-        <button onclick='refreshState()'>Refresh</button>
-        <button onclick='openConfigEditor()'>Edit Config</button>
-        <div class='actions'>
-            <button type='button' onclick='retryBackendHealthCheckCompare()'>Retry Now</button>
-            <button type='button' onclick='reloadCurrentPageCompare()'>Reload Page</button>
-            <span id='reconnectBannerCompareMeta' class='meta'></span>
-        </div>
-    </div>
+    {reconnect_banner_compare_html}
     <div class='top'>
         <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
         <span class='badge'>Switch country without closing Review UI</span>
@@ -2047,21 +2038,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
             <button class='neutral' onclick='openCountryFolder()'>Open Country Folder</button>
         </div>
   </div>
-    <div id='runtimeLogComparePanel' style='border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;'>
-        <div style='display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;'>
-            <strong>Runtime Log</strong>
-            <div style='display:flex;gap:8px;align-items:center;flex-wrap:wrap;'>
-                <label style='font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;'>
-                    <input id='showRuntimeLogCompare' type='checkbox' checked onchange='toggleRuntimeLogVisibilityCompare()' />
-                    Show Log
-                </label>
-                <button onclick='copyRuntimeLogCompare()'>Copy Log</button>
-            </div>
-        </div>
-        <div id='runtimeLogCompareBody'>
-            <textarea id='runtimeLogCompare' readonly style='width:100%;min-height:120px;max-height:220px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>
-        </div>
-    </div>
+    {runtime_log_compare_panel_html}
     <div class='controlGroups'>
         <div class='groupCard session'>
             <h4>Session</h4>
@@ -5909,22 +5886,39 @@ document.getElementById('reviewSwEndYear')?.addEventListener('change', updateRev
 document.getElementById('reviewSwPreset')?.addEventListener('change', updateReviewStampWorldCommand);
 document.getElementById('reviewSwExtraFlags')?.addEventListener('input', updateReviewStampWorldCommand);
 render();
-document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
-    el.textContent = String(new Date().getFullYear());
-}});
+{footer_year_update_js}
 </script>
 {footer_html}
-<script>
-document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
-    el.textContent = String(new Date().getFullYear());
-}});
-</script>
+{footer_year_script}
 {config_editor_assets}
 </body>
 </html>"#,
         json = json,
         backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
+        reconnect_banner_compare_html = render_reconnect_banner_html(
+            "reconnectBannerCompare",
+            "reconnectBannerCompareTitle",
+            None,
+            None,
+            "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
+            "retryBackendHealthCheckCompare",
+            "reloadCurrentPageCompare",
+            "reconnectBannerCompareMeta",
+        ),
+        runtime_log_compare_panel_html = render_runtime_log_panel_html(
+            "runtimeLogComparePanel",
+            "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
+            "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
+            "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
+            "runtimeLogCompareBody",
+            "runtimeLogCompare",
+            "showRuntimeLogCompare",
+            "toggleRuntimeLogVisibilityCompare",
+            "copyRuntimeLogCompare",
+        ),
+        footer_year_update_js = FOOTER_YEAR_UPDATE_JS,
         footer_html = render_app_footer_html(),
+        footer_year_script = render_footer_year_script(),
         config_editor_assets = render_config_editor_assets()
     )
 }

@@ -76,3 +76,12 @@ fn compare_html_contains_backend_recovery_banner() {
     assert!(html.contains("retryBackendHealthCheckCompare"));
     assert!(html.contains("Connection lost, retrying..."));
 }
+
+#[test]
+fn compare_html_contains_runtime_log_hooks() {
+    let payload = minimal_payload();
+    let html = render_html(&payload);
+    assert!(html.contains("id='runtimeLogCompare'"));
+    assert!(html.contains("id='showRuntimeLogCompare'"));
+    assert!(html.contains("copyRuntimeLogCompare()"));
+}
