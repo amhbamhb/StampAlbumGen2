@@ -1,52 +1,147 @@
 # Plan to Split `views.rs` (Stamp Album Generator 2)
 
+Last updated: 2026-05-26
+Target: `src/review_ui/views.rs`
+
 ## Goals
 
-- Improve maintainability and readability by splitting the 4,000+ line `views.rs` into logical modules.
-- Each split is incremental: after each step, the app must build, run, and produce identical output.
-- Only proceed to the next section after explicit user approval.
+- Reduce the 4,000+ line `views.rs` into smaller review-ui-specific modules.
+- Keep every extraction incremental, buildable, and behavior-preserving.
+- Track completed work directly in this plan so the current state stays visible.
+- Prefer a dedicated `src/review_ui/views/` logic directory over adding more large top-level files.
+- Only proceed to the next extraction section after explicit user approval.
 
-## Proposed Sections
+## Current State
 
-1. **HTML Template Rendering**
-   - Move all functions that generate static or mostly-static HTML (e.g., `render_app_footer_html`, `render_bootstrap_html`) to a new `html_templates.rs`.
+- `src/review_ui/views.rs` still owns the render functions and the large inline HTML/CSS/JS templates.
+- `src/review_ui/views/` now exists and already contains `tests.rs`.
+- `src/review_ui/html_templates.rs` already exists as an empty placeholder, so this plan should treat it as optional rather than assume it must be created.
+- The first cleanup step is done: tests were moved out of `views.rs` into `src/review_ui/views/tests.rs`.
 
-2. **JavaScript/CSS Embedding**
-   - Move embedded JS/CSS string generation to a new `assets.rs` or `embedded_scripts.rs`.
+## Status Tracker
 
-3. **Country/Album Panel Logic**
-   - Move functions related to rendering and updating the country/album panels to `country_panel.rs` and/or `album_panel.rs`.
+1. Test extraction to separate file: completed.
+2. Shared fragment extraction: completed.
+3. Bootstrap view chunking: in progress.
+4. Compare view chunking: not started.
+5. Shared JS/CSS snippet consolidation: not started.
+6. Physical file split from `views.rs` to `views/mod.rs` plus submodules: not started.
 
-4. **StampWorld Panel Logic**
-   - Move all StampWorld-specific UI logic to `stampworld_panel.rs`.
+## Revised Target Structure
 
-5. **Colnect/Import Panel Logic**
-   - Move Colnect import UI and logic to `colnect_panel.rs`.
-
-6. **Utility Functions**
-   - Move shared helpers (e.g., string escaping, formatting) to a new `ui_utils.rs`.
-
-7. **Tests**
-   - Move or create tests for each module in a `tests/` subdirectory or inline as appropriate.
-
-## File Structure Example
+Preferred end state:
 
 ```
 src/review_ui/
-    views.rs                # Main entry point, re-exports, glue code
-    html_templates.rs       # Static HTML rendering
-    embedded_scripts.rs     # JS/CSS string generation
-    country_panel.rs        # Country/album panel logic
-    stampworld_panel.rs     # StampWorld panel logic
-    colnect_panel.rs        # Colnect import logic
-    ui_utils.rs             # Shared helpers/utilities
-    tests/
-        ...                # (optional) module-specific tests
+    views.rs or views/mod.rs        # final entry point, depending on extraction timing
+    views/
+        tests.rs                    # characterization tests
+        shared.rs                   # shared HTML/script fragments and helpers
+        bootstrap.rs                # bootstrap page assembly
+        compare.rs                  # compare/review page assembly
 ```
+
+Optional later files only if they clearly reduce coupling:
+
+- `src/review_ui/views/bootstrap_assets.rs`
+- `src/review_ui/views/compare_assets.rs`
+- `src/review_ui/html_templates.rs`
+
+The plan should avoid prematurely scattering logic into many tiny files unless the split lines are already stable.
+
+## Execution Order
+
+### Phase 1: Baseline and Tracking
+
+- Keep characterization tests in `src/review_ui/views/tests.rs` up to date.
+- Add narrow tests only when they protect the next extraction step.
+- Update this plan after each completed phase.
+
+### Phase 2: Shared Fragments Inside `views.rs`
+
+- Extract repeated output fragments first while keeping everything in one file:
+- footer year script
+- reconnect banner HTML
+- runtime log panel HTML
+- copy-alert helper fragment if it is meaningfully duplicated
+
+Status:
+
+- Completed on 2026-05-26.
+- Extracted local helpers in `src/review_ui/views.rs` for footer year script, reconnect banner HTML, and runtime log panel HTML.
+- Focused validation passed with `cargo test review_ui::views::tests --lib`.
+
+Verification:
+
+- `cargo test review_ui::views::tests --lib`
+
+### Phase 3: Chunk Bootstrap Rendering
+
+- Split `render_bootstrap_html` into local helpers with stable IDs and endpoints:
+- bootstrap CSS helper
+- bootstrap body helper
+- bootstrap script helper
+
+Rules:
+
+- No endpoint string changes.
+- No HTML ID changes.
+- No JavaScript function rename.
+
+Verification:
+
+- existing focused tests
+- add one narrow contract test only if a moved fragment loses coverage
+
+Status:
+
+- In progress as of 2026-05-27.
+- Completed extraction of bootstrap CSS (`bootstrap_head_css`) and bootstrap body shell (`render_bootstrap_body_html`) in `src/review_ui/views.rs`.
+- Focused validation passed with `cargo test review_ui::views::tests --lib`.
+- Remaining for this phase: move the large bootstrap inline script into a dedicated helper function so `render_bootstrap_html` becomes a thin assembler.
+
+### Phase 4: Chunk Compare Rendering
+
+- Split `render_html` into local helpers with the same constraints:
+- compare CSS helper
+- compare body helper
+- compare script helper
+
+Verification:
+
+- `cargo test review_ui::views::tests --lib`
+- add compare-specific output marker tests only where needed
+
+### Phase 5: Move Helpers Into `src/review_ui/views/`
+
+- After the helper seams are stable, move code physically into:
+- `shared.rs`
+- `bootstrap.rs`
+- `compare.rs`
+
+Preferred transition:
+
+- either keep `src/review_ui/views.rs` as the entry point that `mod`s the new files
+- or rename to `src/review_ui/views/mod.rs` once the module split is settled
+
+This phase should happen after chunking, not before, to minimize churn.
+
+### Phase 6: Optional Deeper Splits
+
+- Only split by concern such as StampWorld, Colnect import, or panel-specific assets if those sections remain too large after the page-level split.
+- Prefer concern-specific helper modules under `src/review_ui/views/` rather than adding unrelated top-level review_ui files.
+
+## Guardrails
+
+- Every extraction must preserve rendered output and behavior.
+- Keep changes surgical; do not rename handlers, routes, or element IDs without necessity.
+- Avoid unchecked `unwrap()` in runtime code paths.
+- Prefer one commit-sized extraction step at a time.
+- Run focused validation immediately after each substantive edit.
 
 ## Workflow
 
-- After each section is moved:
-  - The code must build and run with no errors.
-  - The UI output must be visually and functionally identical.
-  - Only proceed to the next section after user review and approval.
+- After each approved section is moved:
+- the code must build and the targeted tests must pass
+- the UI output should remain functionally identical
+- this plan must be updated to reflect what was completed and what remains next

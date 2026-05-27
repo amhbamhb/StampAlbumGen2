@@ -22,7 +22,7 @@ Target file: `src/review_ui/views.rs` (4360+ lines)
 
 - Keep current behavior and add characterization tests for rendered output markers.
 - Do not move logic yet.
-- Completed in this change in `src/review_ui/views.rs` test module.
+- Completed: tests were moved out of `src/review_ui/views.rs` into `src/review_ui/views/tests.rs`.
 
 ### Phase 2: Extract Shared Constants and Fragments
 
@@ -80,9 +80,9 @@ Approach:
 
 ### Phase 6: Optional File Split
 
-After chunking stabilizes, split file physically:
+After chunking stabilizes, split file physically into the existing `src/review_ui/views/` directory:
 
-- `src/review_ui/views/mod.rs`
+- `src/review_ui/views/mod.rs` or keep `src/review_ui/views.rs` as entry point during transition
 - `src/review_ui/views/bootstrap.rs`
 - `src/review_ui/views/compare.rs`
 - `src/review_ui/views/shared.rs`
@@ -101,7 +101,7 @@ This should be done only after tests are stable to minimize merge risk.
 
 ## Existing tests added now
 
-In `src/review_ui/views.rs`:
+In `src/review_ui/views/tests.rs`:
 
 - Bootstrap default inbox hint rendering.
 - Bootstrap custom inbox hint rendering.
