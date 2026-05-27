@@ -1,6 +1,7 @@
 use super::{render_config_editor_assets, MatcherPayload};
 
 const BACKEND_NOT_RESPONDING_MESSAGE: &str = "The Review UI backend is not responding. Automatic retries are in progress.   This might be caused by loading of files, especially if you have many colnect files to import .  You can wait for recovery or reload now.";
+const FOOTER_YEAR_UPDATE_JS: &str = "document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {\n    el.textContent = String(new Date().getFullYear());\n});";
 
 fn render_app_footer_html() -> String {
     let version = env!("CARGO_PKG_VERSION");
@@ -14,17 +15,86 @@ fn render_app_footer_html() -> String {
     )
 }
 
-pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
-    let inbox_hint = default_inbox_path.unwrap_or("samples/colnect_inbox");
+fn render_footer_year_script() -> String {
+    format!("<script>\n{}\n</script>", FOOTER_YEAR_UPDATE_JS)
+}
+
+fn render_reconnect_banner_html(
+    banner_id: &str,
+    title_id: &str,
+    text_id: Option<&str>,
+    text_html: Option<&str>,
+    extra_html: &str,
+    retry_fn: &str,
+    reload_fn: &str,
+    meta_id: &str,
+) -> String {
+    let text_section = match (text_id, text_html) {
+        (Some(text_id), Some(text_html)) => format!("\n        <div id='{text_id}'>{text_html}</div>"),
+        _ => String::new(),
+    };
+
     format!(
-        r#"<!doctype html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Stamp Album Generator 2 Setup</title>
-<link rel='icon' type='image/png' href='/favicon.png'>
-<style>
-:root {{
+        r#"<div id='{banner_id}' class='reconnectBanner' role='status' aria-live='polite'>
+        <div id='{title_id}' class='title'>Connection lost, retrying...</div>{text_section}{extra_html}
+        <div class='actions'>
+            <button type='button' onclick='{retry_fn}()'>Retry Now</button>
+            <button type='button' onclick='{reload_fn}()'>Reload Page</button>
+            <span id='{meta_id}' class='meta'></span>
+        </div>
+    </div>"#,
+        banner_id = banner_id,
+        title_id = title_id,
+        text_section = text_section,
+        extra_html = extra_html,
+        retry_fn = retry_fn,
+        reload_fn = reload_fn,
+        meta_id = meta_id,
+    )
+}
+
+fn render_runtime_log_panel_html(
+    panel_id: &str,
+    panel_style: &str,
+    header_style: &str,
+    controls_style: &str,
+    body_id: &str,
+    textarea_id: &str,
+    checkbox_id: &str,
+    toggle_fn: &str,
+    copy_fn: &str,
+) -> String {
+    format!(
+        r#"<div id='{panel_id}' style='{panel_style}'>
+        <div style='{header_style}'>
+            <strong>Runtime Log</strong>
+            <div style='{controls_style}'>
+                <label style='font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;'>
+                    <input id='{checkbox_id}' type='checkbox' checked onchange='{toggle_fn}()' />
+                    Show Log
+                </label>
+                <button onclick='{copy_fn}()'>Copy Log</button>
+            </div>
+        </div>
+        <div id='{body_id}'>
+            <textarea id='{textarea_id}' readonly style='width:100%;min-height:120px;max-height:220px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>
+        </div>
+    </div>"#,
+        panel_id = panel_id,
+        panel_style = panel_style,
+        header_style = header_style,
+        controls_style = controls_style,
+        body_id = body_id,
+        textarea_id = textarea_id,
+        checkbox_id = checkbox_id,
+        toggle_fn = toggle_fn,
+        copy_fn = copy_fn,
+    )
+}
+
+fn bootstrap_head_css() -> String {
+    format!(
+        r#":root {{
     --bg-top: #fdf5ec;
     --bg-bottom: #e9f2fb;
     --card-bg: #ffffff;
@@ -111,20 +181,18 @@ details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(
 .colnectCopyStatus.fail {{ background: #fff3f3; border-color: #e8b4b4; color: #7a2020; }}
 #colnectDirPath {{ display: block; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }}
 #colnectCopyLog .line {{ border-bottom: 1px solid #e4dff1; padding: 2px 0; white-space: pre-wrap; word-break: break-word; }}
-#colnectCopyLog .line:last-child {{ border-bottom: none; }}
-</style>
-</head>
-<body>
-<div class='card'>
-    <div id='reconnectBanner' class='reconnectBanner' role='status' aria-live='polite'>
-        <div id='reconnectBannerTitle' class='title'>Connection lost, retrying...</div>
-        <div id='reconnectBannerText'>{backend_not_responding_message}</div>
-        <div class='actions'>
-            <button type='button' onclick='retryBackendHealthCheck()'>Retry Now</button>
-            <button type='button' onclick='reloadCurrentPage()'>Reload Page</button>
-            <span id='reconnectBannerMeta' class='meta'></span>
-        </div>
-    </div>
+#colnectCopyLog .line:last-child {{ border-bottom: none; }}"#
+    )
+}
+
+fn render_bootstrap_body_html(
+    inbox_hint: &str,
+    reconnect_banner_html: &str,
+    runtime_log_panel_html: &str,
+) -> String {
+    format!(
+        r#"<div class='card'>
+    {reconnect_banner_html}
     <h1>Stamp Album Generator 2</h1>
     <h2>Start Review UI</h2>
     <details id='introPanel' class='introPanel' open>
@@ -233,21 +301,7 @@ details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(
         </div>
     </details>
     <div id='status' class='status'></div>
-    <div id='runtimeLogPanel' style='margin-top:10px;border:1px solid #d7e2eb;border-radius:10px;padding:10px;background:#fbfdff;'>
-        <div class='row' style='margin-top:0;justify-content:space-between;'>
-            <strong>Runtime Log</strong>
-            <div class='row' style='margin-top:0;gap:8px;'>
-                <label style='font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;'>
-                    <input id='showRuntimeLog' type='checkbox' checked onchange='toggleRuntimeLogVisibility()' />
-                    Show Log
-                </label>
-                <button onclick='copyRuntimeLog()'>Copy Log</button>
-            </div>
-        </div>
-        <div id='runtimeLogBody'>
-            <textarea id='runtimeLog' readonly style='width:100%;min-height:120px;max-height:220px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>
-        </div>
-    </div>
+    {runtime_log_panel_html}
     <div id='loadingBox' class='loadingBox'>
         <div class='loadingRow'>
             <span class='spinner'></span>
@@ -257,7 +311,55 @@ details.collapsibleSection:not([open]) summary .introArrow {{ transform: rotate(
             </div>
         </div>
     </div>
-</div>
+</div>"#,
+        inbox_hint = inbox_hint,
+        reconnect_banner_html = reconnect_banner_html,
+        runtime_log_panel_html = runtime_log_panel_html,
+    )
+}
+
+pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {
+    let inbox_hint = default_inbox_path.unwrap_or("samples/colnect_inbox");
+    let reconnect_banner_html = render_reconnect_banner_html(
+        "reconnectBanner",
+        "reconnectBannerTitle",
+        Some("reconnectBannerText"),
+        Some(BACKEND_NOT_RESPONDING_MESSAGE),
+        "",
+        "retryBackendHealthCheck",
+        "reloadCurrentPage",
+        "reconnectBannerMeta",
+    );
+    let runtime_log_panel_html = render_runtime_log_panel_html(
+        "runtimeLogPanel",
+        "margin-top:10px;border:1px solid #d7e2eb;border-radius:10px;padding:10px;background:#fbfdff;",
+        "display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:0;",
+        "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:0;",
+        "runtimeLogBody",
+        "runtimeLog",
+        "showRuntimeLog",
+        "toggleRuntimeLogVisibility",
+        "copyRuntimeLog",
+    );
+    let bootstrap_body_html = render_bootstrap_body_html(
+        inbox_hint,
+        &reconnect_banner_html,
+        &runtime_log_panel_html,
+    );
+
+    format!(
+        r#"<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Stamp Album Generator 2 Setup</title>
+<link rel='icon' type='image/png' href='/favicon.png'>
+<style>
+{bootstrap_css}
+</style>
+</head>
+<body>
+{bootstrap_body_html}
 
 <script>
 let countries = [];
@@ -1603,22 +1705,19 @@ startRuntimeLogPolling();
 startBackendHealthPolling();
 refreshState();
 pollStampWorldStatus();
-document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
-    el.textContent = String(new Date().getFullYear());
-}});
+{footer_year_update_js}
 </script>
 {footer_html}
-<script>
-document.querySelectorAll('.copyrightCurrentYear').forEach((el) => {{
-    el.textContent = String(new Date().getFullYear());
-}});
-</script>
+{footer_year_script}
 {config_editor_assets}
 </body>
 </html>"#,
-        inbox_hint = inbox_hint,
         backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
+        bootstrap_css = bootstrap_head_css(),
+        bootstrap_body_html = bootstrap_body_html,
+        footer_year_update_js = FOOTER_YEAR_UPDATE_JS,
         footer_html = render_app_footer_html(),
+        footer_year_script = render_footer_year_script(),
         config_editor_assets = render_config_editor_assets()
     )
 }
