@@ -1,6 +1,6 @@
 # Plan to Split `views.rs` (Stamp Album Generator 2)
 
-Last updated: 2026-05-26
+Last updated: 2026-05-27
 Target: `src/review_ui/views.rs`
 
 ## Goals
@@ -22,7 +22,7 @@ Target: `src/review_ui/views.rs`
 
 1. Test extraction to separate file: completed.
 2. Shared fragment extraction: completed.
-3. Bootstrap view chunking: in progress.
+3. Bootstrap view chunking: completed.
 4. Compare view chunking: not started.
 5. Shared JS/CSS snippet consolidation: not started.
 6. Physical file split from `views.rs` to `views/mod.rs` plus submodules: not started.
@@ -95,10 +95,10 @@ Verification:
 
 Status:
 
-- In progress as of 2026-05-27.
-- Completed extraction of bootstrap CSS (`bootstrap_head_css`) and bootstrap body shell (`render_bootstrap_body_html`) in `src/review_ui/views.rs`.
+- Completed as of 2026-05-27.
+- Extracted bootstrap CSS (`bootstrap_head_css`), bootstrap body shell (`render_bootstrap_body_html`), and bootstrap script (`render_bootstrap_script_html`) in `src/review_ui/views.rs`.
+- `render_bootstrap_html` is now a thin assembler using helper fragments.
 - Focused validation passed with `cargo test review_ui::views::tests --lib`.
-- Remaining for this phase: move the large bootstrap inline script into a dedicated helper function so `render_bootstrap_html` becomes a thin assembler.
 
 ### Phase 4: Chunk Compare Rendering
 

@@ -346,6 +346,7 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
         &reconnect_banner_html,
         &runtime_log_panel_html,
     );
+    let bootstrap_script_html = render_bootstrap_script_html();
 
     format!(
         r#"<!doctype html>
@@ -360,8 +361,24 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
 </head>
 <body>
 {bootstrap_body_html}
+{bootstrap_script_html}
+{footer_html}
+{footer_year_script}
+{config_editor_assets}
+</body>
+</html>"#,
+        bootstrap_css = bootstrap_head_css(),
+        bootstrap_body_html = bootstrap_body_html,
+        bootstrap_script_html = bootstrap_script_html,
+        footer_html = render_app_footer_html(),
+        footer_year_script = render_footer_year_script(),
+        config_editor_assets = render_config_editor_assets()
+    )
+}
 
-<script>
+fn render_bootstrap_script_html() -> String {
+    format!(
+        r#"<script>
 let countries = [];
 let loadingDotsTimer = null;
 let loadingPhaseTimer = null;
@@ -1706,19 +1723,9 @@ startBackendHealthPolling();
 refreshState();
 pollStampWorldStatus();
 {footer_year_update_js}
-</script>
-{footer_html}
-{footer_year_script}
-{config_editor_assets}
-</body>
-</html>"#,
+</script>"#,
         backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
-        bootstrap_css = bootstrap_head_css(),
-        bootstrap_body_html = bootstrap_body_html,
         footer_year_update_js = FOOTER_YEAR_UPDATE_JS,
-        footer_html = render_app_footer_html(),
-        footer_year_script = render_footer_year_script(),
-        config_editor_assets = render_config_editor_assets()
     )
 }
 
