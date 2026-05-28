@@ -23,6 +23,7 @@ Target: `src/review_ui/views.rs`
 1. Test extraction to separate file: completed.
 2. Shared fragment extraction: completed.
 3. Bootstrap view chunking: completed.
+3. Bootstrap view chunking: completed.
 4. Compare view chunking: not started.
 5. Shared JS/CSS snippet consolidation: not started.
 6. Physical file split from `views.rs` to `views/mod.rs` plus submodules: not started.
