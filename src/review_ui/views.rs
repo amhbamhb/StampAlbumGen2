@@ -1809,6 +1809,206 @@ fn render_compare_filters_html() -> String {
         .to_string()
 }
 
+fn render_compare_action_rows_html() -> String {
+    r#"    <div class='actionRows'>
+        <div class='actionBar match'>
+            <span class='actionBarTitle'>Match Actions</span>
+            <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
+            <button onclick='clearAssignment()'>Clear Assignment</button>
+            <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
+        </div>
+        <div class='actionBar candidate'>
+            <span class='actionBarTitle'>Candidate Management</span>
+            <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
+            <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
+            <button onclick='undoLastDelete()'>Undo Delete</button>
+        </div>
+        <div id='matchActionStatus' class='actionMessage'>Ready</div>
+    </div>"#
+        .to_string()
+}
+
+fn render_compare_panels_html() -> String {
+        r#"  <div id='comparePanels' class='row'>
+        <div class='col'>
+                        <div class='titleRow'>
+                                <h3>Left: StampWorld Base</h3>
+                                <span id='leftPos' class='badge'></span>
+                        </div>
+                                                <div id='leftActionBanner' class='leftActionBanner'></div>
+            <div id='leftPanel'></div>
+        </div>
+        <div class='col'>
+                        <div class='titleRow'>
+                                <h3>Right: Colnect Candidate</h3>
+                                <span id='rightPos' class='badge'></span>
+                        </div>
+                                                <div id='rightActionBanner' class='rightActionBanner'></div>
+            <div id='rightPanel'></div>
+        </div>
+    </div>"#
+                .to_string()
+}
+
+fn render_add_modal_html() -> String {
+    r#"<div id='addModalBackdrop' class='modal-backdrop'>
+    <div class='modal'>
+        <h4>Add Colnect Candidate To stamps</h4>
+        <div class='rowx'>
+            <label><span id='addCatalogLabel'>Catalog</span> <input id='addSg' type='text' /></label>
+            <label>Year <input id='addYear' type='number' /></label>
+            <label>Series <input id='addSeries' type='text' /></label>
+        </div>
+        <div class='rowx'>
+            <label><input id='addAssociateImage' type='checkbox' checked onchange='toggleAddImageOptions()'/> Associate image</label>
+        </div>
+        <div id='addImageOptions'>
+            <div class='rowx'>
+                <label><input type='radio' name='addImageMode' value='current_left' checked onchange='toggleAddImageOptions()'/> Use current left image</label>
+                <label><input type='radio' name='addImageMode' value='upload' onchange='toggleAddImageOptions()'/> Upload image file</label>
+                <label><input type='radio' name='addImageMode' value='none' onchange='toggleAddImageOptions()'/> No image</label>
+            </div>
+            <div class='rowx' id='uploadRow' style='display:none;'>
+                <label>Upload <input id='addUploadFile' type='file' accept='image/png,image/jpeg,image/webp'/></label>
+            </div>
+        </div>
+        <div class='rowx' style='justify-content:flex-end; margin-top: 12px;'>
+            <button onclick='closeAddDialog()'>Cancel</button>
+            <button onclick='addCurrentColnectAsStamp()'>Add</button>
+        </div>
+    </div>
+</div>"#
+        .to_string()
+}
+
+fn render_op_busy_modal_html() -> String {
+    r#"<div id='opBusyBackdrop' class='opBusyBackdrop'>
+    <div class='opBusyCard'>
+        <div class='opBusyRow'>
+            <span class='opBusySpinner'></span>
+            <div class='opBusyText'>
+                <strong id='opBusyTitle'>Working<span id='opBusyDots' class='opBusyDots'></span></strong><br/>
+                <span id='opBusyText'>Please wait...</span>
+            </div>
+        </div>
+    </div>
+</div>"#
+        .to_string()
+}
+
+fn render_left_editor_modal_html() -> String {
+    r#"<div id='leftEditorBackdrop' class='modal-backdrop'>
+    <div class='modal leftEditorDialog leftEditorCompact'>
+        <div class='leftEditorHead'>
+            <h4 id='leftEditorTitle'>Edit Base Stamp</h4>
+            <button onclick='closeLeftEditor()' class='closeButton'>&times;</button>
+        </div>
+        <div class='leftEditorBody'>
+            <section class='leftEditorSection'>
+                <h5>Base Stamp Details</h5>
+                <div class='leftEditorSectionBody'>
+                    <div class='leftEditorGrid'>
+                        <label><span id='leftEditorCatalogLabel'>Catalog</span> <input id='leftEditorCatalogCode' type='text' list='catalogCodesList' placeholder='e.g. SG123' onchange='handleLeftEditorCatalogTypeChange()' />
+                            <datalist id='catalogCodesList'>
+                                <option value='sg'>Scott (SG)</option>
+                                <option value='sn'>Scott Number (SN)</option>
+                                <option value='mi'>Michel (MI)</option>
+                                <option value='yt'>Yvert (YT)</option>
+                                <option value='afa'>AFA</option>
+                                <option value='nvp'>NVP</option>
+                                <option value='un'>Unificato (UN)</option>
+                                <option value='col'>Colnect (COL)</option>
+                                <option value='custom'>Custom...</option>
+                            </select>
+                        </label>
+                        <label id='leftEditorCatalogCodeCustomWrap' style='display:none;'>Custom Catalog Type Code <input id='leftEditorCatalogCodeCustom' type='text' placeholder='e.g. zz' /></label>
+                        <label>Year <input id='leftEditorYear' type='number' /></label>
+                        <label>Series <input id='leftEditorSeries' type='text' /></label>
+                    </div>
+                    <div class='leftEditorStack'>
+                        <label>Description <textarea id='leftEditorDescription'></textarea></label>
+                        <label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
+                        <label>Design <textarea id='leftEditorDesign'></textarea></label>
+                        <label>Engraving <textarea id='leftEditorEngraving'></textarea></label>
+                        <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
+                        <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
+                    </div>
+                </div>
+            </section>
+            <section class='leftEditorSection'>
+                <h5>Dimensions</h5>
+                <div class='leftEditorSectionBody'>
+                    <div class='leftEditorDimsGrid'>
+                        <label>Width <input id='leftEditorWidth' type='text' placeholder='e.g. 25' /></label>
+                        <label>Height <input id='leftEditorHeight' type='text' placeholder='e.g. 30' /></label>
+                        <label>Colnect Width <input id='leftEditorColnectWidth' type='text' /></label>
+                        <label>Colnect Height <input id='leftEditorColnectHeight' type='text' /></label>
+                    </div>
+                </div>
+            </section>
+            <section class='leftEditorSection'>
+                <h5>Colnect Metadata</h5>
+                <div class='leftEditorSectionBody'>
+                    <div class='leftEditorGrid'>
+                        <label>Colnect ID <input id='leftEditorColnectId' type='text' /></label>
+                        <label>Colnect Name <input id='leftEditorColnectName' type='text' /></label>
+                        <label>Colnect Country <input id='leftEditorColnectCountry' type='text' /></label>
+                        <label>Catalog Codes <input id='leftEditorColnectCatalogCodes' type='text' /></label>
+                        <label>Colnect Page URL <input id='leftEditorColnectPageUrl' type='text' /></label>
+                        <label>Colnect Image URL <input id='leftEditorColnectImageUrl' type='text' /></label>
+                        <label>Format <input id='leftEditorColnectFormat' type='text' /></label>
+                        <label>Emission <input id='leftEditorColnectEmission' type='text' /></label>
+                        <label>Printing <input id='leftEditorColnectPrinting' type='text' /></label>
+                        <label>Paper <input id='leftEditorColnectPaper' type='text' /></label>
+                        <label>Gum <input id='leftEditorColnectGum' type='text' /></label>
+                        <label>Face Value <input id='leftEditorColnectFaceValue' type='text' /></label>
+                        <label>Currency <input id='leftEditorColnectCurrency' type='text' /></label>
+                        <label>Ord MI <input id='leftEditorColnectOrdMi' type='text' /></label>
+                        <label>Ord SN <input id='leftEditorColnectOrdSn' type='text' /></label>
+                        <label>Ord YT <input id='leftEditorColnectOrdYt' type='text' /></label>
+                        <label>Ord Catalog (primary) <input id='leftEditorColnectOrdSg' type='text' /></label>
+                        <label>Expiry Date <input id='leftEditorColnectExpiryDate' type='text' /></label>
+                        <label>Print Run <input id='leftEditorColnectPrintRun' type='text' /></label>
+                        <label>Colors <input id='leftEditorColnectColors' type='text' /></label>
+                        <label>Parent Item <input id='leftEditorColnectParentItem' type='text' /></label>
+                        <label>Variant <input id='leftEditorColnectVariant' type='text' /></label>
+                        <label>Overprint Variant <input id='leftEditorColnectOverprintVariant' type='text' /></label>
+                        <label>Score <input id='leftEditorColnectScore' type='text' /></label>
+                        <label>Accuracy <input id='leftEditorColnectAccuracy' type='text' /></label>
+                        <label>List <input id='leftEditorColnectList' type='text' /></label>
+                        <label>Quantity <input id='leftEditorColnectQuantity' type='text' /></label>
+                        <label>Condition <input id='leftEditorColnectCondition' type='text' /></label>
+                    </div>
+                    <div class='leftEditorStack'>
+                        <label>Public Note <textarea id='leftEditorColnectPublicNote'></textarea></label>
+                        <label>Private Note <textarea id='leftEditorColnectPrivateNote'></textarea></label>
+                    </div>
+                </div>
+            </section>
+            <section class='leftEditorSection'>
+                <h5>Image Handling</h5>
+                <div class='leftEditorSectionBody'>
+                    <div class='leftEditorHint'>Items without an image will not stay visible in the left review list.</div>
+                    <div class='leftEditorModes'>
+                        <label id='leftModeKeepWrap'><input id='leftModeKeep' type='radio' name='leftImageMode' value='keep' checked onchange='toggleLeftEditorImageOptions()'/> Keep current image</label>
+                        <label id='leftModeCurrentWrap'><input id='leftModeCurrent' type='radio' name='leftImageMode' value='current_left' onchange='toggleLeftEditorImageOptions()'/> Use current left image</label>
+                        <label><input id='leftModeUpload' type='radio' name='leftImageMode' value='upload' onchange='toggleLeftEditorImageOptions()'/> Upload image</label>
+                    </div>
+                    <div id='leftUploadRow' class='rowx' style='display:none;'>
+                        <label>Upload <input id='leftEditorUploadFile' type='file' accept='image/png,image/jpeg,image/webp'/></label>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class='leftEditorActions'>
+            <button onclick='closeLeftEditor()'>Cancel</button>
+            <button class='primary' onclick='submitLeftEditor()'>Save</button>
+        </div>
+    </div>
+</div>"#
+        .to_string()
+}
+
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let json =
         serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
@@ -1839,6 +2039,11 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     );
     let compare_navigation_html = render_compare_navigation_html();
     let compare_filters_html = render_compare_filters_html();
+    let compare_action_rows_html = render_compare_action_rows_html();
+    let compare_panels_html = render_compare_panels_html();
+    let compare_add_modal_html = render_add_modal_html();
+    let compare_op_busy_modal_html = render_op_busy_modal_html();
+    let _left_editor_modal_html = render_left_editor_modal_html();
     format!(
         r#"<!doctype html>
 <html>
@@ -1940,115 +2145,160 @@ body.pageEnter {{ animation: reviewPageIn 170ms ease-out; }}
 .rightActionTop {{ display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }}
 .rightActionTop strong {{ color: #214d72; }}
 .rightBottomBlock {{ display: flex; flex-direction: column; gap: 0; }}
-.rightSearchRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }}
-.rightSearchRow input {{ width: 220px; max-width: 52vw; padding: 5px 7px; border: 1px solid #c8d5e2; border-radius: 7px; }}
-.rightNavRow {{ display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 8px; background: #eaf4ff; border: 1px solid #c9ddf2; border-radius: 8px; padding: 6px; }}
-@media (min-width: 981px) {{
-    #comparePanels {{
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: auto auto 1fr;
-        gap: 0 16px;
-        align-items: start;
-    }}
-    #comparePanels .col {{
-        display: grid;
-        grid-template-rows: subgrid;
-        grid-row: 1 / span 3;
-    }}
-    #comparePanels .col:first-child {{ grid-column: 1; }}
-    #comparePanels .col:last-child  {{ grid-column: 2; }}
-    /* Push right search/nav to the bottom of the shared banner row so it
-       sits at the same eye level as the left search/nav (which is naturally
-       at the bottom of the taller left action banner). */
-    .rightActionBanner {{
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }}
-}}
-.leftEditorGrid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 8px; }}
-.leftEditorGrid label, .leftEditorStack label {{ display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #284357; }}
-.leftEditorStack {{ display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }}
-.leftEditorStack textarea {{ min-height: 74px; resize: vertical; }}
-.leftEditorModes {{ display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0; }}
-.leftEditorHint {{ margin: 0 0 4px 0; color: #5d6f7f; font-size: 12px; }}
-.leftEditorDialog {{ width: min(980px, 97vw); border: 1px solid #c8d9e5; border-radius: 14px; padding: 0; overflow: hidden; box-shadow: 0 22px 48px rgba(16, 39, 56, 0.28); }}
-.leftEditorHead {{ background: linear-gradient(180deg, #f3f8fc 0%, #eaf2f8 100%); padding: 14px 16px 12px; border-bottom: 1px solid #d6e3ed; }}
-.leftEditorHead h4 {{ margin: 0 0 6px 0; font-size: 18px; color: #173a4f; }}
-.leftEditorBody {{ max-height: 66vh; overflow-y: auto; padding: 14px 16px; background: linear-gradient(180deg, #fbfdff 0%, #f2f7fb 100%); }}
-.leftEditorSection {{ border: 1px solid #d5e1ea; border-radius: 12px; background: #ffffff; margin-bottom: 12px; overflow: hidden; }}
-.leftEditorSection h5 {{ margin: 0; padding: 10px 12px; font-size: 13px; color: #173a4f; background: #eef5fa; border-bottom: 1px solid #d9e5ef; }}
-.leftEditorSectionBody {{ padding: 10px 12px; }}
-.leftEditorDimsGrid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }}
-.leftEditorCompact input, .leftEditorCompact textarea {{ background: #fcfeff; border: 1px solid #cddbe6; border-radius: 8px; padding: 7px 9px; }}
-.leftEditorCompact input:focus, .leftEditorCompact textarea:focus {{ outline: 2px solid rgba(47, 111, 163, 0.16); border-color: #2f6fa3; }}
-.leftEditorActions {{ display: flex; justify-content: flex-end; gap: 10px; padding: 12px 16px; border-top: 1px solid #d6e3ed; background: #f5f9fc; }}
-.row {{ display: flex; gap: 16px; align-items: stretch; }}
-.col {{ flex: 1; min-width: 280px; display: flex; flex-direction: column; }}
-.colNav {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }}
-.titleRow {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }}
-.titleRow h3 {{ margin: 0; }}
-.panelCard {{ display: flex; flex-direction: column; border: 1px solid #ddd; border-radius: 8px; background: #fff; overflow: hidden; min-height: 0; }}
-.panelHead {{ padding: 10px; border-bottom: 1px solid #ececec; background: #fbfcfd; font-size: 12px; }}
-.panelBody {{ padding: 8px; overflow: auto; max-height: 56vh; }}
-.imgbox {{ min-height: 260px; display: flex; align-items: center; justify-content: center; border: 1px solid #ccc; background: #fff; }}
-img {{ max-width: 260px; max-height: 260px; border: 1px solid #ccc; background: #fff; }}
-.imgph {{ width: 260px; height: 260px; border: 1px dashed #bbb; background: #f7f7f7; color: #666; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; padding: 8px; box-sizing: border-box; }}
-.kv {{ width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }}
-.kv td {{ border: 1px solid #e1e6ea; padding: 4px 6px; vertical-align: top; }}
-.kv tr:nth-child(odd) td {{ background: var(--row-odd-bg); }}
-.kv tr:nth-child(even) td {{ background: var(--row-even-bg); }}
-.kv tr:nth-child(odd) td.k {{ background: var(--row-odd-key-bg); }}
-.kv tr:nth-child(even) td.k {{ background: var(--row-even-key-bg); }}
-.kv td.k {{ width: 36%; font-weight: 600; }}
-.kv td.v {{ width: 64%; word-break: break-word; }}
-button {{ padding: 6px 10px; border-radius: 8px; border: 1px solid #c9d5e2; background: #ffffff; color: #1f3448; cursor: pointer; }}
-button:hover {{ background: #f1f6fa; }}
-button.primary {{ background: #2f6fa3; border-color: #2f6fa3; color: #ffffff; }}
-button.primary:hover {{ background: #285f8a; }}
-button.success {{ background: #2f8f63; border-color: #2f8f63; color: #ffffff; }}
-button.success:hover {{ background: #287953; }}
-button.warn {{ background: #f0e1c6; border-color: #ddc79f; color: #694314; }}
-button.danger {{ background: #a34545; border-color: #a34545; color: #ffffff; }}
-button.danger:hover {{ background: #8f3939; }}
-button.neutral {{ background: #4b5a68; border-color: #4b5a68; color: #ffffff; }}
-button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
-.badge {{ display: inline-block; padding: 2px 8px; border: 1px solid #d3dfe9; border-radius: 999px; background: #f8fbfe; font-size: 12px; color: #2d4760; }}
-.modal-backdrop {{ position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; z-index: 1000; }}
-.modal {{ background: #fff; border-radius: 10px; border: 1px solid #ddd; width: min(700px, 96vw); max-height: 88vh; overflow-y: auto; padding: 14px; box-sizing: border-box; }}
-.modal h4 {{ margin: 0 0 10px 0; }}
-.modal .rowx {{ display: flex; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }}
-.modal .rowx label {{ display: inline-flex; align-items: center; gap: 6px; }}
-.modal input[type='text'], .modal input[type='number'] {{ padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; min-width: 140px; }}
-.opBusyBackdrop {{
+.modal-backdrop {{
+    display: none;
     position: fixed;
     inset: 0;
-    display: none;
+    background: rgba(17, 34, 49, 0.52);
+    z-index: 1200;
     align-items: center;
     justify-content: center;
-    background: rgba(15, 28, 42, 0.48);
-    z-index: 1500;
+    padding: 16px;
+    box-sizing: border-box;
+}}
+.modal {{
+    width: min(860px, 96vw);
+    max-height: 92vh;
+    overflow: auto;
+    background: #ffffff;
+    border: 1px solid #dbe4ec;
+    border-radius: 10px;
+    box-shadow: 0 22px 52px rgba(17, 34, 49, 0.36);
+    padding: 12px;
+}}
+.rowx {{ display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }}
+.rowx label {{ display: inline-flex; align-items: center; gap: 6px; }}
+.leftEditorDialog {{ width: min(1120px, 97vw); }}
+.leftEditorCompact {{ max-height: 94vh; }}
+.leftEditorHead {{ display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }}
+.leftEditorHead h4 {{ margin: 0; }}
+.closeButton {{ min-width: 36px; padding: 4px 8px; font-size: 18px; line-height: 1; }}
+.leftEditorBody {{ display: flex; flex-direction: column; gap: 10px; }}
+.leftEditorSection {{ border: 1px solid #dbe4ec; border-radius: 8px; background: #f9fcff; }}
+.leftEditorSection h5 {{ margin: 0; padding: 8px 10px; border-bottom: 1px solid #dbe4ec; font-size: 13px; }}
+.leftEditorSectionBody {{ padding: 10px; }}
+.leftEditorGrid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }}
+.leftEditorDimsGrid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }}
+.leftEditorStack {{ display: grid; gap: 8px; margin-top: 8px; }}
+.leftEditorStack label {{ display: grid; gap: 4px; }}
+.leftEditorStack textarea {{ min-height: 56px; resize: vertical; }}
+.leftEditorModes {{ display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }}
+.leftEditorActions {{ display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }}
+.opBusyBackdrop {{
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(17, 34, 49, 0.5);
+    z-index: 1300;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
 }}
 .opBusyCard {{
-    width: min(560px, 92vw);
-    border: 1px solid #c9d8e6;
-    border-radius: 12px;
+    min-width: 280px;
+    max-width: min(560px, 94vw);
     background: #ffffff;
-    box-shadow: 0 18px 42px rgba(17, 38, 56, 0.25);
-    padding: 14px 16px;
+    border: 1px solid #dbe4ec;
+    border-radius: 10px;
+    box-shadow: 0 18px 44px rgba(17, 34, 49, 0.34);
+    padding: 12px;
 }}
-.opBusyRow {{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}}
+.opBusyRow {{ display: flex; align-items: center; gap: 10px; }}
 .opBusySpinner {{
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
     border: 3px solid #d7e2eb;
     border-top-color: #2f6fa3;
     border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    flex: 0 0 auto;
+}}
+#comparePanels {{
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+}}
+#comparePanels .col {{ min-width: 0; }}
+#comparePanels .col {{
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}}
+#leftPanel,
+#rightPanel {{
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}}
+#leftPanel > .panelCard,
+#rightPanel > .panelCard {{
+    width: 100%;
+}}
+.panelCard {{
+    border: 1px solid #dbe4ec;
+    border-radius: 10px;
+    background: #ffffff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 74vh;
+    min-height: 440px;
+}}
+.panelHead {{
+    padding: 10px 12px;
+    border-bottom: 1px solid #e1e8ef;
+    background: #f7fbff;
+}}
+.panelBody {{
+    padding: 10px;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1 1 auto;
+}}
+.imgbox {{
+    border: 1px solid #d9e2ea;
+    border-radius: 8px;
+    background: #f6f9fc;
+    padding: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}}
+.imgbox img {{
+    max-width: 100%;
+    max-height: 220px;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}}
+.imgph {{
+    color: #4b5a68;
+    font-size: 12px;
+    text-align: center;
+}}
+.kv {{
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+}}
+.kv td {{
+    vertical-align: top;
+    padding: 6px 8px;
+    border-bottom: 1px solid #dde7ef;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}}
+.kv td.k {{
+    width: 34%;
+    font-weight: 600;
+    color: #2f4f67;
+    background: #f2f6fb;
+}}
+.kv td.v {{ background: #ffffff; }}
     animation: spin 0.9s linear infinite;
     flex: 0 0 auto;
 }}
@@ -2123,6 +2373,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 @keyframes spin {{ from {{ transform: rotate(0deg); }} to {{ transform: rotate(360deg); }} }}
 @media (max-width: 980px) {{
     .row {{ flex-direction: column; }}
+    #comparePanels {{ grid-template-columns: minmax(0, 1fr); }}
     .panelBody {{ max-height: 42vh; }}
     .orderSelectGroup {{ width: 100%; }}
     #sortMode, #reviewPdfSortMode {{ width: 100%; min-width: 190px; }}
@@ -2255,68 +2506,13 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         </div>
     </div>
 {compare_filters_html}
-    <div class='actionRows'>
-        <div class='actionBar match'>
-            <span class='actionBarTitle'>Match Actions</span>
-            <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
-            <button onclick='clearAssignment()'>Clear Assignment</button>
-            <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
-        </div>
-        <div class='actionBar candidate'>
-            <span class='actionBarTitle'>Candidate Management</span>
-            <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
-            <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
-            <button onclick='undoLastDelete()'>Undo Delete</button>
-        </div>
-        <div id='matchActionStatus' class='actionMessage'>Ready</div>
-    </div>
-  <div id='comparePanels' class='row'>
-    <div class='col'>
-            <div class='titleRow'>
-                <h3>Left: StampWorld Base</h3>
-                <span id='leftPos' class='badge'></span>
-            </div>
-                        <div id='leftActionBanner' class='leftActionBanner'></div>
-      <div id='leftPanel'></div>
-    </div>
-    <div class='col'>
-            <div class='titleRow'>
-                <h3>Right: Colnect Candidate</h3>
-                <span id='rightPos' class='badge'></span>
-            </div>
-                        <div id='rightActionBanner' class='rightActionBanner'></div>
-      <div id='rightPanel'></div>
-    </div>
-  </div>
+{compare_action_rows_html}
+{compare_panels_html}
 </div>
 
-<div id='addModalBackdrop' class='modal-backdrop'>
-    <div class='modal'>
-        <h4>Add Colnect Candidate To stamps</h4>
-        <div class='rowx'>
-            <label><span id='addCatalogLabel'>Catalog</span> <input id='addSg' type='text' /></label>
-            <label>Year <input id='addYear' type='number' /></label>
-            <label>Series <input id='addSeries' type='text' /></label>
-        </div>
-        <div class='rowx'>
-            <label><input id='addAssociateImage' type='checkbox' checked onchange='toggleAddImageOptions()'/> Associate image</label>
-        </div>
-        <div id='addImageOptions'>
-            <div class='rowx'>
-                <label><input type='radio' name='addImageMode' value='current_left' checked onchange='toggleAddImageOptions()'/> Use current left image</label>
-                <label><input type='radio' name='addImageMode' value='upload' onchange='toggleAddImageOptions()'/> Upload image file</label>
-                <label><input type='radio' name='addImageMode' value='none' onchange='toggleAddImageOptions()'/> No image</label>
-            </div>
-            <div class='rowx' id='uploadRow' style='display:none;'>
-                <label>Upload <input id='addUploadFile' type='file' accept='image/png,image/jpeg,image/webp'/></label>
-            </div>
-        </div>
-        <div class='rowx' style='justify-content:flex-end; margin-top: 12px;'>
-            <button onclick='closeAddDialog()'>Cancel</button>
-            <button onclick='addCurrentColnectAsStamp()'>Add</button>
-        </div>
-    </div>
-</div>
+{compare_add_modal_html}
+
+{compare_op_busy_modal_html}
 
 <div id='leftEditorBackdrop' class='modal-backdrop'>
     <div class='modal leftEditorDialog leftEditorCompact'>
@@ -2428,17 +2624,6 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
         <div class='leftEditorActions'>
             <button onclick='closeLeftEditor()'>Cancel</button>
             <button class='primary' onclick='submitLeftEditor()'>Save</button>
-        </div>
-    </div>
-</div>
-<div id='opBusyBackdrop' class='opBusyBackdrop'>
-    <div class='opBusyCard'>
-        <div class='opBusyRow'>
-            <span class='opBusySpinner'></span>
-            <div class='opBusyText'>
-                <strong id='opBusyTitle'>Working<span id='opBusyDots' class='opBusyDots'></span></strong><br/>
-                <span id='opBusyText'>Please wait...</span>
-            </div>
         </div>
     </div>
 </div>
@@ -4372,8 +4557,48 @@ function render(options) {{
   const avail = availableCandidatesForCurrentLeft();
   const r = currentRightCandidate();
   if (!r) {{
+    const unmatchedOnly = !!document.getElementById('f_right_unmatched_only')?.checked;
+    const query = String(rightSearchQuery || '').trim();
+    const used = usedColnectIds(l.rowid);
+    const assignedForCurrent = assignedByLeft[l.rowid];
+    const matchedInDb = new Set(left.map(s => String(s.colnect_id || '').trim()).filter(v => !!v));
+    const baseAvailCount = rightAll.filter(c => {{
+        const keepUsed = (!used.has(c.colnect_id) || c.colnect_id === assignedForCurrent);
+        if (!keepUsed) return false;
+        if (!unmatchedOnly) return true;
+        if (c.colnect_id === assignedForCurrent) return true;
+        return !matchedInDb.has(String(c.colnect_id || '').trim());
+    }}).length;
+
+    let reason = 'All candidates already assigned';
+    if (!rightAll.length) {{
+        reason = 'No candidates loaded for this country';
+    }} else if (query && baseAvailCount > 0 && !avail.length) {{
+        reason = 'No candidates match the current right-side search';
+    }} else if (unmatchedOnly && baseAvailCount === 0) {{
+        reason = 'No unmatched candidates remain for the current left row';
+    }} else if (baseAvailCount === 0) {{
+        reason = 'All remaining candidates are already used by other rows';
+    }}
+
     document.getElementById('rightPos').innerText = 'No available candidate';
-    document.getElementById('rightPanel').innerHTML = '<div class="imgph">All candidates already assigned</div>';
+    document.getElementById('rightPanel').innerHTML = `
+        <div class='panelCard'>
+            <div class='panelHead'>
+                <strong>No Right Candidate Visible</strong>
+                <div style='margin-top:6px; font-size:12px;'>${{html(reason)}}</div>
+            </div>
+            <div class='panelBody'>
+                <div class='imgph' style='text-align:left;'>
+                    <div><strong>Total candidates:</strong> ${{rightAll.length}}</div>
+                    <div><strong>Eligible before search:</strong> ${{baseAvailCount}}</div>
+                    <div><strong>Visible after search:</strong> ${{avail.length}}</div>
+                    <div><strong>Right search query:</strong> ${{html(query || '(empty)')}}</div>
+                    <div><strong>Unmatched-only filter:</strong> ${{unmatchedOnly ? 'ON' : 'OFF'}}</div>
+                </div>
+            </div>
+        </div>
+    `;
         updateRightSearchStatus();
     restoreRightPanelScrollIfNeeded();
     restoreSearchFocusState(searchFocusState);
