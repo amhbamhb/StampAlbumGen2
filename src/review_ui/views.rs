@@ -1729,9 +1729,116 @@ pollStampWorldStatus();
     )
 }
 
+fn render_compare_top_html(
+    reconnect_banner_compare_html: &str,
+    runtime_log_compare_panel_html: &str,
+) -> String {
+    format!(
+        r#"<body>
+<div class='wrap'>
+    {reconnect_banner_compare_html}
+    <div class='top'>
+        <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
+        <span class='badge'>Switch country without closing Review UI</span>
+    </div>
+    <div id='startGuide' class='startGuide'>
+        <h2>Start Country Review Session</h2>
+        <h2 ><strong>Current country:</strong> <span id='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
+        <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
+        <div class='guideStats'>
+            <span id='statLeftCount' class='badge'>Left: 0</span>
+            <span id='statRightCount' class='badge'>Candidates: 0</span>
+            <span id='statAssignedCount' class='badge'>Assigned: 0</span>
+        </div>
+        <div class='guideActions'>
+            <button class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
+            <button onclick='scrollToFilters()'>Review Field Options</button>
+            <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
+            <button class='neutral' onclick='openCountryFolder()'>Open Country Folder</button>
+        </div>
+  </div>
+    {runtime_log_compare_panel_html}"#,
+        reconnect_banner_compare_html = reconnect_banner_compare_html,
+        runtime_log_compare_panel_html = runtime_log_compare_panel_html,
+    )
+}
+
+fn render_compare_navigation_html() -> String {
+    r#"        <div class='sessionSection sessionSectionSlate'>
+                    <div class='sessionSectionTitle'>Navigation</div>
+                    <div class='sessionRow'>
+                        <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
+                        <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
+                    </div>
+                    <div id='status' class='sessionStatusBox sessionStatusSlate'>Ready</div>
+                </div>"#
+        .to_string()
+}
+
+fn render_compare_filters_html() -> String {
+    r#"        <div id='filtersCard' class='filtersCard'>
+            <h4 class='filtersTitle'>Field Update Options</h4>
+            <div class='filtersGrid'>
+        <label><input type='checkbox' id='f_series'/> series</label>
+        <label><input type='checkbox' id='f_description' checked/> description</label>
+        <label><input type='checkbox' id='f_watermark'/> watermark</label>
+        <label><input type='checkbox' id='f_design'/> design</label>
+        <label><input type='checkbox' id='f_engraving'/> engraving</label>
+        <label><input type='checkbox' id='f_perforation'/> perforation</label>
+        <label><input type='checkbox' id='f_context'/> context</label>
+        <label><input type='checkbox' id='f_links' checked/> colnect links</label>
+        <label><input type='checkbox' id='f_image_url' checked/> colnect image url</label>
+        <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
+        <label><input type='checkbox' id='f_replace_sg'/> replace catalog number</label>
+        <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
+        <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
+            <div class='orderSelectGroup'><label>order
+                        <select id='sortMode' onchange='changeSortMode()'>
+                        <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)</option>
+                        <option value='catalog'>Catalog number</option>
+                        <option value='year_catalog'>Year then catalog number</option>
+                        <option value='series_catalog'>Series then catalog number</option>
+                    <option value='series_date_catalog'>Series then issue date then catalog number</option>
+                                <option value='rowid'>DB row id</option>
+                                <option value='colnect_id'>Colnect ID</option>
+                        </select>
+                </label><button id='sortModeMakeDefaultBtn' type='button' onclick='makeSortModeDefault()' style='display:none;'>Make default?</button>
+                <button id='sortModeResetDefaultBtn' type='button' onclick='resetSortModeDefault()' style='display:none;'>Reset default</button></div>
+      </div>
+    </div>"#
+        .to_string()
+}
+
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let json =
         serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
+    let reconnect_banner_compare_html = render_reconnect_banner_html(
+        "reconnectBannerCompare",
+        "reconnectBannerCompareTitle",
+        None,
+        None,
+        "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
+        "retryBackendHealthCheckCompare",
+        "reloadCurrentPageCompare",
+        "reconnectBannerCompareMeta",
+    );
+    let runtime_log_compare_panel_html = render_runtime_log_panel_html(
+        "runtimeLogComparePanel",
+        "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
+        "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
+        "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
+        "runtimeLogCompareBody",
+        "runtimeLogCompare",
+        "showRuntimeLogCompare",
+        "toggleRuntimeLogVisibilityCompare",
+        "copyRuntimeLogCompare",
+    );
+    let compare_top_html = render_compare_top_html(
+        &reconnect_banner_compare_html,
+        &runtime_log_compare_panel_html,
+    );
+    let compare_navigation_html = render_compare_navigation_html();
+    let compare_filters_html = render_compare_filters_html();
     format!(
         r#"<!doctype html>
 <html>
@@ -2022,30 +2129,7 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
 }}
 </style>
 </head>
-<body>
-<div class='wrap'>
-    {reconnect_banner_compare_html}
-    <div class='top'>
-        <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
-        <span class='badge'>Switch country without closing Review UI</span>
-    </div>
-    <div id='startGuide' class='startGuide'>
-        <h2>Start Country Review Session</h2>
-        <h2 ><strong>Current country:</strong> <span id='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
-        <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
-        <div class='guideStats'>
-            <span id='statLeftCount' class='badge'>Left: 0</span>
-            <span id='statRightCount' class='badge'>Candidates: 0</span>
-            <span id='statAssignedCount' class='badge'>Assigned: 0</span>
-        </div>
-        <div class='guideActions'>
-            <button class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
-            <button onclick='scrollToFilters()'>Review Field Options</button>
-            <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
-            <button class='neutral' onclick='openCountryFolder()'>Open Country Folder</button>
-        </div>
-  </div>
-    {runtime_log_compare_panel_html}
+{compare_top_html}
     <div class='controlGroups'>
         <div class='groupCard session'>
             <h4>Session</h4>
@@ -2166,47 +2250,11 @@ button.navBtn {{ background: #eef4f8; border-color: #d4e2ee; }}
                         <span id='pdfStatus' class='pdfStatusText'>Ready</span>
                     </div>
                 </div>
-                <div class='sessionSection sessionSectionSlate'>
-                    <div class='sessionSectionTitle'>Navigation</div>
-                    <div class='sessionRow'>
-                        <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
-                        <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
-                    </div>
-                    <div id='status' class='sessionStatusBox sessionStatusSlate'>Ready</div>
-                </div>
+{compare_navigation_html}
             </div>
         </div>
     </div>
-        <div id='filtersCard' class='filtersCard'>
-            <h4 class='filtersTitle'>Field Update Options</h4>
-            <div class='filtersGrid'>
-        <label><input type='checkbox' id='f_series'/> series</label>
-        <label><input type='checkbox' id='f_description' checked/> description</label>
-        <label><input type='checkbox' id='f_watermark'/> watermark</label>
-        <label><input type='checkbox' id='f_design'/> design</label>
-        <label><input type='checkbox' id='f_engraving'/> engraving</label>
-        <label><input type='checkbox' id='f_perforation'/> perforation</label>
-        <label><input type='checkbox' id='f_context'/> context</label>
-        <label><input type='checkbox' id='f_links' checked/> colnect links</label>
-        <label><input type='checkbox' id='f_image_url' checked/> colnect image url</label>
-        <label><input type='checkbox' id='f_colnect_meta' checked/> colnect metadata fields</label>
-        <label><input type='checkbox' id='f_replace_sg'/> replace catalog number</label>
-        <label><input type='checkbox' id='f_right_unmatched_only' onchange='render()'/> right unmatched only</label>
-        <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
-            <div class='orderSelectGroup'><label>order
-                        <select id='sortMode' onchange='changeSortMode()'>
-                        <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)</option>
-                        <option value='catalog'>Catalog number</option>
-                        <option value='year_catalog'>Year then catalog number</option>
-                        <option value='series_catalog'>Series then catalog number</option>
-                    <option value='series_date_catalog'>Series then issue date then catalog number</option>
-                                <option value='rowid'>DB row id</option>
-                                <option value='colnect_id'>Colnect ID</option>
-                        </select>
-                </label><button id='sortModeMakeDefaultBtn' type='button' onclick='makeSortModeDefault()' style='display:none;'>Make default?</button>
-                <button id='sortModeResetDefaultBtn' type='button' onclick='resetSortModeDefault()' style='display:none;'>Reset default</button></div>
-      </div>
-    </div>
+{compare_filters_html}
     <div class='actionRows'>
         <div class='actionBar match'>
             <span class='actionBarTitle'>Match Actions</span>
@@ -5902,27 +5950,7 @@ render();
 </html>"#,
         json = json,
         backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
-        reconnect_banner_compare_html = render_reconnect_banner_html(
-            "reconnectBannerCompare",
-            "reconnectBannerCompareTitle",
-            None,
-            None,
-            "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
-            "retryBackendHealthCheckCompare",
-            "reloadCurrentPageCompare",
-            "reconnectBannerCompareMeta",
-        ),
-        runtime_log_compare_panel_html = render_runtime_log_panel_html(
-            "runtimeLogComparePanel",
-            "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
-            "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
-            "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
-            "runtimeLogCompareBody",
-            "runtimeLogCompare",
-            "showRuntimeLogCompare",
-            "toggleRuntimeLogVisibilityCompare",
-            "copyRuntimeLogCompare",
-        ),
+        compare_top_html = compare_top_html,
         footer_year_update_js = FOOTER_YEAR_UPDATE_JS,
         footer_html = render_app_footer_html(),
         footer_year_script = render_footer_year_script(),
