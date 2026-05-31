@@ -102,6 +102,20 @@ Requirements:
 1. Use unique timestamped filenames to avoid collisions.
 2. Do not create temp scripts in the repository tree unless explicitly requested.
 
+## Draw.io Baseline Diagram Rule
+
+The project now includes a baseline logic diagram at:
+
+- `/media/ray/program/Rust/StampAlbumGen2/refactor-plans/diagrams/app-logic-before.drawio`
+
+Requirements:
+
+1. Do not modify `app-logic-before.drawio` directly.
+2. When significant logic/flow changes are made, create a copy and update the copy.
+3. Keep the baseline file as historical reference and use it for comparison while working.
+4. Prefer clear derivative names for updates (for example, `app-logic-after-YYYYMMDD.drawio` or `app-logic-step-XX.drawio`).
+5. If no significant flow change occurred, do not create a new diagram copy.
+
 # CLAUDE.md
 
 Behavioral guidelines to reduce common LLM coding mistakes. Merge with project-specific instructions as needed.
