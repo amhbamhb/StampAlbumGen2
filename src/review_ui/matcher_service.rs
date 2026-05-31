@@ -386,13 +386,30 @@ pub(super) fn apply_matches(
     let mut errors = Vec::new();
 
     for m in matches {
-        let Some(c) = right_map.get(&m.colnect_id) else {
-            skipped_rows += 1;
-            skipped_details.push(format!(
-                "skipped rowid={} colnect_id={}: candidate not found in current review session",
-                m.left_rowid, m.colnect_id
-            ));
-            continue;
+        // The UI can re-queue candidates during a running session (for example after clearing
+        // a linked Colnect record). Fall back to a live DB lookup when the startup snapshot map
+        // does not contain the assigned candidate id.
+        let c = if let Some(existing) = right_map.get(&m.colnect_id) {
+            existing.clone()
+        } else {
+            match load_right_candidate_by_colnect_id(conn, db_path, album_name, &m.colnect_id) {
+                Ok(Some(candidate)) => candidate,
+                Ok(None) => {
+                    skipped_rows += 1;
+                    skipped_details.push(format!(
+                        "skipped rowid={} colnect_id={}: candidate not found in current review session",
+                        m.left_rowid, m.colnect_id
+                    ));
+                    continue;
+                }
+                Err(e) => {
+                    errors.push(format!(
+                        "failed to load colnect_id={} for rowid={}: {}",
+                        m.colnect_id, m.left_rowid, e
+                    ));
+                    continue;
+                }
+            }
         };
 
         let selected_catalog_code =
