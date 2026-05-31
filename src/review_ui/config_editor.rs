@@ -215,8 +215,73 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
         );
     }
 
+    if key_only == "include_series" {
+        add_unique("Controls the series title line shown above each stamp row.");
+        add_unique("false hides the series heading such as '1970 New Civil Law'.");
+    }
+
+    if key_only == "include_date" {
+        add_unique("Controls the date line shown above each stamp row.");
+        add_unique("false hides issue dates such as 'January 13, 1970'.");
+    }
+
+    if key_only == "include_watermark" {
+        add_unique("Controls the watermark line shown above each stamp row.");
+        add_unique("false hides watermark text in the header area.");
+    }
+
+    if key_only == "include_engraving" {
+        add_unique("Controls the engraving line shown above each stamp row.");
+        add_unique("false hides engraving text in the header area.");
+    }
+
+    if key_only == "include_design" {
+        add_unique("Controls the design line shown above each stamp row when present.");
+        add_unique("false hides design text in the header area.");
+    }
+
+    if key_only == "include_perforation" {
+        add_unique("Controls perforation text in the header area and in STAMP_HEADING.");
+        add_unique("false hides perforation details above the image and from the per-stamp heading.");
+    }
+
+    if key_only == "include_catalog_numbers" {
+        add_unique("Controls the STAMP_HEADING block above each image.");
+        add_unique("false hides the catalog label/number heading entirely.");
+    }
+
     if key_only == "stamp_detail_layout" {
         add_unique("inline: details inside stamp text blocks; separate_rows: details in dedicated rows; minimal: reduced metadata output.");
+    }
+
+    if key_only == "include_denomination" {
+        add_unique("Controls the left value under each stamp image.");
+        add_unique("false hides denomination/face-value fallback text in the stamp row.");
+    }
+
+    if key_only == "include_stamps_issued" {
+        add_unique("Controls the centre-top quantity value under each stamp image.");
+        add_unique("false hides stamps-issued / print-run values in the stamp row.");
+    }
+
+    if key_only == "include_description" {
+        add_unique("Controls the centre description text under each stamp image.");
+        add_unique("false hides the main stamp description/body text in the stamp row.");
+    }
+
+    if key_only == "include_color" {
+        add_unique("Controls the colour line under each stamp image.");
+        add_unique("false hides color text such as multicoloured in the stamp row.");
+    }
+
+    if key_only == "include_mint_unused" {
+        add_unique("Controls the first right-side value under each stamp image.");
+        add_unique("false hides mint (or unused fallback) in the stamp row.");
+    }
+
+    if key_only == "include_used" {
+        add_unique("Controls the second right-side value under each stamp image.");
+        add_unique("false hides used value/condition in the stamp row.");
     }
 
     if key_only == "row_start_es_enabled"
@@ -447,7 +512,23 @@ pub(super) fn build_config_editor_data(
     let template_content = config::load_template_content_with_fallback(template_path)?;
     let mut template_sections = parse_template_config_sections(&template_content);
     let example_help_map = load_example_config_help_map("config_full_example.toml");
-    let current_values = load_current_config_values(config_path)?;
+    let mut current_values = load_current_config_values(config_path)?;
+    // Normalize legacy root-level keys into their sectioned template IDs.
+    // This prevents these fields from showing as "Preserved" and ensures
+    // save operations keep them in the documented [stamps] section.
+    let legacy_stamp_aliases = [
+        ("include_denomination", "stamps.include_denomination"),
+        ("include_stamps_issued", "stamps.include_stamps_issued"),
+        ("include_description", "stamps.include_description"),
+        ("include_color", "stamps.include_color"),
+        ("include_mint_unused", "stamps.include_mint_unused"),
+        ("include_used", "stamps.include_used"),
+    ];
+    for (legacy_key, sectioned_key) in legacy_stamp_aliases {
+        if let Some(v) = current_values.remove(legacy_key) {
+            current_values.entry(sectioned_key.to_string()).or_insert(v);
+        }
+    }
     let mut used_field_ids = HashSet::new();
 
     for section in &mut template_sections {

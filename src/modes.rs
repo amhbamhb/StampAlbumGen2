@@ -510,13 +510,19 @@ fn run_colnect_inbox_mode(
 
             match crate::db_utils::init_db(&db_path) {
                 Ok(conn) => {
-                    let output_path = crate::album_globals::generate_album_output_conn(
-                        &conn,
-                        album_country,
-                        None::<fn(usize)>,
-                        Some(cli.start_year),
-                        Some(cli.end_year),
-                    );
+                    let album_dir = std::path::Path::new(&db_path)
+                        .parent()
+                        .map(std::path::Path::to_path_buf)
+                        .unwrap_or_else(|| std::path::PathBuf::from("."));
+                    let output_path = crate::config::with_album_config_override(&album_dir, || {
+                        crate::album_globals::generate_album_output_conn(
+                            &conn,
+                            album_country,
+                            None::<fn(usize)>,
+                            Some(cli.start_year),
+                            Some(cli.end_year),
+                        )
+                    });
                     generated += 1;
                     info!(
                         "Generated album for {}: {}",
@@ -1397,13 +1403,19 @@ pub fn run_database_mode(
         std::env::var("FORCE_WIKI_PAGE_METRICS").unwrap_or_else(|_| "".to_string())
     );
 
-    let output_path = crate::album_globals::generate_album_output_conn(
-        &conn,
-        &album_name,
-        None::<fn(usize)>,
-        Some(cli.start_year),
-        Some(cli.end_year),
-    );
+    let album_dir = std::path::Path::new(db_path)
+        .parent()
+        .map(std::path::Path::to_path_buf)
+        .unwrap_or_else(|| std::path::PathBuf::from("."));
+    let output_path = crate::config::with_album_config_override(&album_dir, || {
+        crate::album_globals::generate_album_output_conn(
+            &conn,
+            &album_name,
+            None::<fn(usize)>,
+            Some(cli.start_year),
+            Some(cli.end_year),
+        )
+    });
 
     progress.finish_with_message(&format!(
         "Album '{}' generated successfully! 📄 File: {}",
@@ -1818,13 +1830,19 @@ pub fn run_scraping_mode(
                         "📖 Generating album output for: {}",
                         canonical_storage_dir
                     ));
-                    let output_path = crate::album_globals::generate_album_output_conn(
-                        &conn,
-                        &canonical_storage_dir,
-                        None::<fn(usize)>,
-                        Some(cli.start_year),
-                        Some(cli.end_year),
-                    );
+                    let album_dir = std::path::Path::new(&db_path)
+                        .parent()
+                        .map(std::path::Path::to_path_buf)
+                        .unwrap_or_else(|| std::path::PathBuf::from("."));
+                    let output_path = crate::config::with_album_config_override(&album_dir, || {
+                        crate::album_globals::generate_album_output_conn(
+                            &conn,
+                            &canonical_storage_dir,
+                            None::<fn(usize)>,
+                            Some(cli.start_year),
+                            Some(cli.end_year),
+                        )
+                    });
 
                     progress.finish_with_message(&format!(
                         "Album '{}' completed successfully! 🎉 📄 File: {}",

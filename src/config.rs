@@ -89,6 +89,13 @@ pub struct HeaderFormatting {
     pub include_series: Option<bool>,
     pub include_country: Option<bool>,
     pub include_date: Option<bool>,
+    // Stamp-row side/center value visibility toggles
+    pub include_denomination: Option<bool>,
+    pub include_stamps_issued: Option<bool>,
+    pub include_description: Option<bool>,
+    pub include_color: Option<bool>,
+    pub include_mint_unused: Option<bool>,
+    pub include_used: Option<bool>,
     pub print_flag_cover: Option<bool>,
     pub header_spacing: Option<f32>,
 }
@@ -155,6 +162,13 @@ pub struct Config {
     pub include_series: Option<bool>,
     pub include_country: Option<bool>,
     pub include_date: Option<bool>,
+    // Stamp-row side/center value visibility toggles
+    pub include_denomination: Option<bool>,
+    pub include_stamps_issued: Option<bool>,
+    pub include_description: Option<bool>,
+    pub include_color: Option<bool>,
+    pub include_mint_unused: Option<bool>,
+    pub include_used: Option<bool>,
     // Stamp detail layout mode: "inline" (default), "separate_rows", "minimal"
     // - inline: All details inside stamp boxes (current behavior, can be cluttered)
     // - separate_rows: Clean stamps on first row, organized details below each stamp
@@ -529,6 +543,12 @@ impl Config {
             include_series: Some(true),
             include_country: Some(true),
             include_date: Some(true),
+            include_denomination: Some(true),
+            include_stamps_issued: Some(true),
+            include_description: Some(true),
+            include_color: Some(true),
+            include_mint_unused: Some(true),
+            include_used: Some(true),
             stamp_detail_layout: Some("separate_rows".to_string()),
             colnect_detail_fields: Some("print_run,themes,designers,printing_type".to_string()),
             review_ui: Some(ReviewUiConfig {
@@ -1367,9 +1387,9 @@ pub fn load_config(path: &str) -> Config {
                         {
                             if let Some(tbl) = value.as_table_mut() {
                                 for (k, v) in sec_table.iter() {
-                                    if tbl.get(k).is_none() {
-                                        tbl.insert(k.clone(), v.clone());
-                                    }
+                                    // Sectioned keys should win over stale top-level values
+                                    // so explicit [stamps]/[layout]/... edits are honored.
+                                    tbl.insert(k.clone(), v.clone());
                                 }
                             }
                         }
@@ -1531,6 +1551,30 @@ pub fn load_config(path: &str) -> Config {
                                 }
                                 if cfg.include_date.is_none() {
                                     cfg.include_date = defaults.include_date;
+                                    has_missing = true;
+                                }
+                                if cfg.include_denomination.is_none() {
+                                    cfg.include_denomination = defaults.include_denomination;
+                                    has_missing = true;
+                                }
+                                if cfg.include_stamps_issued.is_none() {
+                                    cfg.include_stamps_issued = defaults.include_stamps_issued;
+                                    has_missing = true;
+                                }
+                                if cfg.include_description.is_none() {
+                                    cfg.include_description = defaults.include_description;
+                                    has_missing = true;
+                                }
+                                if cfg.include_color.is_none() {
+                                    cfg.include_color = defaults.include_color;
+                                    has_missing = true;
+                                }
+                                if cfg.include_mint_unused.is_none() {
+                                    cfg.include_mint_unused = defaults.include_mint_unused;
+                                    has_missing = true;
+                                }
+                                if cfg.include_used.is_none() {
+                                    cfg.include_used = defaults.include_used;
                                     has_missing = true;
                                 }
                                 if cfg.max_rows_per_page.is_none() {
@@ -2145,6 +2189,107 @@ albumeasy_auto_generate_pdf = true
         let duplicates = detect_duplicate_keys(cfg_toml).unwrap_or_default();
         assert!(duplicates.contains(&"runtime.albumeasy_auto_generate_pdf".to_string()));
     }
+
+    #[test]
+    fn album_override_section_value_wins_over_root_for_stamp_visibility_keys() {
+        use std::fs;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock before unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("stamp_cfg_override_test_{}", nonce));
+        let album_dir = root.join("Albums").join("Testland");
+        fs::create_dir_all(&album_dir).expect("create temp album dir");
+
+        let global_path = root.join("config.toml");
+        fs::write(
+            &global_path,
+            r#"
+include_denomination = true
+[stamps]
+include_denomination = true
+"#,
+        )
+        .expect("write global config");
+
+        fs::write(
+            album_dir.join("config.toml"),
+            r#"
+include_denomination = true
+[stamps]
+include_denomination = false
+"#,
+        )
+        .expect("write album override config");
+
+        let cfg = super::load_config_with_override(
+            global_path.to_str().expect("global path utf8"),
+            &album_dir,
+        );
+        assert_eq!(cfg.include_denomination, Some(false));
+
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn scoped_album_override_applies_stamp_visibility_keys_in_effective_config() {
+        use std::fs;
+        use std::time::{SystemTime, UNIX_EPOCH};
+
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock before unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("stamp_cfg_scope_test_{}", nonce));
+        let album_dir = root.join("Albums").join("Testland");
+        fs::create_dir_all(&album_dir).expect("create temp album dir");
+
+        let global_path = root.join("config.toml");
+        fs::write(
+            &global_path,
+            r#"
+[stamps]
+include_denomination = true
+include_stamps_issued = true
+include_description = true
+include_color = true
+include_mint_unused = true
+include_used = true
+"#,
+        )
+        .expect("write global config");
+
+        fs::write(
+            album_dir.join("config.toml"),
+            r#"
+[stamps]
+include_denomination = false
+include_stamps_issued = false
+include_description = false
+include_color = false
+include_mint_unused = false
+include_used = false
+"#,
+        )
+        .expect("write album override config");
+
+        let previous_dir = std::env::current_dir().expect("current dir");
+        std::env::set_current_dir(&root).expect("set current dir to temp root");
+
+        let cfg = super::with_album_config_override(&album_dir, || super::load_effective_config("config.toml"));
+
+        std::env::set_current_dir(previous_dir).expect("restore current dir");
+        let _ = fs::remove_dir_all(&root);
+
+        assert_eq!(cfg.include_denomination, Some(false));
+        assert_eq!(cfg.include_stamps_issued, Some(false));
+        assert_eq!(cfg.include_description, Some(false));
+        assert_eq!(cfg.include_color, Some(false));
+        assert_eq!(cfg.include_mint_unused, Some(false));
+        assert_eq!(cfg.include_used, Some(false));
+    }
 }
 
 use std::collections::HashMap;
@@ -2256,9 +2401,9 @@ pub fn load_config_with_override(global_path: &str, album_dir: &std::path::Path)
         {
             if let Some(tbl) = override_val.as_table_mut() {
                 for (k, v) in sec_table.iter() {
-                    if tbl.get(k).is_none() {
-                        tbl.insert(k.clone(), v.clone());
-                    }
+                    // In album overrides, sectioned keys should override root keys
+                    // to avoid old preserved values masking current UI edits.
+                    tbl.insert(k.clone(), v.clone());
                 }
             }
         }

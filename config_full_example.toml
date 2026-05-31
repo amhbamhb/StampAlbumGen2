@@ -50,6 +50,19 @@ include_catalog_numbers = true
 include_series = true
 include_country = true
 include_date = true
+# Stamp row value visibility (beneath each stamp image)
+# Left value: denomination / face-value fallback
+include_denomination = true
+# Centre-top value: print-run / stamps-issued count
+include_stamps_issued = true
+# Centre body text: main stamp description
+include_description = true
+# Centre bottom text: stamp color such as multicoloured
+include_color = true
+# Right first value: mint (or unused fallback)
+include_mint_unused = true
+# Right second value: used value/condition
+include_used = true
 print_flag_cover = false
 
 # --- Stamp heading formatting ---

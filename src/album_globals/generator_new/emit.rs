@@ -188,7 +188,11 @@ pub fn emit_stamp_lines<W: Write>(
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     }
 
-    let sh_label = resolve_stamp_heading_label(config, None);
+    let sh_label = if config.include_catalog_numbers.unwrap_or(true) {
+        resolve_stamp_heading_label(config, None)
+    } else {
+        String::new()
+    };
     // Only emit STAMP_HEADING if a label is configured (the number alone
     // is from StampWorld's internal system, not a real catalog)
     if !sh_label.is_empty() {

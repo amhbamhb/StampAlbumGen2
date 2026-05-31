@@ -1,0 +1,32 @@
+# Stamp Album Generator 2 album config override: Netherlands
+# Only values that differ from the global config.toml are stored here.
+# Settings not listed here fall back to the global config.toml.
+
+[colnect]
+include_details = false
+
+[colnect.fields]
+face_value = false
+perforation = false
+size = false
+watermark = false
+
+[header]
+include_catalog_numbers = false
+include_country = false
+include_date = false
+include_engraving = false
+include_perforation = false
+include_series = false
+include_watermark = false
+
+[runtime]
+colnect_inbox_path = "samples/colnect_inbox"
+
+[stamps]
+include_color = false
+include_denomination = false
+include_description = false
+include_mint_unused = false
+include_stamps_issued = false
+include_used = false

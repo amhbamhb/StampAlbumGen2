@@ -517,6 +517,12 @@ where
     let passed_end_year = end_year;
     // Load config values from config.toml
     let config = load_effective_config("config.toml");
+    let include_denomination = config.include_denomination.unwrap_or(true);
+    let include_stamps_issued = config.include_stamps_issued.unwrap_or(true);
+    let include_description = config.include_description.unwrap_or(true);
+    let include_color = config.include_color.unwrap_or(true);
+    let include_mint_unused = config.include_mint_unused.unwrap_or(true);
+    let include_used = config.include_used.unwrap_or(true);
     // Check if this is a US1847 sourced album
     let is_us1847 = conn
         .query_row(
@@ -1305,7 +1311,7 @@ where
                 // Use configured text line height (mm) for header lines to more
                 // accurately reflect visual space consumed by AlbumEasy font sizes.
                 let header_font_h = config.text_line_height_mm.unwrap_or(2.82) as f64;
-                if !name_line.is_empty() {
+                if config.include_series.unwrap_or(true) && !name_line.is_empty() {
                     // Use configurable PAGE_TEXT_CENTRE template when present in config
                     let tmpl = build_series_page_text_centre_template(&config);
                     let safe = name_line.replace('"', "\\\"");
@@ -1513,10 +1519,13 @@ where
                 // Additional per-image adjustments from ALBUM_STAMP_IMG_NEW_SETTING
                 let _img_new_w = config.extra_width_mm.unwrap_or(0.0) as f64;
                 let img_new_h = config.extra_height_mm.unwrap_or(0.0) as f64;
-                let sh_label_for_fit =
+                let sh_label_for_fit = if config.include_catalog_numbers.unwrap_or(true) {
                     crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
                         &config, None,
-                    );
+                    )
+                } else {
+                    String::new()
+                };
                 let sh_size_for_fit = config.stamp_heading_size.unwrap_or(10.0) as i32;
                 let include_perforation_in_heading = config.include_perforation.unwrap_or(true);
                 for stamp in stamps_in_row {
@@ -1550,6 +1559,9 @@ where
                             };
                         }
                     }
+                    if !include_denomination {
+                        raw_left.clear();
+                    }
                     let mut raw_stamps_issued =
                         format_number_with_commas(&clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())));
                     if raw_stamps_issued.trim().is_empty() {
@@ -1560,9 +1572,19 @@ where
                                 .unwrap_or(&"".to_string()),
                         ));
                     }
-                    let raw_description =
-                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
-                    let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
+                    if !include_stamps_issued {
+                        raw_stamps_issued.clear();
+                    }
+                    let raw_description = if include_description {
+                        clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()))
+                    } else {
+                        String::new()
+                    };
+                    let raw_color = if include_color {
+                        clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()))
+                    } else {
+                        String::new()
+                    };
                     let mint_raw = clean_text(
                         stamp
                             .attrs
@@ -1575,11 +1597,14 @@ where
                         clean_text(stamp.attrs.get("unused").unwrap_or(&"".to_string())).trim().to_string();
                     let used_raw =
                         clean_text(stamp.attrs.get("used").unwrap_or(&"".to_string())).trim().to_string();
-                    let right_first_line = if !mint_raw.is_empty() {
+                    let right_first_line = if !include_mint_unused {
+                        ""
+                    } else if !mint_raw.is_empty() {
                         mint_raw.as_str()
                     } else {
                         unused_raw.as_str()
                     };
+                    let right_second_line = if include_used { used_raw.as_str() } else { "" };
                     let text_lines = estimate_stamp_body_line_count(
                         &raw_left,
                         &raw_stamps_issued,
@@ -1587,7 +1612,7 @@ where
                         &raw_color,
                         &estimate_colnect_centre_text(stamp, &config),
                         right_first_line,
-                        &used_raw,
+                        right_second_line,
                         estimated_emit_width,
                         adj_est_height,
                     );
@@ -1719,10 +1744,13 @@ where
                 + config
                     .text_line_height_mm
                     .unwrap_or(cfg_defaults.text_line_height_mm.unwrap()) as f64;
-            let sh_label_for_fit =
+            let sh_label_for_fit = if config.include_catalog_numbers.unwrap_or(true) {
                 crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
                     &config, None,
-                );
+                )
+            } else {
+                String::new()
+            };
             let sh_size_for_fit = config.stamp_heading_size.unwrap_or(10.0) as i32;
             let include_perforation_in_heading = config.include_perforation.unwrap_or(true);
             for stamp in stamps_in_row {
@@ -1751,6 +1779,9 @@ where
                         };
                     }
                 }
+                if !include_denomination {
+                    raw_left.clear();
+                }
                 let mut raw_stamps_issued =
                     format_number_with_commas(&clean_text(stamp.attrs.get("stamps_issued").unwrap_or(&"".to_string())));
                 if raw_stamps_issued.trim().is_empty() {
@@ -1761,9 +1792,19 @@ where
                             .unwrap_or(&"".to_string()),
                     ));
                 }
-                let raw_description =
-                    clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
-                let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
+                if !include_stamps_issued {
+                    raw_stamps_issued.clear();
+                }
+                let raw_description = if include_description {
+                    clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()))
+                } else {
+                    String::new()
+                };
+                let raw_color = if include_color {
+                    clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()))
+                } else {
+                    String::new()
+                };
                 let mint_raw = clean_text(
                     stamp
                         .attrs
@@ -1785,11 +1826,14 @@ where
                     .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
                     + img_new_w
                     + effective_stamp_box_adjust;
-                let right_first_line = if !mint_raw.is_empty() {
+                let right_first_line = if !include_mint_unused {
+                    ""
+                } else if !mint_raw.is_empty() {
                     mint_raw.as_str()
                 } else {
                     unused_raw.as_str()
                 };
+                let right_second_line = if include_used { used_raw.as_str() } else { "" };
                 let text_lines = estimate_stamp_body_line_count(
                     &raw_left,
                     &raw_stamps_issued,
@@ -1797,7 +1841,7 @@ where
                     &raw_color,
                     &estimate_colnect_centre_text(stamp, &config),
                     right_first_line,
-                    &used_raw,
+                    right_second_line,
                     estimated_emit_width,
                     adj_est_height,
                 );
@@ -1881,7 +1925,7 @@ where
                     .replace("\n", " ")
                     .replace("  ", " ");
                 let header_font_h = config.text_line_height_mm.unwrap_or(2.82) as f64;
-                if !next_name_line.is_empty() {
+                if config.include_series.unwrap_or(true) && !next_name_line.is_empty() {
                     let tmpl = build_series_page_text_centre_template(&config);
                     let safe = next_name_line.replace('"', "\\\"");
                     next_header_lines_vec.push((tmpl.replace("{}", &safe), header_font_h));
@@ -1982,18 +2026,37 @@ where
                                 };
                             }
                         }
+                        if !include_denomination {
+                            raw_left.clear();
+                        }
                         let raw_stamps_issued = format_number_with_commas(&clean_text(&stamp.stamps_issued));
+                        let raw_stamps_issued = if include_stamps_issued {
+                            raw_stamps_issued
+                        } else {
+                            String::new()
+                        };
                         // StampStub does not carry Colnect attrs here; use DB-resolved stamps_issued only.
-                        let raw_description = clean_text(&stamp.description);
-                        let raw_color = clean_text(&stamp.color);
+                        let raw_description = if include_description {
+                            clean_text(&stamp.description)
+                        } else {
+                            String::new()
+                        };
+                        let raw_color = if include_color {
+                            clean_text(&stamp.color)
+                        } else {
+                            String::new()
+                        };
                         let mint_raw = clean_text(&stamp.mint_condition).trim().to_string();
                         let unused_raw = clean_text(&stamp.unused).trim().to_string();
                         let used_raw = clean_text(&stamp.used).trim().to_string();
-                        let right_first_line = if !mint_raw.is_empty() {
+                        let right_first_line = if !include_mint_unused {
+                            ""
+                        } else if !mint_raw.is_empty() {
                             mint_raw.as_str()
                         } else {
                             unused_raw.as_str()
                         };
+                        let right_second_line = if include_used { used_raw.as_str() } else { "" };
                         let estimated_emit_width =
                             est_width_mm + effective_stamp_box_adjust;
                         let text_lines = estimate_stamp_body_line_count(
@@ -2003,7 +2066,7 @@ where
                             &raw_color,
                             "", // StampStub lacks colnect attrs; forward-peek estimate only
                             right_first_line,
-                            &used_raw,
+                            right_second_line,
                             estimated_emit_width,
                             adj_est_height,
                         );
@@ -2280,6 +2343,9 @@ where
                         };
                     }
                 }
+                if !include_denomination {
+                    raw_left.clear();
+                }
                 // Compute a conservative max chars for the left column from emit_width
                 let approx_char_width_mm_left = 2.6_f64;
                 let padding_mm_left = 4.0_f64;
@@ -2344,9 +2410,19 @@ where
                             .unwrap_or(&"".to_string()),
                     ));
                 }
-                let raw_description =
-                    clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()));
-                let raw_color = clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()));
+                if !include_stamps_issued {
+                    raw_stamps_issued.clear();
+                }
+                let raw_description = if include_description {
+                    clean_text(stamp.attrs.get("description").unwrap_or(&"".to_string()))
+                } else {
+                    String::new()
+                };
+                let raw_color = if include_color {
+                    clean_text(stamp.attrs.get("color").unwrap_or(&"".to_string()))
+                } else {
+                    String::new()
+                };
 
                 // Simple wrapping: estimate characters per line from emit_width.
                 // Use an approximate character width (mm). This is heuristic but
@@ -2797,11 +2873,14 @@ where
                         .or(explicit_code)
                         .unwrap_or(default_code)
                 };
-                let heading_label =
+                let heading_label = if config.include_catalog_numbers.unwrap_or(true) {
                     crate::album_globals::generator_new::emit::resolve_stamp_heading_label(
                         &config,
                         Some(heading_catalog_code.as_str()),
-                    );
+                    )
+                } else {
+                    String::new()
+                };
                 let heading_diag_sg = sgnum.replace('"', "'");
                 let heading_diag_code = heading_catalog_code.replace('"', "'");
                 let heading_diag_label = heading_label.replace('"', "'");
@@ -2843,10 +2922,18 @@ where
                 //   - second line: used
                 // Do NOT shift used/unused into a separate third-right line here. The centre
                 // field continues to hold `stamps_issued` when present.
-                let first_line = v_mint
-                    .or(v_unused.clone())
-                    .unwrap_or_else(|| "".to_string());
-                let second_line = v_used.clone().unwrap_or_else(|| "".to_string());
+                let first_line = if include_mint_unused {
+                    v_mint
+                        .or(v_unused.clone())
+                        .unwrap_or_else(|| "".to_string())
+                } else {
+                    String::new()
+                };
+                let second_line = if include_used {
+                    v_used.clone().unwrap_or_else(|| "".to_string())
+                } else {
+                    String::new()
+                };
                 let centre = pad_centre_body_for_side_columns(
                     &raw_stamps_issued,
                     &centre_body,

@@ -17,6 +17,20 @@ page_border_inner2 = 0.1
 page_border_spacing = 1.0
 album_pages_spacing_h = 3.0
 album_pages_spacing_v = 3.0
+
+# Stamp row value visibility (under each image)
+# Left value: denomination / face value fallback
+include_denomination = true
+# Center top value: print-run / stamps-issued count
+include_stamps_issued = true
+# Center body text: main stamp description
+include_description = true
+# Center bottom text: stamp color such as multicoloured
+include_color = true
+# Right first value: mint condition (falls back to unused when mint is empty)
+include_mint_unused = true
+# Right second value: used value/condition
+include_used = true
 max_page_vspace_mm = 10.0
 
 ###################################
