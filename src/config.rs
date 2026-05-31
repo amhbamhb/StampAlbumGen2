@@ -414,16 +414,22 @@ pub struct ColnectConfig {
     // Optional comma-separated list of Colnect detail fields. When omitted,
     // falls back to legacy `colnect_detail_fields` or built-in defaults.
     pub detail_fields: Option<String>,
-    // Optional per-field boolean toggles. When at least one toggle is set,
-    // this map takes precedence over `detail_fields`.
+    // Optional per-field boolean toggles. When at least one toggle is
+    // explicitly set (true or false), this map takes precedence over
+    // `detail_fields`.
     pub fields: Option<ColnectFieldToggles>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct ColnectFieldToggles {
+    pub name: Option<bool>,
     pub catalog_codes: Option<bool>,
+    pub country: Option<bool>,
+    pub colnect_link: Option<bool>,
     pub issued_on: Option<bool>,
     pub expiry_date: Option<bool>,
+    pub width: Option<bool>,
+    pub height: Option<bool>,
     pub size: Option<bool>,
     pub themes: Option<bool>,
     pub printing: Option<bool>,
@@ -438,8 +444,22 @@ pub struct ColnectFieldToggles {
     pub emission: Option<bool>,
     pub perforation: Option<bool>,
     pub face_value: Option<bool>,
+    pub currency: Option<bool>,
     pub print_run: Option<bool>,
     pub score: Option<bool>,
+    pub accuracy: Option<bool>,
+    pub ord_mi: Option<bool>,
+    pub ord_sn: Option<bool>,
+    pub ord_yt: Option<bool>,
+    pub ord_sg: Option<bool>,
+    pub parent_item: Option<bool>,
+    pub variant: Option<bool>,
+    pub overprint_variant: Option<bool>,
+    pub list: Option<bool>,
+    pub quantity: Option<bool>,
+    pub condition: Option<bool>,
+    pub public_note: Option<bool>,
+    pub private_note: Option<bool>,
     pub description: Option<bool>,
 }
 
@@ -669,16 +689,22 @@ impl Config {
 
     /// Effective enabled Colnect detail fields.
     /// Precedence:
-    /// 1) `[colnect.fields]` booleans when at least one key is set
+    /// 1) `[colnect.fields]` booleans when at least one key is explicitly set
+    ///    (true or false)
     /// 2) `[colnect].detail_fields` comma-separated list
     /// 3) legacy top-level `colnect_detail_fields`
     /// 4) built-in default list
     pub fn effective_colnect_detail_field_set(&self) -> std::collections::HashSet<String> {
         if let Some(fields) = self.colnect.as_ref().and_then(|c| c.fields.as_ref()) {
-            let any_true = [
+            let any_set = [
+                fields.name,
                 fields.catalog_codes,
+                fields.country,
+                fields.colnect_link,
                 fields.issued_on,
                 fields.expiry_date,
+                fields.width,
+                fields.height,
                 fields.size,
                 fields.themes,
                 fields.printing,
@@ -693,23 +719,52 @@ impl Config {
                 fields.emission,
                 fields.perforation,
                 fields.face_value,
+                fields.currency,
                 fields.print_run,
                 fields.score,
+                fields.accuracy,
+                fields.ord_mi,
+                fields.ord_sn,
+                fields.ord_yt,
+                fields.ord_sg,
+                fields.parent_item,
+                fields.variant,
+                fields.overprint_variant,
+                fields.list,
+                fields.quantity,
+                fields.condition,
+                fields.public_note,
+                fields.private_note,
                 fields.description,
             ]
             .iter()
-            .any(|v| v.unwrap_or(false));
+            .any(|v| v.is_some());
 
-            if any_true {
+            if any_set {
                 let mut set = std::collections::HashSet::new();
+                if fields.name.unwrap_or(false) {
+                    set.insert("name".to_string());
+                }
                 if fields.catalog_codes.unwrap_or(false) {
                     set.insert("catalog_codes".to_string());
+                }
+                if fields.country.unwrap_or(false) {
+                    set.insert("country".to_string());
+                }
+                if fields.colnect_link.unwrap_or(false) {
+                    set.insert("colnect_link".to_string());
                 }
                 if fields.issued_on.unwrap_or(false) {
                     set.insert("issued_on".to_string());
                 }
                 if fields.expiry_date.unwrap_or(false) {
                     set.insert("expiry_date".to_string());
+                }
+                if fields.width.unwrap_or(false) {
+                    set.insert("width".to_string());
+                }
+                if fields.height.unwrap_or(false) {
+                    set.insert("height".to_string());
                 }
                 if fields.size.unwrap_or(false) {
                     set.insert("size".to_string());
@@ -753,11 +808,53 @@ impl Config {
                 if fields.face_value.unwrap_or(false) {
                     set.insert("face_value".to_string());
                 }
+                if fields.currency.unwrap_or(false) {
+                    set.insert("currency".to_string());
+                }
                 if fields.print_run.unwrap_or(false) {
                     set.insert("print_run".to_string());
                 }
                 if fields.score.unwrap_or(false) {
                     set.insert("score".to_string());
+                }
+                if fields.accuracy.unwrap_or(false) {
+                    set.insert("accuracy".to_string());
+                }
+                if fields.ord_mi.unwrap_or(false) {
+                    set.insert("ord_mi".to_string());
+                }
+                if fields.ord_sn.unwrap_or(false) {
+                    set.insert("ord_sn".to_string());
+                }
+                if fields.ord_yt.unwrap_or(false) {
+                    set.insert("ord_yt".to_string());
+                }
+                if fields.ord_sg.unwrap_or(false) {
+                    set.insert("ord_sg".to_string());
+                }
+                if fields.parent_item.unwrap_or(false) {
+                    set.insert("parent_item".to_string());
+                }
+                if fields.variant.unwrap_or(false) {
+                    set.insert("variant".to_string());
+                }
+                if fields.overprint_variant.unwrap_or(false) {
+                    set.insert("overprint_variant".to_string());
+                }
+                if fields.list.unwrap_or(false) {
+                    set.insert("list".to_string());
+                }
+                if fields.quantity.unwrap_or(false) {
+                    set.insert("quantity".to_string());
+                }
+                if fields.condition.unwrap_or(false) {
+                    set.insert("condition".to_string());
+                }
+                if fields.public_note.unwrap_or(false) {
+                    set.insert("public_note".to_string());
+                }
+                if fields.private_note.unwrap_or(false) {
+                    set.insert("private_note".to_string());
                 }
                 if fields.description.unwrap_or(false) {
                     set.insert("description".to_string());
@@ -1965,7 +2062,7 @@ printing_type = true
     }
 
     #[test]
-    fn colnect_all_false_toggles_fall_back_to_detail_fields() {
+    fn colnect_all_false_toggles_override_detail_fields_to_empty() {
         let cfg_toml = r#"
 [colnect]
 detail_fields = "print_run,printing"
@@ -1977,8 +2074,47 @@ printing = false
 
         let cfg: Config = toml::from_str(cfg_toml).expect("config should parse");
         let fields = cfg.effective_colnect_detail_field_set();
+        assert!(fields.is_empty());
+    }
+
+    #[test]
+    fn colnect_false_override_disables_global_true_field() {
+        let base_toml = r#"
+[colnect]
+detail_fields = "print_run,printing"
+
+[colnect.fields]
+catalog_codes = true
+issued_on = true
+expiry_date = true
+face_value = true
+print_run = true
+score = true
+description = true
+"#;
+
+        let override_toml = r#"
+[colnect.fields]
+expiry_date = false
+face_value = false
+score = false
+"#;
+
+        let base_val: toml::Value = toml::from_str(base_toml).expect("base parse should succeed");
+        let override_val: toml::Value =
+            toml::from_str(override_toml).expect("override parse should succeed");
+        let merged = super::deep_merge_toml_values(base_val, override_val);
+        let cfg: Config = toml::from_str(&toml::to_string(&merged).expect("serialize merged config"))
+            .expect("merged config should parse");
+
+        let fields = cfg.effective_colnect_detail_field_set();
+        assert!(fields.contains("catalog_codes"));
+        assert!(fields.contains("issued_on"));
         assert!(fields.contains("print_run"));
-        assert!(fields.contains("printing"));
+        assert!(fields.contains("description"));
+        assert!(!fields.contains("expiry_date"));
+        assert!(!fields.contains("face_value"));
+        assert!(!fields.contains("score"));
     }
 
     #[test]

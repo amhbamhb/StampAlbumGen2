@@ -208,6 +208,202 @@ show_stamps_per_row = true
 series_order = "first_date"
 
 ###################################
+# StampWorld Scrape Options
+###################################
+[stampworld]
+# This section documents all StampWorld run options used by CLI/Review UI.
+# These values are defaults/reference values for run presets.
+#
+# Equivalent CLI source selector.
+source = "stampworld"
+# StampWorld site/country slug (for example: Great-Britain, Netherlands).
+site_name = ""
+# Local album folder name. Empty means use site_name.
+album_name = ""
+# Optional full base URL override. Leave empty for automatic URL construction.
+base_url = ""
+# Scrape year range.
+start_year = 1840
+end_year = 2026
+# Overwrite modes.
+overwrite_album = false
+overwrite_images = false
+# Page traversal controls:
+# - max_pages = 0 means no explicit page cap.
+max_pages = 0
+# Stop after this many consecutive pages with no matching rows.
+stop_after_no_hits = 3
+# If true, auto-accept top typo suggestion for source/site-name prompts.
+accept_top_suggestion = false
+# Review UI preset shortcut.
+# Allowed values:
+# - basic           : no extra flags
+# - overwrite_album : --overwrite-album
+# - overwrite_all   : --overwrite-album --overwrite-images
+# - bounded_pages   : --max-pages 25 --stop-after-no-hits 3
+# - accept_typo     : --yes
+preset = "basic"
+# Extra raw flags appended by Review UI command helpers.
+extra_flags = ""
+
+###################################
+# Colnect Metadata / Field Selection
+###################################
+[colnect]
+# This section controls which stamp metadata fields sourced from Colnect.net
+# are included in generated album pages (under each stamp entry).
+#
+# Why this section is important:
+# - Colnect provides rich stamp metadata (designers, paper type, print run, etc.)
+#   that goes far beyond basic catalog numbers and dates.
+# - Including too many fields creates cluttered, hard-to-read album pages.
+# - Carefully selecting fields lets you tune the level of detail per collection.
+#
+# HOW FIELD SELECTION WORKS (read carefully — two mechanisms interact):
+#
+# Mechanism 1: detail_fields (comma-separated list)
+#   - Simple fallback used only when NO [colnect.fields] value is explicitly set.
+#   - Lists field names in the order you want them displayed.
+#   - Easy to change without touching individual toggles.
+#
+# Mechanism 2: [colnect.fields] per-field toggles
+#   - Takes PRECEDENCE over detail_fields when at least one field is explicitly
+#     set (true or false).
+#   - If any toggle is present, the detail_fields list is ignored.
+#   - This means album overrides can disable a global true field by setting it
+#     to false locally.
+#   - Use this for precise per-field control.
+#
+# Recommended approach:
+# - Use detail_fields for quick experimentation.
+# - Switch to [colnect.fields] toggles once you know which fields you want.
+# - Never mix both active simultaneously (detail_fields will be silently ignored).
+
+# Master toggle: set false to suppress ALL Colnect metadata from album output.
+# Why important:
+# - Provides a single switch to strip all Colnect detail without deleting config.
+# - Useful when generating clean overview pages without metadata clutter.
+include_details = true
+
+# MECHANISM 1: Comma-list field selection (active when no [colnect.fields] values are set)
+#
+# List field names in display order, separated by commas.
+# Only fields listed here will appear in the album output.
+#
+# All available field names:
+#   name           - Colnect item title/name
+#   catalog_codes  — Cross-catalog identifiers (Scott, SG, Michel, etc.)
+#   country        - Country value from Colnect
+#   colnect_link   - Colnect page URL
+#   issued_on      — Official issue date
+#   expiry_date    — Date stamp was withdrawn from sale (if known)
+#   width          - Width only (mm)
+#   height         - Height only (mm)
+#   size           — Physical stamp dimensions (mm)
+#   themes         — Subject/topic tags (e.g. "Animals", "Space", "Royalty")
+#   printing       — Printing process (e.g. recess, lithography, photogravure)
+#   printing_type  — Sub-type of printing method
+#   paper          — Paper type used (e.g. chalk-surfaced, ordinary)
+#   gum            — Gum/adhesive type (e.g. PVA, gum arabic)
+#   designers      — Stamp designer credit(s)
+#   printers       — Printing firm credit(s)
+#   colors         — Color description as listed in catalog
+#   watermark      — Watermark type/orientation
+#   format         — Stamp format (e.g. vertical, horizontal, se-tenant)
+#   emission       — Emission type (e.g. definitive, commemorative, airmail)
+#   perforation    — Perforation gauge(s)
+#   face_value     — Denomination as printed on stamp
+#   currency       - Currency label (e.g. Dutch cent)
+#   print_run      — Known or estimated quantity printed
+#   score          — Colnect community popularity/score value
+#   accuracy       - Colnect confidence/accuracy value
+#   ord_mi         - Michel ordering/ranking value from Colnect
+#   ord_sn         - Scott ordering/ranking value from Colnect
+#   ord_yt         - Yvert ordering/ranking value from Colnect
+#   ord_sg         - SG ordering/ranking value from Colnect
+#   parent_item    - Parent Colnect item ID/reference
+#   variant        - Variant marker
+#   overprint_variant - Overprint variant marker
+#   list           - List metadata from Colnect
+#   quantity       - Quantity metadata from Colnect
+#   condition      - Condition metadata from Colnect
+#   public_note    - Public note text from Colnect
+#   private_note   - Private note text from Colnect
+#   description    — Free-text description from Colnect
+detail_fields = "print_run,themes,designers,printing_type"
+
+# MECHANISM 2: Per-field toggles (takes precedence over detail_fields above)
+#
+# Set any field to true to include it; false to exclude it.
+# As soon as at least one field is explicitly set here (true or false),
+# detail_fields is ignored entirely.
+#
+# Why use toggles instead of detail_fields:
+# - More explicit and readable for permanent configs.
+# - Easy to enable/disable individual fields without retyping the whole list.
+# - Allows commenting out a field without losing its position.
+[colnect.fields]
+name = false           # Colnect item title/name
+catalog_codes = true   # Cross-catalog identifiers (sn:540, sg:824, etc.)
+country = false        # Country value from Colnect
+colnect_link = false   # Colnect page URL
+issued_on = true       # Official issue/release date
+expiry_date = true     # Withdrawal-from-sale date (often unknown)
+width = false          # Width only, in mm
+height = false         # Height only, in mm
+size = true            # Physical stamp size in mm (width x height)
+themes = true          # Subject tags / topical categories
+printing = true        # Printing process (e.g. recess, offset lithography)
+printing_type = true   # Sub-category of printing method
+paper = true           # Paper type or surface
+gum = true             # Gum/adhesive type (PVA, dextrin, etc.)
+designers = true       # Designer name(s)
+printers = true        # Printer/manufacturer name(s)
+colors = true          # Color description from catalog
+watermark = true       # Watermark type and orientation
+format = true          # Stamp format (vertical, horizontal, miniature sheet, etc.)
+emission = true        # Emission category (definitive, commemorative, airmail, etc.)
+perforation = true     # Perforation gauge(s) - e.g. 14 x 13.5
+face_value = true      # Denomination as printed on stamp
+currency = false       # Currency label (e.g. Dutch cent)
+print_run = true       # Quantity printed (if known)
+score = true           # Colnect community popularity score (0-100)
+accuracy = false       # Colnect confidence/accuracy value
+ord_mi = false         # Michel ordering/ranking value from Colnect
+ord_sn = false         # Scott ordering/ranking value from Colnect
+ord_yt = false         # Yvert ordering/ranking value from Colnect
+ord_sg = false         # SG ordering/ranking value from Colnect
+parent_item = false    # Parent Colnect item ID/reference
+variant = false        # Variant marker
+overprint_variant = false # Overprint variant marker
+list = false           # List metadata from Colnect
+quantity = false       # Quantity metadata from Colnect
+condition = false      # Condition metadata from Colnect
+public_note = false    # Public note text from Colnect
+private_note = false   # Private note text from Colnect
+description = true     # Free-text description from Colnect page
+
+###################################
+# Preserved Extra Keys
+###################################
+
+[colnect.fields.layout]
+# Legacy passthrough section kept for backward compatibility.
+# These values mirror layout-level settings used elsewhere.
+pages_vspace_in_row_height = true
+stamp_heading_in_row_height = true
+
+[colnect.fields.runtime]
+# Legacy passthrough section kept for backward compatibility.
+# These values mirror runtime-level diagnostics settings.
+calibration_csv = ""
+date_format = "commas"
+detailed_page_fit = false
+detailed_page_fit_diagnostics = false
+emit_placeholder_diagnostics = false
+
+
+###################################
 # Colors
 ###################################
 [colors]
@@ -722,112 +918,3 @@ default_right_unmatched_only_checked = true
 #   wad = WADP / WNS Numbering System (UN postal agency standard)
 catalog_family_options = ["sn|Scott Number|814224", "sg|Stanley Gibbons|705728", "mi|Michel|1126331", "yt|Yvert et Tellier|925704", "afa|AFA number|116770", "ank|ANK|8320", "nvp|NVPH|18985", "un|Unificato|169053", "col|Colnect codes|445975", "wad|WADP Numbering System - WNS|91196"]
 
-###################################
-# Colnect Metadata / Field Selection
-###################################
-[colnect]
-# This section controls which stamp metadata fields sourced from Colnect.net
-# are included in generated album pages (under each stamp entry).
-#
-# Why this section is important:
-# - Colnect provides rich stamp metadata (designers, paper type, print run, etc.)
-#   that goes far beyond basic catalog numbers and dates.
-# - Including too many fields creates cluttered, hard-to-read album pages.
-# - Carefully selecting fields lets you tune the level of detail per collection.
-#
-# HOW FIELD SELECTION WORKS (read carefully — two mechanisms interact):
-#
-# Mechanism 1: detail_fields (comma-separated list)
-#   - Simple fallback used when NO [colnect.fields] toggle is set to true.
-#   - Lists field names in the order you want them displayed.
-#   - Easy to change without touching individual toggles.
-#
-# Mechanism 2: [colnect.fields] per-field toggles
-#   - Takes PRECEDENCE over detail_fields when at least one field is set true.
-#   - If even one toggle is true, the entire detail_fields list is ignored.
-#   - Use this for precise per-field control.
-#
-# Recommended approach:
-# - Use detail_fields for quick experimentation.
-# - Switch to [colnect.fields] toggles once you know which fields you want.
-# - Never mix both active simultaneously (detail_fields will be silently ignored).
-
-# Master toggle: set false to suppress ALL Colnect metadata from album output.
-# Why important:
-# - Provides a single switch to strip all Colnect detail without deleting config.
-# - Useful when generating clean overview pages without metadata clutter.
-include_details = true
-
-# MECHANISM 1: Comma-list field selection (active when all [colnect.fields] are false)
-#
-# List field names in display order, separated by commas.
-# Only fields listed here will appear in the album output.
-#
-# All available field names:
-#   catalog_codes  — Cross-catalog identifiers (Scott, SG, Michel, etc.)
-#   issued_on      — Official issue date
-#   expiry_date    — Date stamp was withdrawn from sale (if known)
-#   size           — Physical stamp dimensions (mm)
-#   themes         — Subject/topic tags (e.g. "Animals", "Space", "Royalty")
-#   printing       — Printing process (e.g. recess, lithography, photogravure)
-#   printing_type  — Sub-type of printing method
-#   paper          — Paper type used (e.g. chalk-surfaced, ordinary)
-#   gum            — Gum/adhesive type (e.g. PVA, gum arabic)
-#   designers      — Stamp designer credit(s)
-#   printers       — Printing firm credit(s)
-#   colors         — Color description as listed in catalog
-#   watermark      — Watermark type/orientation
-#   format         — Stamp format (e.g. vertical, horizontal, se-tenant)
-#   emission       — Emission type (e.g. definitive, commemorative, airmail)
-#   perforation    — Perforation gauge(s)
-#   face_value     — Denomination as printed on stamp
-#   print_run      — Known or estimated quantity printed
-#   score          — Colnect community popularity/score value
-#   description    — Free-text description from Colnect
-detail_fields = "print_run,themes,designers,printing_type"
-
-# MECHANISM 2: Per-field toggles (takes precedence over detail_fields above)
-#
-# Set any field to true to include it; false to exclude it.
-# As soon as at least one field is true here, detail_fields is ignored entirely.
-#
-# Why use toggles instead of detail_fields:
-# - More explicit and readable for permanent configs.
-# - Easy to enable/disable individual fields without retyping the whole list.
-# - Allows commenting out a field without losing its position.
-[colnect.fields]
-catalog_codes = true
-issued_on = true
-expiry_date = true
-size = true
-themes = true
-printing = true
-printing_type = true
-paper = true
-gum = true
-designers = true
-printers = true
-colors = true
-watermark = true
-format = true
-emission = true
-perforation = true
-face_value = true
-print_run = true
-score = true
-description = true
-
-###################################
-# Preserved Extra Keys
-###################################
-
-[colnect.fields.layout]
-pages_vspace_in_row_height = true
-stamp_heading_in_row_height = true
-
-[colnect.fields.runtime]
-calibration_csv = ""
-date_format = "commas"
-detailed_page_fit = false
-detailed_page_fit_diagnostics = false
-emit_placeholder_diagnostics = false

@@ -281,29 +281,51 @@ include_details = true
 # Available: catalog_codes, issued_on, expiry_date, size, themes, printing,
 # printing_type,
 # paper, gum, designers, printers, colors, watermark, format, emission,
-# perforation, face_value, print_run, score, description
+# perforation, face_value, print_run, score, description,
+# name, country, colnect_link, width, height, currency, accuracy,
+# ord_mi, ord_sn, ord_yt, ord_sg, parent_item, variant,
+# overprint_variant, list, quantity, condition, public_note, private_note
 detail_fields = "print_run,themes,designers,printing_type"
 
 # Optional per-field true/false toggles (takes precedence over detail_fields
-# when at least one toggle is true).
+# when at least one toggle is explicitly set true or false).
 [colnect.fields]
-catalog_codes = false
-issued_on = false
-expiry_date = false
-size = false
-themes = false
-printing = false
-printing_type = false
-paper = false
-gum = false
-designers = false
-printers = false
-colors = false
-watermark = false
-format = false
-emission = false
-perforation = false
-face_value = false
-print_run = false
-score = false
-description = false
+name = false          # Colnect item title/name
+catalog_codes = false  # Cross-catalog identifiers (sn:540, sg:824, etc.)
+country = false        # Country value from Colnect
+colnect_link = false   # Colnect page URL
+issued_on = false      # Official issue/release date
+expiry_date = false    # Withdrawal-from-sale date (often unknown)
+width = false          # Width only, in mm
+height = false         # Height only, in mm
+size = false           # Physical stamp size in mm (width x height)
+themes = false         # Subject tags / topical categories
+printing = false       # Printing process (e.g. recess, offset lithography)
+printing_type = false  # Sub-category of printing method
+paper = false          # Paper type or surface
+gum = false            # Gum/adhesive type (PVA, dextrin, etc.)
+designers = false      # Designer name(s)
+printers = false       # Printer/manufacturer name(s)
+colors = false         # Color description from catalog
+watermark = false      # Watermark type and orientation
+format = false         # Stamp format (vertical, horizontal, miniature sheet, etc.)
+emission = false       # Emission category (definitive, commemorative, airmail, etc.)
+perforation = false    # Perforation gauge(s) - e.g. 14 x 13.5
+face_value = false     # Denomination as printed on stamp
+currency = false       # Currency label (e.g. Dutch cent)
+print_run = false      # Quantity printed (if known)
+score = false          # Colnect community popularity score (0-100)
+accuracy = false       # Colnect confidence/accuracy value
+ord_mi = false         # Michel ordering/ranking value from Colnect
+ord_sn = false         # Scott ordering/ranking value from Colnect
+ord_yt = false         # Yvert ordering/ranking value from Colnect
+ord_sg = false         # SG ordering/ranking value from Colnect
+parent_item = false    # Parent Colnect item ID/reference
+variant = false        # Variant marker
+overprint_variant = false # Overprint variant marker
+list = false           # List metadata from Colnect
+quantity = false       # Quantity metadata from Colnect
+condition = false      # Condition metadata from Colnect
+public_note = false    # Public note text from Colnect
+private_note = false   # Private note text from Colnect
+description = false    # Free-text description from Colnect page

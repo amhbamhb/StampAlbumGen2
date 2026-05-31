@@ -472,6 +472,8 @@ pub fn fetch_and_filter_stamps(
         };
 
         if let Some(colnect) = colnect_lookup {
+            set_attr_if_missing(&mut attrs, "colnect_country", colnect.country);
+            set_attr_if_missing(&mut attrs, "colnect_page_url", colnect.colnect_link);
             set_attr_if_missing(&mut attrs, "colnect_name", colnect.name);
             set_attr_if_missing(&mut attrs, "colnect_watermark", colnect.watermark);
             set_attr_if_missing(&mut attrs, "colnect_format", colnect.format);
@@ -494,6 +496,22 @@ pub fn fetch_and_filter_stamps(
             set_attr_if_missing(&mut attrs, "colnect_accuracy", colnect.accuracy);
             set_attr_if_missing(&mut attrs, "colnect_width_mm", colnect.width);
             set_attr_if_missing(&mut attrs, "colnect_height_mm", colnect.height);
+            set_attr_if_missing(&mut attrs, "colnect_ord_mi", colnect.ord_mi);
+            set_attr_if_missing(&mut attrs, "colnect_ord_sn", colnect.ord_sn);
+            set_attr_if_missing(&mut attrs, "colnect_ord_yt", colnect.ord_yt);
+            set_attr_if_missing(&mut attrs, "colnect_ord_sg", colnect.ord_sg);
+            set_attr_if_missing(&mut attrs, "colnect_parent_item", colnect.parent_item);
+            set_attr_if_missing(&mut attrs, "colnect_variant", colnect.variant);
+            set_attr_if_missing(
+                &mut attrs,
+                "colnect_overprint_variant",
+                colnect.overprint_variant,
+            );
+            set_attr_if_missing(&mut attrs, "colnect_list", colnect.list);
+            set_attr_if_missing(&mut attrs, "colnect_quantity", colnect.quantity);
+            set_attr_if_missing(&mut attrs, "colnect_condition", colnect.condition);
+            set_attr_if_missing(&mut attrs, "colnect_public_note", colnect.public_note);
+            set_attr_if_missing(&mut attrs, "colnect_private_note", colnect.private_note);
 
             if attrs
                 .get("colnect_catalog_codes")

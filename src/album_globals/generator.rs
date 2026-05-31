@@ -389,7 +389,10 @@ fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -
             }
         };
     }
+    push_field!("name", "colnect_name");
     push_field!("catalog_codes", "colnect_catalog_codes");
+    push_field!("country", "colnect_country");
+    push_field!("colnect_link", "colnect_page_url");
     push_field!("description", "colnect_description");
     push_field!("themes", "colnect_topics");
     push_field!("printing", "colnect_printing");
@@ -404,9 +407,25 @@ fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -
     push_field!("watermark", "colnect_watermark");
     push_field!("issued_on", "colnect_issued_on");
     push_field!("expiry_date", "colnect_expiry_date");
+    push_field!("width", "colnect_width_mm");
+    push_field!("height", "colnect_height_mm");
     push_field!("size", "colnect_width_mm"); // proxy: if size field exists
     push_field!("face_value", "colnect_face_value");
+    push_field!("currency", "colnect_currency");
     push_field!("score", "colnect_score");
+    push_field!("accuracy", "colnect_accuracy");
+    push_field!("ord_mi", "colnect_ord_mi");
+    push_field!("ord_sn", "colnect_ord_sn");
+    push_field!("ord_yt", "colnect_ord_yt");
+    push_field!("ord_sg", "colnect_ord_sg");
+    push_field!("parent_item", "colnect_parent_item");
+    push_field!("variant", "colnect_variant");
+    push_field!("overprint_variant", "colnect_overprint_variant");
+    push_field!("list", "colnect_list");
+    push_field!("quantity", "colnect_quantity");
+    push_field!("condition", "colnect_condition");
+    push_field!("public_note", "colnect_public_note");
+    push_field!("private_note", "colnect_private_note");
     parts.join("\\n")
 }
 
@@ -2460,9 +2479,24 @@ where
 
                 // Only collect Colnect data if not in minimal mode
                 if detail_layout != "minimal" && colnect_enabled {
+                    if enabled_fields.contains("name") {
+                        if let Some(v) = stamp.attrs.get("colnect_name") {
+                            colnect_parts.push(format!("Name: {}", v));
+                        }
+                    }
                     if enabled_fields.contains("catalog_codes") {
                         if let Some(v) = stamp.attrs.get("colnect_catalog_codes") {
                             colnect_parts.push(format!("Catalog: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("country") {
+                        if let Some(v) = stamp.attrs.get("colnect_country") {
+                            colnect_parts.push(format!("Country: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("colnect_link") {
+                        if let Some(v) = stamp.attrs.get("colnect_page_url") {
+                            colnect_parts.push(format!("Colnect link: {}", v));
                         }
                     }
                     if enabled_fields.contains("description") {
@@ -2544,6 +2578,16 @@ where
                             colnect_parts.push(format!("Size: {} x {} mm", w, h));
                         }
                     }
+                    if enabled_fields.contains("width") {
+                        if let Some(v) = stamp.attrs.get("colnect_width_mm") {
+                            colnect_parts.push(format!("Width: {} mm", v));
+                        }
+                    }
+                    if enabled_fields.contains("height") {
+                        if let Some(v) = stamp.attrs.get("colnect_height_mm") {
+                            colnect_parts.push(format!("Height: {} mm", v));
+                        }
+                    }
                     if enabled_fields.contains("face_value") {
                         if let Some(v) = stamp.attrs.get("colnect_face_value") {
                             if let Some(cur) = stamp.attrs.get("colnect_currency") {
@@ -2553,6 +2597,11 @@ where
                             }
                         }
                     }
+                    if enabled_fields.contains("currency") {
+                        if let Some(v) = stamp.attrs.get("colnect_currency") {
+                            colnect_parts.push(format!("Currency: {}", v));
+                        }
+                    }
                     if enabled_fields.contains("score") {
                         if let Some(v) = stamp.attrs.get("colnect_score") {
                             if let Some(acc) = stamp.attrs.get("colnect_accuracy") {
@@ -2560,6 +2609,71 @@ where
                             } else {
                                 colnect_parts.push(format!("Score: {}", v));
                             }
+                        }
+                    }
+                    if enabled_fields.contains("accuracy") {
+                        if let Some(v) = stamp.attrs.get("colnect_accuracy") {
+                            colnect_parts.push(format!("Accuracy: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("ord_mi") {
+                        if let Some(v) = stamp.attrs.get("colnect_ord_mi") {
+                            colnect_parts.push(format!("MI order: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("ord_sn") {
+                        if let Some(v) = stamp.attrs.get("colnect_ord_sn") {
+                            colnect_parts.push(format!("SN order: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("ord_yt") {
+                        if let Some(v) = stamp.attrs.get("colnect_ord_yt") {
+                            colnect_parts.push(format!("YT order: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("ord_sg") {
+                        if let Some(v) = stamp.attrs.get("colnect_ord_sg") {
+                            colnect_parts.push(format!("SG order: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("parent_item") {
+                        if let Some(v) = stamp.attrs.get("colnect_parent_item") {
+                            colnect_parts.push(format!("Parent item: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("variant") {
+                        if let Some(v) = stamp.attrs.get("colnect_variant") {
+                            colnect_parts.push(format!("Variant: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("overprint_variant") {
+                        if let Some(v) = stamp.attrs.get("colnect_overprint_variant") {
+                            colnect_parts.push(format!("Overprint variant: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("list") {
+                        if let Some(v) = stamp.attrs.get("colnect_list") {
+                            colnect_parts.push(format!("List: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("quantity") {
+                        if let Some(v) = stamp.attrs.get("colnect_quantity") {
+                            colnect_parts.push(format!("Quantity: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("condition") {
+                        if let Some(v) = stamp.attrs.get("colnect_condition") {
+                            colnect_parts.push(format!("Condition: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("public_note") {
+                        if let Some(v) = stamp.attrs.get("colnect_public_note") {
+                            colnect_parts.push(format!("Public note: {}", v));
+                        }
+                    }
+                    if enabled_fields.contains("private_note") {
+                        if let Some(v) = stamp.attrs.get("colnect_private_note") {
+                            colnect_parts.push(format!("Private note: {}", v));
                         }
                     }
                 }
