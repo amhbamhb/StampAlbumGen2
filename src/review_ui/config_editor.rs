@@ -242,7 +242,9 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
 
     if key_only == "include_perforation" {
         add_unique("Controls perforation text in the header area and in STAMP_HEADING.");
-        add_unique("false hides perforation details above the image and from the per-stamp heading.");
+        add_unique(
+            "false hides perforation details above the image and from the per-stamp heading.",
+        );
     }
 
     if key_only == "include_catalog_numbers" {

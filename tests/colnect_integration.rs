@@ -11,6 +11,8 @@ fn setup_colnect_db(rows: &[(&str, &str)]) -> Connection {
     conn.execute_batch(
         "CREATE TABLE colnect_stamps (
             colnect_id TEXT PRIMARY KEY,
+            country    TEXT,
+            colnect_link TEXT,
             sg_number  TEXT,
             name       TEXT,
             watermark  TEXT, format TEXT, emission TEXT, perforation TEXT,
@@ -18,7 +20,11 @@ fn setup_colnect_db(rows: &[(&str, &str)]) -> Connection {
             description TEXT, issued_on TEXT, expiry_date TEXT, print_run TEXT,
             face_value  TEXT, currency  TEXT, colors    TEXT, designers TEXT,
             printers    TEXT, score     TEXT, accuracy  TEXT,
-            width TEXT, height TEXT
+            width TEXT, height TEXT,
+            ord_mi TEXT, ord_sn TEXT, ord_yt TEXT, ord_sg TEXT,
+            parent_item TEXT, variant TEXT, overprint_variant TEXT,
+            list TEXT, quantity TEXT, condition TEXT,
+            public_note TEXT, private_note TEXT
         );
         CREATE TABLE colnect_catalog_codes (
             colnect_id TEXT,

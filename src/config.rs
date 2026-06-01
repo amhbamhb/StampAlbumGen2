@@ -2148,8 +2148,9 @@ score = false
         let override_val: toml::Value =
             toml::from_str(override_toml).expect("override parse should succeed");
         let merged = super::deep_merge_toml_values(base_val, override_val);
-        let cfg: Config = toml::from_str(&toml::to_string(&merged).expect("serialize merged config"))
-            .expect("merged config should parse");
+        let cfg: Config =
+            toml::from_str(&toml::to_string(&merged).expect("serialize merged config"))
+                .expect("merged config should parse");
 
         let fields = cfg.effective_colnect_detail_field_set();
         assert!(fields.contains("catalog_codes"));
@@ -2278,7 +2279,9 @@ include_used = false
         let previous_dir = std::env::current_dir().expect("current dir");
         std::env::set_current_dir(&root).expect("set current dir to temp root");
 
-        let cfg = super::with_album_config_override(&album_dir, || super::load_effective_config("config.toml"));
+        let cfg = super::with_album_config_override(&album_dir, || {
+            super::load_effective_config("config.toml")
+        });
 
         std::env::set_current_dir(previous_dir).expect("restore current dir");
         let _ = fs::remove_dir_all(&root);

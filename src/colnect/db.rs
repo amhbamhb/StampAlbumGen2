@@ -123,7 +123,7 @@ pub fn get_colnect_info(conn: &Connection, sg_number: &str) -> Result<Option<Col
     // like sg="4" matching "468d" (a completely different stamp number). Valid
     // variants: "944a", "944*", "944x"; invalid: "4" → "468d", "5" → "586".
     if result.is_none() {
-                let variant_sql =
+        let variant_sql =
                         "SELECT colnect_id, country, colnect_link, name, watermark, format, emission, perforation, printing, paper, gum, themes, description, issued_on, expiry_date, print_run, face_value, currency, colors, designers, printers, score, accuracy, width, height, ord_mi, ord_sn, ord_yt, ord_sg, parent_item, variant, overprint_variant, list, quantity, condition, public_note, private_note
              FROM colnect_stamps
              WHERE sg_number LIKE (?1 || '%')

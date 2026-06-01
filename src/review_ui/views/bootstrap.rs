@@ -1,7 +1,6 @@
 use super::{
     render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html,
-    BACKEND_NOT_RESPONDING_MESSAGE,
+    render_reconnect_banner_html, render_runtime_log_panel_html, BACKEND_NOT_RESPONDING_MESSAGE,
 };
 
 use super::bootstrap_assets::{
@@ -31,11 +30,8 @@ pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String 
         "toggleRuntimeLogVisibility",
         "copyRuntimeLog",
     );
-    let bootstrap_body_html = render_bootstrap_body_html(
-        inbox_hint,
-        &reconnect_banner_html,
-        &runtime_log_panel_html,
-    );
+    let bootstrap_body_html =
+        render_bootstrap_body_html(inbox_hint, &reconnect_banner_html, &runtime_log_panel_html);
     let bootstrap_script_html = render_bootstrap_script_html();
 
     format!(

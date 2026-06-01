@@ -98,7 +98,7 @@ pub(super) fn render_compare_action_rows_html() -> String {
 }
 
 pub(super) fn render_compare_panels_html() -> String {
-        r#"  <div id='comparePanels' class='row'>
+    r#"  <div id='comparePanels' class='row'>
         <div class='col'>
                         <div class='titleRow'>
                                 <h3>Left: StampWorld Base</h3>

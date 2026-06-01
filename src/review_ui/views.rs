@@ -1,8 +1,8 @@
-mod shared;
 mod bootstrap;
 mod bootstrap_assets;
 mod compare;
 mod compare_assets;
+mod shared;
 
 use super::{render_config_editor_assets, MatcherPayload};
 use shared::{

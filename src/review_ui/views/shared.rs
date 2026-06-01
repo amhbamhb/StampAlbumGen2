@@ -26,7 +26,9 @@ pub(super) fn render_reconnect_banner_html(
     meta_id: &str,
 ) -> String {
     let text_section = match (text_id, text_html) {
-        (Some(text_id), Some(text_html)) => format!("\n        <div id='{text_id}'>{text_html}</div>"),
+        (Some(text_id), Some(text_html)) => {
+            format!("\n        <div id='{text_id}'>{text_html}</div>")
+        }
         _ => String::new(),
     };
 
