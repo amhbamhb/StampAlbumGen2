@@ -1,7 +1,7 @@
 use super::{
     render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html,
-    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS, MatcherPayload,
+    render_reconnect_banner_html, render_runtime_log_panel_html, MatcherPayload,
+    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS,
 };
 
 use super::compare_assets::{
@@ -3873,4 +3873,3 @@ render();
         config_editor_assets = render_config_editor_assets()
     )
 }
-

@@ -25,6 +25,9 @@ const albumsRootPanelStorageKey = 'reviewui.bootstrap.albumsRootPanel';
 const stampworldPanelStorageKey = 'reviewui.bootstrap.stampworldPanel';
 const colnectCopyPanelStorageKey = 'reviewui.bootstrap.colnectCopyPanel';
 const selectedCountryStorageKey = 'reviewui.bootstrap.selectedCountry';
+const stampworldStartYearStorageKey = 'reviewui.stampworld.startYear';
+const stampworldEndYearStorageKey = 'reviewui.stampworld.endYear';
+const stampworldMinYear = 1840;
 const backendHealthPollMs = 15000;
 function initCollapsiblePanel(panelId, storageKey) {{
         try {{
@@ -540,10 +543,32 @@ function populateYearSelect(id, startYear, endYear, defaultYear) {{
 }}
 
 function initYearSelectors() {{
-    const minYear = 1840;
+    const minYear = stampworldMinYear;
     const maxYear = new Date().getFullYear();
-    populateYearSelect('swStartYear', minYear, maxYear, 1840);
-    populateYearSelect('swEndYear', minYear, maxYear, 2026);
+    const defaultStartYear = Math.max(minYear, maxYear - 2);
+    const defaultEndYear = maxYear;
+
+    let stickyStartYear = defaultStartYear;
+    let stickyEndYear = defaultEndYear;
+    try {{
+        const storedStart = parseInt(localStorage.getItem(stampworldStartYearStorageKey) || '', 10);
+        const storedEnd = parseInt(localStorage.getItem(stampworldEndYearStorageKey) || '', 10);
+        if (Number.isFinite(storedStart)) stickyStartYear = Math.min(Math.max(storedStart, minYear), maxYear);
+        if (Number.isFinite(storedEnd)) stickyEndYear = Math.min(Math.max(storedEnd, minYear), maxYear);
+    }} catch (_) {{}}
+
+    populateYearSelect('swStartYear', minYear, maxYear, stickyStartYear);
+    populateYearSelect('swEndYear', minYear, maxYear, stickyEndYear);
+}}
+
+function persistStampWorldYearRange() {{
+    const maxYear = new Date().getFullYear();
+    const startYear = parseInt(document.getElementById('swStartYear')?.value || '', 10);
+    const endYear = parseInt(document.getElementById('swEndYear')?.value || '', 10);
+    try {{
+        if (Number.isFinite(startYear)) localStorage.setItem(stampworldStartYearStorageKey, String(Math.min(Math.max(startYear, stampworldMinYear), maxYear)));
+        if (Number.isFinite(endYear)) localStorage.setItem(stampworldEndYearStorageKey, String(Math.min(Math.max(endYear, stampworldMinYear), maxYear)));
+    }} catch (_) {{}}
 }}
 
 function stampworldPresetFlags() {{
@@ -557,8 +582,10 @@ function stampworldPresetFlags() {{
 
 function suggestedStampworldCommand(country) {{
     const c = document.getElementById('swCountry').value || country || '';
-    const y1 = document.getElementById('swStartYear').value || '1840';
-    const y2 = document.getElementById('swEndYear').value || '2026';
+    const currentYear = new Date().getFullYear();
+    const defaultStartYear = Math.max(stampworldMinYear, currentYear - 2);
+    const y1 = document.getElementById('swStartYear').value || String(defaultStartYear);
+    const y2 = document.getElementById('swEndYear').value || String(currentYear);
     const presetFlags = stampworldPresetFlags();
     const extraFlags = (document.getElementById('swExtraFlags')?.value || '').trim();
     const suffix = [presetFlags, extraFlags].filter(Boolean).join(' ');
@@ -671,8 +698,12 @@ async function pollStampWorldStatus() {{
 
 async function runStampWorldPull() {{
     const country = (document.getElementById('swCountry')?.value || '').trim();
-    const startYear = parseInt(document.getElementById('swStartYear')?.value || '1840', 10);
-    const endYear = parseInt(document.getElementById('swEndYear')?.value || '2026', 10);
+    const currentYear = new Date().getFullYear();
+    const defaultStartYear = Math.max(stampworldMinYear, currentYear - 2);
+    const startYearRaw = parseInt(document.getElementById('swStartYear')?.value || String(defaultStartYear), 10);
+    const endYearRaw = parseInt(document.getElementById('swEndYear')?.value || String(currentYear), 10);
+    const startYear = Math.min(Math.max(Number.isFinite(startYearRaw) ? startYearRaw : defaultStartYear, stampworldMinYear), currentYear);
+    const endYear = Math.min(Math.max(Number.isFinite(endYearRaw) ? endYearRaw : currentYear, stampworldMinYear), currentYear);
     const preset = document.getElementById('swPreset')?.value || 'basic';
     const extraFlags = (document.getElementById('swExtraFlags')?.value || '').trim();
     const status = document.getElementById('status');
@@ -1307,10 +1338,12 @@ async function generateAlbumPdfNow() {{
 }}
 
 document.getElementById('swStartYear').addEventListener('change', () => {{
+    persistStampWorldYearRange();
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 }});
 document.getElementById('swEndYear').addEventListener('change', () => {{
+    persistStampWorldYearRange();
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 }});
