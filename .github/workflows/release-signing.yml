@@ -1,0 +1,117 @@
+name: Build, Sign and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build artifacts (Windows/Linux/macOS)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/setup-rust@v1
+      - name: Build release
+        run: |
+          cargo build --release
+      - name: Package artifact
+        run: |
+          case "${{ matrix.os }}" in
+            "windows-latest") mv target/release/stamp_album_gen2.exe stamp_album_gen2-windows.exe ;;
+            "ubuntu-latest") mv target/release/stamp_album_gen2 stamp_album_gen2-linux ;;
+            "macos-latest") mv target/release/stamp_album_gen2 stamp_album_gen2-macos ;;
+          esac
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stamp_artifact-${{ matrix.os }}
+          path: |
+            stamp_album_gen2-*
+
+  windows-sign:
+    name: Sign Windows EXE (Authenticode)
+    runs-on: windows-latest
+    needs: build
+    if: ${{ secrets.SIGNING_PFX != '' }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: stamp_artifact-windows-latest
+      - name: Decode signing PFX
+        run: echo "${{ secrets.SIGNING_PFX }}" | base64 -d > cert.pfx
+      - name: Sign EXE with SignTool
+        run: signtool sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p "${{ secrets.SIGNING_PFX_PASSWORD }}" stamp_album_gen2-windows.exe
+      - name: Upload signed windows exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-windows-exe
+          path: stamp_album_gen2-windows.exe
+
+  sign-and-release:
+    name: Create checksums, signatures and GitHub release
+    needs: [build, windows-sign]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: stamp_artifact-ubuntu-latest
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: stamp_artifact-macos-latest
+      - name: Download signed windows artifact (if present)
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-windows-exe
+        continue-on-error: true
+      - name: Normalize filenames
+        run: |
+          if [ -f stamp_album_gen2-windows.exe ]; then mv stamp_album_gen2-windows.exe stamp_album_gen2-windows.exe; fi
+          if [ -f stamp_album_gen2-linux ]; then mv stamp_album_gen2-linux stamp_album_gen2-linux; fi
+          if [ -f stamp_album_gen2-macos ]; then mv stamp_album_gen2-macos stamp_album_gen2-macos; fi
+      - name: Compute SHA256 for each artifact
+        run: |
+          for f in stamp_album_gen2-*; do sha256sum "$f" > "$f.sha256"; done
+      - name: Import GPG signing key
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        env:
+          GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+        run: |
+          echo "$GPG_KEY" | base64 -d > private.key
+          gpg --batch --import private.key
+      - name: Create GPG detached signatures
+        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
+        run: |
+          for f in stamp_album_gen2-*; do gpg --batch --yes --armor --detach-sign "$f" || true; done
+      - name: Cosign sign blobs (optional)
+        if: ${{ secrets.COSIGN_KEY != '' }}
+        env:
+          COSIGN_KEY_B64: ${{ secrets.COSIGN_KEY }}
+        run: |
+          echo "$COSIGN_KEY_B64" | base64 -d > cosign.key
+          chmod 600 cosign.key
+          curl -sSfL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o cosign
+          chmod +x cosign
+          for f in stamp_album_gen2-*; do ./cosign sign-blob --key cosign.key "$f" || true; done
+      - name: Create GitHub Release and upload artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            stamp_album_gen2-windows.exe
+            stamp_album_gen2-windows.exe.sha256
+            stamp_album_gen2-windows.exe.asc
+            stamp_album_gen2-linux
+            stamp_album_gen2-linux.sha256
+            stamp_album_gen2-linux.asc
+            stamp_album_gen2-macos
+            stamp_album_gen2-macos.sha256
+            stamp_album_gen2-macos.asc
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
