@@ -1,0 +1,70 @@
+#####################################################################################
+#
+# An example AlbumEasy file for producing album pages in a similar style to the
+# Steiner album pages for those who wish to create pages to supplement their
+# Steiner albums.
+#
+# This example is modelled on the first page of the "steiner_united_states2015" album
+# this is not an exact copy, but paying more attention to fonts, font sizes and
+# spacing could produce a closer copy
+#
+# NOTE: This album requires AlbumEasy V3.4.0 or newer.
+#
+#####################################################################################
+
+ALBUM_PAGES_SIZE     (215.9 279.4)            #Set the page to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (22.0 10.0 10.0 10.0)
+ALBUM_PAGES_BORDER   (0.7 0.15 0.0 0.55)
+ALBUM_PAGES_SPACING  (6.0 4.0)
+
+
+ROW_ALIGN_BOTTOM
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 12 "\nUNITED STATES")
+TEXT_CHAR_SPACING(0.15)
+ROW_START_FS (HN 6 0.2 4.0)
+STAMP_ADD (28.0 31.0 "1 C"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Bobcat\n2015")
+STAMP_ADD_BLANK (2.0 30.0)
+STAMP_ADD (28.0 31.0 "(22 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Emperor Penguins\n2015" 17.0)
+STAMP_ADD (28.0 31.0 "COIL STAMP"  "(22 C)"            ""   ""  "" "")
+STAMP_ADD_BLANK (2.0 36.0)
+STAMP_ADD (28.0 31.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Purple Heart\n2015")
+TEXT_CHAR_SPACING(0)
+
+TEXT_CHAR_SPACING(0.15)
+ROW_START_FS (HN 6 0.2 4.0)
+STAMP_ADD (45.0 36.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "War of 1812 Bicentennial\n2015")
+STAMP_ADD_BLANK (2.0 30.0)
+STAMP_ADD (36.0 29.0 "$ 1"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Patriotic Waves\n2015" 24.0)
+STAMP_ADD (45.0 29.0 "$ 2"    " "         ""   ""  "" "")
+TEXT_CHAR_SPACING(0)
+
+TEXT_CHAR_SPACING(0.15)
+ROW_START_FS (HN 6 0.2 4.0)
+STAMP_ADD (29.0 36.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Love\n2015" 16.0)
+STAMP_ADD (29.0 36.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_ADD_BLANK (2.0 36.0)
+STAMP_ADD (29.0 36.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Flowers\n2015" 32.0)
+STAMP_ADD (29.0 36.0 "70 C"    " "         ""   ""  "" "")
+STAMP_ADD (29.0 36.0 "ENGRAVED"    "(71 C)"         ""   ""  "" "")
+TEXT_CHAR_SPACING(0)
+
+TEXT_CHAR_SPACING(0.15)
+ROW_START_FS (HN 6 0.2 4.0)
+STAMP_ADD (46.0 31.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Chinese New Year\n2015")
+STAMP_ADD_BLANK (2.0 36.0)
+STAMP_ADD (31.0 46.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Robert R. Taylor\n2015")
+STAMP_ADD_BLANK (2.0 36.0)
+STAMP_ADD (46.0 31.0 "(49 C)"    " "         ""   ""  "" "")
+STAMP_HEADING(HN 9 "Maya Angelou\n2015")
+TEXT_CHAR_SPACING(0)

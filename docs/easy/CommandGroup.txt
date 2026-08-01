@@ -1,0 +1,63 @@
+#####################################################################################
+#
+# A sample AlbumEasy file showing how to use a page start command group
+# defined by means of the PAGE_START_GROUP_BEGIN command
+#
+# The commands in the group are output at the start of each new page.
+#
+# This allows one to create a page heading, in this case an image
+# of a flag and country name, that will automatically be added to the start of
+# each page rather than having to copy and paste
+#
+# for a more advanced example, using placeholders, please see:
+# CommandGroup_advanced.txt
+#
+#####################################################################################
+
+
+# ------------------------------------------------------------------------------
+# Setup page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE     (215.9 279.4)           # Set the page to US Letter (8.5 x 11)
+ALBUM_PAGES_MARGINS  (15.0 15.0 15.0 15.0)   # Left, right, top and bottom page margins
+ALBUM_PAGES_BORDER   (0.8 0.1 0.0 1.0)       #double line border around the page
+
+ALBUM_PAGES_SPACING  (3.0 3.0)
+
+ALBUM_DEFINE_FONT    (CPG "Copperplate-Gothic")
+
+# ------------------------------------------------------------------------------
+# Start of the page start command group
+# ------------------------------------------------------------------------------
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT(HN 1 "" 6.0)
+ROW_START_JS(HN 6 0.1)
+STAMP_ADD_IMG(42 21 "stamp_images/flag_canada.png" ""  ""  "" NO_FRAME)
+PAGE_TEXT(HN 1 "" -22.0)
+PAGE_TEXT_CENTRE(CPG 42 "Canada")
+PAGE_TEXT(HN 1 "" 12.0)
+PAGE_START_GROUP_END
+
+
+# ------------------------------------------------------------------------------
+# Album Page 1
+# ------------------------------------------------------------------------------
+PAGE_START
+PAGE_TEXT_CENTRE (HN 14 "Page One of the album")
+
+# ------------------------------------------------------------------------------
+# Album Page 2
+# ------------------------------------------------------------------------------
+PAGE_START
+
+PAGE_TEXT_CENTRE (HN 14 "Page Two of the album")
+
+
+
+
+
+
+
+
+

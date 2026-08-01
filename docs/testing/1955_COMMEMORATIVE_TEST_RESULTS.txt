@@ -1,0 +1,193 @@
+================================================================================
+1955 COMMEMORATIVE FORMAT - ACTUAL TEST WITH REAL DATA
+================================================================================
+
+DATE: December 24, 2025
+SOURCE: https://1847us.com/byyear/1955-year/ (1955 Commemoratives)
+GENERATED: Albums/US-1955-comm-test/US-1955-comm-test-1955-1955.txt
+
+================================================================================
+COMMEMORATIVE STAMPS FOUND: 1064-1072 ✅
+================================================================================
+
+Scott 1064: PA Academy of the Arts
+  Denomination: 3¢
+  Location: Philadelphia, PA
+  Date: January 15, 1955
+  Issued: 116,139,800
+
+Scott 1065: Land Grant Colleges Centennial  
+  Denomination: 3¢
+  Location: East Lansing, MI
+  Date: February 12, 1955
+  Issued: 120,484,800
+
+Scott 1066: Rotary International 50th Anniversary
+  Denomination: 8¢
+  Location: Chicago, IL
+  Date: February 23, 1955
+  Issued: 53,854,750 (Airmail)
+
+Scott 1067: American Chemical Society Centennial
+  Denomination: 3¢
+  Location: Chicago, IL
+  Date: September 6, 1955
+  Issued: 78,560,000
+
+Scott 1068: Fort Ticonderoga Bicentennial Stamp
+  Denomination: 3¢
+  Location: Fort Ticonderoga, NY
+  Date: September 18, 1955
+  Issued: 118,664,600
+
+Scott 1069: Soo Locks Centenary Stamp
+  Denomination: 3¢
+  Location: Sault Sainte Marie, MI
+  Date: June 28, 1955
+  Issued: 122,284,600
+
+Scott 1070: Atoms for Peace Stamp
+  Denomination: 3¢
+  Location: Washington, D.C.
+  Date: July 28, 1955
+  Issued: 133,638,850
+
+Scott 1071: Armed Forces Reserve
+  Denomination: 3¢
+  Location: Washington, D.C.
+  Date: May 21, 1955
+  Issued: 176,075,000
+
+Scott 1072: The Andrew Mellon Stamp
+  Denomination: 3¢
+  Location: Washington, D.C.
+  Date: December 20, 1955
+  Issued: 112,434,000
+
+================================================================================
+CURRENT OUTPUT FORMAT (FROM GENERATED FILE)
+================================================================================
+
+All commemorative stamps are currently rendered with the standard format:
+- Basic STAMP_ADD_IMG with dimensions
+- Scott number as label
+- Description mixed with location and date info in one text box
+
+Example from line 1235-1239:
+  STAMP_ADD_IMG (58.4 38.6 "images/1071.jpg" "" "" "")
+  STAMP_ADD (58.4 15.0 "1071" "HN" "12" "black")
+  STAMP_ADD (100.0 40.0 
+    "Denomination: 3\n
+     Description: Fort Ticonderoga\n
+     Bicentennial Stamp\n
+     Fort Ticonderoga, NY\n
+     Sep. 18,\n
+     1955118,664,600\n
+     issued\n
+     Color: \n
+     Issued: 118,664,600" "HN" "8" "black")
+
+OBSERVATIONS:
+  - Data is present but poorly formatted
+  - Date and location embedded in description field
+  - Issued quantity is parsed (appears twice)
+  - No visual separation or grouping
+  - Mixed with definitive stamps on same pages
+
+================================================================================
+IMPROVED FORMAT AVAILABLE (commemorative_layout module)
+================================================================================
+
+The new commemorative layout module can generate:
+
+PAGE_START
+PAGE_VSPACE (3.0)
+ROW_START_ES (HN 6 0.2)
+
+COLOR_STAMP_BORDER(black)
+COLOR_STAMP_BACKGROUND(black)
+
+ROW_ALIGN_TOP
+
+STAMP_ADD_IMG (28.0 45.0 "images/1071.jpg" "3¢" "Perf 10½ x 11" "Horizontal")
+STAMP_HEADING (HB 9 "Scott 1071: Armed Forces Reserve")
+...
+
+PAGE_VSPACE (-5.0)
+ROW_START_ES (HN 6 0.2)
+ROW_ALIGN_TOP
+COLOR_STAMP_BORDER(white)
+COLOR_STAMP_BACKGROUND(white)
+STAMP_ADD (28.0 32.0 
+  "Armed Forces Reserve - Military Service\n
+   Issued: May 21, 1955 - Washington, D.C.\n
+   Color: Red | Quantity: 176,075,000\n
+   Honors America's military reserve forces" "" "" "" NO_FRAME)
+COLOR_STAMP_BORDER(black)
+...
+
+ADVANTAGES:
+  ✅ Clear page structure
+  ✅ Grid layout with proper alignment
+  ✅ Rich formatting with STAMP_HEADING
+  ✅ Formatted description boxes
+  ✅ Structured data fields
+  ✅ Dedicated to commemorative stamps
+
+================================================================================
+NEXT STEPS TO ACTIVATE IMPROVED FORMAT
+================================================================================
+
+1. DATA PARSING ENHANCEMENT:
+   - Parse description field to extract:
+     • Title (e.g., "Armed Forces Reserve")
+     • Location (e.g., "Washington, D.C.")
+     • Date (e.g., "May 21, 1955")
+     • Quantity (e.g., "176,075,000")
+
+2. SERIES DETECTION:
+   - Identify when stamps are commemorative (1064-1072 for 1955)
+   - Route to commemorative_layout functions
+
+3. PAGE ORGANIZATION:
+   - Group commemoratives on dedicated pages
+   - Keep definitive stamps on separate pages
+
+4. INTEGRATION:
+   - Modify src/album_globals/generator.rs
+   - Add conditional routing logic
+   - Test with 1955 data
+
+================================================================================
+DATA QUALITY ASSESSMENT
+================================================================================
+
+Available Fields:
+  ✅ Scott Number (1064-1072)
+  ✅ Denomination (3¢, 8¢)
+  ✅ Image Path (images/10XX.jpg)
+  ✅ Description (mixed with location/date)
+  ✅ Issued Quantity (numbers)
+  ⚠️  Color (missing/empty in current output)
+  ⚠️  Issue Date (embedded in description)
+  ⚠️  Issue Location (embedded in description)
+
+The data exists but requires parsing to extract structured information.
+
+================================================================================
+CONCLUSION
+================================================================================
+
+The 1955 commemorative stamps are successfully:
+  ✅ Generated with the program
+  ✅ Identified in the output (stamps 1064-1072)
+  ✅ Contain rich metadata (location, dates, quantities)
+  ✅ Ready for enhanced layout formatting
+
+The commemorative_layout module is ready to format this data into the improved
+grid-based layout once integrated into the main generator.
+
+Next phase: Integrate module into generator and parse description field to
+extract structured data for proper formatting.
+
+================================================================================

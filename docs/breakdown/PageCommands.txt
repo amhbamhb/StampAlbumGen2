@@ -1,0 +1,316 @@
+ PAGE COMMANDS 
+The Page Commands add pages to the album and items to the page. These include text, horizontal lines and stamps. For simplicity however stamps have been assigned to their own dedicated section of this help file.
+None of the Page Commands are mandatory, however every page, including the first page, must begin with a PAGE_START, PAGE_START_INFO, or PAGE_START_VAR command. 
+PAGE_START 
+PAGE_START_VAR (horizontal vertical) 
+PAGE_START_INFO ([NO_BORDER] [INC_PG_COUNT]) 
+Commands that start a new page.
+Note: Every album file must have at least one PAGE_START, PAGE_START_INFO or PAGE_START_VAR command.
+The difference between the PAGE_START command and the PAGE_START_VAR command is that the PAGE_START_VAR overrides the page spacing set by ALBUM_PAGES_SPACING for the specific page.
+See here for an example. 
+Both of these commands accept optional parameters. See the PAGE_START_GROUP_BEGIN command for details. 
+
+PAGE_START_INFO ( [NO_BORDER] [INC_PG_COUNT] )
+ 
+
+Starts an information page.
+Information pages may be used for title pages or to create pages containing additional information that is to be included in the PDF file but is not generally intended to be part of the printed album.
+
+Information pages may be placed anywhere in an album but do not include a page title, headers or footers, nor, by default, do they increment the page number. Information pages also do not process any commands that are part of a page start group.
+
+The PAGE_START_INFO command accepts two optional parameters which may be used singly or together: 
+NO_BORDER
+Suppress the printing of the page border for this page
+INC_PG_COUNT
+Include this page in the page count. This is useful for example to maintain the odd/even page flow when adding a title page.
+
+e.g.
+PAGE_START_INFO
+PAGE_START_INFO (NO_BORDER)
+PAGE_START_INFO (NO_BORDER INC_PG_COUNT) PAGE_START_INFO (INC_PG_COUNT) 
+PAGE_COLUMN_START (C1Percent C1Leftpad C1Rightpad C2Leftpad C2Rightpad) 
+PAGE_COLUMN_START ([padding])** for zero or one parameter, see below 
+PAGE_COLUMN_NEXT 
+PAGE_COLUMN_STOP 
+Split the page into two vertical columns, with each column behaving like an independent page. Column mode persists until the end of the page or when terminated by a PAGE_COLUMN_STOP command. 
+PAGE_COLUMN_START:
+Start column mode. All output will be placed on the left half of the page
+PAGE_COLUMN_NEXT:
+Begin the second column. All output will be placed on the right half of page
+PAGE_COLUMN_STOP:
+Exit column mode
+
+PAGE_COLUMN_START requires five parameters: 
+C1Percent
+Percentage of the page width allocated to the first column, the remainder will be allocated to the second column
+C1Leftpad
+Padding to the left of the first column content
+C1Rightpad
+Padding to the right of the first column content
+C2Leftpad
+Padding to the left of the second column content
+C2Rightpad
+Padding to the right of the second column content
+
+e.g.
+PAGE_COLUMN_START (35 5.0 1.0 0.0 5.0)
+The left column is given 35% of the page width, the right column 65%.
+Content of the left column will be spaced 5mm away from the left edge of the column and 1mm from the right edge.
+Content of the right column will be spaced 0mm away from the left edge of the column 5mm from the right edge.
+Note: Columns start and end at the left and right page margins, irrespective of the horizontal spacing value specified by ALBUM_PAGES_SPACING. 
+PAGE_COLUMN_START ( [padding] ) ** 
+For backwards compatability the PAGE_COLUMN_START command also accepts zero or one parameters. In which case the page will be split into two equal sized columns spaced from the left and right margins by the horizontal spacing value specified in ALBUM_PAGES_SPACING. 
+The optional padding parameter adds space between the left and right columns. The padding value is the amount of space inserted to the right of the first column and to the left of the second column
+e.g.
+PAGE_COLUMN_START (2.0) will insert 4.0mm of space between the two columns 
+For examples of how the column commands may be used please refer to the NewExamples.txt and Columns.txt sample album files which can be found in the AlbumEasy examples directory.
+
+PAGE_TEXT (Font Fontsize Text [vspace]) 
+PAGE_TEXT_CENTRE (Font Fontsize Text [vspace]) 
+PAGE_TEXT_RIGHT (Font Fontsize Text [vspace]) 
+Place a paragraph of text on the page. Text is formatted to fit between the page margins, spaced from the margins by the horizontal value specified in ALBUM_PAGES_SPACING. 
+PAGE_TEXT:
+Place text left aligned.
+PAGE_TEXT_RIGHT:
+Place text right aligned.
+PAGE_TEXT_CENTRE:
+Place text centred between the margins.
+
+e.g.
+PAGE_TEXT (HN 10 "Some text") Place text left aligned using a Helvetica Normal 10 point font
+PAGE_TEXT_CENTRE (HB 10 "A heading") Place text centred using a Helvetica Bold 10 point font
+
+The PAGE_TEXT commands also accept an optional vspace parameter which is used to set the amount of blank space after the text.
+e.g.
+PAGE_TEXT (HN 12 "A line of text" 0.5) Place the text using a Helvetica Normal 12 point font with 0.5mm of blank space after the text.
+This is useful for example to output a paragraph of text where each line does not have the same font. See here for an example.
+
+A negative vspace parameter can be used to place the item that follows the text before the text on the page.
+e.g.
+PAGE_TEXT (HN 10 "Descriptive text" -3.5) will start drawing the next item 3.5mm above the bottom of the line of text.
+
+PAGE_TEXT_PARAGRAPH_START (Font Fontsize Alignment [padding] [vspace] [right-padding]) 
+PAGE_TEXT_PARAGRAPH_END 
+Introduced with AlbumEasy V4.0 the PAGE_TEXT_PARAGRAPH_START along with the PAGE_TEXT_PARAGRAPH_END commands provide an alternative to the PAGE_TEXT commands for placing text on the page.
+This command pair, which formats the paragraph automatically, is especially convenient when placing larger paragraphs of text. Also, unlike the PAGE_TEXT commands, these commands provide support for fully justifed text in addition to left, centred and right aligned text.
+The Alignment parameter can be one of: 
+LEFT
+Left aligned text
+RIGHT
+Right aligned text
+CENTRE
+Centred text
+CENTER
+"              "
+JUSTIFIED
+Justified text
+
+To include a paragraph of text, add the text after a PAGE_TEXT_PARAGRAPH_START command, ending the paragraph with a PAGE_TEXT_PARAGRAPH_END command.
+The lines of text will be concatenated and output as a single paragraph aligned and formatted to fit the page. Line endings are ignored, newlines when required can be included by means of the \n newline indicator. 
+e.g.
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED)
+Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore
+ et dolore magna aliqua. \nUt enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit.
+PAGE_TEXT_PARAGRAPH_END  
+Note. Because line endings are ignored a space has been placed before the first word of the second and third lines to prevent the first word of theses line from being joined to the last word of the previous line. 
+The PAGE_TEXT_PARAGRAPH_START command also accepts the following optional parameters: 
+padding
+pad the text the specified distance from the left and right margins*
+vspace
+set the amount of blank space after the text
+right-padding
+if provided, it will set the right margin padding independently from the left*
+
+*Note: Padding is in addition to the left and right horizontal space set by the ALBUM_PAGES_SPACING command.
+Padding values can be negative, in which case the left side of the text will be shifted left, the right side to the right. 
+e.g.
+PAGE_TEXT_PARAGRAPH_START(TN 10 JUSTIFIED 10.0 5.0 20.0) Begin a paragraph of text with 10mm of padding to the left and 20mm to the right of the text. The next item on the page will be placed 5mm below the text paragraph. 
+For additional examples please refer to the NewExamples.txt sample album files which can be found in the AlbumEasy examples directory.
+
+PAGE_ADD_BOX (Font Fontsize border left top width height inside-text left-text centre-text right-text [angle]) 
+Command for adding a box anywhere on a page.
+The box may optionally be rotated at an angle to accommodate envelopes or long strips of stamps. 
+Font & Fontsize
+the font that will be used for text inside or under the box
+border
+the thickness of the line used to draw the box frame
+left
+left coordinate of the box
+top
+top coordinate of the box
+width
+width of the box
+height
+height of the box
+inside-text:
+text placed inside the box
+left-text:
+text placed under the box to the left
+centre-text:
+text placed under the box centred
+right-text:
+text placed under the box to the right
+
+Note: All four text parameters are required, even if left blank. 
+e.g.
+PAGE_ADD_BOX (HN 10 0.1 50.0 20.0 100.0 200.0 "" "" "" "")
+
+Optional parameter: 
+angle
+the angle of rotation; a positive angles rotate the box clockwise tilting it forward, a negative angle rotates it anticlockwise.
+
+e.g.
+PAGE_ADD_BOX ( HN 10 0.1 40.0 20.0 60.0 200.0 "" "" "Sample Box" "" 30.0)
+Add a box to the page with the top corner 40mm from the left edge of the page and 20mm down from the top of the page. The box dimensions are 60mm by 200mm and it is rotated 30 degrees clockwise with the text Sample Box underneath. 
+Note: 
+The colours of the the box border, text and background can be changed by means of the following commands:
+COLOUR_STAMP_BORDER
+COLOUR_STAMP_TEXT
+COLOUR_STAMP_BACKGROUND (COLOUR_STAMP_BACKGROUND is not supported for rotated boxes)
+
+The box border style can be changed by means of the STAMP_BORDER_STYLE commands.
+Only the SOLID, DOTTED, DOT_DASH and DASHED styles are supported. 
+PAGE_QUADRILLE (line grid-x grid-y   [left-padding | CENTRE | CENTER]   [border] [grid-frame-x grid-frame-y] [major-line major-pitch]) 
+Command for placing a quadrille or grid on the page. The grid can be configured to cover the whole of the page or only part of the page.
+The colour of the grid can be set by means of the COLOUR_PAGE_QUADRILLE command.
+
+Note: The grid is automatically resized to ensure an integral number of cells.
+For example, if the grid width is 97mm and cell widths are 10mm the grid width will be reduce to 90mm so as not to leave a partial 7mm wide cell.
+Parameters: 
+line
+Thickness of the grid lines
+grid-x
+horizontal cell size
+grid-y
+vertical cell size
+
+e.g.
+PAGE_QUADRILLE(0.1 2.54 2.54) Add a grid of 0.1mm thick lines with 1/0th of an inch spacing.
+
+Optional parameters: 
+left-padding | CENTRE | CENTER
+Value to pad the grid from the left side of the page, alternatively, the word CENTRE or CENTER to centre the grid across the page.
+border
+Thickness of the outer border line
+grid-frame-x grid-frame-y
+width and height of the grid
+major-line major-pitch
+Thickness of any major lines and the major line pitch
+
+e.g.
+PAGE_QUADRILLE(0.1 10.0 10.0 CENTRE 0.75 150.0 200.0 1.0 5) Add a 150mm by 200 mm grid to the page. 0.1mm thick grid lines are spaced 10mm apart both vertically and horizontally, with the grid centred across the page. The the outer border lines are 0.75mm thick, major gridlines 1.0mm thick are placed after every 5 cells.
+
+PAGE_RULE_H (line spacing [margin] [right-margin]) 
+Draw a horizontal rule line that extends from the left to right margins.
+Spacing specifies the amount of blank space placed before the line. This is in addition to the vertical space set by the ALBUM_PAGES_SPACING command
+e.g. if the vertical spacing is set to 6mm then:
+PAGE_RULE_H (0.5 10.0) will draw a 0.5mm horizontal line 16mm below the current item on the page.
+
+Note, spacing can also take a negative value.
+Therefore, if the ALBUM_PAGES_SPACING vertical spacing is set to 6mm, then:
+PAGE_RULE_H (0.5 -6.0) will draw a 0.5mm horizontal line immediately below the current item on the page.
+
+The PAGE_RULE_H command also accepts one or two optional margin parameters that offset the start and end of the line away from the margins.
+if only one margin parameter is given, it will be used for both the left and right spacing, if a second parameter is given it will be used for the right e.g.
+PAGE_RULE_H (1.0 0.0 5.0) Draw a 1mm horizontal line indented 5mm in from the left margin, ending 5mm in from the right margin.
+PAGE_RULE_H (1.0 0.0 5.0 12.0) Draw a 1mm horizontal line indented 5mm in from the left margin, ending 12.0mm in from the right margin.
+
+PAGE_VSPACE (spacing) 
+Insert vertical space before the next element on the page.
+Spacing can be negative in which case the next element will be moved up by the specified distance.
+e.g.
+PAGE_VSPACE (12.5) Leave a gap of 12.5mm before the next item.
+PAGE_VSPACE (-15.0) Move the next item up by 15mm.
+
+PAGE_SET_VERTICAL_POS (position) 
+Set the vertical drawing position on the page from which point all further output will begin.
+The position is specified in mm from the top of the page.
+e.g.
+PAGE_SET_VERTICAL_POS (50.0) Further output will begin 50.0mm down from the top of the page.
+
+Note: This command has no effect in column mode. 
+PAGE_START_GROUP_BEGIN 
+PAGE_START_GROUP_END 
+These commands are used to define a group of commands that will be output at the start of each new page.
+The command group must be defined before any PAGE_START commands, and only one command group can be defined per album.
+
+e.g. a trivial example that will output a line of text at the start of each page:
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT (HN 12 "This text will be output at the start of each new page")
+PAGE_START_GROUP_END
+
+Needless to say, far more complex command groups can be created, such as a heading that includes an image of the flag along with the country name that will automatically be added to the start of each page rather than having to copy and paste the commands. 
+
+Command groups may also include placeholders designated by two $ symbols followed by a digit between 1 and 9. e.g $$1 $$2 etc.
+Parameters, added to the PAGE_START or PAGE_START_VAR command, are substituted for these placeholders in positional order. i.e the first parameter will be substituted for $$1 the second for $$2 etc.
+e.g.
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT_CENTRE (HN 12 "" 5.0)
+PAGE_TEXT_CENTRE (HN 12 "Country: $$1")
+PAGE_TEXT_CENTRE (HN 12 "Year: $$2")
+PAGE_START_GROUP_END
+PAGE_START (Bechunaland 1926) - generate a new page with two lines of text: "Country: Bechunaland" and "Year: 1926"
+PAGE_START (Basutoland 1932) - generate a new page with two lines of text: "Country: Basutoland" and "Year: 1932" 
+For more comprehensive examples please refer to the CommandGroup.txt and CommandGroup_advanced.txt sample album files which are to be found in the AlbumEasy examples directory.
+
+PAGE_BACKGROUND_IMG (image [scale] [hoffset voffset]) 
+Add a background image to the page. If the image is specified without any optional parameters, then the image will be centred within the page margins. If the image is larger than the margins it will be reduced to fit. Currently, AlbumEasy only supports PNG and JPEG format image files.
+
+Parameters accepted by this command: 
+image:
+Name of the image file including the path.
+scale:
+Optional parameter that will scale the image.
+e.g 0.5 will halve the size of the image, 2.0 will double it.
+hoffset and voffset:
+Optional horizontal and vertical parameters that offset the image from its central position. If given, then both parameters are required.
+A negative horizontal value will displace the image to the left, whereas a positive value will move it to the right.
+Similarly, a negative vertical value will move the image up, and a positive value will move it down.
+
+e.g.
+place the image background.png centred on the page, actual size, but no larger than the page margins.
+PAGE_BACKGROUND_IMG ("background.png")
+
+Place the image centred on the page at half the actual size.
+PAGE_BACKGROUND_IMG ("background.png" 0.5 )
+
+Place the image centred on the page at the actual size, but shifted left by 25mm.
+PAGE_BACKGROUND_IMG ("background.png" 1.0 -25.0 0.0) 
+
+The image file must be specified relative to the location of the album text file.
+So for example if the image file is called background.png and located in the same directory as the album file, it should be specified as "background.png" however if it is located in for example a sub-folder called images, then the sub-folder name must be included "images/background.png"
+
+TEXT_CHAR_SPACING (spacing) 
+This command is used to adjust the tracking, or inter-character spacing, by a fixed amount for succeeding text. Tracking is different from kerning which adjusts the spacing between individual pairs of letters based on the letter shapes whereas tracking inserts a fixed amount of space between the letters.
+A positive spacing value will increase the amount of space between characters, a negative value will reduce it.
+e.g.
+TEXT_CHAR_SPACING (0.1) increases the inter-character spacing by 0.1mm
+TEXT_CHAR_SPACING (-0.5) decreases the spacing by 0.5mm
+TEXT_CHAR_SPACING (0.0) reset to the default spacing 
+Note 1:
+The TEXT_CHAR_SPACING setting applies to all text except for text inside or under stamp boxes.
+Note 2:
+Once set, the spacing value remains in effect until the next TEXT_CHAR_SPACING command for most text commands. See Note 3 below for the exceptions.
+Note 3:
+The TEXT_CHAR_SPACING in effect when an ALBUM_PAGES_TITLE, ALBUM_PAGES_FOOTER, ALBUM_PAGES_NUMBER or ALBUM_PAGES_DATE command is issued will be applied to all pages in the album, subsequent TEXT_CHAR_SPACING commands will be ignored for these specific items.
+
+TEXT_LINE_LEADING (leading) 
+Adjust the amount of space between lines of text in a paragraph or other multiline text item. This is especially useful for increasing the spacing when a line of text contains diacritical marks that may collide with descenders in the line of text above.
+As illustrated in this example.
+
+A positive leading value increases the amount of space between lines of text, a negative leading will reduce it.
+e.g.
+TEXT_LINE_LEADING (1.0) increases the inter-line spacing by 1.0mm
+TEXT_LINE_LEADING (-1.5) decrease the inter-line spacing by 1.5mm
+TEXT_LINE_LEADING (0.0) reset to the default spacing 
+Note 1:
+The TEXT_LINE_LEADING command applies only to multiline text items e.g
+PAGE_TEXT (HN 10 "Line 1 \n Line2")
+It has no effect between paragraphs such as between these:
+PAGE_TEXT (HN 10 "Line 1t")
+PAGE_TEXT (HN 10 "Line2") 
+Note 2:
+Once set, the leading value will remain in effect until the next TEXT_LINE_LEADING command for most text commands. See Note 3 below for the exceptions.
+Note 3:
+The TEXT_LINE_LEADING in effect when an ALBUM_PAGES_TITLE, ALBUM_PAGES_FOOTER, ALBUM_PAGES_NUMBER, ALBUM_PAGES_DATE or ALBUM_PAGES_MARGIN_TXT command is issued will be applied to all pages in the album, subsequent TEXT_LINE_LEADING commands will be ignored for these specific items.

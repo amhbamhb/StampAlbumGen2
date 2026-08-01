@@ -1,0 +1,19 @@
+#####################################################################################
+#
+# A sample AlbumEasy file showing how to load and use a font called "Penguin Attack".
+#
+#####################################################################################
+
+ALBUM_PAGES_SIZE     (210.0 297.0)                                #sized A4
+ALBUM_PAGES_MARGINS  (15.0 15.0 15.0 15.0 )
+ALBUM_PAGES_BORDER   (0.5 0.1 0.0 1.0)
+ALBUM_PAGES_SPACING  (5.0 5.0)
+ALBUM_PAGES_TITLE    (TB 16  "Font Example")
+
+ALBUM_DEFINE_FONT(PENGUIN "Penguin Attack" )     #load the font, giving it the identifier PENGUIN
+
+PAGE_START
+
+PAGE_TEXT (PENGUIN 16 "Penguin Attack is a fancy font. But not to everyone's taste." )
+
+PAGE_TEXT (HN 14 "The far more sedate Helvetica will probably be more appealing to philatelists!")

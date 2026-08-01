@@ -1,0 +1,91 @@
+################################################################################
+# A simple sample AlbumEasy file that could be used as a template for new albums.
+#
+# ------------------------------------------------------------------------------
+# Note: the # character is used for comments, any text following the # is
+#       ignored by AlbumEasy.
+#
+# All measurements are in millimeters, except for font sizes which are points.
+################################################################################
+
+
+# ------------------------------------------------------------------------------
+# First setup the page elements that are common to all pages in this album.
+# ------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE  (215.9 279.4)            #Set the page to US Letter (8.5 x 11)
+# ALBUM_PAGES_SIZE  (210.0 297.0)                               #Use this for A4
+
+                                       #left, right, top and bottom page margins
+ALBUM_PAGES_MARGINS  (25.0 12.0 15.0 15.0)
+
+                                        #place a triple line border around the page
+ALBUM_PAGES_BORDER   (0.1 0.5 0.1 1.0)
+                         #for a single or double line border uncomment one of these instead
+# ALBUM_PAGES_BORDER   (0.5 0.1 0.0 1.0)   #use for a double line border
+# ALBUM_PAGES_BORDER   (0.5 0.0 0.0 1.0)   #use for a single line border
+
+
+
+
+ALBUM_PAGES_TITLE    (TB 16 "Union of South Africa")
+ALBUM_PAGES_SPACING  (6.0 6.0)
+
+# ------------------------------------------------------------------------------
+# Define the first page of this album
+# ------------------------------------------------------------------------------
+
+PAGE_START
+
+PAGE_TEXT (HN 10 "The Cape of Good Hope, Natal, the Orange Free State and "\
+                 "Transvaal were united on the 31st of May 1910 to form The Union of South Africa, "\
+                 "The Union existed until the 31st of May 1961 when it left the British "\
+                 "Commonwealth to become The Republic of South Africa.")
+
+PAGE_TEXT_CENTRE (HS 12 "4 November 1910\nInauguration of The Union Parliament.");
+PAGE_TEXT_CENTRE (HN 12 "Mint")
+
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (32.0 37.0 "2 1/2d \n deep blue \n blue surface"  "sg 1" "" "sacc 1")
+STAMP_ADD (32.0 37.0 "2 1/2d \n blue \n white surface"      "sg 2" "" "sacc 1a")
+
+PAGE_TEXT_CENTRE (HN 12 "\nUsed")
+
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (32.0 37.0 "2 1/2d \n deep blue \n blue surface"  "sg 1" "" "sacc 1")
+STAMP_ADD (32.0 37.0 "2 1/2d \n blue \n white surface"      "sg 2" "" "sacc 1a")
+
+# ------------------------------------------------------------------------------
+# Define the second page of this album
+# ------------------------------------------------------------------------------
+
+PAGE_START
+PAGE_TEXT_CENTRE (HS 12 "King's Heads - George V\nFirst Definitives 1913 - 1921\n");
+
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (25.0 28.0 "1/2d \n green"                        "sg 3"  "" "sacc 2")
+STAMP_ADD (25.0 28.0 "1d \n rose red"                       "sg 4"  "" "sacc 3")
+STAMP_ADD (25.0 28.0 "1 1/2d \n chestnut"                   "sg 5"  "" "sacc 4")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (25.0 28.0 "2d \n dull purple"                    "sg 6"  "" "sacc 5")
+STAMP_ADD (25.0 28.0 "2 1/2d \n bright blue"                "sg 7"  "" "sacc 6")
+STAMP_ADD (25.0 28.0 "3d \n black & orange-red"             "sg 8"  "" "sacc 7")
+STAMP_ADD (25.0 28.0 "3d \n ultramarine"                    "sg 9"  "" "sacc 8")
+STAMP_ADD (25.0 28.0 "4d \n orange-yellow & \n olive-green" "sg 10" "" "sacc 9")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (25.0 28.0 "6d \n black & violet"                 "sg 11" "" "sacc 10")
+STAMP_ADD (25.0 28.0 "1S \n orange"                         "sg 12" "" "sacc 11")
+STAMP_ADD (25.0 28.0 "1s 3d \n violet"                      "sg 13" "" "sacc 12")
+STAMP_ADD (25.0 28.0 "2s 6d \n purple & green"              "sg 14" "" "sacc 13")
+STAMP_ADD (25.0 28.0 "5s \n purple & blue"                  "sg 15" "" "sacc 14")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (25.0 28.0 "10s \n deep blue & \n olive-green"      "sg 16" "" "sacc 15")
+STAMP_ADD (25.0 28.0 "£1 \n green & red"                      "sg 17" "" "sacc 16")
+
+PAGE_TEXT_CENTRE (HN 12 "\nCoil Stamps")
+ROW_START_FS (HN 6 0.1 6.0)
+STAMP_ADD (25.0 28.0 "1/2d \n green"                        "sg 18" "" "sacc 17")
+STAMP_ADD (25.0 28.0 "1d \n rose red"                       "sg 19" "" "sacc 18")
+STAMP_ADD (25.0 28.0 "1 1/2d \n chestnut"                   "sg 20" "" "sacc 19")
+STAMP_ADD (25.0 28.0 "2d \n dull purple"                    "sg 21" "" "sacc 20")
+

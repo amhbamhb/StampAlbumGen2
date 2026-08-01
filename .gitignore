@@ -1,0 +1,163 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+Albums/**
+Alblums/
+Albums/**/config.toml
+
+refactor-plans/**
+drawio-diagrams/**
+refactor-plans/*.md
+*.drawio
+refactor-plans/diagrams/**
+
+/backups/**
+/REPORTS/**
+
+/Archive/
+Archive/
+Archive/**
+Archives/*.rs
+examples/
+/examples/
+examples/*
+outputs
+outputs/*
+/output
+/output/*
+outputs2
+outputs2/*
+/#notes.txt*
+.#notes.txt*
+notes_backup.txt*
+examples/*
+examples/
+/examples/*
+demo_outputs/
+demo_outputs/*
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+
+
+# Ignore all .toml files except config.toml
+*.html
+testing/*
+Logs/
+logs/   
+logs/*
+Logs/*
+
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+*.suo
+*.ntvs_analysis.dat
+*.njsproj
+*.sln
+*.swp
+*.user
+*.userosscache
+*.userprefs
+*.vscode/
+
+# Logs
+*.log
+
+# By-products
+*.dSYM/
+*.exe
+*.dll
+*.obj
+*.pdb
+*.idb
+*.class
+*.psd
+*.db
+*.tgz
+*.gz
+*.zip
+*.tar
+*.rar
+*.7z
+
+# Misc
+*.tmp
+*.bak
+*.old
+*.orig
+*.save
+*.pid
+*.seed
+*.pid.lock
+
+# Rust coverage
+/coverage/
+
+# Rust build
+/target/
+Cargo.lock
+
+# VS Code extensions
+.vscode/extensions.json
+
+# VS Code settings
+.vscode/settings.json
+
+# VS Code launch configs
+.vscode/launch.json
+
+# VS Code tasks
+.vscode/tasks.json
+demo_outputs/bleeding_risk_scenario.pdf
+artifacts/stamp_album_gen2
+artifacts/stamp_album_gen2.exe.sha256
+
+# Ignore per-album test config files (allow repo-level config.toml)
+/Albums/*/config.toml
+/Albums/**/config.toml
+
+# Build outputs and release artifacts
+/artifacts/*.exe
+/artifacts/*.sha256
+/artifacts/*.sig
+/artifacts/*.asc
+/artifacts/*.tar.gz
+
+# Secrets and keys
+*.pfx
+*.p12
+*.key
+*.pem
+.env
+.env.*
+
+# Local editor and OS files
+/.idea/
+/.vscode/
+*.iml
+*.log
+.DS_Store
+
+# CI / temporary / coverage
+/coverage/
+/tmp/
+/outputs/
+/outputs2/
+/demo_outputs/
+refactor-plans/diagrams/.xdp-.$app-logic-before.drawio.bkp-2Id7JW

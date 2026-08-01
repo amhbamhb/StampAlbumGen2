@@ -1,0 +1,34 @@
+# ----------------------------------------------------------------------------------------------
+# Examples of decorative borders
+# ----------------------------------------------------------------------------------------------
+
+ALBUM_PAGES_SIZE    (215.9 279.4)
+ALBUM_PAGES_MARGINS (12.0 12.0 15.0 15.0)
+ALBUM_PAGES_SPACING (6.0 6.0)
+
+ALBUM_PAGES_TITLE    (TB 16 "Decorative Borders")
+
+# -------------------------------------------------------------------------
+# Uncomment one of the lines below for an example of that border type
+# -------------------------------------------------------------------------
+
+# ALBUM_PAGES_DECORATIVE_BORDER("ArtDeco.txt")
+# ALBUM_PAGES_DECORATIVE_BORDER("ArtDecoSmall.txt")
+ALBUM_PAGES_DECORATIVE_BORDER("CornerStyleA.txt");
+# ALBUM_PAGES_DECORATIVE_BORDER("CornerStyleB.txt");
+# ALBUM_PAGES_DECORATIVE_BORDER("CornerAndVerticalStyleC.txt");
+# ALBUM_PAGES_DECORATIVE_BORDER("Classic.txt");
+# ALBUM_PAGES_DECORATIVE_BORDER("Coronet.txt");
+# ALBUM_PAGES_DECORATIVE_BORDER("Bottom.txt");
+
+
+PAGE_START
+
+PAGE_TEXT (HN 10 "AlbumEasy includes seven sample decorative borders, all of which are listed "\
+                 "in this file.\n"\
+                 "In order to view these borders remove the comment character from each in turn "\
+                 "and then regenerate this album.\n\n"\
+                 "Although the user is free to use these sample borders as is, they "\
+                 "are really intended as examples that can be used as templates for user "\
+                 "created borders. Please see the \"Decorative Borders\" help topic for "\
+                 "details as to how this may be accomplished.")

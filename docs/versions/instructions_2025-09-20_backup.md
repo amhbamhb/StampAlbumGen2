@@ -1,0 +1,49 @@
+# Stamp Album Generator - Instructions
+# Version: 0.8.0
+# Last Updated: 2025-09-20
+# Previous Versions: docs/versions/instructions_2025-09-18_v1.md
+
+# Best Practices
+- Follow Rust coding standards and conventions.
+- Write modular and reusable code.
+- Include unit tests for critical functions.
+- Use version control effectively with Git.
+- Always use best practices for security and performance.
+- Keep your code organized and well-documented.
+- Commit changes frequently with clear messages.
+- Use descriptive names for files and directories.
+- Review and test your code before pushing.
+- Keep Readme and documentation up to date.
+
+# Location of Help
+- Refer to the README.md in the project root for setup and usage.
+- Check the `/docs` directory for detailed guides.
+- The main Album guide is available at [Album Guide](docs/AlbumEasy_4.2.1.pdf).
+- For Rust-specific questions, visit [The Rust Book](https://doc.rust-lang.org/book/).
+- Use GitLab Issues for project-related questions.
+
+# Git repository Structure
+- Source code is in `/src`.
+- Configuration files are in `/config.toml` and `/config_template.toml`.
+- Documentation is in `/docs`, `/API_DOCUMENTATION.md`, `/CONTRIBUTING.md`, `/RELEASE_NOTES.md`.
+- Tests are in `/tests`.
+- Example data is in `/examples`.
+- Stamp collections are in `/Albums/{country name}/`.
+- Archived source files are in `/Archive`.
+- Image assets are in `/images`.
+- Build artifacts are in `/target`.
+
+# SQLite Database
+- Databases are stored in `/Albums/{country name}/{country name}.db`.
+- Database backups are stored as `{country name}.db.backup`.
+
+# Postage Stamps
+- Store stamp images in `Albums/{country name}/images/`.
+- Follow the naming convention: `country_year_{image Name}.jpg`.
+- Placeholder images are available in `/images/no_image_placeholder.png`.
+
+# StampEasy Output
+- Output files are generated in `/Albums/{country name}`.
+- Album text files are named `{country name}.txt`.
+- Extract files are named `{country name}_extract.txt`.
+- Review the output logs in the project root (timestamped .log files).

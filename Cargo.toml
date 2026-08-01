@@ -1,0 +1,64 @@
+[workspace]
+members = ["crates/stamp_album_db", "."]
+
+[profile.release]
+opt-level = 3
+
+[features]
+# Default to minimal in-code country->flag mapping.
+# Enable `full-flag-db` to embed and use `flags/flag_codes.json` at compile time.
+default = []
+full-flag-db = []
+
+[dependencies]
+csv = "1.2"
+image = { version = "0.25.10", features = ["png"] }
+ab_glyph = "0.2"
+scraper = "0.26.0"
+# For MUSL builds, we need rustls instead of native OpenSSL to avoid cross-compilation issues
+# Using feature flags to conditionally use rustls on MUSL targets
+reqwest = { version = "0.13.2", features = ["blocking", "json"] }
+lazy_static = "1.5.0"
+regex = "1.10"
+rusqlite = { version = "0.39.0", features = ["bundled"] }
+log = "0.4"
+stamp_album_db = { path = "crates/stamp_album_db" }
+env_logger = "0.11.10"
+flexi_logger = "0.31.8"
+indicatif = "0.18"
+toml = "1.1.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+chrono = "0.4"
+whoami = "2.1.1"
+sha2 = "0.11.0"
+tempfile = { version = "3.6", optional = false }
+once_cell = "1.21.3"
+strsim = "0.11.1"
+which = "8"
+tiny_http = "0.12"
+webbrowser = "1.0"
+urlencoding = "2.1"
+base64 = "0.22"
+# Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
+resvg = "0.47"
+usvg = "0.47"
+tiny-skia = "0.12.0"
+# Explicit OpenSSL with vendored feature for MUSL builds
+openssl = { version = "0.10.76", optional = true, features = ["vendored"] }
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.6"
+serial_test = "3.4.0"
+
+[package]
+name = "stamp_album_gen2"
+version = "1.8.29"
+edition = "2021"
+default-run = "stamp_album_gen2"
+
+[build-dependencies]
+chrono = "0.4"

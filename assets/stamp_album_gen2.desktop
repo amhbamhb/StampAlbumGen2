@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Stamp Album Generator 2
+GenericName=Stamp Album Generator
+Comment=Generate printable stamp album pages from Colnect stamp data
+Exec=stamp_album_gen2
+Icon=stamp_album_gen2
+Terminal=true
+Categories=Utility;Graphics;
+Keywords=stamp;album;philately;collector;generator;
+StartupNotify=false
