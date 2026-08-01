@@ -316,9 +316,15 @@ pub fn ensure_coat_of_arms_with_fetcher(
 
     // Candidate directories to look for an existing coat of arms image.
     let mut candidates: Vec<PathBuf> = Vec::new();
-    // Environment override (STAMP_FLAGS_DIR/coats_of_arms)
+    // Environment override: accept either STAMP_FLAGS_DIR as the flags
+    // directory itself or as the parent containing a `flags/` directory.
     if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
-        candidates.push(PathBuf::from(p).join("coats_of_arms"));
+        let pbuf = PathBuf::from(&p);
+        // Direct `coats_of_arms` under the provided dir
+        candidates.push(pbuf.join("coats_of_arms"));
+        // Or the common layout where the provided dir is the parent and
+        // the actual flags live in a `flags/` subdirectory.
+        candidates.push(pbuf.join("flags").join("coats_of_arms"));
     }
     // Current working directory 'flags/coats_of_arms'
     candidates.push(PathBuf::from("flags").join("coats_of_arms"));
