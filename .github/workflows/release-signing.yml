@@ -41,8 +41,18 @@ jobs:
     name: Sign Windows EXE (Authenticode)
     runs-on: windows-latest
     needs: build
-    if: ${{ secrets.SIGNING_PFX != '' }}
+    # Do not reference `secrets` in a job-level `if` expression (can cause parser errors).
+    # Instead check for the secret at runtime in a step and exit the job early if missing.
     steps:
+      - name: Check signing PFX secret
+        run: |
+          if [ -z "${SIGNING_PFX:-}" ]; then
+            echo "SIGNING_PFX not set - skipping signing job"
+            exit 0
+          fi
+        shell: bash
+        env:
+          SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
       - uses: actions/download-artifact@v4
         with:
           name: stamp_artifact-windows-latest
@@ -100,30 +110,44 @@ jobs:
           chmod +x cosign
           mv cosign /usr/local/bin/
       - name: Cosign keyless sign artifacts
-        if: ${{ secrets.COSIGN_KEY == '' }}
+        env:
+          COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
         run: |
           set -euo pipefail
+          if [ -n "${COSIGN_KEY:-}" ]; then
+            echo "COSIGN_KEY provided; skipping keyless signing"
+            exit 0
+          fi
           for f in stamp_album_gen2-*; do
             sigfile="$f.sig"
             cosign sign-blob --keyless --output-signature "$sigfile" "$f"
             cosign verify-blob --keyless --signature "$sigfile" "$f"
           done
       - name: Import GPG signing key
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         env:
           GPG_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
         run: |
+          if [ -z "${GPG_KEY:-}" ]; then
+            echo "No GPG_PRIVATE_KEY provided; skipping import"
+            exit 0
+          fi
           echo "$GPG_KEY" | base64 -d > private.key
           gpg --batch --import private.key
       - name: Create GPG detached signatures
-        if: ${{ secrets.GPG_PRIVATE_KEY != '' }}
         run: |
+          if ! gpg --list-secret-keys >/dev/null 2>&1; then
+            echo "No GPG key imported; skipping GPG signatures"
+            exit 0
+          fi
           for f in stamp_album_gen2-*; do gpg --batch --yes --armor --detach-sign "$f" || true; done
       - name: Cosign sign blobs (optional)
-        if: ${{ secrets.COSIGN_KEY != '' }}
         env:
           COSIGN_KEY_B64: ${{ secrets.COSIGN_KEY }}
         run: |
+          if [ -z "${COSIGN_KEY_B64:-}" ]; then
+            echo "No COSIGN_KEY provided; skipping cosign key-based signing"
+            exit 0
+          fi
           echo "$COSIGN_KEY_B64" | base64 -d > cosign.key
           chmod 600 cosign.key
           curl -sSfL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o cosign
