@@ -235,8 +235,7 @@ pub fn save_stamp_data<P: AsRef<std::path::Path>>(
             }
         } else {
             // Create a timestamped copy name: insert `.created-YYYYMMDD-HHMMSS` before extension.
-            use chrono::Local;
-            let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+            let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
             if let Some(parent) = path.parent() {
                 if let Some(stem_os) = path.file_stem() {
                     if let Some(stem) = stem_os.to_str() {

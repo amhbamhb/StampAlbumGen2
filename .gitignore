@@ -6,6 +6,13 @@ Albums/**
 Alblums/
 Albums/**/config.toml
 
+refactor-plans/**
+drawio-diagrams/**
+refactor-plans/*.md
+*.drawio
+refactor-plans/diagrams/**
+
+
 /Archive/
 Archive/
 Archive/**

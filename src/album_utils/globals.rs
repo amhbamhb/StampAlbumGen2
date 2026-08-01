@@ -12,9 +12,9 @@ pub fn write_globals<W: Write>(
 ) -> usize {
     // Get current date/time and user information using chrono (cross-platform)
     // Use UTC for the canonical generated timestamp and Local for the host localtime
-    use chrono::{Local, Utc};
+    use chrono::Utc;
     let datetime_str = Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
-    let localdatetime = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
+    let localdatetime = crate::time_utils::formatted_now("%Y-%m-%d %H:%M:%S");
 
     // Get user information (cross-platform)
     let username = std::env::var("USER")

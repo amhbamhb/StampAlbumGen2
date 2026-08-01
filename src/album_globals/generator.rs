@@ -3262,7 +3262,7 @@ where
                         use chrono::Local;
                         if let Some(stem_os) = output_path.file_stem() {
                             if let Some(stem) = stem_os.to_str() {
-                                let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                                let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
                                 let ext = output_path
                                     .extension()
                                     .and_then(|e| e.to_str())
@@ -3292,7 +3292,7 @@ where
                         use chrono::Local;
                         if let Some(stem_os) = output_path.file_stem() {
                             if let Some(stem) = stem_os.to_str() {
-                                let ts = Local::now().format("%Y%m%d-%H%M%S").to_string();
+                                let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
                                 let ext = output_path
                                     .extension()
                                     .and_then(|e| e.to_str())

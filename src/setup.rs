@@ -74,7 +74,7 @@ pub fn setup_logging() -> Result<(), SetupError> {
     }
 
     // Build a timestamped basename like 'stamp_album_gen2-20251020-171234'
-    let ts = chrono::Local::now().format("%Y%m%d-%H%M%S").to_string();
+    let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
     let basename = format!("stamp_album_gen2-{}", ts);
 
     // Use a conservative default filter that keeps this crate at `info` but
@@ -115,7 +115,7 @@ pub fn startup_probe_path() -> PathBuf {
 }
 
 pub fn write_startup_probe(stage: &str, detail: &str) {
-    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S%.3f");
+    let ts = crate::time_utils::formatted_now("%Y-%m-%d %H:%M:%S%.3f");
     let pid = std::process::id();
     let line = format!("{} pid={} stage={} detail={}\n", ts, pid, stage, detail);
     let path = startup_probe_path();

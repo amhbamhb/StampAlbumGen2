@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Create new timestamped backup
-    let ts = Local::now().format("%Y%m%d%H%M%S").to_string();
+    let ts = stamp_album_gen2::time_utils::formatted_now("%Y%m%d%H%M%S");
     let backup_name = format!("{}.bak.{}", file_name, ts);
     let backup_path = parent.join(&backup_name);
     println!("Creating backup {} -> {}", db_path, backup_path.display());

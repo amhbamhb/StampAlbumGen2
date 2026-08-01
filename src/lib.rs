@@ -21,6 +21,7 @@ pub use crate::config::{load_slug_overrides, Config, HeaderFormatting};
 // Add more modules as needed
 
 pub mod image_utils;
+pub mod time_utils;
 // pub mod html_utils;
 pub mod commands_file_generator;
 pub mod stampworld;

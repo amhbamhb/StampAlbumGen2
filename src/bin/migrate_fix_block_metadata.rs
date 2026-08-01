@@ -13,7 +13,7 @@ fn main() {
         eprintln!("DB path does not exist: {}", db);
         std::process::exit(3);
     }
-    let ts = Local::now().format("%Y%m%d%H%M%S").to_string();
+    let ts = stamp_album_gen2::time_utils::formatted_now("%Y%m%d%H%M%S");
     let bak = format!("{}.bak.{}", db, ts);
     match std::fs::copy(db, &bak) {
         Ok(_) => eprintln!("Backup created: {}", bak),

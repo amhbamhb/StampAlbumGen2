@@ -1,0 +1,2 @@
+11131dfa8aec8d8eff9de3aaeea58cc954d4a7c46e6ce87e277f9735047bce0c  stamp_album_gen2
+9536beaa64bb435b5a3ddf3d079961b4f4105b808e5b2acc00c304451283f585  stamp_album_gen2.exe

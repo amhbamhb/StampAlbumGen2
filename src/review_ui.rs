@@ -1479,7 +1479,7 @@ enum PortProbeResult {
 /// desktop shortcut with no terminal (Terminal=false).
 fn log_startup(msg: &str) {
     use std::io::Write;
-    let ts = chrono::Local::now().format("%Y-%m-%d %H:%M:%S");
+    let ts = crate::time_utils::formatted_now("%Y-%m-%d %H:%M:%S");
 
     // Write to every candidate location — Wayland desktop sessions may use a
     // different TMPDIR than the interactive shell, so we cover both.
