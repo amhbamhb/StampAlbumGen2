@@ -2,8 +2,9 @@
 /target/
 **/*.rs.bk
 Cargo.lock
-Albums/
+Albums/**
 Alblums/
+Albums/**/config.toml
 
 /Archive/
 Archive/
@@ -117,4 +118,37 @@ Cargo.lock
 demo_outputs/bleeding_risk_scenario.pdf
 artifacts/stamp_album_gen2
 artifacts/stamp_album_gen2.exe.sha256
+
+# Ignore per-album test config files (allow repo-level config.toml)
+/Albums/*/config.toml
+/Albums/**/config.toml
+
+# Build outputs and release artifacts
+/artifacts/*.exe
+/artifacts/*.sha256
+/artifacts/*.sig
+/artifacts/*.asc
+/artifacts/*.tar.gz
+
+# Secrets and keys
+*.pfx
+*.p12
+*.key
+*.pem
+.env
+.env.*
+
+# Local editor and OS files
+/.idea/
+/.vscode/
+*.iml
+*.log
+.DS_Store
+
+# CI / temporary / coverage
+/coverage/
+/tmp/
+/outputs/
+/outputs2/
+/demo_outputs/
 refactor-plans/diagrams/.xdp-.$app-logic-before.drawio.bkp-2Id7JW
