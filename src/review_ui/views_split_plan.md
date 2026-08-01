@@ -3,7 +3,9 @@
 Last updated: 2026-05-31
 Target: `src/review_ui/views.rs`
 
-## Goals
+
+- Add LLM instruction file location and content reference.
+
 
 - Reduce the 4,000+ line `views.rs` into smaller review-ui-specific modules.
 - Keep every extraction incremental, buildable, and behavior-preserving.
