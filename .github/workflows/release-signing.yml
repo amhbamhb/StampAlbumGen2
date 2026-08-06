@@ -131,6 +131,7 @@ jobs:
           if [ -f stamp_album_gen2-windows.exe ]; then mv stamp_album_gen2-windows.exe stamp_album_gen2-windows.exe; fi
           if [ -f stamp_album_gen2-linux ]; then mv stamp_album_gen2-linux stamp_album_gen2-linux; fi
           if [ -f stamp_album_gen2-macos ]; then mv stamp_album_gen2-macos stamp_album_gen2-macos; fi
+      # commitlint workflow enforces Conventional Commits on PRs
       - name: Compute SHA256 for each artifact
         run: |
           for f in stamp_album_gen2-*; do sha256sum "$f" > "$f.sha256"; done

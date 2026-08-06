@@ -34,3 +34,4 @@ jobs:
             echo "CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:\n  cargo run -- --help > docs/CLI_USAGE.md"
             exit 1
           fi
+      # commitlint workflow enforces Conventional Commits on PRs
