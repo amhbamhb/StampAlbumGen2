@@ -144,7 +144,7 @@ Do **not** place new user-facing documentation in the repository root unless it 
 - Historical/manual test outputs go in `docs/testing/`.
 
 ### 10. Temporary Files
-- Create temporary/one-off scripts under `/tmp` (not in the repository tree) so they are never committed.
+- Create temporary/one-off scripts outside the repository tree (preferred location is documented in `.github/copilot-instructions.md`; otherwise use your OS temp dir such as `/tmp` on Linux/macOS or `%TEMP%` on Windows) so they are never committed.
 
 ---
 
