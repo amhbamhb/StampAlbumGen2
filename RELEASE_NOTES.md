@@ -135,7 +135,7 @@ For issues or questions, please check the embedded documentation in the source c
 
 **Release Date**: 2026-08-06
 **Version**: 1.8.35
-**Build**: Release (optimized)</content>
+**Build**: Release (optimized)
 
 ---
 
