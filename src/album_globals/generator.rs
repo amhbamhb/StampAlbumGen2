@@ -3259,7 +3259,7 @@ where
                     // If the user explicitly requested overwrite, create a backup
                     // of the existing file even if generation produced no STAMP lines.
                     if crate::file_utils::get_overwrite_album_from_cli() && output_path.exists() {
-                        use chrono::Local;
+                        // use chrono::Local;
                         if let Some(stem_os) = output_path.file_stem() {
                             if let Some(stem) = stem_os.to_str() {
                                 let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
@@ -3289,7 +3289,7 @@ where
                 } else {
                     // Create a timestamped backup of the existing file if present
                     if output_path.exists() {
-                        use chrono::Local;
+                        // use chrono::Local;
                         if let Some(stem_os) = output_path.file_stem() {
                             if let Some(stem) = stem_os.to_str() {
                                 let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
