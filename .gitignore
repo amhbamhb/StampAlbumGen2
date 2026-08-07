@@ -5,17 +5,18 @@ Cargo.lock
 Albums/**
 Alblums/
 Albums/**/config.toml
-samples/**
-build/site-release-bundle/**
+samples
+build/site-release-bundle
 copy-release.sh
 PHASE2_MODULARIZATION_PLAN.md
 stamp_album_gen2-windows.exe.sha256
 stamp_album_gen2-linux.sha256
 SHA256SUMS.txt
+.venv
+backups
 
-
-refactor-plans/**
-drawio-diagrams/**
+refactor-plans
+drawio-diagrams
 refactor-plans/*.md
 *.drawio
 refactor-plans/diagrams/**
