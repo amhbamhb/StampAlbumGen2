@@ -21,9 +21,8 @@ jobs:
           node-version: '24'
 
       - name: Set up Rust
-        uses: dtolnay/setup-rust@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           override: true
 
       - name: Build
