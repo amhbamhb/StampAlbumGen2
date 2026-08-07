@@ -70,15 +70,17 @@ jobs:
     # Instead check for the secret at runtime in a step and exit the job early if missing.
     steps:
       - name: Check signing PFX secret
+        id: signing_pfx
         shell: pwsh
+        env:
+          SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
         run: |
           if (-not $env:SIGNING_PFX) {
             Write-Host 'SIGNING_PFX not set - skipping signing job'
+            "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
             exit 0
           }
-        env:
-          SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
-
+          "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
