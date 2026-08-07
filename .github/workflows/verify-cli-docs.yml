@@ -23,7 +23,7 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          override: true
+          toolchain: stable
 
       - name: Build
         run: cargo build
