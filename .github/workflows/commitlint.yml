@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   commitlint:
     name: Commit Lint
@@ -13,4 +17,5 @@ jobs:
       - name: Run commitlint on PR commits
         uses: wagoid/commitlint-github-action@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          configFile: ./.commitlintrc.json
