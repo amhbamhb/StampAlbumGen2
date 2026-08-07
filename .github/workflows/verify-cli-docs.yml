@@ -15,14 +15,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          override: true
 
       - name: Build
-        run: cargo build --locked
+        run: cargo build
 
       - name: Capture CLI help
         run: cargo run -- --help > help.txt

@@ -18,6 +18,10 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Setup Rust
         uses: dtolnay/setup-rust@v1
       - name: Build release
@@ -118,6 +122,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
