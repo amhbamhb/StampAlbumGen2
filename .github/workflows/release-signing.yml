@@ -82,19 +82,21 @@ jobs:
           }
           "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
       - name: Download Windows artifact
+        if: steps.signing_pfx.outputs.enabled == 'true'
         uses: actions/download-artifact@v4
         with:
           name: stamp_artifact-windows-latest
 
       - name: Decode signing PFX (PowerShell)
+        if: steps.signing_pfx.outputs.enabled == 'true'
         shell: pwsh
         env:
           SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
         run: |
-          if (-not $env:SIGNING_PFX) { Write-Host 'No SIGNING_PFX provided'; exit 1 }
           [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($env:SIGNING_PFX))
 
       - name: Sign EXE with SignTool
+        if: steps.signing_pfx.outputs.enabled == 'true'
         shell: pwsh
         env:
           SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
@@ -104,6 +106,7 @@ jobs:
           signtool sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
 
       - name: Upload signed windows exe
+        if: steps.signing_pfx.outputs.enabled == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: signed-windows-exe
