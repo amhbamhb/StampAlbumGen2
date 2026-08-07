@@ -1,0 +1,23 @@
+name: Commit Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  commitlint:
+    name: Commit Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run commitlint on PR commits
+        uses: wagoid/commitlint-github-action@v4.1.12
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          configFile: ./.commitlintrc.json

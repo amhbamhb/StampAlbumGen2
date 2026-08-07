@@ -34,3 +34,4 @@ jobs:
         run: ./scripts/cli_parity_test.sh --verbose
         env:
           RUST_BACKTRACE: 1
+      # commitlint workflow enforces Conventional Commits on PRs
