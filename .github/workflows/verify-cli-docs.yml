@@ -22,7 +22,7 @@ jobs:
           override: true
 
       - name: Build
-        run: cargo build --locked
+        run: cargo build
 
       - name: Capture CLI help
         run: cargo run -- --help > help.txt
