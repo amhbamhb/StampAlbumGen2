@@ -130,7 +130,7 @@ Follow Conventional Commits. Types in use:
 | Test run artifacts    | `docs/testing/`           |
 | Root-level docs       | `README.md`, `DEVELOPMENT.md`, `CONTRIBUTING.md`, `RELEASE_NOTES.md` |
 
-Do **not** place new documentation in the repository root unless it is one of the four files above.
+Do **not** place new user-facing documentation in the repository root unless it is one of the four files above (or `AGENTS.md`).
 
 ### 8. Database Schema Changes
 - Maintain backward compatibility with existing SQLite databases.
