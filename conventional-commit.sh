@@ -16,7 +16,7 @@ fi
 
 msg="$1"
 
-if echo "$msg" | grep -qE "^(BREAKING CHANGE:|feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
+if echo "$msg" | grep -qE "^(BREAKING CHANGE: |(feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: )"; then
   exit 0
 else
   exit 1
