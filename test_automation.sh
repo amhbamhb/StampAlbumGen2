@@ -55,7 +55,7 @@ test_cases=(
 )
 
 for msg in "${test_cases[@]}"; do
-  if echo "$msg" | grep -qE "^(BREAKING CHANGE:|feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
+  if echo "$msg" | grep -qE "^(BREAKING CHANGE|feat|fix|docs|style|refactor|perf|test|chore|ci|build|revert)(\(.+\))?: "; then
     echo "✅ VALID: $msg"
   else
     echo "❌ INVALID: $msg"
