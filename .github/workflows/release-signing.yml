@@ -196,7 +196,7 @@ jobs:
           chmod 600 cosign.key
           curl -sSfL https://github.com/sigstore/cosign/releases/latest/download/cosign-linux-amd64 -o cosign
           chmod +x cosign
-          for f in stamp_album_gen2-*; do ./cosign sign-blob --key cosign.key "$f" || true; done
+          for f in stamp_album_gen2-*; do ./cosign sign-blob --key cosign.key --output-signature "$f.sig" "$f" || true; done
       - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v1
         with:
