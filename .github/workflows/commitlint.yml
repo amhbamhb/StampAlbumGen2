@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run commitlint on PR commits
-        uses: wagoid/commitlint-github-action@v4
+        uses: wagoid/commitlint-github-action@v4.1.12
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           configFile: ./.commitlintrc.json
