@@ -126,26 +126,34 @@ jobs:
             if (-not (Test-Path cert.pfx)) { Write-Host 'cert.pfx missing'; exit 1 }
             if (-not (Test-Path 'stamp_album_gen2-windows.exe')) { Write-Host 'stamp_album_gen2-windows.exe not found'; exit 1 }
 
-            # Try to find signtool in PATH
+            # Try to find signtool in PATH first
             $signtool = (Get-Command signtool -ErrorAction SilentlyContinue)?.Source
+
+            # If not found, search recursively under Windows Kits directories (various hosts use different versions)
             if (-not $signtool) {
-              # common Windows Kits installation locations
-              $candidates = @(
-                'C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe',
-                'C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe',
-                'C:\Program Files (x86)\Windows Kits\8.1\bin\x64\signtool.exe'
+              $searchPaths = @(
+                'C:\Program Files (x86)\Windows Kits\10\bin',
+                'C:\Program Files\Windows Kits\10\bin',
+                'C:\Program Files (x86)\Windows Kits',
+                'C:\Program Files\Windows Kits'
               )
-              foreach ($p in $candidates) { if (Test-Path $p) { $signtool = $p; break } }
+              foreach ($sp in $searchPaths) {
+                if (Test-Path $sp) {
+                  $found = Get-ChildItem -Path $sp -Filter 'signtool.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                  if ($found) { $signtool = $found.FullName; break }
+                }
+              }
             }
 
             if (-not $signtool) {
-              Write-Host 'signtool not found in PATH or common locations.'
+              Write-Host 'signtool not found in PATH or under Windows Kits directories.'
               Write-Host "PATH: $($env:PATH)"
+              Write-Host 'If you need signing in CI, run this job on a self-hosted Windows runner that has the Windows SDK installed, or install the SDK on the runner.'
               exit 1
             }
 
             Write-Host "Using signtool: $signtool"
-            & $signtool sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
+            & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
           } catch {
             Write-Host "SignTool invocation failed: $($_.Exception.Message)"
             exit 1

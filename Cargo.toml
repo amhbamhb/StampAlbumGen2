@@ -56,9 +56,11 @@ serial_test = "3.4.0"
 
 [package]
 name = "stamp_album_gen2"
-version = "1.8.50"
+version = "1.8.51"
 edition = "2021"
 default-run = "stamp_album_gen2"
 
 [build-dependencies]
 chrono = "0.4"
+base64 = "0.22"
+winres = "0.1"
