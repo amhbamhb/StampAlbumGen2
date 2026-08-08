@@ -101,7 +101,20 @@ jobs:
         env:
           SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
         run: |
-          [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($env:SIGNING_PFX))
+          try {
+            # strip whitespace/newlines that might have been introduced when copying
+            $b64 = $env:SIGNING_PFX -replace '\s', ''
+            if (-not $b64) {
+              Write-Host 'SIGNING_PFX is empty after stripping whitespace'
+              exit 1
+            }
+            Write-Host "SIGNING_PFX (chars) = $($b64.Length)"
+            [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($b64))
+            Write-Host 'Wrote cert.pfx successfully'
+          } catch {
+            Write-Host "Failed to decode SIGNING_PFX: $($_.Exception.Message)"
+            exit 1
+          }
 
       - name: Sign EXE with SignTool
         if: steps.signing_pfx.outputs.enabled == 'true'
@@ -109,9 +122,34 @@ jobs:
         env:
           SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
         run: |
-          if (-not (Test-Path cert.pfx)) { Write-Host 'cert.pfx missing'; exit 1 }
-          if (-not (Test-Path 'stamp_album_gen2-windows.exe')) { Write-Host 'stamp_album_gen2-windows.exe not found'; exit 1 }
-          signtool sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
+          try {
+            if (-not (Test-Path cert.pfx)) { Write-Host 'cert.pfx missing'; exit 1 }
+            if (-not (Test-Path 'stamp_album_gen2-windows.exe')) { Write-Host 'stamp_album_gen2-windows.exe not found'; exit 1 }
+
+            # Try to find signtool in PATH
+            $signtool = (Get-Command signtool -ErrorAction SilentlyContinue)?.Source
+            if (-not $signtool) {
+              # common Windows Kits installation locations
+              $candidates = @(
+                'C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x64\signtool.exe',
+                'C:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe',
+                'C:\Program Files (x86)\Windows Kits\8.1\bin\x64\signtool.exe'
+              )
+              foreach ($p in $candidates) { if (Test-Path $p) { $signtool = $p; break } }
+            }
+
+            if (-not $signtool) {
+              Write-Host 'signtool not found in PATH or common locations.'
+              Write-Host "PATH: $($env:PATH)"
+              exit 1
+            }
+
+            Write-Host "Using signtool: $signtool"
+            & $signtool sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
+          } catch {
+            Write-Host "SignTool invocation failed: $($_.Exception.Message)"
+            exit 1
+          }
 
       - name: Upload signed windows exe
         if: steps.signing_pfx.outputs.enabled == 'true'

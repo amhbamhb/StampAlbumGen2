@@ -20,8 +20,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Install commitlint
+        run: |
+          npm install --no-save @commitlint/cli @commitlint/config-conventional
+
       - name: Run commitlint on PR commits
-        uses: wagoid/commitlint-github-action@v4.1.12
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          configFile: ./.commitlintrc.json
+        run: |
+          # Ensure repository history is available
+          git fetch --no-tags --prune || true
+          # Run commitlint for the PR commit range
+          npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }} --config ./.commitlintrc.json
+        env:
+          CI: true
