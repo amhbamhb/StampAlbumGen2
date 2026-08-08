@@ -167,6 +167,29 @@ jobs:
         cargo build --release
         cargo test
 
+    - name: Show disk usage and cleanup large files
+      if: runner.os == 'Linux'
+      run: |
+        echo "Disk usage before cleanup:"; df -h || true
+        echo "Workspace size:"; du -sh "$GITHUB_WORKSPACE" || true
+        # Remove known large temporary files that can fill runner disk (best-effort)
+        if [ -f perf.data ]; then
+          echo "Removing workspace perf.data to free space";
+          rm -f perf.data || true
+        fi
+        # Remove large files over 200MB in the workspace (best-effort, print first)
+        find "$GITHUB_WORKSPACE" -type f -size +200M -maxdepth 3 -print -exec rm -f {} \; || true
+        echo "Disk usage after cleanup:"; df -h || true
+      shell: bash
+
+    - name: Configure Cargo target dir to runner temp
+      if: runner.os == 'Linux'
+      run: |
+        echo "CARGO_TARGET_DIR=${RUNNER_TEMP}/cargo-target" >> $GITHUB_ENV
+        mkdir -p "${RUNNER_TEMP}/cargo-target"
+        echo "Configured CARGO_TARGET_DIR=${RUNNER_TEMP}/cargo-target"
+      shell: bash
+
     - name: Verify version consistency
       run: |
         CARGO_VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
