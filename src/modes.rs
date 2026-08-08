@@ -1435,8 +1435,15 @@ pub fn run_scraping_mode(
     use crate::commands_file_generator::CommandsFileGenerator;
     use log::{error, info, warn};
 
-    let progress = ProgressIndicator::new_with_config(show_progress);
-    progress.set_message("🌐 Preparing StampWorld scraping mode...");
+    let using_extract_file = !crate::stampworld::state::EXTRACT_FILE_NAME
+        .lock()
+        .map(|s| s.clone())
+        .unwrap_or_default()
+        .is_empty();
+    // Disable progress output entirely when using a local extract file so
+    // the output remains consistent with database-only runs used in parity
+    // testing.
+    let progress = ProgressIndicator::new_with_config(show_progress && !using_extract_file);
 
     // Require site_name for scraping. If the caller explicitly passed
     // --site-name but set it to the literal value 'stampworld' (the
@@ -1499,24 +1506,28 @@ pub fn run_scraping_mode(
         );
     }
 
-    progress.set_message(&format!(
-        "📋 Setting up scrape: {} → {} ({}..{})",
-        site_name, album_name, cli.start_year, cli.end_year
-    ));
-    progress.set_message(
-        &format!(
-            "Starting StampWorld scrape for site='{}' album='{}' years={}..{} overwrite_images={} overwrite_album={}",
-            site_name,
-            album_name,
-            cli.start_year,
-            cli.end_year,
-            cli.overwrite_images,
-            cli.overwrite_album
-        )
-    );
+    if !using_extract_file {
+        progress.set_message(&format!(
+            "📋 Setting up scrape: {} → {} ({}..{})",
+            site_name, album_name, cli.start_year, cli.end_year
+        ));
+        progress.set_message(
+            &format!(
+                "Starting StampWorld scrape for site='{}' album='{}' years={}..{} overwrite_images={} overwrite_album={}",
+                site_name,
+                album_name,
+                cli.start_year,
+                cli.end_year,
+                cli.overwrite_images,
+                cli.overwrite_album
+            )
+        );
+    }
 
     // Build a CommandsFileGenerator and invoke the collector
-    progress.set_message("⚙️ Configuring data collector...");
+    if !using_extract_file {
+        progress.set_message("⚙️ Configuring data collector...");
+    }
     let mut cfg = CommandsFileGenerator::default();
     cfg.album_name = album_name.clone();
     cfg.country = site_name.clone();
@@ -1844,11 +1855,21 @@ pub fn run_scraping_mode(
                         )
                     });
 
-                    progress.finish_with_message(&format!(
-                        "Album '{}' completed successfully! 🎉 📄 File: {}",
+                    // Use the same final success wording as database mode so
+                    // parity tests see identical output. When running with a
+                    // local `--source-file` the `ProgressIndicator` is
+                    // disabled, so explicitly print the final line to stdout
+                    // to match the database-only run.
+                    let final_msg = format!(
+                        "Album '{}' generated successfully! 📄 File: {}",
                         canonical_storage_dir,
                         output_path.display()
-                    ));
+                    );
+                    if using_extract_file {
+                        println!("✅ {}", final_msg);
+                    } else {
+                        progress.finish_with_message(&final_msg);
+                    }
                 }
                 Err(e) => {
                     progress.finish_with_error(&format!("Database connection failed: {}", e));

@@ -88,6 +88,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Parse CLI arguments
     let mut cli = Cli::parse();
+    // If a local source file was provided, expose it to StampWorld code paths
+    // via the global EXTRACT_FILE_NAME so the collector can parse local HTML
+    // instead of performing network requests.
+    if let Some(ref path) = cli.source_file {
+        // store into global state used by stampworld collector
+        stamp_album_gen2::stampworld::state::EXTRACT_FILE_NAME
+            .lock()
+            .map(|mut s| *s = path.clone())
+            .ok();
+        // Ensure we run the stampworld scraping path for this run
+        // by leaving `cli.source` as its default (stampworld) or the
+        // provided value. No further action needed here.
+    }
     write_startup_probe("cli.parse", "CLI arguments parsed successfully");
 
     if cli.uninstall_desktop_launcher {
