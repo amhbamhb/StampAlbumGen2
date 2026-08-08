@@ -118,13 +118,42 @@ jobs:
     - name: Add temporary swap to avoid linker OOM
       if: runner.os == 'Linux'
       run: |
-        echo "Creating 6G swapfile to avoid linker OOM on hosted runner"
-        sudo fallocate -l 6G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=6144
-        sudo chmod 600 /swapfile
-        sudo mkswap /swapfile
-        sudo swapon /swapfile
+        echo "Attempting to create 6G swapfile in runner temp to avoid linker OOM"
+        SWAPFILE="${RUNNER_TEMP:-/tmp}/gha_swapfile"
+        echo "Swapfile path: $SWAPFILE"
+        # If the swapfile is already active, nothing to do
+        if sudo swapon --noheadings --show=NAME 2>/dev/null | awk '{print $1}' | grep -qx "$SWAPFILE"; then
+          echo "Swap already active at $SWAPFILE"
+          exit 0
+        fi
+
+        # Remove any stale swapfile at the path
+        if [ -e "$SWAPFILE" ]; then
+          echo "Existing swapfile found at $SWAPFILE; removing"
+          sudo rm -f "$SWAPFILE" || true
+        fi
+
+        # Try to allocate with fallocate first; fall back to dd. Allow failures and continue.
+        set +e
+        if command -v fallocate >/dev/null 2>&1; then
+          sudo fallocate -l 6G "$SWAPFILE" 2>/dev/null
+        fi
+        if [ ! -s "$SWAPFILE" ]; then
+          sudo dd if=/dev/zero of="$SWAPFILE" bs=1M count=6144 status=none || true
+        fi
+        set -e
+
+        sudo chmod 600 "$SWAPFILE" || true
+        if ! sudo mkswap "$SWAPFILE" >/dev/null 2>&1; then
+          echo "mkswap failed; continuing without swap (best-effort)"
+          exit 0
+        fi
+        if ! sudo swapon "$SWAPFILE" >/dev/null 2>&1; then
+          echo "swapon failed; continuing without swap (best-effort)"
+          exit 0
+        fi
         sudo sysctl -w vm.swappiness=10 || true
-        echo "Swap added"
+        echo "Swap added at $SWAPFILE"
       shell: bash
 
     - name: Configure Rust build flags
