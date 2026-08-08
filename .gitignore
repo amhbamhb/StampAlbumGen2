@@ -14,6 +14,9 @@ stamp_album_gen2-linux.sha256
 SHA256SUMS.txt
 .venv
 backups
+tools
+scripts
+
 
 refactor-plans
 drawio-diagrams
@@ -170,3 +173,5 @@ artifacts/stamp_album_gen2.exe.sha256
 /outputs2/
 /demo_outputs/
 refactor-plans/diagrams/.xdp-.$app-logic-before.drawio.bkp-2Id7JW
+# Keep assets/app.ico tracked
+!assets/app.ico

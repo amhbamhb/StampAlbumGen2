@@ -73,6 +73,8 @@ jobs:
   windows-sign:
     name: Sign Windows EXE (Authenticode)
     runs-on: windows-latest
+    env:
+      INSTALL_WINDOWS_SDK: 'true'
     needs: build
     # Do not reference `secrets` in a job-level `if` expression (can cause parser errors).
     # Instead check for the secret at runtime in a step and exit the job early if missing.
@@ -145,10 +147,36 @@ jobs:
               }
             }
 
+            # If still not found, optionally attempt to install the Windows SDK when explicitly enabled.
             if (-not $signtool) {
               Write-Host 'signtool not found in PATH or under Windows Kits directories.'
-              Write-Host "PATH: $($env:PATH)"
-              Write-Host 'If you need signing in CI, run this job on a self-hosted Windows runner that has the Windows SDK installed, or install the SDK on the runner.'
+              if ($env:INSTALL_WINDOWS_SDK -eq 'true') {
+                Write-Host 'INSTALL_WINDOWS_SDK=true — attempting to install Windows SDK via Chocolatey (this may take many minutes).'
+                try {
+                  if (Get-Command choco -ErrorAction SilentlyContinue) {
+                    choco install windows-sdk-10.0 -y
+                  } else {
+                    Write-Host 'Chocolatey not found; attempting to install Chocolatey and then the Windows SDK.'
+                    Set-ExecutionPolicy Bypass -Scope Process -Force
+                    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
+                    choco install windows-sdk-10.0 -y
+                  }
+                } catch {
+                  Write-Host "Windows SDK install attempt failed: $($_.Exception.Message)"
+                }
+
+                # Re-scan for signtool after attempted install
+                $found = Get-ChildItem -Path 'C:\Program Files (x86)\Windows Kits' -Filter 'signtool.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($found) { $signtool = $found.FullName }
+              } else {
+                Write-Host "To enable automated SDK install, set environment variable INSTALL_WINDOWS_SDK=true for this job."
+                Write-Host "PATH: $($env:PATH)"
+                Write-Host 'If you need signing in CI, run this job on a self-hosted Windows runner that has the Windows SDK installed.'
+              }
+            }
+
+            if (-not $signtool) {
+              Write-Host 'signtool still not found; aborting signing step.'
               exit 1
             }
 
