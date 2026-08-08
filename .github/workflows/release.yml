@@ -116,7 +116,7 @@ jobs:
         sed -i "s/^\*\*Version\*\*: .*/**Version**: $NEW_VERSION/" RELEASE_NOTES.md
         sed -i "s/^\*\*Release Date\*\*: .*/**Release Date**: $DATE/" RELEASE_NOTES.md
 
-      - name: Add temporary swap to avoid linker OOM
+        - name: Add temporary swap to avoid linker OOM
         if: runner.os == 'Linux'
         run: |
           echo "Creating 4G swapfile to avoid linker OOM on hosted runner"
