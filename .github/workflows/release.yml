@@ -18,6 +18,9 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
 
     steps:
     - name: Checkout code
@@ -30,6 +33,19 @@ jobs:
       run: |
         git config --global user.name 'github-actions[bot]'
         git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
+    - name: Show disk usage and cleanup large files (early)
+      if: runner.os == 'Linux'
+      run: |
+        echo "Disk usage before cleanup:"; df -h || true
+        echo "Workspace size:"; du -sh "$GITHUB_WORKSPACE" || true
+        if [ -f perf.data ]; then
+          echo "Removing workspace perf.data to free space";
+          rm -f perf.data || true
+        fi
+        find "$GITHUB_WORKSPACE" -type f -size +200M -maxdepth 3 -print -exec rm -f {} \; || true
+        echo "Disk usage after early cleanup:"; df -h || true
+      shell: bash
 
     - name: Setup Rust
       uses: actions-rs/toolchain@v1
@@ -156,39 +172,19 @@ jobs:
         echo "Swap added at $SWAPFILE"
       shell: bash
 
-    - name: Configure Rust build flags
-      run: |
-        echo "RUSTFLAGS=-C lto=off -C codegen-units=16" >> $GITHUB_ENV
+    # RUSTFLAGS and CARGO_TARGET_DIR are set at job-level env to ensure they are
+    # present for every step (including cache/restore and any cargo invocations).
 
     - name: Build and test
-      env:
-        RUSTFLAGS: ${{ env.RUSTFLAGS }}
       run: |
         cargo build --release
         cargo test
 
-    - name: Show disk usage and cleanup large files
-      if: runner.os == 'Linux'
-      run: |
-        echo "Disk usage before cleanup:"; df -h || true
-        echo "Workspace size:"; du -sh "$GITHUB_WORKSPACE" || true
-        # Remove known large temporary files that can fill runner disk (best-effort)
-        if [ -f perf.data ]; then
-          echo "Removing workspace perf.data to free space";
-          rm -f perf.data || true
-        fi
-        # Remove large files over 200MB in the workspace (best-effort, print first)
-        find "$GITHUB_WORKSPACE" -type f -size +200M -maxdepth 3 -print -exec rm -f {} \; || true
-        echo "Disk usage after cleanup:"; df -h || true
-      shell: bash
+    # Early cleanup already handled; later cleanup intentionally omitted to avoid
+    # removing files created by the build steps.
 
-    - name: Configure Cargo target dir to runner temp
-      if: runner.os == 'Linux'
-      run: |
-        echo "CARGO_TARGET_DIR=${RUNNER_TEMP}/cargo-target" >> $GITHUB_ENV
-        mkdir -p "${RUNNER_TEMP}/cargo-target"
-        echo "Configured CARGO_TARGET_DIR=${RUNNER_TEMP}/cargo-target"
-      shell: bash
+    # CARGO_TARGET_DIR is configured as a job-level env to ensure all steps
+    # including cache and pre-build operations respect the target dir.
 
     - name: Verify version consistency
       run: |

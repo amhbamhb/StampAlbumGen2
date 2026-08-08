@@ -13,11 +13,25 @@ jobs:
   build:
     name: Build artifacts (Windows/Linux/macOS)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+      - name: Early disk usage and cleanup (linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "Disk usage before cleanup:"; df -h || true
+          if [ -f perf.data ]; then
+            echo "Removing workspace perf.data to free space";
+            rm -f perf.data || true
+          fi
+          find "$GITHUB_WORKSPACE" -type f -size +200M -maxdepth 3 -print -exec rm -f {} \; || true
+          echo "Disk usage after early cleanup:"; df -h || true
+        shell: bash
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
