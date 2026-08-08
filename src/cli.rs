@@ -69,6 +69,10 @@ pub struct Cli {
     #[arg(long)]
     pub colnect_csv: Option<String>,
 
+    /// Path to a local source HTML file to parse in scraping mode (compatibility wrapper for --source extractfile)
+    #[arg(long)]
+    pub source_file: Option<String>,
+
     /// Path to a Colnect inbox folder. When set, matching CSV files are
     /// discovered recursively and processed country-by-country.
     /// By default this mode ingests data only; use

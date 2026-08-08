@@ -45,6 +45,7 @@ pub fn validate_user_input(cli: &crate::cli::Cli) -> Result<(), ValidationError>
     let user_provided_any = cli.db_path.is_some()
         || cli.album_name.is_some()
         || cli.site_name.is_some()
+        || cli.source_file.is_some()
         || cli.base_url.is_some()
         || cli.colnect_csv.is_some()
         || source_non_default

@@ -125,11 +125,29 @@ pub fn collect_stampworld_data_with_fetcher(
         let url = format!("{}{}", working_base_url, page_num);
         // Temporary info: log exact request URL we'll call (use info so it appears without RUST_LOG=debug)
         info!("Request URL: {}", url);
-        let (status, body) = match fetcher.fetch_text(&url) {
-            Ok((s, b)) => (s, b),
-            Err(e) => {
-                error!("Problem retrieving page {}: {}", url, e);
-                break;
+
+        // If a local extract file was supplied via global state, use it
+        // as the content for page 1 instead of performing a network fetch.
+        let extract_file = crate::stampworld::state::EXTRACT_FILE_NAME
+            .lock()
+            .map(|s| s.clone())
+            .unwrap_or_default();
+
+        let (status, body) = if !extract_file.is_empty() && page_num == 1 {
+            match std::fs::read_to_string(&extract_file) {
+                Ok(contents) => (reqwest::StatusCode::OK, contents),
+                Err(e) => {
+                    error!("Failed to read extract file {}: {}", extract_file, e);
+                    break;
+                }
+            }
+        } else {
+            match fetcher.fetch_text(&url) {
+                Ok((s, b)) => (s, b),
+                Err(e) => {
+                    error!("Problem retrieving page {}: {}", url, e);
+                    break;
+                }
             }
         };
         // Extra stdout-level diagnostics to ensure automated runs capture
@@ -202,6 +220,10 @@ pub fn collect_stampworld_data_with_fetcher(
                 // continue to try the alternate URL immediately
                 continue;
             }
+        }
+        // If we used a local extract file for page 1, do not attempt to iterate additional pages.
+        if !extract_file.is_empty() && page_num == 1 {
+            done = true;
         }
         // Emit first ~2KB of body to aid debugging (avoid flood) - chars taken as approximate
         // let snippet: String = body.chars().take(2048).collect();
