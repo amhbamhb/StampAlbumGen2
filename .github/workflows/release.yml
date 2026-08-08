@@ -116,6 +116,18 @@ jobs:
         sed -i "s/^\*\*Version\*\*: .*/**Version**: $NEW_VERSION/" RELEASE_NOTES.md
         sed -i "s/^\*\*Release Date\*\*: .*/**Release Date**: $DATE/" RELEASE_NOTES.md
 
+      - name: Add temporary swap to avoid linker OOM
+        if: runner.os == 'Linux'
+        run: |
+          echo "Creating 4G swapfile to avoid linker OOM on hosted runner"
+          sudo fallocate -l 4G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=4096
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          sudo sysctl -w vm.swappiness=10 || true
+          echo "Swap added"
+        shell: bash
+
     - name: Build and test
       run: |
         cargo build --release
