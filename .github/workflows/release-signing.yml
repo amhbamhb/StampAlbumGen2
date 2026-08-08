@@ -23,7 +23,11 @@ jobs:
         with:
           node-version: '24'
       - name: Setup Rust
-        uses: dtolnay/setup-rust@v1
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
       - name: Build release
         run: |
           cargo build --release
