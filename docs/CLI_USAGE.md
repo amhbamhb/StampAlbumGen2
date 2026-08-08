@@ -33,6 +33,8 @@ Options:
           When used with --init-config, force overwriting an existing config.toml after creating a timestamped backup. Default: false
       --colnect-csv <COLNECT_CSV>
           Path to Colnect CSV file for ingestion
+      --source-file <SOURCE_FILE>
+          Path to a local source HTML file to parse in scraping mode (compatibility wrapper for --source extractfile)
       --colnect-inbox <COLNECT_INBOX>
           Path to a Colnect inbox folder. When set, matching CSV files are discovered recursively and processed country-by-country. By default this mode ingests data only; use --colnect-generate-after-import to auto-generate pages in the same run
       --colnect-generate-after-import
@@ -61,3 +63,6 @@ Options:
           Print help
   -V, --version
           Print version
+
+CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:
+  cargo run -- --help > docs/CLI_USAGE.md
