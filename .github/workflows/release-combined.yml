@@ -194,8 +194,8 @@ jobs:
             # Import the PFX into an X509Certificate2 object and check for private key
             $flags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
             $bytes = [IO.File]::ReadAllBytes('cert.pfx')
-            $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
-            $cert.Import($bytes, $pw, $flags)
+            # Use the constructor on platforms where X509Certificate2 is immutable
+            $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new($bytes, $pw, $flags)
             if (-not $cert.HasPrivateKey) { Write-Host 'PFX decoded but contains no private key (HasPrivateKey=false)'; exit 1 }
             Write-Host "PFX validated (HasPrivateKey=$($cert.HasPrivateKey))"
           } catch { Write-Host "PFX validation failed: $($_.Exception.Message)"; exit 1 }
