@@ -16,14 +16,17 @@ permissions:
   contents: write
   id-token: write
 
-env:
-  CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
-  RUSTFLAGS: -C lto=off -C codegen-units=16
+# Note: `runner` expressions are only valid inside a job context. Set
+# `CARGO_TARGET_DIR` and `RUSTFLAGS` at job level where `runner.temp` is
+# available.
 
 jobs:
   prepare-version:
     name: Prepare version (bump & tag)
     runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
     outputs:
       new_version: ${{ steps.new_version.outputs.new_version }}
     steps:
@@ -91,6 +94,9 @@ jobs:
     name: Build artifacts (matrix)
     needs: prepare-version
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -142,6 +148,9 @@ jobs:
     name: Sign Windows EXE (Authenticode)
     needs: build
     runs-on: windows-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
     if: needs.build.outputs['matrix.os'] || true
     steps:
       - name: Check signing PFX secret
@@ -199,6 +208,9 @@ jobs:
     name: Create checksums, signatures and GitHub release
     needs: [build, windows-sign]
     runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
     steps:
       - name: Checkout
         uses: actions/checkout@v4
