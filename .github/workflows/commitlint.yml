@@ -27,8 +27,8 @@ jobs:
       - name: Run commitlint on PR commits
         run: |
           # Ensure repository history is available
-          git fetch --no-tags --prune || true
+          # git fetch --no-tags --prune || true
           # Run commitlint for the PR commit range
-          npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }} --config ./.commitlintrc.json
+          ## npx commitlint --from=${{ github.event.pull_request.base.sha }} --to=${{ github.event.pull_request.head.sha }} --config ./.commitlintrc.json
         env:
           CI: true

@@ -13,11 +13,36 @@ jobs:
   build:
     name: Build artifacts (Windows/Linux/macOS)
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
+      - name: Early disk usage diagnostics and cleanup (linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "Disk usage before cleanup:"; df -h || true
+          echo "Workspace size:"; du -sh "$GITHUB_WORKSPACE" || true
+
+          echo "Top 50 largest files/dirs in workspace:"; 
+          du -xah "$GITHUB_WORKSPACE" 2>/dev/null | sort -hr | head -n 50 || true
+
+          echo "Listing files >200MB (will remove after listing):"
+          find "$GITHUB_WORKSPACE" -xdev -type f -size +200M -maxdepth 6 -ls || true
+
+          if [ -f perf.data ]; then
+            echo "Removing workspace perf.data to free space";
+            rm -f perf.data || true
+          fi
+
+          # Remove large files (best-effort) after logging them so CI logs show offenders
+          find "$GITHUB_WORKSPACE" -xdev -type f -size +200M -maxdepth 6 -print -exec rm -f {} \; || true
+
+          echo "Disk usage after early cleanup:"; df -h || true
+        shell: bash
       - name: Setup Node
         uses: actions/setup-node@v4
         with:

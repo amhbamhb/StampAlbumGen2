@@ -64,5 +64,3 @@ Options:
   -V, --version
           Print version
 
-CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:
-  cargo run -- --help > docs/CLI_USAGE.md
