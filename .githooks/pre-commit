@@ -18,7 +18,7 @@ set -euo pipefail
 # fi
 
 # Keep commit flow fast and deterministic; hook mode is non-interactive and backup-free.
-./scripts/update_versions.sh patch --from-hook
+# ./scripts/update_versions.sh patch --from-hook
 
 git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md 2>/dev/null || true
 
