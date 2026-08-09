@@ -293,7 +293,9 @@ jobs:
           if ! $COSIGN_BIN version >/dev/null 2>&1; then
             echo "cosign binary missing at $COSIGN_BIN"; exit 1
           fi
-          if ! $COSIGN_BIN help sign-blob | grep -q "--keyless"; then
+          # Check the sign-blob help text for the literal "--keyless" string.
+          # Use -F and -- to ensure patterns starting with '-' are not treated as options.
+          if ! $COSIGN_BIN sign-blob --help 2>&1 | grep -Fq -- '--keyless'; then
             echo "Installed cosign ($($COSIGN_BIN version 2>&1 | head -n1)) does not support --keyless. Exiting."; exit 1
           fi
 
