@@ -279,6 +279,13 @@ jobs:
       - name: Compute SHA256 for each artifact
         run: |
           for f in stamp_album_gen2-*; do sha256sum "$f" > "$f.sha256"; done
+      - name: Package all binaries into a single archive
+        run: |
+          TAG="v${{ needs.prepare-version.outputs.new_version }}"
+          ARCHIVE_NAME="stamp_album_gen2-${TAG}.tar.gz"
+          # include binaries and their sha256 files
+          tar -czf "$ARCHIVE_NAME" stamp_album_gen2-* || true
+          ls -lh "$ARCHIVE_NAME" || true
       - name: Fetch tags
         run: git fetch --tags --prune
 
@@ -295,6 +302,7 @@ jobs:
             stamp_album_gen2-linux.sha256
             stamp_album_gen2-macos
             stamp_album_gen2-macos.sha256
+            stamp_album_gen2-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
