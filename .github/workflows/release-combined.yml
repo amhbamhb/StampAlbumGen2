@@ -128,6 +128,7 @@ jobs:
           cargo build --release
 
       - name: Package artifact
+        shell: bash
         run: |
           case "${{ matrix.os }}" in
             "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2-windows.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
