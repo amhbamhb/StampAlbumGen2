@@ -31,11 +31,18 @@ jobs:
       - name: Capture CLI help
         run: cargo run -- --help > help.txt
 
-      - name: Compare help to docs/CLI_USAGE.md
+      - name: Compare help to docs/CLI_USAGE.md (normalize trailing newlines)
         run: |
-          set -e
-          if ! diff -u docs/CLI_USAGE.md help.txt; then
-            echo "CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:\n  cargo run -- --help > docs/CLI_USAGE.md"
+          set -euo pipefail
+          # Normalize both files to use LF and a single trailing newline before diffing.
+          normalize() {
+            perl -0777 -pe 's/\r\n?/\n/g; s/\n+\z/\n/;' "$1" > "$2"
+          }
+          normalize docs/CLI_USAGE.md docs/CLI_USAGE.normalized
+          normalize help.txt help.normalized
+          if ! diff -u docs/CLI_USAGE.normalized help.normalized; then
+            echo "CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:"
+            echo "  cargo run -- --help > docs/CLI_USAGE.md"
             exit 1
           fi
       # commitlint workflow enforces Conventional Commits on PRs
