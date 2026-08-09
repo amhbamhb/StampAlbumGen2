@@ -82,9 +82,13 @@ jobs:
           sed -i "s/^# Version: .*/# Version: $NEW_VERSION/" .github/instructions || true
           sed -i "s/^# Last Updated: .*/# Last Updated: $DATE/" .github/instructions || true
           sed -i "s/^# Stamp Album Generator v.*/# Stamp Album Generator v$NEW_VERSION/" README.md || true
+          # Regenerate lockfile to keep Cargo.lock in sync with the version change
+          if command -v cargo >/dev/null 2>&1; then
+            cargo generate-lockfile || true
+          fi
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md || true
+          git add Cargo.toml Cargo.lock .github/instructions README.md RELEASE_NOTES.md || true
           git commit -m "chore: bump version to $NEW_VERSION" || echo "No changes to commit"
           git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
           git push origin HEAD || true
