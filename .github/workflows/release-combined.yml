@@ -1,8 +1,6 @@
 name: Release (combined)
 
 on:
-  push:
-    branches: [ main, master ]
   workflow_dispatch:
     inputs:
       version_type:
@@ -102,7 +100,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+          ref: v${{ needs.prepare-version.outputs.new_version }}
       # Optional defensive step: logs top disk users and removes very large files
       # Keep while debugging runner OOM/disk issues; safe to remove later.
       - name: Early disk usage diagnostics and cleanup (linux only)
@@ -127,6 +127,7 @@ jobs:
           cargo build --release
 
       - name: Package artifact
+        shell: bash
         run: |
           case "${{ matrix.os }}" in
             "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2-windows.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
@@ -150,7 +151,6 @@ jobs:
     env:
       CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
       RUSTFLAGS: -C lto=off -C codegen-units=16
-    if: needs.build.outputs['matrix.os'] || true
     steps:
       - name: Check signing PFX secret
         id: signing_pfx
