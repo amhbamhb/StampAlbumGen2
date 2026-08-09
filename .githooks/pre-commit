@@ -4,18 +4,18 @@
 
 set -euo pipefail
 
-ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-cd "$ROOT_DIR"
+# ROOT_DIR="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+# cd "$ROOT_DIR"
 
-if [[ "${SKIP_VERSION_BUMP:-0}" == "1" ]]; then
-    echo "Skipping version bump because SKIP_VERSION_BUMP=1"
-    exit 0
-fi
+# if [[ "${SKIP_VERSION_BUMP:-0}" == "1" ]]; then
+#     echo "Skipping version bump because SKIP_VERSION_BUMP=1"
+#     exit 0
+# fi
 
-if [[ ! -x "./scripts/update_versions.sh" ]]; then
-    echo "pre-commit: scripts/update_versions.sh not found or not executable; skipping version bump"
-    exit 0
-fi
+# if [[ ! -x "./scripts/update_versions.sh" ]]; then
+#     echo "pre-commit: scripts/update_versions.sh not found or not executable; skipping version bump"
+#     exit 0
+# fi
 
 # Keep commit flow fast and deterministic; hook mode is non-interactive and backup-free.
 ./scripts/update_versions.sh patch --from-hook
