@@ -1,0 +1,268 @@
+name: Release (combined)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options: [patch, minor, major]
+
+permissions:
+  contents: write
+  id-token: write
+
+# Note: `runner` expressions are only valid inside a job context. Set
+# `CARGO_TARGET_DIR` and `RUSTFLAGS` at job level where `runner.temp` is
+# available.
+
+jobs:
+  prepare-version:
+    name: Prepare version (bump & tag)
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
+    outputs:
+      new_version: ${{ steps.new_version.outputs.new_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get current version
+        id: current_version
+        run: |
+          VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
+          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine version bump type
+        id: version_type
+        run: |
+          if [ "${{ github.event.inputs.version_type }}" != "" ]; then
+            echo "version_type=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
+          else
+            if git log --oneline -n 20 | grep -q "feat:"; then
+              echo "version_type=minor" >> $GITHUB_OUTPUT
+            elif git log --oneline -n 20 | grep -q "fix:"; then
+              echo "version_type=patch" >> $GITHUB_OUTPUT
+            elif git log --oneline -n 20 | grep -q "BREAKING CHANGE"; then
+              echo "version_type=major" >> $GITHUB_OUTPUT
+            else
+              echo "version_type=patch" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Calculate new version
+        id: new_version
+        run: |
+          CURRENT="${{ steps.current_version.outputs.current_version }}"
+          TYPE="${{ steps.version_type.outputs.version_type }}"
+          MAJOR=$(echo $CURRENT | cut -d. -f1)
+          MINOR=$(echo $CURRENT | cut -d. -f2)
+          PATCH=$(echo $CURRENT | cut -d. -f3)
+          case $TYPE in
+            "major") NEW_VERSION="$((MAJOR + 1)).0.0" ;;
+            "minor") NEW_VERSION="$MAJOR.$((MINOR + 1)).0" ;;
+            "patch") NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
+          esac
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Calculated new version: $CURRENT -> $NEW_VERSION (type: $TYPE)"
+
+      - name: Update version in files and tag
+        run: |
+          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
+          DATE=$(date +%Y-%m-%d)
+          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
+          sed -i "s/^# Version: .*/# Version: $NEW_VERSION/" .github/instructions || true
+          sed -i "s/^# Last Updated: .*/# Last Updated: $DATE/" .github/instructions || true
+          sed -i "s/^# Stamp Album Generator v.*/# Stamp Album Generator v$NEW_VERSION/" README.md || true
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md || true
+          git commit -m "chore: bump version to $NEW_VERSION" || echo "No changes to commit"
+          git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
+          git push origin HEAD || true
+          git push origin "v$NEW_VERSION" || true
+
+  build:
+    name: Build artifacts (matrix)
+    needs: prepare-version
+    runs-on: ${{ matrix.os }}
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: v${{ needs.prepare-version.outputs.new_version }}
+      # Optional defensive step: logs top disk users and removes very large files
+      # Keep while debugging runner OOM/disk issues; safe to remove later.
+      - name: Early disk usage diagnostics and cleanup (linux only)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          echo "Disk usage before cleanup:"; df -h || true
+          echo "Top 50 largest files/dirs in workspace:"; du -xah "$GITHUB_WORKSPACE" 2>/dev/null | sort -hr | head -n 50 || true
+          find "$GITHUB_WORKSPACE" -xdev -type f -size +200M -maxdepth 6 -ls || true
+          if [ -f perf.data ]; then rm -f perf.data || true; fi
+          find "$GITHUB_WORKSPACE" -xdev -type f -size +200M -maxdepth 6 -print -exec rm -f {} \; || true
+        shell: bash
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Build release
+        run: |
+          cargo build --release
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          case "${{ matrix.os }}" in
+            "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2-windows.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
+            "ubuntu-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2-linux; else echo 'Linux artifact not found' && exit 1; fi ;;
+            "macos-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2-macos; else echo 'macOS artifact not found' && exit 1; fi ;;
+          esac
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stamp_artifact-${{ matrix.os }}
+          path: |
+            stamp_album_gen2-windows.exe
+            stamp_album_gen2-linux
+            stamp_album_gen2-macos
+
+  windows-sign:
+    name: Sign Windows EXE (Authenticode)
+    needs: build
+    runs-on: windows-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
+    steps:
+      - name: Check signing PFX secret
+        id: signing_pfx
+        shell: pwsh
+        env:
+          SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
+        run: |
+          if (-not $env:SIGNING_PFX) { Write-Host 'SIGNING_PFX not set - skipping signing job'; "enabled=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append; exit 0 }
+          "enabled=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Download Windows artifact
+        if: steps.signing_pfx.outputs.enabled == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: stamp_artifact-windows-latest
+
+      - name: Decode signing PFX (PowerShell)
+        if: steps.signing_pfx.outputs.enabled == 'true'
+        shell: pwsh
+        env:
+          SIGNING_PFX: ${{ secrets.SIGNING_PFX }}
+        run: |
+          try {
+            $b64 = $env:SIGNING_PFX -replace '\s', ''
+            [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($b64))
+          } catch { Write-Host "Failed to decode SIGNING_PFX: $($_.Exception.Message)"; exit 1 }
+
+      - name: Sign EXE with SignTool
+        if: steps.signing_pfx.outputs.enabled == 'true'
+        shell: pwsh
+        env:
+          SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
+        run: |
+          try {
+            if (-not (Test-Path cert.pfx)) { Write-Host 'cert.pfx missing'; exit 1 }
+            if (-not (Test-Path 'stamp_album_gen2-windows.exe')) { Write-Host 'stamp_album_gen2-windows.exe not found'; exit 1 }
+            $signtool = (Get-Command signtool -ErrorAction SilentlyContinue)?.Source
+            if (-not $signtool) {
+              $found = Get-ChildItem -Path 'C:\Program Files (x86)\Windows Kits' -Filter 'signtool.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+              if ($found) { $signtool = $found.FullName }
+            }
+            if (-not $signtool) { Write-Host 'signtool not found; aborting'; exit 1 }
+            & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
+          } catch { Write-Host "SignTool invocation failed: $($_.Exception.Message)"; exit 1 }
+
+      - name: Upload signed windows exe
+        if: steps.signing_pfx.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-windows-exe
+          path: stamp_album_gen2-windows.exe
+
+  finalize-release:
+    name: Create checksums, signatures and GitHub release
+    needs: [build, windows-sign]
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
+      RUSTFLAGS: -C lto=off -C codegen-units=16
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: stamp_artifact-ubuntu-latest
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: stamp_artifact-macos-latest
+
+      - name: Download signed windows artifact (if present)
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-windows-exe
+        continue-on-error: true
+
+      - name: Normalize filenames
+        run: |
+          if [ -f stamp_album_gen2-windows.exe ]; then mv stamp_album_gen2-windows.exe stamp_album_gen2-windows.exe; fi
+          if [ -f stamp_album_gen2-linux ]; then mv stamp_album_gen2-linux stamp_album_gen2-linux; fi
+          if [ -f stamp_album_gen2-macos ]; then mv stamp_album_gen2-macos stamp_album_gen2-macos; fi
+
+      - name: Compute SHA256 for each artifact
+        run: |
+          for f in stamp_album_gen2-*; do sha256sum "$f" > "$f.sha256"; done
+
+      - name: Install cosign (for keyless signing)
+        run: |
+          COSIGN_VER=v2.1.0
+          curl -sSfL https://github.com/sigstore/cosign/releases/download/${COSIGN_VER}/cosign-linux-amd64 -o cosign
+          chmod +x cosign
+          mv cosign /usr/local/bin/
+
+      - name: Cosign keyless sign artifacts
+        run: |
+          set -euo pipefail
+          for f in stamp_album_gen2-*; do sigfile="$f.sig"; cosign sign-blob --keyless --output-signature "$sigfile" "$f"; cosign verify-blob --keyless --signature "$sigfile" "$f"; done
+
+      - name: Create GitHub Release and upload artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          fail_on_unmatched_files: false
+          files: |
+            stamp_album_gen2-windows.exe
+            stamp_album_gen2-windows.exe.sha256
+            stamp_album_gen2-linux
+            stamp_album_gen2-linux.sha256
+            stamp_album_gen2-macos
+            stamp_album_gen2-macos.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

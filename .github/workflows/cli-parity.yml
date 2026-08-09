@@ -1,40 +1,40 @@
-# name: CLI parity test
+name: CLI parity test
 
-# on:
-#   pull_request:
-#     paths:
-#       - '**/*.rs'
-#       - 'scripts/**'
-#       - 'Example-Stampworldwebpage.txt'
-#       - 'scripts/populate_example_db.data.json'
+on:
+  pull_request:
+    paths:
+      - '**/*.rs'
+      - 'scripts/**'
+      - 'Example-Stampworldwebpage.txt'
+      - 'scripts/populate_example_db.data.json'
 
-# jobs:
-#   parity:
-#     name: Run CLI parity test
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - name: Setup Node
-#         uses: actions/setup-node@v4
-#         with:
-#           node-version: '24'
-#       - name: Set up Rust
-#         uses: dtolnay/rust-toolchain@stable
-#         with:
-#           toolchain: stable
-#       - name: Install Python
-#         uses: actions/setup-python@v4
-#         with:
-#           python-version: '3.x'
-#       - name: Build
-#         run: cargo build --locked
-#       - name: Make scripts executable
-#         run: |
-#           chmod +x scripts/cli_parity_test.sh
-#           chmod +x scripts/populate_example_db.sh
-#           chmod +x scripts/populate_example_db.py || true
-#       - name: Run parity test
-#         run: ./scripts/cli_parity_test.sh --verbose
-#         env:
-#           RUST_BACKTRACE: 1
-#       # commitlint workflow enforces Conventional Commits on PRs
+jobs:
+  parity:
+    name: Run CLI parity test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      - name: Build
+        run: cargo build --locked
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/cli_parity_test.sh
+          chmod +x scripts/populate_example_db.sh
+          chmod +x scripts/populate_example_db.py || true
+      - name: Run parity test
+        run: ./scripts/cli_parity_test.sh --verbose
+        env:
+          RUST_BACKTRACE: 1
+      # commitlint workflow enforces Conventional Commits on PRs
