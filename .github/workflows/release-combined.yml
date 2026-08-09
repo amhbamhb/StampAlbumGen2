@@ -148,10 +148,13 @@ jobs:
     name: Sign Windows EXE (Authenticode)
     needs: build
     runs-on: windows-latest
-    env:
-      CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
-      RUSTFLAGS: -C lto=off -C codegen-units=16
     steps:
+      - name: Set job env (CARGO_TARGET_DIR, RUSTFLAGS)
+        shell: pwsh
+        run: |
+          echo "CARGO_TARGET_DIR=$env:RUNNER_TEMP\\cargo-target" >> $env:GITHUB_ENV
+          echo "RUSTFLAGS=-C lto=off -C codegen-units=16" >> $env:GITHUB_ENV
+
       - name: Check signing PFX secret
         id: signing_pfx
         shell: pwsh
