@@ -181,6 +181,25 @@ jobs:
             [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($b64))
           } catch { Write-Host "Failed to decode SIGNING_PFX: $($_.Exception.Message)"; exit 1 }
 
+      - name: Validate PFX and password (pre-sign)
+        if: steps.signing_pfx.outputs.enabled == 'true'
+        shell: pwsh
+        env:
+          SIGNING_PFX_PASSWORD: ${{ secrets.SIGNING_PFX_PASSWORD }}
+        run: |
+          try {
+            if (-not (Test-Path 'cert.pfx')) { Write-Host 'cert.pfx missing after decode'; exit 1 }
+            $pw = $env:SIGNING_PFX_PASSWORD
+            if (-not $pw) { Write-Host 'SIGNING_PFX_PASSWORD not set'; exit 1 }
+            # Import the PFX into an X509Certificate2 object and check for private key
+            $flags = [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet
+            $bytes = [IO.File]::ReadAllBytes('cert.pfx')
+            $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
+            $cert.Import($bytes, $pw, $flags)
+            if (-not $cert.HasPrivateKey) { Write-Host 'PFX decoded but contains no private key (HasPrivateKey=false)'; exit 1 }
+            Write-Host "PFX validated (HasPrivateKey=$($cert.HasPrivateKey))"
+          } catch { Write-Host "PFX validation failed: $($_.Exception.Message)"; exit 1 }
+
       - name: Sign EXE with SignTool
         if: steps.signing_pfx.outputs.enabled == 'true'
         shell: pwsh
@@ -196,7 +215,7 @@ jobs:
               if ($found) { $signtool = $found.FullName }
             }
             if (-not $signtool) { Write-Host 'signtool not found; aborting'; exit 1 }
-            & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p $env:SIGNING_PFX_PASSWORD stamp_album_gen2-windows.exe
+            & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p "$env:SIGNING_PFX_PASSWORD" "stamp_album_gen2-windows.exe"
           } catch { Write-Host "SignTool invocation failed: $($_.Exception.Message)"; exit 1 }
 
       - name: Upload signed windows exe
@@ -242,9 +261,16 @@ jobs:
 
       - name: Normalize filenames
         run: |
-          if [ -f stamp_album_gen2-windows.exe ]; then mv stamp_album_gen2-windows.exe stamp_album_gen2-windows.exe; fi
-          if [ -f stamp_album_gen2-linux ]; then mv stamp_album_gen2-linux stamp_album_gen2-linux; fi
-          if [ -f stamp_album_gen2-macos ]; then mv stamp_album_gen2-macos stamp_album_gen2-macos; fi
+          # Only rename when an alternate source filename exists and the normalized target is missing.
+          if [ -f stamp_album_gen2.exe ] && [ ! -f stamp_album_gen2-windows.exe ]; then
+            mv stamp_album_gen2.exe stamp_album_gen2-windows.exe
+          fi
+          if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-linux ]; then
+            mv stamp_album_gen2 stamp_album_gen2-linux
+          fi
+          if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-macos ]; then
+            mv stamp_album_gen2 stamp_album_gen2-macos
+          fi
 
       - name: Compute SHA256 for each artifact
         run: |
