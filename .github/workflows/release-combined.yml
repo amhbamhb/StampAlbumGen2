@@ -282,10 +282,11 @@ jobs:
       - name: Fetch tags
         run: git fetch --tags --prune
 
-      - name: Create GitHub Release and upload artifacts
+      - name: Create GitHub Release (draft) and upload artifacts
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ needs.prepare-version.outputs.new_version }}
+          draft: true
           fail_on_unmatched_files: false
           files: |
             stamp_album_gen2-windows.exe
@@ -296,3 +297,32 @@ jobs:
             stamp_album_gen2-macos.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish GitHub Release
+        # Publish the previously-created draft release after assets uploaded to avoid
+        # immutable-release upload errors. Uses the REST API to set draft=false.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="v${{ needs.prepare-version.outputs.new_version }}"
+          REPO="${GITHUB_REPOSITORY}"
+          echo "Looking up release for tag $TAG in $REPO"
+          release_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
+          release_id=$(python3 - <<'PY'
+import sys, json
+try:
+    j=json.load(sys.stdin)
+    print(j.get('id',''))
+except Exception:
+    sys.exit(1)
+PY
+ <<EOF
+$release_json
+EOF
+          if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
+            echo "Release not found for tag $TAG"; exit 1
+          fi
+          echo "Publishing release id=$release_id"
+          curl -s -X PATCH -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
+            -d '{"draft":false}' "https://api.github.com/repos/$REPO/releases/$release_id" | sed -n '1,200p'
