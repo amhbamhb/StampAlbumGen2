@@ -231,7 +231,7 @@ jobs:
 
   finalize-release:
     name: Create checksums, signatures and GitHub release
-    needs: [build, windows-sign]
+    needs: [prepare-version, build, windows-sign]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -279,9 +279,13 @@ jobs:
       - name: Compute SHA256 for each artifact
         run: |
           for f in stamp_album_gen2-*; do sha256sum "$f" > "$f.sha256"; done
+      - name: Fetch tags
+        run: git fetch --tags --prune
+
       - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: v${{ needs.prepare-version.outputs.new_version }}
           fail_on_unmatched_files: false
           files: |
             stamp_album_gen2-windows.exe
