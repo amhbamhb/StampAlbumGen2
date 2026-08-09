@@ -150,7 +150,6 @@ jobs:
     env:
       CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
       RUSTFLAGS: -C lto=off -C codegen-units=16
-    if: needs.build.outputs['matrix.os'] || true
     steps:
       - name: Check signing PFX secret
         id: signing_pfx
