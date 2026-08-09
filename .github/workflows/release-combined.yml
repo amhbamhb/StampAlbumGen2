@@ -261,9 +261,16 @@ jobs:
 
       - name: Normalize filenames
         run: |
-          if [ -f stamp_album_gen2-windows.exe ]; then mv stamp_album_gen2-windows.exe stamp_album_gen2-windows.exe; fi
-          if [ -f stamp_album_gen2-linux ]; then mv stamp_album_gen2-linux stamp_album_gen2-linux; fi
-          if [ -f stamp_album_gen2-macos ]; then mv stamp_album_gen2-macos stamp_album_gen2-macos; fi
+          # Only rename when an alternate source filename exists and the normalized target is missing.
+          if [ -f stamp_album_gen2.exe ] && [ ! -f stamp_album_gen2-windows.exe ]; then
+            mv stamp_album_gen2.exe stamp_album_gen2-windows.exe
+          fi
+          if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-linux ]; then
+            mv stamp_album_gen2 stamp_album_gen2-linux
+          fi
+          if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-macos ]; then
+            mv stamp_album_gen2 stamp_album_gen2-macos
+          fi
 
       - name: Compute SHA256 for each artifact
         run: |
