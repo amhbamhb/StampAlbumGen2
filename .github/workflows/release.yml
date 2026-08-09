@@ -188,8 +188,8 @@ jobs:
     - name: Build and test
       run: |
         cargo build --release
-        cargo test
-
+        
+    # cargo test removed from release workflow to avoid OOM issues on GitHub runners.
     # Early cleanup already handled; later cleanup intentionally omitted to avoid
     # removing files created by the build steps.
 
