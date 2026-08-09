@@ -311,7 +311,15 @@ jobs:
           release_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
           release_id=$(echo "$release_json" | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j.get("id",""))')
           if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
-            echo "Release not found for tag $TAG"; echo "$release_json" | sed -n '1,200p'; exit 1
+            echo "Release not found for tag $TAG; creating a draft release"
+            create_json=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
+              -d "{\"tag_name\": \"$TAG\", \"name\": \"$TAG\", \"draft\": true}" \
+              "https://api.github.com/repos/$REPO/releases")
+            release_id=$(echo "$create_json" | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j.get("id",""))')
+            if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
+              echo "Failed to create release for tag $TAG"; echo "$create_json" | sed -n '1,200p'; exit 1
+            fi
+            echo "Created release id=$release_id"
           fi
           echo "Publishing release id=$release_id"
           curl -s -X PATCH -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
