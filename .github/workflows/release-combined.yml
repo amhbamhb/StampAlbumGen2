@@ -283,10 +283,26 @@ jobs:
           chmod +x cosign
           mv cosign /usr/local/bin/
 
+      - name: Verify cosign supports --keyless
+        run: |
+          COSIGN_BIN=/usr/local/bin/cosign
+          if ! $COSIGN_BIN version >/dev/null 2>&1; then
+            echo "cosign binary missing at $COSIGN_BIN"; exit 1
+          fi
+          if ! $COSIGN_BIN help sign-blob | grep -q "--keyless"; then
+            echo "Installed cosign ($($COSIGN_BIN version 2>&1 | head -n1)) does not support --keyless. Exiting."; exit 1
+          fi
+
       - name: Cosign keyless sign artifacts
         run: |
           set -euo pipefail
-          for f in stamp_album_gen2-*; do sigfile="$f.sig"; cosign sign-blob --keyless --output-signature "$sigfile" "$f"; cosign verify-blob --keyless --signature "$sigfile" "$f"; done
+          COSIGN_BIN=/usr/local/bin/cosign
+          for f in stamp_album_gen2-*; do
+            sigfile="$f.sig"
+            echo "Signing $f -> $sigfile"
+            $COSIGN_BIN sign-blob --keyless --output-signature "$sigfile" "$f"
+            $COSIGN_BIN verify-blob --keyless --signature "$sigfile" "$f"
+          done
 
       - name: Create GitHub Release and upload artifacts
         uses: softprops/action-gh-release@v1
