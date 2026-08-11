@@ -6,7 +6,7 @@ Albums/**
 Alblums/
 Albums/**/config.toml
 samples
-build/site-release-bundle
+build/site-release-bundle-test
 copy-release.sh
 PHASE2_MODULARIZATION_PLAN.md
 stamp_album_gen2-windows.exe.sha256

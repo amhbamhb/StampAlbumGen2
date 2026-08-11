@@ -279,3 +279,49 @@ Notes & tips:
 - If you only want to reference an issue without closing it, use `Refs #2` or `Related to #2`.
 - You can close multiple issues in one commit/MR: `Closes #2, #5` or list each on its own line.
 - Prefer placing the closing note in the MR description for clarity; reviewers will see it immediately.
+
+## Post-history-rewrite: contributor recovery
+
+The repository history was rewritten to remove large or sensitive files. This is a disruptive change for anyone with a local clone — please follow the instructions below.
+
+- If you have no local work or unpushed branches: reclone the repository fresh.
+
+```bash
+git clone git@github.com:amhbamhb/StampAlbumGen2.git
+```
+
+- If you have local work you need to preserve, create a backup bundle or branch before recloning:
+
+```bash
+# Save current branch as a bundle
+git branch -m my-work-save
+git bundle create my-work-save.bundle my-work-save
+
+# Or create patches
+git format-patch origin/main..my-work-branch -o ~/patches
+```
+
+- After recloning, re-apply your work by unpacking the bundle or applying patches, or by cherry-picking from a temporary branch you created before the rewrite.
+
+```bash
+# From the new clone
+git clone git@github.com:amhbamhb/StampAlbumGen2.git new-clone
+cd new-clone
+# If using bundle
+git pull ../my-work-save.bundle my-work-save
+# Or apply patches
+git am ~/patches/*.patch
+```
+
+- If you prefer to attempt an in-place recovery (advanced and riskier):
+
+```bash
+git fetch --all --prune
+git branch save-before-rewrite
+git checkout my-work
+git rebase origin/main
+```
+
+If you encounter conflicts, resolve them locally and then push your updated branch with `git push --force-with-lease`.
+
+If you need assistance recovering local branches or applying patches, open an issue and include the bundle or patch files.

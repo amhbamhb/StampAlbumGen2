@@ -100,7 +100,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, ubuntu-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -136,7 +136,6 @@ jobs:
           case "${{ matrix.os }}" in
             "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2-windows.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
             "ubuntu-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2-linux; else echo 'Linux artifact not found' && exit 1; fi ;;
-            "macos-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2-macos; else echo 'macOS artifact not found' && exit 1; fi ;;
           esac
 
       - name: Upload artifact
@@ -146,7 +145,6 @@ jobs:
           path: |
             stamp_album_gen2-windows.exe
             stamp_album_gen2-linux
-            stamp_album_gen2-macos
 
   windows-sign:
     name: Sign Windows EXE (Authenticode)
@@ -252,10 +250,6 @@ jobs:
         with:
           name: stamp_artifact-ubuntu-latest
 
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: stamp_artifact-macos-latest
 
       - name: Download signed windows artifact (if present)
         uses: actions/download-artifact@v4
@@ -272,9 +266,7 @@ jobs:
           if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-linux ]; then
             mv stamp_album_gen2 stamp_album_gen2-linux
           fi
-          if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-macos ]; then
-            mv stamp_album_gen2 stamp_album_gen2-macos
-          fi
+          # macOS artifact disabled temporarily (no macOS certificate available)
 
       - name: Compute SHA256 for each artifact
         run: |
@@ -300,8 +292,6 @@ jobs:
             stamp_album_gen2-windows.exe.sha256
             stamp_album_gen2-linux
             stamp_album_gen2-linux.sha256
-            stamp_album_gen2-macos
-            stamp_album_gen2-macos.sha256
             stamp_album_gen2-*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
