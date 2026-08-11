@@ -16,6 +16,10 @@ SHA256SUMS.txt
 backups
 tools
 scripts
+samples/views_split_plan.md
+.gitlab-ci.yml
+verify_setup.sh
+version_docs.sh
 
 
 refactor-plans
