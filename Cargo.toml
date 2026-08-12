@@ -41,6 +41,9 @@ tiny_http = "0.12"
 webbrowser = "1.0"
 urlencoding = "2.1"
 base64 = "0.22"
+# `rfd` provides native file/folder dialogs but pulls GTK on Linux.
+# Make it optional behind the `use-rfd` feature so builds remain portable.
+rfd = { version = "0.9", optional = true }
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 resvg = "0.47"
 usvg = "0.47"

@@ -3,6 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::io::{self, Write};
+use std::env;
+
+// `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
+// folder picker, otherwise fall back to a console prompt.
+#[cfg(feature = "rfd")]
+use rfd::FileDialog;
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
 
@@ -27,7 +34,110 @@ pub fn ensure_config_and_template_files(
     config_path: &str,
     template_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let cwd = std::env::current_dir()?;
+    // Determine working directory and allow the user to move/copy the
+    // running binary to a different folder on first-run when this
+    // directory appears otherwise empty (no config/template present).
+    let mut cwd = std::env::current_dir()?;
+
+    // If there is no config yet and the current folder appears empty
+    // except for the running binary, offer the user an interactive
+    // folder picker so they may move/copy the binary and continue there.
+    if !Path::new(config_path).exists() {
+        // Count visible (non-dot) entries excluding the running executable
+        if let Ok(entries) = fs::read_dir(&cwd) {
+            let exe_name = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.file_name().map(|s| s.to_os_string()));
+
+            let mut visible_count = 0usize;
+            for e in entries.flatten() {
+                let name = e.file_name();
+                if let Some(ref exe_n) = exe_name {
+                    if name == *exe_n {
+                        continue;
+                    }
+                }
+                if name.to_string_lossy().starts_with('.') {
+                    continue;
+                }
+                visible_count += 1;
+            }
+
+            if visible_count == 0 {
+                // Try a GUI folder picker when enabled, otherwise ask for a
+                // typed path on the console. If the user cancels/skips we
+                // continue in the current directory.
+                #[cfg(feature = "rfd")]
+                let picked = FileDialog::new()
+                    .set_title("Select directory to move/copy binary to (Cancel to keep current)")
+                    .pick_folder();
+
+                #[cfg(not(feature = "rfd"))]
+                let picked = {
+                    println!(
+                        "No GUI dialogs enabled. Enter a target directory path, or press Enter to continue in current directory:" 
+                    );
+                    print!("Target directory (absolute or relative, blank to skip): ");
+                    io::stdout().flush().ok();
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).ok();
+                    let input = input.trim();
+                    if input.is_empty() {
+                        None
+                    } else {
+                        Some(PathBuf::from(input))
+                    }
+                };
+
+                if let Some(target) = picked {
+                    println!("Selected target directory: {}", target.display());
+
+                    // Ask whether to move or copy via a simple console prompt.
+                    loop {
+                        print!("Move binary to target (m), Copy (c), or Skip (s)? [m/c/s]: ");
+                        io::stdout().flush().ok();
+                        let mut choice = String::new();
+                        io::stdin().read_line(&mut choice).ok();
+                        let choice = choice.trim().to_lowercase();
+                        let exe_path = std::env::current_exe()?;
+                        let exe_file_name = exe_path
+                            .file_name()
+                            .and_then(|s| s.to_str())
+                            .ok_or("Failed to determine executable name")?;
+                        let dest = target.join(exe_file_name);
+
+                        if choice == "m" {
+                            match fs::rename(&exe_path, &dest) {
+                                Ok(()) => {
+                                    info!("Moved executable to {}", dest.display());
+                                }
+                                Err(e) => {
+                                    // Fallback to copy on failure
+                                    fs::copy(&exe_path, &dest)?;
+                                    info!("Rename failed ({}); copied executable to {}", e, dest.display());
+                                }
+                            }
+                            env::set_current_dir(&target)?;
+                            cwd = env::current_dir()?;
+                            break;
+                        } else if choice == "c" {
+                            fs::copy(&exe_path, &dest)?;
+                            info!("Copied executable to {}", dest.display());
+                            env::set_current_dir(&target)?;
+                            cwd = env::current_dir()?;
+                            break;
+                        } else if choice == "s" {
+                            // User chose to skip; continue in current directory
+                            break;
+                        } else {
+                            println!("Please enter 'm', 'c' or 's'.");
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+    }
     let config_abs: PathBuf = if Path::new(config_path).is_absolute() {
         PathBuf::from(config_path)
     } else {
