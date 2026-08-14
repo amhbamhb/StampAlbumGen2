@@ -9,6 +9,8 @@ opt-level = 3
 # Enable `full-flag-db` to embed and use `flags/flag_codes.json` at compile time.
 default = []
 full-flag-db = []
+# Optional GUI folder picker (enables optional `rfd` dependency)
+rfd = ["dep:rfd"]
 
 [dependencies]
 csv = "1.2"

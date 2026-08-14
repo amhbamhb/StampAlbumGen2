@@ -4,12 +4,17 @@ use std::cell::RefCell;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::io::{self, Write};
+use std::io::IsTerminal;
 use std::env;
+use std::process::Command;
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 
 // `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
-// folder picker, otherwise fall back to a console prompt.
+// folder picker and a Yes/No confirmation dialog, otherwise fall back
+// to a console prompt (only when a terminal is present).
 #[cfg(feature = "rfd")]
-use rfd::FileDialog;
+use rfd::{FileDialog, MessageDialog, MessageButtons, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
 
@@ -34,6 +39,8 @@ pub fn ensure_config_and_template_files(
     config_path: &str,
     template_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    // Debug: indicate whether the optional GUI folder-picker feature is compiled in
+    debug!("ensure_config_and_template_files: rfd feature compiled = {}", cfg!(feature = "rfd"));
     // Determine working directory and allow the user to move/copy the
     // running binary to a different folder on first-run when this
     // directory appears otherwise empty (no config/template present).
@@ -67,29 +74,69 @@ pub fn ensure_config_and_template_files(
                 // Try a GUI folder picker when enabled, otherwise ask for a
                 // typed path on the console. If the user cancels/skips we
                 // continue in the current directory.
+                // Prefer GUI folder-picker when available, but fall back to
+                // a console prompt if the GUI was not selected or returned
+                // no result (user canceled or failure). Emit a diagnostic
+                // so we can observe which path was used.
+                let mut picked_opt: Option<PathBuf> = None;
+
+                // Detect whether we have an interactive terminal available
+                // so we never block on stdin when the user launched the
+                // binary from a GUI (double-click/file-manager).
+                let has_tty = io::stdin().is_terminal();
+
                 #[cfg(feature = "rfd")]
-                let picked = FileDialog::new()
-                    .set_title("Select directory to move/copy binary to (Cancel to keep current)")
-                    .pick_folder();
+                {
+                    // Ask the user first with a simple Yes/No dialog whether
+                    // they want to move/copy the binary. This is friendly for
+                    // GUI double-click flows on Windows/Linux.
+                    let proceed = MessageDialog::new()
+                        .set_title("Move or copy binary?")
+                        .set_description("Do you want to move or copy this application to another folder before first-run?\n\nChoose Yes to select a folder, No to continue here.")
+                        .set_buttons(MessageButtons::YesNo)
+                        .set_level(MessageLevel::Info)
+                        .show();
+
+                    if proceed {
+                        match FileDialog::new()
+                            .set_title("Select directory to move/copy binary to (Cancel to keep current)")
+                            .pick_folder()
+                        {
+                            Some(p) => {
+                                println!("GUI picker selected: {}", p.display());
+                                picked_opt = Some(p);
+                            }
+                            None => {
+                                println!("GUI picker returned no selection; will fallback to console if interactive");
+                            }
+                        }
+                    } else {
+                        println!("User declined move/copy dialog; continuing in current directory");
+                    }
+                }
 
                 #[cfg(not(feature = "rfd"))]
-                let picked = {
-                    println!(
-                        "No GUI dialogs enabled. Enter a target directory path, or press Enter to continue in current directory:" 
-                    );
+                {
+                    println!("GUI picker not compiled in; will use console prompt if terminal present");
+                }
+
+                // If we don't have a picked folder from the GUI, only prompt
+                // on stdin when a terminal is present. Avoid blocking when the
+                // process was launched from a graphical session.
+                if picked_opt.is_none() && has_tty {
                     print!("Target directory (absolute or relative, blank to skip): ");
                     io::stdout().flush().ok();
                     let mut input = String::new();
                     io::stdin().read_line(&mut input).ok();
                     let input = input.trim();
-                    if input.is_empty() {
-                        None
-                    } else {
-                        Some(PathBuf::from(input))
+                    if !input.is_empty() {
+                        picked_opt = Some(PathBuf::from(input));
                     }
-                };
+                } else if picked_opt.is_none() && !has_tty {
+                    println!("No terminal available; skipping console prompt");
+                }
 
-                if let Some(target) = picked {
+                if let Some(target) = picked_opt {
                     println!("Selected target directory: {}", target.display());
 
                     // Ask whether to move or copy via a simple console prompt.
@@ -117,15 +164,46 @@ pub fn ensure_config_and_template_files(
                                     info!("Rename failed ({}); copied executable to {}", e, dest.display());
                                 }
                             }
+                            // Change into the target directory. Note: on many
+                            // Unix systems the running process's reported
+                            // executable path does not change after a move,
+                            // so to actually continue running from the new
+                            // binary location we re-exec the newly moved
+                            // binary. This replaces the current process and
+                            // ensures `current_exe()` and other runtime
+                            // discovery see the new path.
                             env::set_current_dir(&target)?;
                             cwd = env::current_dir()?;
-                            break;
+                            #[cfg(unix)]
+                            {
+                                let err = Command::new(&dest)
+                                    .args(env::args_os().skip(1))
+                                    .exec();
+                                // If exec returns, it failed.
+                                return Err(Box::new(err));
+                            }
+                            #[cfg(not(unix))]
+                            {
+                                // On non-Unix platforms we just continue in-place.
+                                break;
+                            }
                         } else if choice == "c" {
                             fs::copy(&exe_path, &dest)?;
                             info!("Copied executable to {}", dest.display());
                             env::set_current_dir(&target)?;
                             cwd = env::current_dir()?;
-                            break;
+                            #[cfg(unix)]
+                            {
+                                let err = Command::new(&dest)
+                                    .args(env::args_os().skip(1))
+                                    .exec();
+                                return Err(Box::new(err));
+                            }
+                            #[cfg(not(unix))]
+                            {
+                                // On non-unix targets continue after copying.
+                                break;
+                            }
                         } else if choice == "s" {
                             // User chose to skip; continue in current directory
                             break;

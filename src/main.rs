@@ -135,6 +135,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    // Ensure config/template files or prompt to move/copy on first-run *before*
+    // we align the process working directory to the executable layout. This
+    // allows the initial-startup dialog to operate in the directory the user
+    // actually launched the binary from.
+    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml") {
+        log::warn!("Failed to ensure config template file: {}", e);
+    }
+
     let aligned_runtime_dir = match align_process_working_dir_to_runtime_layout() {
         Ok(dir) => {
             let detail = dir
@@ -166,14 +174,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let startup_config = config::load_config("config.toml");
-    // Always ensure the template file exists, even when config.toml was found and loaded
-    // successfully. This covers the case where a user deletes config_template.toml after
-    // the initial setup — it will be silently recreated from the embedded defaults on the
-    // next run without touching their existing config.toml.
-    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml")
-    {
-        log::warn!("Failed to ensure config template file: {}", e);
-    }
 
     // Warn the user if their config.toml is missing keys added in this version.
     if let Ok(user_cfg_content) = std::fs::read_to_string("config.toml") {

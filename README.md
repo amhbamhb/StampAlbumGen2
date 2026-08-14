@@ -2,6 +2,8 @@
 
 Rust CLI that generates AlbumEasy pages from stamp data sources and SQLite databases.
 
+Latest release: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
+
 ## Start Here
 
 Build release binary and run it:
