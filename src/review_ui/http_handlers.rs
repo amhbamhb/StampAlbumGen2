@@ -1022,7 +1022,6 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn serve_review_requests(
     server: &Server,
     conn: &Connection,
