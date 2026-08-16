@@ -10,11 +10,7 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
         let after_country = &filename[country_start + 8..]; // Skip "country_"
         if let Some(dash_pos) = after_country.find('-') {
             let after_dash = &after_country[dash_pos + 1..];
-            if let Some(underscore_pos) = after_dash.find('_') {
-                Some(after_dash[..underscore_pos].to_string())
-            } else {
-                None
-            }
+            after_dash.find('_').map(|underscore_pos| after_dash[..underscore_pos].to_string())
         } else {
             None
         }
@@ -25,11 +21,7 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
     // Extract year: look for "year_YYYY"
     let year = if let Some(year_start) = filename.find("year_") {
         let after_year = &filename[year_start + 5..]; // Skip "year_"
-        if let Some(dot_pos) = after_year.find('.') {
-            Some(after_year[..dot_pos].to_string())
-        } else {
-            None
-        }
+        after_year.find('.').map(|dot_pos| after_year[..dot_pos].to_string())
     } else {
         None
     };
