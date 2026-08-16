@@ -786,7 +786,7 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
         // Strings to avoid borrowing from a temporary created by `replace`.
         let parts: Vec<String> = combined
             .replace('\r', "")
-            .split(|c| c == '|' || c == '\n')
+            .split(&['|', '\n'][..])
             .map(|s| s.trim().to_string())
             .filter(|s| !s.is_empty())
             .collect();
