@@ -305,34 +305,34 @@ pub fn collect_stampworld_data(
                     .join(" | ");
 
                 debug!("[stampworld] PRE-INSERT: sg_number='{}' year='{}' image_path='{}' remote_image_url='{}' watermark='{}' stamps_issued='{}'", sg_number, stamp_year, local_image_path, remote_image_url, watermark, stamps_issued);
-                let result = crate::db_utils::insert_stamp(
-                    &conn,
-                    _site_name, // country
-                    &desc,      // series
-                    stamp_year, // year as i32
-                    &month,     // month
-                    &month_num, // month_num
-                    &day,       // day
-                    &sg_number,
-                    &type_,
-                    &denomination,
-                    &color,
-                    &description,
-                    &stamps_issued,
-                    &mint_condition,
-                    &unused,
-                    &used,
-                    &letter_fdc,
-                    &currency,
-                    &local_image_path,
-                    &remote_image_url,
-                    &watermark,
-                    &design,
-                    &engraving,
-                    &perforation,
-                    &cleaned_context_details,
-                );
-                match result {
+                let si = crate::db_utils::StampInsert {
+                    country: _site_name.to_string(),
+                    series: desc.clone(),
+                    year: stamp_year,
+                    month: month.clone(),
+                    month_num: month_num.clone(),
+                    day: day.clone(),
+                    sg_number: sg_number.clone(),
+                    type_: type_.clone(),
+                    denomination: denomination.clone(),
+                    color: color.clone(),
+                    description: description.clone(),
+                    stamps_issued: stamps_issued.clone(),
+                    mint_condition: mint_condition.clone(),
+                    unused: unused.clone(),
+                    used: used.clone(),
+                    letter_fdc: letter_fdc.clone(),
+                    currency: currency.clone(),
+                    image_path: local_image_path.clone(),
+                    remote_image_url: remote_image_url.clone(),
+                    original_image_url: String::new(),
+                    watermark: watermark.clone(),
+                    design: design.clone(),
+                    engraving: engraving.clone(),
+                    perforation: perforation.clone(),
+                    context: cleaned_context_details.clone(),
+                };
+                match crate::db_utils::insert_stamp_from_struct(&conn, &si) {
                     Ok(_) => debug!("Inserted stamp into DB: {} {} {}", _site_name, desc, stamp_year),
                     Err(e) => error!("Failed to insert stamp into DB: {} {} {} | Error: {}", _site_name, desc, stamp_year, e),
                 }
