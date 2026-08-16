@@ -10,31 +10,34 @@ use super::compare_assets::{
     render_compare_top_html, render_left_editor_modal_html, render_op_busy_modal_html,
 };
 
+use crate::review_ui::views::shared::RuntimeLogPanelParams;
+use crate::review_ui::views::shared::ReconnectBannerParams;
+
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let json =
         serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
     let compare_css = compare_head_css();
-    let reconnect_banner_compare_html = render_reconnect_banner_html(
-        "reconnectBannerCompare",
-        "reconnectBannerCompareTitle",
-        None,
-        None,
-        "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
-        "retryBackendHealthCheckCompare",
-        "reloadCurrentPageCompare",
-        "reconnectBannerCompareMeta",
-    );
-    let runtime_log_compare_panel_html = render_runtime_log_panel_html(
-        "runtimeLogComparePanel",
-        "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
-        "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
-        "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
-        "runtimeLogCompareBody",
-        "runtimeLogCompare",
-        "showRuntimeLogCompare",
-        "toggleRuntimeLogVisibilityCompare",
-        "copyRuntimeLogCompare",
-    );
+    let reconnect_banner_compare_html = render_reconnect_banner_html(&ReconnectBannerParams {
+        banner_id: "reconnectBannerCompare",
+        title_id: "reconnectBannerCompareTitle",
+        text_id: None,
+        text_html: None,
+        extra_html: "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
+        retry_fn: "retryBackendHealthCheckCompare",
+        reload_fn: "reloadCurrentPageCompare",
+        meta_id: "reconnectBannerCompareMeta",
+    });
+    let runtime_log_compare_panel_html = render_runtime_log_panel_html(&RuntimeLogPanelParams {
+        panel_id: "runtimeLogComparePanel",
+        panel_style: "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
+        header_style: "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
+        controls_style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
+        body_id: "runtimeLogCompareBody",
+        textarea_id: "runtimeLogCompare",
+        checkbox_id: "showRuntimeLogCompare",
+        toggle_fn: "toggleRuntimeLogVisibilityCompare",
+        copy_fn: "copyRuntimeLogCompare",
+    });
     let compare_top_html = render_compare_top_html(
         &reconnect_banner_compare_html,
         &runtime_log_compare_panel_html,
