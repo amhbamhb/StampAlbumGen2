@@ -1673,7 +1673,7 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
         });
     }
 
-    out.sort_by(|a, b| a.country.to_lowercase().cmp(&b.country.to_lowercase()));
+    out.sort_by_key(|a| a.country.to_lowercase());
     out
 }
 
