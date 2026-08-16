@@ -1878,7 +1878,7 @@ pub fn run_scraping_mode(
         Err(e) => {
             progress.finish_with_error(&format!("Data collection failed: {}", e));
             eprintln!("Failed to collect stampworld data: {}", e);
-            return Err(e.into());
+            return Err(e);
         }
     }
 
