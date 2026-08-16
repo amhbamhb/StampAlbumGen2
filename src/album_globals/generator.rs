@@ -369,9 +369,7 @@ fn pad_centre_body_for_side_columns(
 fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -> String {
     let colnect_enabled = config.colnect_details_enabled();
     let detail_layout = config
-        .stamp_detail_layout
-        .as_ref()
-        .map(|s| s.as_str())
+        .stamp_detail_layout.as_deref()
         .unwrap_or("inline");
     if !colnect_enabled || detail_layout == "minimal" {
         return String::new();
@@ -947,9 +945,7 @@ where
         // inline metadata, use a more conservative per-row cap to keep text
         // readable and avoid visual crowding in PDF output.
         let detail_layout = config
-            .stamp_detail_layout
-            .as_ref()
-            .map(|s| s.as_str())
+            .stamp_detail_layout.as_deref()
             .unwrap_or("inline");
         let configured_max = config.max_stamps_per_row.unwrap_or(5) as usize;
         let field_count = if config.colnect_details_enabled() {
