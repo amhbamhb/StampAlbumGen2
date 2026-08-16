@@ -16,6 +16,18 @@ use std::collections::HashMap;
 /// Type alias for country (string)
 pub type Country = String;
 
+/// Parameters for `CommandsFileGenerator::collect_stampworld_data` to reduce
+/// the number of direct arguments and make calls more readable.
+pub struct CollectStampworldCallParams<'a> {
+    pub base_url: &'a str,
+    pub overwrite_images: bool,
+    pub page_callback: Option<&'a dyn Fn(usize)>,
+    pub max_pages: i32,
+    pub stop_after_no_hits: i32,
+    pub start_year: i32,
+    pub end_year: i32,
+}
+
 /// Main struct for generating stamp album command files
 pub struct CommandsFileGenerator {
     pub album_name: String,
@@ -125,15 +137,9 @@ impl CommandsFileGenerator {
     }
 
     /// Collect stampworld data
-    pub fn collect_stampworld_data(
+    pub fn collect_stampworld_data<'a>(
         &mut self,
-        base_url: &str,
-        overwrite_images: bool,
-        page_callback: Option<&dyn Fn(usize)>,
-        max_pages: i32,
-        stop_after_no_hits: i32,
-        start_year: i32,
-        end_year: i32,
+        params: CollectStampworldCallParams<'a>,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
         use crate::commands_file_generator::data_collection::collect_stampworld_data;
         use crate::types::ImageStatus;
@@ -175,22 +181,23 @@ impl CommandsFileGenerator {
             crate::commands_file_generator::image_utils::get_image(url, &target_name, &file_path)
         };
 
-        info!("Invoking commands_file_generator::data_collection::collect_stampworld_data with base_url='{}'", base_url);
-        let stamp_data = collect_stampworld_data(
-            &mut sequencer,
-            &self.separator,
-            &self.country,
-            &self.image_path,
-            &month_number_fn,
-            &downloader,
-            base_url,
-            start_year,
-            end_year,
-            overwrite_images,
-            page_callback,
-            max_pages,
-            stop_after_no_hits,
-        );
+        info!("Invoking commands_file_generator::data_collection::collect_stampworld_data with base_url='{}'", params.base_url);
+        let mut dparams = crate::commands_file_generator::data_collection::CollectStampworldParams {
+            sequencer: &mut sequencer,
+            separator: &self.separator,
+            site_name: &self.country,
+            images_directory: &self.image_path,
+            month_number_fn: &month_number_fn,
+            downloader: &downloader,
+            base_url: params.base_url,
+            start_year: params.start_year,
+            end_year: params.end_year,
+            overwrite_images: params.overwrite_images,
+            page_callback: params.page_callback,
+            max_pages: params.max_pages,
+            stop_after_no_hits: params.stop_after_no_hits,
+        };
+        let stamp_data = collect_stampworld_data(&mut dparams);
 
         info!(
             "Returned from collect_stampworld_data; received {} stamp data lines",
