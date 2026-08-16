@@ -1249,7 +1249,7 @@ where
                 .to_string();
             // Use the est_width_mm precomputed in the pre-pass (should always be present)
             let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm);
-            let _est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
+            let _est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm );
             // Horizontal spacing between stamps (mm). Use packing horizontal safety
             // config so users can tune how tightly stamps are packed horizontally.
             let margin = config.packing_horizontal_safety_mm.unwrap_or(5.0) as f64;
@@ -1632,7 +1632,7 @@ where
                             .text_line_height_mm
                             .unwrap_or(cfg_defaults.text_line_height_mm.unwrap())
                             as f64;
-                    let heading_emit_width = stamp.est_width_mm.unwrap_or(reference_width_mm as f64)
+                    let heading_emit_width = stamp.est_width_mm.unwrap_or(reference_width_mm )
                         + effective_stamp_box_adjust;
                     let heading_perforation = stamp
                         .attrs
@@ -1664,7 +1664,7 @@ where
                     + header_block_height
                     + vspace_after_header
                     + max_row_height
-                    + row_font_spacing as f64
+                    + row_font_spacing 
                     + vertical_safety; // include vertical safety padding
                                        // Reserve extra room for footers/AlbumEasy page decorations to avoid overlap
                                        // Bumped to 11mm (was 10.0) to avoid a subtle footer bleed observed in rendered PDFs.
@@ -1875,7 +1875,7 @@ where
                 .packing_vertical_safety_mm
                 .unwrap_or(cfg_defaults.packing_vertical_safety_mm.unwrap())
                 as f64;
-            let total_row_height = max_row_height + row_font_spacing as f64 + vertical_safety;
+            let total_row_height = max_row_height + row_font_spacing  + vertical_safety;
             // ROW_START_ES emits a line with configured vspace; account for it
             // in fit checks and consumed height to avoid stranded headers.
             let row_start_es_height = if config.row_start_es_enabled.unwrap_or(true) {
@@ -2084,7 +2084,7 @@ where
                     + next_header_block_height
                     + next_vspace_after
                     + next_first_row_max
-                    + row_font_spacing as f64;
+                    + row_font_spacing ;
                 // Include the global conservative buffer when peeking ahead
                 let next_conservative_needed =
                     next_total_header_and_row_height + conservative_buffer;
@@ -2281,10 +2281,10 @@ where
                 // page-fit checks, and emitted dimensions stay in sync.
                 let mut est_width_mm = stamp
                     .est_width_mm
-                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64));
+                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm ));
                 let mut est_height_mm = stamp
                     .est_height_mm
-                    .unwrap_or(series_avg_h_mm.unwrap_or(reference_height_mm as f64));
+                    .unwrap_or(series_avg_h_mm.unwrap_or(reference_height_mm ));
                 // Apply extra_width_mm/extra_height_mm adjustments to width/height (additive)
                 est_width_mm += extra_width_mm;
                 est_height_mm += extra_height_mm;
