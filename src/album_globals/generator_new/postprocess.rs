@@ -349,9 +349,8 @@ pub fn compute_page_used_height(page_block: &[&str], config: &crate::config::Con
             idx += 1;
         }
         // skip trailing PAGE_VSPACE if present
-        while idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
+        if idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
             idx += 1;
-            break;
         }
     }
     let v_before = config
