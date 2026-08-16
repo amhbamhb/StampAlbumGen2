@@ -26,9 +26,7 @@ fn cleanup_stampworld_identity_duplicates(
            AND rowid != ?3",
     )?;
     let rowids = stmt
-        .query_map(params![country, stampworld_image_url, keep_rowid], |r| {
-            r.get::<_, i64>(0)
-        })?
+        .query_map(params![country, stampworld_image_url, keep_rowid], |r| r.get::<_, i64>(0))?
         .collect::<std::result::Result<Vec<_>, _>>()?;
 
     let mut deleted = 0usize;
