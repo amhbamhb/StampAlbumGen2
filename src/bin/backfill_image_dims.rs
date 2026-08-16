@@ -86,8 +86,7 @@ fn process_db(db_path: &Path, apply: bool) -> Result<usize, Box<dyn std::error::
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let prog = args
-        .get(0)
+    let prog = args.first()
         .map(|s| s.as_str())
         .unwrap_or("backfill_image_dims");
     if args.iter().any(|a| a == "--help" || a == "-h") {
