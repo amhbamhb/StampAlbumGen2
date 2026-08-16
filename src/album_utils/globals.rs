@@ -390,7 +390,7 @@ pub fn write_globals<W: Write>(
                 // Ensure page sections begin with a row start when enabled
                 if cfg_row_start_es {
                     // Use centralized helper to emit ROW_START_ES
-                    let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                    let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
                 }
                 last_was_page_start = true;
             }
@@ -403,9 +403,9 @@ pub fn write_globals<W: Write>(
         if trimmed == "PAGE_START" {
             let _ = layout::write_page_start(writer);
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
-            if cfg_row_start_es {
-                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
-            }
+                if cfg_row_start_es {
+                    let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
+                }
             last_was_page_start = true;
             continue;
         }
@@ -436,31 +436,25 @@ pub fn write_globals<W: Write>(
         // Try to fetch/copy a flag image (size w320) and coat of arms. If these fail we ignore the error.
         let mut flag_path_opt: Option<String> = None;
         let mut coat_path_opt: Option<String> = None;
-        match crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
-            Ok(p) => {
-                if let Some(fname) = std::path::Path::new(&p)
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                {
-                    flag_path_opt = Some(format!("images/{}", fname));
-                } else {
-                    flag_path_opt = Some(p);
-                }
+        if let Ok(p) = crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
+            if let Some(fname) = std::path::Path::new(&p)
+                .file_name()
+                .and_then(|s| s.to_str())
+            {
+                flag_path_opt = Some(format!("images/{}", fname));
+            } else {
+                flag_path_opt = Some(p);
             }
-            Err(_) => {}
         }
-        match crate::flagdb::copy_coa_for_album(album_name, &album_images_dir) {
-            Ok(p) => {
-                if let Some(fname) = std::path::Path::new(&p)
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                {
-                    coat_path_opt = Some(format!("images/{}", fname));
-                } else {
-                    coat_path_opt = Some(p);
-                }
+        if let Ok(p) = crate::flagdb::copy_coa_for_album(album_name, &album_images_dir) {
+            if let Some(fname) = std::path::Path::new(&p)
+                .file_name()
+                .and_then(|s| s.to_str())
+            {
+                coat_path_opt = Some(format!("images/{}", fname));
+            } else {
+                coat_path_opt = Some(p);
             }
-            Err(_) => {}
         }
 
         // If flag and coat refer to the same image path, avoid showing both
@@ -516,32 +510,34 @@ pub fn write_globals<W: Write>(
                     if let Some(cp) = coat_path_opt.as_ref() {
                         // Emit a row start before the coat (large vertical element)
                         if cfg_row_start_es {
-                            let _ = crate::album_globals::helpers::emit_row_start_es(
-                                writer,
-                                Some(&cfg),
-                            );
+                            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
                         }
                         // Background color for the coat area (from config)
                         let coat_bg_color = cfg
                             .color_stamp_background
-                            .as_ref()
-                            .map(|s| s.as_str())
+                            .as_deref()
                             .unwrap_or("black");
                         let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", coat_bg_color);
                         // Use configurable coat dimensions from config, default 80x100
                         let coat_w = cfg.flag_cover_coat_img_w_mm.unwrap_or(80.0);
                         let coat_h = cfg.flag_cover_coat_img_h_mm.unwrap_or(100.0);
                         let _ = writeln!(writer, "# Coat of arms for album (if available)");
-                        let _ = crate::album_globals::generator_new::emit::emit_image_only(
-                            writer,
-                            coat_w as f64,
-                            coat_h as f64,
-                            cp,
-                            "",
-                            "",
-                            "",
-                            Some("NO_FRAME"),
-                        );
+                        let ctx = crate::album_globals::generator_new::emit::EmitContext {
+                            emit_width: coat_w as f64,
+                            emit_height: coat_h as f64,
+                            image_path: cp,
+                            left: "",
+                            centre: "",
+                            right: "",
+                            sh_font: "",
+                            sh_size: 0,
+                            sh_label: "",
+                            sgnum: "",
+                            stamp_name: None,
+                            perforation: None,
+                            include_perforation: false,
+                        };
+                        let _ = crate::album_globals::generator_new::emit::emit_image_only(writer, &ctx, Some("NO_FRAME"));
                         // Small vertical gap after coat
                         let _ = layout::write_page_vspace(writer, 6.0_f64);
                     }
@@ -550,29 +546,31 @@ pub fn write_globals<W: Write>(
                     if let Some(fp) = flag_path_opt.as_ref() {
                         // Emit a small-row_start before the flag (HN 1 as requested)
                         if cfg_row_start_es {
-                            let _ = crate::album_globals::helpers::emit_row_start_es(
-                                writer,
-                                Some(&cfg),
-                            );
+                            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
                         }
                         let _ = writeln!(writer, "# Cover flag image for album");
                         let img_w = cfg.flag_cover_img_w_mm.unwrap_or(160.0);
                         let img_h = cfg.flag_cover_img_h_mm.unwrap_or(80.0);
-                        let _ = crate::album_globals::generator_new::emit::emit_image_only(
-                            writer,
-                            img_w as f64,
-                            img_h as f64,
-                            fp,
-                            "",
-                            "",
-                            "",
-                            Some("NO_FRAME"),
-                        );
+                        let ctx = crate::album_globals::generator_new::emit::EmitContext {
+                            emit_width: img_w as f64,
+                            emit_height: img_h as f64,
+                            image_path: fp,
+                            left: "",
+                            centre: "",
+                            right: "",
+                            sh_font: "",
+                            sh_size: 0,
+                            sh_label: "",
+                            sgnum: "",
+                            stamp_name: None,
+                            perforation: None,
+                            include_perforation: false,
+                        };
+                        let _ = crate::album_globals::generator_new::emit::emit_image_only(writer, &ctx, Some("NO_FRAME"));
                         // Reset stamp background to default from config after the flag
                         let default_bg = cfg
                             .color_stamp_background
-                            .as_ref()
-                            .map(|s| s.as_str())
+                            .as_deref()
                             .unwrap_or("black");
                         let _ = writeln!(writer, "COLOR_STAMP_BACKGROUND({})", default_bg);
                         // Vertical gap after flag controlled by config
@@ -582,7 +580,7 @@ pub fn write_globals<W: Write>(
                 "name" => {
                     if cfg_row_start_es {
                         let _ =
-                            crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                            crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
                     }
                     let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
                     let _ = writeln!(
@@ -605,7 +603,7 @@ pub fn write_globals<W: Write>(
             let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
 
             let _ = layout::write_page_vspace(writer, top_vspace as f64);
-            let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
             let _ = writeln!(
                 writer,
                 "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
@@ -623,7 +621,7 @@ pub fn write_globals<W: Write>(
                 let title_size = cfg.flag_cover_text_only_title_size.unwrap_or(48.0);
 
                 let _ = layout::write_page_vspace(writer, top_vspace as f64);
-                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
                 let _ = writeln!(
                     writer,
                     "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
@@ -719,7 +717,7 @@ fn add_wikipedia_section<W: Write>(
             // Add row start if configured and account for its height
             let _row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
                 let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = crate::album_globals::helpers::emit_row_start_es(writer, Some(&cfg));
+                let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
                 let _ = writeln!(writer, "################################################################################");
 
                 // Estimate height of row start (rough approximation)
@@ -1140,22 +1138,22 @@ fn parse_content_into_sections(content: &str) -> Vec<ContentSection> {
                         let mut best_split = chunk_end;
                         if chunk_end < paragraph_text.len() {
                             // Search backwards from chunk_end for a good break point
-                            for (j, _) in paragraph_text[chunk_start..chunk_end]
+                            if let Some((j, _)) = paragraph_text[chunk_start..chunk_end]
                                 .rmatch_indices(". ")
                                 .take(1)
+                                .next()
                             {
                                 best_split = chunk_start + j + 2;
-                                break;
                             }
 
                             // If no sentence boundary found, try to break at space
                             if best_split == chunk_end {
-                                for (j, _) in paragraph_text[chunk_start..chunk_end]
+                                if let Some((j, _)) = paragraph_text[chunk_start..chunk_end]
                                     .rmatch_indices(" ")
                                     .take(1)
+                                    .next()
                                 {
                                     best_split = chunk_start + j + 1;
-                                    break;
                                 }
                             }
                         }
@@ -1282,7 +1280,7 @@ fn create_greedy_pages(
 
 /// Helper function to balance content between existing pages
 /// This tries to move content from over-full pages to under-full pages
-pub fn balance_pages(pages: &mut Vec<Vec<usize>>, heights: &[f64], usable_height: f64) {
+pub fn balance_pages(pages: &mut [Vec<usize>], heights: &[f64], usable_height: f64) {
     // Calculate current page heights
     let mut page_heights: Vec<f64> = pages
         .iter()

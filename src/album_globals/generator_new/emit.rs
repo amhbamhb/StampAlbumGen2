@@ -70,6 +70,23 @@ fn wrap_preserving_breaks_keep_empty(text: &str, max_chars: usize) -> Vec<String
     out
 }
 
+/// Context struct grouping common parameters for stamp emission helpers.
+pub struct EmitContext<'a> {
+    pub emit_width: f64,
+    pub emit_height: f64,
+    pub image_path: &'a str,
+    pub left: &'a str,
+    pub centre: &'a str,
+    pub right: &'a str,
+    pub sh_font: &'a str,
+    pub sh_size: i32,
+    pub sh_label: &'a str,
+    pub sgnum: &'a str,
+    pub stamp_name: Option<&'a str>,
+    pub perforation: Option<&'a str>,
+    pub include_perforation: bool,
+}
+
 fn build_stamp_heading_lines(
     sh_label: &str,
     sgnum: &str,
@@ -156,38 +173,31 @@ pub fn estimate_stamp_heading_line_count(
 ///   content for the box (e.g. "Image\\nNot\\nAvailable").
 pub fn emit_stamp_lines<W: Write>(
     out: &mut W,
-    emit_width: f64,
-    emit_height: f64,
-    image_path: &str,
-    left: &str,
-    centre: &str,
-    right: &str,
+    ctx: &EmitContext,
     config: &crate::config::Config,
-    sgnum: &str,
     is_image: bool,
 ) -> io::Result<()> {
     if is_image {
-        let image_path = escape_ae_text(image_path);
-        let left = escape_ae_text(left);
-        let centre = escape_ae_text(centre);
-        let right = escape_ae_text(right);
+        let image_path = escape_ae_text(ctx.image_path);
+        let left = escape_ae_text(ctx.left);
+        let centre = escape_ae_text(ctx.centre);
+        let right = escape_ae_text(ctx.right);
         let line = format!(
             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-            emit_width, emit_height, image_path, left, centre, right
+            ctx.emit_width, ctx.emit_height, image_path, left, centre, right
         );
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     } else {
-        let image_path = escape_ae_text(image_path);
-        let left = escape_ae_text(left);
-        let centre = escape_ae_text(centre);
-        let right = escape_ae_text(right);
+        let image_path = escape_ae_text(ctx.image_path);
+        let left = escape_ae_text(ctx.left);
+        let centre = escape_ae_text(ctx.centre);
+        let right = escape_ae_text(ctx.right);
         let line = format!(
             "STAMP_ADD ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-            emit_width, emit_height, image_path, left, centre, right
+            ctx.emit_width, ctx.emit_height, image_path, left, centre, right
         );
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     }
-
     let sh_label = if config.include_catalog_numbers.unwrap_or(true) {
         resolve_stamp_heading_label(config, None)
     } else {
@@ -204,7 +214,7 @@ pub fn emit_stamp_lines<W: Write>(
         writeln!(
             out,
             "STAMP_HEADING({} {} \"{} : {}\")",
-            sh_font, sh_size, sh_label, sgnum
+            sh_font, sh_size, sh_label, ctx.sgnum
         )?;
     }
 
@@ -276,77 +286,53 @@ pub fn resolve_stamp_heading_label(
 /// This centralizes the formatting of `STAMP_ADD_IMG` / `STAMP_ADD` and
 /// `STAMP_HEADING` so call sites can focus on layout and placeholder
 /// generation logic.
-pub fn emit_stamp<W: Write>(
-    out: &mut W,
-    has_image: bool,
-    image_path: &str,
-    emit_width: f64,
-    emit_height: f64,
-    left: &str,
-    centre: &str,
-    right: &str,
-    sh_font: &str,
-    sh_size: i32,
-    sh_label: &str,
-    sgnum: &str,
-    stamp_name: Option<&str>,
-    perforation: Option<&str>,
-    include_perforation: bool,
-) -> std::io::Result<()> {
+pub fn emit_stamp<W: Write>(out: &mut W, has_image: bool, ctx: &EmitContext) -> std::io::Result<()> {
     if has_image {
-        let image_path = escape_ae_text(image_path);
-        let left = escape_ae_text(left);
-        let centre = escape_ae_text(centre);
-        let right = escape_ae_text(right);
+        let image_path = escape_ae_text(ctx.image_path);
+        let left = escape_ae_text(ctx.left);
+        let centre = escape_ae_text(ctx.centre);
+        let right = escape_ae_text(ctx.right);
         let line = format!(
             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\")",
-            emit_width, emit_height, image_path, left, centre, right
+            ctx.emit_width, ctx.emit_height, image_path, left, centre, right
         );
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
         // Only emit STAMP_HEADING if a label is configured (the number alone
         // is from StampWorld's internal system, not a real catalog)
-        if !sh_label.is_empty() {
+        if !ctx.sh_label.is_empty() {
             if let Some(heading) = format_stamp_heading(
-                sh_label,
-                sgnum,
-                stamp_name,
-                perforation,
-                include_perforation,
-                emit_width,
-                sh_size,
+                ctx.sh_label,
+                ctx.sgnum,
+                ctx.stamp_name,
+                ctx.perforation,
+                ctx.include_perforation,
+                ctx.emit_width,
+                ctx.sh_size,
             ) {
-                writeln!(
-                    out,
-                    "STAMP_HEADING({} {} \"{}\")",
-                    sh_font, sh_size, heading
-                )?;
+                writeln!(out, "STAMP_HEADING({} {} \"{}\")", ctx.sh_font, ctx.sh_size, heading)?;
             }
         }
     } else {
-        let left = escape_ae_text(left);
-        let centre = escape_ae_text(centre);
-        let right = escape_ae_text(right);
+        let left = escape_ae_text(ctx.left);
+        let centre = escape_ae_text(ctx.centre);
+        let right = escape_ae_text(ctx.right);
         let line = format!(
             "STAMP_ADD ({:.1} {:.1} \"Image\\nNot\\nAvailable\" \"{}\" \"{}\" \"{}\")",
-            emit_width, emit_height, left, centre, right
+            ctx.emit_width, ctx.emit_height, left, centre, right
         );
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
         // Only emit STAMP_HEADING if a label is configured
-        if !sh_label.is_empty() {
+        if !ctx.sh_label.is_empty() {
             if let Some(heading) = format_stamp_heading(
-                sh_label,
-                sgnum,
-                stamp_name,
-                perforation,
-                include_perforation,
-                emit_width,
-                sh_size,
+                ctx.sh_label,
+                ctx.sgnum,
+                ctx.stamp_name,
+                ctx.perforation,
+                ctx.include_perforation,
+                ctx.emit_width,
+                ctx.sh_size,
             ) {
-                writeln!(
-                    out,
-                    "STAMP_HEADING({} {} \"{}\")",
-                    sh_font, sh_size, heading
-                )?;
+                writeln!(out, "STAMP_HEADING({} {} \"{}\")", ctx.sh_font, ctx.sh_size, heading)?;
             }
         }
     }
@@ -356,23 +342,14 @@ pub fn emit_stamp<W: Write>(
 /// Emit only an image stamp line (no `STAMP_HEADING`) with optional extra
 /// options appended (e.g. `NO_FRAME`). This is useful for cover/flag images
 /// where a heading should not be emitted.
-pub fn emit_image_only<W: Write>(
-    out: &mut W,
-    emit_width: f64,
-    emit_height: f64,
-    image_path: &str,
-    left: &str,
-    centre: &str,
-    right: &str,
-    options: Option<&str>,
-) -> std::io::Result<()> {
-    let image_path = escape_ae_text(image_path);
-    let left = escape_ae_text(left);
-    let centre = escape_ae_text(centre);
-    let right = escape_ae_text(right);
+pub fn emit_image_only<W: Write>(out: &mut W, ctx: &EmitContext, options: Option<&str>) -> std::io::Result<()> {
+    let image_path = escape_ae_text(ctx.image_path);
+    let left = escape_ae_text(ctx.left);
+    let centre = escape_ae_text(ctx.centre);
+    let right = escape_ae_text(ctx.right);
     let mut line = format!(
         "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"{}\" \"{}\"",
-        emit_width, emit_height, image_path, left, centre, right
+        ctx.emit_width, ctx.emit_height, image_path, left, centre, right
     );
     if let Some(opts) = options {
         // append a space then the options token(s) and close paren

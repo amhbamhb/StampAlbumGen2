@@ -9,7 +9,7 @@ use image::GenericImageView;
 /// Small local flag DB: map lowercase country name -> ISO alpha-2 code
 /// We'll initialize it with a compact set and allow loading from a JSON file
 /// under `flags/flag_codes.json` to allow updates.
-
+///
 pub fn default_flag_map() -> HashMap<String, String> {
     // Minimal initial set; we'll try to be forgiving with lookups
     let mut m = HashMap::new();

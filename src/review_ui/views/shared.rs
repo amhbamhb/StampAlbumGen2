@@ -15,6 +15,7 @@ pub(super) fn render_footer_year_script() -> String {
     format!("<script>\n{}\n</script>", FOOTER_YEAR_UPDATE_JS)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn render_reconnect_banner_html(
     banner_id: &str,
     title_id: &str,

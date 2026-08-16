@@ -97,15 +97,18 @@ pub fn create_album<P: AsRef<std::path::Path>>(
                 height = series_info
                     .as_ref()
                     .map_or("0".to_string(), |s| s.height.clone());
-                album_globals::new_series(
-                    &mut writer,
-                    series,
+                let series_ctx = album_globals::page_functions::SeriesContext {
+                    series_name: series,
                     year,
                     month,
                     day,
-                    count,
-                    multi_perf,
-                    fields[12],
+                    stamps_in_series: count,
+                    is_perforated: multi_perf,
+                    perforation: fields[12],
+                };
+                album_globals::new_series(
+                    &mut writer,
+                    &series_ctx,
                     &mut rows_written,
                     &mut stamps_written,
                     &mut used_width,
@@ -125,15 +128,18 @@ pub fn create_album<P: AsRef<std::path::Path>>(
                 height = series_info
                     .as_ref()
                     .map_or("0".to_string(), |s| s.height.clone());
-                album_globals::new_series(
-                    &mut writer,
-                    series,
+                let series_ctx = album_globals::page_functions::SeriesContext {
+                    series_name: series,
                     year,
                     month,
                     day,
-                    count,
-                    multi_perf,
-                    fields[12],
+                    stamps_in_series: count,
+                    is_perforated: multi_perf,
+                    perforation: fields[12],
+                };
+                album_globals::new_series(
+                    &mut writer,
+                    &series_ctx,
                     &mut rows_written,
                     &mut stamps_written,
                     &mut used_width,
@@ -155,20 +161,21 @@ pub fn create_album<P: AsRef<std::path::Path>>(
                 && is_selected_format(formats, fields[13])
                 && is_selected_emission(emissions, fields[14])
             {
-                album_globals::add_stamp(
-                    &mut writer,
+                let color_val = fix_color(fields[9]);
+                let stamp_ctx = album_globals::page_functions::StampContext {
                     year,
-                    fields[6],
-                    fields[7],
-                    fields[8],
-                    fix_color(fields[9]),
-                    series_info.as_ref().is_some_and(|s| s.multi_perf),
-                    fields[12],
-                    &stamp_width,
-                    &stamp_height,
-                    &catalog_num,
-                    fields[17],
-                );
+                    field1: fields[6],
+                    field2: fields[7],
+                    field3: fields[8],
+                    color: &color_val,
+                    multi_perf: series_info.as_ref().is_some_and(|s| s.multi_perf),
+                    desc: fields[12],
+                    width: &stamp_width,
+                    height: &stamp_height,
+                    catalog_num: &catalog_num,
+                    field4: fields[17],
+                };
+                album_globals::add_stamp(&mut writer, &stamp_ctx);
             }
         }
     }

@@ -54,7 +54,7 @@ pub fn get_all_series(conn: &Connection) -> Result<Vec<String>> {
                   ) ASC,
                   series COLLATE NOCASE ASC",
     )?;
-    let iter = stmt.query_map([], |row| Ok(row.get::<_, String>(0)?))?;
+    let iter = stmt.query_map([], |row| row.get::<_, String>(0))?;
     let mut res = Vec::new();
     for s in iter {
         res.push(s?);
@@ -321,7 +321,7 @@ pub fn insert_stamp_placeholder(
     }
 }
 
-pub fn sort_stampstubs_inplace(v: &mut Vec<StampStub>) {
+pub fn sort_stampstubs_inplace(v: &mut [StampStub]) {
     v.sort_by(|a, b| {
         let year_cmp = a.year.cmp(&b.year);
         if year_cmp != std::cmp::Ordering::Equal {
@@ -496,7 +496,7 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     debug!("Running migrate_stamps_table");
     // Check existing columns
     let mut stmt = conn.prepare("PRAGMA table_info('stamps')")?;
-    let cols = stmt.query_map([], |row| Ok(row.get::<_, String>(1)?))?;
+    let cols = stmt.query_map([], |row| row.get::<_, String>(1))?;
     let mut existing: Vec<String> = Vec::new();
     for c in cols {
         existing.push(c?);
@@ -693,6 +693,7 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn insert_stamp(
     conn: &Connection,
     country: &str,
@@ -736,41 +737,9 @@ pub fn insert_stamp(
 
     let exists_sql = "SELECT COUNT(*), image_path, remote_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3";
     let mut stmt = conn.prepare(exists_sql)?;
-    let (
-        count,
-        existing_image_path,
-        existing_remote_url,
-        existing_description,
-        existing_stamps_issued,
-        existing_mint_condition,
-        existing_unused,
-        existing_used,
-        existing_letter_fdc,
-        existing_currency,
-        existing_watermark,
-        existing_design,
-        existing_engraving,
-        existing_perforation,
-        existing_context,
-    ): (
-        i64,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-    ) = stmt.query_row(params![country, series, sg_number], |row| {
+    let row_tuple = stmt.query_row(params![country, series, sg_number], |row| {
         Ok((
-            row.get(0)?,
+            row.get::<_, i64>(0)?,
             row.get(1).unwrap_or(String::new()),
             row.get(2).unwrap_or(String::new()),
             row.get(3).unwrap_or(String::new()),
@@ -787,6 +756,23 @@ pub fn insert_stamp(
             row.get(14).unwrap_or(String::new()),
         ))
     })?;
+    let (
+        count,
+        existing_image_path,
+        existing_remote_url,
+        existing_description,
+        existing_stamps_issued,
+        existing_mint_condition,
+        existing_unused,
+        existing_used,
+        existing_letter_fdc,
+        existing_currency,
+        existing_watermark,
+        existing_design,
+        existing_engraving,
+        existing_perforation,
+        existing_context,
+    ) = row_tuple;
 
     if count > 0 {
         // trace removed
@@ -797,11 +783,10 @@ pub fn insert_stamp(
         if has_new_remote_url {
             needs_update = true;
         }
-        if !image_path.trim().is_empty() {
-            if is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image")
-            {
-                needs_update = true;
-            }
+        if !image_path.trim().is_empty()
+            && (is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image"))
+        {
+            needs_update = true;
         }
         if is_empty(&existing_description) && !description.trim().is_empty() {
             needs_update = true;
@@ -1029,26 +1014,26 @@ pub fn insert_stamp(
     Ok(true)
 }
 
+pub type StampCountrySeriesRow = (
+    i32,
+    String,
+    String,
+    i32,
+    String,
+    i32,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+);
+
 pub fn get_stamps_by_country_series(
     conn: &Connection,
     country: &str,
     series: &str,
-) -> Result<
-    Vec<(
-        i32,
-        String,
-        String,
-        i32,
-        String,
-        i32,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-    )>,
-> {
+) -> Result<Vec<StampCountrySeriesRow>> {
     let mut stmt = conn.prepare(
         "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
     )?;

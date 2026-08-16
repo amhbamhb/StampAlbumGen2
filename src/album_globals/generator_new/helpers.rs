@@ -11,6 +11,30 @@ use std::io::Write;
 // Path is not currently needed here; keep import commented for future use.
 // use std::path::Path;
 
+/// Options used when generating placeholders for a series of stamps.
+pub struct PlaceholderOptions<'a> {
+    pub album_name: &'a str,
+    pub series_name: Option<&'a str>,
+    pub mm_per_pixel_w: f32,
+    pub mm_per_pixel_h: f32,
+    pub fit_box: bool,
+    pub target_stamp_height_mm: f64,
+    pub reference_width_mm: f64,
+    pub reference_height_mm: f64,
+}
+
+/// Call-specific options for a single placeholder creation invocation.
+pub struct PlaceholderCallOptions<'a> {
+    pub album_name: &'a str,
+    pub series_name: Option<&'a str>,
+    pub catalog_number: &'a str,
+    pub year: &'a str,
+    pub target_w_mm: Option<f64>,
+    pub target_h_mm: Option<f64>,
+    pub mm_per_pixel_w: Option<f32>,
+    pub mm_per_pixel_h: Option<f32>,
+}
+
 // Local copy of helper functions so the refactor can be worked on inside
 // `generator_new` without changing behavior. These mirror the existing
 // `crate::album_globals::helpers` implementations and will be unified later.
@@ -96,10 +120,7 @@ pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {
             if let Some(t) = cfg.page_text_format.clone() {
                 return t;
             }
-            let font = cfg
-                .page_text_font
-                .clone()
-                .unwrap_or_else(|| "HN".to_string());
+            let font = cfg.page_text_font.clone().unwrap_or_else(|| "HN".to_string());
             let size = cfg.page_text_size.unwrap_or(10.0) as i32;
             let vspace = cfg.page_text_vspace.unwrap_or(1.0_f32);
             let head = format!("PAGE_TEXT ({} {} \"", font, size);
@@ -317,7 +338,7 @@ fn set_attr_if_non_empty(attrs: &mut GenericAttrs, key: &str, value: &str) {
 }
 
 fn set_attr_if_missing(attrs: &mut GenericAttrs, key: &str, value: Option<String>) {
-    let missing = attrs.get(key).map_or(true, |v| v.trim().is_empty());
+    let missing = attrs.get(key).map(|v| v.trim().is_empty()).unwrap_or(true);
     if missing {
         if let Some(v) = value {
             if !v.trim().is_empty() {
@@ -515,7 +536,8 @@ pub fn fetch_and_filter_stamps(
 
             if attrs
                 .get("colnect_catalog_codes")
-                .map_or(true, |v| v.trim().is_empty())
+                .map(|v| v.trim().is_empty())
+                .unwrap_or(true)
                 && !colnect.catalog_codes.is_empty()
             {
                 let codes_str = colnect
@@ -529,7 +551,8 @@ pub fn fetch_and_filter_stamps(
 
             if attrs
                 .get("catalog_number")
-                .map_or(true, |v| v.trim().is_empty())
+                .map(|v| v.trim().is_empty())
+                .unwrap_or(true)
             {
                 let raw_codes = colnect
                     .catalog_codes
@@ -548,7 +571,8 @@ pub fn fetch_and_filter_stamps(
                     if catalog_type == "sn"
                         && attrs
                             .get("scott_number")
-                            .map_or(true, |v| v.trim().is_empty())
+                            .map(|v| v.trim().is_empty())
+                            .unwrap_or(true)
                     {
                         attrs.set(
                             "scott_number",
@@ -598,7 +622,8 @@ pub fn fetch_and_filter_stamps(
 
             if attrs
                 .get("scott_number")
-                .map_or(true, |v| v.trim().is_empty())
+                .map(|v| v.trim().is_empty())
+                .unwrap_or(true)
             {
                 if let Some((_, scott_code)) = colnect
                     .catalog_codes
@@ -612,16 +637,17 @@ pub fn fetch_and_filter_stamps(
 
         if attrs
             .get("catalog_number")
-            .map_or(true, |v| v.trim().is_empty())
+            .map(|v| v.trim().is_empty())
+            .unwrap_or(true)
         {
             if let Some(sg_number) = attrs.get("sg_number").cloned() {
                 attrs.set("catalog_number", &sg_number);
             }
         }
-
         if attrs
             .get("catalog_code")
-            .map_or(true, |v| v.trim().is_empty())
+            .map(|v| v.trim().is_empty())
+            .unwrap_or(true)
         {
             attrs.set("catalog_code", &default_catalog_code);
         }
@@ -654,29 +680,22 @@ pub fn fetch_and_filter_stamps(
 /// in the original generator so layout can rely on finalized `est_*` fields.
 pub fn estimate_and_ensure_placeholders(
     conn: &Connection,
-    album_name: &str,
-    series_name: &str,
+    opts: &PlaceholderOptions<'_>,
     stamps: &mut [Stamp],
-    mm_per_pixel_w: f32,
-    mm_per_pixel_h: f32,
-    fit_box: bool,
-    target_stamp_height_mm: f64,
-    reference_width_mm: f64,
-    reference_height_mm: f64,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Compute series averages from available images
     let mut series_widths_mm: Vec<f64> = Vec::new();
     let mut series_heights_mm: Vec<f64> = Vec::new();
     for stamp in stamps.iter() {
         let image_path = stamp.image_path.trim();
-        let full_image_path = crate::file_utils::resolve_album_image_path(album_name, image_path)
+        let full_image_path = crate::file_utils::resolve_album_image_path(opts.album_name, image_path)
             .to_string_lossy()
             .to_string();
         if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
-            series_widths_mm.push((w_px as f64) * (mm_per_pixel_w as f64));
-            series_heights_mm.push((h_px as f64) * (mm_per_pixel_h as f64));
+            series_widths_mm.push((w_px as f64) * (opts.mm_per_pixel_w as f64));
+            series_heights_mm.push((h_px as f64) * (opts.mm_per_pixel_h as f64));
         } else if let Some((w_mm, h_mm)) =
-            estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+            estimate_real_dimensions(&full_image_path, opts.mm_per_pixel_w, opts.mm_per_pixel_h)
         {
             series_widths_mm.push(w_mm as f64);
             series_heights_mm.push(h_mm as f64);
@@ -715,21 +734,21 @@ pub fn estimate_and_ensure_placeholders(
             // Fall back to existing logic for image-based or default dimensions
             let image_path = s.image_path.trim();
             let full_image_path =
-                crate::file_utils::resolve_album_image_path(album_name, image_path)
+                crate::file_utils::resolve_album_image_path(opts.album_name, image_path)
                     .to_string_lossy()
                     .to_string();
             if let (Some(w_px), Some(h_px)) = (s.image_width_px, s.image_height_px) {
-                let w_mm = (w_px as f64) * (mm_per_pixel_w as f64);
-                let h_mm = (h_px as f64) * (mm_per_pixel_h as f64);
+                let w_mm = (w_px as f64) * (opts.mm_per_pixel_w as f64);
+                let h_mm = (h_px as f64) * (opts.mm_per_pixel_h as f64);
                 s.est_width_mm = Some(w_mm);
                 s.est_height_mm = Some(h_mm);
             } else if let Some((w_mm, h_mm)) =
-                estimate_real_dimensions(&full_image_path, mm_per_pixel_w, mm_per_pixel_h)
+                estimate_real_dimensions(&full_image_path, opts.mm_per_pixel_w, opts.mm_per_pixel_h)
             {
                 let mut w = w_mm as f64;
                 let mut h = h_mm as f64;
-                if fit_box && h > target_stamp_height_mm {
-                    let sc = target_stamp_height_mm / h;
+                if opts.fit_box && h > opts.target_stamp_height_mm {
+                    let sc = opts.target_stamp_height_mm / h;
                     w *= sc;
                     h *= sc;
                 }
@@ -738,8 +757,8 @@ pub fn estimate_and_ensure_placeholders(
 
                 // We found the real image and got dimensions!
                 // Update the stamp object and DB so we don't generate a placeholder.
-                let px_w = (w_mm / mm_per_pixel_w).round() as i32;
-                let px_h = (h_mm / mm_per_pixel_h).round() as i32;
+                let px_w = (w_mm as f64 / (opts.mm_per_pixel_w as f64)).round() as i32;
+                let px_h = (h_mm as f64 / (opts.mm_per_pixel_h as f64)).round() as i32;
                 s.image_width_px = Some(px_w);
                 s.image_height_px = Some(px_h);
 
@@ -747,15 +766,15 @@ pub fn estimate_and_ensure_placeholders(
                     let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
                     if let Err(e) = update_image_dimensions(
                         conn,
-                        album_name,
-                        series_name,
+                        opts.album_name,
+                        opts.series_name.unwrap_or(""),
                         sg_str,
                         Some(px_w),
                         Some(px_h),
                     ) {
                         log::error!(
                             "Failed to update DB image dims for {} sg {}: {}",
-                            album_name,
+                            opts.album_name,
                             sg_str,
                             e
                         );
@@ -765,16 +784,16 @@ pub fn estimate_and_ensure_placeholders(
                 s.est_width_mm = Some(avg_w);
                 s.est_height_mm = Some(avg_h);
             } else {
-                s.est_width_mm = Some(reference_width_mm as f64);
-                s.est_height_mm = Some(reference_height_mm as f64);
+                s.est_width_mm = Some(opts.reference_width_mm);
+                s.est_height_mm = Some(opts.reference_height_mm);
             }
         }
 
         // If the stamp lacks pixel dims, generate a placeholder sized to the
         // image-only mm size so layout later sees consistent pixel sizes.
         if s.image_width_px.is_none() {
-            let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
-            let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
+            let base_w = s.est_width_mm.unwrap_or(opts.reference_width_mm);
+            let base_h = s.est_height_mm.unwrap_or(opts.reference_height_mm);
             let target_w_mm = base_w;
             let target_h_mm = base_h;
             // Use Scott number if available, fall back to SG number for placeholder filename
@@ -785,36 +804,47 @@ pub fn estimate_and_ensure_placeholders(
                 .or_else(|| s.attrs.get("sg_number"))
                 .map(|v| v.as_str())
                 .unwrap_or("");
-            match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
-                album_name,
-                catalog_num,
-                s.attrs.get("year").map(|v| v.as_str()).unwrap_or(""),
-                Some(series_name),
-                None,
-                Some(target_w_mm),
-                Some(target_h_mm),
-                Some(mm_per_pixel_w),
-                Some(mm_per_pixel_h),
-            ) {
+            let ph_opts = PlaceholderCallOptions {
+                album_name: opts.album_name,
+                series_name: opts.series_name,
+                catalog_number: catalog_num,
+                year: s.attrs.get("year").map(|v| v.as_str()).unwrap_or(""),
+                target_w_mm: Some(target_w_mm),
+                target_h_mm: Some(target_h_mm),
+                mm_per_pixel_w: Some(opts.mm_per_pixel_w),
+                mm_per_pixel_h: Some(opts.mm_per_pixel_h),
+            };
+            let ph_image_opts = crate::placeholder_image::PlaceholderImageOptions {
+                album_name: ph_opts.album_name,
+                catalog_number: ph_opts.catalog_number,
+                year: ph_opts.year,
+                series_hint: ph_opts.series_name,
+                stamp_bg_color: None,
+                target_mm_w: ph_opts.target_w_mm,
+                target_mm_h: ph_opts.target_h_mm,
+                mm_per_px_w: ph_opts.mm_per_pixel_w,
+                mm_per_px_h: ph_opts.mm_per_pixel_h,
+            };
+            match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(&ph_image_opts) {
                 Ok(rel) => {
                     s.image_path = rel;
-                    let px_w = (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
-                    let px_h = (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
+                    let px_w = (target_w_mm / (opts.mm_per_pixel_w as f64)).round() as i32;
+                    let px_h = (target_h_mm / (opts.mm_per_pixel_h as f64)).round() as i32;
                     s.image_width_px = Some(px_w);
                     s.image_height_px = Some(px_h);
                     if px_w > 0 && px_h > 0 {
                         let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
                         if let Err(e) = update_image_dimensions(
                             conn,
-                            album_name,
-                            series_name,
+                            opts.album_name,
+                            opts.series_name.unwrap_or(""),
                             sg_str,
                             Some(px_w),
                             Some(px_h),
                         ) {
                             log::error!(
                                 "Failed to update DB image dims for {} sg {}: {}",
-                                album_name,
+                                opts.album_name,
                                 sg_str,
                                 e
                             );
@@ -824,7 +854,7 @@ pub fn estimate_and_ensure_placeholders(
                 Err(e) => {
                     log::error!(
                         "Failed to create placeholder for {} sg {}: {}",
-                        album_name,
+                        opts.album_name,
                         s.attrs.get("sg_number").unwrap_or(&"".to_string()),
                         e
                     );
@@ -842,44 +872,37 @@ pub fn estimate_and_ensure_placeholders(
 /// placeholder generator); otherwise `None`.
 pub fn ensure_placeholder_for_stamp_and_update_db(
     conn: &Connection,
-    album_name: &str,
-    series_name: &str,
-    sg_number: &str,
-    catalog_number: &str,
-    year: &str,
-    target_w_mm: f64,
-    target_h_mm: f64,
-    mm_per_pixel_w: f32,
-    mm_per_pixel_h: f32,
+    opts: &PlaceholderCallOptions,
     mut writer: Option<&mut dyn Write>,
 ) -> Option<(String, i32, i32)> {
-    match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
-        album_name,
-        catalog_number,
-        year,
-        Some(series_name),
-        None,
-        Some(target_w_mm),
-        Some(target_h_mm),
-        Some(mm_per_pixel_w),
-        Some(mm_per_pixel_h),
-    ) {
+            let ph_image_opts = crate::placeholder_image::PlaceholderImageOptions {
+                album_name: opts.album_name,
+                catalog_number: opts.catalog_number,
+                year: opts.year,
+                series_hint: opts.series_name,
+                stamp_bg_color: None,
+                target_mm_w: opts.target_w_mm,
+                target_mm_h: opts.target_h_mm,
+                mm_per_px_w: opts.mm_per_pixel_w,
+                mm_per_px_h: opts.mm_per_pixel_h,
+            };
+            match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(&ph_image_opts) {
         Ok(rel) => {
-            let px_w = (target_w_mm / (mm_per_pixel_w as f64)).round() as i32;
-            let px_h = (target_h_mm / (mm_per_pixel_h as f64)).round() as i32;
+            let px_w = (opts.target_w_mm.unwrap_or(0.0) / (opts.mm_per_pixel_w.unwrap_or(1.0) as f64)).round() as i32;
+            let px_h = (opts.target_h_mm.unwrap_or(0.0) / (opts.mm_per_pixel_h.unwrap_or(1.0) as f64)).round() as i32;
             if px_w > 0 && px_h > 0 {
                 if let Err(e) = update_image_dimensions(
                     conn,
-                    album_name,
-                    series_name,
-                    sg_number,
+                    opts.album_name,
+                    opts.series_name.unwrap_or(""),
+                    opts.catalog_number,
                     Some(px_w),
                     Some(px_h),
                 ) {
                     log::error!(
                         "Failed to update DB image dims for {} sg {}: {}",
-                        album_name,
-                        sg_number,
+                        opts.album_name,
+                        opts.catalog_number,
                         e
                     );
                 }
@@ -887,12 +910,12 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
             // If a writer was provided, emit the diagnostic line here so
             // callers don't need to perform this side-effect themselves.
             if let Some(ref mut w) = writer.as_mut() {
-                let ph_sg = sg_number.replace('"', "'");
+                let ph_sg = opts.catalog_number.replace('"', "'");
                 let ph_img = rel.replace('"', "'");
                 let _ = writeln!(
                     w,
                     "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\" target_mm=\"{:.2}x{:.2}\" source=\"placeholder_helper\"",
-                    ph_sg, px_w, px_h, ph_img, target_w_mm, target_h_mm
+                    ph_sg, px_w, px_h, ph_img, opts.target_w_mm.unwrap_or(0.0), opts.target_h_mm.unwrap_or(0.0)
                 );
             }
             Some((rel, px_w, px_h))
@@ -900,8 +923,8 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
         Err(e) => {
             log::error!(
                 "Failed to create placeholder for {} sg {}: {}",
-                album_name,
-                sg_number,
+                opts.album_name,
+                opts.catalog_number,
                 e
             );
             None

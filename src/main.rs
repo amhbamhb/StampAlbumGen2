@@ -86,6 +86,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     write_startup_probe_snapshot(&raw_args, launched_without_args, interactive_terminal);
 
+    // Allow forcing the initial first-run interactive flow for testing
+    // (avoids loading an existing config.toml or auto-starting Review UI).
+    let force_first_run = std::env::var("STAMP_ALBUM_FORCE_FIRST_RUN")
+        .map(|v| !(v == "0" || v.to_lowercase() == "false"))
+        .unwrap_or(false);
+    if force_first_run {
+        write_startup_probe("first_run.force", "STAMP_ALBUM_FORCE_FIRST_RUN=1");
+    }
+
     // Parse CLI arguments
     let mut cli = Cli::parse();
     // If a local source file was provided, expose it to StampWorld code paths
@@ -158,7 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
-    if launched_without_args && (interactive_terminal || gui_session) {
+    if launched_without_args && (interactive_terminal || gui_session) && !force_first_run {
         cli.review_ui = true;
         write_startup_probe(
             "review_ui.auto_enable",
@@ -172,22 +181,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             ),
         );
     }
-
-    let startup_config = config::load_config("config.toml");
-
-    // Warn the user if their config.toml is missing keys added in this version.
-    if let Ok(user_cfg_content) = std::fs::read_to_string("config.toml") {
-        let missing = config::check_config_staleness(&user_cfg_content);
-        if !missing.is_empty() {
-            eprintln!(
-                "\n⚠  Your config.toml is missing {} option(s) added in this version:\n   {}\n\
+    // Load startup config unless we're forcing the first-run interactive flow.
+    let startup_config = if force_first_run {
+        write_startup_probe("config.load", "skipped due to STAMP_ALBUM_FORCE_FIRST_RUN");
+        config::Config::with_defaults()
+    } else {
+        let cfg = config::load_config("config.toml");
+        // Warn the user if their config.toml is missing keys added in this version.
+        if let Ok(user_cfg_content) = std::fs::read_to_string("config.toml") {
+            let missing = config::check_config_staleness(&user_cfg_content);
+            if !missing.is_empty() {
+                eprintln!(
+                    "\n⚠  Your config.toml is missing {} option(s) added in this version:\n   {}\n\
                  Run:  stamp_album_gen2 --init-config   (backs up your current config.toml first)\n",
-                missing.len(),
-                missing.join(", ")
-            );
+                    missing.len(),
+                    missing.join(", ")
+                );
+            }
         }
-    }
-    write_startup_probe("config.load", "loaded config.toml");
+        write_startup_probe("config.load", "loaded config.toml");
+        cfg
+    };
 
     // Ensure the desktop entry and icon are present on every startup, not just
     // in Review UI mode.  Both functions are no-ops on the wrong OS, on Cargo
@@ -338,12 +352,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             };
                             continue;
                         }
-                        ReviewUiBootstrapOutcome::Selected {
-                            db_path,
-                            country,
-                            server,
-                            bind,
-                        } => {
+                        ReviewUiBootstrapOutcome::Selected(boxed) => {
+                            let ReviewUiSelected { db_path, country, server, bind } = *boxed;
                             log_runtime_event(&format!(
                                 "Review UI: selected '{}' with database {}",
                                 country, db_path
@@ -457,9 +467,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // Load config early to check for progress indicator setting
-    let config = config::load_config("config.toml");
-    write_startup_probe("config.load", "loaded config.toml for non-review flow");
+    // Load config early to check for progress indicator setting. When the
+    // forced first-run interactive flow is enabled (STAMP_ALBUM_FORCE_FIRST_RUN)
+    // avoid loading an existing `config.toml` so the tester can exercise the
+    // initial interactive branch in isolation.
+    let config = if force_first_run {
+        write_startup_probe("config.load", "skipped due to STAMP_ALBUM_FORCE_FIRST_RUN");
+        config::Config::with_defaults()
+    } else {
+        let cfg = config::load_config("config.toml");
+        write_startup_probe("config.load", "loaded config.toml for non-review flow");
+        cfg
+    };
     let show_progress = config.show_progress_indicator.unwrap_or(true);
 
     // For Colnect inbox mode, allow config.toml to provide a default inbox

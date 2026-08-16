@@ -778,8 +778,8 @@ where
     }) {
         Ok(opt_px) => opt_px
             .map(|px| px * (mm_per_pixel_w as f64))
-            .unwrap_or(reference_width_mm as f64),
-        Err(_) => reference_width_mm as f64,
+            .unwrap_or(reference_width_mm),
+        Err(_) => reference_width_mm,
     };
     let extra_width_mm = config
         .extra_width_mm
@@ -1060,8 +1060,8 @@ where
                     s.est_height_mm = Some(avg_h);
                     est_source = "series_average";
                 } else {
-                    s.est_width_mm = Some(reference_width_mm as f64);
-                    s.est_height_mm = Some(reference_height_mm as f64);
+                    s.est_width_mm = Some(reference_width_mm);
+                    s.est_height_mm = Some(reference_height_mm);
                     est_source = "reference";
                 }
             }
@@ -1076,8 +1076,8 @@ where
                 .unwrap_or(&"".to_string())
                 .replace('"', "'");
             let diag_img_path = s.image_path.replace('"', "'");
-            let diag_w_mm = s.est_width_mm.unwrap_or(reference_width_mm as f64);
-            let diag_h_mm = s.est_height_mm.unwrap_or(reference_height_mm as f64);
+            let diag_w_mm = s.est_width_mm.unwrap_or(reference_width_mm);
+            let diag_h_mm = s.est_height_mm.unwrap_or(reference_height_mm);
             // If pixel dims are present (placeholders set them later), print them too.
             let diag_px_w = s.image_width_px.unwrap_or(0);
             let diag_px_h = s.image_height_px.unwrap_or(0);
@@ -1100,30 +1100,28 @@ where
                 .to_string_lossy()
                 .to_string();
             if s.image_width_px.is_none() && (image_path.is_empty() || !Path::new(&full_image_path).exists()) {
-                let base_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
-                let base_h = s.est_height_mm.unwrap_or(reference_height_mm as f64);
+                let base_w = s.est_width_mm.unwrap_or(reference_width_mm);
+                let base_h = s.est_height_mm.unwrap_or(reference_height_mm);
                 let target_w_mm = base_w; // image-only width (mm)
                 let target_h_mm = base_h; // image-only height (mm)
-                let sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                let _sg_str = s.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
                 let catalog_num = s.attrs.get("scott_number")
                     .or_else(|| s.attrs.get("sg_number"))
                     .map(|v| v.as_str())
                     .unwrap_or("");
                 let year_str = s.attrs.get("year").map(|v| v.as_str()).unwrap_or("");
-                if let Some((rel, px_w, px_h)) =
-                    crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
-                        conn,
-                        album_name,
-                        series,
-                        sg_str,
-                        catalog_num,
-                        year_str,
-                        target_w_mm,
-                        target_h_mm,
-                        mm_per_pixel_w,
-                        mm_per_pixel_h,
-                        Some(&mut output),
-                    )
+                let ph_opts = crate::album_globals::generator_new::helpers::PlaceholderCallOptions {
+                    album_name,
+                    series_name: Some(series),
+                    catalog_number: catalog_num,
+                    year: year_str,
+                    target_w_mm: Some(target_w_mm),
+                    target_h_mm: Some(target_h_mm),
+                    mm_per_pixel_w: Some(mm_per_pixel_w),
+                    mm_per_pixel_h: Some(mm_per_pixel_h),
+                };
+                if let Some((rel, px_w, px_h)) = crate::album_globals::generator_new::helpers::
+                    ensure_placeholder_for_stamp_and_update_db(conn, &ph_opts, Some(&mut output))
                 {
                     s.image_path = rel;
                     s.image_width_px = Some(px_w);
@@ -1250,7 +1248,7 @@ where
                 .to_string_lossy()
                 .to_string();
             // Use the est_width_mm precomputed in the pre-pass (should always be present)
-            let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
+            let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm);
             let _est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
             // Horizontal spacing between stamps (mm). Use packing horizontal safety
             // config so users can tune how tightly stamps are packed horizontally.
@@ -1272,7 +1270,7 @@ where
             let row_width: f64 = row
                 .iter()
                 .map(|s| {
-                    let est_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
+                    let est_w = s.est_width_mm.unwrap_or(reference_width_mm);
                     let emit_w = est_w + extra_width_mm + stamp_box_adjust;
                     emit_w + margin
                 })
@@ -1529,8 +1527,8 @@ where
                 let sh_size_for_fit = config.stamp_heading_size.unwrap_or(10.0) as i32;
                 let include_perforation_in_heading = config.include_perforation.unwrap_or(true);
                 for stamp in stamps_in_row {
-                    let est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
-                    let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
+                    let est_height_mm = stamp.est_height_mm.unwrap_or(reference_height_mm);
+                    let est_width_mm = stamp.est_width_mm.unwrap_or(reference_width_mm);
                     let effective_stamp_box_adjust = stamp_box_adjust;
                     let adj_est_height =
                         est_height_mm + img_new_h + effective_stamp_box_adjust;
@@ -1823,7 +1821,7 @@ where
                 let adj_est_height = est_height_mm + img_new_h + effective_stamp_box_adjust;
                 let estimated_emit_width = stamp
                     .est_width_mm
-                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
+                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm))
                     + img_new_w
                     + effective_stamp_box_adjust;
                 let right_first_line = if !include_mint_unused {
@@ -1848,7 +1846,7 @@ where
                 let text_height = (text_lines as f64) * font_height;
                 let heading_emit_width = stamp
                     .est_width_mm
-                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm as f64))
+                    .unwrap_or(series_avg_w_mm.unwrap_or(reference_width_mm))
                     + img_new_w
                     + effective_stamp_box_adjust;
                 let heading_perforation = stamp
@@ -1996,7 +1994,7 @@ where
                             }
                             h
                         } else {
-                            reference_height_mm as f64
+                            reference_height_mm
                         };
                         let est_width_mm = if let (Some(w_px), Some(_h_px)) =
                             (stamp.image_width_px, stamp.image_height_px)
@@ -2009,7 +2007,7 @@ where
                         ) {
                             w_mm as f64
                         } else {
-                            reference_width_mm as f64
+                            reference_width_mm
                         };
                         let effective_stamp_box_adjust = stamp_box_adjust;
                         let adj_est_height =
@@ -2244,7 +2242,7 @@ where
                 let margin = config.packing_horizontal_safety_mm.unwrap_or(5.0) as f64;
                 let stamp_box_adjust_row = config.stamp_box_adjust.unwrap_or(0.0) as f64;
                 for s in stamps_in_row.iter() {
-                    let est_w = s.est_width_mm.unwrap_or(reference_width_mm as f64);
+                    let est_w = s.est_width_mm.unwrap_or(reference_width_mm);
                     let emit_w = est_w + extra_width_mm + stamp_box_adjust_row;
                     row_w += emit_w + margin;
                 }
@@ -2540,8 +2538,7 @@ where
                 // Get layout mode from config
                 let detail_layout = config
                     .stamp_detail_layout
-                    .as_ref()
-                    .map(|s| s.as_str())
+                    .as_deref()
                     .unwrap_or("inline");
 
                 // Build Colnect data based on layout mode and config
@@ -2785,7 +2782,7 @@ where
                         // Minimal: only face value, no clutter
                         String::new()
                     }
-                    "separate_rows" | _ => {
+                    _ => {
                         // Inline / separate_rows (now merged): detail text goes in the centre
                         // parameter of STAMP_ADD_IMG, below the issued count.
                         let mut blocks: Vec<String> = Vec::new();
@@ -3009,23 +3006,22 @@ where
                             .get("colnect_perforation")
                             .or_else(|| stamp.attrs.get("perforation"))
                             .map(|s| s.as_str());
-                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
-                            &mut output,
-                            true,
-                            image_path,
+                        let ctx = crate::album_globals::generator_new::emit::EmitContext {
                             emit_width,
                             emit_height,
-                            &left,
-                            &centre,
-                            &right,
-                            &sh_font,
+                            image_path,
+                            left: &left,
+                            centre: &centre,
+                            right: &right,
+                            sh_font: &sh_font,
                             sh_size,
-                            &heading_label,
-                            &sgnum,
+                            sh_label: &heading_label,
+                            sgnum: &sgnum,
                             stamp_name,
-                            heading_perforation,
-                            config.include_perforation.unwrap_or(true),
-                        );
+                            perforation: heading_perforation,
+                            include_perforation: config.include_perforation.unwrap_or(true),
+                        };
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(&mut output, true, &ctx);
                     }
                 } else {
                     let _safe_series = clean_text(series)
@@ -3065,10 +3061,8 @@ where
                         // fallback, use their raw image mm values (not the
                         // emitted box size) so placeholders match neighbour
                         // image areas rather than the printed box padding.
-                        let mut target_w_mm =
-                            stamp.est_width_mm.unwrap_or(reference_width_mm as f64);
-                        let mut target_h_mm =
-                            stamp.est_height_mm.unwrap_or(reference_height_mm as f64);
+                        let mut target_w_mm = stamp.est_width_mm.unwrap_or(reference_width_mm);
+                        let mut target_h_mm = stamp.est_height_mm.unwrap_or(reference_height_mm);
                         // If this stamp has no explicit image pixel dimensions,
                         // attempt to compute an average from neighbours in the row.
                         if stamp.image_width_px.is_none() && stamp.image_height_px.is_none() {
@@ -3145,22 +3139,22 @@ where
                         }
 
                         // sgnum already contains Scott number (or SG fallback), use for both DB and filename
-                        let sg_for_db = stamp.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
-                        if let Some((rel_path, _, _)) =
-                            crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
-                                conn,
-                                album_name,
-                                series,
-                                sg_for_db,
-                                &sgnum,
-                                &year_clean,
-                                target_w_mm,
-                                target_h_mm,
-                                mm_per_pixel_w,
-                                mm_per_pixel_h,
-                                Some(&mut output),
-                            )
-                        {
+                        let _sg_for_db = stamp.attrs.get("sg_number").map(|v| v.as_str()).unwrap_or("");
+                        let ph_call_opts = crate::album_globals::generator_new::helpers::PlaceholderCallOptions {
+                            album_name,
+                            series_name: Some(series),
+                            catalog_number: &sgnum,
+                            year: &year_clean,
+                            target_w_mm: Some(target_w_mm),
+                            target_h_mm: Some(target_h_mm),
+                            mm_per_pixel_w: Some(mm_per_pixel_w),
+                            mm_per_pixel_h: Some(mm_per_pixel_h),
+                        };
+                        if let Some((rel_path, _, _)) = crate::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
+                            conn,
+                            &ph_call_opts,
+                            Some(&mut output),
+                        ) {
                             emitted_placeholder = Some(rel_path.clone());
                         }
                     }
@@ -3178,23 +3172,22 @@ where
                             .get("colnect_perforation")
                             .or_else(|| stamp.attrs.get("perforation"))
                             .map(|s| s.as_str());
-                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
-                            &mut output,
-                            true,
-                            &img_rel,
+                        let ctx = crate::album_globals::generator_new::emit::EmitContext {
                             emit_width,
                             emit_height,
-                            &left,
-                            &centre,
-                            &right,
-                            &sh_font,
+                            image_path: &img_rel,
+                            left: &left,
+                            centre: &centre,
+                            right: &right,
+                            sh_font: &sh_font,
                             sh_size,
-                            &heading_label,
-                            &sgnum,
+                            sh_label: &heading_label,
+                            sgnum: &sgnum,
                             stamp_name,
-                            heading_perforation,
-                            config.include_perforation.unwrap_or(true),
-                        );
+                            perforation: heading_perforation,
+                            include_perforation: config.include_perforation.unwrap_or(true),
+                        };
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(&mut output, true, &ctx);
                     } else {
                         // Could not create a placeholder; fall back to the textual box
                         let sh_font = config
@@ -3208,23 +3201,22 @@ where
                             .get("colnect_perforation")
                             .or_else(|| stamp.attrs.get("perforation"))
                             .map(|s| s.as_str());
-                        let _ = crate::album_globals::generator_new::emit::emit_stamp(
-                            &mut output,
-                            false,
-                            "Image\\nNot\\nAvailable",
+                        let ctx = crate::album_globals::generator_new::emit::EmitContext {
                             emit_width,
                             emit_height,
-                            &left,
-                            &centre,
-                            &right,
-                            &sh_font,
+                            image_path: "Image\\nNot\\nAvailable",
+                            left: &left,
+                            centre: &centre,
+                            right: &right,
+                            sh_font: &sh_font,
                             sh_size,
-                            &heading_label,
-                            &sgnum,
+                            sh_label: &heading_label,
+                            sgnum: &sgnum,
                             stamp_name,
-                            heading_perforation,
-                            config.include_perforation.unwrap_or(true),
-                        );
+                            perforation: heading_perforation,
+                            include_perforation: config.include_perforation.unwrap_or(true),
+                        };
+                        let _ = crate::album_globals::generator_new::emit::emit_stamp(&mut output, false, &ctx);
                         let _ = writeln!(output, "# PAGE_FIT_STATE step=\"stamp_emitted\" series=\"{}\" img=\"{}\" emit_h=\"{:.2}\" current=\"{:.2}\"",
                                 clean_text(series).replace('\n', " ").replace('"', "'"), image_path, emit_height, current_height + total_row_height);
                     }
@@ -3527,7 +3519,7 @@ fn center_tmp_pages(
 
         // Count actual rows on this page and configured maximum.
         let rows_on_page = all_row_indices.len();
-        let cfg_max_rows = config.max_rows_per_page.unwrap_or(4) as usize;
+    let cfg_max_rows = config.max_rows_per_page.unwrap_or(4);
 
         // Do not attempt to center when there is no meaningful extra space,
         // or when the page already contains the max allowed rows.

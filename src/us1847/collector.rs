@@ -74,15 +74,23 @@ pub fn process_1847us_page(
     let mut design_size_portrait = String::new();
     let mut design_size_landscape = String::new();
 
-    // Look for paragraphs containing series info
+    // Precompile regexes used inside the loop to avoid recompiling on each iteration
     let p_selector = Selector::parse("p").unwrap();
+    let president_regex = Regex::new(r"President:\s*([^·]+)").unwrap();
+    let pm_regex = Regex::new(r"Postmaster General:\s*([^·]+)").unwrap();
+    let domestic_rate_regex = Regex::new(r"Domestic Letter Rate:\s*([^·]+)").unwrap();
+    let postcard_rate_regex = Regex::new(r"Postcard Rate:\s*([^·]+)").unwrap();
+    let airmail_rate_regex = Regex::new(r"Air Mail Rate:\s*([^·]+)").unwrap();
+    let portrait_regex = Regex::new(r"Portrait Stamps:\s*([^·]+)").unwrap();
+    let landscape_regex = Regex::new(r"Landscape Stamps:\s*([^·]+)").unwrap();
+
+    // Look for paragraphs containing series info
     for p in document.select(&p_selector) {
         let text = p.text().collect::<String>();
         let lower = text.to_lowercase();
 
         // Extract president info
         if lower.contains("president:") {
-            let president_regex = Regex::new(r"President:\s*([^·]+)").unwrap();
             if let Some(cap) = president_regex.captures(&text) {
                 president = cap
                     .get(1)
@@ -94,7 +102,6 @@ pub fn process_1847us_page(
 
         // Extract postmaster general
         if lower.contains("postmaster general:") {
-            let pm_regex = Regex::new(r"Postmaster General:\s*([^·]+)").unwrap();
             if let Some(cap) = pm_regex.captures(&text) {
                 postmaster_general = cap
                     .get(1)
@@ -106,8 +113,7 @@ pub fn process_1847us_page(
 
         // Extract rates
         if lower.contains("domestic letter rate:") {
-            let rate_regex = Regex::new(r"Domestic Letter Rate:\s*([^·]+)").unwrap();
-            if let Some(cap) = rate_regex.captures(&text) {
+            if let Some(cap) = domestic_rate_regex.captures(&text) {
                 domestic_letter_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
@@ -117,8 +123,7 @@ pub fn process_1847us_page(
         }
 
         if lower.contains("postcard rate:") {
-            let rate_regex = Regex::new(r"Postcard Rate:\s*([^·]+)").unwrap();
-            if let Some(cap) = rate_regex.captures(&text) {
+            if let Some(cap) = postcard_rate_regex.captures(&text) {
                 postcard_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
@@ -128,8 +133,7 @@ pub fn process_1847us_page(
         }
 
         if lower.contains("air mail rate:") || lower.contains("airmail rate:") {
-            let rate_regex = Regex::new(r"Air Mail Rate:\s*([^·]+)").unwrap();
-            if let Some(cap) = rate_regex.captures(&text) {
+            if let Some(cap) = airmail_rate_regex.captures(&text) {
                 airmail_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
@@ -147,7 +151,6 @@ pub fn process_1847us_page(
             size_info = text.trim().to_string();
             // Extract design sizes
             if lower.contains("portrait stamps") {
-                let portrait_regex = Regex::new(r"Portrait Stamps:\s*([^·]+)").unwrap();
                 if let Some(cap) = portrait_regex.captures(&text) {
                     design_size_portrait = cap
                         .get(1)
@@ -157,7 +160,6 @@ pub fn process_1847us_page(
                 }
             }
             if lower.contains("landscape stamps") {
-                let landscape_regex = Regex::new(r"Landscape Stamps:\s*([^·]+)").unwrap();
                 if let Some(cap) = landscape_regex.captures(&text) {
                     design_size_landscape = cap
                         .get(1)
@@ -373,7 +375,7 @@ fn parse_html_tables(
 
         // Insert stamps from this section
         for stamp in section_stamps {
-            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, &series_title, &stamp) {
+            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                 error!("Failed to insert stamp from {} section: {}", stamp_type, e);
             } else {
                 stamps_found += 1;
@@ -506,7 +508,7 @@ fn parse_html_tables(
 
             // Insert stamps from this section
             for stamp in section_stamps {
-                if let Err(e) = insert_stamp_if_not_exists(conn, series_id, &series_title, &stamp) {
+                if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                     error!("Failed to insert stamp: {}", e);
                 } else {
                     stamps_found += 1;
@@ -517,8 +519,8 @@ fn parse_html_tables(
 
     // Parse stamps from the detailed commemoratives list
     for line in stamp_lines {
-        if let Some(stamp) = parse_commemorative_line(line) {
-            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, &series_title, &stamp) {
+            if let Some(stamp) = parse_commemorative_line(line) {
+            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                 error!("Failed to insert stamp from commemoratives: {}", e);
             } else {
                 stamps_found += 1;
@@ -547,7 +549,7 @@ fn parse_printing_section(title: &str) -> (String, String, String) {
     // Parse "Rotary Press – Perf 11 x 10½ – 200 Subject Electric Eye Plates"
     let parts: Vec<&str> = title.split(" – ").collect();
 
-    if parts.len() >= 1 {
+    if !parts.is_empty() {
         printer = parts[0].trim().to_string();
     }
     if parts.len() >= 2 {
@@ -777,7 +779,7 @@ fn parse_stamp_from_title_and_description(
         } else {
             // Look for date first in the full description, then quantity after it
             let date_regex = Regex::new(r"([A-Z][a-z]+ \d{1,2}, \d{4})").unwrap();
-            if let Some(date_cap) = date_regex.captures(&description) {
+            if let Some(date_cap) = date_regex.captures(description) {
                 let after_date = &description[date_cap.get(0).unwrap().end()..];
                 let quant_regex = Regex::new(r"([\d,]+) issued").unwrap();
                 if let Some(quant_cap) = quant_regex.captures(after_date) {
@@ -795,7 +797,7 @@ fn parse_stamp_from_title_and_description(
                 }
                 if quantity_issued.is_empty() {
                     let quant_regex = Regex::new(r"([\d,]+) issued").unwrap();
-                    if let Some(quant_cap) = quant_regex.captures(&description) {
+                    if let Some(quant_cap) = quant_regex.captures(description) {
                         let mut quant = quant_cap.get(1).unwrap().as_str().to_string();
                         // Special fix: if quantity starts with "1955", remove it (it's part of the date)
                         if quant.starts_with("1955") && quant.len() > 4 {
@@ -1180,9 +1182,7 @@ fn parse_liberty_issue_stamp(
                                 design_size: design_size.clone(),
                             };
 
-                            if let Err(e) =
-                                insert_stamp_if_not_exists(conn, series_id, series_title, &stamp)
-                            {
+                            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                                 eprintln!("Failed to insert stamp {}: {}", scott_text, e);
                             } else {
                                 stamps_found += 1;
@@ -1560,7 +1560,7 @@ pub fn sync_us1847_to_stamps(
         let day = "";
         let sg_number = scott_number.clone();
         let type_ = "Postage Stamp";
-        let color = color; // From database
+        // color from database is already in `color` binding
         let stamps_issued = quantity_issued;
         let mint_condition = "";
         let unused = "";
@@ -1574,45 +1574,45 @@ pub fn sync_us1847_to_stamps(
         let engraving = engraver;
         let context = format!("{} - {}", place_issued, issue_date);
 
-        crate::db_utils::insert_stamp(
-            conn,
-            "United States", // country
-            series_title,    // series
-            year,
-            &month,
-            &month,
-            &day,
-            &sg_number,
-            &type_,
-            &denomination,
-            &color,
-            &description,
-            &stamps_issued,
-            &mint_condition,
-            &unused,
-            &used,
-            &letter_fdc,
-            &currency,
-            &image_path,
-            &remote_image_url,
-            &original_image_url,
-            &watermark,
-            &design,
-            &engraving,
-            &perforation,
-            &context,
-        )?;
+            crate::db_utils::insert_stamp(
+                conn,
+                "United States", // country
+                &series_title,    // series
+                year,
+                month,
+                month,
+                day,
+                &sg_number,
+                type_,
+                &denomination,
+                &color,
+                &description,
+                &stamps_issued,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                &image_path,
+                &remote_image_url,
+                &original_image_url,
+                &watermark,
+                &design,
+                &engraving,
+                &perforation,
+                &context,
+            )?;
 
         // Set image dimensions if image exists
         if !image_path.is_empty() {
             let full_path = format!("Albums/{}/{}", series_title.replace(' ', "-"), image_path);
-            let _ = crate::db_utils::updates::persist_image_dimensions_from_file(
-                conn,
-                "United States",
-                series_title,
-                &sg_number,
-                &full_path,
-            );
+                let _ = crate::db_utils::updates::persist_image_dimensions_from_file(
+                    conn,
+                    "United States",
+                    &series_title,
+                    &sg_number,
+                    &full_path,
+                );
         }
     }
 

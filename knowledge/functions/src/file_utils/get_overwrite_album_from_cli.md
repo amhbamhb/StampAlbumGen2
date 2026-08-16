@@ -1,0 +1,20 @@
+---
+type: Rust Function
+title: get_overwrite_album_from_cli
+resource: src/file_utils.rs#L97-L100
+generated:
+  by: okf-rs/0.4.0
+relationships:
+  called_by:
+  - target: functions/src/album_globals/generator/generate_album_output_conn
+    resolved_by: tree-sitter
+    confidence: exact
+---
+
+# Signature
+
+`pub fn get_overwrite_album_from_cli() -> bool`
+
+# Called by
+
+- [generate_album_output_conn](../../../functions/src/album_globals/generator/generate_album_output_conn.md)

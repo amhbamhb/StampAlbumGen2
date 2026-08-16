@@ -116,14 +116,16 @@ pub fn tail_current_log(lines_count: usize) -> Vec<String> {
     }
 
     // Sort by modification time, most recent first
-    log_files.sort_by(|a, b| b.1.cmp(&a.1));
+    log_files.sort_by_key(|b| std::cmp::Reverse(b.1));
     let log_path = &log_files[0].0;
 
     // Read the last N lines efficiently
     match fs::File::open(log_path) {
-        Ok(file) => {
+            Ok(file) => {
             let reader = BufReader::new(file);
-            let lines: Vec<String> = reader.lines().filter_map(Result::ok).collect();
+            let mut lines_iter = reader.lines().map_while(Result::ok);
+            let _first_line: Option<String> = lines_iter.next();
+            let lines: Vec<String> = lines_iter.collect();
             lines
                 .iter()
                 .rev()
@@ -1219,16 +1221,19 @@ struct SaveConfigEditorResponse {
     reload_required: bool,
 }
 
+/// Boxed payload for the `Selected` bootstrap outcome to avoid large enum size.
+pub struct ReviewUiSelected {
+    pub db_path: String,
+    pub country: String,
+    pub server: Server,
+    pub bind: String,
+}
+
 pub enum ReviewUiBootstrapOutcome {
     Exit,
     AlreadyRunning,
     ReloadRequested,
-    Selected {
-        db_path: String,
-        country: String,
-        server: Server,
-        bind: String,
-    },
+    Selected(Box<ReviewUiSelected>),
 }
 
 pub enum ReviewUiRunOutcome {
@@ -2587,16 +2592,14 @@ fn colnect_import_data(
 /// Write `default_catalog_code` into the album-local config override
 /// (`Albums/<name>/config.toml`), preserving any other per-album overrides
 /// already present and only storing values that differ from the global config.
-
 /// Build config editor data for a country review UI session.
 /// Returns `(sections, has_album_override)` where sections have `current_value`
 /// set to the merged (effective) value and `global_value` / `is_album_override`
 /// populated correctly.
-
+///
 /// Write a minimal album-local config.toml that stores only the fields that
 /// differ from the global config.  The file is written into `album_dir`.
 /// Returns the number of fields written (0 = nothing changed vs global).
-
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
@@ -2643,12 +2646,12 @@ pub fn run_review_ui_bootstrap(
     }
 
     Ok(match selected {
-        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected {
+        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected(Box::new(ReviewUiSelected {
             db_path,
             country,
             server,
             bind,
-        },
+        })),
         None => ReviewUiBootstrapOutcome::Exit,
     })
 }
