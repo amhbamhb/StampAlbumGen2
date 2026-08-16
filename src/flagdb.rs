@@ -444,7 +444,7 @@ pub fn copy_coa_for_album(
         if src_path
             .extension()
             .and_then(|s| s.to_str())
-            .map_or(false, |ext| ext.eq_ignore_ascii_case("png"))
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("png"))
         {
             // Check current PNG width
             if let Ok(img) = image::open(&src_path) {

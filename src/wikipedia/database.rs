@@ -42,7 +42,7 @@ pub fn fetch_and_cache_content(
             let name: String = row.get(1)?;
             Ok(name)
         })?
-        .any(|name| name.as_ref().map_or(false, |n| n == "source"));
+        .any(|name| name.as_ref().is_ok_and(|n| n == "source"));
 
     if !has_source_column {
         let _ = conn.execute(
