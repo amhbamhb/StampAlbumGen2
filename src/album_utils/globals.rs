@@ -717,7 +717,7 @@ fn add_wikipedia_section<W: Write>(
             // Add row start if configured and account for its height
             let _row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
                 let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
+                let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, cfg);
                 let _ = writeln!(writer, "################################################################################");
 
                 // Estimate height of row start (rough approximation)
