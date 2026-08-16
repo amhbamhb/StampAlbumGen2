@@ -1462,7 +1462,7 @@ fn bind_review_server(
 
 /// If `err` is the sentinel error from `bind_review_server` indicating that
 /// our own app is already listening, extract and return the URL.
-fn already_running_url(err: &Box<dyn std::error::Error>) -> Option<String> {
+fn already_running_url(err: &dyn std::error::Error) -> Option<String> {
     err.to_string()
         .strip_prefix("__already_running__")
         .map(|url| url.to_string())
@@ -2610,7 +2610,7 @@ pub fn run_review_ui_bootstrap(
     let (server, bind) = match bind_review_server(bind_addr_opt) {
         Ok(pair) => pair,
         Err(e) => {
-            if let Some(url) = already_running_url(&e) {
+            if let Some(url) = already_running_url(e.as_ref()) {
                 log_runtime_event(&format!(
                     "Review UI: instance already running at {} — opening browser",
                     url
@@ -2793,7 +2793,7 @@ pub fn run_review_ui(
         match bind_review_server(bind_addr_opt) {
             Ok(pair) => pair,
             Err(e) => {
-                if let Some(url) = already_running_url(&e) {
+                if let Some(url) = already_running_url(e.as_ref()) {
                     log_runtime_event(&format!(
                         "Review UI: instance already running at {} — opening browser",
                         url
