@@ -1609,7 +1609,7 @@ pub fn sync_us1847_to_stamps(
                 let _ = crate::db_utils::updates::persist_image_dimensions_from_file(
                     conn,
                     "United States",
-                    &series_title,
+                    series_title,
                     &sg_number,
                     &full_path,
                 );
