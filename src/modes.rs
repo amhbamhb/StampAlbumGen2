@@ -1721,7 +1721,7 @@ pub fn run_scraping_mode(
             // generation can produce something usable. This implements the
             // "Wikipedia-as-fallback" behavior: only run when the collector
             // returned zero results.
-            if pages.len() == 0 {
+            if pages.is_empty() {
                 let fetch_wiki = cfg_file
                     .fetch_wikipedia
                     .unwrap_or_else(|| cfg_file.include_wikipedia_content.unwrap_or(false));
