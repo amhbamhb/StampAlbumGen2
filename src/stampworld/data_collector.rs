@@ -15,6 +15,16 @@ pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$").expect("invalid day-month regex")
 });
 
+// Hoisted regexes that were previously constructed inside loops.
+pub static YEAR_RANGE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex")
+});
+
+pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#)
+        .expect("invalid group url regex")
+});
+
 // Import parser helpers from the extracted parser module. These helpers were
 // previously defined here; they have been moved to `stampworld::parser` so
 // they can be unit tested and reused independently from the large collector.
@@ -278,10 +288,7 @@ pub fn collect_stampworld_data_with_fetcher(
                 let text = header_a.text().collect::<String>();
                 series_desc = text.clone();
                 debug!("Extracted series_desc from header: '{}'", series_desc);
-                if let Some(caps) = Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?")
-                    .unwrap()
-                    .captures(&text)
-                {
+                if let Some(caps) = YEAR_RANGE_RE.captures(&text) {
                     block_year_int = caps
                         .get(1)
                         .map_or("0", |m| m.as_str())
@@ -524,12 +531,8 @@ pub fn collect_stampworld_data_with_fetcher(
                                 // fetching/parsing fails. Limit fetches per-range to avoid heavy loads.
                                 if expand == "detail_fetch" {
                                     // Try to find a canonical group base URL inside the block HTML
-                                    let group_url_re = Regex::new(
-                                        r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#,
-                                    )
-                                    .unwrap();
                                     let block_html = content_div.html();
-                                    let maybe_group_base = group_url_re
+                                    let maybe_group_base = GROUP_URL_RE
                                         .find(&block_html)
                                         .map(|m| m.as_str().to_string());
 
