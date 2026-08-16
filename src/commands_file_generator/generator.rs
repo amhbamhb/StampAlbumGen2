@@ -4,7 +4,7 @@
 //! core methods for generating stamp album command files.
 
 use crate::album_globals::Stamp;
-use crate::commands_file_generator::album_creation::{create_album, save_stamp_data};
+use crate::commands_file_generator::album_creation::save_stamp_data;
 use crate::commands_file_generator::utils::{
     is_selected_emission, is_selected_format, month_number, snooze,
 };
@@ -208,16 +208,17 @@ impl CommandsFileGenerator {
 
     /// Create album file
     pub fn create_album(&self) -> usize {
-        create_album(
-            &self.album_path,
-            &self.stamp_data,
-            &self.album_name,
-            &self.separator,
-            self.fix_sizes,
-            &self.formats,
-            &self.emissions,
-            &self.catalog_name,
-        )
+        let params = crate::commands_file_generator::album_creation::CreateAlbumParams {
+            file_path: std::path::Path::new(&self.album_path),
+            data: &self.stamp_data,
+            album_name: &self.album_name,
+            separator: &self.separator,
+            fix_sizes: self.fix_sizes,
+            formats: &self.formats,
+            emissions: &self.emissions,
+            catalog_name: &self.catalog_name,
+        };
+        crate::commands_file_generator::album_creation::create_album(params)
     }
 
     /// Save stamp data to file

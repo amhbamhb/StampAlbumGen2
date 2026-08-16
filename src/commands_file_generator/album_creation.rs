@@ -12,19 +12,21 @@ use log::{error, info};
 use std::io::Write;
 
 /// Create an album file from stamp data
-pub fn create_album<P: AsRef<std::path::Path>>(
-    file_path: P,
-    data: &[String],
-    album_name: &str,
-    separator: &str,
-    fix_sizes: bool,
-    formats: &[String],
-    emissions: &[String],
-    catalog_name: &str,
-) -> usize {
+pub struct CreateAlbumParams<'a> {
+    pub file_path: &'a std::path::Path,
+    pub data: &'a [String],
+    pub album_name: &'a str,
+    pub separator: &'a str,
+    pub fix_sizes: bool,
+    pub formats: &'a [String],
+    pub emissions: &'a [String],
+    pub catalog_name: &'a str,
+}
+
+pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize {
     use std::fs::File;
     use std::io::{BufWriter, Write};
-    let path = file_path.as_ref();
+    let path = params.file_path;
     let file = match File::create(path) {
         Ok(f) => f,
         Err(e) => {
@@ -33,7 +35,7 @@ pub fn create_album<P: AsRef<std::path::Path>>(
         }
     };
     let mut writer = BufWriter::new(file);
-    let page_count = write_globals(&mut writer, album_name);
+    let page_count = write_globals(&mut writer, params.album_name);
     let mut prev_year = String::new();
     let mut prev_series = String::new();
     let mut prev_date = String::new();
@@ -60,9 +62,9 @@ pub fn create_album<P: AsRef<std::path::Path>>(
         "November",
         "December",
     ];
-    for (idx, line) in data.iter().enumerate() {
+    for (idx, line) in params.data.iter().enumerate() {
         if line.starts_with("STAMP") {
-            let fields: Vec<&str> = line.split(separator).collect();
+            let fields: Vec<&str> = line.split(params.separator).collect();
             if fields.len() < 24 {
                 continue;
             }
@@ -71,7 +73,7 @@ pub fn create_album<P: AsRef<std::path::Path>>(
             let day = fields[3];
             let series = fields[4];
             let date = format!("{}{}{}", year, month, day);
-            let _catalog_num = if catalog_name.is_empty() {
+            let _catalog_num = if params.catalog_name.is_empty() {
                 fields[5].to_string()
             } else {
                 get_catalog_num(fields[15], false)
@@ -88,7 +90,7 @@ pub fn create_album<P: AsRef<std::path::Path>>(
                     &mut max_row_height,
                 );
                 album_globals::new_year(&mut writer, year, None);
-                series_info = Some(get_series_info_stub(data, idx, &width, &height));
+                series_info = Some(get_series_info_stub(params.data, idx, &width, &height));
                 count = series_info.as_ref().map_or(1, |s| s.count);
                 multi_perf = series_info.as_ref().is_some_and(|s| s.multi_perf);
                 width = series_info
@@ -119,7 +121,7 @@ pub fn create_album<P: AsRef<std::path::Path>>(
                 prev_series = series.to_string();
                 prev_date = date.clone();
             } else if series != prev_series || date != prev_date {
-                series_info = Some(get_series_info_stub(data, idx, &width, &height));
+                series_info = Some(get_series_info_stub(params.data, idx, &width, &height));
                 count = series_info.as_ref().map_or(1, |s| s.count);
                 multi_perf = series_info.as_ref().is_some_and(|s| s.multi_perf);
                 width = series_info
@@ -151,15 +153,15 @@ pub fn create_album<P: AsRef<std::path::Path>>(
             }
             let mut stamp_width = fields[10].to_string();
             let mut stamp_height = fields[11].to_string();
-            if fix_sizes && series_info.as_ref().map_or(1, |s| s.count) > 1 && stamp_width == "0" {
+            if params.fix_sizes && series_info.as_ref().map_or(1, |s| s.count) > 1 && stamp_width == "0" {
                 stamp_width = width.clone();
                 stamp_height = height.clone();
             }
             let catalog_num = get_catalog_num(fields[15], true);
             if !catalog_num.is_empty()
                 && catalog_num != "Unlisted"
-                && is_selected_format(formats, fields[13])
-                && is_selected_emission(emissions, fields[14])
+                && is_selected_format(params.formats, fields[13])
+                && is_selected_emission(params.emissions, fields[14])
             {
                 let color_val = fix_color(fields[9]);
                 let stamp_ctx = album_globals::page_functions::StampContext {
