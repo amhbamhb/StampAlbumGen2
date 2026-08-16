@@ -1878,7 +1878,7 @@ where
             let output = Command::new("zenity")
                 .arg("--file-selection")
                 .arg("--title")
-                .arg(&title)
+                .arg(title)
                 .arg("--filename")
                 .arg(&starting)
                 .arg("--file-filter")
@@ -1909,7 +1909,7 @@ where
                 .arg(&starting)
                 .arg("*.csv")
                 .arg("--title")
-                .arg(&title)
+                .arg(title)
                 .output()
                 .map_err(|e| format!("failed to launch kdialog: {}", e))?;
 
