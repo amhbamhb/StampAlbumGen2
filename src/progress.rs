@@ -116,6 +116,12 @@ impl Drop for ProgressIndicator {
     }
 }
 
+impl Default for ProgressIndicator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Macro to easily update progress with formatted messages
 #[macro_export]
 macro_rules! progress_update {
