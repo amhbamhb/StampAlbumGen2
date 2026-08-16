@@ -808,7 +808,7 @@ where
     // Write computed values to an album-specific advisory file so we do not
     // mutate the user's main `config.toml`. This is non-destructive and makes
     // it easy to inspect recommended values per-album.
-    if let Ok(_) = std::fs::create_dir_all(&album_dir) {
+    if std::fs::create_dir_all(&album_dir).is_ok() {
         let computed_path = album_dir.join("computed_values.toml");
         let computed_txt = format!(
             "# Auto-generated computed values for album\ncomputed_stamps_per_row = {}\naverage_emit_width_mm = {:.2}\n# usable_width_mm = {:.2}\n",
