@@ -3579,7 +3579,7 @@ fn center_tmp_pages(
             2
         } else {
             series_count + 1
-        } as usize;
+        };
         let has_page_header = page_block
             .iter()
             .any(|l| l.trim().starts_with("PAGE_TEXT_"));
