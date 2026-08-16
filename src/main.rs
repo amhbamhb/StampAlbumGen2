@@ -21,7 +21,7 @@ use stamp_album_gen2::{
     modes::{run_database_mode, run_scraping_mode},
     review_ui::{
         log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
-        ReviewUiRunOutcome,
+        ReviewUiRunOutcome, ReviewUiSelected,
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
