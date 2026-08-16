@@ -49,34 +49,37 @@ pub fn insert_stamp(
     perforation: &str,
     context: &str,
 ) -> Result<bool> {
-    stamp_album_db::insert_stamp(
-        conn,
-        country,
-        series,
+    // Construct a `StampInsert` owned struct and delegate to the DB crate's
+    // `insert_stamp_from_struct` implementation. This avoids calling the old
+    // high-arity API and eases incremental migration.
+    let si = stamp_album_db::StampInsert {
+        country: country.to_string(),
+        series: series.to_string(),
         year,
-        month,
-        _month_num,
-        day,
-        sg_number,
-        type_,
-        denomination,
-        color,
-        description,
-        stamps_issued,
-        mint_condition,
-        unused,
-        used,
-        letter_fdc,
-        currency,
-        image_path,
-        remote_image_url,
-        original_image_url,
-        watermark,
-        design,
-        engraving,
-        perforation,
-        context,
-    )
+        month: month.to_string(),
+        month_num: _month_num.to_string(),
+        day: day.to_string(),
+        sg_number: sg_number.to_string(),
+        type_: type_.to_string(),
+        denomination: denomination.to_string(),
+        color: color.to_string(),
+        description: description.to_string(),
+        stamps_issued: stamps_issued.to_string(),
+        mint_condition: mint_condition.to_string(),
+        unused: unused.to_string(),
+        used: used.to_string(),
+        letter_fdc: letter_fdc.to_string(),
+        currency: currency.to_string(),
+        image_path: image_path.to_string(),
+        remote_image_url: remote_image_url.to_string(),
+        original_image_url: original_image_url.to_string(),
+        watermark: watermark.to_string(),
+        design: design.to_string(),
+        engraving: engraving.to_string(),
+        perforation: perforation.to_string(),
+        context: context.to_string(),
+    };
+    stamp_album_db::insert_stamp_from_struct(conn, &si)
 }
 
 /// Insert a minimal placeholder stamp row when the collector encountered a grouped
