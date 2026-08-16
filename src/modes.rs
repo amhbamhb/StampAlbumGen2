@@ -594,11 +594,10 @@ fn sync_missing_stamps_from_colnect(
 
         let col_series_l = col_series.to_lowercase();
         let cand_series_l = cand_series.to_lowercase();
-        if !col_series_l.is_empty() && !cand_series_l.is_empty() {
-            if cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l) {
+        if !col_series_l.is_empty() && !cand_series_l.is_empty()
+            && (cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l)) {
                 score += 10;
             }
-        }
 
         if !cand_image_path.trim().is_empty() {
             score += 5;
