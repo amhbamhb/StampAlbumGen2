@@ -178,8 +178,7 @@ pub fn normalize_country_input(country: &str) -> String {
     country
         .trim()
         .to_lowercase()
-        .replace('-', " ")
-        .replace('_', " ")
+        .replace(['-', '_'], " ")
         .replace(',', "")
 }
 

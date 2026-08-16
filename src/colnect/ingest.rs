@@ -322,8 +322,8 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
 fn extract_colnect_code(codes: &str) -> Option<String> {
     for part in codes.split(',') {
         let part = part.trim();
-        if part.starts_with("Col:") {
-            return Some(part["Col:".len()..].trim().to_string());
+        if let Some(stripped) = part.strip_prefix("Col:") {
+            return Some(stripped.trim().to_string());
         }
     }
     None
