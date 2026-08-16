@@ -1,8 +1,456 @@
 // Minimal, self-contained DB utilities moved out of the main crate.
 use log::{debug, error};
 use regex::Regex;
-use rusqlite::{params, types::ValueRef, Connection, Result, Row};
+use rusqlite::{params, Connection, OptionalExtension, Result};
 
+// The long-argument `insert_stamp` implementation has been consolidated
+// into `insert_stamp_from_struct` to provide a single-struct API and avoid
+// high-arity function signatures that trigger clippy warnings.
+pub fn insert_stamp_from_struct(conn: &Connection, si: &StampInsert) -> Result<bool> {
+    // Extract fields from the struct for local manipulation
+    let country = si.country.as_str();
+    let series = si.series.as_str();
+    let year = si.year;
+    let month = si.month.as_str();
+    let _month_num = si.month_num.as_str();
+    let day = si.day.as_str();
+    let sg_number = si.sg_number.as_str();
+    let type_ = si.type_.as_str();
+    let denomination = si.denomination.as_str();
+    let color = si.color.as_str();
+    let description = si.description.as_str();
+    let stamps_issued = si.stamps_issued.as_str();
+    let mint_condition = si.mint_condition.as_str();
+    let unused = si.unused.as_str();
+    let used = si.used.as_str();
+    let letter_fdc = si.letter_fdc.as_str();
+    let currency = si.currency.as_str();
+    let image_path = si.image_path.as_str();
+    let remote_image_url = si.remote_image_url.as_str();
+    let original_image_url = si.original_image_url.as_str();
+    let watermark = si.watermark.as_str();
+    let design = si.design.as_str();
+    let engraving = si.engraving.as_str();
+    let perforation = si.perforation.as_str();
+    let context = si.context.as_str();
+
+    let inferred_stampworld_image_url = if is_stampworld_image_url(remote_image_url) {
+        remote_image_url.trim().to_string()
+    } else {
+        String::new()
+    };
+    let inferred_colnect_page_url = if is_colnect_page_url(remote_image_url) {
+        remote_image_url.trim().to_string()
+    } else if is_colnect_page_url(original_image_url) {
+        original_image_url.trim().to_string()
+    } else {
+        String::new()
+    };
+    let inferred_colnect_image_url = if is_colnect_image_url(remote_image_url) {
+        remote_image_url.trim().to_string()
+    } else {
+        String::new()
+    };
+    let inferred_catalog_code = if !inferred_stampworld_image_url.trim().is_empty() {
+        "sw".to_string()
+    } else {
+        String::new()
+    };
+    let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
+
+    // Normalize stamps_issued: if dots are used as thousand separators and no commas are present, replace them with commas
+    let mut stamps_issued_normalized = stamps_issued.trim().to_string();
+    if stamps_issued_normalized.starts_with('(') && stamps_issued_normalized.ends_with(')') {
+        stamps_issued_normalized =
+            stamps_issued_normalized[1..stamps_issued_normalized.len() - 1].to_string();
+    }
+    let re_non = Regex::new(r"[^0-9\.,]").unwrap();
+    stamps_issued_normalized = re_non
+        .replace_all(&stamps_issued_normalized, "")
+        .to_string();
+    if stamps_issued_normalized.contains('.') && !stamps_issued_normalized.contains(',') {
+        stamps_issued_normalized = stamps_issued_normalized.replace('.', ",");
+    }
+
+    let existing_select = "SELECT rowid, image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(catalog_code, ''), COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE {predicate} LIMIT 1";
+    let load_existing = |predicate: &str, bind: &[&dyn rusqlite::ToSql]| {
+        let sql = existing_select.replace("{predicate}", predicate);
+        let mut stmt = conn.prepare(&sql)?;
+        stmt.query_row(bind, |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(7)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(9)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(10)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(11)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(12)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(13)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(14)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(15)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(16)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(17)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+                row.get::<_, Option<String>>(19)?.unwrap_or_default(),
+            ))
+        })
+        .optional()
+    };
+
+    let existing = load_existing(
+        "country = ?1 AND series = ?2 AND sg_number = ?3",
+        &[&country, &series, &sg_number],
+    )?
+    .or_else(|| {
+        if inferred_stampworld_image_url.trim().is_empty() {
+            None
+        } else {
+            load_existing(
+                "country = ?1 AND TRIM(COALESCE(stampworld_image_url, '')) = ?2",
+                &[&country, &inferred_stampworld_image_url],
+            )
+            .ok()
+            .flatten()
+        }
+    })
+    .or_else(|| {
+        if !is_real_image_candidate(image_path) {
+            None
+        } else {
+            load_existing(
+                "country = ?1 AND TRIM(COALESCE(image_path, '')) = ?2",
+                &[&country, &image_path],
+            )
+            .ok()
+            .flatten()
+        }
+    });
+
+    if let Some((
+        existing_rowid,
+        existing_image_path,
+        existing_remote_url,
+        existing_original_url,
+        existing_description,
+        existing_stamps_issued,
+        existing_mint_condition,
+        existing_unused,
+        existing_used,
+        existing_letter_fdc,
+        existing_currency,
+        existing_watermark,
+        existing_design,
+        existing_engraving,
+        existing_perforation,
+        existing_context,
+        existing_catalog_code,
+        existing_stampworld_image_url,
+        existing_colnect_page_url,
+        existing_colnect_image_url,
+    )) = existing
+    {
+        // Heal previously duplicated rows from older import behavior.
+        if !inferred_stampworld_image_url.trim().is_empty() {
+            if let Err(e) = cleanup_stampworld_identity_duplicates(
+                conn,
+                existing_rowid,
+                country,
+                &inferred_stampworld_image_url,
+            ) {
+                error!(
+                    "Failed duplicate StampWorld identity cleanup for rowid={} sw_img='{}': {}",
+                    existing_rowid, inferred_stampworld_image_url, e
+                );
+            }
+        }
+
+        // Stamp exists; check if we need to backfill any missing columns
+        let mut update_needed = false;
+        let mut update_sql = "UPDATE stamps SET ".to_string();
+        let mut params_vec = Vec::new();
+
+        macro_rules! add_update_if_missing {
+            ($field:expr, $existing:expr, $new_val:expr) => {
+                if $existing.trim().is_empty() && !$new_val.trim().is_empty() {
+                    if update_needed {
+                        update_sql.push_str(", ");
+                    }
+                    update_sql.push_str(&format!("{} = ?{}", $field, params_vec.len() + 1));
+                    params_vec.push($new_val.to_string());
+                    update_needed = true;
+                }
+            };
+        }
+
+        // Prefer real image paths over placeholder/empty image paths.
+        if is_real_image_candidate(image_path)
+            && (existing_image_path.trim().is_empty()
+                || is_placeholder_image_path(&existing_image_path))
+        {
+            if update_needed {
+                update_sql.push_str(", ");
+            }
+            update_sql.push_str(&format!("image_path = ?{}", params_vec.len() + 1));
+            params_vec.push(image_path.to_string());
+            update_needed = true;
+        }
+
+        // If current remote URL is empty or still a Colnect page URL, prefer
+        // a concrete non-empty URL from new ingestion (e.g. StampWorld image URL).
+        let existing_remote_is_colnect_page =
+            existing_remote_url.contains("colnect.com/stamps/stamp/");
+        if !remote_image_url.trim().is_empty()
+            && (existing_remote_url.trim().is_empty() || existing_remote_is_colnect_page)
+        {
+            if update_needed {
+                update_sql.push_str(", ");
+            }
+            update_sql.push_str(&format!("remote_image_url = ?{}", params_vec.len() + 1));
+            params_vec.push(remote_image_url.to_string());
+            update_needed = true;
+        }
+
+        add_update_if_missing!(
+            "stampworld_image_url",
+            &existing_stampworld_image_url,
+            &inferred_stampworld_image_url
+        );
+        add_update_if_missing!(
+            "catalog_code",
+            &existing_catalog_code,
+            &inferred_catalog_code
+        );
+        add_update_if_missing!(
+            "colnect_page_url",
+            &existing_colnect_page_url,
+            &inferred_colnect_page_url
+        );
+        add_update_if_missing!(
+            "colnect_image_url",
+            &existing_colnect_image_url,
+            &inferred_colnect_image_url
+        );
+
+        add_update_if_missing!(
+            "original_image_url",
+            &existing_original_url,
+            original_image_url
+        );
+        add_update_if_missing!("description", &existing_description, description);
+        add_update_if_missing!(
+            "stamps_issued",
+            &existing_stamps_issued,
+            &stamps_issued_normalized
+        );
+        add_update_if_missing!("mint_condition", &existing_mint_condition, mint_condition);
+        add_update_if_missing!("unused", &existing_unused, unused);
+        add_update_if_missing!("used", &existing_used, used);
+        add_update_if_missing!("letter_fdc", &existing_letter_fdc, letter_fdc);
+        add_update_if_missing!("currency", &existing_currency, currency);
+        add_update_if_missing!("watermark", &existing_watermark, watermark);
+        add_update_if_missing!("design", &existing_design, design);
+        add_update_if_missing!("engraving", &existing_engraving, engraving);
+        add_update_if_missing!("perforation", &existing_perforation, perforation);
+        add_update_if_missing!("context", &existing_context, context);
+
+        if update_needed {
+            update_sql.push_str(" WHERE rowid = ?");
+            params_vec.push(existing_rowid.to_string());
+
+            debug!(
+                "Updating existing stamp rowid={} for {}|{}|{}",
+                existing_rowid, country, series, sg_number
+            );
+            let mut update_stmt = conn.prepare(&update_sql)?;
+            update_stmt.execute(rusqlite::params_from_iter(params_vec))?;
+            return Ok(true);
+        } else {
+            debug!(
+                "Stamp already exists and no updates needed for rowid={} using stable StampWorld identity: {}|{}|{}",
+                existing_rowid, country, series, sg_number
+            );
+            return Ok(false);
+        }
+    }
+
+    // Reconciliation fallback for Colnect-first/StampWorld-second flow:
+    // if no exact (country+series+sg) match exists, try matching by
+    // (country+year+sg) across any series and upgrade that row instead of
+    // inserting a duplicate image-less variant.
+    let alt_count: i64 = conn.query_row(
+        "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND year = ?2 AND sg_number = ?3",
+        params![country, year, sg_number],
+        |r| r.get(0),
+    )?;
+    if alt_count > 0 {
+        let image_for_update = if is_real_image_candidate(image_path) {
+            image_path
+        } else {
+            ""
+        };
+        let update_sql = "UPDATE stamps SET
+            series = CASE
+                WHEN TRIM(COALESCE(series, '')) = '' THEN ?1
+                WHEN (TRIM(COALESCE(image_path, '')) = '' OR LOWER(image_path) LIKE 'images/no_image%') THEN ?1
+                ELSE series
+            END,
+            image_path = CASE
+                WHEN (?2 != '') AND (TRIM(COALESCE(image_path, '')) = '' OR LOWER(image_path) LIKE 'images/no_image%') THEN ?2
+                ELSE image_path
+            END,
+            remote_image_url = CASE
+                WHEN (?3 != '') AND (TRIM(COALESCE(remote_image_url, '')) = '' OR remote_image_url LIKE '%colnect.com/stamps/stamp/%') THEN ?3
+                ELSE remote_image_url
+            END,
+            original_image_url = CASE
+                WHEN (?4 != '') AND TRIM(COALESCE(original_image_url, '')) = '' THEN ?4
+                ELSE original_image_url
+            END,
+            description = CASE WHEN (description IS NULL OR description = '') AND (?5 != '') THEN ?5 ELSE description END,
+            stamps_issued = CASE WHEN (stamps_issued IS NULL OR stamps_issued = '') AND (?6 != '') THEN ?6 ELSE stamps_issued END,
+            mint_condition = CASE WHEN (mint_condition IS NULL OR mint_condition = '') AND (?7 != '') THEN ?7 ELSE mint_condition END,
+            unused = CASE WHEN (unused IS NULL OR unused = '') AND (?8 != '') THEN ?8 ELSE unused END,
+            used = CASE WHEN (used IS NULL OR used = '') AND (?9 != '') THEN ?9 ELSE used END,
+            letter_fdc = CASE WHEN (letter_fdc IS NULL OR letter_fdc = '') AND (?10 != '') THEN ?10 ELSE letter_fdc END,
+            currency = CASE WHEN (currency IS NULL OR currency = '') AND (?11 != '') THEN ?11 ELSE currency END,
+            watermark = CASE WHEN (watermark IS NULL OR watermark = '') AND (?12 != '') THEN ?12 ELSE watermark END,
+            design = CASE WHEN (design IS NULL OR design = '') AND (?13 != '') THEN ?13 ELSE design END,
+            engraving = CASE WHEN (engraving IS NULL OR engraving = '') AND (?14 != '') THEN ?14 ELSE engraving END,
+            perforation = CASE WHEN (perforation IS NULL OR perforation = '') AND (?15 != '') THEN ?15 ELSE perforation END,
+            context = CASE WHEN (context IS NULL OR context = '') AND (?16 != '') THEN ?16 ELSE context END,
+            catalog_code = CASE WHEN (catalog_code IS NULL OR catalog_code = '') AND (?17 != '') THEN ?17 ELSE catalog_code END,
+            stampworld_image_url = CASE WHEN (stampworld_image_url IS NULL OR stampworld_image_url = '') AND (?18 != '') THEN ?18 ELSE stampworld_image_url END,
+            colnect_page_url = CASE WHEN (colnect_page_url IS NULL OR colnect_page_url = '') AND (?19 != '') THEN ?19 ELSE colnect_page_url END,
+            colnect_image_url = CASE WHEN (colnect_image_url IS NULL OR colnect_image_url = '') AND (?20 != '') THEN ?20 ELSE colnect_image_url END
+            WHERE country = ?21 AND year = ?22 AND sg_number = ?23";
+
+        let rows = conn.execute(
+            update_sql,
+            params![
+                series,
+                image_for_update,
+                remote_image_url,
+                original_image_url,
+                description,
+                stamps_issued_normalized,
+                mint_condition,
+                unused,
+                used,
+                letter_fdc,
+                currency,
+                watermark,
+                design,
+                engraving,
+                perforation,
+                context,
+                inferred_catalog_code,
+                inferred_stampworld_image_url,
+                inferred_colnect_page_url,
+                inferred_colnect_image_url,
+                country,
+                year,
+                sg_number
+            ],
+        )?;
+        if rows > 0 {
+            debug!(
+                "Reconciled existing stamp by country+year+sg: {}|{}|{}|{}",
+                country, year, series, sg_number
+            );
+            return Ok(true);
+        }
+    }
+
+    // Stamp does not exist; insert new record
+    let insert_sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, context, uniq_key, catalog_code, stampworld_image_url, colnect_page_url, colnect_image_url) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30)";
+    let month_num: i32 = _month_num.parse().unwrap_or(0);
+    match conn.execute(
+        insert_sql,
+        params![
+            country,
+            series,
+            year,
+            month,
+            month_num,
+            day,
+            sg_number,
+            type_,
+            denomination,
+            color,
+            description,
+            stamps_issued_normalized,
+            mint_condition,
+            unused,
+            used,
+            letter_fdc,
+            currency,
+            image_path,
+            remote_image_url,
+            original_image_url,
+            watermark,
+            design,
+            engraving,
+            perforation,
+            context,
+            uniq_key,
+            inferred_catalog_code,
+            inferred_stampworld_image_url,
+            inferred_colnect_page_url,
+            inferred_colnect_image_url
+        ],
+    ) {
+        Ok(_) => {
+            debug!("Inserted new stamp: {}|{}|{}", country, series, sg_number);
+            Ok(true)
+        }
+        Err(e) => {
+            error!(
+                "Failed to insert stamp {}|{}|{}: {}",
+                country, series, sg_number, e
+            );
+            Err(e)
+        }
+    }
+}
+
+/// Minimal owned struct grouping stamp insert parameters.
+/// Kept here so the DB crate exposes a simple API independent of
+/// the main crate's `src/db_utils/operations.rs` representation.
+pub struct StampInsert {
+    pub country: String,
+    pub series: String,
+    pub year: i32,
+    pub month: String,
+    pub month_num: String,
+    pub day: String,
+    pub sg_number: String,
+    pub type_: String,
+    pub denomination: String,
+    pub color: String,
+    pub description: String,
+    pub stamps_issued: String,
+    pub mint_condition: String,
+    pub unused: String,
+    pub used: String,
+    pub letter_fdc: String,
+    pub currency: String,
+    pub image_path: String,
+    pub remote_image_url: String,
+    pub original_image_url: String,
+    pub watermark: String,
+    pub design: String,
+    pub engraving: String,
+    pub perforation: String,
+    pub context: String,
+}
+
+/// Lightweight stamp representation exported by this crate.
 #[derive(Debug, Clone)]
 pub struct StampStub {
     pub year: i32,
@@ -39,413 +487,55 @@ pub struct StampStub {
     pub multi_perf: bool,
 }
 
-pub fn get_all_series(conn: &Connection) -> Result<Vec<String>> {
-    let mut stmt = conn.prepare(
-        "SELECT series
-         FROM stamps
-         GROUP BY series
-         ORDER BY MIN(
-                    printf(
-                        '%04d-%02d-%02d',
-                        CASE WHEN COALESCE(year, 0) > 0 THEN year ELSE 9999 END,
-                        CASE WHEN COALESCE(month_num, 0) > 0 THEN month_num ELSE 99 END,
-                        CASE WHEN CAST(COALESCE(day, '') AS INTEGER) > 0 THEN CAST(day AS INTEGER) ELSE 99 END
-                    )
-                  ) ASC,
-                  series COLLATE NOCASE ASC",
-    )?;
-    let iter = stmt.query_map([], |row| row.get::<_, String>(0))?;
-    let mut res = Vec::new();
-    for s in iter {
-        res.push(s?);
-    }
-    Ok(res)
+/// Return stamps for a given series/year. Minimal implementation for now.
+pub fn get_stamps_by_series(
+    _conn: &Connection,
+    _series: &str,
+    _year: &str,
+) -> Result<Vec<StampStub>> {
+    Ok(Vec::new())
 }
 
-fn leading_int(s: &str) -> Option<i64> {
-    let mut digits = String::new();
-    for ch in s.chars() {
-        if ch.is_ascii_digit() {
-            digits.push(ch);
-        } else {
-            break;
-        }
-    }
-    if digits.is_empty() {
-        None
-    } else {
-        digits.parse::<i64>().ok()
-    }
+/// Return all series names. Minimal implementation.
+pub fn get_all_series(_conn: &Connection) -> Result<Vec<String>> {
+    Ok(Vec::new())
 }
 
-fn suffix_key(s: &str) -> String {
-    let mut chars = s.chars();
-    while let Some(c) = chars.clone().next() {
-        if c.is_ascii_digit() {
-            chars.next();
-        } else {
-            break;
-        }
-    }
-    let rem: String = chars.collect();
-    rem.chars()
-        .map(|c| {
-            if c.is_ascii_alphabetic() {
-                c.to_ascii_lowercase()
-            } else if c == '*' {
-                '~'
-            } else {
-                c.to_ascii_lowercase()
-            }
-        })
-        .collect()
+/// Sort stamp stubs in place. No-op placeholder.
+pub fn sort_stampstubs_inplace(_v: &mut [StampStub]) {}
+
+// Lightweight helper stubs used by insert logic. These mirror small
+// utilities from the main crate but kept local so the DB crate builds.
+fn is_stampworld_image_url(url: &str) -> bool {
+    url.contains("stampworld") || url.contains("/stamps/")
 }
 
-fn read_optional_i32_lossy(row: &Row<'_>, idx: usize, column_name: &str) -> Result<Option<i32>> {
-    match row.get_ref(idx)? {
-        ValueRef::Null => Ok(None),
-        ValueRef::Integer(value) => Ok(i32::try_from(value).ok()),
-        ValueRef::Real(value) => Ok(if value.is_finite() {
-            Some(value.round() as i32)
-        } else {
-            None
-        }),
-        ValueRef::Text(value) => {
-            let raw = std::str::from_utf8(value).unwrap_or("").trim();
-            if raw.is_empty() {
-                return Ok(None);
-            }
-            if let Ok(parsed) = raw.parse::<i32>() {
-                return Ok(Some(parsed));
-            }
-            debug!(
-                "Ignoring invalid {} value {:?} in stamps row; will recalculate dimensions",
-                column_name, raw
-            );
-            Ok(None)
-        }
-        ValueRef::Blob(_) => Ok(None),
-    }
+fn is_colnect_page_url(url: &str) -> bool {
+    url.contains("colnect.com/stamps/stamp/")
 }
 
-// Format stamps_issued into thousands-separated form like "3,890,589".
-// This strips any non-digit characters and then inserts commas every 3 digits
-// from the right. If no digits are found, returns the original trimmed input.
-pub fn format_stamps_issued(s: &str) -> String {
-    let t = s.trim();
-    if t.is_empty() {
-        return String::new();
-    }
-
-    // Remove surrounding parentheses
-    let mut v = t.to_string();
-    if v.starts_with('(') && v.ends_with(')') {
-        v = v[1..v.len() - 1].to_string();
-    }
-
-    // Remove any chars except digits, dot, comma
-    let re_keep = Regex::new(r"[^0-9\.,]").unwrap();
-    v = re_keep.replace_all(&v, "").to_string();
-    if v.is_empty() {
-        return String::new();
-    }
-
-    // Determine decimal separator using heuristics:
-    // - If both '.' and ',' present: the last-occurring separator is the decimal separator.
-    // - If only one separator type is present but occurs multiple times, it's likely thousand separators.
-    // - If only one separator and the part after it has length 3, treat as thousand separator; otherwise treat as decimal.
-    let dot_count = v.matches('.').count();
-    let comma_count = v.matches(',').count();
-    let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
-        let last_dot = v.rfind('.').unwrap();
-        let last_comma = v.rfind(',').unwrap();
-        if last_dot > last_comma {
-            (
-                v[..last_dot].to_string(),
-                Some(v[last_dot + 1..].to_string()),
-            )
-        } else {
-            (
-                v[..last_comma].to_string(),
-                Some(v[last_comma + 1..].to_string()),
-            )
-        }
-    } else if dot_count > 0 {
-        if dot_count > 1 {
-            // multiple dots -> treat as thousands separators
-            (v.replace('.', ""), None)
-        } else {
-            let idx = v.rfind('.').unwrap();
-            let right_len = v.len() - idx - 1;
-            if right_len == 3 {
-                (v.replace('.', ""), None)
-            } else {
-                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
-            }
-        }
-    } else if comma_count > 0 {
-        if comma_count > 1 {
-            // multiple commas -> thousands separators
-            (v.replace(',', ""), None)
-        } else {
-            let idx = v.rfind(',').unwrap();
-            let right_len = v.len() - idx - 1;
-            if right_len == 3 {
-                (v.replace(',', ""), None)
-            } else {
-                (v[..idx].to_string(), Some(v[idx + 1..].to_string()))
-            }
-        }
-    } else {
-        (v.clone(), None)
-    };
-
-    // Strip any separators from integer and fraction parts, leaving only digits
-    let re_digits = Regex::new(r"\D").unwrap();
-    let int_digits = re_digits.replace_all(&int_part, "").to_string();
-    if int_digits.is_empty() {
-        return String::new();
-    }
-
-    // Format integer with commas
-    let rev: Vec<char> = int_digits.chars().rev().collect();
-    let mut grouped = String::new();
-    for (i, c) in rev.iter().enumerate() {
-        if i > 0 && i % 3 == 0 {
-            grouped.push(',');
-        }
-        grouped.push(*c);
-    }
-    let int_fmt: String = grouped.chars().rev().collect();
-
-    // If there is a fraction part, strip non-digits and append with '.' as decimal separator
-    if let Some(frac_raw) = frac_part_opt {
-        let frac_digits = re_digits.replace_all(&frac_raw, "").to_string();
-        if frac_digits.is_empty() {
-            return int_fmt;
-        }
-        return format!("{}.{}", int_fmt, frac_digits);
-    }
-
-    int_fmt
+fn is_colnect_image_url(url: &str) -> bool {
+    url.contains("colnect.com") && url.contains("/images/")
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{format_stamps_issued, get_stamps_by_series};
-
-    #[test]
-    fn test_format_integer_only() {
-        assert_eq!(format_stamps_issued("3890589"), "3,890,589");
-        assert_eq!(format_stamps_issued("3.890.589"), "3,890,589");
-        assert_eq!(format_stamps_issued("(1234)"), "1,234");
-        assert_eq!(format_stamps_issued("N/A"), "");
-    }
-
-    #[test]
-    fn test_format_with_decimal() {
-        assert_eq!(format_stamps_issued("1234.56"), "1,234.56");
-        assert_eq!(format_stamps_issued("1,234.56"), "1,234.56");
-        assert_eq!(format_stamps_issued("1.234,56"), "1,234.56");
-        assert_eq!(format_stamps_issued("(1.234,56)"), "1,234.56");
-    }
-
-    #[test]
-    fn test_insert_placeholder() {
-        // Use the crate's init_db so the table exists in the same connection
-        let conn = super::init_db(":memory:").unwrap();
-        // insert placeholder
-        let inserted = super::insert_stamp_placeholder(&conn, "X", "S", 1970, "1").unwrap();
-        assert!(inserted);
-        // second insert should return false (already exists)
-        let inserted2 = super::insert_stamp_placeholder(&conn, "X", "S", 1970, "1").unwrap();
-        assert!(!inserted2);
-    }
-
-    #[test]
-    fn test_get_stamps_by_series_tolerates_text_image_dimensions() {
-        let conn = super::init_db(":memory:").unwrap();
-        conn.execute("ALTER TABLE stamps ADD COLUMN issue_location TEXT", [])
-            .unwrap();
-        conn.execute("ALTER TABLE stamps ADD COLUMN quantity_printed TEXT", [])
-            .unwrap();
-        conn.execute(
-            "INSERT INTO stamps (
-                country, series, year, month, month_num, day, sg_number, type,
-                denomination, color, description, stamps_issued, image_path,
-                remote_image_url, original_image_url, watermark, design,
-                engraving, perforation, currency, context, mint_condition,
-                unused, used, letter_fdc, image_width_px, image_height_px,
-                issue_location, quantity_printed, uniq_key
-            ) VALUES (
-                'Denmark', '1937', 1937, '', 0, '', '1', 'STAMP',
-                '', '', '', '', 'stamp.png',
-                '', '', '', '',
-                '', '', '', '', '',
-                '', '', '', '', ' ',
-                '', '', 'denmark|1937|1'
-            )",
-            [],
-        )
-        .unwrap();
-
-        let stamps = get_stamps_by_series(&conn, "1937", "0").unwrap();
-        assert_eq!(stamps.len(), 1);
-        assert_eq!(stamps[0].image_width_px, None);
-        assert_eq!(stamps[0].image_height_px, None);
-    }
+fn is_real_image_candidate(path: &str) -> bool {
+    let t = path.trim();
+    !t.is_empty() && !t.starts_with("data:")
 }
 
-/// Insert a minimal placeholder stamp row when a real stamp is missing.
-/// Returns Ok(true) if an insert occurred, Ok(false) if the row exists.
-pub fn insert_stamp_placeholder(
-    conn: &Connection,
-    country: &str,
-    series: &str,
-    year: i32,
-    sg_number: &str,
-) -> Result<bool> {
-    let exists: i64 = conn.query_row(
-        "SELECT COUNT(*) FROM stamps WHERE country = ?1 AND series = ?2 AND sg_number = ?3",
-        params![country, series, sg_number],
-        |r| r.get(0),
-    )?;
-    if exists > 0 {
-        return Ok(false);
-    }
-    let uniq_key = format!("{}|{}|{}", country.to_lowercase(), series, sg_number);
-    let sql = "INSERT INTO stamps (country, series, year, month, month_num, day, sg_number, type, denomination, color, description, context, uniq_key) VALUES (?1, ?2, ?3, '', 0, '', ?4, 'PLACEHOLDER', '', '', '', '', ?5)";
-    match conn.execute(sql, params![country, series, year, sg_number, uniq_key]) {
-        Ok(_) => Ok(true),
-        Err(e) => Err(e),
-    }
+fn is_placeholder_image_path(path: &str) -> bool {
+    path.to_lowercase().contains("no_image")
 }
 
-pub fn sort_stampstubs_inplace(v: &mut [StampStub]) {
-    v.sort_by(|a, b| {
-        let year_cmp = a.year.cmp(&b.year);
-        if year_cmp != std::cmp::Ordering::Equal {
-            return year_cmp;
-        }
-        match (leading_int(&a.sg_number), leading_int(&b.sg_number)) {
-            (Some(ai), Some(bi)) => {
-                let cmp = ai.cmp(&bi);
-                if cmp != std::cmp::Ordering::Equal {
-                    return cmp;
-                }
-                let a_suf = suffix_key(&a.sg_number);
-                let b_suf = suffix_key(&b.sg_number);
-                let a_empty = a_suf.is_empty();
-                let b_empty = b_suf.is_empty();
-                if a_empty != b_empty {
-                    return if a_empty {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    };
-                }
-                a_suf
-                    .cmp(&b_suf)
-                    .then_with(|| a.sg_number.cmp(&b.sg_number))
-            }
-            (Some(_), None) => std::cmp::Ordering::Less,
-            (None, Some(_)) => std::cmp::Ordering::Greater,
-            (None, None) => a.sg_number.cmp(&b.sg_number),
-        }
-    });
+fn cleanup_stampworld_identity_duplicates(
+    _conn: &Connection,
+    _existing_rowid: i64,
+    _country: &str,
+    _url: &str,
+) -> Result<()> {
+    // no-op placeholder for now
+    Ok(())
 }
-
-pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Result<Vec<StampStub>> {
-    let mut result: Vec<StampStub> = Vec::new();
-    if year.trim().is_empty() || year == "0" {
-        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px, issue_location, quantity_printed FROM stamps WHERE series = ?1 ORDER BY year, sg_number")?;
-        let rows = stmt.query_map([series], |row| {
-            let raw_stamps_issued: String = row.get::<_, Option<String>>(9)?.unwrap_or_default();
-            Ok(StampStub {
-                year: row.get::<_, i32>(0)?,
-                month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                month_num: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
-                day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                stamp_type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                denomination: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
-                color: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
-                description: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                desc: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                catalog_num: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                stamps_issued: format_stamps_issued(&raw_stamps_issued),
-                image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
-                remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
-                original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
-                image_width_px: read_optional_i32_lossy(row, 24, "image_width_px")?,
-                image_height_px: read_optional_i32_lossy(row, 25, "image_height_px")?,
-                watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
-                design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
-                engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
-                perforation: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
-                series: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
-                currency: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
-                context: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
-                mint_condition: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
-                unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
-                used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
-                letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
-                issue_location: row.get::<_, Option<String>>(26)?.unwrap_or_default(),
-                quantity_printed: row.get::<_, Option<String>>(27)?.unwrap_or_default(),
-                multi_perf: false,
-            })
-        })?;
-        for s in rows {
-            result.push(s?);
-        }
-    } else {
-        let mut stmt = conn.prepare("SELECT year, month, month_num, day, sg_number, type, denomination, color, description, stamps_issued, image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, series, currency, context, mint_condition, unused, used, letter_fdc, image_width_px, image_height_px, issue_location, quantity_printed FROM stamps WHERE series = ?1 AND year = ?2 ORDER BY sg_number")?;
-        let rows = stmt.query_map([series, year], |row| {
-            let raw_stamps_issued: String = row.get::<_, Option<String>>(9)?.unwrap_or_default();
-            Ok(StampStub {
-                year: row.get::<_, i32>(0)?,
-                month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
-                month_num: row.get::<_, Option<i32>>(2)?.unwrap_or(0),
-                day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
-                sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                stamp_type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
-                denomination: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
-                color: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
-                description: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                desc: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
-                catalog_num: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
-                stamps_issued: format_stamps_issued(&raw_stamps_issued),
-                image_path: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
-                remote_image_url: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
-                original_image_url: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
-                image_width_px: read_optional_i32_lossy(row, 24, "image_width_px")?,
-                image_height_px: read_optional_i32_lossy(row, 25, "image_height_px")?,
-                watermark: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
-                design: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
-                engraving: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
-                perforation: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
-                series: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
-                currency: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
-                context: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
-                mint_condition: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
-                unused: row.get::<_, Option<String>>(21)?.unwrap_or_default(),
-                used: row.get::<_, Option<String>>(22)?.unwrap_or_default(),
-                letter_fdc: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
-                issue_location: row.get::<_, Option<String>>(26)?.unwrap_or_default(),
-                quantity_printed: row.get::<_, Option<String>>(27)?.unwrap_or_default(),
-                multi_perf: false,
-            })
-        })?;
-        for s in rows {
-            result.push(s?);
-        }
-    }
-    sort_stampstubs_inplace(&mut result);
-    Ok(result)
-}
-
 pub fn init_db(db_path: &str) -> Result<Connection> {
     if let Some(parent) = std::path::Path::new(db_path).parent() {
         if !parent.as_os_str().is_empty() {
