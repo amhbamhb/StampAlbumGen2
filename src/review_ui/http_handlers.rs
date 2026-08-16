@@ -135,7 +135,7 @@ pub(super) struct ReviewHandlersState {
     pub return_to_start_requested: bool,
 }
 
-pub(super) fn serve_bootstrap_requests(server: &Server, html:   &String) -> BootstrapHandlersState {
+pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
     let reload_requested = false;
@@ -162,8 +162,8 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html:   &String) -> Boot
             continue;
         }
 
-        if method == Method::Get && req_url == "/" {
-            let mut resp = Response::from_string(html.clone());
+            if method == Method::Get && req_url == "/" {
+            let mut resp = Response::from_string(html.to_string());
             if let Ok(h) =
                 Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
             {
