@@ -8,6 +8,9 @@ use std::collections::HashSet;
 
 const LATEST_SCHEMA_VERSION: i64 = 4;
 
+// Type alias for a migration entry: (version, name, function)
+type MigrationEntry = (i64, &'static str, fn(&Connection) -> Result<()>);
+
 const CANONICAL_STAMPS_COLUMNS: [(&str, &str); 65] = [
     ("id", "INTEGER PRIMARY KEY"),
     ("country", "TEXT"),
@@ -224,7 +227,7 @@ pub fn run_pending_schema_migrations(conn: &Connection) -> Result<()> {
         .query_map([], |row| row.get::<_, i64>(0))?
         .collect::<std::result::Result<HashSet<_>, _>>()?;
 
-    let migrations: [(i64, &str, fn(&Connection) -> Result<()>); 4] = [
+    let migrations: [MigrationEntry; 4] = [
         (
             1,
             "stamps_schema_alignment",
