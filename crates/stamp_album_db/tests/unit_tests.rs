@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 use stamp_album_db::{
-    get_all_series, get_stamps_by_series, insert_stamp, migrate_fix_block_metadata,
-    sort_stampstubs_inplace, StampStub,
+    get_all_series, get_stamps_by_series, insert_stamp_from_struct, migrate_fix_block_metadata,
+    sort_stampstubs_inplace, StampStub, StampInsert,
 };
 
 fn make_stub(sg: &str, year: i32) -> StampStub {
@@ -153,35 +153,35 @@ fn test_insert_stamp_and_backfill() {
 
     conn.execute("INSERT INTO stamps (country, series, sg_number, description, uniq_key) VALUES (?1,?2,?3,?4,?5)", rusqlite::params!["X","S","1","Existing desc","x|s|1"]).unwrap();
 
-    let res = insert_stamp(
-        &conn,
-        "X",
-        "S",
-        1900,
-        "Jan",
-        "1",
-        "1",
-        "1",
-        "Type",
-        "Denom",
-        "Color",
-        "New Desc",
-        "1.234",
-        "Mint",
-        "Unused",
-        "Used",
-        "Letter",
-        "USD",
-        "images/1.jpg",
-        "https://example.com/1.jpg",
-        "orig.jpg",
-        "WM",
-        "Design",
-        "Engr",
-        "12",
-        "Context",
-    )
-    .unwrap();
+    let si = StampInsert {
+        country: "X".to_string(),
+        series: "S".to_string(),
+        year: 1900,
+        month: "Jan".to_string(),
+        month_num: "1".to_string(),
+        day: "1".to_string(),
+        sg_number: "1".to_string(),
+        type_: "Type".to_string(),
+        denomination: "Denom".to_string(),
+        color: "Color".to_string(),
+        description: "New Desc".to_string(),
+        stamps_issued: "1.234".to_string(),
+        mint_condition: "Mint".to_string(),
+        unused: "Unused".to_string(),
+        used: "Used".to_string(),
+        letter_fdc: "Letter".to_string(),
+        currency: "USD".to_string(),
+        image_path: "images/1.jpg".to_string(),
+        remote_image_url: "https://example.com/1.jpg".to_string(),
+        original_image_url: "orig.jpg".to_string(),
+        watermark: "WM".to_string(),
+        design: "Design".to_string(),
+        engraving: "Engr".to_string(),
+        perforation: "12".to_string(),
+        context: "Context".to_string(),
+    };
+
+    let res = insert_stamp_from_struct(&conn, &si).unwrap();
     assert!(res);
 
     let row: (String, String, String, String) = conn.query_row("SELECT description, stamps_issued, image_path, remote_image_url FROM stamps WHERE country=?1 AND series=?2 AND sg_number=?3", rusqlite::params!["X","S","1"], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))).unwrap();
