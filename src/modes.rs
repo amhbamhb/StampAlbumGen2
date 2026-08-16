@@ -1519,21 +1519,24 @@ pub fn run_scraping_mode(
     if !using_extract_file {
         progress.set_message("⚙️ Configuring data collector...");
     }
-    let mut cfg = CommandsFileGenerator::default();
-    cfg.album_name = album_name.clone();
-    cfg.country = site_name.clone();
     // Keep scrape outputs in a canonical country/site-based folder.
     let albums_root = resolve_runtime_albums_root();
-    cfg.album_path = albums_root
-        .join(&canonical_storage_dir)
-        .to_string_lossy()
-        .to_string();
-    cfg.image_path = albums_root
-        .join(&canonical_storage_dir)
-        .join("images")
-        .to_string_lossy()
-        .to_string();
-    cfg.year = cli.start_year.to_string();
+
+    let mut cfg = CommandsFileGenerator {
+        album_name: album_name.clone(),
+        country: site_name.clone(),
+        album_path: albums_root
+            .join(&canonical_storage_dir)
+            .to_string_lossy()
+            .to_string(),
+        image_path: albums_root
+            .join(&canonical_storage_dir)
+            .join("images")
+            .to_string_lossy()
+            .to_string(),
+        year: cli.start_year.to_string(),
+        ..Default::default()
+    };
 
     // Build base URL
     progress.set_message(&format!(
@@ -1696,15 +1699,15 @@ pub fn run_scraping_mode(
         }
     } else {
         // Call StampWorld collector
-        cfg.collect_stampworld_data(
-            &base_url,
-            cli.overwrite_images,
-            None::<&dyn Fn(usize)>,
-            cli.max_pages,
-            cli.stop_after_no_hits,
-            cli.start_year,
-            cli.end_year,
-        )
+        cfg.collect_stampworld_data(crate::commands_file_generator::generator::CollectStampworldCallParams {
+            base_url: &base_url,
+            overwrite_images: cli.overwrite_images,
+            page_callback: None::<&dyn Fn(usize)>,
+            max_pages: cli.max_pages,
+            stop_after_no_hits: cli.stop_after_no_hits,
+            start_year: cli.start_year,
+            end_year: cli.end_year,
+        })
     };
     match pages {
         Ok(pages) => {
