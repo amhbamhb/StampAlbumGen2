@@ -546,7 +546,7 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
 
             // Create pixmap and render
             let mut pixmap = tiny_skia::Pixmap::new(render_w, render_h)
-                .ok_or_else(|| "failed to allocate pixmap for high-res render")?;
+                .ok_or("failed to allocate pixmap for high-res render")?;
 
             // Compute scale factor to map SVG logical units to rendered pixels
             let scale_x = (render_w as f64) / svg_w;
@@ -561,7 +561,7 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
             let data = pixmap.data().to_vec();
             let img_buf =
                 image::ImageBuffer::<image::Rgba<u8>, Vec<u8>>::from_raw(render_w, render_h, data)
-                    .ok_or_else(|| "failed to create image buffer from pixmap data")?;
+                    .ok_or("failed to create image buffer from pixmap data")?;
             let dynimg = image::DynamicImage::ImageRgba8(img_buf);
             let final_img = dynimg.resize_exact(
                 target_width,
