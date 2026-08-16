@@ -1277,7 +1277,7 @@ pub fn run_database_mode(
     }
     if !std::path::Path::new(&db_path).exists() {
         progress.set_message("📝 Creating new database file...");
-        match std::fs::File::create(&db_path) {
+        match std::fs::File::create(db_path) {
             Ok(_) => (),
             Err(e) => {
                 progress.finish_with_error(&format!("Failed to create DB file: {}", e));
@@ -1291,7 +1291,7 @@ pub fn run_database_mode(
     // provide a friendly message with suggestions rather than panicking later.
     // Open the database once and hand a reference to the generator.
     progress.set_message("🔗 Opening database connection...");
-    let conn = match crate::db_utils::init_db(&db_path) {
+    let conn = match crate::db_utils::init_db(db_path) {
         Ok(c) => c,
         Err(e) => {
             progress.finish_with_error(&format!("Database connection failed: {}", e));
