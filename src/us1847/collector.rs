@@ -458,7 +458,7 @@ fn parse_html_tables(
                                 if let Err(e) = insert_stamp_if_not_exists(
                                     conn,
                                     series_id,
-                                    &series_title,
+                                    series_title,
                                     &stamp,
                                 ) {
                                     error!("Failed to insert ordinary stamp from line: {}", e);
@@ -1577,7 +1577,7 @@ pub fn sync_us1847_to_stamps(
             crate::db_utils::insert_stamp(
                 conn,
                 "United States", // country
-                &series_title,    // series
+                series_title,    // series
                 year,
                 month,
                 month,
@@ -1596,7 +1596,7 @@ pub fn sync_us1847_to_stamps(
                 &image_path,
                 &remote_image_url,
                 &original_image_url,
-                &watermark,
+                watermark,
                 &design,
                 &engraving,
                 &perforation,
