@@ -695,9 +695,11 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
     // Use the icon *name* (not an absolute path) so GNOME/Wayland resolves it
     // through the hicolor icon theme — required for App Details and taskbar
     // icons to work correctly under Wayland.
+    let exec_cmd = format!("{} --review-ui", exec_path);
+
     let desktop_contents = format!(
         "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon=stamp_album_gen2\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
-        format!("{} --review-ui", exec_path),
+        exec_cmd,
         working_dir,
     );
 
