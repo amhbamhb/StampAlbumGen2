@@ -1574,34 +1574,34 @@ pub fn sync_us1847_to_stamps(
         let engraving = engraver;
         let context = format!("{} - {}", place_issued, issue_date);
 
-            crate::db_utils::insert_stamp(
-                conn,
-                "United States", // country
-                series_title,    // series
+            let si = crate::db_utils::StampInsert {
+                country: "United States".to_string(),
+                series: series_title.to_string(),
                 year,
-                month,
-                month,
-                day,
-                &sg_number,
-                type_,
-                &denomination,
-                &color,
-                &description,
-                &stamps_issued,
-                mint_condition,
-                unused,
-                used,
-                letter_fdc,
-                currency,
-                &image_path,
-                &remote_image_url,
-                &original_image_url,
-                watermark,
-                &design,
-                &engraving,
-                &perforation,
-                &context,
-            )?;
+                month: month.to_string(),
+                month_num: month.to_string(),
+                day: day.to_string(),
+                sg_number: sg_number.clone(),
+                type_: type_.to_string(),
+                denomination: denomination.clone(),
+                color: color.clone(),
+                description: description.clone(),
+                stamps_issued: stamps_issued.clone(),
+                mint_condition: mint_condition.to_string(),
+                unused: unused.to_string(),
+                used: used.to_string(),
+                letter_fdc: letter_fdc.to_string(),
+                currency: currency.to_string(),
+                image_path: image_path.clone(),
+                remote_image_url: remote_image_url.clone(),
+                original_image_url: original_image_url.clone(),
+                watermark: watermark.to_string(),
+                design: design.to_string(),
+                engraving: engraving.to_string(),
+                perforation: perforation.to_string(),
+                context: context.to_string(),
+            };
+            crate::db_utils::insert_stamp_from_struct(conn, &si)?;
 
         // Set image dimensions if image exists
         if !image_path.is_empty() {
