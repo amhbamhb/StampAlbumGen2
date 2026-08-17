@@ -5,6 +5,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use log::debug;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -2090,17 +2091,20 @@ fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> S
     }
 
     let p1 = crate::file_utils::resolve_album_image_path(album_name, rel);
+    debug!("resolve_image_abs: db_path='{}' album='{}' rel='{}' -> p1='{}' (exists={})", db_path, album_name, rel, p1.display(), p1.exists());
     if p1.exists() {
         return p1.to_string_lossy().to_string();
     }
 
     if let Some(parent) = Path::new(db_path).parent() {
         let p2 = parent.join(rel);
+        debug!("resolve_image_abs: checking parent path p2='{}' (exists={})", p2.display(), p2.exists());
         if p2.exists() {
             return p2.to_string_lossy().to_string();
         }
     }
 
+    debug!("resolve_image_abs: no local image resolved for rel='{}'", rel);
     String::new()
 }
 

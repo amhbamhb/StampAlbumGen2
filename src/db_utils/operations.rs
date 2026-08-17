@@ -3,49 +3,14 @@
 //! This module contains functions for inserting, updating, and querying stamp data.
 
 use log::{debug, error};
-use regex::Regex;
-use rusqlite::{params, Connection, OptionalExtension, Result};
+use rusqlite::{params, Connection, Result};
 
 use crate::db_utils::StampStub;
 use stamp_album_db::StampInsert as DbStampInsert;
 
-fn cleanup_stampworld_identity_duplicates(
-    conn: &Connection,
-    keep_rowid: i64,
-    country: &str,
-    stampworld_image_url: &str,
-) -> Result<usize> {
-    if stampworld_image_url.trim().is_empty() {
-        return Ok(0);
-    }
-
-    let mut stmt = conn.prepare(
-        "SELECT rowid
-         FROM stamps
-         WHERE country = ?1
-           AND TRIM(COALESCE(stampworld_image_url, '')) = ?2
-           AND rowid != ?3",
-    )?;
-    let rowids = stmt
-        .query_map(params![country, stampworld_image_url, keep_rowid], |r| r.get::<_, i64>(0))?
-        .collect::<std::result::Result<Vec<_>, _>>()?;
-
-    let mut deleted = 0usize;
-    for rid in rowids {
-        let n = conn.execute("DELETE FROM stamps WHERE rowid = ?1", params![rid])?;
-        if n > 0 {
-            deleted += n;
-        }
-    }
-
-    if deleted > 0 {
-        debug!(
-            "Removed {} duplicate StampWorld identity row(s) for country='{}' sw_img='{}' (keeper rowid={})",
-            deleted, country, stampworld_image_url, keep_rowid
-        );
-    }
-    Ok(deleted)
-}
+// Helper functions moved to `crates/stamp_album_db` to provide a single
+// implementation shared between the DB crate and the main crate. Keeping
+// them here caused duplicate definitions and dead-code warnings.
 
 #[allow(clippy::too_many_arguments)]
 pub fn insert_stamp(
@@ -262,8 +227,55 @@ pub fn get_stamps_by_country_series(
 }
 
 /// Get stamps by series and year.
-pub fn get_stamps_by_series(conn: &Connection, series: &str, year: &str) -> Result<Vec<StampStub>> {
-    stamp_album_db::get_stamps_by_series(conn, series, year)
+pub fn get_stamps_by_series(conn: &Connection, series: &str, _year: &str) -> Result<Vec<StampStub>> {
+    // Query local stamps table directly. The external crate currently
+    // contains a stubbed implementation that returns an empty vec, which
+    // causes the generator to emit no stamps. Use a conservative select
+    // mapping the common StampStub fields used by the generator.
+    let mut stmt = conn.prepare(
+        "SELECT year, month, month_num, day, sg_number, type, '' as stamp_type, denomination, color, description, '' as desc, '' as catalog_num, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, image_width_px, image_height_px, watermark, design, engraving, perforation, series, context, issue_location, quantity_printed, 0 as multi_perf FROM stamps WHERE series = ?1 ORDER BY year"
+    )?;
+    let stamp_iter = stmt.query_map(params![series], |row| {
+        Ok(StampStub {
+            year: row.get::<_, Option<i32>>(0)?.unwrap_or_default(),
+            month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+            month_num: row.get::<_, Option<i32>>(2)?.unwrap_or_default(),
+            day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+            sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+            r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+            stamp_type: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+            denomination: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
+            color: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+            description: row.get::<_, Option<String>>(9)?.unwrap_or_default(),
+            desc: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
+            catalog_num: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
+            stamps_issued: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
+            mint_condition: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
+            unused: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
+            used: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
+            letter_fdc: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
+            currency: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
+            image_path: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+            remote_image_url: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
+            original_image_url: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
+            image_width_px: row.get::<_, Option<i32>>(21)?,
+            image_height_px: row.get::<_, Option<i32>>(22)?,
+            watermark: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+            design: row.get::<_, Option<String>>(24)?.unwrap_or_default(),
+            engraving: row.get::<_, Option<String>>(25)?.unwrap_or_default(),
+            perforation: row.get::<_, Option<String>>(26)?.unwrap_or_default(),
+            series: row.get::<_, Option<String>>(27)?.unwrap_or_default(),
+            context: row.get::<_, Option<String>>(28)?.unwrap_or_default(),
+            issue_location: row.get::<_, Option<String>>(29)?.unwrap_or_default(),
+            quantity_printed: row.get::<_, Option<String>>(30)?.unwrap_or_default(),
+            multi_perf: row.get::<_, i32>(31)? != 0,
+        })
+    })?;
+    let mut results = Vec::new();
+    for s in stamp_iter {
+        results.push(s?);
+    }
+    Ok(results)
 }
 
 /// Get all series from the database, with optional ordering.

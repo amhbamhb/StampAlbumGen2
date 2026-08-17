@@ -121,7 +121,7 @@ pub fn ensure_config_and_template_files(
                 // binary from a GUI (double-click/file-manager).
                 let has_tty = io::stdin().is_terminal();
 
-                let mut gui_initiated = cfg!(feature = "rfd");
+                let gui_initiated = cfg!(feature = "rfd");
                 #[cfg(feature = "rfd")]
                 {
                     // Ask the user first with an explicit OK/Cancel dialog whether

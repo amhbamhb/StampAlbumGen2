@@ -1,4 +1,5 @@
 use std::io::{self, Write};
+use log::debug;
 
 fn escape_ae_text(v: &str) -> String {
     // AlbumEasy command args are wrapped in double quotes; embedded quotes
@@ -178,6 +179,7 @@ pub fn emit_stamp_lines<W: Write>(
     is_image: bool,
 ) -> io::Result<()> {
     if is_image {
+        debug!("emit_stamp_lines: emitting image: path='{}' sg='{}' emit_size=({:.1},{:.1})", ctx.image_path, ctx.sgnum, ctx.emit_width, ctx.emit_height);
         let image_path = escape_ae_text(ctx.image_path);
         let left = escape_ae_text(ctx.left);
         let centre = escape_ae_text(ctx.centre);
@@ -188,6 +190,7 @@ pub fn emit_stamp_lines<W: Write>(
         );
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     } else {
+        debug!("emit_stamp_lines: emitting placeholder/text image_path='{}' sg='{}'", ctx.image_path, ctx.sgnum);
         let image_path = escape_ae_text(ctx.image_path);
         let left = escape_ae_text(ctx.left);
         let centre = escape_ae_text(ctx.centre);
