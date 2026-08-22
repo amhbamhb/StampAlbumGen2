@@ -452,7 +452,7 @@ color_stamp_background = "black"
 # - When true, prepend a dedicated cover page before stamp pages.
 # - If a flag image is found, use the image-based layout.
 # - If no flag image is found, use the text-only layout values below.
-print_flag_cover = false
+print_flag_cover = true
 # Preferred rendered flag image size on the cover (mm).
 # Typical ranges:
 # - width : 120.0 .. 180.0
@@ -469,7 +469,7 @@ flag_cover_background_color = ""
 # List which elements appear on the cover and in what order.
 # Recognized values: "coat" (coat of arms), "flag", "name" (country name text).
 # Remove an entry to omit that element from the cover entirely.
-flag_cover_elements = ["coat", "flag", "name"]
+flag_cover_elements = ["flag", "coat", "name"]
 
 # Coat-of-arms image size on the cover (mm).
 # Used when a coat_of_arms image is included in the cover layout.
@@ -506,6 +506,11 @@ flag_cover_text_only_title_scale = 1.0
 # Extra space after text-only title block (mm).
 # Increase this if first content on next section appears too tight.
 flag_cover_text_only_vspace_after = 18.0
+
+# Allow overwriting existing downloaded flag/coat images when true
+# When false (default) existing files will be kept and not re-downloaded.
+flag_cover_overwrite_flag = false
+flag_cover_overwrite_coa = false
 
 ###################################
 # Wikipedia Data Sources

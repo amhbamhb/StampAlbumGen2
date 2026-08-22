@@ -550,6 +550,12 @@ pub struct Config {
     // If false, the generator will skip emitting the large flag/title cover page
     // Default: true (when None or not present)
     pub print_flag_cover: Option<bool>,
+    // When true, overwrite existing downloaded flag PNGs from remote sources
+    // Default: false
+    pub flag_cover_overwrite_flag: Option<bool>,
+    // When true, overwrite existing downloaded coat-of-arms images from remote sources
+    // Default: false
+    pub flag_cover_overwrite_coa: Option<bool>,
     // If true, fetch a short Wikipedia summary for the album/site and save
     // it under the album directory (wiki_summary.txt). Default: false
     pub fetch_wikipedia: Option<bool>,

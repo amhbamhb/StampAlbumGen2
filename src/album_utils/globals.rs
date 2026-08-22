@@ -1,6 +1,7 @@
 use crate::album_globals::generator_new::layout;
 use log::info;
 use std::io::Write;
+use std::path::Path;
 
 /// Writes global AlbumEasy header information to the output stream
 pub fn write_globals<W: Write>(
@@ -454,6 +455,27 @@ pub fn write_globals<W: Write>(
                 coat_path_opt = Some(format!("images/{}", fname));
             } else {
                 coat_path_opt = Some(p);
+            }
+        }
+
+        // If the copy call failed (no coat_path_opt), check if a local
+        // `coat_of_arms.png` or `coat_of_arms.svg` already exists in the
+        // album images dir (tools or manual addition). Use it if present.
+        if coat_path_opt.is_none() {
+            let png_candidate = Path::new(&album_images_dir).join("coat_of_arms.png");
+            let svg_candidate = Path::new(&album_images_dir).join("coat_of_arms.svg");
+            if png_candidate.exists() {
+                if let Some(fname) = png_candidate.file_name().and_then(|s| s.to_str()) {
+                    coat_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    coat_path_opt = Some(png_candidate.to_string_lossy().to_string());
+                }
+            } else if svg_candidate.exists() {
+                if let Some(fname) = svg_candidate.file_name().and_then(|s| s.to_str()) {
+                    coat_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    coat_path_opt = Some(svg_candidate.to_string_lossy().to_string());
+                }
             }
         }
 

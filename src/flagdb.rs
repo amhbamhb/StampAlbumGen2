@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 use image::GenericImageView;
+use std::time::{SystemTime, UNIX_EPOCH};
+use rusqlite::Connection;
 
 /// Small local flag DB: map lowercase country name -> ISO alpha-2 code
 /// We'll initialize it with a compact set and allow loading from a JSON file
@@ -267,6 +269,17 @@ pub fn ensure_flag_image_with_fetcher(
 
     let filepath = target_dir.join(&filename);
 
+    // If not found locally, try neXperts countries API first (provides flags/coa endpoints)
+    // Respect config override: if user set flag_cover_overwrite_flag=true then allow re-download
+    let cfg = crate::config::load_effective_config("config.toml");
+    let overwrite_flag = cfg.flag_cover_overwrite_flag.unwrap_or(false);
+    if overwrite_flag || !filepath.exists() {
+        // try neXperts endpoints for flag (prefer PNG then SVG)
+        if let Ok(p) = try_fetch_nexperts_resource(fetcher, alpha2, "flags", size) {
+            return Ok(p);
+        }
+    }
+
     // Build URL: https://flagcdn.com/[size]/[code].png where size is like w40 (width px)
     let url = format!("https://flagcdn.com/{}/{}.png", size, alpha);
 
@@ -386,41 +399,247 @@ pub fn ensure_coat_of_arms_with_fetcher(
     }
 
     let filepath = target_dir.join(&filename);
+    // Honor overwrite config: only attempt network fetch if overwrite enabled
+    // or the target file doesn't already exist.
+    let cfg = crate::config::load_effective_config("config.toml");
+    let overwrite_coa = cfg.flag_cover_overwrite_coa.unwrap_or(false);
 
-    // Query restcountries API for coatOfArms URL: https://restcountries.com/v3.1/alpha/{alpha}
-    let api_url = format!("https://restcountries.com/v3.1/alpha/{}", alpha);
-    let (_status, body) = fetcher.fetch_text(&api_url)?;
-    // Parse JSON and extract coatOfArms.svg
+    // If overwrite is disabled and a file already exists at `filepath`, return it.
+    if filepath.exists() && !overwrite_coa {
+        // Prefer a rasterized PNG sibling if present
+        let png_candidate = filepath.with_extension("png");
+        if png_candidate.exists() {
+            return Ok(png_candidate.to_string_lossy().to_string());
+        }
+        return Ok(filepath.to_string_lossy().to_string());
+    }
+
+    // First try neXperts countries API for coat (preferred source): PNG then SVG.
+    // This provides a predictable, high-quality asset set.
+    if overwrite_coa || !filepath.exists() {
+        let nex_png = format!("https://countries.nexperts.nl/coa/{}.png", alpha);
+        if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&nex_png) {
+            let target_dir_coa = PathBuf::from("flags").join("coats_of_arms");
+            let _ = std::fs::create_dir_all(&target_dir_coa);
+            let out_path = target_dir_coa.join(format!("{}.png", alpha));
+            let mut f = std::fs::File::create(&out_path)?;
+            f.write_all(&bytes)?;
+            // copy into target filepath location if different
+            if out_path != filepath.with_extension("png") {
+                let _ = std::fs::create_dir_all(filepath.parent().unwrap_or(&target_dir_coa));
+                let _ = std::fs::copy(&out_path, filepath.with_extension("png"))?;
+                return Ok(filepath.with_extension("png").to_string_lossy().to_string());
+            }
+            return Ok(out_path.to_string_lossy().to_string());
+        }
+
+        // Try neXperts SVG
+        let nex_svg = format!("https://countries.nexperts.nl/coa/{}.svg", alpha);
+        if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&nex_svg) {
+            let target_dir_coa = PathBuf::from("flags").join("coats_of_arms");
+            let _ = std::fs::create_dir_all(&target_dir_coa);
+            let out_path = target_dir_coa.join(format!("{}.svg", alpha));
+            let mut f = std::fs::File::create(&out_path)?;
+            f.write_all(&bytes)?;
+            let png_path = out_path.with_extension("png");
+            if try_rasterize_svg_to_png(&out_path, &png_path).unwrap_or(false) {
+                return Ok(png_path.to_string_lossy().to_string());
+            }
+            return Ok(out_path.to_string_lossy().to_string());
+        }
+    }
+
+    // Query restcountries API for coatOfArms URL. Try v5 first, then v3 as fallback.
+    // Prefer minimal-field v5 endpoint, fall back to other shapes
+    let candidates = vec![
+        format!("https://restcountries.com/v5.1/alpha/{}?fields=coatOfArms", alpha),
+        format!("https://restcountries.com/v5.1/alpha?codes={}&fields=coatOfArms", alpha),
+        format!("https://restcountries.com/v3.1/alpha/{}?fields=coatOfArms", alpha),
+        format!("https://restcountries.com/v3.1/alpha?codes={}&fields=coatOfArms", alpha),
+    ];
+
+    let mut body: Option<String> = None;
+    let mut last_err: Option<String> = None;
+    for url in candidates.iter() {
+        match fetcher.fetch_text(url) {
+            Ok((_s, b)) => {
+                body = Some(b);
+                break;
+            }
+            Err(e) => {
+                // remember the last error but continue to next candidate
+                last_err = Some(format!("fetch {} failed: {}", url, e));
+            }
+        }
+    }
+
+    // If restcountries did not provide usable coat, try neXperts countries API (provides /coa/{code}.svg/png)
+    if body.is_none() || body.as_ref().map(|s| s.contains("deprecated")).unwrap_or(false) {
+        // try neXperts country full info first
+        let nex_info_url = format!("https://countries.nexperts.nl/{alpha}");
+        if let Ok((_s, b)) = fetcher.fetch_text(&nex_info_url) {
+            // save a copy into a small sqlite cache for future
+            let _ = cache_country_info(&alpha, &b);
+            // try to parse links to coa or flag from the returned content (it's HTML)
+            if let Some(coa_url) = extract_coa_from_nexperts_html(&b, &alpha) {
+                // download bytes
+                if let Ok((_st, _headers, bytes)) = fetcher.fetch_bytes(&coa_url) {
+                    let ext = if coa_url.to_lowercase().ends_with(".png") {"png"} else {"svg"};
+                    let final_path = target_dir.join(format!("{}.{}", alpha, ext));
+                    let mut out = std::fs::File::create(&final_path)?;
+                    out.write_all(&bytes)?;
+                    if ext=="png" { return Ok(final_path.to_string_lossy().to_string()); }
+                    let png_path = final_path.with_extension("png");
+                    if try_rasterize_svg_to_png(&final_path, &png_path).unwrap_or(false) {
+                        return Ok(png_path.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    let body = match body {
+        Some(b) => b,
+        None => {
+            if let Some(e) = last_err {
+                return Err(e.into());
+            }
+            return Err("Failed to fetch country data from restcountries API".into());
+        }
+    };
+
+    // Parse JSON and try to extract coatOfArms.svg or coatOfArms.png from a variety
+    // of possible response shapes (array, single object, nested 'data' responses).
     let v: serde_json::Value = serde_json::from_str(&body)?;
-    // API returns an array with a single object
-    let coa_url_opt = v
-        .get(0)
-        .and_then(|o| o.get("coatOfArms"))
-        .and_then(|c| c.get("svg"))
-        .and_then(|s| s.as_str())
-        .map(|s| s.to_string());
+
+    // Helper to inspect a JSON value for coat urls
+    fn extract_from_obj(o: &serde_json::Value) -> Option<String> {
+        if let Some(coa) = o.get("coatOfArms") {
+            if let Some(s) = coa.get("svg").and_then(|x| x.as_str()) {
+                if !s.trim().is_empty() {
+                    return Some(s.to_string());
+                }
+            }
+            if let Some(s) = coa.get("png").and_then(|x| x.as_str()) {
+                if !s.trim().is_empty() {
+                    return Some(s.to_string());
+                }
+            }
+        }
+        None
+    }
+
+    // If the API responded with an error structure, create a placeholder PNG
+    // so album generation can continue (the absence of a coat should not
+    // abort the whole run). Surface the message to logs for diagnosis.
+    if let Some(errors) = v.get("errors") {
+        if let Some(first) = errors.get(0) {
+            if let Some(msg) = first.get("message").and_then(|m| m.as_str()) {
+                eprintln!("restcountries API error: {}", msg);
+                // create placeholder PNG and return its path
+                let png_path = filepath.with_extension("png");
+                // Ensure parent dir
+                if let Some(parent) = png_path.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
+                // Generate a simple placeholder image (320x240) with border
+                let w = 320u32;
+                let h = 240u32;
+                let mut im = image::RgbaImage::new(w, h);
+                for px in im.pixels_mut() {
+                    *px = image::Rgba([255, 255, 255, 255]);
+                }
+                for x in 0..w {
+                    im.put_pixel(x, 0, image::Rgba([200, 200, 200, 255]));
+                    im.put_pixel(x, h - 1, image::Rgba([200, 200, 200, 255]));
+                }
+                for y in 0..h {
+                    im.put_pixel(0, y, image::Rgba([200, 200, 200, 255]));
+                    im.put_pixel(w - 1, y, image::Rgba([200, 200, 200, 255]));
+                }
+                let _ = im.save(&png_path);
+                return Ok(png_path.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    // Try a few shapes: array of objects, single object, or nested data->... structures.
+    let mut coa_url_opt: Option<String> = None;
+    if v.is_array() {
+        for item in v.as_array().unwrap().iter() {
+            if let Some(s) = extract_from_obj(item) {
+                coa_url_opt = Some(s);
+                break;
+            }
+        }
+    } else if v.is_object() {
+        // Direct object
+        if let Some(s) = extract_from_obj(&v) {
+            coa_url_opt = Some(s);
+        } else if let Some(data) = v.get("data") {
+            if data.is_array() {
+                for item in data.as_array().unwrap().iter() {
+                    if let Some(s) = extract_from_obj(item) {
+                        coa_url_opt = Some(s);
+                        break;
+                    }
+                }
+            } else if data.is_object() {
+                if let Some(s) = extract_from_obj(data) {
+                    coa_url_opt = Some(s);
+                }
+            }
+        }
+    }
 
     if let Some(coa_url) = coa_url_opt {
         if coa_url.trim().is_empty() {
-            return Err("No coatOfArms.svg URL provided by API".into());
+            return Err("No coatOfArms URL provided by API".into());
         }
-        // Download the SVG bytes
-        let (_s, _h, bytes) = fetcher.fetch_bytes(&coa_url)?;
-        let mut out = fs::File::create(&filepath)?;
+
+        // Download the bytes and inspect headers to decide extension
+        let (_s, headers, bytes) = fetcher.fetch_bytes(&coa_url)?;
+
+        // Decide on extension: prefer Content-Type header, fall back to URL suffix
+        let mut ext = None::<&str>;
+        if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE) {
+            if let Ok(cts) = ct.to_str() {
+                if cts.contains("svg") {
+                    ext = Some("svg");
+                } else if cts.contains("png") {
+                    ext = Some("png");
+                }
+            }
+        }
+        if ext.is_none() {
+            if coa_url.to_lowercase().ends_with(".png") {
+                ext = Some("png");
+            } else if coa_url.to_lowercase().ends_with(".svg") {
+                ext = Some("svg");
+            }
+        }
+        let ext = ext.unwrap_or("svg");
+
+        let final_path = target_dir.join(format!("{}.{}", alpha, ext));
+        let mut out = fs::File::create(&final_path)?;
         out.write_all(&bytes)?;
 
-        // Attempt best-effort rasterization to PNG so the renderer (which
-        // currently only supports PNG/JPG) can consume the coat-of-arms.
-        // We try common command-line tools in order: rsvg-convert, convert, magick.
-        // If none exist or conversion fails, we leave the SVG on disk and
-        // return its path; callers may decide how to handle SVG fallback.
-        let png_path = filepath.with_extension("png");
-        if try_rasterize_svg_to_png(&filepath, &png_path).unwrap_or(false) {
-            // Prefer the PNG when available
+        // If the downloaded asset is already a PNG, return it directly
+        if ext.eq_ignore_ascii_case("png") {
+            return Ok(final_path.to_string_lossy().to_string());
+        }
+
+        // If we have an SVG, attempt to rasterize to PNG for printing support.
+        let png_path = final_path.with_extension("png");
+        if try_rasterize_svg_to_png(&final_path, &png_path).unwrap_or(false) {
             return Ok(png_path.to_string_lossy().to_string());
         }
 
-        return Ok(filepath.to_string_lossy().to_string());
+        // As a last resort, return the SVG path (caller may still use it),
+        // but note the application can't print SVG directly — higher layers
+        // should detect this and prefer a PNG. We still return the SVG so
+        // callers can inspect or rerun rasterization later.
+        return Ok(final_path.to_string_lossy().to_string());
     }
 
     Err("Coat of arms not available for this country".into())
@@ -720,6 +939,153 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
     }
     let _ = im.save(png);
     Ok(true)
+}
+
+// --- neXperts helpers -----------------------------------------------------
+
+fn try_fetch_nexperts_resource(
+    fetcher: &dyn Fetcher,
+    alpha: &str,
+    resource: &str,
+    size: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    // resource: "flags" or "coa"
+    // Build direct resource URL: https://countries.nexperts.nl/{resource}/{alpha}.png (or .svg)
+    let png_url = format!("https://countries.nexperts.nl/{}/{}.png", resource, alpha);
+    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&png_url) {
+        let target_dir = Path::new("flags");
+        let _ = std::fs::create_dir_all(target_dir);
+        let out_path = target_dir.join(format!("{}-{}.png", alpha, size));
+        let mut f = std::fs::File::create(&out_path)?;
+        f.write_all(&bytes)?;
+        return Ok(out_path.to_string_lossy().to_string());
+    }
+    // Try svg
+    let svg_url = format!("https://countries.nexperts.nl/{}/{}.svg", resource, alpha);
+    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&svg_url) {
+        let target_dir = Path::new("flags");
+        let _ = std::fs::create_dir_all(target_dir);
+        let out_path = target_dir.join(format!("{}.svg", alpha));
+        let mut f = std::fs::File::create(&out_path)?;
+        f.write_all(&bytes)?;
+        // try rasterize
+        let png_out = out_path.with_extension("png");
+        if try_rasterize_svg_to_png(&out_path, &png_out)? {
+            return Ok(png_out.to_string_lossy().to_string());
+        }
+        return Ok(out_path.to_string_lossy().to_string());
+    }
+
+    Err("nexperts resource not available".into())
+}
+
+fn cache_country_info(alpha: &str, html: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let db_dir = Path::new("flags");
+    let _ = std::fs::create_dir_all(db_dir);
+    let db_path = db_dir.join("countries.db");
+    let conn = Connection::open(&db_path)?;
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS countries (
+            alpha TEXT PRIMARY KEY,
+            name TEXT,
+            flag_url TEXT,
+            coa_url TEXT,
+            raw_html TEXT,
+            fetched_at INTEGER
+        )",
+        [],
+    )?;
+    // Attempt to extract simple metadata from the HTML so we can store structured info
+    let name = extract_country_name_from_nexperts_html(html).unwrap_or_else(|| alpha.to_string());
+    let flag_url = extract_flag_from_nexperts_html(html, alpha);
+    let coa_url = extract_coa_from_nexperts_html(html, alpha);
+    let ts = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64;
+    conn.execute(
+        "INSERT OR REPLACE INTO countries(alpha, name, flag_url, coa_url, raw_html, fetched_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        rusqlite::params![alpha, name, flag_url, coa_url, html, ts],
+    )?;
+    Ok(())
+}
+
+fn extract_flag_from_nexperts_html(html: &str, alpha: &str) -> Option<String> {
+    // Heuristic: look for /flags/{alpha}.png or .svg
+    let needle_png = format!("/flags/{}.png", alpha);
+    if let Some(pos) = html.find(&needle_png) {
+        if let Some(start) = html[..pos].rfind('"') {
+            let snippet = &html[start..pos + needle_png.len() + 64.min(html.len() - pos)];
+            if let Some(url_start) = snippet.find("http") {
+                let url = &snippet[url_start..];
+                if let Some(endq) = url.find('"') {
+                    return Some(url[..endq].to_string());
+                }
+            }
+        }
+        return Some(format!("https://countries.nexperts.nl{}", needle_png));
+    }
+    let needle_svg = format!("/flags/{}.svg", alpha);
+    if let Some(pos) = html.find(&needle_svg) {
+        if let Some(start) = html[..pos].rfind('"') {
+            let snippet = &html[start..pos + needle_svg.len() + 64.min(html.len() - pos)];
+            if let Some(url_start) = snippet.find("http") {
+                let url = &snippet[url_start..];
+                if let Some(endq) = url.find('"') {
+                    return Some(url[..endq].to_string());
+                }
+            }
+        }
+        return Some(format!("https://countries.nexperts.nl{}", needle_svg));
+    }
+    None
+}
+
+fn extract_country_name_from_nexperts_html(html: &str) -> Option<String> {
+    // Try <title> or an <h1> entry
+    if let Some(pos) = html.find("<title>") {
+        if let Some(end) = html[pos..].find("</title>") {
+            let t = &html[pos + 7..pos + end];
+            return Some(t.trim().to_string());
+        }
+    }
+    if let Some(pos) = html.find("<h1") {
+        // find closing '>' then closing </h1>
+        if let Some(start) = html[pos..].find('>') {
+            if let Some(end) = html[pos + start..].find("</h1>") {
+                let t = &html[pos + start + 1..pos + start + end];
+                return Some(t.trim().to_string());
+            }
+        }
+    }
+    None
+}
+
+fn extract_coa_from_nexperts_html(html: &str, alpha: &str) -> Option<String> {
+    // Very small heuristic HTML parse: look for /coa/{alpha}.png or .svg
+    let needle_png = format!("/coa/{}.png", alpha);
+    if let Some(pos) = html.find(&needle_png) {
+        // find surrounding href or src
+        let start = html[..pos].rfind('"').unwrap_or(pos.saturating_sub(64));
+        let snippet = &html[start..pos + needle_png.len() + 8.min(html.len() - pos)];
+        if let Some(url_start) = snippet.find("http") {
+            let url = &snippet[url_start..];
+            if let Some(endq) = url.find('"') {
+                return Some(url[..endq].to_string());
+            }
+        }
+        return Some(format!("https://countries.nexperts.nl{}", needle_png));
+    }
+    let needle_svg = format!("/coa/{}.svg", alpha);
+    if let Some(pos) = html.find(&needle_svg) {
+        let start = html[..pos].rfind('"').unwrap_or(pos.saturating_sub(64));
+        let snippet = &html[start..pos + needle_svg.len() + 8.min(html.len() - pos)];
+        if let Some(url_start) = snippet.find("http") {
+            let url = &snippet[url_start..];
+            if let Some(endq) = url.find('"') {
+                return Some(url[..endq].to_string());
+            }
+        }
+        return Some(format!("https://countries.nexperts.nl{}", needle_svg));
+    }
+    None
 }
 
 // Inline tests moved to `tests/flagdb.rs`.

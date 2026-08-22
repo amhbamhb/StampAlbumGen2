@@ -815,6 +815,8 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                                 Ok(conn) => {
                                     let (real_image_rows, local_real_files) =
                                         best_effort_prepare_images_for_pdf(&conn, &c.country);
+                                    // Normalize images (strip ICC / rewrite) before PDF generation
+                                    let _ = crate::image_downloader::normalize_album_images_for_pdf(&c.country);
                                     let album_dir = album_dir_for_ui(&c.db_path, &c.country);
                                     let artifacts = crate::config::with_album_config_override(
                                         &album_dir,
