@@ -3,6 +3,19 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::io::{self, Write};
+use std::io::IsTerminal;
+// removed OpenOptions and SystemTime/UNIX_EPOCH now that persistent debug file is unused
+use std::env;
+use std::process::Command;
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+
+// `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
+// folder picker and a Yes/No confirmation dialog, otherwise fall back
+// to a console prompt (only when a terminal is present).
+#[cfg(feature = "rfd")]
+use rfd::{FileDialog, MessageDialog, MessageButtons, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
 
@@ -27,16 +40,325 @@ pub fn ensure_config_and_template_files(
     config_path: &str,
     template_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let cwd = std::env::current_dir()?;
+    // Debug: indicate whether the optional GUI folder-picker feature is compiled in
+    debug!("ensure_config_and_template_files: rfd feature compiled = {}", cfg!(feature = "rfd"));
+    // Use structured logging (debug) instead of a persistent debug file.
+    debug!("rfd_compiled={}", cfg!(feature = "rfd"));
+    // Determine working directory and allow the user to move/copy the
+    // running binary to a different folder on first-run when this
+    // directory appears otherwise empty (no config/template present).
+    // Prefer the executable's parent directory (so double-click launches
+    // evaluate first-run relative to the exe location) but fall back to
+    // the process current directory when the exe path cannot be found.
+    let cwd = match std::env::current_exe().ok().and_then(|p| p.parent().map(|pp| pp.to_path_buf())) {
+        Some(exe_parent) => {
+            debug!("Using executable parent dir for first-run check: {}", exe_parent.display());
+            exe_parent
+        }
+        None => {
+            let d = std::env::current_dir()?;
+            debug!("Falling back to current_dir for first-run check: {}", d.display());
+            d
+        }
+    };
+
+    // Allow forcing the first-run interactive flow via env var. This is
+    // useful when testing GUI double-click flows (set to "1" to force).
+    let force_first_run = match std::env::var("STAMP_ALBUM_FORCE_FIRST_RUN") {
+        Ok(v) => !(v == "0" || v.to_lowercase() == "false"),
+        Err(_) => false,
+    };
+    if force_first_run {
+        debug!("force_first_run enabled via env");
+    }
+
+    // If there is no config yet and the current folder appears empty
+    // except for the running binary, offer the user an interactive
+    // folder picker so they may move/copy the binary and continue there.
+    if !Path::new(config_path).exists() || force_first_run {
+        // Count visible (non-dot) entries excluding the running executable
+        if let Ok(entries) = fs::read_dir(&cwd) {
+            let exe_name = std::env::current_exe()
+                .ok()
+                .and_then(|p| p.file_name().map(|s| s.to_os_string()));
+
+            let mut visible_count = 0usize;
+                for e in entries.flatten() {
+                let name = e.file_name();
+                // Log each visible entry for debugging first-run detection
+                debug!("dir-entry: {}", name.to_string_lossy());
+                if let Some(ref exe_n) = exe_name {
+                    if name == *exe_n {
+                        continue;
+                    }
+                }
+                // Ignore startup probe file(s) created earlier in main.rs
+                if name.to_string_lossy().starts_with("startup_trace") {
+                    debug!("ignoring probe file: {}", name.to_string_lossy());
+                    continue;
+                }
+                if name.to_string_lossy().starts_with('.') {
+                    continue;
+                }
+                visible_count += 1;
+            }
+
+            debug!("computed visible_count={}", visible_count);
+
+            if visible_count == 0 {
+                debug!("visible_count==0: attempting interactive first-run flow");
+                // Try a GUI folder picker when enabled, otherwise ask for a
+                // typed path on the console. If the user cancels/skips we
+                // continue in the current directory.
+                // Prefer GUI folder-picker when available, but fall back to
+                // a console prompt if the GUI was not selected or returned
+                // no result (user canceled or failure). Emit a diagnostic
+                // so we can observe which path was used.
+                let mut picked_opt: Option<PathBuf> = None;
+
+                // Detect whether we have an interactive terminal available
+                // so we never block on stdin when the user launched the
+                // binary from a GUI (double-click/file-manager).
+                let has_tty = io::stdin().is_terminal();
+
+                let gui_initiated = cfg!(feature = "rfd");
+                #[cfg(feature = "rfd")]
+                {
+                    // Ask the user first with an explicit OK/Cancel dialog whether
+                    // they want to pick a folder to move/copy the binary. OK will
+                    // open the folder picker; Cancel will skip the interactive flow.
+                    let proceed = MessageDialog::new()
+                        .set_title("Select installation folder?")
+                        .set_description("Pick a folder to install/move this application to, or Cancel to continue here.")
+                        .set_buttons(MessageButtons::OkCancel)
+                        .set_level(MessageLevel::Info)
+                        .show();
+
+                    debug!("MessageDialog shown: proceed={}", proceed);
+                    // Mark that the GUI was invoked so we don't fall back to
+                    // a console prompt in non-interactive launches.
+                    gui_initiated = true;
+                    if proceed {
+                        match FileDialog::new()
+                            .set_title("Select directory to move/copy binary to (Cancel to keep current)")
+                            .pick_folder()
+                        {
+                            Some(p) => {
+                                println!("GUI picker selected: {}", p.display());
+                                debug!("GUI picker selected: {}", p.display());
+                                picked_opt = Some(p);
+                            }
+                            None => {
+                                println!("GUI picker returned no selection; skipping interactive move/copy");
+                                debug!("GUI picker returned no selection");
+                                // keep picked_opt as None; since GUI was used,
+                                // avoid falling back to console prompt below.
+                            }
+                        }
+                    } else {
+                        println!("User cancelled folder selection; continuing in current directory");
+                        debug!("User cancelled folder selection");
+                    }
+                }
+
+                #[cfg(not(feature = "rfd"))]
+                {
+                    println!("GUI picker not compiled in; will use console prompt if terminal present");
+                }
+
+                // If we don't have a picked folder from the GUI, only prompt
+                // on stdin when a terminal is present. Avoid blocking when the
+                // process was launched from a graphical session.
+                debug!("has_tty={} picked_opt.is_some={} gui_initiated={}", has_tty, picked_opt.is_some(), gui_initiated);
+                // Only fall back to a console prompt when no GUI was invoked
+                // (so GUI cancel/close won't unexpectedly block on stdin).
+                if picked_opt.is_none() && has_tty && !gui_initiated {
+                    print!("Target directory (absolute or relative, blank to skip): ");
+                    io::stdout().flush().ok();
+                    let mut input = String::new();
+                    io::stdin().read_line(&mut input).ok();
+                    let input = input.trim();
+                    if !input.is_empty() {
+                        picked_opt = Some(PathBuf::from(input));
+                    }
+                } else if picked_opt.is_none() && !has_tty {
+                    println!("No terminal available; skipping console prompt");
+                    debug!("No terminal available; skipping console prompt");
+                }
+
+                if let Some(target) = picked_opt {
+                    println!("Selected target directory: {}", target.display());
+                    debug!("Selected target directory: {}", target.display());
+
+                    // Ask whether to move or copy. Prefer GUI dialogs when
+                    // compiled with `rfd`; otherwise fall back to the console
+                    // prompt. Keep the console loop as a fallback for TTY
+                    // sessions so scripts and headless runs continue to work.
+                    let exe_path = std::env::current_exe()?;
+                    let exe_file_name = exe_path
+                        .file_name()
+                        .and_then(|s| s.to_str())
+                        .ok_or("Failed to determine executable name")?;
+                    let dest = target.join(exe_file_name);
+
+                    #[cfg(feature = "rfd")]
+                    {
+                        // Use a two-step dialog to offer Move / Copy / Skip.
+                        // First ask whether to Move; if No, ask whether to Copy.
+                        let do_move = MessageDialog::new()
+                            .set_title("Move binary to target?")
+                            .set_description(&format!(
+                                "Move the running binary to {}?\n\nChoose Yes to move, No to consider copying, Cancel to skip.",
+                                target.display()
+                            ))
+                            .set_buttons(MessageButtons::YesNo)
+                            .set_level(MessageLevel::Warning)
+                            .show();
+
+                        debug!("GUI move dialog result: {}", do_move);
+                        if do_move {
+                            match fs::rename(&exe_path, &dest) {
+                                Ok(()) => info!("Moved executable to {}", dest.display()),
+                                Err(e) => {
+                                    fs::copy(&exe_path, &dest)?;
+                                    info!("Rename failed ({}); copied executable to {}", e, dest.display());
+                                }
+                            }
+                            // Ensure template/config exist in the target to avoid
+                            // re-triggering first-run after exec in an empty dir.
+                            let target_template = target.join(template_path);
+                            let target_config = target.join(config_path);
+                            if !target_template.exists()
+                                || std::fs::read_to_string(&target_template).ok().as_deref()
+                                    != Some(EMBEDDED_CONFIG_TEMPLATE)
+                            {
+                                fs::write(&target_template, EMBEDDED_CONFIG_TEMPLATE)?;
+                            }
+                            if !target_config.exists() {
+                                fs::copy(&target_template, &target_config)?;
+                            }
+                            env::set_current_dir(&target)?;
+                            #[cfg(unix)]
+                            {
+                                let err = Command::new(&dest)
+                                    .args(env::args_os().skip(1))
+                                    .exec();
+                                return Err(Box::new(err));
+                            }
+                        } else {
+                            // User selected No in the first dialog — ask about
+                            // copying. If they decline again, treat as Skip.
+                            let do_copy = MessageDialog::new()
+                                .set_title("Copy binary to target?")
+                                .set_description(&format!(
+                                    "Copy the running binary to {}?\n\nChoose Yes to copy, No/Cancel to skip.",
+                                    target.display()
+                                ))
+                                .set_buttons(MessageButtons::YesNo)
+                                .set_level(MessageLevel::Info)
+                                .show();
+                            debug!("GUI copy dialog result: {}", do_copy);
+                            if do_copy {
+                                fs::copy(&exe_path, &dest)?;
+                                info!("Copied executable to {}", dest.display());
+                                // Write template/config into the target to avoid
+                                // the new process re-prompting on empty dir.
+                                let target_template = target.join(template_path);
+                                let target_config = target.join(config_path);
+                                if !target_template.exists()
+                                    || std::fs::read_to_string(&target_template).ok().as_deref()
+                                        != Some(EMBEDDED_CONFIG_TEMPLATE)
+                                {
+                                    fs::write(&target_template, EMBEDDED_CONFIG_TEMPLATE)?;
+                                }
+                                if !target_config.exists() {
+                                    fs::copy(&target_template, &target_config)?;
+                                }
+                                env::set_current_dir(&target)?;
+                                #[cfg(unix)]
+                                {
+                                    let err = Command::new(&dest)
+                                        .args(env::args_os().skip(1))
+                                        .exec();
+                                    return Err(Box::new(err));
+                                }
+                            } else {
+                                debug!("User chose to skip move/copy via GUI dialogs");
+                            }
+                        }
+                    }
+
+                    #[cfg(not(feature = "rfd"))]
+                    {
+                        // Console fallback for headful TTY sessions.
+                        loop {
+                            print!("Move binary to target (m), Copy (c), or Skip (s)? [m/c/s]: ");
+                            io::stdout().flush().ok();
+                            let mut choice = String::new();
+                            io::stdin().read_line(&mut choice).ok();
+                            let choice = choice.trim().to_lowercase();
+
+                            if choice == "m" {
+                                match fs::rename(&exe_path, &dest) {
+                                    Ok(()) => info!("Moved executable to {}", dest.display()),
+                                    Err(e) => {
+                                        fs::copy(&exe_path, &dest)?;
+                                        info!("Rename failed ({}); copied executable to {}", e, dest.display());
+                                    }
+                                }
+                                env::set_current_dir(&target)?;
+                                #[cfg(unix)]
+                                {
+                                    let err = Command::new(&dest)
+                                        .args(env::args_os().skip(1))
+                                        .exec();
+                                    return Err(Box::new(err));
+                                }
+                                #[cfg(not(unix))]
+                                {
+                                    break;
+                                }
+                            } else if choice == "c" {
+                                fs::copy(&exe_path, &dest)?;
+                                info!("Copied executable to {}", dest.display());
+                                env::set_current_dir(&target)?;
+                                #[cfg(unix)]
+                                {
+                                    let err = Command::new(&dest)
+                                        .args(env::args_os().skip(1))
+                                        .exec();
+                                    return Err(Box::new(err));
+                                }
+                                #[cfg(not(unix))]
+                                {
+                                    break;
+                                }
+                            } else if choice == "s" {
+                                break;
+                            } else {
+                                println!("Please enter 'm', 'c' or 's'.");
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    // Compute absolute paths relative to the current working directory
+    // (which may have been changed by a move/copy above). This avoids
+    // relying on the earlier `cwd` variable which represented the
+    // executable parent dir at process start.
+    let current_dir = env::current_dir()?;
     let config_abs: PathBuf = if Path::new(config_path).is_absolute() {
         PathBuf::from(config_path)
     } else {
-        cwd.join(config_path)
+        current_dir.join(config_path)
     };
     let template_abs: PathBuf = if Path::new(template_path).is_absolute() {
         PathBuf::from(template_path)
     } else {
-        cwd.join(template_path)
+        current_dir.join(template_path)
     };
 
     // Always keep config_template.toml in sync with the embedded defaults so
@@ -228,6 +550,12 @@ pub struct Config {
     // If false, the generator will skip emitting the large flag/title cover page
     // Default: true (when None or not present)
     pub print_flag_cover: Option<bool>,
+    // When true, overwrite existing downloaded flag PNGs from remote sources
+    // Default: false
+    pub flag_cover_overwrite_flag: Option<bool>,
+    // When true, overwrite existing downloaded coat-of-arms images from remote sources
+    // Default: false
+    pub flag_cover_overwrite_coa: Option<bool>,
     // If true, fetch a short Wikipedia summary for the album/site and save
     // it under the album directory (wiki_summary.txt). Default: false
     pub fetch_wikipedia: Option<bool>,

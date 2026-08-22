@@ -1,17 +1,21 @@
 use super::generator_new::layout;
 use super::helpers::build_page_text_template;
-use super::helpers::emit_row_start_es;
 use crate::config::Config;
+
+/// Series-level context for page emission helpers.
+pub struct SeriesContext<'a> {
+    pub series_name: &'a str,
+    pub year: &'a str,
+    pub month: &'a str,
+    pub day: &'a str,
+    pub stamps_in_series: i32,
+    pub is_perforated: bool,
+    pub perforation: &'a str,
+}
 
 pub fn new_series<W: std::io::Write>(
     writer: &mut W,
-    series_name: &str,
-    year: &str,
-    month: &str,
-    day: &str,
-    stamps_in_series: i32,
-    is_perforated: bool,
-    perforation: &str,
+    ctx: &SeriesContext<'_>,
     rows_written: &mut i32,
     stamps_written: &mut i32,
     used_width: &mut i32,
@@ -21,7 +25,13 @@ pub fn new_series<W: std::io::Write>(
     let _ = writeln!(
         writer,
         "SERIES {} {} {} {} {} {} {}",
-        series_name, year, month, day, stamps_in_series, is_perforated, perforation
+        ctx.series_name,
+        ctx.year,
+        ctx.month,
+        ctx.day,
+        ctx.stamps_in_series,
+        ctx.is_perforated,
+        ctx.perforation
     );
     new_page(
         writer,
@@ -106,7 +116,7 @@ pub fn new_row<W: std::io::Write>(
 
     // Write ROW_START_ES using the loaded config so the emitted vspace and
     // spacing match the current configuration.
-    let _ = emit_row_start_es(writer, Some(&cfg));
+    let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
 
     *rows_written += 1;
     *stamps_written = 0;
@@ -116,23 +126,35 @@ pub fn new_row<W: std::io::Write>(
 }
 
 /// Writes a stamp entry (stub implementation)
-pub fn add_stamp<W: std::io::Write>(
-    writer: &mut W,
-    year: &str,
-    field1: &str,
-    field2: &str,
-    field3: &str,
-    color: String,
-    multi_perf: bool,
-    desc: &str,
-    width: &str,
-    height: &str,
-    catalog_num: &str,
-    field4: &str,
-) {
+/// Stamp-level context for a single emitted stamp row.
+pub struct StampContext<'a> {
+    pub year: &'a str,
+    pub field1: &'a str,
+    pub field2: &'a str,
+    pub field3: &'a str,
+    pub color: &'a str,
+    pub multi_perf: bool,
+    pub desc: &'a str,
+    pub width: &'a str,
+    pub height: &'a str,
+    pub catalog_num: &'a str,
+    pub field4: &'a str,
+}
+
+pub fn add_stamp<W: std::io::Write>(writer: &mut W, ctx: &StampContext<'_>) {
     let _ = writeln!(
         writer,
         "STAMP {} {} {} {} {} {} {} {} {} {} {}",
-        year, field1, field2, field3, color, multi_perf, desc, width, height, catalog_num, field4
+        ctx.year,
+        ctx.field1,
+        ctx.field2,
+        ctx.field3,
+        ctx.color,
+        ctx.multi_perf,
+        ctx.desc,
+        ctx.width,
+        ctx.height,
+        ctx.catalog_num,
+        ctx.field4
     );
 }

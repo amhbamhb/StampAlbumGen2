@@ -32,11 +32,7 @@ pub fn resolve_album_dir(album_name: &str) -> PathBuf {
 }
 
 pub fn resolve_album_image_path(album_name: &str, image_path: &str) -> PathBuf {
-    let clean_image_path = if image_path.starts_with("images/") {
-        &image_path[7..]
-    } else {
-        image_path
-    };
+    let clean_image_path = image_path.strip_prefix("images/").unwrap_or(image_path);
 
     resolve_album_dir(album_name)
         .join("images")
@@ -83,11 +79,7 @@ pub fn find_config_path() -> String {
 /// Checks if an image file exists for the given album and image path
 pub fn image_exists(album_name: &str, image_path: &str) -> bool {
     // Strip "images/" prefix if present
-    let clean_image_path = if image_path.starts_with("images/") {
-        &image_path[7..] // Remove "images/" prefix
-    } else {
-        image_path
-    };
+    let clean_image_path = image_path.strip_prefix("images/").unwrap_or(image_path);
 
     // Construct the full path to the image
     let image_full_path = resolve_album_image_path(album_name, clean_image_path);

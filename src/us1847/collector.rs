@@ -1,8 +1,8 @@
-use log::{error, info};
+use log::{ error, info };
 use regex::Regex;
 use reqwest::blocking::Client;
 use rusqlite::Connection;
-use scraper::{ElementRef, Html, Selector};
+use scraper::{ ElementRef, Html, Selector };
 use std::error::Error;
 
 #[derive(Debug, Clone)]
@@ -39,7 +39,7 @@ pub fn process_1847us_page(
     _start_year: i32,
     _end_year: i32,
     image_path: &str,
-    overwrite_images: bool,
+    overwrite_images: bool
 ) -> Result<usize, Box<dyn Error>> {
     info!("Processing 1847us page: {}", url);
 
@@ -74,15 +74,23 @@ pub fn process_1847us_page(
     let mut design_size_portrait = String::new();
     let mut design_size_landscape = String::new();
 
-    // Look for paragraphs containing series info
+    // Precompile regexes used inside the loop to avoid recompiling on each iteration
     let p_selector = Selector::parse("p").unwrap();
+    let president_regex = Regex::new(r"President:\s*([^·]+)").unwrap();
+    let pm_regex = Regex::new(r"Postmaster General:\s*([^·]+)").unwrap();
+    let domestic_rate_regex = Regex::new(r"Domestic Letter Rate:\s*([^·]+)").unwrap();
+    let postcard_rate_regex = Regex::new(r"Postcard Rate:\s*([^·]+)").unwrap();
+    let airmail_rate_regex = Regex::new(r"Air Mail Rate:\s*([^·]+)").unwrap();
+    let portrait_regex = Regex::new(r"Portrait Stamps:\s*([^·]+)").unwrap();
+    let landscape_regex = Regex::new(r"Landscape Stamps:\s*([^·]+)").unwrap();
+
+    // Look for paragraphs containing series info
     for p in document.select(&p_selector) {
         let text = p.text().collect::<String>();
         let lower = text.to_lowercase();
 
         // Extract president info
         if lower.contains("president:") {
-            let president_regex = Regex::new(r"President:\s*([^·]+)").unwrap();
             if let Some(cap) = president_regex.captures(&text) {
                 president = cap
                     .get(1)
@@ -94,7 +102,6 @@ pub fn process_1847us_page(
 
         // Extract postmaster general
         if lower.contains("postmaster general:") {
-            let pm_regex = Regex::new(r"Postmaster General:\s*([^·]+)").unwrap();
             if let Some(cap) = pm_regex.captures(&text) {
                 postmaster_general = cap
                     .get(1)
@@ -106,8 +113,7 @@ pub fn process_1847us_page(
 
         // Extract rates
         if lower.contains("domestic letter rate:") {
-            let rate_regex = Regex::new(r"Domestic Letter Rate:\s*([^·]+)").unwrap();
-            if let Some(cap) = rate_regex.captures(&text) {
+            if let Some(cap) = domestic_rate_regex.captures(&text) {
                 domestic_letter_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
@@ -117,8 +123,7 @@ pub fn process_1847us_page(
         }
 
         if lower.contains("postcard rate:") {
-            let rate_regex = Regex::new(r"Postcard Rate:\s*([^·]+)").unwrap();
-            if let Some(cap) = rate_regex.captures(&text) {
+            if let Some(cap) = postcard_rate_regex.captures(&text) {
                 postcard_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
@@ -128,8 +133,7 @@ pub fn process_1847us_page(
         }
 
         if lower.contains("air mail rate:") || lower.contains("airmail rate:") {
-            let rate_regex = Regex::new(r"Air Mail Rate:\s*([^·]+)").unwrap();
-            if let Some(cap) = rate_regex.captures(&text) {
+            if let Some(cap) = airmail_rate_regex.captures(&text) {
                 airmail_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
@@ -147,7 +151,6 @@ pub fn process_1847us_page(
             size_info = text.trim().to_string();
             // Extract design sizes
             if lower.contains("portrait stamps") {
-                let portrait_regex = Regex::new(r"Portrait Stamps:\s*([^·]+)").unwrap();
                 if let Some(cap) = portrait_regex.captures(&text) {
                     design_size_portrait = cap
                         .get(1)
@@ -157,7 +160,6 @@ pub fn process_1847us_page(
                 }
             }
             if lower.contains("landscape stamps") {
-                let landscape_regex = Regex::new(r"Landscape Stamps:\s*([^·]+)").unwrap();
                 if let Some(cap) = landscape_regex.captures(&text) {
                     design_size_landscape = cap
                         .get(1)
@@ -166,10 +168,11 @@ pub fn process_1847us_page(
                         .to_string();
                 }
             }
-        } else if series_description.is_empty()
-            && text.len() > 50
-            && !text.contains("President:")
-            && !text.contains("Postmaster")
+        } else if
+            series_description.is_empty() &&
+            text.len() > 50 &&
+            !text.contains("President:") &&
+            !text.contains("Postmaster")
         {
             // First substantial paragraph as description
             series_description = text.trim().to_string();
@@ -177,23 +180,39 @@ pub fn process_1847us_page(
     }
 
     // Insert or get series
-    let series_id = conn.query_row(
-        "INSERT OR IGNORE INTO us1847_series (series_name, series_url, description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
-        rusqlite::params![series_title, url, series_description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape],
-        |row| row.get::<_, i64>(0),
-    ).unwrap_or_else(|insert_err| {
-        error!("INSERT failed: {}", insert_err);
-        error!("Attempting SELECT fallback with URL: {}", url);
-        error!("Series title: {}", series_title);
-        conn.query_row(
-            "SELECT id FROM us1847_series WHERE series_url = ?",
-            rusqlite::params![url],
-            |row| row.get::<_, i64>(0),
-        ).unwrap_or_else(|select_err| {
-            error!("SELECT fallback also failed: {}", select_err);
-            0
-        })
-    });
+    let series_id = conn
+        .query_row(
+            "INSERT OR IGNORE INTO us1847_series (series_name, series_url, description, president, postmaster_general, domestic_letter_rate, postcard_rate, airmail_rate, printing_info, tagging_info, size_info, design_size_portrait, design_size_landscape) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+            rusqlite::params![
+                series_title,
+                url,
+                series_description,
+                president,
+                postmaster_general,
+                domestic_letter_rate,
+                postcard_rate,
+                airmail_rate,
+                printing_info,
+                tagging_info,
+                size_info,
+                design_size_portrait,
+                design_size_landscape
+            ],
+            |row| row.get::<_, i64>(0)
+        )
+        .unwrap_or_else(|insert_err| {
+            error!("INSERT failed: {}", insert_err);
+            error!("Attempting SELECT fallback with URL: {}", url);
+            error!("Series title: {}", series_title);
+            conn.query_row(
+                "SELECT id FROM us1847_series WHERE series_url = ?",
+                rusqlite::params![url],
+                |row| row.get::<_, i64>(0)
+            ).unwrap_or_else(|select_err| {
+                error!("SELECT fallback also failed: {}", select_err);
+                0
+            })
+        });
 
     if series_id == 0 {
         error!("Could not create or retrieve series for URL: {}", url);
@@ -223,7 +242,7 @@ pub fn process_1847us_page(
             _start_year,
             _end_year,
             image_path,
-            overwrite_images,
+            overwrite_images
         )?;
         stamps_found += parse_stamp_lists(conn, &document, series_id, &series_title)?;
     }
@@ -251,7 +270,7 @@ fn parse_html_tables(
     start_year: i32,
     end_year: i32,
     image_path: &str,
-    overwrite_images: bool,
+    overwrite_images: bool
 ) -> Result<usize, Box<dyn Error>> {
     let mut stamps_found = 0;
 
@@ -311,13 +330,15 @@ fn parse_html_tables(
             "certified".to_string()
         } else if section_title.contains("Special Handling") {
             "special_handling".to_string()
-        } else if section_title.contains("Commemoratives")
-            || section_title.contains("Commemorative")
+        } else if
+            section_title.contains("Commemoratives") ||
+            section_title.contains("Commemorative")
         {
             "commemorative".to_string()
-        } else if section_title.contains("Ordinary")
-            || section_title.contains("Air Mail")
-            || section_title.contains("Special Delivery")
+        } else if
+            section_title.contains("Ordinary") ||
+            section_title.contains("Air Mail") ||
+            section_title.contains("Special Delivery")
         {
             "ordinary".to_string()
         } else {
@@ -338,8 +359,13 @@ fn parse_html_tables(
                 if elem.name() == "table" {
                     // Parse table stamps
                     if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling) {
-                        let mut table_stamps =
-                            parse_table_stamps(&elem_ref, "", "", "", &stamp_type);
+                        let mut table_stamps = parse_table_stamps(
+                            &elem_ref,
+                            "",
+                            "",
+                            "",
+                            &stamp_type
+                        );
                         // Set the stamp type for all stamps in this section
                         for stamp in &mut table_stamps {
                             stamp.stamp_type = stamp_type.clone();
@@ -349,7 +375,11 @@ fn parse_html_tables(
                 } else if elem.name() == "img" {
                     // Handle single images (like Certified Mail)
                     if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling) {
-                        if let Some(single_stamp) = parse_single_image_stamp(&elem_ref, &stamp_type)
+                        if
+                            let Some(single_stamp) = parse_single_image_stamp(
+                                &elem_ref,
+                                &stamp_type
+                            )
                         {
                             section_stamps.push(single_stamp);
                         }
@@ -357,11 +387,11 @@ fn parse_html_tables(
                 } else {
                     // Look for images inside other elements (like div, p, etc.)
                     if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling) {
-                        let img_selector =
-                            Selector::parse("img[title*='Scott'], img[alt*='Scott']").unwrap();
+                        let img_selector = Selector::parse(
+                            "img[title*='Scott'], img[alt*='Scott']"
+                        ).unwrap();
                         for img in elem_ref.select(&img_selector) {
-                            if let Some(single_stamp) = parse_single_image_stamp(&img, &stamp_type)
-                            {
+                            if let Some(single_stamp) = parse_single_image_stamp(&img, &stamp_type) {
                                 section_stamps.push(single_stamp);
                             }
                         }
@@ -373,7 +403,7 @@ fn parse_html_tables(
 
         // Insert stamps from this section
         for stamp in section_stamps {
-            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, &series_title, &stamp) {
+            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                 error!("Failed to insert stamp from {} section: {}", stamp_type, e);
             } else {
                 stamps_found += 1;
@@ -418,20 +448,22 @@ fn parse_html_tables(
                                         start_year,
                                         end_year,
                                         image_path,
-                                        overwrite_images,
+                                        overwrite_images
                                     );
                                     match ordinary_stamps {
                                         Ok(count) => {
                                             info!(
                                                 "Processed {} ordinary stamps from {}",
-                                                count, full_url
+                                                count,
+                                                full_url
                                             );
                                             stamps_found += count;
                                         }
                                         Err(e) => {
                                             error!(
                                                 "Failed to process ordinary issue page {}: {}",
-                                                full_url, e
+                                                full_url,
+                                                e
                                             );
                                         }
                                     }
@@ -453,12 +485,14 @@ fn parse_html_tables(
                             if let Some(mut stamp) = parse_ordinary_stamp_line(line) {
                                 // Set stamp type to ordinary
                                 stamp.stamp_type = "ordinary".to_string();
-                                if let Err(e) = insert_stamp_if_not_exists(
-                                    conn,
-                                    series_id,
-                                    &series_title,
-                                    &stamp,
-                                ) {
+                                if
+                                    let Err(e) = insert_stamp_if_not_exists(
+                                        conn,
+                                        series_id,
+                                        series_title,
+                                        &stamp
+                                    )
+                                {
                                     error!("Failed to insert ordinary stamp from line: {}", e);
                                 } else {
                                     stamps_found += 1;
@@ -491,13 +525,15 @@ fn parse_html_tables(
                     if elem.name() == "table" {
                         // Parse table stamps
                         if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling) {
-                            section_stamps.extend(parse_table_stamps(
-                                &elem_ref,
-                                &printer,
-                                &perforation,
-                                &printing_details,
-                                "commemorative",
-                            ));
+                            section_stamps.extend(
+                                parse_table_stamps(
+                                    &elem_ref,
+                                    &printer,
+                                    &perforation,
+                                    &printing_details,
+                                    "commemorative"
+                                )
+                            );
                         }
                     }
                 }
@@ -506,7 +542,7 @@ fn parse_html_tables(
 
             // Insert stamps from this section
             for stamp in section_stamps {
-                if let Err(e) = insert_stamp_if_not_exists(conn, series_id, &series_title, &stamp) {
+                if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                     error!("Failed to insert stamp: {}", e);
                 } else {
                     stamps_found += 1;
@@ -518,7 +554,7 @@ fn parse_html_tables(
     // Parse stamps from the detailed commemoratives list
     for line in stamp_lines {
         if let Some(stamp) = parse_commemorative_line(line) {
-            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, &series_title, &stamp) {
+            if let Err(e) = insert_stamp_if_not_exists(conn, series_id, series_title, &stamp) {
                 error!("Failed to insert stamp from commemoratives: {}", e);
             } else {
                 stamps_found += 1;
@@ -533,7 +569,7 @@ fn parse_stamp_lists(
     _conn: &Connection,
     _document: &Html,
     _series_id: i64,
-    _series_title: &str,
+    _series_title: &str
 ) -> Result<usize, Box<dyn Error>> {
     // This function is now deprecated - all parsing is handled by parse_html_tables
     Ok(0)
@@ -547,7 +583,7 @@ fn parse_printing_section(title: &str) -> (String, String, String) {
     // Parse "Rotary Press – Perf 11 x 10½ – 200 Subject Electric Eye Plates"
     let parts: Vec<&str> = title.split(" – ").collect();
 
-    if parts.len() >= 1 {
+    if !parts.is_empty() {
         printer = parts[0].trim().to_string();
     }
     if parts.len() >= 2 {
@@ -562,7 +598,7 @@ fn parse_printing_section(title: &str) -> (String, String, String) {
 
 fn parse_single_image_stamp(
     img_elem: &scraper::element_ref::ElementRef,
-    stamp_type: &str,
+    stamp_type: &str
 ) -> Option<StampInfo> {
     // Get Scott number from title or alt
     let title = img_elem.value().attr("title").unwrap_or("");
@@ -575,11 +611,7 @@ fn parse_single_image_stamp(
 
     // Extract Scott number
     let scott_regex = Regex::new(r"Scott\s+(\w+)").unwrap();
-    let scott_number = scott_regex
-        .captures(scott_source)?
-        .get(1)?
-        .as_str()
-        .to_string();
+    let scott_number = scott_regex.captures(scott_source)?.get(1)?.as_str().to_string();
 
     // Extract denomination
     let denomination_regex = Regex::new(r"(\d+)&cent;").unwrap();
@@ -630,7 +662,7 @@ fn parse_table_stamps(
     printer: &str,
     perforation: &str,
     printing_details: &str,
-    stamp_type: &str,
+    stamp_type: &str
 ) -> Vec<StampInfo> {
     let mut stamps = Vec::new();
 
@@ -664,14 +696,16 @@ fn parse_table_stamps(
     for (i, title) in images.iter().enumerate() {
         let description = descriptions.get(i).cloned().unwrap_or_default();
 
-        if let Some(stamp) = parse_stamp_from_title_and_description(
-            title,
-            &description,
-            printer,
-            perforation,
-            printing_details,
-            stamp_type,
-        ) {
+        if
+            let Some(stamp) = parse_stamp_from_title_and_description(
+                title,
+                &description,
+                printer,
+                perforation,
+                printing_details,
+                stamp_type
+            )
+        {
             stamps.push(stamp);
         }
     }
@@ -685,7 +719,7 @@ fn parse_stamp_from_title_and_description(
     printer: &str,
     perforation: &str,
     printing_details: &str,
-    stamp_type: &str,
+    stamp_type: &str
 ) -> Option<StampInfo> {
     // Parse title like "Scott 1065 - 3¢ Land Grant Colleges Centennial Stamp"
     let scott_regex = Regex::new(r"Scott\s+(\w+)").unwrap();
@@ -701,9 +735,7 @@ fn parse_stamp_from_title_and_description(
     // Extract name from title (everything after denomination)
     let name = if let Some(dash_pos) = title.find(" - ") {
         if let Some(second_dash) = title[dash_pos + 3..].find(" - ") {
-            title[dash_pos + 3..dash_pos + 3 + second_dash]
-                .trim()
-                .to_string()
+            title[dash_pos + 3..dash_pos + 3 + second_dash].trim().to_string()
         } else {
             title[dash_pos + 3..].trim().to_string()
         }
@@ -723,7 +755,10 @@ fn parse_stamp_from_title_and_description(
 
     for sep in &separators {
         if description.contains(sep) {
-            desc_parts = description.split(sep).map(|s| s.trim()).collect();
+            desc_parts = description
+                .split(sep)
+                .map(|s| s.trim())
+                .collect();
             break;
         }
     }
@@ -777,7 +812,7 @@ fn parse_stamp_from_title_and_description(
         } else {
             // Look for date first in the full description, then quantity after it
             let date_regex = Regex::new(r"([A-Z][a-z]+ \d{1,2}, \d{4})").unwrap();
-            if let Some(date_cap) = date_regex.captures(&description) {
+            if let Some(date_cap) = date_regex.captures(description) {
                 let after_date = &description[date_cap.get(0).unwrap().end()..];
                 let quant_regex = Regex::new(r"([\d,]+) issued").unwrap();
                 if let Some(quant_cap) = quant_regex.captures(after_date) {
@@ -795,7 +830,7 @@ fn parse_stamp_from_title_and_description(
                 }
                 if quantity_issued.is_empty() {
                     let quant_regex = Regex::new(r"([\d,]+) issued").unwrap();
-                    if let Some(quant_cap) = quant_regex.captures(&description) {
+                    if let Some(quant_cap) = quant_regex.captures(description) {
                         let mut quant = quant_cap.get(1).unwrap().as_str().to_string();
                         // Special fix: if quantity starts with "1955", remove it (it's part of the date)
                         if quant.starts_with("1955") && quant.len() > 4 {
@@ -816,10 +851,7 @@ fn parse_stamp_from_title_and_description(
     // Find image URL - special handling for certification/special handling stamps
     let image_url = if scott_number.starts_with("QE") || scott_number.starts_with("FA") {
         // QE1a, QE2a, QE3a, FA1 use the wp-content path with _dry-print suffix
-        format!(
-            "https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg",
-            scott_number
-        )
+        format!("https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg", scott_number)
     } else {
         format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number)
     };
@@ -880,10 +912,7 @@ fn parse_ordinary_stamp_line(line: &str) -> Option<StampInfo> {
         };
 
         let image_url = if scott_number.starts_with("QE") || scott_number.starts_with("FA") {
-            format!(
-                "https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg",
-                scott_number
-            )
+            format!("https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg", scott_number)
         } else {
             format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number)
         };
@@ -935,7 +964,7 @@ fn extract_design_size(document: &Html) -> String {
             // Extract Portrait: look for "Portrait Stamps:" and get dimensions
             if let Some(start) = text.find("Portrait Stamps:") {
                 let after = &text[start + 16..]; // len("Portrait Stamps:") = 16
-                                                 // Find dimensions: look for pattern ".XX x .XX inches" or ".XX x .XX in"
+                // Find dimensions: look for pattern ".XX x .XX inches" or ".XX x .XX in"
                 if let Some(first_dot) = after.find('.') {
                     let from_first = &after[first_dot..];
                     // Find " inches" or " in" to mark end of this dimension section
@@ -949,7 +978,7 @@ fn extract_design_size(document: &Html) -> String {
             // Extract Landscape: look for "Landscape Stamps:" and get dimensions
             if let Some(start) = text.find("Landscape Stamps:") {
                 let after = &text[start + 17..]; // len("Landscape Stamps:") = 17
-                                                 // Find dimensions: look for pattern ".XX x .XX in"
+                // Find dimensions: look for pattern ".XX x .XX in"
                 if let Some(first_dot) = after.find('.') {
                     let from_first = &after[first_dot..];
                     // Find " in" to mark end of this dimension section (could be "in." or "in,")
@@ -975,13 +1004,9 @@ fn parse_liberty_issue_stamp(
     series_id: i64,
     series_title: &str,
     conn: &Connection,
-    _base_url: &str,
+    _base_url: &str
 ) -> Result<usize, Box<dyn Error>> {
-    std::fs::write(
-        "/tmp/function_called.txt",
-        "parse_liberty_issue_stamp was called",
-    )
-    .ok();
+    std::fs::write("/tmp/function_called.txt", "parse_liberty_issue_stamp was called").ok();
     let mut stamps_found = 0;
 
     // Extract design size information from the page
@@ -1005,8 +1030,9 @@ fn parse_liberty_issue_stamp(
         let mut i = 0;
         while i < rows.len() {
             let row = &rows[i];
-            let td_elements: Vec<ElementRef> =
-                row.select(&Selector::parse("td").unwrap()).collect();
+            let td_elements: Vec<ElementRef> = row
+                .select(&Selector::parse("td").unwrap())
+                .collect();
 
             if td_elements.is_empty() {
                 i += 1;
@@ -1048,11 +1074,21 @@ fn parse_liberty_issue_stamp(
                         let key = trimmed[..colon].trim();
                         let value = &trimmed[colon + 1..].trim();
                         match key {
-                            "Designer" | "Designers" => designer = value.to_string(),
-                            "Vignette" => vignette = value.to_string(),
-                            "Frame" => frame = value.to_string(),
-                            "Lettering" => lettering = value.to_string(),
-                            "Engraver" | "Engravers" => engraver = value.to_string(),
+                            "Designer" | "Designers" => {
+                                designer = value.to_string();
+                            }
+                            "Vignette" => {
+                                vignette = value.to_string();
+                            }
+                            "Frame" => {
+                                frame = value.to_string();
+                            }
+                            "Lettering" => {
+                                lettering = value.to_string();
+                            }
+                            "Engraver" | "Engravers" => {
+                                engraver = value.to_string();
+                            }
                             _ => {}
                         }
                     }
@@ -1064,8 +1100,9 @@ fn parse_liberty_issue_stamp(
 
                 while i < rows.len() {
                     let next_row = &rows[i];
-                    let next_tds: Vec<ElementRef> =
-                        next_row.select(&Selector::parse("td").unwrap()).collect();
+                    let next_tds: Vec<ElementRef> = next_row
+                        .select(&Selector::parse("td").unwrap())
+                        .collect();
 
                     if !next_tds.is_empty() {
                         // Check if first td contains an image
@@ -1094,8 +1131,9 @@ fn parse_liberty_issue_stamp(
                 let mut found_new_denomination = false;
                 while i < rows.len() {
                     let data_row = &rows[i];
-                    let data_tds: Vec<ElementRef> =
-                        data_row.select(&Selector::parse("td").unwrap()).collect();
+                    let data_tds: Vec<ElementRef> = data_row
+                        .select(&Selector::parse("td").unwrap())
+                        .collect();
 
                     // Check ALL tds in this row for colspan="8"
                     let has_colspan_8 = data_tds
@@ -1127,8 +1165,9 @@ fn parse_liberty_issue_stamp(
                         let scott_text = scott_text_str.trim();
 
                         // Check if this looks like a Scott number
-                        if !scott_text.is_empty()
-                            && scott_text.chars().next().unwrap_or(' ').is_ascii_digit()
+                        if
+                            !scott_text.is_empty() &&
+                            scott_text.chars().next().unwrap_or(' ').is_ascii_digit()
                         {
                             let issue_date = data_tds
                                 .get(1)
@@ -1180,15 +1219,21 @@ fn parse_liberty_issue_stamp(
                                 design_size: design_size.clone(),
                             };
 
-                            if let Err(e) =
-                                insert_stamp_if_not_exists(conn, series_id, series_title, &stamp)
+                            if
+                                let Err(e) = insert_stamp_if_not_exists(
+                                    conn,
+                                    series_id,
+                                    series_title,
+                                    &stamp
+                                )
                             {
                                 eprintln!("Failed to insert stamp {}: {}", scott_text, e);
                             } else {
                                 stamps_found += 1;
                             }
-                        } else if !scott_text.is_empty()
-                            && (scott_text.contains('¢') || scott_text.contains('$'))
+                        } else if
+                            !scott_text.is_empty() &&
+                            (scott_text.contains('¢') || scott_text.contains('$'))
                         {
                             // Detected start of new denomination section
                             found_new_denomination = true;
@@ -1218,9 +1263,9 @@ fn parse_liberty_issue_stamp(
 
 fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
     // Parse lines like "Scott 1064 – 3¢ Pennsylvania Academy of the Arts Sesquicentennial – Designer: McCloskey, Jr. – Engraver: C. A. Brooks"
-    let scott_regex =
-        Regex::new(r"Scott\s+(\w+)\s+–\s+(.+?)\s+–\s+Designer:\s*([^–]+)\s+–\s+Engraver:\s*(.+)")
-            .unwrap();
+    let scott_regex = Regex::new(
+        r"Scott\s+(\w+)\s+–\s+(.+?)\s+–\s+Designer:\s*([^–]+)\s+–\s+Engraver:\s*(.+)"
+    ).unwrap();
 
     if let Some(caps) = scott_regex.captures(line) {
         let scott_number = caps.get(1)?.as_str().to_string();
@@ -1240,10 +1285,7 @@ fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
         };
 
         let image_url = if scott_number.starts_with("QE") || scott_number.starts_with("FA") {
-            format!(
-                "https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg",
-                scott_number
-            )
+            format!("https://1847us.com/wp-content/uploads/2017/12/{}_dry-print.jpg", scott_number)
         } else {
             format!("https://1847us.com/ByYear/images2/{}.jpg", scott_number)
         };
@@ -1254,7 +1296,7 @@ fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
             name,
             color: String::new(),
             place_issued: String::new(), // Will be updated from table data
-            issue_date: String::new(),   // Will be updated from table data
+            issue_date: String::new(), // Will be updated from table data
             quantity_issued: String::new(), // Will be updated from table data
             designer,
             vignette: String::new(),
@@ -1262,7 +1304,7 @@ fn parse_commemorative_line(line: &str) -> Option<StampInfo> {
             lettering: String::new(),
             engraver,
             image_url,
-            printer: String::new(),     // Will be updated from section data
+            printer: String::new(), // Will be updated from section data
             perforation: String::new(), // Will be updated from section data
             printing_details: String::new(), // Will be updated from section data
             tagging: String::new(),
@@ -1281,17 +1323,17 @@ fn insert_stamp_if_not_exists(
     conn: &Connection,
     series_id: i64,
     _series_title: &str,
-    stamp: &StampInfo,
+    stamp: &StampInfo
 ) -> Result<(), Box<dyn Error>> {
     // Check if stamp already exists
-    let exists = conn
-        .query_row(
-            "SELECT COUNT(*) FROM us1847_stamps WHERE scott_number = ?",
-            rusqlite::params![&stamp.scott_number],
-            |row| row.get::<_, i64>(0),
-        )
-        .unwrap_or(0)
-        > 0;
+    let exists =
+        conn
+            .query_row(
+                "SELECT COUNT(*) FROM us1847_stamps WHERE scott_number = ?",
+                rusqlite::params![&stamp.scott_number],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap_or(0) > 0;
 
     if exists {
         // Update existing stamp with additional information
@@ -1338,7 +1380,7 @@ fn insert_stamp_if_not_exists(
                 &stamp.stamp_type,
                 &stamp.design_size,
                 &stamp.scott_number
-            ],
+            ]
         )?;
     } else {
         // Insert new stamp
@@ -1372,7 +1414,7 @@ fn insert_stamp_if_not_exists(
                 &stamp.description,
                 &stamp.stamp_type,
                 &stamp.design_size
-            ],
+            ]
         )?;
     }
 
@@ -1409,7 +1451,7 @@ fn insert_stamp_if_not_exists(
             &stamp.engraver, // engraving
             &stamp.perforation, // perforation
             uniq_key // uniq_key
-        ],
+        ]
     )?;
 
     Ok(())
@@ -1421,7 +1463,7 @@ fn download_stamp_images(
     series_id: i64,
     image_path: &str,
     overwrite_images: bool,
-    base_url: &str,
+    base_url: &str
 ) -> Result<(), Box<dyn Error>> {
     use std::io::Write;
 
@@ -1430,7 +1472,7 @@ fn download_stamp_images(
 
     // Get all stamps for this series that have image URLs
     let mut stmt = conn.prepare(
-        "SELECT scott_number, image_url FROM us1847_stamps WHERE series_id = ? AND image_url != ''",
+        "SELECT scott_number, image_url FROM us1847_stamps WHERE series_id = ? AND image_url != ''"
     )?;
     let stamp_iter = stmt.query_map([series_id], |row| {
         Ok((
@@ -1465,18 +1507,20 @@ fn download_stamp_images(
                                     } else {
                                         info!("Successfully downloaded image {}", filename);
                                         // Update image dimensions in database
-                                        if let Err(e) =
-                                            crate::db_utils::persist_image_dimensions_from_file(
-                                                conn,
-                                                "United States",
-                                                "1955",
-                                                &scott_number,
-                                                &filepath.to_string_lossy(),
-                                            )
+                                        if
+                                            let Err(e) =
+                                                crate::db_utils::persist_image_dimensions_from_file(
+                                                    conn,
+                                                    "United States",
+                                                    "1955",
+                                                    &scott_number,
+                                                    &filepath.to_string_lossy()
+                                                )
                                         {
                                             error!(
                                                 "Failed to update image dimensions for {}: {}",
-                                                scott_number, e
+                                                scott_number,
+                                                e
                                             );
                                         }
                                     }
@@ -1506,7 +1550,7 @@ fn download_stamp_images(
 pub fn sync_us1847_to_stamps(
     conn: &Connection,
     series_id: i64,
-    series_title: &str,
+    series_title: &str
 ) -> Result<(), Box<dyn Error>> {
     // Query all stamps for this series
     let mut stmt = conn.prepare(
@@ -1514,16 +1558,16 @@ pub fn sync_us1847_to_stamps(
     )?;
     let stamp_iter = stmt.query_map([series_id], |row| {
         Ok((
-            row.get::<_, String>(0)?,  // scott_number
-            row.get::<_, String>(1)?,  // denomination
-            row.get::<_, String>(2)?,  // name
-            row.get::<_, String>(3)?,  // place_issued
-            row.get::<_, String>(4)?,  // issue_date
-            row.get::<_, String>(5)?,  // quantity_issued
-            row.get::<_, String>(6)?,  // designer
-            row.get::<_, String>(7)?,  // engraver
-            row.get::<_, String>(8)?,  // printer
-            row.get::<_, String>(9)?,  // perforation
+            row.get::<_, String>(0)?, // scott_number
+            row.get::<_, String>(1)?, // denomination
+            row.get::<_, String>(2)?, // name
+            row.get::<_, String>(3)?, // place_issued
+            row.get::<_, String>(4)?, // issue_date
+            row.get::<_, String>(5)?, // quantity_issued
+            row.get::<_, String>(6)?, // designer
+            row.get::<_, String>(7)?, // engraver
+            row.get::<_, String>(8)?, // printer
+            row.get::<_, String>(9)?, // perforation
             row.get::<_, String>(10)?, // printing_details
             row.get::<_, String>(11)?, // description
             row.get::<_, String>(12)?, // image_url
@@ -1560,7 +1604,7 @@ pub fn sync_us1847_to_stamps(
         let day = "";
         let sg_number = scott_number.clone();
         let type_ = "Postage Stamp";
-        let color = color; // From database
+        // color from database is already in `color` binding
         let stamps_issued = quantity_issued;
         let mint_condition = "";
         let unused = "";
@@ -1574,34 +1618,34 @@ pub fn sync_us1847_to_stamps(
         let engraving = engraver;
         let context = format!("{} - {}", place_issued, issue_date);
 
-        crate::db_utils::insert_stamp(
-            conn,
-            "United States", // country
-            series_title,    // series
+        let si = crate::db_utils::StampInsert {
+            country: "United States".to_string(),
+            series: series_title.to_string(),
             year,
-            &month,
-            &month,
-            &day,
-            &sg_number,
-            &type_,
-            &denomination,
-            &color,
-            &description,
-            &stamps_issued,
-            &mint_condition,
-            &unused,
-            &used,
-            &letter_fdc,
-            &currency,
-            &image_path,
-            &remote_image_url,
-            &original_image_url,
-            &watermark,
-            &design,
-            &engraving,
-            &perforation,
-            &context,
-        )?;
+            month: month.to_string(),
+            month_num: month.to_string(),
+            day: day.to_string(),
+            sg_number: sg_number.clone(),
+            type_: type_.to_string(),
+            denomination: denomination.clone(),
+            color: color.clone(),
+            description: description.clone(),
+            stamps_issued: stamps_issued.clone(),
+            mint_condition: mint_condition.to_string(),
+            unused: unused.to_string(),
+            used: used.to_string(),
+            letter_fdc: letter_fdc.to_string(),
+            currency: currency.to_string(),
+            image_path: image_path.clone(),
+            remote_image_url: remote_image_url.clone(),
+            original_image_url: original_image_url.clone(),
+            watermark: watermark.to_string(),
+            design: design.to_string(),
+            engraving: engraving.to_string(),
+            perforation: perforation.to_string(),
+            context: context.to_string(),
+        };
+        crate::db_utils::insert_stamp_from_struct(conn, &si)?;
 
         // Set image dimensions if image exists
         if !image_path.is_empty() {
@@ -1611,7 +1655,7 @@ pub fn sync_us1847_to_stamps(
                 "United States",
                 series_title,
                 &sg_number,
-                &full_path,
+                &full_path
             );
         }
     }
@@ -1629,7 +1673,7 @@ pub fn collect_us1847_data(
     _base_url: &str,
     _start_year: i32,
     _end_year: i32,
-    _overwrite_images: bool,
+    _overwrite_images: bool
 ) -> Result<(), Box<dyn Error>> {
     Ok(())
 }

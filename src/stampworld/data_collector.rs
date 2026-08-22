@@ -15,6 +15,16 @@ pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$").expect("invalid day-month regex")
 });
 
+// Hoisted regexes that were previously constructed inside loops.
+pub static YEAR_RANGE_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex")
+});
+
+pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#)
+        .expect("invalid group url regex")
+});
+
 // Import parser helpers from the extracted parser module. These helpers were
 // previously defined here; they have been moved to `stampworld::parser` so
 // they can be unit tested and reused independently from the large collector.
@@ -278,10 +288,7 @@ pub fn collect_stampworld_data_with_fetcher(
                 let text = header_a.text().collect::<String>();
                 series_desc = text.clone();
                 debug!("Extracted series_desc from header: '{}'", series_desc);
-                if let Some(caps) = Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?")
-                    .unwrap()
-                    .captures(&text)
-                {
+                if let Some(caps) = YEAR_RANGE_RE.captures(&text) {
                     block_year_int = caps
                         .get(1)
                         .map_or("0", |m| m.as_str())
@@ -524,12 +531,8 @@ pub fn collect_stampworld_data_with_fetcher(
                                 // fetching/parsing fails. Limit fetches per-range to avoid heavy loads.
                                 if expand == "detail_fetch" {
                                     // Try to find a canonical group base URL inside the block HTML
-                                    let group_url_re = Regex::new(
-                                        r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#,
-                                    )
-                                    .unwrap();
                                     let block_html = content_div.html();
-                                    let maybe_group_base = group_url_re
+                                    let maybe_group_base = GROUP_URL_RE
                                         .find(&block_html)
                                         .map(|m| m.as_str().to_string());
 
@@ -716,34 +719,34 @@ pub fn collect_stampworld_data_with_fetcher(
                                                             month_number(&month_f)
                                                         };
                                                         // Call centralized insert
-                                                        match crate::db_utils::insert_stamp(
-                                                            &conn,
-                                                            site_name,
-                                                            &series_desc,
-                                                            stamp_year,
-                                                            &month_f,
-                                                            &month_num_f,
-                                                            &day_f,
-                                                            &sg_number_f,
-                                                            &type_f,
-                                                            &denomination_f,
-                                                            &color_f,
-                                                            &description_f,
-                                                            "", // stamps_issued
-                                                            "", // mint_condition
-                                                            "", // unused
-                                                            "", // used
-                                                            "", // letter_fdc
-                                                            "", // currency
-                                                            "", // image_path
-                                                            "", // remote_image_url
-                                                            "", // original_image_url
-                                                            "", // watermark
-                                                            "", // design
-                                                            "", // engraving
-                                                            "", // perforation
-                                                            "", // context
-                                                        ) {
+                                                        let si = crate::db_utils::StampInsert {
+                                                            country: site_name.to_string(),
+                                                            series: series_desc.clone(),
+                                                            year: stamp_year,
+                                                            month: month_f.clone(),
+                                                            month_num: month_num_f.clone(),
+                                                            day: day_f.clone(),
+                                                            sg_number: sg_number_f.clone(),
+                                                            type_: type_f.clone(),
+                                                            denomination: denomination_f.clone(),
+                                                            color: color_f.clone(),
+                                                            description: description_f.clone(),
+                                                            stamps_issued: String::new(),
+                                                            mint_condition: String::new(),
+                                                            unused: String::new(),
+                                                            used: String::new(),
+                                                            letter_fdc: String::new(),
+                                                            currency: String::new(),
+                                                            image_path: String::new(),
+                                                            remote_image_url: String::new(),
+                                                            original_image_url: String::new(),
+                                                            watermark: String::new(),
+                                                            design: String::new(),
+                                                            engraving: String::new(),
+                                                            perforation: String::new(),
+                                                            context: String::new(),
+                                                        };
+                                                        match crate::db_utils::insert_stamp_from_struct(&conn, &si) {
                                                             Ok(inserted) => {
                                                                 if inserted {
                                                                     let _ = conn.execute(
@@ -1302,34 +1305,34 @@ pub fn collect_stampworld_data_with_fetcher(
                 // Call DB insert following the existing callers' parameter order
                 info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
                     site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
-                let res = crate::db_utils::insert_stamp(
-                    &conn,
-                    site_name,
-                    &series_name,
-                    stamp_year,
-                    &month,
-                    &month_num,
-                    &day,
-                    &sg_number,
-                    &type_,
-                    &denomination,
-                    &color,
-                    &description,
-                    &stamps_issued_norm,
-                    &mint_condition,
-                    &unused,
-                    &used,
-                    &letter_fdc,
-                    &currency_norm,
-                    &local_image_path,
-                    &remote_image_url,
-                    &original_image_url,
-                    &watermark,
-                    &design,
-                    &engraving,
-                    &perforation,
-                    &cleaned_context_details,
-                );
+                let si = crate::db_utils::StampInsert {
+                    country: site_name.to_string(),
+                    series: series_name.clone(),
+                    year: stamp_year,
+                    month: month.clone(),
+                    month_num: month_num.clone(),
+                    day: day.clone(),
+                    sg_number: sg_number.clone(),
+                    type_: type_.clone(),
+                    denomination: denomination.clone(),
+                    color: color.clone(),
+                    description: description.clone(),
+                    stamps_issued: stamps_issued_norm.clone(),
+                    mint_condition: mint_condition.clone(),
+                    unused: unused.clone(),
+                    used: used.clone(),
+                    letter_fdc: letter_fdc.clone(),
+                    currency: currency_norm.clone(),
+                    image_path: local_image_path.clone(),
+                    remote_image_url: remote_image_url.clone(),
+                    original_image_url: original_image_url.clone(),
+                    watermark: watermark.clone(),
+                    design: design.clone(),
+                    engraving: engraving.clone(),
+                    perforation: perforation.clone(),
+                    context: cleaned_context_details.clone(),
+                };
+                let res = crate::db_utils::insert_stamp_from_struct(&conn, &si);
                 // Diagnostic: log the raw result from the DB layer so we can see
                 // whether the call inserted/updated (Ok(true)), was a no-op
                 // (Ok(false)), or returned an error (Err).

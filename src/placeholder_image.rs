@@ -220,7 +220,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
             if let Ok(mut f) = File::open(p) {
                 let mut buf = Vec::new();
                 if f.read_to_end(&mut buf).is_ok() {
-                    if let Some(font) = FontArc::try_from_vec(buf).ok() {
+                    if let Ok(font) = FontArc::try_from_vec(buf) {
                         return Some(font);
                     }
                 }
@@ -234,7 +234,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
                 if let Ok(mut f) = File::open(&env_path) {
                     let mut buf = Vec::new();
                     if f.read_to_end(&mut buf).is_ok() {
-                        if let Some(font) = FontArc::try_from_vec(buf).ok() {
+                        if let Ok(font) = FontArc::try_from_vec(buf) {
                             return Some(font);
                         }
                     }
@@ -257,7 +257,7 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
             if let Ok(mut f) = File::open(path) {
                 let mut buf = Vec::new();
                 if f.read_to_end(&mut buf).is_ok() {
-                    if let Some(font) = FontArc::try_from_vec(buf).ok() {
+                    if let Ok(font) = FontArc::try_from_vec(buf) {
                         return Some(font);
                     }
                 }
@@ -382,9 +382,7 @@ fn draw_text(
 ///
 /// # Returns
 /// * `Result<(), Box<dyn std::error::Error>>` - Success or error
-// ...existing code...
-
-/// Options to customize placeholder image rendering
+///   Options to customize placeholder image rendering
 pub struct PlaceholderOptions<'a> {
     pub font_path: Option<&'a str>,
     pub title_size: f32,
@@ -597,21 +595,31 @@ pub fn ensure_placeholder_image_for_stamp(
 /// stamp background color so the generated placeholder can match the series
 /// sizing and contrast. Backwards-compatible callers can continue to call
 /// `ensure_placeholder_image_for_stamp` which delegates to this with None hints.
+pub struct PlaceholderImageOptions<'a> {
+    pub album_name: &'a str,
+    pub catalog_number: &'a str,
+    pub year: &'a str,
+    pub series_hint: Option<&'a str>,
+    pub stamp_bg_color: Option<Rgba<u8>>,
+    pub target_mm_w: Option<f64>,
+    pub target_mm_h: Option<f64>,
+    pub mm_per_px_w: Option<f32>,
+    pub mm_per_px_h: Option<f32>,
+}
+
 pub fn ensure_placeholder_image_for_stamp_with_hint(
-    album_name: &str,
-    catalog_number: &str,
-    year: &str,
-    series_hint: Option<&str>,
-    stamp_bg_color: Option<Rgba<u8>>,
-    // If provided, target_mm_* and mm_per_px_* will be used to compute an exact
-    // pixel size so the generated placeholder, when converted by the album
-    // mm-per-pixel ratio, matches the emitted mm dimensions. If omitted we
-    // fall back to series-based pixel sizing.
-    target_mm_w: Option<f64>,
-    target_mm_h: Option<f64>,
-    mm_per_px_w: Option<f32>,
-    mm_per_px_h: Option<f32>,
+    opts: &PlaceholderImageOptions,
 ) -> Result<String, Box<dyn std::error::Error>> {
+    // Local aliases for backwards-compatibility with the existing implementation
+    let album_name = opts.album_name;
+    let catalog_number = opts.catalog_number;
+    let year = opts.year;
+    let series_hint = opts.series_hint;
+    let stamp_bg_color = opts.stamp_bg_color;
+    let target_mm_w = opts.target_mm_w;
+    let target_mm_h = opts.target_mm_h;
+    let mm_per_px_w = opts.mm_per_px_w;
+    let mm_per_px_h = opts.mm_per_px_h;
     // Normalize album directory name to match other modules (use hyphens for spaces)
     let album_dir = Path::new("Albums").join(album_name.replace(' ', "-"));
     // sanitize catalog_number for filename (replace slashes etc.)
@@ -701,7 +709,7 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
         let mut img: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(px_w, px_h);
         for pixel in img.pixels_mut() {
             *pixel = stamp_bg_color
-                .map(|c| contrasting_color(c))
+                .map(contrasting_color)
                 .unwrap_or(Rgba([255, 255, 255, 255]));
         }
 
@@ -765,7 +773,7 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
                     log::warn!("Saved placeholder {} has size {}x{} px but expected {}x{} px — attempting rewrite", placeholder_path.display(), sw, sh, px_w, px_h);
                     // Re-generate explicitly via the options API which is known
                     // to produce exact buffer sizes.
-                    let _ = generate_placeholder_image_with_options(
+                    generate_placeholder_image_with_options(
                         px_w,
                         px_h,
                         &placeholder_path,

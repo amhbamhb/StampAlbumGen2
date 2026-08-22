@@ -53,38 +53,38 @@ pub fn ingest_colnect_data_with_mode(
             extract_colnect_code(&stamp.catalog_codes).unwrap_or_else(|| stamp.link.clone());
 
         // Convert Option<String> to Option<&str> for rusqlite
-        let width_ref = stamp.width.as_ref().map(|s| s.as_str());
-        let height_ref = stamp.height.as_ref().map(|s| s.as_str());
-        let watermark_ref = stamp.watermark.as_ref().map(|s| s.as_str());
-        let format_ref = stamp.format.as_ref().map(|s| s.as_str());
-        let emission_ref = stamp.emission.as_ref().map(|s| s.as_str());
-        let perforation_ref = stamp.perforation.as_ref().map(|s| s.as_str());
-        let printing_ref = stamp.printing.as_ref().map(|s| s.as_str());
-        let paper_ref = stamp.paper.as_ref().map(|s| s.as_str());
-        let gum_ref = stamp.gum.as_ref().map(|s| s.as_str());
-        let ord_mi_ref = stamp.ord_mi.as_ref().map(|s| s.as_str());
-        let ord_sn_ref = stamp.ord_sn.as_ref().map(|s| s.as_str());
-        let ord_yt_ref = stamp.ord_yt.as_ref().map(|s| s.as_str());
-        let ord_sg_ref = stamp.ord_sg.as_ref().map(|s| s.as_str());
-        let themes_ref = stamp.themes.as_ref().map(|s| s.as_str());
-        let description_ref = stamp.description.as_ref().map(|s| s.as_str());
-        let expiry_date_ref = stamp.expiry_date.as_ref().map(|s| s.as_str());
-        let print_run_ref = stamp.print_run.as_ref().map(|s| s.as_str());
-        let face_value_ref = stamp.face_value.as_ref().map(|s| s.as_str());
-        let currency_ref = stamp.currency.as_ref().map(|s| s.as_str());
-        let colors_ref = stamp.colors.as_ref().map(|s| s.as_str());
-        let designers_ref = stamp.designers.as_ref().map(|s| s.as_str());
-        let printers_ref = stamp.printers.as_ref().map(|s| s.as_str());
-        let parent_item_ref = stamp.parent_item.as_ref().map(|s| s.as_str());
-        let variant_ref = stamp.variant.as_ref().map(|s| s.as_str());
-        let overprint_variant_ref = stamp.overprint_variant.as_ref().map(|s| s.as_str());
-        let score_ref = stamp.score.as_ref().map(|s| s.as_str());
-        let accuracy_ref = stamp.accuracy.as_ref().map(|s| s.as_str());
-        let list_ref = stamp.list.as_ref().map(|s| s.as_str());
-        let quantity_ref = stamp.quantity.as_ref().map(|s| s.as_str());
-        let condition_ref = stamp.condition.as_ref().map(|s| s.as_str());
-        let public_note_ref = stamp.public_note.as_ref().map(|s| s.as_str());
-        let private_note_ref = stamp.private_note.as_ref().map(|s| s.as_str());
+        let width_ref = stamp.width.as_deref();
+        let height_ref = stamp.height.as_deref();
+        let watermark_ref = stamp.watermark.as_deref();
+        let format_ref = stamp.format.as_deref();
+        let emission_ref = stamp.emission.as_deref();
+        let perforation_ref = stamp.perforation.as_deref();
+        let printing_ref = stamp.printing.as_deref();
+        let paper_ref = stamp.paper.as_deref();
+        let gum_ref = stamp.gum.as_deref();
+        let ord_mi_ref = stamp.ord_mi.as_deref();
+        let ord_sn_ref = stamp.ord_sn.as_deref();
+        let ord_yt_ref = stamp.ord_yt.as_deref();
+        let ord_sg_ref = stamp.ord_sg.as_deref();
+        let themes_ref = stamp.themes.as_deref();
+        let description_ref = stamp.description.as_deref();
+        let expiry_date_ref = stamp.expiry_date.as_deref();
+        let print_run_ref = stamp.print_run.as_deref();
+        let face_value_ref = stamp.face_value.as_deref();
+        let currency_ref = stamp.currency.as_deref();
+        let colors_ref = stamp.colors.as_deref();
+        let designers_ref = stamp.designers.as_deref();
+        let printers_ref = stamp.printers.as_deref();
+        let parent_item_ref = stamp.parent_item.as_deref();
+        let variant_ref = stamp.variant.as_deref();
+        let overprint_variant_ref = stamp.overprint_variant.as_deref();
+        let score_ref = stamp.score.as_deref();
+        let accuracy_ref = stamp.accuracy.as_deref();
+        let list_ref = stamp.list.as_deref();
+        let quantity_ref = stamp.quantity.as_deref();
+        let condition_ref = stamp.condition.as_deref();
+        let public_note_ref = stamp.public_note.as_deref();
+        let private_note_ref = stamp.private_note.as_deref();
 
         stmt.execute(params![
             catalog_number,
@@ -322,8 +322,8 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
 fn extract_colnect_code(codes: &str) -> Option<String> {
     for part in codes.split(',') {
         let part = part.trim();
-        if part.starts_with("Col:") {
-            return Some(part["Col:".len()..].trim().to_string());
+        if let Some(stripped) = part.strip_prefix("Col:") {
+            return Some(stripped.trim().to_string());
         }
     }
     None

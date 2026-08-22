@@ -2,6 +2,8 @@
 
 Rust CLI that generates AlbumEasy pages from stamp data sources and SQLite databases.
 
+Latest release: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
+
 ## Start Here
 
 Build release binary and run it:
@@ -216,6 +218,21 @@ Force overwrite existing config (creates backup first):
  Skip files already imported by SHA256 checksum (default behavior).
 - `--colnect-force-reimport`
  Reimport even if checksum already exists in import history.
+
+## GUI build note
+
+The project includes optional GUI folder-picker dialogs via the `rfd` crate. To build and test the GUI-enabled binary locally or in CI, enable the `rfd` feature:
+
+```bash
+# Build with GUI dialogs enabled
+cargo build --features rfd
+
+# Or use the provided scripts which respect the USE_RFD env var:
+USE_RFD=1 ./format-and-check.sh
+USE_RFD=1 Archive/build-musl.sh
+```
+
+If your CI runner lacks GUI libraries (GTK on Linux), keep `USE_RFD` disabled. The code is written to fall back to console prompts only when a TTY is available.
 
 ### Review UI
 

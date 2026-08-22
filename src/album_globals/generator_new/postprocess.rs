@@ -129,7 +129,7 @@ pub fn center_tmp_pages(
 
         // Count actual rows on this page and configured maximum.
         let rows_on_page = all_row_indices.len();
-        let cfg_max_rows = config.max_rows_per_page.unwrap_or(4) as usize;
+        let cfg_max_rows = config.max_rows_per_page.unwrap_or(4);
 
         // Do not attempt to center when there is no meaningful extra space,
         // or when the page already contains the max allowed rows.
@@ -189,11 +189,11 @@ pub fn center_tmp_pages(
         } else {
             series_row_indices.len()
         };
-        let base_gaps = if series_count == 0 {
-            2
-        } else {
-            series_count + 1
-        } as usize;
+                    let base_gaps = if series_count == 0 {
+                        2
+                } else {
+                        series_count + 1
+                };
         let has_page_header = page_block
             .iter()
             .any(|l| l.trim().starts_with("PAGE_TEXT_"));
@@ -349,9 +349,8 @@ pub fn compute_page_used_height(page_block: &[&str], config: &crate::config::Con
             idx += 1;
         }
         // skip trailing PAGE_VSPACE if present
-        while idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
+        if idx < page_block.len() && page_block[idx].trim().starts_with("PAGE_VSPACE") {
             idx += 1;
-            break;
         }
     }
     let v_before = config

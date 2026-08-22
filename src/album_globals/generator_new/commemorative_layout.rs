@@ -32,7 +32,7 @@ pub fn is_commemorative(stamp: &Stamp, _year: Option<i32>) -> bool {
             .parse::<u32>()
         {
             // US 1955 commemoratives are Scott 1064-1072
-            if num >= 1064 && num <= 1072 {
+            if (1064..=1072).contains(&num) {
                 return true;
             }
         }
@@ -200,7 +200,7 @@ fn build_stamp_description(stamp: &Stamp) -> String {
     // Notes (if available)
     if let Some(notes) = stamp.attrs.get("notes") {
         if !notes.is_empty() {
-            parts.push(format!("{}", notes));
+            parts.push(notes.to_string());
         }
     }
 

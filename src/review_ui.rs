@@ -5,6 +5,7 @@ use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
+use log::debug;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -116,14 +117,16 @@ pub fn tail_current_log(lines_count: usize) -> Vec<String> {
     }
 
     // Sort by modification time, most recent first
-    log_files.sort_by(|a, b| b.1.cmp(&a.1));
+    log_files.sort_by_key(|b| std::cmp::Reverse(b.1));
     let log_path = &log_files[0].0;
 
     // Read the last N lines efficiently
     match fs::File::open(log_path) {
-        Ok(file) => {
+            Ok(file) => {
             let reader = BufReader::new(file);
-            let lines: Vec<String> = reader.lines().filter_map(Result::ok).collect();
+            let mut lines_iter = reader.lines().map_while(Result::ok);
+            let _first_line: Option<String> = lines_iter.next();
+            let lines: Vec<String> = lines_iter.collect();
             lines
                 .iter()
                 .rev()
@@ -1219,16 +1222,19 @@ struct SaveConfigEditorResponse {
     reload_required: bool,
 }
 
+/// Boxed payload for the `Selected` bootstrap outcome to avoid large enum size.
+pub struct ReviewUiSelected {
+    pub db_path: String,
+    pub country: String,
+    pub server: Server,
+    pub bind: String,
+}
+
 pub enum ReviewUiBootstrapOutcome {
     Exit,
     AlreadyRunning,
     ReloadRequested,
-    Selected {
-        db_path: String,
-        country: String,
-        server: Server,
-        bind: String,
-    },
+    Selected(Box<ReviewUiSelected>),
 }
 
 pub enum ReviewUiRunOutcome {
@@ -1457,7 +1463,7 @@ fn bind_review_server(
 
 /// If `err` is the sentinel error from `bind_review_server` indicating that
 /// our own app is already listening, extract and return the URL.
-fn already_running_url(err: &Box<dyn std::error::Error>) -> Option<String> {
+fn already_running_url(err: &dyn std::error::Error) -> Option<String> {
     err.to_string()
         .strip_prefix("__already_running__")
         .map(|url| url.to_string())
@@ -1668,7 +1674,7 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
         });
     }
 
-    out.sort_by(|a, b| a.country.to_lowercase().cmp(&b.country.to_lowercase()));
+    out.sort_by_key(|a| a.country.to_lowercase());
     out
 }
 
@@ -1873,7 +1879,7 @@ where
             let output = Command::new("zenity")
                 .arg("--file-selection")
                 .arg("--title")
-                .arg(&title)
+                .arg(title)
                 .arg("--filename")
                 .arg(&starting)
                 .arg("--file-filter")
@@ -1904,7 +1910,7 @@ where
                 .arg(&starting)
                 .arg("*.csv")
                 .arg("--title")
-                .arg(&title)
+                .arg(title)
                 .output()
                 .map_err(|e| format!("failed to launch kdialog: {}", e))?;
 
@@ -2085,17 +2091,20 @@ fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> S
     }
 
     let p1 = crate::file_utils::resolve_album_image_path(album_name, rel);
+    debug!("resolve_image_abs: db_path='{}' album='{}' rel='{}' -> p1='{}' (exists={})", db_path, album_name, rel, p1.display(), p1.exists());
     if p1.exists() {
         return p1.to_string_lossy().to_string();
     }
 
     if let Some(parent) = Path::new(db_path).parent() {
         let p2 = parent.join(rel);
+        debug!("resolve_image_abs: checking parent path p2='{}' (exists={})", p2.display(), p2.exists());
         if p2.exists() {
             return p2.to_string_lossy().to_string();
         }
     }
 
+    debug!("resolve_image_abs: no local image resolved for rel='{}'", rel);
     String::new()
 }
 
@@ -2587,16 +2596,14 @@ fn colnect_import_data(
 /// Write `default_catalog_code` into the album-local config override
 /// (`Albums/<name>/config.toml`), preserving any other per-album overrides
 /// already present and only storing values that differ from the global config.
-
 /// Build config editor data for a country review UI session.
 /// Returns `(sections, has_album_override)` where sections have `current_value`
 /// set to the merged (effective) value and `global_value` / `is_album_override`
 /// populated correctly.
-
+///
 /// Write a minimal album-local config.toml that stores only the fields that
 /// differ from the global config.  The file is written into `album_dir`.
 /// Returns the number of fields written (0 = nothing changed vs global).
-
 pub fn run_review_ui_bootstrap(
     bind_addr_opt: Option<&str>,
     default_inbox_path: Option<&str>,
@@ -2607,7 +2614,7 @@ pub fn run_review_ui_bootstrap(
     let (server, bind) = match bind_review_server(bind_addr_opt) {
         Ok(pair) => pair,
         Err(e) => {
-            if let Some(url) = already_running_url(&e) {
+            if let Some(url) = already_running_url(e.as_ref()) {
                 log_runtime_event(&format!(
                     "Review UI: instance already running at {} — opening browser",
                     url
@@ -2643,12 +2650,12 @@ pub fn run_review_ui_bootstrap(
     }
 
     Ok(match selected {
-        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected {
+        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected(Box::new(ReviewUiSelected {
             db_path,
             country,
             server,
             bind,
-        },
+        })),
         None => ReviewUiBootstrapOutcome::Exit,
     })
 }
@@ -2790,7 +2797,7 @@ pub fn run_review_ui(
         match bind_review_server(bind_addr_opt) {
             Ok(pair) => pair,
             Err(e) => {
-                if let Some(url) = already_running_url(&e) {
+                if let Some(url) = already_running_url(e.as_ref()) {
                     log_runtime_event(&format!(
                         "Review UI: instance already running at {} — opening browser",
                         url

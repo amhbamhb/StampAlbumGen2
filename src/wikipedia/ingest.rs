@@ -93,40 +93,38 @@ pub fn ingest_wikipedia_to_db(
                     para.to_string()
                 };
 
-                match crate::db_utils::insert_stamp(
-                    &conn,
-                    topic,         // country
-                    &series_name,  // series
-                    0,             // year unknown
-                    "",            // month
-                    "0",           // _month_num
-                    "",            // day
-                    &sg,           // sg_number
-                    "WIKIPEDIA",   // type
-                    "",            // denomination
-                    "",            // color
-                    &description,  // description
-                    "",            // stamps_issued
-                    "",            // mint_condition
-                    "",            // unused
-                    "",            // used
-                    "",            // letter_fdc
-                    "",            // currency
-                    "",            // image_path
-                    "",            // remote_image_url
-                    "",            // original_image_url
-                    "",            // watermark
-                    "",            // design
-                    "",            // engraving
-                    "",            // perforation
-                    series_prefix, // context
-                ) {
+                let si = crate::db_utils::StampInsert {
+                    country: topic.to_string(),
+                    series: series_name.clone(),
+                    year: 0,
+                    month: String::new(),
+                    month_num: "0".to_string(),
+                    day: String::new(),
+                    sg_number: sg.clone(),
+                    type_: "WIKIPEDIA".to_string(),
+                    denomination: String::new(),
+                    color: String::new(),
+                    description: description.clone(),
+                    stamps_issued: String::new(),
+                    mint_condition: String::new(),
+                    unused: String::new(),
+                    used: String::new(),
+                    letter_fdc: String::new(),
+                    currency: String::new(),
+                    image_path: String::new(),
+                    remote_image_url: String::new(),
+                    original_image_url: String::new(),
+                    watermark: String::new(),
+                    design: String::new(),
+                    engraving: String::new(),
+                    perforation: String::new(),
+                    context: series_prefix.to_string(),
+                };
+                match crate::db_utils::insert_stamp_from_struct(&conn, &si) {
                     Ok(true) => {
                         inserted += 1;
                     }
-                    Ok(false) => {
-                        // already exists or no-op; continue
-                    }
+                    Ok(false) => {}
                     Err(e) => {
                         warn!(
                             "Failed to insert Wikipedia-derived row for '{}': {}",

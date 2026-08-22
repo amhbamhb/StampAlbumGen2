@@ -203,3 +203,62 @@ pub fn download_missing_stamp_images(
 
     Ok(())
 }
+
+/// Normalize images in an album's `images/` directory for PDF generation.
+/// This re-opens and re-saves each image which removes embedded ICC profiles
+/// and other metadata that can confuse Qt's color management. Returns the
+/// number of files normalized (successful rewrites).
+pub fn normalize_album_images_for_pdf(album_name: &str) -> Result<usize, Box<dyn std::error::Error>> {
+    let images_dir = crate::file_utils::resolve_album_dir(album_name).join("images");
+    if !images_dir.exists() {
+        return Ok(0);
+    }
+
+    let mut count = 0usize;
+    for entry in std::fs::read_dir(&images_dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+        // Only attempt common image extensions
+        if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
+            let lower = ext.to_ascii_lowercase();
+            if lower != "png" && lower != "jpg" && lower != "jpeg" && lower != "webp" && lower != "gif" {
+                continue;
+            }
+        } else {
+            continue;
+        }
+
+        // Try to open and re-save the image. Use a temp file then rename to avoid corruption.
+        match image::open(&path) {
+            Ok(img) => {
+                // Convert to RGBA8 then save as the same extension to strip metadata.
+                let rgba = img.to_rgba8();
+                let tmp = path.with_extension("tmpimg");
+                if rgba.save(&tmp).is_ok() {
+                    // Replace original file atomically
+                    if std::fs::rename(&tmp, &path).is_ok() {
+                        count += 1;
+                    } else {
+                        // Fallback: try copy + remove
+                        if std::fs::copy(&tmp, &path).is_ok() {
+                            let _ = std::fs::remove_file(&tmp);
+                            count += 1;
+                        } else {
+                            let _ = std::fs::remove_file(&tmp);
+                        }
+                    }
+                } else {
+                    let _ = std::fs::remove_file(&tmp);
+                }
+            }
+            Err(e) => {
+                log::warn!("normalize image open failed {}: {}", path.display(), e);
+            }
+        }
+    }
+
+    Ok(count)
+}

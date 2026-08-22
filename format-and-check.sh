@@ -24,8 +24,15 @@ echo ""
 
 echo "� Checking current formatting status..."
 
+# Determine optional features for cargo commands (enable with USE_RFD=1)
+if [ "${USE_RFD:-0}" = "1" ]; then
+    CARGO_FEATURES="--features rfd"
+else
+    CARGO_FEATURES=""
+fi
+
 # First check if formatting is needed
-if cargo fmt --all -- --check > /dev/null 2>&1; then
+if cargo fmt ${CARGO_FEATURES} --all -- --check > /dev/null 2>&1; then
     echo "✅ Code is already properly formatted!"
 else
     echo "🔧 Formatting Rust code..."
@@ -36,13 +43,13 @@ else
     echo ""
     
     # Actually format the code
-    cargo fmt --all
+    cargo fmt ${CARGO_FEATURES} --all
     echo "✅ Code has been formatted"
 fi
 
 echo ""
 echo "🔍 Verifying formatting is now correct..."
-if ! cargo fmt --all -- --check; then
+if ! cargo fmt ${CARGO_FEATURES} --all -- --check; then
     echo "❌ Formatting verification failed!"
     echo "There may be syntax errors preventing proper formatting."
     exit 1
@@ -52,7 +59,7 @@ echo "✅ Formatting verification passed"
 echo ""
 
 echo "📋 Running a quick compilation check..."
-if ! cargo check --quiet; then
+    if ! cargo check ${CARGO_FEATURES} --quiet; then
     echo "❌ Code doesn't compile!"
     echo "Please fix compilation errors before committing."
     exit 1
@@ -65,9 +72,9 @@ echo "🧪 Running test-suite (this may take a while)..."
 # Prefer GNU `timeout` to bound the total runtime so developers don't get
 # stuck on a single hanging test during a pre-commit check. If `timeout` is
 # not available, fall back to running tests directly.
-if command -v timeout >/dev/null 2>&1; then
+    if command -v timeout >/dev/null 2>&1; then
     echo "⏱️  Running tests with timeout=${TEST_TIMEOUT}s (set TEST_TIMEOUT to override)"
-    if ! timeout --preserve-status ${TEST_TIMEOUT}s cargo test --all; then
+    if ! timeout --preserve-status ${TEST_TIMEOUT}s cargo test ${CARGO_FEATURES} --all; then
         echo "❌ Tests failed or timed out. Inspect the output above."
         echo "If a specific test is hanging, run it individually to debug, e.g."
         echo "  cargo test test_cli_special_characters_and_edge_cases --test cli_option_validation -- --nocapture"
@@ -75,7 +82,7 @@ if command -v timeout >/dev/null 2>&1; then
     fi
 else
     echo "⚠️  'timeout' command not found; running tests without a hard timeout."
-    if ! cargo test --all; then
+    if ! cargo test ${CARGO_FEATURES} --all; then
         echo "❌ Some tests failed. Please fix failures before committing."
         exit 1
     fi

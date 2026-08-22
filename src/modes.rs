@@ -10,11 +10,7 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
         let after_country = &filename[country_start + 8..]; // Skip "country_"
         if let Some(dash_pos) = after_country.find('-') {
             let after_dash = &after_country[dash_pos + 1..];
-            if let Some(underscore_pos) = after_dash.find('_') {
-                Some(after_dash[..underscore_pos].to_string())
-            } else {
-                None
-            }
+            after_dash.find('_').map(|underscore_pos| after_dash[..underscore_pos].to_string())
         } else {
             None
         }
@@ -25,11 +21,7 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
     // Extract year: look for "year_YYYY"
     let year = if let Some(year_start) = filename.find("year_") {
         let after_year = &filename[year_start + 5..]; // Skip "year_"
-        if let Some(dot_pos) = after_year.find('.') {
-            Some(after_year[..dot_pos].to_string())
-        } else {
-            None
-        }
+        after_year.find('.').map(|dot_pos| after_year[..dot_pos].to_string())
     } else {
         None
     };
@@ -602,11 +594,10 @@ fn sync_missing_stamps_from_colnect(
 
         let col_series_l = col_series.to_lowercase();
         let cand_series_l = cand_series.to_lowercase();
-        if !col_series_l.is_empty() && !cand_series_l.is_empty() {
-            if cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l) {
+        if !col_series_l.is_empty() && !cand_series_l.is_empty()
+            && (cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l)) {
                 score += 10;
             }
-        }
 
         if !cand_image_path.trim().is_empty() {
             score += 5;
@@ -1286,7 +1277,7 @@ pub fn run_database_mode(
     }
     if !std::path::Path::new(&db_path).exists() {
         progress.set_message("📝 Creating new database file...");
-        match std::fs::File::create(&db_path) {
+        match std::fs::File::create(db_path) {
             Ok(_) => (),
             Err(e) => {
                 progress.finish_with_error(&format!("Failed to create DB file: {}", e));
@@ -1300,7 +1291,7 @@ pub fn run_database_mode(
     // provide a friendly message with suggestions rather than panicking later.
     // Open the database once and hand a reference to the generator.
     progress.set_message("🔗 Opening database connection...");
-    let conn = match crate::db_utils::init_db(&db_path) {
+    let conn = match crate::db_utils::init_db(db_path) {
         Ok(c) => c,
         Err(e) => {
             progress.finish_with_error(&format!("Database connection failed: {}", e));
@@ -1528,21 +1519,24 @@ pub fn run_scraping_mode(
     if !using_extract_file {
         progress.set_message("⚙️ Configuring data collector...");
     }
-    let mut cfg = CommandsFileGenerator::default();
-    cfg.album_name = album_name.clone();
-    cfg.country = site_name.clone();
     // Keep scrape outputs in a canonical country/site-based folder.
     let albums_root = resolve_runtime_albums_root();
-    cfg.album_path = albums_root
-        .join(&canonical_storage_dir)
-        .to_string_lossy()
-        .to_string();
-    cfg.image_path = albums_root
-        .join(&canonical_storage_dir)
-        .join("images")
-        .to_string_lossy()
-        .to_string();
-    cfg.year = cli.start_year.to_string();
+
+    let mut cfg = CommandsFileGenerator {
+        album_name: album_name.clone(),
+        country: site_name.clone(),
+        album_path: albums_root
+            .join(&canonical_storage_dir)
+            .to_string_lossy()
+            .to_string(),
+        image_path: albums_root
+            .join(&canonical_storage_dir)
+            .join("images")
+            .to_string_lossy()
+            .to_string(),
+        year: cli.start_year.to_string(),
+        ..Default::default()
+    };
 
     // Build base URL
     progress.set_message(&format!(
@@ -1705,15 +1699,15 @@ pub fn run_scraping_mode(
         }
     } else {
         // Call StampWorld collector
-        cfg.collect_stampworld_data(
-            &base_url,
-            cli.overwrite_images,
-            None::<&dyn Fn(usize)>,
-            cli.max_pages,
-            cli.stop_after_no_hits,
-            cli.start_year,
-            cli.end_year,
-        )
+        cfg.collect_stampworld_data(crate::commands_file_generator::generator::CollectStampworldCallParams {
+            base_url: &base_url,
+            overwrite_images: cli.overwrite_images,
+            page_callback: None::<&dyn Fn(usize)>,
+            max_pages: cli.max_pages,
+            stop_after_no_hits: cli.stop_after_no_hits,
+            start_year: cli.start_year,
+            end_year: cli.end_year,
+        })
     };
     match pages {
         Ok(pages) => {
@@ -1727,7 +1721,7 @@ pub fn run_scraping_mode(
             // generation can produce something usable. This implements the
             // "Wikipedia-as-fallback" behavior: only run when the collector
             // returned zero results.
-            if pages.len() == 0 {
+            if pages.is_empty() {
                 let fetch_wiki = cfg_file
                     .fetch_wikipedia
                     .unwrap_or_else(|| cfg_file.include_wikipedia_content.unwrap_or(false));
@@ -1884,7 +1878,7 @@ pub fn run_scraping_mode(
         Err(e) => {
             progress.finish_with_error(&format!("Data collection failed: {}", e));
             eprintln!("Failed to collect stampworld data: {}", e);
-            return Err(e.into());
+            return Err(e);
         }
     }
 

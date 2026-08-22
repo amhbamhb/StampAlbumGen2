@@ -54,9 +54,9 @@ pub fn estimate_text_height(text: &str, config: &Config) -> f64 {
 
     // Total estimate: be CONSERVATIVE by adding extra margin
     // Use 1.4x safety factor to account for rendering variations
-    let total_estimated = (text_height + paragraph_overhead + header_spacing_factor) * 1.4;
+    
 
-    total_estimated
+    (text_height + paragraph_overhead + header_spacing_factor) * 1.4
 }
 
 /// Estimate the height of a section header

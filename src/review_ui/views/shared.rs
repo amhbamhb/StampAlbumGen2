@@ -14,24 +14,25 @@ pub(super) fn render_app_footer_html() -> String {
 pub(super) fn render_footer_year_script() -> String {
     format!("<script>\n{}\n</script>", FOOTER_YEAR_UPDATE_JS)
 }
+/// Params for `render_reconnect_banner_html`
+pub struct ReconnectBannerParams<'a> {
+    pub banner_id: &'a str,
+    pub title_id: &'a str,
+    pub text_id: Option<&'a str>,
+    pub text_html: Option<&'a str>,
+    pub extra_html: &'a str,
+    pub retry_fn: &'a str,
+    pub reload_fn: &'a str,
+    pub meta_id: &'a str,
+}
 
-pub(super) fn render_reconnect_banner_html(
-    banner_id: &str,
-    title_id: &str,
-    text_id: Option<&str>,
-    text_html: Option<&str>,
-    extra_html: &str,
-    retry_fn: &str,
-    reload_fn: &str,
-    meta_id: &str,
-) -> String {
-    let text_section = match (text_id, text_html) {
+pub(super) fn render_reconnect_banner_html(params: &ReconnectBannerParams) -> String {
+    let text_section = match (params.text_id, params.text_html) {
         (Some(text_id), Some(text_html)) => {
             format!("\n        <div id='{text_id}'>{text_html}</div>")
         }
         _ => String::new(),
     };
-
     format!(
         r#"<div id='{banner_id}' class='reconnectBanner' role='status' aria-live='polite'>
         <div id='{title_id}' class='title'>Connection lost, retrying...</div>{text_section}{extra_html}
@@ -41,27 +42,30 @@ pub(super) fn render_reconnect_banner_html(
             <span id='{meta_id}' class='meta'></span>
         </div>
     </div>"#,
-        banner_id = banner_id,
-        title_id = title_id,
+        banner_id = params.banner_id,
+        title_id = params.title_id,
         text_section = text_section,
-        extra_html = extra_html,
-        retry_fn = retry_fn,
-        reload_fn = reload_fn,
-        meta_id = meta_id,
+        extra_html = params.extra_html,
+        retry_fn = params.retry_fn,
+        reload_fn = params.reload_fn,
+        meta_id = params.meta_id,
     )
 }
 
-pub(super) fn render_runtime_log_panel_html(
-    panel_id: &str,
-    panel_style: &str,
-    header_style: &str,
-    controls_style: &str,
-    body_id: &str,
-    textarea_id: &str,
-    checkbox_id: &str,
-    toggle_fn: &str,
-    copy_fn: &str,
-) -> String {
+/// Params for `render_runtime_log_panel_html`
+pub struct RuntimeLogPanelParams<'a> {
+    pub panel_id: &'a str,
+    pub panel_style: &'a str,
+    pub header_style: &'a str,
+    pub controls_style: &'a str,
+    pub body_id: &'a str,
+    pub textarea_id: &'a str,
+    pub checkbox_id: &'a str,
+    pub toggle_fn: &'a str,
+    pub copy_fn: &'a str,
+}
+
+pub(super) fn render_runtime_log_panel_html(params: &RuntimeLogPanelParams) -> String {
     format!(
         r#"<div id='{panel_id}' style='{panel_style}'>
         <div style='{header_style}'>
@@ -78,14 +82,14 @@ pub(super) fn render_runtime_log_panel_html(
             <textarea id='{textarea_id}' readonly style='width:100%;min-height:120px;max-height:220px;resize:vertical;padding:8px;border:1px solid #c8d5e2;border-radius:8px;font-family:monospace;font-size:12px;'></textarea>
         </div>
     </div>"#,
-        panel_id = panel_id,
-        panel_style = panel_style,
-        header_style = header_style,
-        controls_style = controls_style,
-        body_id = body_id,
-        textarea_id = textarea_id,
-        checkbox_id = checkbox_id,
-        toggle_fn = toggle_fn,
-        copy_fn = copy_fn,
+        panel_id = params.panel_id,
+        panel_style = params.panel_style,
+        header_style = params.header_style,
+        controls_style = params.controls_style,
+        body_id = params.body_id,
+        textarea_id = params.textarea_id,
+        checkbox_id = params.checkbox_id,
+        toggle_fn = params.toggle_fn,
+        copy_fn = params.copy_fn,
     )
 }

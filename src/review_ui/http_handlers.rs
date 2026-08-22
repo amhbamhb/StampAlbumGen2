@@ -135,7 +135,7 @@ pub(super) struct ReviewHandlersState {
     pub return_to_start_requested: bool,
 }
 
-pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> BootstrapHandlersState {
+pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
     let reload_requested = false;
@@ -162,8 +162,8 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
             continue;
         }
 
-        if method == Method::Get && req_url == "/" {
-            let mut resp = Response::from_string(html.clone());
+            if method == Method::Get && req_url == "/" {
+            let mut resp = Response::from_string(html.to_string());
             if let Ok(h) =
                 Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
             {
@@ -815,6 +815,8 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
                                 Ok(conn) => {
                                     let (real_image_rows, local_real_files) =
                                         best_effort_prepare_images_for_pdf(&conn, &c.country);
+                                    // Normalize images (strip ICC / rewrite) before PDF generation
+                                    let _ = crate::image_downloader::normalize_album_images_for_pdf(&c.country);
                                     let album_dir = album_dir_for_ui(&c.db_path, &c.country);
                                     let artifacts = crate::config::with_album_config_override(
                                         &album_dir,
@@ -1022,13 +1024,12 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> Bootst
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 pub(super) fn serve_review_requests(
     server: &Server,
     conn: &Connection,
     db_path: &str,
     album_name: &str,
-    html: &String,
+    html: &str,
     right_map: &HashMap<String, RightCandidate>,
     default_catalog_code: &str,
     default_sort_mode: &str,
@@ -1299,7 +1300,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Get && req_url == "/api/config-editor" {
-            let album_dir = album_dir_for_ui(db_path, &album_name);
+            let album_dir = album_dir_for_ui(db_path, album_name);
             let resp_json = match build_config_editor_data_for_album(
                 "config.toml",
                 "config_template.toml",
@@ -1339,9 +1340,9 @@ pub(super) fn serve_review_requests(
             let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
             let html = if show_imageless_left_rows {
                 match build_matcher_payload(
-                    &conn,
+                    conn,
                     db_path,
-                    &album_name,
+                    album_name,
                     default_catalog_code,
                     default_sort_mode,
                     odd_row_color,
@@ -1369,11 +1370,11 @@ pub(super) fn serve_review_requests(
                             "Review UI: failed to reload compare payload with image-less rows: {}",
                             error
                         ));
-                        html.clone()
+                        html.to_string()
                     }
                 }
             } else {
-                html.clone()
+                html.to_string()
             };
 
             let mut resp = Response::from_string(html);
@@ -1457,12 +1458,12 @@ pub(super) fn serve_review_requests(
             let parsed: Result<ApplyMatchesEnvelope, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&apply_matches(
-                    &conn,
-                    &db_path,
-                    &album_name,
+                    conn,
+                    db_path,
+                    album_name,
                     req.matches,
                     req.fields,
-                    &right_map,
+                    right_map,
                 ))
                 .unwrap_or_else(|_| {
                     "{\"updated_rows\":0,\"skipped_rows\":0,\"skipped_details\":[],\"processed_colnect_ids\":[],\"errors\":[\"serialization failed\"]}"
@@ -1499,9 +1500,9 @@ pub(super) fn serve_review_requests(
             let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&save_left_stamp(
-                    &conn,
+                    conn,
                     db_path,
-                    &album_name,
+                    album_name,
                     req,
                 ))
                 .unwrap_or_else(|_| {
@@ -1536,7 +1537,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<AddLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&add_left_stamp(&conn, db_path, &album_name, req))
+                Ok(req) => serde_json::to_string(&add_left_stamp(conn, db_path, album_name, req))
                     .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
                             .to_string()
@@ -1568,7 +1569,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<DeleteLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&delete_left_stamp(&conn, req)).unwrap_or_else(|_| {
+                Ok(req) => serde_json::to_string(&delete_left_stamp(conn, req)).unwrap_or_else(|_| {
                     "{\"ok\":false,\"message\":\"serialization failed\",\"deleted_rowid\":null,\"restored_colnect_id\":null}".to_string()
                 }),
                 Err(e) => serde_json::to_string(&DeleteLeftStampResponse {
@@ -1600,9 +1601,9 @@ pub(super) fn serve_review_requests(
             let parsed: Result<ClearLeftColnectLinkRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&clear_left_colnect_link(
-                    &conn,
+                    conn,
                     db_path,
-                    &album_name,
+                    album_name,
                     req,
                 ))
                 .unwrap_or_else(|_| {
@@ -1639,9 +1640,9 @@ pub(super) fn serve_review_requests(
             let parsed: Result<AddColnectStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&add_colnect_stamp_to_stamps(
-                    &conn,
+                    conn,
                     db_path,
-                    &album_name,
+                    album_name,
                     req,
                 ))
                 .unwrap_or_else(|_| {
@@ -1676,7 +1677,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<DeleteColnectCandidateRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&delete_colnect_candidate(&conn, req)).unwrap_or_else(|_| {
+                Ok(req) => serde_json::to_string(&delete_colnect_candidate(conn, req)).unwrap_or_else(|_| {
                     "{\"ok\":false,\"message\":\"serialization failed\",\"deleted_stamp_rows\":0,\"deleted_code_rows\":0}".to_string()
                 }),
                 Err(e) => serde_json::to_string(&DeleteColnectCandidateResponse {
@@ -1708,7 +1709,7 @@ pub(super) fn serve_review_requests(
             let parsed: Result<UndoColnectDeleteRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => {
-                    serde_json::to_string(&undo_colnect_delete(&conn, req)).unwrap_or_else(|_| {
+                    serde_json::to_string(&undo_colnect_delete(conn, req)).unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}"
                             .to_string()
                     })
@@ -1741,10 +1742,10 @@ pub(super) fn serve_review_requests(
             let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&colnect_import_data(
-                    &conn,
+                    conn,
                     req,
                     db_path,
-                    &album_name,
+                    album_name,
                 ))
                     .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
@@ -1773,7 +1774,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Get && req_url == "/api/fresh-candidates" {
-            let resp_json = match load_right_candidates(&conn, db_path, &album_name) {
+            let resp_json = match load_right_candidates(conn, db_path, album_name) {
                 Ok(candidates) => {
                     serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
                 }
@@ -1812,12 +1813,12 @@ pub(super) fn serve_review_requests(
             }
 
             let parsed: Result<UpdateDefaultCatalogRequest, _> = serde_json::from_str(&body);
-            let album_dir = album_dir_for_ui(db_path, &album_name);
+            let album_dir = album_dir_for_ui(db_path, album_name);
             let resp_json = match parsed {
                 Ok(req) => {
                     match update_default_catalog_code_for_album(
                         &album_dir,
-                        &album_name,
+                        album_name,
                         "config.toml",
                         "config_template.toml",
                         &req.default_catalog_code,
@@ -1860,11 +1861,11 @@ pub(super) fn serve_review_requests(
                 continue;
             }
             let parsed: Result<SaveConfigEditorRequest, _> = serde_json::from_str(&body);
-            let album_dir = album_dir_for_ui(db_path, &album_name);
+            let album_dir = album_dir_for_ui(db_path, album_name);
             let response = match parsed {
                 Ok(req) => match save_album_config_diff(
                     &album_dir,
-                    &album_name,
+                    album_name,
                     "config.toml",
                     "config_template.toml",
                     &req.values,
@@ -1907,7 +1908,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Post && req_url == "/api/config-editor-delete-album-override" {
-            let album_dir = album_dir_for_ui(db_path, &album_name);
+            let album_dir = album_dir_for_ui(db_path, album_name);
             let override_path = album_dir.join("config.toml");
             let response = if override_path.exists() {
                 match fs::remove_file(&override_path) {
@@ -2081,15 +2082,15 @@ pub(super) fn serve_review_requests(
                 .unwrap_or(false);
 
             let (real_image_rows, local_real_files) =
-                best_effort_prepare_images_for_pdf(&conn, &album_name);
+                best_effort_prepare_images_for_pdf(conn, album_name);
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let album_dir = album_dir_for_ui(db_path, &album_name);
+                let album_dir = album_dir_for_ui(db_path, album_name);
                 crate::config::with_album_config_override(&album_dir, || {
                     crate::album_globals::generate_album_output_conn_with_pdf_override(
-                        &conn,
-                        &album_name,
+                        conn,
+                        album_name,
                         None::<fn(usize)>,
                         req_start_year,
                         req_end_year,
@@ -2214,7 +2215,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Post && req_url == "/api/open-country-folder" {
-            let folder = album_dir_for_ui(db_path, &album_name);
+            let folder = album_dir_for_ui(db_path, album_name);
             let folder_str = folder.to_string_lossy();
             let opened = open_folder_in_file_manager(&folder_str);
             let resp_json = if opened {
@@ -2250,14 +2251,14 @@ pub(super) fn serve_review_requests(
                 Ok(req) => {
                     if req.generate_album {
                         let (real_image_rows, local_real_files) =
-                            best_effort_prepare_images_for_pdf(&conn, &album_name);
-                        let album_dir = album_dir_for_ui(db_path, &album_name);
+                            best_effort_prepare_images_for_pdf(conn, album_name);
+                        let album_dir = album_dir_for_ui(db_path, album_name);
                         let generated = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
                             || {
                                 crate::config::with_album_config_override(&album_dir, || {
                                     crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                        &conn,
-                                        &album_name,
+                                        conn,
+                                        album_name,
                                         None::<fn(usize)>,
                                         req.start_year,
                                         req.end_year,
