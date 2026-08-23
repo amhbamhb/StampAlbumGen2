@@ -2,7 +2,10 @@ use chrono::Datelike;
 
 fn main() {
     // Only add Windows resources when building for Windows
-    if std::env::var("CARGO_CFG_TARGET_OS").map(|v| v == "windows").unwrap_or(false) {
+    if std::env::var("CARGO_CFG_TARGET_OS")
+        .map(|v| v == "windows")
+        .unwrap_or(false)
+    {
         let mut res = winres::WindowsResource::new();
 
         // Use provided ICO at assets/app.ico if present
@@ -18,7 +21,10 @@ fn main() {
         res.set("FileDescription", "Stamp Album Generator");
         res.set("CompanyName", "Laser Spider LLC");
         res.set("ProductName", "Stamp Album Gen2");
-        res.set("LegalCopyright", &format!("Copyright {} Laser Spider LLC", year));
+        res.set(
+            "LegalCopyright",
+            &format!("Copyright {} Laser Spider LLC", year),
+        );
         res.set("FileVersion", &version);
         res.set("ProductVersion", &version);
 

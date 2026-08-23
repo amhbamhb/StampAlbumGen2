@@ -2,20 +2,20 @@ use log::{debug, info};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::fs;
-use std::path::{Path, PathBuf};
-use std::io::{self, Write};
 use std::io::IsTerminal;
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 // removed OpenOptions and SystemTime/UNIX_EPOCH now that persistent debug file is unused
 use std::env;
-use std::process::Command;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
+use std::process::Command;
 
 // `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
 // folder picker and a Yes/No confirmation dialog, otherwise fall back
 // to a console prompt (only when a terminal is present).
 #[cfg(feature = "rfd")]
-use rfd::{FileDialog, MessageDialog, MessageButtons, MessageLevel};
+use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
 
@@ -41,7 +41,10 @@ pub fn ensure_config_and_template_files(
     template_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Debug: indicate whether the optional GUI folder-picker feature is compiled in
-    debug!("ensure_config_and_template_files: rfd feature compiled = {}", cfg!(feature = "rfd"));
+    debug!(
+        "ensure_config_and_template_files: rfd feature compiled = {}",
+        cfg!(feature = "rfd")
+    );
     // Use structured logging (debug) instead of a persistent debug file.
     debug!("rfd_compiled={}", cfg!(feature = "rfd"));
     // Determine working directory and allow the user to move/copy the
@@ -50,14 +53,23 @@ pub fn ensure_config_and_template_files(
     // Prefer the executable's parent directory (so double-click launches
     // evaluate first-run relative to the exe location) but fall back to
     // the process current directory when the exe path cannot be found.
-    let cwd = match std::env::current_exe().ok().and_then(|p| p.parent().map(|pp| pp.to_path_buf())) {
+    let cwd = match std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|pp| pp.to_path_buf()))
+    {
         Some(exe_parent) => {
-            debug!("Using executable parent dir for first-run check: {}", exe_parent.display());
+            debug!(
+                "Using executable parent dir for first-run check: {}",
+                exe_parent.display()
+            );
             exe_parent
         }
         None => {
             let d = std::env::current_dir()?;
-            debug!("Falling back to current_dir for first-run check: {}", d.display());
+            debug!(
+                "Falling back to current_dir for first-run check: {}",
+                d.display()
+            );
             d
         }
     };
@@ -83,7 +95,7 @@ pub fn ensure_config_and_template_files(
                 .and_then(|p| p.file_name().map(|s| s.to_os_string()));
 
             let mut visible_count = 0usize;
-                for e in entries.flatten() {
+            for e in entries.flatten() {
                 let name = e.file_name();
                 // Log each visible entry for debugging first-run detection
                 debug!("dir-entry: {}", name.to_string_lossy());
@@ -140,7 +152,9 @@ pub fn ensure_config_and_template_files(
                     gui_initiated = true;
                     if proceed {
                         match FileDialog::new()
-                            .set_title("Select directory to move/copy binary to (Cancel to keep current)")
+                            .set_title(
+                                "Select directory to move/copy binary to (Cancel to keep current)",
+                            )
                             .pick_folder()
                         {
                             Some(p) => {
@@ -156,20 +170,29 @@ pub fn ensure_config_and_template_files(
                             }
                         }
                     } else {
-                        println!("User cancelled folder selection; continuing in current directory");
+                        println!(
+                            "User cancelled folder selection; continuing in current directory"
+                        );
                         debug!("User cancelled folder selection");
                     }
                 }
 
                 #[cfg(not(feature = "rfd"))]
                 {
-                    println!("GUI picker not compiled in; will use console prompt if terminal present");
+                    println!(
+                        "GUI picker not compiled in; will use console prompt if terminal present"
+                    );
                 }
 
                 // If we don't have a picked folder from the GUI, only prompt
                 // on stdin when a terminal is present. Avoid blocking when the
                 // process was launched from a graphical session.
-                debug!("has_tty={} picked_opt.is_some={} gui_initiated={}", has_tty, picked_opt.is_some(), gui_initiated);
+                debug!(
+                    "has_tty={} picked_opt.is_some={} gui_initiated={}",
+                    has_tty,
+                    picked_opt.is_some(),
+                    gui_initiated
+                );
                 // Only fall back to a console prompt when no GUI was invoked
                 // (so GUI cancel/close won't unexpectedly block on stdin).
                 if picked_opt.is_none() && has_tty && !gui_initiated {
@@ -221,7 +244,11 @@ pub fn ensure_config_and_template_files(
                                 Ok(()) => info!("Moved executable to {}", dest.display()),
                                 Err(e) => {
                                     fs::copy(&exe_path, &dest)?;
-                                    info!("Rename failed ({}); copied executable to {}", e, dest.display());
+                                    info!(
+                                        "Rename failed ({}); copied executable to {}",
+                                        e,
+                                        dest.display()
+                                    );
                                 }
                             }
                             // Ensure template/config exist in the target to avoid
@@ -240,9 +267,7 @@ pub fn ensure_config_and_template_files(
                             env::set_current_dir(&target)?;
                             #[cfg(unix)]
                             {
-                                let err = Command::new(&dest)
-                                    .args(env::args_os().skip(1))
-                                    .exec();
+                                let err = Command::new(&dest).args(env::args_os().skip(1)).exec();
                                 return Err(Box::new(err));
                             }
                         } else {
@@ -277,9 +302,8 @@ pub fn ensure_config_and_template_files(
                                 env::set_current_dir(&target)?;
                                 #[cfg(unix)]
                                 {
-                                    let err = Command::new(&dest)
-                                        .args(env::args_os().skip(1))
-                                        .exec();
+                                    let err =
+                                        Command::new(&dest).args(env::args_os().skip(1)).exec();
                                     return Err(Box::new(err));
                                 }
                             } else {
@@ -303,15 +327,18 @@ pub fn ensure_config_and_template_files(
                                     Ok(()) => info!("Moved executable to {}", dest.display()),
                                     Err(e) => {
                                         fs::copy(&exe_path, &dest)?;
-                                        info!("Rename failed ({}); copied executable to {}", e, dest.display());
+                                        info!(
+                                            "Rename failed ({}); copied executable to {}",
+                                            e,
+                                            dest.display()
+                                        );
                                     }
                                 }
                                 env::set_current_dir(&target)?;
                                 #[cfg(unix)]
                                 {
-                                    let err = Command::new(&dest)
-                                        .args(env::args_os().skip(1))
-                                        .exec();
+                                    let err =
+                                        Command::new(&dest).args(env::args_os().skip(1)).exec();
                                     return Err(Box::new(err));
                                 }
                                 #[cfg(not(unix))]
@@ -324,9 +351,8 @@ pub fn ensure_config_and_template_files(
                                 env::set_current_dir(&target)?;
                                 #[cfg(unix)]
                                 {
-                                    let err = Command::new(&dest)
-                                        .args(env::args_os().skip(1))
-                                        .exec();
+                                    let err =
+                                        Command::new(&dest).args(env::args_os().skip(1)).exec();
                                     return Err(Box::new(err));
                                 }
                                 #[cfg(not(unix))]

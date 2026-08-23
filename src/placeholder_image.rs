@@ -773,12 +773,7 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
                     log::warn!("Saved placeholder {} has size {}x{} px but expected {}x{} px — attempting rewrite", placeholder_path.display(), sw, sh, px_w, px_h);
                     // Re-generate explicitly via the options API which is known
                     // to produce exact buffer sizes.
-                    generate_placeholder_image_with_options(
-                        px_w,
-                        px_h,
-                        &placeholder_path,
-                        None,
-                    )?;
+                    generate_placeholder_image_with_options(px_w, px_h, &placeholder_path, None)?;
                     // Re-open and check again
                     if let Ok(reopen) = image::open(&placeholder_path) {
                         let (rw, rh) = reopen.dimensions();

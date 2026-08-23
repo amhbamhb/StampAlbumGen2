@@ -936,7 +936,8 @@ pub fn insert_stamp(
             needs_update = true;
         }
         if !image_path.trim().is_empty()
-            && (is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image"))
+            && (is_empty(&existing_image_path)
+                || existing_image_path.starts_with("images/no_image"))
         {
             needs_update = true;
         }

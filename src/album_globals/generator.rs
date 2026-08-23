@@ -368,9 +368,7 @@ fn pad_centre_body_for_side_columns(
 /// `\n`-separated string matching the format used in `centre_body`.
 fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -> String {
     let colnect_enabled = config.colnect_details_enabled();
-    let detail_layout = config
-        .stamp_detail_layout.as_deref()
-        .unwrap_or("inline");
+    let detail_layout = config.stamp_detail_layout.as_deref().unwrap_or("inline");
     if !colnect_enabled || detail_layout == "minimal" {
         return String::new();
     }
@@ -1660,7 +1658,7 @@ where
                     + header_block_height
                     + vspace_after_header
                     + max_row_height
-                    + row_font_spacing 
+                    + row_font_spacing
                     + vertical_safety; // include vertical safety padding
                                        // Reserve extra room for footers/AlbumEasy page decorations to avoid overlap
                                        // Bumped to 11mm (was 10.0) to avoid a subtle footer bleed observed in rendered PDFs.
@@ -3515,7 +3513,7 @@ fn center_tmp_pages(
 
         // Count actual rows on this page and configured maximum.
         let rows_on_page = all_row_indices.len();
-    let cfg_max_rows = config.max_rows_per_page.unwrap_or(4);
+        let cfg_max_rows = config.max_rows_per_page.unwrap_or(4);
 
         // Do not attempt to center when there is no meaningful extra space,
         // or when the page already contains the max allowed rows.

@@ -1,5 +1,5 @@
-use std::io::{self, Write};
 use log::debug;
+use std::io::{self, Write};
 
 fn escape_ae_text(v: &str) -> String {
     // AlbumEasy command args are wrapped in double quotes; embedded quotes
@@ -179,7 +179,10 @@ pub fn emit_stamp_lines<W: Write>(
     is_image: bool,
 ) -> io::Result<()> {
     if is_image {
-        debug!("emit_stamp_lines: emitting image: path='{}' sg='{}' emit_size=({:.1},{:.1})", ctx.image_path, ctx.sgnum, ctx.emit_width, ctx.emit_height);
+        debug!(
+            "emit_stamp_lines: emitting image: path='{}' sg='{}' emit_size=({:.1},{:.1})",
+            ctx.image_path, ctx.sgnum, ctx.emit_width, ctx.emit_height
+        );
         let image_path = escape_ae_text(ctx.image_path);
         let left = escape_ae_text(ctx.left);
         let centre = escape_ae_text(ctx.centre);
@@ -190,7 +193,10 @@ pub fn emit_stamp_lines<W: Write>(
         );
         writeln!(out, "{}", line.replace('\r', "").replace('\n', "\\n"))?;
     } else {
-        debug!("emit_stamp_lines: emitting placeholder/text image_path='{}' sg='{}'", ctx.image_path, ctx.sgnum);
+        debug!(
+            "emit_stamp_lines: emitting placeholder/text image_path='{}' sg='{}'",
+            ctx.image_path, ctx.sgnum
+        );
         let image_path = escape_ae_text(ctx.image_path);
         let left = escape_ae_text(ctx.left);
         let centre = escape_ae_text(ctx.centre);
@@ -289,7 +295,11 @@ pub fn resolve_stamp_heading_label(
 /// This centralizes the formatting of `STAMP_ADD_IMG` / `STAMP_ADD` and
 /// `STAMP_HEADING` so call sites can focus on layout and placeholder
 /// generation logic.
-pub fn emit_stamp<W: Write>(out: &mut W, has_image: bool, ctx: &EmitContext) -> std::io::Result<()> {
+pub fn emit_stamp<W: Write>(
+    out: &mut W,
+    has_image: bool,
+    ctx: &EmitContext,
+) -> std::io::Result<()> {
     if has_image {
         let image_path = escape_ae_text(ctx.image_path);
         let left = escape_ae_text(ctx.left);
@@ -312,7 +322,11 @@ pub fn emit_stamp<W: Write>(out: &mut W, has_image: bool, ctx: &EmitContext) -> 
                 ctx.emit_width,
                 ctx.sh_size,
             ) {
-                writeln!(out, "STAMP_HEADING({} {} \"{}\")", ctx.sh_font, ctx.sh_size, heading)?;
+                writeln!(
+                    out,
+                    "STAMP_HEADING({} {} \"{}\")",
+                    ctx.sh_font, ctx.sh_size, heading
+                )?;
             }
         }
     } else {
@@ -335,7 +349,11 @@ pub fn emit_stamp<W: Write>(out: &mut W, has_image: bool, ctx: &EmitContext) -> 
                 ctx.emit_width,
                 ctx.sh_size,
             ) {
-                writeln!(out, "STAMP_HEADING({} {} \"{}\")", ctx.sh_font, ctx.sh_size, heading)?;
+                writeln!(
+                    out,
+                    "STAMP_HEADING({} {} \"{}\")",
+                    ctx.sh_font, ctx.sh_size, heading
+                )?;
             }
         }
     }
@@ -345,7 +363,11 @@ pub fn emit_stamp<W: Write>(out: &mut W, has_image: bool, ctx: &EmitContext) -> 
 /// Emit only an image stamp line (no `STAMP_HEADING`) with optional extra
 /// options appended (e.g. `NO_FRAME`). This is useful for cover/flag images
 /// where a heading should not be emitted.
-pub fn emit_image_only<W: Write>(out: &mut W, ctx: &EmitContext, options: Option<&str>) -> std::io::Result<()> {
+pub fn emit_image_only<W: Write>(
+    out: &mut W,
+    ctx: &EmitContext,
+    options: Option<&str>,
+) -> std::io::Result<()> {
     let image_path = escape_ae_text(ctx.image_path);
     let left = escape_ae_text(ctx.left);
     let centre = escape_ae_text(ctx.centre);

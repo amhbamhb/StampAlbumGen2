@@ -10,8 +10,8 @@ use super::compare_assets::{
     render_compare_top_html, render_left_editor_modal_html, render_op_busy_modal_html,
 };
 
-use crate::review_ui::views::shared::RuntimeLogPanelParams;
 use crate::review_ui::views::shared::ReconnectBannerParams;
+use crate::review_ui::views::shared::RuntimeLogPanelParams;
 
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let json =

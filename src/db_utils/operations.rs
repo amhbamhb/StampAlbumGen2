@@ -227,7 +227,11 @@ pub fn get_stamps_by_country_series(
 }
 
 /// Get stamps by series and year.
-pub fn get_stamps_by_series(conn: &Connection, series: &str, _year: &str) -> Result<Vec<StampStub>> {
+pub fn get_stamps_by_series(
+    conn: &Connection,
+    series: &str,
+    _year: &str,
+) -> Result<Vec<StampStub>> {
     // Query local stamps table directly. The external crate currently
     // contains a stubbed implementation that returns an empty vec, which
     // causes the generator to emit no stamps. Use a conservative select

@@ -153,7 +153,10 @@ pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize {
             }
             let mut stamp_width = fields[10].to_string();
             let mut stamp_height = fields[11].to_string();
-            if params.fix_sizes && series_info.as_ref().map_or(1, |s| s.count) > 1 && stamp_width == "0" {
+            if params.fix_sizes
+                && series_info.as_ref().map_or(1, |s| s.count) > 1
+                && stamp_width == "0"
+            {
                 stamp_width = width.clone();
                 stamp_height = height.clone();
             }

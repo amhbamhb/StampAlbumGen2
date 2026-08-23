@@ -1,11 +1,11 @@
 use base64::Engine;
+use log::debug;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use log::debug;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -122,7 +122,7 @@ pub fn tail_current_log(lines_count: usize) -> Vec<String> {
 
     // Read the last N lines efficiently
     match fs::File::open(log_path) {
-            Ok(file) => {
+        Ok(file) => {
             let reader = BufReader::new(file);
             let mut lines_iter = reader.lines().map_while(Result::ok);
             let _first_line: Option<String> = lines_iter.next();
@@ -2091,20 +2091,34 @@ fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> S
     }
 
     let p1 = crate::file_utils::resolve_album_image_path(album_name, rel);
-    debug!("resolve_image_abs: db_path='{}' album='{}' rel='{}' -> p1='{}' (exists={})", db_path, album_name, rel, p1.display(), p1.exists());
+    debug!(
+        "resolve_image_abs: db_path='{}' album='{}' rel='{}' -> p1='{}' (exists={})",
+        db_path,
+        album_name,
+        rel,
+        p1.display(),
+        p1.exists()
+    );
     if p1.exists() {
         return p1.to_string_lossy().to_string();
     }
 
     if let Some(parent) = Path::new(db_path).parent() {
         let p2 = parent.join(rel);
-        debug!("resolve_image_abs: checking parent path p2='{}' (exists={})", p2.display(), p2.exists());
+        debug!(
+            "resolve_image_abs: checking parent path p2='{}' (exists={})",
+            p2.display(),
+            p2.exists()
+        );
         if p2.exists() {
             return p2.to_string_lossy().to_string();
         }
     }
 
-    debug!("resolve_image_abs: no local image resolved for rel='{}'", rel);
+    debug!(
+        "resolve_image_abs: no local image resolved for rel='{}'",
+        rel
+    );
     String::new()
 }
 
@@ -2650,12 +2664,14 @@ pub fn run_review_ui_bootstrap(
     }
 
     Ok(match selected {
-        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected(Box::new(ReviewUiSelected {
-            db_path,
-            country,
-            server,
-            bind,
-        })),
+        Some((db_path, country)) => {
+            ReviewUiBootstrapOutcome::Selected(Box::new(ReviewUiSelected {
+                db_path,
+                country,
+                server,
+                bind,
+            }))
+        }
         None => ReviewUiBootstrapOutcome::Exit,
     })
 }

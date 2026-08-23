@@ -120,7 +120,10 @@ pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {
             if let Some(t) = cfg.page_text_format.clone() {
                 return t;
             }
-            let font = cfg.page_text_font.clone().unwrap_or_else(|| "HN".to_string());
+            let font = cfg
+                .page_text_font
+                .clone()
+                .unwrap_or_else(|| "HN".to_string());
             let size = cfg.page_text_size.unwrap_or(10.0) as i32;
             let vspace = cfg.page_text_vspace.unwrap_or(1.0_f32);
             let head = format!("PAGE_TEXT ({} {} \"", font, size);
@@ -688,9 +691,10 @@ pub fn estimate_and_ensure_placeholders(
     let mut series_heights_mm: Vec<f64> = Vec::new();
     for stamp in stamps.iter() {
         let image_path = stamp.image_path.trim();
-        let full_image_path = crate::file_utils::resolve_album_image_path(opts.album_name, image_path)
-            .to_string_lossy()
-            .to_string();
+        let full_image_path =
+            crate::file_utils::resolve_album_image_path(opts.album_name, image_path)
+                .to_string_lossy()
+                .to_string();
         if let (Some(w_px), Some(h_px)) = (stamp.image_width_px, stamp.image_height_px) {
             series_widths_mm.push((w_px as f64) * (opts.mm_per_pixel_w as f64));
             series_heights_mm.push((h_px as f64) * (opts.mm_per_pixel_h as f64));
@@ -825,7 +829,9 @@ pub fn estimate_and_ensure_placeholders(
                 mm_per_px_w: ph_opts.mm_per_pixel_w,
                 mm_per_px_h: ph_opts.mm_per_pixel_h,
             };
-            match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(&ph_image_opts) {
+            match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(
+                &ph_image_opts,
+            ) {
                 Ok(rel) => {
                     s.image_path = rel;
                     let px_w = (target_w_mm / (opts.mm_per_pixel_w as f64)).round() as i32;
@@ -875,21 +881,25 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
     opts: &PlaceholderCallOptions,
     mut writer: Option<&mut dyn Write>,
 ) -> Option<(String, i32, i32)> {
-            let ph_image_opts = crate::placeholder_image::PlaceholderImageOptions {
-                album_name: opts.album_name,
-                catalog_number: opts.catalog_number,
-                year: opts.year,
-                series_hint: opts.series_name,
-                stamp_bg_color: None,
-                target_mm_w: opts.target_w_mm,
-                target_mm_h: opts.target_h_mm,
-                mm_per_px_w: opts.mm_per_pixel_w,
-                mm_per_px_h: opts.mm_per_pixel_h,
-            };
-            match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(&ph_image_opts) {
+    let ph_image_opts = crate::placeholder_image::PlaceholderImageOptions {
+        album_name: opts.album_name,
+        catalog_number: opts.catalog_number,
+        year: opts.year,
+        series_hint: opts.series_name,
+        stamp_bg_color: None,
+        target_mm_w: opts.target_w_mm,
+        target_mm_h: opts.target_h_mm,
+        mm_per_px_w: opts.mm_per_pixel_w,
+        mm_per_px_h: opts.mm_per_pixel_h,
+    };
+    match crate::placeholder_image::ensure_placeholder_image_for_stamp_with_hint(&ph_image_opts) {
         Ok(rel) => {
-            let px_w = (opts.target_w_mm.unwrap_or(0.0) / (opts.mm_per_pixel_w.unwrap_or(1.0) as f64)).round() as i32;
-            let px_h = (opts.target_h_mm.unwrap_or(0.0) / (opts.mm_per_pixel_h.unwrap_or(1.0) as f64)).round() as i32;
+            let px_w = (opts.target_w_mm.unwrap_or(0.0)
+                / (opts.mm_per_pixel_w.unwrap_or(1.0) as f64))
+                .round() as i32;
+            let px_h = (opts.target_h_mm.unwrap_or(0.0)
+                / (opts.mm_per_pixel_h.unwrap_or(1.0) as f64))
+                .round() as i32;
             if px_w > 0 && px_h > 0 {
                 if let Err(e) = update_image_dimensions(
                     conn,

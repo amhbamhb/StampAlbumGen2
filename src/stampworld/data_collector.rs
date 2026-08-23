@@ -16,9 +16,8 @@ pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
 });
 
 // Hoisted regexes that were previously constructed inside loops.
-pub static YEAR_RANGE_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex")
-});
+pub static YEAR_RANGE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex"));
 
 pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#)

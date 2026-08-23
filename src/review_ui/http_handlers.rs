@@ -162,7 +162,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
-            if method == Method::Get && req_url == "/" {
+        if method == Method::Get && req_url == "/" {
             let mut resp = Response::from_string(html.to_string());
             if let Ok(h) =
                 Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
@@ -1499,16 +1499,11 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&save_left_stamp(
-                    conn,
-                    db_path,
-                    album_name,
-                    req,
-                ))
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
-                        .to_string()
-                }),
+                Ok(req) => serde_json::to_string(&save_left_stamp(conn, db_path, album_name, req))
+                    .unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
+                            .to_string()
+                    }),
                 Err(e) => serde_json::to_string(&SaveLeftStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),

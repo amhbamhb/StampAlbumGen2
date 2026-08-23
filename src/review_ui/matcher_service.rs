@@ -153,7 +153,12 @@ pub(super) fn load_left_stamps(
         let rel_image = row.get::<_, String>(7)?;
         let image_abs = resolve_image_abs(db_path, album_name, &rel_image);
         // Log for debugging: capture rowid, rel image path, resolved absolute path and existence
-        debug!("load_left_stamps: rowid={} rel_image='{}' resolved_abs='{}'", row.get::<_, i64>(0)?, rel_image, image_abs);
+        debug!(
+            "load_left_stamps: rowid={} rel_image='{}' resolved_abs='{}'",
+            row.get::<_, i64>(0)?,
+            rel_image,
+            image_abs
+        );
         Ok(LeftStamp {
             rowid: row.get(0)?,
             sg_number: row.get(1)?,

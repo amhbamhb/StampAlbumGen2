@@ -189,11 +189,11 @@ pub fn center_tmp_pages(
         } else {
             series_row_indices.len()
         };
-                    let base_gaps = if series_count == 0 {
-                        2
-                } else {
-                        series_count + 1
-                };
+        let base_gaps = if series_count == 0 {
+            2
+        } else {
+            series_count + 1
+        };
         let has_page_header = page_block
             .iter()
             .any(|l| l.trim().starts_with("PAGE_TEXT_"));

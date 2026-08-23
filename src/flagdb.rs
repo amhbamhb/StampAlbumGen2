@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 
 use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 use image::GenericImageView;
-use std::time::{SystemTime, UNIX_EPOCH};
 use rusqlite::Connection;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Small local flag DB: map lowercase country name -> ISO alpha-2 code
 /// We'll initialize it with a compact set and allow loading from a JSON file
@@ -452,10 +452,22 @@ pub fn ensure_coat_of_arms_with_fetcher(
     // Query restcountries API for coatOfArms URL. Try v5 first, then v3 as fallback.
     // Prefer minimal-field v5 endpoint, fall back to other shapes
     let candidates = vec![
-        format!("https://restcountries.com/v5.1/alpha/{}?fields=coatOfArms", alpha),
-        format!("https://restcountries.com/v5.1/alpha?codes={}&fields=coatOfArms", alpha),
-        format!("https://restcountries.com/v3.1/alpha/{}?fields=coatOfArms", alpha),
-        format!("https://restcountries.com/v3.1/alpha?codes={}&fields=coatOfArms", alpha),
+        format!(
+            "https://restcountries.com/v5.1/alpha/{}?fields=coatOfArms",
+            alpha
+        ),
+        format!(
+            "https://restcountries.com/v5.1/alpha?codes={}&fields=coatOfArms",
+            alpha
+        ),
+        format!(
+            "https://restcountries.com/v3.1/alpha/{}?fields=coatOfArms",
+            alpha
+        ),
+        format!(
+            "https://restcountries.com/v3.1/alpha?codes={}&fields=coatOfArms",
+            alpha
+        ),
     ];
 
     let mut body: Option<String> = None;
@@ -474,7 +486,12 @@ pub fn ensure_coat_of_arms_with_fetcher(
     }
 
     // If restcountries did not provide usable coat, try neXperts countries API (provides /coa/{code}.svg/png)
-    if body.is_none() || body.as_ref().map(|s| s.contains("deprecated")).unwrap_or(false) {
+    if body.is_none()
+        || body
+            .as_ref()
+            .map(|s| s.contains("deprecated"))
+            .unwrap_or(false)
+    {
         // try neXperts country full info first
         let nex_info_url = format!("https://countries.nexperts.nl/{alpha}");
         if let Ok((_s, b)) = fetcher.fetch_text(&nex_info_url) {
@@ -484,11 +501,17 @@ pub fn ensure_coat_of_arms_with_fetcher(
             if let Some(coa_url) = extract_coa_from_nexperts_html(&b, &alpha) {
                 // download bytes
                 if let Ok((_st, _headers, bytes)) = fetcher.fetch_bytes(&coa_url) {
-                    let ext = if coa_url.to_lowercase().ends_with(".png") {"png"} else {"svg"};
+                    let ext = if coa_url.to_lowercase().ends_with(".png") {
+                        "png"
+                    } else {
+                        "svg"
+                    };
                     let final_path = target_dir.join(format!("{}.{}", alpha, ext));
                     let mut out = std::fs::File::create(&final_path)?;
                     out.write_all(&bytes)?;
-                    if ext=="png" { return Ok(final_path.to_string_lossy().to_string()); }
+                    if ext == "png" {
+                        return Ok(final_path.to_string_lossy().to_string());
+                    }
                     let png_path = final_path.with_extension("png");
                     if try_rasterize_svg_to_png(&final_path, &png_path).unwrap_or(false) {
                         return Ok(png_path.to_string_lossy().to_string());

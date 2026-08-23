@@ -148,7 +148,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // we align the process working directory to the executable layout. This
     // allows the initial-startup dialog to operate in the directory the user
     // actually launched the binary from.
-    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml") {
+    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml")
+    {
         log::warn!("Failed to ensure config template file: {}", e);
     }
 
@@ -353,7 +354,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             continue;
                         }
                         ReviewUiBootstrapOutcome::Selected(boxed) => {
-                            let ReviewUiSelected { db_path, country, server, bind } = *boxed;
+                            let ReviewUiSelected {
+                                db_path,
+                                country,
+                                server,
+                                bind,
+                            } = *boxed;
                             log_runtime_event(&format!(
                                 "Review UI: selected '{}' with database {}",
                                 country, db_path
