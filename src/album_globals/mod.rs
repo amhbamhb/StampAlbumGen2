@@ -168,7 +168,7 @@ fn maybe_generate_album_pdf_with_settings(
                     log::warn!(
                         "[pdf-dx] timeout waiting for fresh PDF path='{}' timeout_ms={} total_elapsed_ms={}",
                         expected_pdf_path.display(),
-                        Duration::from_secs(8).as_millis(),
+                        Duration::from_secs(80).as_millis(),
                         started.elapsed().as_millis()
                     );
                 }
@@ -180,7 +180,7 @@ fn maybe_generate_album_pdf_with_settings(
                 (
                     None,
                     Some(format!(
-                        "AlbumEasy ran but no PDF appeared at '{}' within 8 seconds",
+                        "AlbumEasy ran but no PDF appeared at '{}' within 80 seconds",
                         expected_pdf_path.display()
                     )),
                 )
