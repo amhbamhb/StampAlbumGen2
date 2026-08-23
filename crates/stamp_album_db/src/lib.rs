@@ -502,7 +502,69 @@ pub fn get_all_series(_conn: &Connection) -> Result<Vec<String>> {
 }
 
 /// Sort stamp stubs in place. No-op placeholder.
-pub fn sort_stampstubs_inplace(_v: &mut [StampStub]) {}
+fn leading_int_and_suffix(s: &str) -> (Option<i64>, String) {
+    let mut chars = s.chars();
+    let mut num_str = String::new();
+    while let Some(c) = chars.next() {
+        if c.is_ascii_digit() {
+            num_str.push(c);
+        } else {
+            // first non-digit - remainder is the rest of the string starting at this char
+            let mut rem = String::new();
+            rem.push(c);
+            rem.extend(chars);
+            return (
+                if num_str.is_empty() {
+                    None
+                } else {
+                    num_str.parse::<i64>().ok()
+                },
+                rem,
+            );
+        }
+    }
+    // consumed all chars; whole string may be numeric
+    if num_str.is_empty() {
+        (None, String::new())
+    } else {
+        (num_str.parse::<i64>().ok(), String::new())
+    }
+}
+
+/// Sort stamp stubs in place using natural ordering for numeric prefixes.
+pub fn sort_stampstubs_inplace(v: &mut [StampStub]) {
+    v.sort_by(|a, b| {
+        let (ai, asuf) = leading_int_and_suffix(&a.sg_number);
+        let (bi, bsuf) = leading_int_and_suffix(&b.sg_number);
+        match (ai, bi) {
+            (Some(na), Some(nb)) => {
+                if na != nb {
+                    return na.cmp(&nb);
+                }
+                // same leading number: empty suffix sorts before non-empty
+                if asuf.is_empty() && !bsuf.is_empty() {
+                    return std::cmp::Ordering::Less;
+                }
+                if !asuf.is_empty() && bsuf.is_empty() {
+                    return std::cmp::Ordering::Greater;
+                }
+                // Prefer alphabetic suffixes before non-alphabetic (e.g. "AT" before "*")
+                let a_first_alpha = asuf.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false);
+                let b_first_alpha = bsuf.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false);
+                if a_first_alpha && !b_first_alpha {
+                    return std::cmp::Ordering::Less;
+                }
+                if !a_first_alpha && b_first_alpha {
+                    return std::cmp::Ordering::Greater;
+                }
+                return asuf.cmp(&bsuf);
+            }
+            (Some(_), None) => return std::cmp::Ordering::Less,
+            (None, Some(_)) => return std::cmp::Ordering::Greater,
+            (None, None) => return a.sg_number.cmp(&b.sg_number),
+        }
+    });
+}
 
 // Lightweight helper stubs used by insert logic. These mirror small
 // utilities from the main crate but kept local so the DB crate builds.
