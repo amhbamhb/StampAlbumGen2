@@ -1,6 +1,6 @@
 pub(super) fn render_compare_top_html(
     reconnect_banner_compare_html: &str,
-    runtime_log_compare_panel_html: &str,
+    runtime_log_compare_panel_html: &str
 ) -> String {
     format!(
         r#"<body>
@@ -15,20 +15,20 @@ pub(super) fn render_compare_top_html(
         <h2 ><strong>Current country:</strong> <span id='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
         <div class='guideStats'>
-            <span id='statLeftCount' class='badge'>Left: 0</span>
-            <span id='statRightCount' class='badge'>Candidates: 0</span>
+            <span id='statLeftCount'  class='badge'>Main Collection: 0</span>
+            <span id='statRightCount'  class='badge'>Potential Candidates: 0</span>
             <span id='statAssignedCount' class='badge'>Assigned: 0</span>
         </div>
         <div class='guideActions'>
-            <button class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
-            <button onclick='scrollToFilters()'>Review Field Options</button>
-            <button onclick='scrollToPanels()'>Jump To Compare Panels</button>
-            <button class='neutral' onclick='openCountryFolder()'>Open Country Folder</button>
+            <button style='background:  #7a68c0; color: #fff; border-color: #6554a8;' class='primary' onclick='dismissStartGuide()'>Start Reviewing</button>
+            <button style='background:  #c87c28;'onclick='scrollToFilters()'>Review Field Options</button>
+            <button style='background: #2da070; 'onclick='scrollToPanels()'>Jump To Compare Panels</button>
+            <button style='background:  #edf6ff;'class='neutral' onclick='openCountryFolder()'>Open Country Folder</button>
         </div>
   </div>
     {runtime_log_compare_panel_html}"#,
         reconnect_banner_compare_html = reconnect_banner_compare_html,
-        runtime_log_compare_panel_html = runtime_log_compare_panel_html,
+        runtime_log_compare_panel_html = runtime_log_compare_panel_html
     )
 }
 
@@ -37,11 +37,10 @@ pub(super) fn render_compare_navigation_html() -> String {
                     <div class='sessionSectionTitle'>Navigation</div>
                     <div class='sessionRow'>
                         <button onclick='returnToStartReviewPage()'>Back To Country Selection</button>
-                        <button class='neutral' onclick='closeReviewUi()'>Close Review UI</button>
+                        <button style='background: #e90909; color: #fff; border-color: #a8641a;' class='neutral' onclick='closeReviewUi()'>Close Review UI and return to Country Selection</button>
                     </div>
                     <div id='status' class='sessionStatusBox sessionStatusSlate'>Ready</div>
-                </div>"#
-        .to_string()
+                </div>"#.to_string()
 }
 
 pub(super) fn render_compare_filters_html() -> String {
@@ -63,19 +62,19 @@ pub(super) fn render_compare_filters_html() -> String {
         <label><input type='checkbox' id='f_show_imageless_left' onchange='toggleImagelessLeftRows()'/> show left rows without images</label>
             <div class='orderSelectGroup'><label>order
                         <select id='sortMode' onchange='changeSortMode()'>
-                        <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)</option>
+                        <option value='year_series_date_catalog' style='display:block;'>
+                         Year then issue date in series then catalog number (default)</option>
                         <option value='catalog'>Catalog number</option>
                         <option value='year_catalog'>Year then catalog number</option>
                         <option value='series_catalog'>Series then catalog number</option>
-                    <option value='series_date_catalog'>Series then issue date then catalog number</option>
+                    <option value='series_date_catalog'style='display:block;'> Series then issue date then catalog number</option>
                                 <option value='rowid'>DB row id</option>
                                 <option value='colnect_id'>Colnect ID</option>
                         </select>
                 </label><button id='sortModeMakeDefaultBtn' type='button' onclick='makeSortModeDefault()' style='display:none;'>Make default?</button>
                 <button id='sortModeResetDefaultBtn' type='button' onclick='resetSortModeDefault()' style='display:none;'>Reset default</button></div>
       </div>
-    </div>"#
-        .to_string()
+    </div>"#.to_string()
 }
 
 pub(super) fn render_compare_action_rows_html() -> String {
@@ -93,8 +92,7 @@ pub(super) fn render_compare_action_rows_html() -> String {
             <button onclick='undoLastDelete()'>Undo Delete</button>
         </div>
         <div id='matchActionStatus' class='actionMessage'>Ready</div>
-    </div>"#
-        .to_string()
+    </div>"#.to_string()
 }
 
 pub(super) fn render_compare_panels_html() -> String {
@@ -115,8 +113,7 @@ pub(super) fn render_compare_panels_html() -> String {
                                                 <div id='rightActionBanner' class='rightActionBanner'></div>
             <div id='rightPanel'></div>
         </div>
-    </div>"#
-                .to_string()
+    </div>"#.to_string()
 }
 
 pub(super) fn render_add_modal_html() -> String {
@@ -146,8 +143,7 @@ pub(super) fn render_add_modal_html() -> String {
             <button onclick='addCurrentColnectAsStamp()'>Add</button>
         </div>
     </div>
-</div>"#
-        .to_string()
+</div>"#.to_string()
 }
 
 pub(super) fn render_op_busy_modal_html() -> String {
@@ -161,8 +157,7 @@ pub(super) fn render_op_busy_modal_html() -> String {
             </div>
         </div>
     </div>
-</div>"#
-        .to_string()
+</div>"#.to_string()
 }
 
 pub(super) fn render_left_editor_modal_html() -> String {
@@ -274,8 +269,7 @@ pub(super) fn render_left_editor_modal_html() -> String {
             <button class='primary' onclick='submitLeftEditor()'>Save</button>
         </div>
     </div>
-</div>"#
-        .to_string()
+</div>"#.to_string()
 }
 
 pub(super) fn compare_head_css() -> String {
@@ -398,49 +392,60 @@ body.pageEnter { animation: reviewPageIn 170ms ease-out; }
 .rowx label { display: inline-flex; align-items: center; gap: 6px; }
 .leftEditorDialog { width: min(1120px, 97vw); }
 .leftEditorCompact { max-height: 94vh; }
-.leftEditorHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.leftEditorHead { display: flex; align-items: center; justify-content: space-between; display: grid;
+grid-template-columns: repeat(2, minmax(180px, 1fr));
+gap: 8px; margin-bottom: 8px; }
 .leftEditorHead h4 { margin: 0; }
 .closeButton { min-width: 36px; padding: 4px 8px; font-size: 18px; line-height: 1; }
 .leftEditorBody { display: flex; flex-direction: column; gap: 10px; }
 .leftEditorSection { border: 1px solid #dbe4ec; border-radius: 8px; background: #f9fcff; }
-.leftEditorSection h5 { margin: 0; padding: 8px 10px; border-bottom: 1px solid #dbe4ec; font-size: 13px; }
+.leftEditorSection h5 { margin: 0; text-align: center; padding: 8px 10px; border-bottom: 1px solid #dbe4ec; font-size:
+13px; }
+.LeftEditorSectionBase { border: 1px solid #dbe4ec; border-radius: 8px; background: MistyRose; }
+.LeftEditorDimensions { border: 1px solid #dbe4ec; border-radius: 8px; background: Lavender; }
+.LeftEditorColnectMeta { border: 1px solid #dbe4ec; border-radius: 8px; background: Thistle; }
+.LeftEditorImageHandling { border: 1px solid #dbe4ec; border-radius: 8px; background: BlanchedAlmond; }
 .leftEditorSectionBody { padding: 10px; }
 .leftEditorGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
-.leftEditorDimsGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+.leftEditorDimsGrid {
+display: grid;
+grid-template-columns: repeat(2, minmax(180px, 1fr));
+gap: 8px;
+}
 .leftEditorStack { display: grid; gap: 8px; margin-top: 8px; }
 .leftEditorStack label { display: grid; gap: 4px; }
 .leftEditorStack textarea { min-height: 56px; resize: vertical; }
 .leftEditorModes { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .leftEditorActions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
 .opBusyBackdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(17, 34, 49, 0.5);
-    z-index: 1300;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    box-sizing: border-box;
+display: none;
+position: fixed;
+inset: 0;
+background: rgba(17, 34, 49, 0.5);
+z-index: 1300;
+align-items: center;
+justify-content: center;
+padding: 16px;
+box-sizing: border-box;
 }
 .opBusyCard {
-    min-width: 280px;
-    max-width: min(560px, 94vw);
-    background: #ffffff;
-    border: 1px solid #dbe4ec;
-    border-radius: 10px;
-    box-shadow: 0 18px 44px rgba(17, 34, 49, 0.34);
-    padding: 12px;
+min-width: 280px;
+max-width: min(560px, 94vw);
+background: #ffffff;
+border: 1px solid #dbe4ec;
+border-radius: 10px;
+box-shadow: 0 18px 44px rgba(17, 34, 49, 0.34);
+padding: 12px;
 }
 .opBusyRow { display: flex; align-items: center; gap: 10px; }
 .opBusySpinner {
-    width: 16px;
-    height: 16px;
-    border: 3px solid #d7e2eb;
-    border-top-color: #2f6fa3;
-    border-radius: 50%;
-    animation: spin 0.9s linear infinite;
-    flex: 0 0 auto;
+width: 16px;
+height: 16px;
+border: 3px solid #d7e2eb;
+border-top-color: #2f6fa3;
+border-radius: 50%;
+animation: spin 0.9s linear infinite;
+flex: 0 0 auto;
 }
 #comparePanels {
     display: grid;

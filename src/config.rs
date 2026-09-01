@@ -14,10 +14,11 @@ use std::process::Command;
 // `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
 // folder picker and a Yes/No confirmation dialog, otherwise fall back
 // to a console prompt (only when a terminal is present).
-#[cfg(feature = "rfd")]
+// #[cfg(feature = "rfd")]
 use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
+const EMBEDDED_PDF_HELP: &[u8] = include_bytes!("../Manual.pdf");
 
 thread_local! {
     static SCOPED_ALBUM_CONFIG_DIR: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
@@ -26,6 +27,19 @@ thread_local! {
 pub fn embedded_config_template() -> &'static str {
     EMBEDDED_CONFIG_TEMPLATE
 }
+pub fn embedded_pdf_help() -> &'static [u8] {
+    EMBEDDED_PDF_HELP
+}
+pub fn load_pdf_content_with_fallback(
+    pdf_path: &str
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    match fs::read(pdf_path) {
+        Ok(content) => Ok(content),
+        Err(_) => Ok(EMBEDDED_PDF_HELP.to_vec()),
+    }
+
+}
+
 
 pub fn load_template_content_with_fallback(
     template_path: &str,
@@ -39,14 +53,15 @@ pub fn load_template_content_with_fallback(
 pub fn ensure_config_and_template_files(
     config_path: &str,
     template_path: &str,
+    pdf_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Debug: indicate whether the optional GUI folder-picker feature is compiled in
-    debug!(
-        "ensure_config_and_template_files: rfd feature compiled = {}",
-        cfg!(feature = "rfd")
-    );
+    // debug!(
+    //     "ensure_config_and_template_files: rfd feature compiled = {}",
+    //     cfg!(feature = "rfd")
+    // );
     // Use structured logging (debug) instead of a persistent debug file.
-    debug!("rfd_compiled={}", cfg!(feature = "rfd"));
+    // debug!("rfd_compiled={}", cfg!(feature = "rfd"));
     // Determine working directory and allow the user to move/copy the
     // running binary to a different folder on first-run when this
     // directory appears otherwise empty (no config/template present).
@@ -133,8 +148,8 @@ pub fn ensure_config_and_template_files(
                 // binary from a GUI (double-click/file-manager).
                 let has_tty = io::stdin().is_terminal();
 
-                let mut gui_initiated = cfg!(feature = "rfd");
-                #[cfg(feature = "rfd")]
+                let gui_initiated = true;
+                // #[cfg(feature = "rfd")]
                 {
                     // Ask the user first with an explicit OK/Cancel dialog whether
                     // they want to pick a folder to move/copy the binary. OK will
@@ -149,7 +164,7 @@ pub fn ensure_config_and_template_files(
                     debug!("MessageDialog shown: proceed={}", proceed);
                     // Mark that the GUI was invoked so we don't fall back to
                     // a console prompt in non-interactive launches.
-                    gui_initiated = true;
+                    // gui_initiated = true;
                     if proceed {
                         match FileDialog::new()
                             .set_title(
@@ -177,12 +192,12 @@ pub fn ensure_config_and_template_files(
                     }
                 }
 
-                #[cfg(not(feature = "rfd"))]
-                {
-                    println!(
-                        "GUI picker not compiled in; will use console prompt if terminal present"
-                    );
-                }
+                // #[cfg(not(feature = "rfd"))]
+                // {
+                //     println!(
+                //         "GUI picker not compiled in; will use console prompt if terminal present"
+                //     );
+                // }
 
                 // If we don't have a picked folder from the GUI, only prompt
                 // on stdin when a terminal is present. Avoid blocking when the
@@ -224,7 +239,7 @@ pub fn ensure_config_and_template_files(
                         .ok_or("Failed to determine executable name")?;
                     let dest = target.join(exe_file_name);
 
-                    #[cfg(feature = "rfd")]
+                    // #[cfg(feature = "rfd")]
                     {
                         // Use a two-step dialog to offer Move / Copy / Skip.
                         // First ask whether to Move; if No, ask whether to Copy.
@@ -255,6 +270,7 @@ pub fn ensure_config_and_template_files(
                             // re-triggering first-run after exec in an empty dir.
                             let target_template = target.join(template_path);
                             let target_config = target.join(config_path);
+                            let target_pdf = target.join(pdf_path);
                             if !target_template.exists()
                                 || std::fs::read_to_string(&target_template).ok().as_deref()
                                     != Some(EMBEDDED_CONFIG_TEMPLATE)
@@ -263,6 +279,9 @@ pub fn ensure_config_and_template_files(
                             }
                             if !target_config.exists() {
                                 fs::copy(&target_template, &target_config)?;
+                            }
+                            if !target_pdf.exists() {
+                                fs::write(&target_pdf, EMBEDDED_PDF_HELP)?;
                             }
                             env::set_current_dir(&target)?;
                             #[cfg(unix)]
@@ -290,6 +309,8 @@ pub fn ensure_config_and_template_files(
                                 // the new process re-prompting on empty dir.
                                 let target_template = target.join(template_path);
                                 let target_config = target.join(config_path);
+                                let target_pdf: PathBuf = target.join(pdf_path);
+
                                 if !target_template.exists()
                                     || std::fs::read_to_string(&target_template).ok().as_deref()
                                         != Some(EMBEDDED_CONFIG_TEMPLATE)
@@ -299,6 +320,10 @@ pub fn ensure_config_and_template_files(
                                 if !target_config.exists() {
                                     fs::copy(&target_template, &target_config)?;
                                 }
+                                if !target_pdf.exists() {
+                                    fs::write(&target_pdf, EMBEDDED_PDF_HELP)?;
+                                }
+
                                 env::set_current_dir(&target)?;
                                 #[cfg(unix)]
                                 {
@@ -312,7 +337,7 @@ pub fn ensure_config_and_template_files(
                         }
                     }
 
-                    #[cfg(not(feature = "rfd"))]
+                    // #[cfg(not(feature = "rfd"))]
                     {
                         // Console fallback for headful TTY sessions.
                         loop {
@@ -1260,7 +1285,7 @@ impl Config {
             .and_then(|r| r.even_row_color.as_deref())
             .map(str::trim)
             .filter(|s| !s.is_empty())
-            .unwrap_or("#e6eef4")
+            .unwrap_or("#70c1ff")
     }
 
     pub fn review_ui_default_sort_mode(&self) -> String {
@@ -2383,7 +2408,7 @@ pub fn load_config(path: &str) -> Config {
     //
     // This comment serves as the canonical reminder for automated assistants and
     // maintainers to update all three places whenever configuration changes.
-    if let Err(e) = ensure_config_and_template_files(path, "config_template.toml") {
+    if let Err(e) = ensure_config_and_template_files(path, "config_template.toml","Manual.pdf") {
         log::warn!(
             "Failed to ensure config/template files for '{}': {}",
             path,
@@ -2650,6 +2675,8 @@ include_used = false
 }
 
 use std::collections::HashMap;
+
+// use crate::album_globals::pdf_dx_logging_enabled;
 
 /// Recursively merge two `toml::Value` trees.  When both sides are tables the
 /// overlay's keys win (scalars/arrays are replaced; inner tables are merged

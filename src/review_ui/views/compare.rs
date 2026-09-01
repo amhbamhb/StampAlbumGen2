@@ -1,46 +1,62 @@
 use super::{
-    render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html, MatcherPayload,
-    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS,
+    render_app_footer_html,
+    render_config_editor_assets,
+    render_footer_year_script,
+    render_reconnect_banner_html,
+    render_runtime_log_panel_html,
+    MatcherPayload,
+    BACKEND_NOT_RESPONDING_MESSAGE,
+    FOOTER_YEAR_UPDATE_JS,
 };
 
 use super::compare_assets::{
-    compare_head_css, render_add_modal_html, render_compare_action_rows_html,
-    render_compare_filters_html, render_compare_navigation_html, render_compare_panels_html,
-    render_compare_top_html, render_left_editor_modal_html, render_op_busy_modal_html,
+    compare_head_css,
+    render_add_modal_html,
+    render_compare_action_rows_html,
+    render_compare_filters_html,
+    render_compare_navigation_html,
+    render_compare_panels_html,
+    render_compare_top_html,
+    render_left_editor_modal_html,
+    render_op_busy_modal_html,
 };
 
 use crate::review_ui::views::shared::ReconnectBannerParams;
 use crate::review_ui::views::shared::RuntimeLogPanelParams;
 
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
-    let json =
-        serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
+    let json = serde_json
+        ::to_string(payload)
+        .unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
     let compare_css = compare_head_css();
-    let reconnect_banner_compare_html = render_reconnect_banner_html(&ReconnectBannerParams {
-        banner_id: "reconnectBannerCompare",
-        title_id: "reconnectBannerCompareTitle",
-        text_id: None,
-        text_html: None,
-        extra_html: "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
-        retry_fn: "retryBackendHealthCheckCompare",
-        reload_fn: "reloadCurrentPageCompare",
-        meta_id: "reconnectBannerCompareMeta",
-    });
-    let runtime_log_compare_panel_html = render_runtime_log_panel_html(&RuntimeLogPanelParams {
-        panel_id: "runtimeLogComparePanel",
-        panel_style: "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
-        header_style: "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
-        controls_style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
-        body_id: "runtimeLogCompareBody",
-        textarea_id: "runtimeLogCompare",
-        checkbox_id: "showRuntimeLogCompare",
-        toggle_fn: "toggleRuntimeLogVisibilityCompare",
-        copy_fn: "copyRuntimeLogCompare",
-    });
+    let reconnect_banner_compare_html = render_reconnect_banner_html(
+        &(ReconnectBannerParams {
+            banner_id: "reconnectBannerCompare",
+            title_id: "reconnectBannerCompareTitle",
+            text_id: None,
+            text_html: None,
+            extra_html: "\n        <button onclick='refreshState()'>Refresh</button>\n        <button onclick='openConfigEditor()'>Edit Config</button>",
+            retry_fn: "retryBackendHealthCheckCompare",
+            reload_fn: "reloadCurrentPageCompare",
+            meta_id: "reconnectBannerCompareMeta",
+        })
+    );
+    let runtime_log_compare_panel_html = render_runtime_log_panel_html(
+        &(RuntimeLogPanelParams {
+            panel_id: "runtimeLogComparePanel",
+            panel_style: "border:1px solid #dbe4ec;border-radius:10px;background:#fbfdff;padding:10px;margin-bottom:10px;",
+            header_style: "display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:6px;",
+            controls_style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;",
+            body_id: "runtimeLogCompareBody",
+            textarea_id: "runtimeLogCompare",
+            checkbox_id: "showRuntimeLogCompare",
+            toggle_fn: "toggleRuntimeLogVisibilityCompare",
+            copy_fn: "copyRuntimeLogCompare",
+        })
+    );
     let compare_top_html = render_compare_top_html(
         &reconnect_banner_compare_html,
-        &runtime_log_compare_panel_html,
+        &runtime_log_compare_panel_html
     );
     let compare_navigation_html = render_compare_navigation_html();
     let compare_filters_html = render_compare_filters_html();
@@ -49,23 +65,8 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let compare_add_modal_html = render_add_modal_html();
     let compare_op_busy_modal_html = render_op_busy_modal_html();
     let _left_editor_modal_html = render_left_editor_modal_html();
-    format!(
-        r#"<!doctype html>
-<html>
-<head>
-<meta charset='utf-8'>
-<title>Stamp Album Generator 2</title>
-<link rel='icon' type='image/png' href='/favicon.png'>
-{compare_css}
-</head>
-{compare_top_html}
-    <div class='controlGroups'>
-        <div class='groupCard session'>
-            <h4>Session</h4>
-            <div class='sessionStack'>
-                <div class='sessionSection sessionSectionBlue'>
-                    <div class='sessionSectionTitle'>Configuration</div>
-                    <div class='sessionRow'>
+    let local_catalog_select_assets =
+        " <div class='sessionRow'>
                         <button onclick='openConfigEditor()'>Edit Local Config</button>
                         <label for='defaultCatalogSelect'>Local Catalog</label>
                         <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
@@ -80,55 +81,58 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                             <option value='col'>Colnect (COL)</option>
                         </select>
                         <button onclick='saveCatalogDefaultToConfig()'>Update Local Config Default</button>
-                    </div>
-                    <div id='configStatus' class='sessionStatusBox sessionStatusBlue'>Ready</div>
-                </div>
-                <div class='sessionSection sessionSectionGreen'>
-                    <div class='sessionSectionTitle'>Import Colnect</div>
-                    <div class='sessionRow'>
-                        <button id='importColnectPickBtn' onclick='pickAndCopyColnectFileReview()'>Browse &amp; Copy Colnect File&#8230;</button>
-                        <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect</button>
-                        <span id='reviewColnectCopyCountBadge' class='badge'>Files: 0</span>
-                    </div>
-                    <div style='margin-top:6px;font-size:12px;color:#35566d;'>
-                        Destination: <code id='reviewColnectDirPath' class='reviewColnectDirPath'>(unknown)</code>
-                    </div>
-                    <div id='colnectImportStatus' class='colnectImportStatus sessionStatusBox sessionStatusGreen'>
-                        <div class='colnectImportSpinRow'>
-                            <span class='colnectImportSpinner' style='display:none;'></span>
-                            <span id='colnectImportStatusText' class='colnectImportStatusText'>Ready</span>
-                        </div>
-                        <div id='colnectImportLog' class='colnectImportLog' style='display:none;'></div>
-                    </div>
-                </div>
-                <div class='sessionSection sessionSectionAmber reviewStampWorldSection'>
-                    <div class='sessionSectionTitle'>StampWorld Pull</div>
-                    <div class='sessionRow reviewSwRow reviewSwCountryRow'>
-                        <label>Current country</label>
-                        <span class='badge'><span id='reviewSwCountry'>Unknown</span></span>
-                    </div>
-                    <div class='sessionRow reviewSwRow reviewSwYearRow'>
+                    </div>";
+    let import_colnect_files =
+        " <div class='sessionSectionTitle'>Import Colnect</div>
+        <div class='sessionRow'>
+            <button id='importColnectPickBtn' onclick='pickAndCopyColnectFileReview()'>Browse &amp; Copy Colnect
+                File&#8230;</button>
+            <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect</button>
+            <span id='reviewColnectCopyCountBadge' class='badge'>Files: 0</span>
+        </div>";
+    let colnect_destination_dir_path =
+        "<div style='margin-top:6px;font-size:12px;color:#35566d;'>
+            Destination: <code id='reviewColnectDirPath' class='reviewColnectDirPath'>(unknown)</code>
+        </div>";
+    let colnect_import_status =
+        " <div id='colnectImportStatus' class='colnectImportStatus sessionStatusBox sessionStatusGreen'>
+            <div class='colnectImportSpinRow'>
+                <span class='colnectImportSpinner' style='display:none;'></span>
+                <span id='colnectImportStatusText' class='colnectImportStatusText'>Ready</span>
+            </div>
+            <div id='colnectImportLog' class='colnectImportLog' style='display:none;'></div>
+        </div>";
+    let stampworld_pull_year_setup =
+        "
+            <div class='sessionRow reviewSwRow reviewSwYearRow'>
                         <label for='reviewSwStartYear'>Start Year</label>
                         <input id='reviewSwStartYear' type='number' placeholder='Start' min='1840' max='2100' />
-                        <label for='reviewSwEndYear'>End Year</label>
+                        <div style='padding: 15px;'>
+                        </div>
+                      
+                        <label for='reviewSwEndYear'>End Year &nbsp;</label>
                         <input id='reviewSwEndYear' type='number' placeholder='End' min='1840' max='2100' />
-                    </div>
-                    <div class='sessionRow reviewSwRow reviewSwPresetRow'>
-                        <label for='reviewSwPreset'>Command Preset</label>
-                        <select id='reviewSwPreset'>
-                            <option value='basic'>Basic Pull</option>
-                            <option value='overwrite_album'>Overwrite Album Output</option>
-                            <option value='overwrite_all'>Overwrite Album + Images</option>
-                            <option value='bounded_pages'>Limit Pages (fast test)</option>
-                            <option value='accept_typo'>Auto Accept Source Typos</option>
-                        </select>
-                    </div>
-                    <div class='sessionRow reviewSwRow reviewSwFlagsRow'>
+                    </div>";
+    let stampworld_pull_command_preset =
+        "
+            <div class='sessionRow reviewSwRow reviewSwPresetRow'>
+                <label for='reviewSwPreset'>Command Preset</label>
+                <select id='reviewSwPreset'>
+                    <option value='basic'>Basic Pull</option>
+                    <option value='overwrite_album'>Overwrite Album Output</option>
+                    <option value='overwrite_all'>Overwrite Album + Images</option>
+                    <option value='bounded_pages'>Limit Pages (fast test)</option>
+                    <option value='accept_typo'>Auto Accept Source Typos</option>
+                </select>
+            </div>";
+    let stampworld_pull_command_info =
+        "
+           <div class='sessionRow reviewSwRow reviewSwFlagsRow'>
                         <label for='reviewSwExtraFlags'>Extra Flags</label>
                         <input id='reviewSwExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='width:100%;max-width:100%;min-width:0;box-sizing:border-box;' />
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwActionRow'>
-                        <button class='accent' onclick='runReviewStampWorldPull()'>Run StampWorld pull for this country (including additional pull).</button>
+                        <button class='accent' style='background-color: lightgreen; color: black;' onclick='runReviewStampWorldPull()'>Run StampWorld pull for this country (including additional pull).</button>
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwCommandRow'>
                         <strong>Suggested command:</strong>
@@ -136,50 +140,213 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwCommandRow'>
                         <button onclick='copyReviewStampWorldCommand()'>Copy</button>
-                    </div>
-                    <div id='reviewSwStatusWrap' class='reviewSwStatusWrap sessionStatusBox sessionStatusAmber'>
+                    </div>";
+    let stampworld_pull_review_status =
+        "
+             <div id='reviewSwStatusWrap' class='reviewSwStatusWrap sessionStatusBox sessionStatusAmber'>
                         <span id='reviewSwRunSpinner' class='colnectImportSpinner' style='display:none;'></span>
                         <span id='reviewSwRunStatus' class='reviewSwStatusText'>Ready</span>
                     </div>
                     <div id='reviewSwPullLogPanel' class='reviewSwLogPanel' style='display:none;'>
                         <div class='reviewSwLogTitle'>StampWorld Pull Progress: Real-Time Log</div>
                         <textarea id='reviewSwPullLog' readonly class='reviewSwLogBox'></textarea>
-                    </div>
-                </div>
-                <div class='sessionSection sessionSectionAmber'>
-                    <div class='sessionSectionTitle'>PDF</div>
-                    <div class='sessionRow'>
-                        <button id='reviewPdfBtn' onclick='generatePdfNowReview()'>Generate PDF Now</button>
-                        <button id='reviewPdfPreviewBtn' onclick='previewLastPdfReview()' style='display:none;'>Preview Last PDF</button>
-                        <div class='orderSelectGroup'>
-                            <label for='reviewPdfSortMode' style='font-size:0.9em;margin:0 0 0 0.4em;'>Order</label>
-                            <select id='reviewPdfSortMode' onchange='changePdfSortMode()' style='padding:2px 4px;font-size:0.9em;'>
-                                <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)</option>
-                                <option value='catalog'>Catalog number</option>
-                                <option value='year_catalog'>Year then catalog number</option>
-                                <option value='series_catalog'>Series then catalog number</option>
-                                <option value='series_date_catalog'>Series then issue date then catalog number</option>
-                                <option value='rowid'>DB row id</option>
-                                <option value='colnect_id'>Colnect ID</option>
-                            </select>
-                            <button id='reviewPdfSortModeMakeDefaultBtn' type='button' onclick='makePdfSortModeDefault()' style='display:none;'>Make default?</button>
-                            <button id='reviewPdfSortModeResetDefaultBtn' type='button' onclick='resetPdfSortModeDefault()' style='display:none;'>Reset default</button>
-                        </div>
-                        <label for='reviewPdfStartYear' style='font-size:0.9em;margin:0 0 0 0.4em;'>Year</label>
-                        <input id='reviewPdfStartYear' type='number' placeholder='Start' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
-                        <span style='font-size:0.9em;'>–</span>
-                        <input id='reviewPdfEndYear' type='number' placeholder='End' min='1840' max='2100' style='width:78px;padding:2px 4px;font-size:0.9em'/>
-                        <label for='reviewPdfAlwaysShow' style='font-size:0.9em;display:inline-flex;align-items:center;gap:6px;'>
-                            <input id='reviewPdfAlwaysShow' type='checkbox' onchange='togglePdfAlwaysOpenPreference()'/>
-                            Always open PDF after generation
-                        </label>
-                    </div>
-                    <div id='pdfStatusWrap' class='pdfStatusWrap sessionStatusBox sessionStatusAmber'>
+                    </div>";
+
+    let stampworld_sort_order_selector =
+        " <div class='orderSelectGroup'>
+            <label for='reviewPdfSortMode' style='font-size:0.9em;margin:0 0 0 0.4em;'>Order</label>
+            <select id='reviewPdfSortMode' onchange='changePdfSortMode()' style='padding:2px 4px;font-size:0.9em;'>
+                <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)
+                </option>
+                <option value='catalog'>Catalog number</option>
+                <option value='year_catalog'>Year then catalog number</option>
+                <option value='series_catalog'>Series then catalog number</option>
+                <option value='series_date_catalog'>Series then issue date then catalog number</option>
+                <option value='rowid'>DB row id</option>
+                <option value='colnect_id'>Colnect ID</option>
+            </select>
+            <button id='reviewPdfSortModeMakeDefaultBtn' type='button' onclick='makePdfSortModeDefault()'
+                style='display:none;'>Make default?</button>
+            <button id='reviewPdfSortModeResetDefaultBtn' type='button' onclick='resetPdfSortModeDefault()'
+                style='display:none;'>Reset default</button>
+        </div>";
+    let stampworld_generate_pdf_button =
+            "<button id='reviewPdfBtn' style='background-color: mistyrose; color: black;'
+        onclick='generatePdfNowReview()'>Generate PDF Now</button>
+            <button id='reviewPdfPreviewBtn' onclick='previewLastPdfReview()' style='display:none;'>Preview Last PDF</button>";
+    let stampworld_start_end_year =
+        "<label for='reviewPdfYearRange' style='font-size:0.9em; color: steelblue;'>To Generate all pages, leave blank.</label>
+        <label for='reviewPdfStartYear' style='font-size:0.9em;  color: steelblue; '>Start Year</label>
+        <input id='reviewPdfStartYear' type='number' placeholder='Start Year' min='1840' max='2100'
+            style='width:78px;padding:2px 4px;font-size:0.9em' />
+
+        <label for='reviewPdfEndYear' style='font-size:0.9em;
+        color: steelblue; '>End Year</label>
+        <input id='reviewPdfEndYear' type='number' placeholder='End Year &nbsp;' min='1840' max='2100'
+            style='width:78px;padding:2px 4px;font-size:0.9em' />
+
+        <label for='reviewPdfAlwaysShow' style='font-size:0.9em;display:inline-flex;   align-items:center;gap:6px;'>
+
+            <input id='reviewPdfAlwaysShow' type='checkbox' onchange='togglePdfAlwaysOpenPreference()' />Always open PDF after generation</label>";
+    let stampworld_pdf_status =
+        " <div id='pdfStatusWrap' class='pdfStatusWrap sessionStatusBox sessionStatusAmber'>
                         <span id='pdfStatusSpinner' class='colnectImportSpinner' style='display:none;'></span>
                         <span id='pdfStatus' class='pdfStatusText'>Ready</span>
-                    </div>
+                    </div>";
+    let left_edit_base_stamp_page = "<div class='leftEditorHead'>
+            <h4 id='leftEditorTitle'>Edit Base Stamp</h4>
+            <p id='leftEditorHint' class='leftEditorHint'>Use this for StampWorld corrections, watermark/reference images, or fixing a bad Colnect placement.</p>
+        </div>";
+    let edit_based_page_top_values = "<label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /><label style='display: block; '>
+            Catalog Type Search
+            <input
+                id='leftEditorCatalogCodeSearch'
+                type='text'
+                list='leftEditorCatalogCodeSearchList'
+                placeholder='Type to filter catalogs...'
+                oninput='filterLeftEditorCatalogTypeOptions()'
+                onchange='applyLeftEditorCatalogSearchChoice()'
+                onblur='tryApplyLeftEditorCatalogSearchChoice()'
+                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
+            />
+            </label>
+
+            <label style='display: block; margin-bottom: 0.75em;'>
+            Catalog Type
+            <select
+                id='leftEditorCatalogCodeSelect'
+                onchange='toggleLeftEditorCatalogCodeCustom()'
+                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
+            >
+                <option value='sg'>Stanley Gibbons (SG)</option>
+                <option value='sw'>StampWorld (SW)</option>
+                <option value='sn'>Scott Number (SN)</option>
+                <option value='mi'>Michel (MI)</option>
+                <option value='yt'>Yvert (YT)</option>
+                <option value='afa'>AFA</option>
+                <option value='nvp'>NVP</option>
+                <option value='un'>Unificato (UN)</option>
+                <option value='col'>Colnect (COL)</option>
+                <option value='custom'>Custom...</option>
+            </select>
+            </label>
+
+            <label id='leftEditorCatalogCodeCustomWrap' style='display: none; margin-bottom: 0.75em;'>
+            Custom Catalog Type Code
+            <input
+                id='leftEditorCatalogCodeCustom'
+                type='text'
+                placeholder='e.g. zz'
+                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
+            />
+            </label>
+
+            <label style='display: block; margin-bottom: 0.75em;'>
+            Year
+            <input
+                id='leftEditorYear'
+                type='number'
+                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
+            />
+            </label>
+
+            <label style='display: block; margin-bottom: 0.75em;'>
+            Series
+            <input
+                id='leftEditorSeries'
+                type='text'
+                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
+            />
+            </label>
+                    </div>";
+
+    let edit_based_page_dimensions =" <div class='leftEditorSectionDimensions'>
+        <div class='leftEditorDimsGrid' style='color: black;'>
+            <label style='display: block;'>
+            Width
+            <input id='leftEditorWidth' type='text' placeholder='e.g. 25' style='display: block; width: 75%; margin-top: 0.25em;' />
+            </label>
+
+            <label style='display: block;'>
+            Height
+            <input id='leftEditorHeight' type='text' placeholder='e.g. 30' style='display: block; width: 75%; margin-top: 0.25em;' />
+            </label>
+
+            <label style='display: block;'>
+            Colnect Width
+            <input id='leftEditorColnectWidth' type='text' style='display: block; width: 75%; margin-top: 0.25em;' />
+            </label>
+
+            <label style='display: block;'>
+            Colnect Height
+            <input id='leftEditorColnectHeight' type='text' style='display: block; width: 75%; margin-top: 0.25em;' />
+            </label>
+        </div>
+        </div>";
+    let edit_based_page_stampworld ="
+                        <div class='leftEditorStack'>
+                        <label>Description <textarea id='leftEditorDescription'></textarea></label>
+                        <label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
+                        <label>Design <textarea id='leftEditorDesign'></textarea></label>
+                        <label>Engraving <textarea id='leftEditorEngraving'></textarea></label>
+                        <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
+                        <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
+                    </div>";
+                    
+
+    format!(
+        r##"<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Stamp Album Generator 2</title>
+<link rel='icon' type='image/png' href='/favicon.png'>
+{compare_css}
+</head>
+{compare_top_html}
+    <div class='controlGroups'>
+        <div class='groupCard session'>
+            <h4>Session</h4>
+            <div class='sessionStack'>
+                <div class='sessionSection sessionSectionBlue'>
+                    <div class='sessionSectionTitle'>Configuration</div>
+                    {local_catalog_select_assets}
+                    <div id='configStatus' class='sessionStatusBox sessionStatusBlue'>Ready</div>
                 </div>
-{compare_navigation_html}
+                <div class='sessionSection sessionSectionGreen'>
+                    {import_colnect_files}
+                    {colnect_destination_dir_path}
+                    {colnect_import_status}
+
+                </div>
+                <div class='sessionSection sessionSectionAmber reviewStampWorldSection'>
+                    <div class='sessionSectionTitle'>StampWorld Pull</div>
+                    <div class='sessionRow reviewSwRow reviewSwCountryRow'>
+                        <label>Current country</label>
+                        <span class='badge'><span id='reviewSwCountry'>Unknown</span></span>
+                    </div>
+                    {stampworld_pull_year_setup}
+                    {stampworld_pull_command_preset}
+                    
+                    {stampworld_pull_command_info}
+
+                   {stampworld_pull_review_status}
+
+                </div>
+                <div class='sessionSection sessionSectionAmber'>
+                        <div class='sessionSectionTitle'>PDF</div>
+                        <div class='sessionRow'>
+
+                            {stampworld_generate_pdf_button}
+
+                            {stampworld_sort_order_selector}
+                            {stampworld_start_end_year}
+                            {stampworld_pdf_status}
+
+                    </div>
+
+                </div>
+                {compare_navigation_html}
             </div>
         </div>
     </div>
@@ -194,58 +361,26 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
 
 <div id='leftEditorBackdrop' class='modal-backdrop'>
     <div class='modal leftEditorDialog leftEditorCompact'>
-        <div class='leftEditorHead'>
-            <h4 id='leftEditorTitle'>Edit Base Stamp</h4>
-            <p id='leftEditorHint' class='leftEditorHint'>Use this for StampWorld corrections, watermark/reference images, or fixing a bad Colnect placement.</p>
-        </div>
+        {left_edit_base_stamp_page}
         <div class='leftEditorBody'>
-            <section class='leftEditorSection'>
+            <section >
                 <h5>Base Stamp Details</h5>
-                <div class='leftEditorSectionBody'>
+                <div class='leftEditorSectionBase'>
                     <div class='leftEditorGrid'>
-                        <label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /></label>
-                        <label>Catalog Type Search <input id='leftEditorCatalogCodeSearch' type='text' list='leftEditorCatalogCodeSearchList' placeholder='Type to filter catalogs...' oninput='filterLeftEditorCatalogTypeOptions()' onchange='applyLeftEditorCatalogSearchChoice()' onblur='tryApplyLeftEditorCatalogSearchChoice()' /></label>
-                        <datalist id='leftEditorCatalogCodeSearchList'></datalist>
-                        <label>Catalog Type
-                            <select id='leftEditorCatalogCodeSelect' onchange='toggleLeftEditorCatalogCodeCustom()'>
-                                <option value='sg'>Stanley Gibbons (SG)</option>
-                                     <option value='sw'>StampWorld (SW)</option>
-                                <option value='sn'>Scott Number (SN)</option>
-                                <option value='mi'>Michel (MI)</option>
-                                <option value='yt'>Yvert (YT)</option>
-                                <option value='afa'>AFA</option>
-                                <option value='nvp'>NVP</option>
-                                <option value='un'>Unificato (UN)</option>
-                                <option value='col'>Colnect (COL)</option>
-                                <option value='custom'>Custom...</option>
-                            </select>
-                        </label>
-                        <label id='leftEditorCatalogCodeCustomWrap' style='display:none;'>Custom Catalog Type Code <input id='leftEditorCatalogCodeCustom' type='text' placeholder='e.g. zz' /></label>
-                        <label>Year <input id='leftEditorYear' type='number' /></label>
-                        <label>Series <input id='leftEditorSeries' type='text' /></label>
-                    </div>
-                    <div class='leftEditorStack'>
-                        <label>Description <textarea id='leftEditorDescription'></textarea></label>
-                        <label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
-                        <label>Design <textarea id='leftEditorDesign'></textarea></label>
-                        <label>Engraving <textarea id='leftEditorEngraving'></textarea></label>
-                        <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
-                        <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
-                    </div>
+
+                        {edit_based_page_top_values}
+
+                        {edit_based_page_stampworld}
+
                 </div>
             </section>
-            <section class='leftEditorSection'>
-                <h5>Dimensions</h5>
-                <div class='leftEditorSectionBody'>
-                    <div class='leftEditorDimsGrid'>
-                        <label>Width <input id='leftEditorWidth' type='text' placeholder='e.g. 25' /></label>
-                        <label>Height <input id='leftEditorHeight' type='text' placeholder='e.g. 30' /></label>
-                        <label>Colnect Width <input id='leftEditorColnectWidth' type='text' /></label>
-                        <label>Colnect Height <input id='leftEditorColnectHeight' type='text' /></label>
-                    </div>
-                </div>
+            <section class='LeftEditorDimensions'>
+                <h5 >Dimensions</h5>
+                
+                {edit_based_page_dimensions}
+
             </section>
-            <section class='leftEditorSection'>
+            <section class='LeftEditorColnectMeta'>
                 <h5>Colnect Metadata</h5>
                 <div class='leftEditorSectionBody'>
                     <div class='leftEditorGrid'>
@@ -1789,7 +1924,7 @@ function initReviewStampWorldPanel() {{
     if (countryLabel) countryLabel.textContent = currentCountry;
     const startYearInput = document.getElementById('reviewSwStartYear');
     const endYearInput = document.getElementById('reviewSwEndYear');
-    if (startYearInput && !startYearInput.value) startYearInput.value = '1840';
+    if (startYearInput && !startYearInput.value) startYearInput.value = String(new Date().getFullYear() - 2);
     if (endYearInput && !endYearInput.value) endYearInput.value = String(new Date().getFullYear());
     updateReviewStampWorldCommand();
     updateReviewStampWorldStatus('Ready', false);
@@ -2180,8 +2315,8 @@ function render(options) {{
             <button class='navBtn' onclick='firstRight()'>First</button>
             <button class='navBtn' onclick='jumpRight(-50)'>-50</button>
             <button class='navBtn' onclick='jumpRight(-10)'>-10</button>
-            <button class='navBtn' onclick='prevRight()'>Prev Candidate</button>
-            <button class='navBtn' onclick='nextRight()'>Next Candidate</button>
+            <button class='navBtn' background: #c87c28; color: #fff; border-color: #a8641a; onclick='prevRight()'>Prev Candidate</button>
+            <button class='navBtn' background: #2da070; color: #fff; border-color: #228458; onclick='nextRight()'>Next Candidate</button>
             <button class='navBtn' onclick='jumpRight(10)'>+10</button>
             <button class='navBtn' onclick='jumpRight(50)'>+50</button>
             <button class='navBtn' onclick='lastRight()'>Last</button>
@@ -3865,7 +4000,7 @@ render();
 {footer_year_script}
 {config_editor_assets}
 </body>
-</html>"#,
+</html>"##,
         json = json,
         backend_not_responding_message = BACKEND_NOT_RESPONDING_MESSAGE,
         compare_css = compare_css,

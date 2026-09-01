@@ -74,59 +74,59 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
 
     // Optional full map path: if enabled, fall back to an embedded copy of
     // flag_codes.json and try to write it back to disk for future runs.
-    if let Some(full_map) = load_embedded_flag_map_if_enabled() {
-        return full_map;
-    }
+    // if let Some(full_map) = load_embedded_flag_map_if_enabled() {
+    //     return full_map;
+    // }
 
     default_flag_map()
 }
 
-#[cfg(feature = "full-flag-db")]
-fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
-    const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
+// #[cfg(feature = "full-flag-db")]
+// fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
+//     const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
 
-    if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(EMBEDDED_FLAGS_JSON) {
-        // Attempt to write the embedded json to the preferred writable location
-        // (cwd 'flags' preferred). Ignore write errors; runtime lookups still
-        // succeed from the in-memory map if writes are not possible.
-        let prefer_dirs: Vec<PathBuf> = vec![
-            PathBuf::from("flags"),
-            std::env::current_exe()
-                .ok()
-                .and_then(|e| e.parent().map(|p| p.to_path_buf()))
-                .unwrap_or_else(|| PathBuf::from("flags")),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
-        ];
+//     if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(EMBEDDED_FLAGS_JSON) {
+//         // Attempt to write the embedded json to the preferred writable location
+//         // (cwd 'flags' preferred). Ignore write errors; runtime lookups still
+//         // succeed from the in-memory map if writes are not possible.
+//         let prefer_dirs: Vec<PathBuf> = vec![
+//             PathBuf::from("flags"),
+//             std::env::current_exe()
+//                 .ok()
+//                 .and_then(|e| e.parent().map(|p| p.to_path_buf()))
+//                 .unwrap_or_else(|| PathBuf::from("flags")),
+//             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
+//         ];
 
-        let cwd_flags = PathBuf::from("flags");
-        if fs::create_dir_all(&cwd_flags).is_ok() {
-            let out_path = cwd_flags.join("flag_codes.json");
-            let _ = fs::write(&out_path, EMBEDDED_FLAGS_JSON);
-        } else {
-            for dir in prefer_dirs.iter() {
-                if fs::create_dir_all(dir).is_ok() {
-                    let out_path = dir.join("flag_codes.json");
-                    if fs::write(&out_path, EMBEDDED_FLAGS_JSON).is_ok() {
-                        break;
-                    }
-                }
-            }
-        }
+//         let cwd_flags = PathBuf::from("flags");
+//         if fs::create_dir_all(&cwd_flags).is_ok() {
+//             let out_path = cwd_flags.join("flag_codes.json");
+//             let _ = fs::write(&out_path, EMBEDDED_FLAGS_JSON);
+//         } else {
+//             for dir in prefer_dirs.iter() {
+//                 if fs::create_dir_all(dir).is_ok() {
+//                     let out_path = dir.join("flag_codes.json");
+//                     if fs::write(&out_path, EMBEDDED_FLAGS_JSON).is_ok() {
+//                         break;
+//                     }
+//                 }
+//             }
+//         }
 
-        return Some(
-            j.into_iter()
-                .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
-                .collect(),
-        );
-    }
+//         return Some(
+//             j.into_iter()
+//                 .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+//                 .collect(),
+//         );
+//     }
 
-    None
-}
+//     None
+// }
 
-#[cfg(not(feature = "full-flag-db"))]
-fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
-    None
-}
+// #[cfg(not(feature = "full-flag-db"))]
+// fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
+//     None
+// }
 
 /// Given a country name, attempt to return an alpha-2 code (lowercase) using simple normalization.
 pub fn country_to_code(country: &str) -> Option<String> {

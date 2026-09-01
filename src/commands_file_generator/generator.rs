@@ -119,22 +119,22 @@ impl CommandsFileGenerator {
     }
 
     /// Get stampworld image for a stamp
-    pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
-        // TODO: Implement proper image fetching
-        None
-    }
+    // pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
+    //     // TODO: Implement proper image fetching
+    //     None
+    // }
 
-    /// Get image from colnect
-    pub fn get_colnect_image(&mut self, _stamp: &Stamp) -> Option<String> {
-        // TODO: Implement proper image fetching
-        None
-    }
+    // /// Get image from colnect
+    // pub fn get_colnect_image(&mut self, _stamp: &Stamp) -> Option<String> {
+    //     // TODO: Implement proper image fetching
+    //     None
+    // }
 
-    /// Get image for a stamp
-    pub fn get_image(&mut self, _stamp: &Stamp) -> Option<String> {
-        // TODO: Implement proper image fetching
-        None
-    }
+    // /// Get image for a stamp
+    // pub fn get_image(&mut self, _stamp: &Stamp) -> Option<String> {
+    //     // TODO: Implement proper image fetching
+    //     None
+    // }
 
     /// Collect stampworld data
     pub fn collect_stampworld_data<'a>(

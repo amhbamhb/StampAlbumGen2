@@ -631,7 +631,7 @@ fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), Str
 }
 
 fn ensure_runtime_startup_files() -> Result<(), String> {
-    crate::config::ensure_config_and_template_files("config.toml", "config_template.toml")
+    crate::config::ensure_config_and_template_files("config.toml", "config_template.toml", "Manual.pdf")
         .map_err(|e| format!("failed to initialize startup config files: {}", e))
 }
 

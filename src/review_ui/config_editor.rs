@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs;
 
+// use crate::album_globals::pdf_dx_logging_enabled;
 use crate::config;
 
 use super::{ConfigEditorField, ConfigEditorSection};
@@ -9,6 +10,7 @@ pub(super) fn update_default_catalog_code_for_album(
     album_dir: &std::path::Path,
     album_name: &str,
     global_config_path: &str,
+    pdf_path: &str,
     template_path: &str,
     requested_code: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -44,6 +46,7 @@ pub(super) fn update_default_catalog_code_for_album(
         album_dir,
         album_name,
         global_config_path,
+        pdf_path,
         template_path,
         &merged,
     )?;
@@ -509,8 +512,9 @@ pub(super) fn load_current_config_values(
 pub(super) fn build_config_editor_data(
     config_path: &str,
     template_path: &str,
+    pdf_path: &str
 ) -> Result<Vec<ConfigEditorSection>, Box<dyn std::error::Error>> {
-    config::ensure_config_and_template_files(config_path, template_path)?;
+    config::ensure_config_and_template_files(config_path, template_path, pdf_path)?;
     let template_content = config::load_template_content_with_fallback(template_path)?;
     let mut template_sections = parse_template_config_sections(&template_content);
     let example_help_map = load_example_config_help_map("config_full_example.toml");
@@ -726,13 +730,14 @@ fn render_config_from_template_values(
 pub(super) fn save_full_config_values(
     config_path: &str,
     template_path: &str,
+    pdf_path: &str,
     values: &HashMap<String, String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     if values.is_empty() {
         return Err("no config values were provided".into());
     }
 
-    config::ensure_config_and_template_files(config_path, template_path)?;
+    config::ensure_config_and_template_files(config_path, template_path,pdf_path)?;
     let template_content = config::load_template_content_with_fallback(template_path)?;
     let template_sections = parse_template_config_sections(&template_content);
     let mut template_defaults_by_id: HashMap<String, String> = HashMap::new();
@@ -765,10 +770,11 @@ pub(super) fn save_full_config_values(
 pub(super) fn build_config_editor_data_for_album(
     global_config_path: &str,
     template_path: &str,
+    pdf_path: &str,
     album_dir: &std::path::Path,
 ) -> Result<(Vec<ConfigEditorSection>, bool), Box<dyn std::error::Error>> {
     // Base: load sections with global config values.
-    let mut sections = build_config_editor_data(global_config_path, template_path)?;
+    let mut sections = build_config_editor_data(global_config_path, template_path, pdf_path)?;
 
     // Set global_value = current_value (baseline before album overlay).
     for section in &mut sections {
@@ -817,6 +823,7 @@ pub(super) fn save_album_config_diff(
     album_dir: &std::path::Path,
     album_name: &str,
     global_config_path: &str,
+    pdf_path: &str,
     template_path: &str,
     all_ui_values: &HashMap<String, String>,
 ) -> Result<usize, Box<dyn std::error::Error>> {
@@ -839,7 +846,7 @@ pub(super) fn save_album_config_diff(
 
     // Load the global config current values for comparison.
     let global_values: HashMap<String, String> =
-        config::ensure_config_and_template_files(global_config_path, template_path)
+        config::ensure_config_and_template_files(global_config_path, template_path, pdf_path)
             .ok()
             .and_then(|_| load_current_config_values(global_config_path).ok())
             .unwrap_or_default();

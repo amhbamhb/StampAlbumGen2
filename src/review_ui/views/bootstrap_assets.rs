@@ -1424,8 +1424,8 @@ button.btn-refresh { background: #6a8faa; color: #fff; border-color: #557888; }
 button.btn-config { background: #7a68c0; color: #fff; border-color: #6554a8; }
 button.btn-pdf { background: #c87c28; color: #fff; border-color: #a8641a; }
 button.btn-import { background: #2da070; color: #fff; border-color: #228458; }
-button:hover { background: #edf6ff; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(21, 66, 95, 0.12); }
-code { background: #edf5fb; border: 1px solid #d4e2ee; border-radius: 6px; padding: 2px 6px; }
+button:hover { background: #edf6ff; color: #131d4d; transform: translateY(-1px); box-shadow: 0 3px 10px rgba(21, 66, 95, 0.12); }
+code { background: #edf5fb; color: #131d4d; border: 1px solid #131d4d; border-radius: 6px; padding: 2px 6px; }
 .status { margin-top: 10px; min-height: 18px; font-size: 13px; color: #35566d; }
 .loadingBox { display: none; margin-top: 12px; padding: 12px; border: 1px solid #d7e2eb; border-left: 5px solid #2f6fa3; border-radius: 10px; background: #f5fafe; }
 .spinner { width: 16px; height: 16px; border: 3px solid #d7e2eb; border-top-color: #2f6fa3; border-radius: 50%; display: inline-block; animation: spin 0.9s linear infinite; }
