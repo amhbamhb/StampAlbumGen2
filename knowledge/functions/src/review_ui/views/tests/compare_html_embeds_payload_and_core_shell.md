@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compare_html_embeds_payload_and_core_shell
-resource: src/review_ui/views/tests.rs#L62-L69
+resource: src/review_ui/views/tests.rs#L64-L71
 visibility: private
 generated:
   by: okf-rs/0.4.0

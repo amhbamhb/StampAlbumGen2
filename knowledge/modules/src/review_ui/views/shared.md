@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: shared
-resource: src/review_ui/views/shared.rs#L1-L92
+resource: src/review_ui/views/shared.rs#L1-L95
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -15,7 +15,9 @@ relationships:
 
 - [render_app_footer_html](../../../../functions/src/review_ui/views/shared/render_app_footer_html.md)
 - [render_footer_year_script](../../../../functions/src/review_ui/views/shared/render_footer_year_script.md)
+- [ReconnectBannerParams](../../../../classes/src/review_ui/views/shared/ReconnectBannerParams.md)
 - [render_reconnect_banner_html](../../../../functions/src/review_ui/views/shared/render_reconnect_banner_html.md)
+- [RuntimeLogPanelParams](../../../../classes/src/review_ui/views/shared/RuntimeLogPanelParams.md)
 - [render_runtime_log_panel_html](../../../../functions/src/review_ui/views/shared/render_runtime_log_panel_html.md)
 
 # Member of

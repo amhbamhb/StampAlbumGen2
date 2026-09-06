@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: serve_bootstrap_requests
-resource: src/review_ui/http_handlers.rs#L138-L1023
+resource: src/review_ui/http_handlers.rs#L138-L1030
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -60,6 +60,9 @@ relationships:
   - target: functions/src/review_ui/http_handlers/best_effort_prepare_images_for_pdf
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/image_downloader/normalize_album_images_for_pdf
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/album_dir_for_ui
     resolved_by: tree-sitter
     confidence: exact
@@ -86,7 +89,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn serve_bootstrap_requests(server: &Server, html: &String) -> BootstrapHandlersState`
+`pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState`
 
 # Calls
 
@@ -108,6 +111,7 @@ relationships:
 - [save_full_config_values](../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
 - [try_acquire](../../../../functions/src/review_ui/PdfGenerationGuard/try_acquire.md)
 - [best_effort_prepare_images_for_pdf](../../../../functions/src/review_ui/http_handlers/best_effort_prepare_images_for_pdf.md)
+- [normalize_album_images_for_pdf](../../../../functions/src/image_downloader/normalize_album_images_for_pdf.md)
 - [album_dir_for_ui](../../../../functions/src/review_ui/album_dir_for_ui.md)
 - [with_album_config_override](../../../../functions/src/config/with_album_config_override.md)
 - [generate_album_output_conn_with_pdf_override](../../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)

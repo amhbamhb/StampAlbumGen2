@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_single_image_stamp
-resource: src/us1847/collector.rs#L565-L628
+resource: src/us1847/collector.rs#L581-L644
 visibility: private
 generated:
   by: okf-rs/0.4.0

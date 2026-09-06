@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: log_runtime_event
-resource: src/review_ui.rs#L51-L59
+resource: src/review_ui.rs#L52-L60
 generated:
   by: okf-rs/0.4.0
 relationships:

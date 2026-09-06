@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: friendly_config_section_title
-resource: src/review_ui/config_editor.rs#L62-L86
+resource: src/review_ui/config_editor.rs#L65-L89
 visibility: private
 generated:
   by: okf-rs/0.4.0

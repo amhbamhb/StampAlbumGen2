@@ -20,6 +20,7 @@ relationships:
 
 # Contains
 
+- [CollectStampworldParams](../../../classes/src/commands_file_generator/data_collection/CollectStampworldParams.md)
 - [collect_stampworld_data](../../../functions/src/commands_file_generator/data_collection/collect_stampworld_data.md)
 
 # Imports

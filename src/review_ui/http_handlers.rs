@@ -615,7 +615,11 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
         }
 
         if method == Method::Get && req_url == "/api/config-editor" {
-            let resp_json = match build_config_editor_data("config.toml", "config_template.toml","Manual.pdf") {
+            let resp_json = match build_config_editor_data(
+                "config.toml",
+                "config_template.toml",
+                "StampAlbumGenerator2HelpManual.pdf",
+            ) {
                 Ok(sections) => serde_json::to_string(&ConfigEditorDataResponse {
                     ok: true,
                     message: "Config editor data loaded".to_string(),
@@ -658,7 +662,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                 Ok(req) => match save_full_config_values(
                     "config.toml",
                     "config_template.toml",
-                    "Manual.pdf",
+                    "StampAlbumGenerator2HelpManual.pdf",
                     &req.values,
                 ) {
                     Ok(_) => SaveConfigEditorResponse {
@@ -1036,6 +1040,8 @@ pub(super) fn serve_review_requests(
     default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
+    first_column_color: &str,
+    second_column_color: &str,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -1305,7 +1311,7 @@ pub(super) fn serve_review_requests(
             let resp_json = match build_config_editor_data_for_album(
                 "config.toml",
                 "config_template.toml",
-                "Manual.pdf",
+                "StampAlbumGenerator2HelpManual.pdf",
                 &album_dir,
             ) {
                 Ok((sections, has_override)) => serde_json::to_string(&ConfigEditorDataResponse {
@@ -1349,6 +1355,8 @@ pub(super) fn serve_review_requests(
                     default_sort_mode,
                     odd_row_color,
                     even_row_color,
+                    first_column_color,
+                    second_column_color,
                     series_default_checked,
                     description_default_checked,
                     watermark_default_checked,
@@ -1818,7 +1826,7 @@ pub(super) fn serve_review_requests(
                         album_name,
                         "config.toml",
                         "config_template.toml",
-                        "Manual.pdf",
+                        "StampAlbumGenerator2HelpManual.pdf",
                         &req.default_catalog_code,
                     ) {
                         Ok(saved) => serde_json::to_string(&UpdateDefaultCatalogResponse {
@@ -1865,7 +1873,7 @@ pub(super) fn serve_review_requests(
                     &album_dir,
                     album_name,
                     "config.toml",
-                    "Manual.pdf",
+                    "StampAlbumGenerator2HelpManual.pdf",
                     "config_template.toml",
                     &req.values,
                 ) {
@@ -1959,7 +1967,7 @@ pub(super) fn serve_review_requests(
                 Ok(req) => match save_full_config_values(
                     "config.toml",
                     "config_template.toml",
-                    "Manual.pdf",
+                    "StampAlbumGenerator2HelpManual.pdf",
                     &req.values,
                 ) {
                     Ok(_) => SaveConfigEditorResponse {

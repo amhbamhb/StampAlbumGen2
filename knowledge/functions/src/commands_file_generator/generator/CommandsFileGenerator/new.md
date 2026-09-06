@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: new
-resource: src/commands_file_generator/generator.rs#L54-L107
+resource: src/commands_file_generator/generator.rs#L66-L119
 generated:
   by: okf-rs/0.4.0
 ---

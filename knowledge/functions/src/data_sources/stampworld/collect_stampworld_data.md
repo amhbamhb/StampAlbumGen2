@@ -15,9 +15,6 @@ relationships:
   - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/commands_file_generator/generator/CommandsFileGenerator/get_stampworld_image
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/album_utils/text_utils/sanitize_filename
     resolved_by: tree-sitter
     confidence: exact
@@ -32,5 +29,4 @@ relationships:
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
-- [get_stampworld_image](../../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_stampworld_image.md)
 - [sanitize_filename](../../../../functions/src/album_utils/text_utils/sanitize_filename.md)

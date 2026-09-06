@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_colnect_image_url_default_checked
-resource: src/config.rs#L1315-L1320
+resource: src/config.rs#L1423-L1428
 generated:
   by: okf-rs/0.4.0
 relationships:

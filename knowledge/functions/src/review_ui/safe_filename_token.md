@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: safe_filename_token
-resource: src/review_ui.rs#L2299-L2315
+resource: src/review_ui.rs#L2327-L2343
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: leading_year_from_series
-resource: src/album_globals/generator_new/helpers.rs#L351-L362
+resource: src/album_globals/generator_new/helpers.rs#L362-L373
 visibility: private
 generated:
   by: okf-rs/0.4.0

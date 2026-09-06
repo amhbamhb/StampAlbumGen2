@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: minimal_payload
-resource: src/review_ui/views/tests.rs#L4-L32
+resource: src/review_ui/views/tests.rs#L4-L34
 visibility: private
 generated:
   by: okf-rs/0.4.0

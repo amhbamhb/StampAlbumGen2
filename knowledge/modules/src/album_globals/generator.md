@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: generator
-resource: src/album_globals/generator.rs#L1-L3812
+resource: src/album_globals/generator.rs#L1-L3828
 generated:
   by: okf-rs/0.4.0
 relationships:

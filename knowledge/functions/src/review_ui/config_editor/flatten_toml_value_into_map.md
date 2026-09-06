@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: flatten_toml_value_into_map
-resource: src/review_ui/config_editor.rs#L475-L495
+resource: src/review_ui/config_editor.rs#L478-L498
 visibility: private
 generated:
   by: okf-rs/0.4.0

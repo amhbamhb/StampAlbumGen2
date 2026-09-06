@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_value_for_template
-resource: src/review_ui/config_editor.rs#L346-L398
+resource: src/review_ui/config_editor.rs#L349-L401
 visibility: private
 generated:
   by: okf-rs/0.4.0

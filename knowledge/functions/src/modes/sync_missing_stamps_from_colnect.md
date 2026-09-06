@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sync_missing_stamps_from_colnect
-resource: src/modes.rs#L564-L1218
+resource: src/modes.rs#L560-L1215
 visibility: private
 generated:
   by: okf-rs/0.4.0

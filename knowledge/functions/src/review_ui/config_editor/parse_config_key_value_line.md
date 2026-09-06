@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_config_key_value_line
-resource: src/review_ui/config_editor.rs#L88-L99
+resource: src/review_ui/config_editor.rs#L91-L102
 visibility: private
 generated:
   by: okf-rs/0.4.0

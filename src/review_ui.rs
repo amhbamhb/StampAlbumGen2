@@ -285,6 +285,8 @@ struct MatcherPayload {
     default_sort_mode: String,
     odd_row_color: String,
     even_row_color: String,
+    first_column_color: String,
+    second_column_color: String,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -631,8 +633,12 @@ fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), Str
 }
 
 fn ensure_runtime_startup_files() -> Result<(), String> {
-    crate::config::ensure_config_and_template_files("config.toml", "config_template.toml", "Manual.pdf")
-        .map_err(|e| format!("failed to initialize startup config files: {}", e))
+    crate::config::ensure_config_and_template_files(
+        "config.toml",
+        "config_template.toml",
+        "StampAlbumGenerator2HelpManual.pdf",
+    )
+    .map_err(|e| format!("failed to initialize startup config files: {}", e))
 }
 
 fn is_directory_empty(path: &Path) -> Result<bool, String> {
@@ -2198,6 +2204,8 @@ fn build_matcher_payload(
     default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
+    first_column_color: &str,
+    second_column_color: &str,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -2234,6 +2242,8 @@ fn build_matcher_payload(
         default_sort_mode: default_sort_mode.to_string(),
         odd_row_color: odd_row_color.to_string(),
         even_row_color: even_row_color.to_string(),
+        first_column_color: first_column_color.to_string(),
+        second_column_color: second_column_color.to_string(),
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -2686,6 +2696,8 @@ pub fn run_review_ui(
     default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
+    first_column_color: &str,
+    second_column_color: &str,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -2764,6 +2776,8 @@ pub fn run_review_ui(
         default_sort_mode,
         odd_row_color,
         even_row_color,
+        first_column_color,
+        second_column_color,
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -2860,6 +2874,8 @@ pub fn run_review_ui(
         default_sort_mode,
         odd_row_color,
         even_row_color,
+        first_column_color,
+        second_column_color,
         series_default_checked,
         description_default_checked,
         watermark_default_checked,

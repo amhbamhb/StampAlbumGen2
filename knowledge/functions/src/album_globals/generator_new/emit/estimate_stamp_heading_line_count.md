@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: estimate_stamp_heading_line_count
-resource: src/album_globals/generator_new/emit.rs#L148-L167
+resource: src/album_globals/generator_new/emit.rs#L149-L168
 generated:
   by: okf-rs/0.4.0
 relationships:

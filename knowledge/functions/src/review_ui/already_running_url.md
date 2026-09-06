@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: already_running_url
-resource: src/review_ui.rs#L1465-L1469
+resource: src/review_ui.rs#L1472-L1476
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`fn already_running_url(err: &Box<dyn std::error::Error>) -> Option<String>`
+`fn already_running_url(err: &dyn std::error::Error) -> Option<String>`
 
 # Called by
 

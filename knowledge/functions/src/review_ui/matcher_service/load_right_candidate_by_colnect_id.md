@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_right_candidate_by_colnect_id
-resource: src/review_ui/matcher_service.rs#L693-L842
+resource: src/review_ui/matcher_service.rs#L701-L850
 generated:
   by: okf-rs/0.4.0
 relationships:

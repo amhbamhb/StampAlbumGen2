@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: enforce_runtime_schema_compatibility
-resource: src/db_utils/migrations.rs#L360-L404
+resource: src/db_utils/migrations.rs#L363-L407
 visibility: private
 generated:
   by: okf-rs/0.4.0

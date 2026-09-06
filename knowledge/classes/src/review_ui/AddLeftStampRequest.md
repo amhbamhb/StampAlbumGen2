@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: AddLeftStampRequest
-resource: src/review_ui.rs#L1022-L1071
+resource: src/review_ui.rs#L1029-L1078
 visibility: private
 generated:
   by: okf-rs/0.4.0

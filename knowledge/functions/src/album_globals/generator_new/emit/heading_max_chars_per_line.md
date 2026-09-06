@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: heading_max_chars_per_line
-resource: src/album_globals/generator_new/emit.rs#L9-L16
+resource: src/album_globals/generator_new/emit.rs#L10-L17
 visibility: private
 generated:
   by: okf-rs/0.4.0

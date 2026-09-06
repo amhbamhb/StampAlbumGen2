@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_stamp
-resource: src/db_utils_wrapper.rs#L24-L80
+resource: src/db_utils_wrapper.rs#L24-L83
 generated:
   by: okf-rs/0.4.0
 ---

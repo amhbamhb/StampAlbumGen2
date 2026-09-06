@@ -549,8 +549,16 @@ pub fn sort_stampstubs_inplace(v: &mut [StampStub]) {
                     return std::cmp::Ordering::Greater;
                 }
                 // Prefer alphabetic suffixes before non-alphabetic (e.g. "AT" before "*")
-                let a_first_alpha = asuf.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false);
-                let b_first_alpha = bsuf.chars().next().map(|c| c.is_alphabetic()).unwrap_or(false);
+                let a_first_alpha = asuf
+                    .chars()
+                    .next()
+                    .map(|c| c.is_alphabetic())
+                    .unwrap_or(false);
+                let b_first_alpha = bsuf
+                    .chars()
+                    .next()
+                    .map(|c| c.is_alphabetic())
+                    .unwrap_or(false);
                 if a_first_alpha && !b_first_alpha {
                     return std::cmp::Ordering::Less;
                 }

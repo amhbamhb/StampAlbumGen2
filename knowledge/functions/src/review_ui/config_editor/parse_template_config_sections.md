@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_template_config_sections
-resource: src/review_ui/config_editor.rs#L418-L473
+resource: src/review_ui/config_editor.rs#L421-L476
 visibility: private
 generated:
   by: okf-rs/0.4.0

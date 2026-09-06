@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: escape_ae_text
-resource: src/album_globals/generator_new/emit.rs#L3-L7
+resource: src/album_globals/generator_new/emit.rs#L4-L8
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: emit
-resource: src/album_globals/generator_new/emit.rs#L1-L364
+resource: src/album_globals/generator_new/emit.rs#L1-L389
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/log-debug
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/std-io-self-write
     resolved_by: tree-sitter
     confidence: exact
@@ -33,6 +36,7 @@ relationships:
 
 # Imports
 
+- `log::debug`
 - `std::io::{self, Write}`
 
 # Member of

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: wrap_segment_words
-resource: src/album_globals/generator_new/emit.rs#L18-L41
+resource: src/album_globals/generator_new/emit.rs#L19-L42
 visibility: private
 generated:
   by: okf-rs/0.4.0

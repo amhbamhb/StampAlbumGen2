@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: operations
-resource: src/db_utils/operations.rs#L1-L684
+resource: src/db_utils/operations.rs#L1-L363
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,13 +9,13 @@ relationships:
   - target: external/log-debug-error
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/regex-regex
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/rusqlite-params-connection-optionalextension-result
+  - target: external/rusqlite-params-connection-result
     resolved_by: tree-sitter
     confidence: exact
   - target: external/crate-db-utils-stampstub
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/stamp-album-db-stampinsert-as-dbstampinsert
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -26,14 +26,9 @@ relationships:
 
 # Contains
 
-- [cleanup_stampworld_identity_duplicates](../../../functions/src/db_utils/operations/cleanup_stampworld_identity_duplicates.md)
-- [is_placeholder_image_path](../../../functions/src/db_utils/operations/is_placeholder_image_path.md)
-- [is_real_image_candidate](../../../functions/src/db_utils/operations/is_real_image_candidate.md)
-- [is_image_url](../../../functions/src/db_utils/operations/is_image_url.md)
-- [is_stampworld_image_url](../../../functions/src/db_utils/operations/is_stampworld_image_url.md)
-- [is_colnect_page_url](../../../functions/src/db_utils/operations/is_colnect_page_url.md)
-- [is_colnect_image_url](../../../functions/src/db_utils/operations/is_colnect_image_url.md)
 - [insert_stamp](../../../functions/src/db_utils/operations/insert_stamp.md)
+- [StampInsert](../../../classes/src/db_utils/operations/StampInsert.md)
+- [insert_stamp_from_struct](../../../functions/src/db_utils/operations/insert_stamp_from_struct.md)
 - [insert_stamp_placeholder](../../../functions/src/db_utils/operations/insert_stamp_placeholder.md)
 - [get_stamps_by_country_series](../../../functions/src/db_utils/operations/get_stamps_by_country_series.md)
 - [get_stamps_by_series](../../../functions/src/db_utils/operations/get_stamps_by_series.md)
@@ -42,9 +37,9 @@ relationships:
 # Imports
 
 - `log::{debug, error}`
-- `regex::Regex`
-- `rusqlite::{params, Connection, OptionalExtension, Result}`
+- `rusqlite::{params, Connection, Result}`
 - `crate::db_utils::StampStub`
+- `stamp_album_db::StampInsert as DbStampInsert`
 
 # Member of
 

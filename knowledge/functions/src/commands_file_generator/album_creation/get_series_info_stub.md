@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_series_info_stub
-resource: src/commands_file_generator/album_creation.rs#L315-L327
+resource: src/commands_file_generator/album_creation.rs#L320-L332
 generated:
   by: okf-rs/0.4.0
 relationships:

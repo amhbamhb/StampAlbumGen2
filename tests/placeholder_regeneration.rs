@@ -28,8 +28,8 @@ fn placeholder_regeneration_forced() {
         mm_per_px_h: Some(mm_per_px),
     };
 
-    let rel_a = ensure_placeholder_image_for_stamp_with_hint(&opts_a)
-        .expect("placeholder creation failed");
+    let rel_a =
+        ensure_placeholder_image_for_stamp_with_hint(&opts_a).expect("placeholder creation failed");
 
     let album_dir_a = Path::new("Albums").join(album_a.replace(' ', "-"));
     println!("placeholder rel='{}'", rel_a);

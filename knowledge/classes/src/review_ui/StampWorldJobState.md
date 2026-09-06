@@ -1,7 +1,7 @@
 ---
 type: Rust Enum
 title: StampWorldJobState
-resource: src/review_ui.rs#L456-L468
+resource: src/review_ui.rs#L459-L471
 visibility: private
 generated:
   by: okf-rs/0.4.0

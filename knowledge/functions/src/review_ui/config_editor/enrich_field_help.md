@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: enrich_field_help
-resource: src/review_ui/config_editor.rs#L155-L319
+resource: src/review_ui/config_editor.rs#L158-L322
 visibility: private
 generated:
   by: okf-rs/0.4.0

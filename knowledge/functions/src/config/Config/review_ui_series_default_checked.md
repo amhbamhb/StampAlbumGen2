@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_series_default_checked
-resource: src/config.rs#L1259-L1264
+resource: src/config.rs#L1367-L1372
 generated:
   by: okf-rs/0.4.0
 relationships:

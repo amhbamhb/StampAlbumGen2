@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_flag_map_from_fs
-resource: src/flagdb.rs#L31-L80
+resource: src/flagdb.rs#L33-L82
 generated:
   by: okf-rs/0.4.0
 relationships:

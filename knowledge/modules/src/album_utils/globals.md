@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: globals
-resource: src/album_utils/globals.rs#L1-L1328
+resource: src/album_utils/globals.rs#L1-L1362
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -13,6 +13,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-io-write
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/std-path-path
     resolved_by: tree-sitter
     confidence: exact
   - target: external/chrono-utc
@@ -45,6 +48,7 @@ relationships:
 - `crate::album_globals::generator_new::layout`
 - `log::info`
 - `std::io::Write`
+- `std::path::Path`
 - `chrono::Utc`
 - `chrono::Datelike`
 - `std::collections::HashSet`

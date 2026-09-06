@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: progress
-resource: src/progress.rs#L1-L135
+resource: src/progress.rs#L1-L141
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -32,6 +32,7 @@ relationships:
 - [finish_with_error](../../functions/src/progress/ProgressIndicator/finish_with_error.md)
 - [clear](../../functions/src/progress/ProgressIndicator/clear.md)
 - [drop](../../functions/src/progress/ProgressIndicator/drop/drop.md)
+- [default](../../functions/src/progress/ProgressIndicator/default/default.md)
 - [new_progress](../../functions/src/progress/new_progress.md)
 - [new_progress_with_config](../../functions/src/progress/new_progress_with_config.md)
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: ingest
-resource: src/wikipedia/ingest.rs#L1-L153
+resource: src/wikipedia/ingest.rs#L1-L151
 generated:
   by: okf-rs/0.4.0
 relationships:

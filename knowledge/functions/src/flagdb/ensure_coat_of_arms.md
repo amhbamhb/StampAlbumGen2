@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_coat_of_arms
-resource: src/flagdb.rs#L305-L308
+resource: src/flagdb.rs#L317-L320
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -17,6 +17,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/ensure_coa_integration/ensure_coa_from_local_svg_creates_png
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/ensure_coa_local/ensure_coa_nl_local
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/stamp_flags_dir_lookup/stamp_flags_dir_lookup_found_coa_svg
@@ -37,4 +40,5 @@ relationships:
 
 - [copy_coa_for_album](../../../functions/src/flagdb/copy_coa_for_album.md)
 - [ensure_coa_from_local_svg_creates_png](../../../functions/tests/ensure_coa_integration/ensure_coa_from_local_svg_creates_png.md)
+- [ensure_coa_nl_local](../../../functions/tests/ensure_coa_local/ensure_coa_nl_local.md)
 - [stamp_flags_dir_lookup_found_coa_svg](../../../functions/tests/stamp_flags_dir_lookup/stamp_flags_dir_lookup_found_coa_svg.md)

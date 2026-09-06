@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_pending_schema_migrations
-resource: src/db_utils/migrations.rs#L219-L270
+resource: src/db_utils/migrations.rs#L222-L273
 generated:
   by: okf-rs/0.4.0
 relationships:

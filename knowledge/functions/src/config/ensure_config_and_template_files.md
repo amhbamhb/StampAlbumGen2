@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_config_and_template_files
-resource: src/config.rs#L39-L394
+resource: src/config.rs#L51-L458
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -32,7 +32,7 @@ relationships:
 
 # Signature
 
-`pub fn ensure_config_and_template_files( config_path: &str, template_path: &str, ) -> Result<(), Box<dyn std::error::Error>>`
+`pub fn ensure_config_and_template_files( config_path: &str, template_path: &str, pdf_path: &str, ) -> Result<(), Box<dyn std::error::Error>>`
 
 # Calls
 

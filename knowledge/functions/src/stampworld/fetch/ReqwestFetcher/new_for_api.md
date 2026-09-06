@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: new_for_api
-resource: src/stampworld/fetch.rs#L81-L97
+resource: src/stampworld/fetch.rs#L81-L99
 generated:
   by: okf-rs/0.4.0
 relationships:

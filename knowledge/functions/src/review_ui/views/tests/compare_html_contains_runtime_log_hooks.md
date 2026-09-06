@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compare_html_contains_runtime_log_hooks
-resource: src/review_ui/views/tests.rs#L81-L87
+resource: src/review_ui/views/tests.rs#L83-L89
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_attr_if_non_empty
-resource: src/album_globals/generator_new/helpers.rs#L334-L338
+resource: src/album_globals/generator_new/helpers.rs#L345-L349
 visibility: private
 generated:
   by: okf-rs/0.4.0

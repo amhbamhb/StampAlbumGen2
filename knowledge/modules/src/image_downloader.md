@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: image_downloader
-resource: src/image_downloader.rs#L1-L205
+resource: src/image_downloader.rs#L1-L271
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -29,6 +29,7 @@ relationships:
 - [download_image](../../functions/src/image_downloader/download_image.md)
 - [download_stamp_image_if_missing](../../functions/src/image_downloader/download_stamp_image_if_missing.md)
 - [download_missing_stamp_images](../../functions/src/image_downloader/download_missing_stamp_images.md)
+- [normalize_album_images_for_pdf](../../functions/src/image_downloader/normalize_album_images_for_pdf.md)
 
 # Imports
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: album_creation
-resource: src/commands_file_generator/album_creation.rs#L1-L327
+resource: src/commands_file_generator/album_creation.rs#L1-L332
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -41,6 +41,7 @@ relationships:
 
 # Contains
 
+- [CreateAlbumParams](../../../classes/src/commands_file_generator/album_creation/CreateAlbumParams.md)
 - [create_album](../../../functions/src/commands_file_generator/album_creation/create_album.md)
 - [write_globals](../../../functions/src/commands_file_generator/album_creation/write_globals.md)
 - [save_stamp_data](../../../functions/src/commands_file_generator/album_creation/save_stamp_data.md)

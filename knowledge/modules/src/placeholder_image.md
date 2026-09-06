@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: placeholder_image
-resource: src/placeholder_image.rs#L1-L836
+resource: src/placeholder_image.rs#L1-L831
 generated:
   by: okf-rs/0.4.0
 relationships:

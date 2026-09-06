@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: generator
-resource: src/commands_file_generator/generator.rs#L1-L301
+resource: src/commands_file_generator/generator.rs#L1-L310
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,7 +9,7 @@ relationships:
   - target: external/crate-album-globals-stamp
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/crate-commands-file-generator-album-creation-create-album-save-stamp-data
+  - target: external/crate-commands-file-generator-album-creation-save-stamp-data
     resolved_by: tree-sitter
     confidence: exact
   - target: external/crate-commands-file-generator-utils-is-selected-emission-is-selected-format-month-number-snooze
@@ -41,11 +41,9 @@ relationships:
 
 # Contains
 
+- [CollectStampworldCallParams](../../../classes/src/commands_file_generator/generator/CollectStampworldCallParams.md)
 - [CommandsFileGenerator](../../../classes/src/commands_file_generator/generator/CommandsFileGenerator.md)
 - [new](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/new.md)
-- [get_stampworld_image](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_stampworld_image.md)
-- [get_colnect_image](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_colnect_image.md)
-- [get_image](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_image.md)
 - [collect_stampworld_data](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/collect_stampworld_data.md)
 - [get_touchstamps_stamps](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_touchstamps_stamps.md)
 - [create_album](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/create_album.md)
@@ -61,7 +59,7 @@ relationships:
 # Imports
 
 - `crate::album_globals::Stamp`
-- `crate::commands_file_generator::album_creation::{create_album, save_stamp_data}`
+- `crate::commands_file_generator::album_creation::save_stamp_data`
 - `crate::commands_file_generator::utils::{
     is_selected_emission, is_selected_format, month_number, snooze,
 }`

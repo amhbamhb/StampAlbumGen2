@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: runtime_root_search_prefers_exe_directory_markers
-resource: src/setup.rs#L812-L825
+resource: src/setup.rs#L814-L827
 visibility: private
 generated:
   by: okf-rs/0.4.0

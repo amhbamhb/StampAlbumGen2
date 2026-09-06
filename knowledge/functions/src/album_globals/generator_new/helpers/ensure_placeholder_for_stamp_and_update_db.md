@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_placeholder_for_stamp_and_update_db
-resource: src/album_globals/generator_new/helpers.rs#L873-L933
+resource: src/album_globals/generator_new/helpers.rs#L887-L951
 generated:
   by: okf-rs/0.4.0
 relationships:

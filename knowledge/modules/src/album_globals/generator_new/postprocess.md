@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: postprocess
-resource: src/album_globals/generator_new/postprocess.rs#L1-L423
+resource: src/album_globals/generator_new/postprocess.rs#L1-L422
 generated:
   by: okf-rs/0.4.0
 relationships:

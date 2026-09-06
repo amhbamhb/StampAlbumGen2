@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_colnect_import_history_table
-resource: src/modes.rs#L185-L211
+resource: src/modes.rs#L181-L207
 visibility: private
 generated:
   by: okf-rs/0.4.0

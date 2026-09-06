@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: data_collector
-resource: src/stampworld/data_collector.rs#L1-L1569
+resource: src/stampworld/data_collector.rs#L1-L1571
 generated:
   by: okf-rs/0.4.0
 relationships:

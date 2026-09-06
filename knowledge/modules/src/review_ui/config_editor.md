@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config_editor
-resource: src/review_ui/config_editor.rs#L1-L1257
+resource: src/review_ui/config_editor.rs#L1-L1264
 generated:
   by: okf-rs/0.4.0
 relationships:

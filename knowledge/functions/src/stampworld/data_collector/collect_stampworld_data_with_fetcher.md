@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: collect_stampworld_data_with_fetcher
-resource: src/stampworld/data_collector.rs#L30-L1531
+resource: src/stampworld/data_collector.rs#L39-L1533
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -22,9 +22,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_utils/text_utils/sanitize_filename
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/commands_file_generator/generator/CommandsFileGenerator/get_stampworld_image
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/stampworld/parser/extract_block_metadata
@@ -75,7 +72,6 @@ relationships:
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [sanitize_filename](../../../../functions/src/album_utils/text_utils/sanitize_filename.md)
-- [get_stampworld_image](../../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_stampworld_image.md)
 - [extract_block_metadata](../../../../functions/src/stampworld/parser/extract_block_metadata.md)
 - [compress_context](../../../../functions/src/stampworld/parser/compress_context.md)
 - [normalize_currency_token](../../../../functions/src/stampworld/data_collector/normalize_currency_token.md)

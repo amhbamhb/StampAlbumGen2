@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: template_literal_kind
-resource: src/review_ui/config_editor.rs#L321-L339
+resource: src/review_ui/config_editor.rs#L324-L342
 visibility: private
 generated:
   by: okf-rs/0.4.0

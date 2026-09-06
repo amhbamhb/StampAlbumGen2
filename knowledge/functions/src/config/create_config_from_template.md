@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: create_config_from_template
-resource: src/config.rs#L1455-L1495
+resource: src/config.rs#L1563-L1603
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: http_handlers
-resource: src/review_ui/http_handlers.rs#L1-L2338
+resource: src/review_ui/http_handlers.rs#L1-L2347
 generated:
   by: okf-rs/0.4.0
 relationships:

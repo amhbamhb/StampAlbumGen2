@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: move_to_country_inbox
-resource: src/modes.rs#L281-L307
+resource: src/modes.rs#L277-L303
 visibility: private
 generated:
   by: okf-rs/0.4.0

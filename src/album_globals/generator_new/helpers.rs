@@ -134,8 +134,10 @@ pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {
 }
 
 pub fn build_series_page_text_centre_template(cfg: &Config) -> String {
-    if let Some(t) = cfg.series_page_text_centre_format.clone() {
-        return t;
+    if cfg.series_page_text_centre_format_enabled {
+        if let Some(t) = cfg.series_page_text_centre_format.clone() {
+            return t;
+        }
     }
     let has_series_override = cfg.series_page_text_centre_font.is_some()
         || cfg.series_page_text_centre_size.is_some()
@@ -167,13 +169,16 @@ pub fn build_series_page_text_centre_template(cfg: &Config) -> String {
 
 fn build_scoped_page_text_centre_template(
     cfg: &Config,
+    format_enabled: bool,
     format_opt: Option<String>,
     font_opt: Option<String>,
     size_opt: Option<f32>,
     vspace_opt: Option<f32>,
 ) -> String {
-    if let Some(t) = format_opt {
-        return t;
+    if format_enabled {
+        if let Some(t) = format_opt {
+            return t;
+        }
     }
 
     let has_override = font_opt.is_some() || size_opt.is_some() || vspace_opt.is_some();
@@ -197,6 +202,7 @@ fn build_scoped_page_text_centre_template(
 pub fn build_date_page_text_centre_template(cfg: &Config) -> String {
     build_scoped_page_text_centre_template(
         cfg,
+        cfg.date_page_text_centre_format_enabled,
         cfg.date_page_text_centre_format.clone(),
         cfg.date_page_text_centre_font.clone(),
         cfg.date_page_text_centre_size,
@@ -207,6 +213,7 @@ pub fn build_date_page_text_centre_template(cfg: &Config) -> String {
 pub fn build_watermark_page_text_centre_template(cfg: &Config) -> String {
     build_scoped_page_text_centre_template(
         cfg,
+        cfg.watermark_page_text_centre_format_enabled,
         cfg.watermark_page_text_centre_format.clone(),
         cfg.watermark_page_text_centre_font.clone(),
         cfg.watermark_page_text_centre_size,
@@ -217,6 +224,7 @@ pub fn build_watermark_page_text_centre_template(cfg: &Config) -> String {
 pub fn build_engraving_page_text_centre_template(cfg: &Config) -> String {
     build_scoped_page_text_centre_template(
         cfg,
+        cfg.engraving_page_text_centre_format_enabled,
         cfg.engraving_page_text_centre_format.clone(),
         cfg.engraving_page_text_centre_font.clone(),
         cfg.engraving_page_text_centre_size,

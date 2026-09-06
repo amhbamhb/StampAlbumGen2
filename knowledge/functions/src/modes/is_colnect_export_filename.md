@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_colnect_export_filename
-resource: src/modes.rs#L134-L139
+resource: src/modes.rs#L130-L135
 visibility: private
 generated:
   by: okf-rs/0.4.0

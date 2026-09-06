@@ -708,6 +708,8 @@ watermark_page_text_centre_size = 8.0
 watermark_page_text_centre_vspace = 1.0
 
 # Engraving line centered text
+engraving_page_text_centre_format_enabled = false
+engraving_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
 engraving_page_text_centre_font = "HN"
 engraving_page_text_centre_size = 8.0
 engraving_page_text_centre_vspace = 1.0
@@ -742,10 +744,15 @@ page_text_right_vspace = 1.0
 # These fields live in a separate sub-section and are NOT promoted to the
 # top-level config — they must be set here in [header_formatting].
 
-# Date display style for stamp issue dates shown in group headers.
-# Allowed values:
-#   "commas" (default) : "Month Day, Year"  e.g. "January 15, 1960"
-#   "dashes"           : "Month - Day - Year"  e.g. "January - 15 - 1960"
+# Preferred date pattern for stamp issue dates shown in group headers.
+# Supported tokens are {year}, {month}, {month_num}, and {day}; token order,
+# punctuation, and spacing are fully customizable.
+# Examples:
+#   "{month} {day}, {year}" -> "January 15, 1960"
+#   "{month_num}-{day}-{year}" -> "1-15-1960"
+#   "{year}-{month_num}-{day}" -> "1960-1-15"
+date_pattern = "{month} {day}, {year}"
+# Legacy fallback used only when date_pattern is omitted.
 date_format = "commas"
 
 ###################################
@@ -867,6 +874,8 @@ pdf_dx_logging = false
 # - Odd = first/third/... rows; Even = second/fourth/... rows.
 odd_row_color = "#ffffff"
 even_row_color = "#6280eb"
+first_column_color = "#f2f6fb"
+second_column_color = "#ffffff"
 
 # DEFAULT FIELD CHECKBOX STATES
 # These control which metadata fields are pre-selected when the Review UI loads.
@@ -936,4 +945,3 @@ default_right_unmatched_only_checked = true
 #   col = Colnect internal codes (unique to the Colnect database)
 #   wad = WADP / WNS Numbering System (UN postal agency standard)
 catalog_family_options = ["sn|Scott Number|814224", "sg|Stanley Gibbons|705728", "mi|Michel|1126331", "yt|Yvert et Tellier|925704", "afa|AFA number|116770", "ank|ANK|8320", "nvp|NVPH|18985", "un|Unificato|169053", "col|Colnect codes|445975", "wad|WADP Numbering System - WNS|91196"]
-

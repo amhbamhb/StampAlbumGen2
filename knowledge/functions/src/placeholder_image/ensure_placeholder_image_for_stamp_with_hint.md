@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_placeholder_image_for_stamp_with_hint
-resource: src/placeholder_image.rs#L610-L816
+resource: src/placeholder_image.rs#L610-L811
 generated:
   by: okf-rs/0.4.0
 relationships:

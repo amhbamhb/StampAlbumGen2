@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_liberty_issue_stamp
-resource: src/us1847/collector.rs#L975-L1217
+resource: src/us1847/collector.rs#L991-L1245
 visibility: private
 generated:
   by: okf-rs/0.4.0

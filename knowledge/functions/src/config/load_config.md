@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_config
-resource: src/config.rs#L1570-L2364
+resource: src/config.rs#L1678-L2476
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_directory_empty
-resource: src/review_ui.rs#L637-L641
+resource: src/review_ui.rs#L644-L648
 visibility: private
 generated:
   by: okf-rs/0.4.0

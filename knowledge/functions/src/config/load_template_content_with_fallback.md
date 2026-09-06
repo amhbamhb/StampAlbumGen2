@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_template_content_with_fallback
-resource: src/config.rs#L30-L37
+resource: src/config.rs#L42-L49
 generated:
   by: okf-rs/0.4.0
 relationships:

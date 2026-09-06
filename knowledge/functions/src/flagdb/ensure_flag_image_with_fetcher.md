@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_flag_image_with_fetcher
-resource: src/flagdb.rs#L196-L281
+resource: src/flagdb.rs#L197-L293
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/try_rasterize_svg_to_png
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/config/load_effective_config
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/try_fetch_nexperts_resource
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -26,6 +32,8 @@ relationships:
 
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [try_rasterize_svg_to_png](../../../functions/src/flagdb/try_rasterize_svg_to_png.md)
+- [load_effective_config](../../../functions/src/config/load_effective_config.md)
+- [try_fetch_nexperts_resource](../../../functions/src/flagdb/try_fetch_nexperts_resource.md)
 
 # Called by
 

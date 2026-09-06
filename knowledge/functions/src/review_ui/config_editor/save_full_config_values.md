@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_full_config_values
-resource: src/review_ui/config_editor.rs#L726-L759
+resource: src/review_ui/config_editor.rs#L730-L764
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -35,7 +35,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn save_full_config_values( config_path: &str, template_path: &str, values: &HashMap<String, String>, ) -> Result<(), Box<dyn std::error::Error>>`
+`pub(super) fn save_full_config_values( config_path: &str, template_path: &str, pdf_path: &str, values: &HashMap<String, String>, ) -> Result<(), Box<dyn std::error::Error>>`
 
 # Calls
 

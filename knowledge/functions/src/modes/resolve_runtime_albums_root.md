@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_runtime_albums_root
-resource: src/modes.rs#L47-L65
+resource: src/modes.rs#L43-L61
 visibility: private
 generated:
   by: okf-rs/0.4.0

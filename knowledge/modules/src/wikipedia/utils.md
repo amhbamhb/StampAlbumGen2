@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: utils
-resource: src/wikipedia/utils.rs#L1-L85
+resource: src/wikipedia/utils.rs#L1-L84
 generated:
   by: okf-rs/0.4.0
 relationships:

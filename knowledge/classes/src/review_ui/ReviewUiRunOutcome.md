@@ -1,7 +1,7 @@
 ---
 type: Rust Enum
 title: ReviewUiRunOutcome
-resource: src/review_ui.rs#L1239-L1243
+resource: src/review_ui.rs#L1246-L1250
 generated:
   by: okf-rs/0.4.0
 ---

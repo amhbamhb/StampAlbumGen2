@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_reconnect_banner_html
-resource: src/review_ui/views/shared.rs#L19-L53
+resource: src/review_ui/views/shared.rs#L29-L53
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,7 +16,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn render_reconnect_banner_html( banner_id: &str, title_id: &str, text_id: Option<&str>, text_html: Option<&str>, extra_html: &str, retry_fn: &str, reload_fn: &str, meta_id: &str, ) -> String`
+`pub(super) fn render_reconnect_banner_html(params: &ReconnectBannerParams) -> String`
 
 # Called by
 

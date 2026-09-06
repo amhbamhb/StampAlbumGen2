@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: emit_stamp_lines
-resource: src/album_globals/generator_new/emit.rs#L174-L222
+resource: src/album_globals/generator_new/emit.rs#L175-L231
 generated:
   by: okf-rs/0.4.0
 relationships:

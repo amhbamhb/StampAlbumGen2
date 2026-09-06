@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migrate_stamps_table
-resource: crates/stamp_album_db/src/lib.rs#L495-L517
+resource: crates/stamp_album_db/src/lib.rs#L655-L677
 generated:
   by: okf-rs/0.4.0
 ---

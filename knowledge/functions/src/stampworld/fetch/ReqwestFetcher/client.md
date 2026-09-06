@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: client
-resource: src/stampworld/fetch.rs#L100-L102
+resource: src/stampworld/fetch.rs#L102-L104
 generated:
   by: okf-rs/0.4.0
 relationships:

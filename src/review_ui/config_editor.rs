@@ -512,7 +512,7 @@ pub(super) fn load_current_config_values(
 pub(super) fn build_config_editor_data(
     config_path: &str,
     template_path: &str,
-    pdf_path: &str
+    pdf_path: &str,
 ) -> Result<Vec<ConfigEditorSection>, Box<dyn std::error::Error>> {
     config::ensure_config_and_template_files(config_path, template_path, pdf_path)?;
     let template_content = config::load_template_content_with_fallback(template_path)?;
@@ -737,7 +737,7 @@ pub(super) fn save_full_config_values(
         return Err("no config values were provided".into());
     }
 
-    config::ensure_config_and_template_files(config_path, template_path,pdf_path)?;
+    config::ensure_config_and_template_files(config_path, template_path, pdf_path)?;
     let template_content = config::load_template_content_with_fallback(template_path)?;
     let template_sections = parse_template_config_sections(&template_content);
     let mut template_defaults_by_id: HashMap<String, String> = HashMap::new();

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_html_tables
-resource: src/us1847/collector.rs#L246-L532
+resource: src/us1847/collector.rs#L262-L548
 visibility: private
 generated:
   by: okf-rs/0.4.0

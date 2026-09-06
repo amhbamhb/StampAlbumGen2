@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: fetch_bytes
-resource: src/stampworld/fetch.rs#L138-L147
+resource: src/stampworld/fetch.rs#L140-L149
 generated:
   by: okf-rs/0.4.0
 relationships:

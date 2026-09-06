@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: store_uploaded_image_from_data_url
-resource: src/review_ui.rs#L2338-L2392
+resource: src/review_ui.rs#L2366-L2420
 visibility: private
 generated:
   by: okf-rs/0.4.0

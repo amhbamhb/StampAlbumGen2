@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: db_utils_wrapper
-resource: src/db_utils_wrapper.rs#L1-L224
+resource: src/db_utils_wrapper.rs#L1-L227
 generated:
   by: okf-rs/0.4.0
 relationships:

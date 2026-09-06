@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
+  - target: functions/crates/stamp_album_db/src/insert_stamp_from_struct
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/crates/stamp_album_db/src/extract_block_metadata_local
     resolved_by: tree-sitter
     confidence: exact
@@ -19,9 +22,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator/stamp_dedupe_fingerprints
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/album_globals/generator/estimate_colnect_centre_text
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator/generate_album_output_conn
@@ -73,6 +73,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/db_utils/migrations/migrate_fix_block_metadata
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/extract_from_obj
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/ensure_coat_of_arms_with_fetcher
@@ -140,12 +143,12 @@ relationships:
 
 # Called by
 
+- [insert_stamp_from_struct](../../../../../functions/crates/stamp_album_db/src/insert_stamp_from_struct.md)
 - [extract_block_metadata_local](../../../../../functions/crates/stamp_album_db/src/extract_block_metadata_local.md)
 - [insert_stamp](../../../../../functions/crates/stamp_album_db/src/insert_stamp.md)
 - [emit_commemorative_pages](../../../../../functions/src/album_globals/commemorative_generator/emit_commemorative_pages.md)
 - [emit_special_stamps_page](../../../../../functions/src/album_globals/commemorative_generator/emit_special_stamps_page.md)
 - [stamp_dedupe_fingerprints](../../../../../functions/src/album_globals/generator/stamp_dedupe_fingerprints.md)
-- [estimate_colnect_centre_text](../../../../../functions/src/album_globals/generator/estimate_colnect_centre_text.md)
 - [generate_album_output_conn](../../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
 - [emit_stamp_grid_row](../../../../../functions/src/album_globals/generator_new/commemorative_layout/emit_stamp_grid_row.md)
 - [resolve_stamp_heading_label](../../../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md)
@@ -163,6 +166,7 @@ relationships:
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [migrate_stamps_table](../../../../../functions/src/db_utils/migrations/migrate_stamps_table.md)
 - [migrate_fix_block_metadata](../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.md)
+- [extract_from_obj](../../../../../functions/src/flagdb/extract_from_obj.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [numeric_tokens](../../../../../functions/src/modes/numeric_tokens.md)
 - [mime_from_path](../../../../../functions/src/review_ui/mime_from_path.md)

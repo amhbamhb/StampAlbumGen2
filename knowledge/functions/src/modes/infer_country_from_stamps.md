@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: infer_country_from_stamps
-resource: src/modes.rs#L270-L279
+resource: src/modes.rs#L266-L275
 visibility: private
 generated:
   by: okf-rs/0.4.0

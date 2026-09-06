@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: collect_stampworld_data
-resource: src/stampworld/data_collector.rs#L1536-L1569
+resource: src/stampworld/data_collector.rs#L1538-L1571
 generated:
   by: okf-rs/0.4.0
 relationships:

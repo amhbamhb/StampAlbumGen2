@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_multiline_array_start
-resource: src/review_ui/config_editor.rs#L612-L615
+resource: src/review_ui/config_editor.rs#L616-L619
 visibility: private
 generated:
   by: okf-rs/0.4.0

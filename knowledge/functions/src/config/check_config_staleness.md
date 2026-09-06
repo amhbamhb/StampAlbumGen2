@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: check_config_staleness
-resource: src/config.rs#L1435-L1449
+resource: src/config.rs#L1543-L1557
 generated:
   by: okf-rs/0.4.0
 relationships:

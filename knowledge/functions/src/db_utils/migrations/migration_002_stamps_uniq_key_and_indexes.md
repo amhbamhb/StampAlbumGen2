@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migration_002_stamps_uniq_key_and_indexes
-resource: src/db_utils/migrations.rs#L292-L337
+resource: src/db_utils/migrations.rs#L295-L340
 visibility: private
 generated:
   by: okf-rs/0.4.0

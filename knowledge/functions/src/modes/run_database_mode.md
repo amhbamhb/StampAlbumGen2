@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_database_mode
-resource: src/modes.rs#L1221-L1427
+resource: src/modes.rs#L1218-L1424
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_left_stamp
-resource: src/review_ui/matcher_service.rs#L1169-L1347
+resource: src/review_ui/matcher_service.rs#L1177-L1355
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_pending_schema_migrations_rebuilds_unexpected_stamps_schema
-resource: src/db_utils/migrations.rs#L591-L628
+resource: src/db_utils/migrations.rs#L594-L631
 visibility: private
 generated:
   by: okf-rs/0.4.0

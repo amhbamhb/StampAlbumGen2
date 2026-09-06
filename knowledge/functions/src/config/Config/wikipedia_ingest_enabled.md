@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: wikipedia_ingest_enabled
-resource: src/config.rs#L1359-L1361
+resource: src/config.rs#L1467-L1469
 generated:
   by: okf-rs/0.4.0
 relationships:

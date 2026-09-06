@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_right_candidates
-resource: src/review_ui/matcher_service.rs#L217-L370
+resource: src/review_ui/matcher_service.rs#L225-L378
 generated:
   by: okf-rs/0.4.0
 relationships:

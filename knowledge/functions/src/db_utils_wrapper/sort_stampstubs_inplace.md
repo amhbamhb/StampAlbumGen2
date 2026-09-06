@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sort_stampstubs_inplace
-resource: src/db_utils_wrapper.rs#L206-L208
+resource: src/db_utils_wrapper.rs#L209-L211
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: serve_review_requests
-resource: src/review_ui/http_handlers.rs#L1026-L2338
+resource: src/review_ui/http_handlers.rs#L1032-L2347
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -122,7 +122,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn serve_review_requests( server: &Server, conn: &Connection, db_path: &str, album_name: &str, html: &str, right_map: &HashMap<String, RightCandidate>, default_catalog_code: &str, default_sort_mode: &str, odd_row_color: &str, even_row_color: &str, series_default_checked: bool, description_default_checked: bool, watermark_default_checked: bool, design_default_checked: bool, engraving_default_checked: bool, perforation_default_checked: bool, context_default_checked: bool, colnect_links_default_checked: bool, colnect_image_url_default_checked: bool, colnect_metadata_default_checked: bool, replace_sg_number_default_checked: bool, right_unmatched_only_default_checked: bool, albumeasy_auto_generate_pdf_default: bool, albumeasy_cli_configured: bool, catalog_family_options: &[String], ) -> ReviewHandlersState`
+`pub(super) fn serve_review_requests( server: &Server, conn: &Connection, db_path: &str, album_name: &str, html: &str, right_map: &HashMap<String, RightCandidate>, default_catalog_code: &str, default_sort_mode: &str, odd_row_color: &str, even_row_color: &str, first_column_color: &str, second_column_color: &str, series_default_checked: bool, description_default_checked: bool, watermark_default_checked: bool, design_default_checked: bool, engraving_default_checked: bool, perforation_default_checked: bool, context_default_checked: bool, colnect_links_default_checked: bool, colnect_image_url_default_checked: bool, colnect_metadata_default_checked: bool, replace_sg_number_default_checked: bool, right_unmatched_only_default_checked: bool, albumeasy_auto_generate_pdf_default: bool, albumeasy_cli_configured: bool, catalog_family_options: &[String], ) -> ReviewHandlersState`
 
 # Calls
 

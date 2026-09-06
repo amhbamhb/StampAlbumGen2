@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_pending_schema_migrations_adds_missing_columns_and_records_versions
-resource: src/db_utils/migrations.rs#L533-L588
+resource: src/db_utils/migrations.rs#L536-L591
 visibility: private
 generated:
   by: okf-rs/0.4.0

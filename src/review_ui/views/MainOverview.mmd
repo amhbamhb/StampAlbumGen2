@@ -1,0 +1,123 @@
+---
+references:
+  - "File: /src/commands_file_generator/generator.rs"
+  - "File: /src/config.rs"
+  - "File: /src/flagdb.rs"
+  - "File: /src/main.rs"
+  - "File: /src/review_ui.rs"
+  - "File: /src/review_ui/config_editor.rs"
+  - "File: /src/review_ui/http_handlers.rs"
+  - "File: /src/review_ui/views/bootstrap_assets.rs"
+  - "File: /src/review_ui/views/compare.rs"
+  - "File: /src/review_ui/views/compare_assets.rs"
+generationTime: 2026-09-01T12:56:11.242Z
+---
+flowchart TD
+    Start(["main() entry"]) --> ParseCLI["Parse CLI args"]
+    ParseCLI --> CheckDesktop{"Uninstall/Install\ndesktop launcher flag?"}
+    CheckDesktop -->|Yes| DesktopAction["Install/Uninstall\ndesktop integration"] --> ExitOk(["Exit"])
+    CheckDesktop -->|No| EnsureConfig["ensure_config_and_template_files()"]
+
+    EnsureConfig --> AlignDir["align_process_working_dir_to_runtime_layout()"]
+    AlignDir --> AutoReviewCheck{"Launched without args\n+ interactive/GUI?"}
+    AutoReviewCheck -->|Yes| SetReviewUiTrue["cli.review_ui = true"]
+    AutoReviewCheck -->|No| LoadStartupCfg
+    SetReviewUiTrue --> LoadStartupCfg["load_config('config.toml')"]
+
+    LoadStartupCfg --> StalenessCheck{"Config missing\nnew keys?"}
+    StalenessCheck -->|Yes| WarnUser["Print upgrade warning"]
+    StalenessCheck -->|No| DesktopIntegration
+    WarnUser --> DesktopIntegration["ensure_linux/windows\ndesktop integration"]
+
+    DesktopIntegration --> ReviewUiFlag{"cli.review_ui?"}
+
+    ReviewUiFlag -->|No| InitConfigCheck{"cli.init_config?"}
+    InitConfigCheck -->|Yes| CreateConfigTemplate["create_config_from_template()"] --> ExitOk
+    InitConfigCheck -->|No| ValidateInput["validate_user_input() /\nvalidate_year_range()"]
+    ValidateInput --> SetupLog["setup_logging()"]
+    SetupLog --> ValidateSource["validate_source()"]
+    ValidateSource --> ModeDecision{"db_path set OR\ncolnectexport csv?"}
+    ModeDecision -->|Yes| RunDbMode["run_database_mode()"]
+    ModeDecision -->|No| SourceCheck{"source == stampworld\nor us1847?"}
+    SourceCheck -->|Yes| RunScrapeMode["run_scraping_mode()"]
+    SourceCheck -->|No| ErrNoDbPath["Print error: missing db-path"] --> ExitFail(["Exit 1"])
+    RunDbMode --> ExitOk
+    RunScrapeMode --> ExitOk
+
+    ReviewUiFlag -->|Yes| ValidateOS["validate_os()"]
+    ValidateOS --> BootstrapLoop["Bootstrap Loop\n(launch_state)"]
+
+    BootstrapLoop --> StateSwitch{"launch_state type?"}
+
+    StateSwitch -->|Bootstrap| RunBootstrap["run_review_ui_bootstrap()"]
+    RunBootstrap --> BindServer{"bind_review_server()"}
+    BindServer -->|AlreadyRunning| OpenExisting["Open browser to\nexisting instance"] --> ExitOk
+    BindServer -->|OK| ServeBootstrap["serve_bootstrap_requests()"]
+    ServeBootstrap --> BootstrapOutcome{"Outcome?"}
+    BootstrapOutcome -->|Exit| ExitOk
+    BootstrapOutcome -->|ReloadRequested| BootstrapLoop
+    BootstrapOutcome -->|Selected| StateSelected["Set state = Selected\n(db_path, country)"]
+    StateSelected --> BootstrapLoop
+
+    StateSwitch -->|Selected| LoadAlbumCfg["load_config_with_override()\n(merge album config.toml)"]
+    LoadAlbumCfg --> RunReviewUiFn["run_review_ui()"]
+
+    RunReviewUiFn --> InitDb["db_utils::init_db()"]
+    InitDb --> SyncColnect["sync_processed_colnect_candidates()"]
+    SyncColnect --> BuildPayload["build_matcher_payload()\n(load_left_stamps,\nload_right_candidates)"]
+    BuildPayload --> RenderHtml["render_html(payload)"]
+    RenderHtml --> ServeReview["serve_review_requests()\n(HTTP request loop)"]
+
+    ServeReview --> HttpRouteSwitch{"Incoming HTTP\nrequest route?"}
+    HttpRouteSwitch -->|GET /| ReturnHtml["Return compare HTML"]
+    HttpRouteSwitch -->|POST /apply-matches| ApplyMatches["apply_matches()\n(update DB rows)"]
+    HttpRouteSwitch -->|POST /add-left-stamp| AddLeft["add_left_stamp()"]
+    HttpRouteSwitch -->|POST /save-left-stamp| SaveLeft["save_left_stamp()"]
+    HttpRouteSwitch -->|POST /delete-left-stamp| DeleteLeft["delete_left_stamp()"]
+    HttpRouteSwitch -->|POST /api/stampworld-run| StartStampworld["start_bootstrap_stampworld_job()\n(spawn child process)"]
+    HttpRouteSwitch -->|POST /generate-pdf-now| GeneratePdf["generate_album_output_conn\n_with_pdf_override()"]
+    HttpRouteSwitch -->|POST /api/config-editor-save*| SaveConfig["save_full_config_values() /\nsave_album_config_diff()"]
+    HttpRouteSwitch -->|POST /shutdown| ShutdownReq["Optional album+PDF\ngeneration, then break loop"]
+    HttpRouteSwitch -->|POST /return-to-start| ReturnStart["Set return_to_start_requested"]
+    HttpRouteSwitch -->|other 404| Return404["Respond 404"]
+
+    ReturnHtml --> ServeReview
+    ApplyMatches --> ServeReview
+    AddLeft --> ServeReview
+    SaveLeft --> ServeReview
+    DeleteLeft --> ServeReview
+    StartStampworld --> ServeReview
+    GeneratePdf --> ServeReview
+    SaveConfig --> ServeReview
+    Return404 --> ServeReview
+
+    ShutdownReq --> ReviewOutcome{"Review outcome?"}
+    ReturnStart --> ReviewOutcome
+    ReviewOutcome -->|Exit| ExitOk
+    ReviewOutcome -->|ReloadRequested| BootstrapLoop
+    ReviewOutcome -->|ReturnToStartRequested| BootstrapLoop
+
+    subgraph ConfigModule["config.rs"]
+        LoadCfgFn["load_config()"] --> SearchPaths["Search cwd/exe\nparent dirs for config.toml"]
+        SearchPaths --> ParseToml{"Valid TOML?"}
+        ParseToml -->|No| ReportErr["Print detailed TOML errors"]
+        ParseToml -->|Yes| PromoteSections["Promote [stamps]/[layout]/etc\nsections to top-level"]
+        PromoteSections --> DeserializeCfg["Deserialize into Config struct"]
+        DeserializeCfg --> AutoFixDefaults["Fill missing fields\nwith with_defaults()"]
+    end
+
+    subgraph FlagDbModule["flagdb.rs"]
+        CountryToCode["country_to_code()"] --> LoadFlagMap["load_flag_map_from_fs()"]
+        LoadFlagMap --> LookupKey{"Found in map?"}
+        LookupKey -->|No| TryRegionMap["Try region/province\nfallback map"]
+        LookupKey -->|Yes| ReturnCode["Return alpha-2 code"]
+        EnsureFlag["ensure_flag_image_with_fetcher()"] --> CheckCandidates{"Image exists\nlocally?"}
+        CheckCandidates -->|Yes| RasterizeIfSvg["Rasterize SVG to PNG\nif needed"]
+        CheckCandidates -->|No| FetchNexperts["Try neXperts API"]
+        FetchNexperts --> FetchFlagCdn["Fallback: FlagCDN download"]
+    end
+
+    subgraph GeneratorModule["commands_file_generator/generator.rs"]
+        CollectData["collect_stampworld_data()"] --> Downloader["downloader closure\n(fetch + save images)"]
+        Downloader --> CreateAlbum["create_album()"]
+    end

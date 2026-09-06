@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_left_stamp_by_rowid
-resource: src/review_ui/matcher_service.rs#L574-L691
+resource: src/review_ui/matcher_service.rs#L582-L699
 generated:
   by: okf-rs/0.4.0
 relationships:

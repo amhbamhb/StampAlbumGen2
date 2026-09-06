@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_stamp_all_fields
-resource: src/review_ui.rs#L2117-L2148
+resource: src/review_ui.rs#L2141-L2172
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_colnect_csv_filename
-resource: src/modes.rs#L5-L41
+resource: src/modes.rs#L5-L37
 visibility: private
 generated:
   by: okf-rs/0.4.0

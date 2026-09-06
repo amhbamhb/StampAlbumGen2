@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: new_progress_with_config
-resource: src/progress.rs#L133-L135
+resource: src/progress.rs#L139-L141
 generated:
   by: okf-rs/0.4.0
 relationships:

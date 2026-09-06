@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: current_bootstrap_albums_root
-resource: src/review_ui.rs#L1680-L1682
+resource: src/review_ui.rs#L1687-L1689
 visibility: private
 generated:
   by: okf-rs/0.4.0

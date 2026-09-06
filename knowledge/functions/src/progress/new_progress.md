@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: new_progress
-resource: src/progress.rs#L128-L130
+resource: src/progress.rs#L134-L136
 generated:
   by: okf-rs/0.4.0
 ---

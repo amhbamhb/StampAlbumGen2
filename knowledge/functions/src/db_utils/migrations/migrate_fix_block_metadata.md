@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migrate_fix_block_metadata
-resource: src/db_utils/migrations.rs#L690-L915
+resource: src/db_utils/migrations.rs#L693-L918
 generated:
   by: okf-rs/0.4.0
 relationships:

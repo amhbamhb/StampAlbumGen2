@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_albumeasy_cli_path
-resource: src/config.rs#L1400-L1405
+resource: src/config.rs#L1508-L1513
 generated:
   by: okf-rs/0.4.0
 relationships:

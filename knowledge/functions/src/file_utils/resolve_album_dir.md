@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/file_utils/resolve_album_image_path
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/image_downloader/normalize_album_images_for_pdf
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -18,3 +21,4 @@ relationships:
 # Called by
 
 - [resolve_album_image_path](../../../functions/src/file_utils/resolve_album_image_path.md)
+- [normalize_album_images_for_pdf](../../../functions/src/image_downloader/normalize_album_images_for_pdf.md)

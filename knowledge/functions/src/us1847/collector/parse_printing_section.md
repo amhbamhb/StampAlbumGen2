@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_printing_section
-resource: src/us1847/collector.rs#L544-L563
+resource: src/us1847/collector.rs#L560-L579
 visibility: private
 generated:
   by: okf-rs/0.4.0

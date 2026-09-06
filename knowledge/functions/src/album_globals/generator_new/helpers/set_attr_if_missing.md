@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_attr_if_missing
-resource: src/album_globals/generator_new/helpers.rs#L340-L349
+resource: src/album_globals/generator_new/helpers.rs#L351-L360
 visibility: private
 generated:
   by: okf-rs/0.4.0

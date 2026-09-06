@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_printing_type_alias_is_supported
-resource: src/config.rs#L2416-L2428
+resource: src/config.rs#L2528-L2540
 visibility: private
 generated:
   by: okf-rs/0.4.0

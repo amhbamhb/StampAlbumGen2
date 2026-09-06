@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: has_import_checksum
-resource: src/modes.rs#L213-L223
+resource: src/modes.rs#L209-L219
 visibility: private
 generated:
   by: okf-rs/0.4.0

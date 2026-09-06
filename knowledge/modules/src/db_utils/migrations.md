@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: migrations
-resource: src/db_utils/migrations.rs#L1-L915
+resource: src/db_utils/migrations.rs#L1-L918
 generated:
   by: okf-rs/0.4.0
 relationships:

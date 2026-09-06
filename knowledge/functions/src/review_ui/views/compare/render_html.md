@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_html
-resource: src/review_ui/views/compare.rs#L13-L3875
+resource: src/review_ui/views/compare.rs#L16-L4041
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -36,9 +36,6 @@ relationships:
   - target: functions/src/review_ui/views/compare_assets/render_op_busy_modal_html
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/views/compare_assets/render_left_editor_modal_html
-    resolved_by: tree-sitter
-    confidence: exact
 ---
 
 # Signature
@@ -57,4 +54,3 @@ relationships:
 - [render_compare_panels_html](../../../../../functions/src/review_ui/views/compare_assets/render_compare_panels_html.md)
 - [render_add_modal_html](../../../../../functions/src/review_ui/views/compare_assets/render_add_modal_html.md)
 - [render_op_busy_modal_html](../../../../../functions/src/review_ui/views/compare_assets/render_op_busy_modal_html.md)
-- [render_left_editor_modal_html](../../../../../functions/src/review_ui/views/compare_assets/render_left_editor_modal_html.md)

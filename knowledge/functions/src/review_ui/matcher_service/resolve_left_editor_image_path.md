@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_left_editor_image_path
-resource: src/review_ui/matcher_service.rs#L1121-L1167
+resource: src/review_ui/matcher_service.rs#L1129-L1175
 generated:
   by: okf-rs/0.4.0
 relationships:

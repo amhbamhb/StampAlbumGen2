@@ -1320,6 +1320,10 @@ where
                 if let Some(stamp) = first_stamp {
                     // Optionally include a date line in the header (from DB year/month/day)
                     if config.include_date.unwrap_or(true) {
+                        let date_pattern_cfg = config
+                            .header_formatting
+                            .as_ref()
+                            .and_then(|hf| hf.date_pattern.clone());
                         let date_format_cfg = config
                             .header_formatting
                             .as_ref()
@@ -1327,16 +1331,16 @@ where
                             .unwrap_or_else(|| "commas".to_string());
                         let year = stamp.attrs.get("year").map(|s| s.trim()).unwrap_or("");
                         let day = stamp.attrs.get("day").map(|s| s.trim()).unwrap_or("");
+                        let month_num = stamp
+                            .attrs
+                            .get("month_num")
+                            .map(|s| s.trim())
+                            .unwrap_or("");
                         let month_raw = stamp.attrs.get("month").map(|s| s.trim()).unwrap_or("");
                         let month = if !month_raw.is_empty() {
                             month_raw.to_string()
                         } else {
                             // fall back to numeric month -> name
-                            let month_num = stamp
-                                .attrs
-                                .get("month_num")
-                                .map(|s| s.trim())
-                                .unwrap_or("0");
                             if let Ok(mn) = month_num.parse::<usize>() {
                                 if (1..=12).contains(&mn) {
                                     MONTH_NAMES[mn].to_string()
@@ -1347,14 +1351,32 @@ where
                                 "".to_string()
                             }
                         };
-                        let mut date_text = String::new();
-                        if !year.is_empty() {
+                        let pattern_is_complete = !year.is_empty()
+                            && !month.is_empty()
+                            && !day.is_empty();
+                        let mut date_text = if let Some(pattern) = date_pattern_cfg {
+                            // Replace the documented tokens independently so
+                            // users can choose either named or numeric months
+                            // and any ordering/separators they prefer.
+                            if pattern_is_complete {
+                                pattern
+                                    .replace("{year}", year)
+                                    .replace("{month}", &month)
+                                    .replace("{month_num}", month_num)
+                                    .replace("{day}", day)
+                            } else {
+                                String::new()
+                            }
+                        } else {
+                            String::new()
+                        };
+                        if date_text.is_empty() && !year.is_empty() {
                             if date_format_cfg == "dashes" {
                                 if !month.is_empty() && !day.is_empty() {
                                     date_text = format!("{} - {} - {}", month, day, year);
                                 } else if !month.is_empty() {
                                     date_text = format!("{} - {}", month, year);
-                                } else {
+                                } else if date_text.is_empty() {
                                     date_text = year.to_string();
                                 }
                             } else {

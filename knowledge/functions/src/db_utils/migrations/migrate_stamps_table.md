@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migrate_stamps_table
-resource: src/db_utils/migrations.rs#L407-L516
+resource: src/db_utils/migrations.rs#L410-L519
 generated:
   by: okf-rs/0.4.0
 relationships:

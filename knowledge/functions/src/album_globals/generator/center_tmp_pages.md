@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: center_tmp_pages
-resource: src/album_globals/generator.rs#L3385-L3686
+resource: src/album_globals/generator.rs#L3401-L3702
 visibility: private
 generated:
   by: okf-rs/0.4.0

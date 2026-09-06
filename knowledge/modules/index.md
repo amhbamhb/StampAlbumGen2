@@ -122,6 +122,7 @@
 - [embedded_flags](../modules/tests/embedded_flags.md) — Rust Module
 - [engraving_column](../modules/tests/engraving_column.md) — Rust Module
 - [ensure_coa_integration](../modules/tests/ensure_coa_integration.md) — Rust Module
+- [ensure_coa_local](../modules/tests/ensure_coa_local.md) — Rust Module
 - [fetch_and_filter_stamps](../modules/tests/fetch_and_filter_stamps.md) — Rust Module
 - [fetcher_injection](../modules/tests/fetcher_injection.md) — Rust Module
 - [filename_year_inference_fixed](../modules/tests/filename_year_inference_fixed.md) — Rust Module

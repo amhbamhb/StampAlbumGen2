@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: src/main.rs#L38-L593
+resource: src/main.rs#L38-L602
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,6 +14,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/write_startup_probe_snapshot
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/setup/setup_logging
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/uninstall_linux_desktop_integration
@@ -73,6 +76,12 @@ relationships:
   - target: functions/src/config/Config/review_ui_even_row_color
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/config/Config/review_ui_first_column_color
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/config/Config/review_ui_second_column_color
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/config/Config/review_ui_series_default_checked
     resolved_by: tree-sitter
     confidence: exact
@@ -130,9 +139,6 @@ relationships:
   - target: functions/src/validation/print_validation_error
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/setup/setup_logging
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/validation/validate_source
     resolved_by: tree-sitter
     confidence: exact
@@ -153,6 +159,7 @@ relationships:
 - [write_startup_probe](../../functions/src/setup/write_startup_probe.md)
 - [log_runtime_event](../../functions/src/review_ui/log_runtime_event.md)
 - [write_startup_probe_snapshot](../../functions/src/setup/write_startup_probe_snapshot.md)
+- [setup_logging](../../functions/src/setup/setup_logging.md)
 - [uninstall_linux_desktop_integration](../../functions/src/setup/uninstall_linux_desktop_integration.md)
 - [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
@@ -172,6 +179,8 @@ relationships:
 - [review_ui_default_sort_mode](../../functions/src/config/Config/review_ui_default_sort_mode.md)
 - [review_ui_odd_row_color](../../functions/src/config/Config/review_ui_odd_row_color.md)
 - [review_ui_even_row_color](../../functions/src/config/Config/review_ui_even_row_color.md)
+- [review_ui_first_column_color](../../functions/src/config/Config/review_ui_first_column_color.md)
+- [review_ui_second_column_color](../../functions/src/config/Config/review_ui_second_column_color.md)
 - [review_ui_series_default_checked](../../functions/src/config/Config/review_ui_series_default_checked.md)
 - [review_ui_description_default_checked](../../functions/src/config/Config/review_ui_description_default_checked.md)
 - [review_ui_watermark_default_checked](../../functions/src/config/Config/review_ui_watermark_default_checked.md)
@@ -191,7 +200,6 @@ relationships:
 - [validate_user_input](../../functions/src/validation/validate_user_input.md)
 - [validate_year_range](../../functions/src/validation/validate_year_range.md)
 - [print_validation_error](../../functions/src/validation/print_validation_error.md)
-- [setup_logging](../../functions/src/setup/setup_logging.md)
 - [validate_source](../../functions/src/validation/validate_source.md)
 - [run_database_mode](../../functions/src/modes/run_database_mode.md)
 - [run_scraping_mode](../../functions/src/modes/run_scraping_mode.md)

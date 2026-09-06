@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: open_folder_in_file_manager
-resource: src/review_ui.rs#L2251-L2289
+resource: src/review_ui.rs#L2279-L2317
 generated:
   by: okf-rs/0.4.0
 relationships:

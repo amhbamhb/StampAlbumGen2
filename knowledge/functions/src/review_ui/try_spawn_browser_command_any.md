@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: try_spawn_browser_command_any
-resource: src/review_ui.rs#L1308-L1315
+resource: src/review_ui.rs#L1315-L1322
 visibility: private
 generated:
   by: okf-rs/0.4.0

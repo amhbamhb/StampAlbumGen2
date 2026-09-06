@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_stamp_data
-resource: src/commands_file_generator/album_creation.rs#L198-L312
+resource: src/commands_file_generator/album_creation.rs#L203-L317
 generated:
   by: okf-rs/0.4.0
 relationships:

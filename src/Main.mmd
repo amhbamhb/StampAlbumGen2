@@ -1,0 +1,102 @@
+---
+references:
+  - "File: /src/review_ui/http_handlers.rs"
+generationTime: 2026-09-05T01:47:10.792Z
+---
+flowchart TD
+    Start["serve_bootstrap_requests / serve_review_requests"] --> Loop{"Incoming Request Loop"}
+
+    Loop --> Method{"Method + URL Match"}
+
+    Method -->|"GET /favicon"| Favicon["Serve bundled favicon.png"]
+    Method -->|"GET /api/ping"| Ping["Return ping JSON"]
+    Method -->|"GET /"| Html["Serve HTML page"]
+    Method -->|"GET /bootstrap-state"| ScanCountries["scan_bootstrap_countries()"]
+    Method -->|"POST /bootstrap-set-albums-root"| ParseBody1{"Parse JSON Body"}
+    Method -->|"POST /start-review"| ParseStart{"Parse Start Request"}
+    Method -->|"POST /api/generate-pdf-now"| PdfGuard{"Acquire PdfGenerationGuard"}
+    Method -->|"POST /api/colnect-import"| ColnectImport["colnect_import_data()"]
+    Method -->|"POST /apply-matches"| ApplyMatches["apply_matches()"]
+    Method -->|"POST /save-left-stamp"| SaveLeft["save_left_stamp()"]
+    Method -->|"POST /add-left-stamp"| AddLeft["add_left_stamp()"]
+    Method -->|"POST /delete-left-stamp"| DeleteLeft["delete_left_stamp()"]
+    Method -->|"POST /shutdown"| Shutdown["Handle Shutdown"]
+    Method -->|"POST /return-to-start"| ReturnStart{"StampWorld Running?"}
+    Method -->|"unmatched"| NotFound["Respond 404"]
+
+    ParseBody1 -->|Ok| SetRoot["set_bootstrap_albums_root_override()"]
+    ParseBody1 -->|Err| Error1["Build Error Response"]
+    SetRoot --> RespondJSON1["Respond JSON"]
+    Error1 --> RespondJSON1
+    RespondJSON1 --> Loop
+
+    ScanCountries --> RespondJSON2["Respond JSON with countries"]
+    RespondJSON2 --> Loop
+
+    ParseStart -->|Ok| FindCountry{"Country Found?"}
+    ParseStart -->|Err| ErrStart["Invalid Request Response"]
+    FindCountry -->|Yes| SetSelected["Set selected = (db_path, country)"]
+    FindCountry -->|No| ErrStart
+    SetSelected --> RespondStart["Respond JSON"]
+    ErrStart --> RespondStart
+    RespondStart --> BreakCheck{"selected.is_some()?"}
+    BreakCheck -->|Yes| BreakLoop["Break Loop"]
+    BreakCheck -->|No| Loop
+
+    PdfGuard -->|"Guard Acquired"| ParsePdfReq{"Parse PDF Request"}
+    PdfGuard -->|"Guard Busy"| Respond409["Respond 409 Conflict"]
+    Respond409 --> Loop
+    ParsePdfReq -->|Ok| FindCountry2{"Country Found?"}
+    ParsePdfReq -->|Err| ErrPdf["Invalid Request Response"]
+    FindCountry2 -->|Yes| InitDB["init_db()"]
+    FindCountry2 -->|No| ErrPdf
+    InitDB -->|Ok| PrepImages["best_effort_prepare_images_for_pdf()"]
+    InitDB -->|Err| ErrPdf
+    PrepImages --> Normalize["normalize_album_images_for_pdf()"]
+    Normalize --> GenAlbum["generate_album_output_conn_with_pdf_override()"]
+    GenAlbum --> OpenPdf{"PDF Generated?"}
+    OpenPdf -->|Yes| OpenFile["open_local_path()"]
+    OpenPdf -->|No| BuildResp["Build Response"]
+    OpenFile --> BuildResp
+    BuildResp --> RespondPdf["Respond JSON"]
+    ErrPdf --> RespondPdf
+    RespondPdf --> Loop
+
+    ColnectImport --> RespondColnect["Respond JSON"]
+    RespondColnect --> Loop
+
+    ApplyMatches --> RespondApply["Respond JSON"]
+    RespondApply --> Loop
+
+    SaveLeft --> RespondSave["Respond JSON"]
+    RespondSave --> Loop
+
+    AddLeft --> RespondAdd["Respond JSON"]
+    RespondAdd --> Loop
+
+    DeleteLeft --> RespondDelete["Respond JSON"]
+    RespondDelete --> Loop
+
+    ReturnStart -->|Running| Block409["Respond 409 Blocked"]
+    ReturnStart -->|Idle| SetReturnFlag["return_to_start_requested = true"]
+    Block409 --> Loop
+    SetReturnFlag --> RespondReturn["Respond JSON"]
+    RespondReturn --> BreakLoop2["Break Loop"]
+
+    Shutdown --> ParseShutdown{"Parse Shutdown Request"}
+    ParseShutdown -->|"generate_album=true"| PrepImages2["best_effort_prepare_images_for_pdf()"]
+    ParseShutdown -->|"generate_album=false"| SkipGen["Skip Generation"]
+    PrepImages2 --> GenAlbum2["generate_album_output_conn_with_pdf_override() (panic-safe)"]
+    GenAlbum2 --> OpenPdf2{"PDF Generated?"}
+    OpenPdf2 -->|Yes| OpenFile2["open_local_path()"]
+    OpenPdf2 -->|No| BuildMsg["Build Message"]
+    OpenFile2 --> BuildMsg
+    SkipGen --> BuildMsg
+    BuildMsg --> RespondShutdown["Respond JSON"]
+    RespondShutdown --> BreakLoop3["Break Loop"]
+
+    NotFound --> Loop
+
+    BreakLoop --> End1["Return BootstrapHandlersState"]
+    BreakLoop2 --> End2["Return ReviewHandlersState"]
+    BreakLoop3 --> End2

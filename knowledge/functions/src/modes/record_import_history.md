@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: record_import_history
-resource: src/modes.rs#L225-L268
+resource: src/modes.rs#L221-L264
 visibility: private
 generated:
   by: okf-rs/0.4.0

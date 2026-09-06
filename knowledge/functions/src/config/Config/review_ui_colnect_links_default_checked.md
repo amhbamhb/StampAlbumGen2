@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_colnect_links_default_checked
-resource: src/config.rs#L1308-L1313
+resource: src/config.rs#L1416-L1421
 generated:
   by: okf-rs/0.4.0
 relationships:

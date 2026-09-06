@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: stamp_flags_dir_lookup
-resource: tests/stamp_flags_dir_lookup.rs#L1-L35
+resource: tests/stamp_flags_dir_lookup.rs#L1-L38
 generated:
   by: okf-rs/0.4.0
 relationships:

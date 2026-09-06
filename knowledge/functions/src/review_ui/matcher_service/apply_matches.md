@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: apply_matches
-resource: src/review_ui/matcher_service.rs#L372-L572
+resource: src/review_ui/matcher_service.rs#L380-L580
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,33 +1,21 @@
 use super::{
-    render_app_footer_html,
-    render_config_editor_assets,
-    render_footer_year_script,
-    render_reconnect_banner_html,
-    render_runtime_log_panel_html,
-    MatcherPayload,
-    BACKEND_NOT_RESPONDING_MESSAGE,
-    FOOTER_YEAR_UPDATE_JS,
+    render_app_footer_html, render_config_editor_assets, render_footer_year_script,
+    render_reconnect_banner_html, render_runtime_log_panel_html, MatcherPayload,
+    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS,
 };
 
 use super::compare_assets::{
-    compare_head_css,
-    render_add_modal_html,
-    render_compare_action_rows_html,
-    render_compare_filters_html,
-    render_compare_navigation_html,
-    render_compare_panels_html,
-    render_compare_top_html,
-    render_left_editor_modal_html,
-    render_op_busy_modal_html,
+    compare_head_css, render_add_modal_html, render_compare_action_rows_html,
+    render_compare_filters_html, render_compare_navigation_html, render_compare_panels_html,
+    render_compare_top_html, render_op_busy_modal_html,
 };
 
 use crate::review_ui::views::shared::ReconnectBannerParams;
 use crate::review_ui::views::shared::RuntimeLogPanelParams;
 
 pub(super) fn render_html(payload: &MatcherPayload) -> String {
-    let json = serde_json
-        ::to_string(payload)
-        .unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
+    let json =
+        serde_json::to_string(payload).unwrap_or_else(|_| "{\"left\":[],\"right\":[]}".to_string());
     let compare_css = compare_head_css();
     let reconnect_banner_compare_html = render_reconnect_banner_html(
         &(ReconnectBannerParams {
@@ -56,7 +44,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     );
     let compare_top_html = render_compare_top_html(
         &reconnect_banner_compare_html,
-        &runtime_log_compare_panel_html
+        &runtime_log_compare_panel_html,
     );
     let compare_navigation_html = render_compare_navigation_html();
     let compare_filters_html = render_compare_filters_html();
@@ -64,7 +52,6 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let compare_panels_html = render_compare_panels_html();
     let compare_add_modal_html = render_add_modal_html();
     let compare_op_busy_modal_html = render_op_busy_modal_html();
-    let _left_editor_modal_html = render_left_editor_modal_html();
     let local_catalog_select_assets =
         " <div class='sessionRow'>
                         <button onclick='openConfigEditor()'>Edit Local Config</button>
@@ -91,30 +78,29 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
             <span id='reviewColnectCopyCountBadge' class='badge'>Files: 0</span>
         </div>";
     let colnect_destination_dir_path =
-        "<div style='margin-top:6px;font-size:12px;color:#35566d;'>
+        "<div class='reviewColnectDestination'>
             Destination: <code id='reviewColnectDirPath' class='reviewColnectDirPath'>(unknown)</code>
         </div>";
     let colnect_import_status =
         " <div id='colnectImportStatus' class='colnectImportStatus sessionStatusBox sessionStatusGreen'>
             <div class='colnectImportSpinRow'>
-                <span class='colnectImportSpinner' style='display:none;'></span>
+                <span class='colnectImportSpinner initiallyHidden'></span>
                 <span id='colnectImportStatusText' class='colnectImportStatusText'>Ready</span>
             </div>
-            <div id='colnectImportLog' class='colnectImportLog' style='display:none;'></div>
+            <div id='colnectImportLog' class='colnectImportLog initiallyHidden'></div>
         </div>";
     let stampworld_pull_year_setup =
         "
             <div class='sessionRow reviewSwRow reviewSwYearRow'>
-                        <label for='reviewSwStartYear'>Start Year</label>
+                        <label for='reviewSwStartYear'  class='reviewPdfYearLabel' >Start Year</label>
                         <input id='reviewSwStartYear' type='number' placeholder='Start' min='1840' max='2100' />
-                        <div style='padding: 15px;'>
+                        <div class='reviewSwYearSpacer'>
                         </div>
                       
-                        <label for='reviewSwEndYear'>End Year &nbsp;</label>
+                        <label for='reviewSwEndYear'  class='reviewPdfYearLabel'>End Year &nbsp;</label>
                         <input id='reviewSwEndYear' type='number' placeholder='End' min='1840' max='2100' />
                     </div>";
-    let stampworld_pull_command_preset =
-        "
+    let stampworld_pull_command_preset = "
             <div class='sessionRow reviewSwRow reviewSwPresetRow'>
                 <label for='reviewSwPreset'>Command Preset</label>
                 <select id='reviewSwPreset'>
@@ -129,10 +115,10 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
         "
            <div class='sessionRow reviewSwRow reviewSwFlagsRow'>
                         <label for='reviewSwExtraFlags'>Extra Flags</label>
-                        <input id='reviewSwExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='width:100%;max-width:100%;min-width:0;box-sizing:border-box;' />
+                        <input id='reviewSwExtraFlags' class='reviewSwExtraFlagsInput' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' />
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwActionRow'>
-                        <button class='accent' style='background-color: lightgreen; color: black;' onclick='runReviewStampWorldPull()'>Run StampWorld pull for this country (including additional pull).</button>
+                        <button class='accent reviewSwRunButton' onclick='runReviewStampWorldPull()'>Run StampWorld pull for this {{country}} .</button>
                     </div>
                     <div class='sessionRow reviewSwRow reviewSwCommandRow'>
                         <strong>Suggested command:</strong>
@@ -144,18 +130,18 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let stampworld_pull_review_status =
         "
              <div id='reviewSwStatusWrap' class='reviewSwStatusWrap sessionStatusBox sessionStatusAmber'>
-                        <span id='reviewSwRunSpinner' class='colnectImportSpinner' style='display:none;'></span>
+                        <span id='reviewSwRunSpinner' class='colnectImportSpinner initiallyHidden'></span>
                         <span id='reviewSwRunStatus' class='reviewSwStatusText'>Ready</span>
                     </div>
-                    <div id='reviewSwPullLogPanel' class='reviewSwLogPanel' style='display:none;'>
+                    <div id='reviewSwPullLogPanel' class='reviewSwLogPanel initiallyHidden'>
                         <div class='reviewSwLogTitle'>StampWorld Pull Progress: Real-Time Log</div>
                         <textarea id='reviewSwPullLog' readonly class='reviewSwLogBox'></textarea>
                     </div>";
 
     let stampworld_sort_order_selector =
         " <div class='orderSelectGroup'>
-            <label for='reviewPdfSortMode' style='font-size:0.9em;margin:0 0 0 0.4em;'>Order</label>
-            <select id='reviewPdfSortMode' onchange='changePdfSortMode()' style='padding:2px 4px;font-size:0.9em;'>
+            <label for='reviewPdfSortMode' class='reviewPdfSortLabel'>Order</label>
+            <select id='reviewPdfSortMode' class='reviewPdfSortSelect' onchange='changePdfSortMode()'>
                 <option value='year_series_date_catalog'>Year then issue date in series then catalog number (default)
                 </option>
                 <option value='catalog'>Catalog number</option>
@@ -165,36 +151,34 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                 <option value='rowid'>DB row id</option>
                 <option value='colnect_id'>Colnect ID</option>
             </select>
-            <button id='reviewPdfSortModeMakeDefaultBtn' type='button' onclick='makePdfSortModeDefault()'
-                style='display:none;'>Make default?</button>
-            <button id='reviewPdfSortModeResetDefaultBtn' type='button' onclick='resetPdfSortModeDefault()'
-                style='display:none;'>Reset default</button>
+            <button id='reviewPdfSortModeMakeDefaultBtn' class='initiallyHidden' type='button' onclick='makePdfSortModeDefault()'>Make default?</button>
+            <button id='reviewPdfSortModeResetDefaultBtn' class='initiallyHidden' type='button' onclick='resetPdfSortModeDefault()'>Reset default</button>
         </div>";
     let stampworld_generate_pdf_button =
-            "<button id='reviewPdfBtn' style='background-color: mistyrose; color: black;'
-        onclick='generatePdfNowReview()'>Generate PDF Now</button>
-            <button id='reviewPdfPreviewBtn' onclick='previewLastPdfReview()' style='display:none;'>Preview Last PDF</button>";
+            "<button id='reviewPdfBtn' class='reviewPdfGenerateButton'
+        onclick='generatePdfNowReview()' title='Generate the AlbumEasy PDF for  {{country}}.'
+        >Generate PDF Now</button>
+            <button id='reviewPdfPreviewBtn' type='button' onclick='previewLastPdfReview()'>Preview Last PDF</button>";
     let stampworld_start_end_year =
-        "<label for='reviewPdfYearRange' style='font-size:0.9em; color: steelblue;'>To Generate all pages, leave blank.</label>
-        <label for='reviewPdfStartYear' style='font-size:0.9em;  color: steelblue; '>Start Year</label>
+        "<label for='reviewPdfYearRange' class='reviewPdfYearHint'>To Generate all pages, leave blank.</label>
+        <label for='reviewPdfStartYear' class='reviewPdfYearLabel'>Start Year</label>
         <input id='reviewPdfStartYear' type='number' placeholder='Start Year' min='1840' max='2100'
-            style='width:78px;padding:2px 4px;font-size:0.9em' />
+            class='reviewPdfYearInput' />
 
-        <label for='reviewPdfEndYear' style='font-size:0.9em;
-        color: steelblue; '>End Year</label>
+        <label for='reviewPdfEndYear' class='reviewPdfYearLabel'>End Year</label>
         <input id='reviewPdfEndYear' type='number' placeholder='End Year &nbsp;' min='1840' max='2100'
-            style='width:78px;padding:2px 4px;font-size:0.9em' />
+            class='reviewPdfYearInput' />
 
-        <label for='reviewPdfAlwaysShow' style='font-size:0.9em;display:inline-flex;   align-items:center;gap:6px;'>
+        <label for='reviewPdfAlwaysShow' class='reviewPdfAlwaysShowLabel'>
 
             <input id='reviewPdfAlwaysShow' type='checkbox' onchange='togglePdfAlwaysOpenPreference()' />Always open PDF after generation</label>";
     let stampworld_pdf_status =
         " <div id='pdfStatusWrap' class='pdfStatusWrap sessionStatusBox sessionStatusAmber'>
-                        <span id='pdfStatusSpinner' class='colnectImportSpinner' style='display:none;'></span>
+                        <span id='pdfStatusSpinner' class='colnectImportSpinner initiallyHidden'></span>
                         <span id='pdfStatus' class='pdfStatusText'>Ready</span>
                     </div>";
     let left_edit_base_stamp_page = "<div class='leftEditorHead'>
-            <h4 id='leftEditorTitle'>Edit Base Stamp</h4>
+            <h4 id='leftEditorTitle' class='leftEditorTitle'>123 Edit Base Stamp for <span id='currentReviewSessionCountry'>Unknown</span></h4>
             <p id='leftEditorHint' class='leftEditorHint'>Use this for StampWorld corrections, watermark/reference images, or fixing a bad Colnect placement.</p>
         </div>";
     let edit_based_page_top_values = "<label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /><label style='display: block; '>
@@ -283,7 +267,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
             </label>
         </div>
         </div>";
-    let edit_based_page_stampworld ="
+    let edit_based_page_stampworld = "
                         <div class='leftEditorStack'>
                         <label>Description <textarea id='leftEditorDescription'></textarea></label>
                         <label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
@@ -292,7 +276,6 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                         <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
                         <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
                     </div>";
-                    
 
     format!(
         r##"<!doctype html>
@@ -513,6 +496,8 @@ async function fetchJsonNoStoreWithTimeout(url, timeoutMs) {{
 
 const currentReviewCountryEl = document.getElementById('currentReviewCountry');
 if (currentReviewCountryEl) currentReviewCountryEl.textContent = reviewCountryName || 'Unknown';
+const currentReviewSessionCountryEl = document.getElementById('currentReviewSessionCountry');
+if (currentReviewSessionCountryEl) currentReviewSessionCountryEl.textContent = reviewCountryName || 'Unknown';
 window.__returnToStartInFlight = false;
 const reviewPdfLastPathStorageKey = 'reviewui.pdf.last_path.' + String(payload.album_name || 'default');
 const reviewPdfLastStatusStorageKey = 'reviewui.pdf.last_status.' + String(payload.album_name || 'default');
@@ -554,7 +539,6 @@ function updatePdfPreviewControls() {{
     const previewBtn = document.getElementById('reviewPdfPreviewBtn');
     if (!previewBtn) return;
     const hasPdf = !!String(reviewLastGeneratedPdfPath || '').trim();
-    previewBtn.style.display = hasPdf ? '' : 'none';
     previewBtn.disabled = !hasPdf;
 }}
 
@@ -985,6 +969,8 @@ async function refreshRightCandidatesRealtime(restoredColnectId = null) {{
 }}
 const rowOddColor = (payload.odd_row_color || '').trim() || '#ffffff';
 const rowEvenColor = (payload.even_row_color || '').trim() || '#e6eef4';
+const firstColumnColor = (payload.first_column_color || '').trim() || '#f2f6fb';
+const secondColumnColor = (payload.second_column_color || '').trim() || '#ffffff';
 const checkboxDefaults = {{
   f_series: payload.series_default_checked !== false,
   f_description: payload.description_default_checked !== false,
@@ -1003,8 +989,13 @@ const pdfGenerationDefaults = {{
     enabledByDefault: payload.albumeasy_auto_generate_pdf_default !== false,
     cliConfigured: payload.albumeasy_cli_configured !== false
 }};
-document.documentElement.style.setProperty('--row-odd-bg', rowOddColor);
-document.documentElement.style.setProperty('--row-even-bg', rowEvenColor);
+// The stylesheet defines defaults on body, so set the configured values on
+// body as well; setting them only on html would be shadowed by body values.
+const reviewColorRoot = document.body || document.documentElement;
+reviewColorRoot.style.setProperty('--row-odd-bg', rowOddColor);
+reviewColorRoot.style.setProperty('--row-even-bg', rowEvenColor);
+reviewColorRoot.style.setProperty('--column-first-bg', firstColumnColor);
+reviewColorRoot.style.setProperty('--column-second-bg', secondColumnColor);
 
 function b(v) {{ return !!v && String(v).trim().length > 0; }}
 function fmt(v) {{ return b(v) ? String(v) : '(no info)'; }}
@@ -2234,8 +2225,8 @@ function render(options) {{
 
     updateGuide();
   if (!left.length) {{
-        document.getElementById('leftPos').innerText = 'Left 0/0';
-        document.getElementById('rightPos').innerText = 'Candidate 0/0';
+        document.getElementById('leftPos').innerText = 'Current Stamp/Position 0/0';
+        document.getElementById('rightPos').innerText = 'Candidate/Position 0/0';
     document.getElementById('leftActionBanner').innerHTML = `
         <div class='leftActionTop'>
             <strong>Manual Base Stamp Tools</strong>
@@ -2275,54 +2266,31 @@ function render(options) {{
         </div>
         <p class='leftActionText'>Use these when the StampWorld base row is wrong, when a watermark/reference image should live on the left, or when a Colnect import landed on the wrong base row.${{showImagelessLeftRowsDefault ? ' Image-less rows are visible in this session.' : ' New left items need an image to remain visible here.'}}</p>
         <div class='leftActionBtns'>
-            <button onclick='openLeftEditor("edit")'>Edit Current</button>
+            <button class='EditCurrentBaseStamp' onclick='openLeftEditor("edit")'>Edit Current</button>
             <button class='warn' onclick='openLeftEditor("add")'>Add Base / Watermark Item</button>
             <button onclick='clearCurrentLeftColnectLink()' ${{b(l.colnect_id) ? '' : 'disabled'}}>Clear Colnect Link</button>
-            <button class='danger' onclick='deleteCurrentLeft()'>Delete Current</button>
+            <button class='DeleteCurrentCandidateButton' onclick='deleteCurrentLeft()'>Delete Current</button>
         </div>
         <div class='leftSearchRow'>
             <label for='leftSearchInput'>Search Left</label>
             <input id='leftSearchInput' type='text' placeholder='Catalog #, series, name...' oninput='onLeftSearchInput()' value='${{html(leftSearchQuery)}}'/>
-            <button onclick='stepLeftSearch(-1)'>Back</button>
-            <button onclick='stepLeftSearch(1)'>Forward</button>
+            <button class='leftBackButton' onclick='stepLeftSearch(-1)'>Back</button>
+            <button class='leftForwardButton' onclick='stepLeftSearch(1)'>Forward</button>
             <span id='leftSearchStatus' class='badge'>Matches: 0/0</span>
         </div>
         <div class='leftNavRow'>
-            <button class='navBtn' onclick='firstLeft()'>First</button>
-            <button class='navBtn' onclick='jumpLeft(-50)'>-50</button>
-            <button class='navBtn' onclick='jumpLeft(-10)'>-10</button>
-            <button class='navBtn' onclick='prevLeft()'>Prev Left</button>
-            <button class='navBtn' onclick='nextLeft()'>Next Left</button>
-            <button class='navBtn' onclick='jumpLeft(10)'>+10</button>
-            <button class='navBtn' onclick='jumpLeft(50)'>+50</button>
-            <button class='navBtn' onclick='lastLeft()'>Last</button>
+            <button class='navBtn LeftNavPreviousCandidateFirstButton' onclick='firstLeft()'>First</button>
+            <button class='navBtn LeftNavPreviousCandidateJump50PlusButton' onclick='jumpLeft(-50)'>-50</button>
+            <button class='navBtn LeftNavPreviousCandidate10MinusButton' onclick='jumpLeft(-10)'>-10</button>
+      
+            <button class='navBtn LeftNavPreviousCandidateButton' onclick='prevLeft()'>Prev Candidate</button>
+            <button class='navBtn LeftNavNextCandidateButton' onclick='nextLeft()'>Next Candidate</button>
+            <button class='navBtn LeftNavNextCandidate10PlusButton' onclick='jumpLeft(10)'>+10</button>
+            <button class='navBtn LeftNavNextCandidateJump50MinusButton' onclick='jumpLeft(50)'>+50</button>
+            <button class='navBtn LeftNavNextCandidateLastButton' onclick='lastLeft()'>Last</button>
         </div>`;
   updateLeftSearchMatches(true);
-  document.getElementById('rightActionBanner').innerHTML = `
-        <div class='rightActionTop'>
-            <strong>Candidate Search And Navigation</strong>
-            <span class='badge'>Filtered by current left row</span>
-        </div>
-        <div class='rightBottomBlock'>
-        <div class='rightSearchRow'>
-            <label for='rightSearchInput'>Search Right</label>
-            <input id='rightSearchInput' type='text' placeholder='ID, catalog #, name, series...' oninput='onRightSearchInput()' value='${{html(rightSearchQuery)}}'/>
-            <button onclick='jumpRight(-1)'>Back</button>
-            <button onclick='jumpRight(1)'>Forward</button>
-            <span id='rightSearchStatus' class='badge'>Matches: 0/0</span>
-        </div>
-        <div class='rightNavRow'>
-            <button class='navBtn' onclick='firstRight()'>First</button>
-            <button class='navBtn' onclick='jumpRight(-50)'>-50</button>
-            <button class='navBtn' onclick='jumpRight(-10)'>-10</button>
-            <button class='navBtn' background: #c87c28; color: #fff; border-color: #a8641a; onclick='prevRight()'>Prev Candidate</button>
-            <button class='navBtn' background: #2da070; color: #fff; border-color: #228458; onclick='nextRight()'>Next Candidate</button>
-            <button class='navBtn' onclick='jumpRight(10)'>+10</button>
-            <button class='navBtn' onclick='jumpRight(50)'>+50</button>
-            <button class='navBtn' onclick='lastRight()'>Last</button>
-        </div>
-        </div>`;
-  updateRightSearchStatus();
+  const rightCatalogQuery = String(document.getElementById('catalogCodeSearchInput')?.value || '');
   document.getElementById('leftPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
@@ -2450,22 +2418,47 @@ function render(options) {{
     const rightCatalogTypeLabel = rightCatalogType
         ? `${{catalogDisplayName(rightCatalogType)}} (${{String(rightCatalogType).toUpperCase()}})`
         : 'Catalog';
-    const rightCatalogQuery = String(document.getElementById('catalogCodeSearchInput')?.value || '');
     const selectedCode = selectedCatalogCodeForCurrent(r);
     const selectedType = selectedCatalogTypeForCurrent(r);
     const rightCatalogOptions = buildRightCatalogSelectOptions(r, selectedCode, selectedType);
+  document.getElementById('rightActionBanner').innerHTML = `
+        <div class='rightActionTop'>
+            <strong>Candidate Search And Navigation</strong>
+            <span class='badge'>Filtered by current left row</span>
+        </div>
+        <div class='rightBottomBlock'>
+        <div class='rightCatalogRow'>
+            <label for='catalogCodeSearchInput'>Catalog code to assign (for catalog number replace)</label>
+            <input id='catalogCodeSearchInput' type='text' list='catalogCodeSearchList' value='${{html(rightCatalogQuery)}}' placeholder='Type to filter catalogs...' oninput='render({{ preserveRightScroll: true }})' onchange='applyRightCatalogSearchChoice()' onblur='tryApplyRightCatalogSearchChoice()' />
+            <datalist id='catalogCodeSearchList'></datalist>
+            <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
+                ${{rightCatalogOptions}}
+            </select>
+        </div>
+        <div class='rightSearchRow'>
+            <label for='rightSearchInput'>Search Right</label>
+            <input id='rightSearchInput' type='text' placeholder='ID, catalog #, name, series...' oninput='onRightSearchInput()' value='${{html(rightSearchQuery)}}'/>
+            <button class='navBtn rightBackButton' onclick='jumpRight(-1)'>Back</button>
+            <button class='rightForwardButton' onclick='jumpRight(1)'>Forward</button>
+            <span id='rightSearchStatus' class='badge'>Matches: 0/0</span>
+        </div>
+        <div class='rightNavRow'>
+            <button class='navBtn RightNavPreviousCandidateFirstButton' onclick='firstRight()'>First</button>
+            <button class='navBtn RightNavPreviousCandidateJump50PlusButton' onclick='jumpRight(-50)'>-50</button>
+            <button class='navBtn RightNavPreviousCandidate10MinusButton' onclick='jumpRight(-10)'>-10</button>
+            <button class='navBtn RightNavPreviousCandidateButton' onclick='prevRight()'>Prev Candidate</button>
+            <button class='navBtn RightNavNextCandidateButton' onclick='nextRight()'>Next Candidate</button>
+            <button class='navBtn RightNavNextCandidate10PlusButton' onclick='jumpRight(10)'>+10</button>
+            <button class='navBtn RightNavNextCandidateJump50MinusButton' onclick='jumpRight(50)'>+50</button>
+            <button class='navBtn RightNavNextCandidateLastButton' onclick='lastRight()'>Last</button>
+        </div>
+ 
+        </div>`;
+  updateRightSearchStatus();
   document.getElementById('rightPanel').innerHTML = `
         <div class='panelCard'>
             <div class='panelHead'>
-               
-                <div style='margin-top:8px;'>
-                    <label>Catalog code to assign (for catalog number replace):</label>
-                    <input id='catalogCodeSearchInput' type='text' list='catalogCodeSearchList' value='${{html(rightCatalogQuery)}}' placeholder='Type to filter catalogs...' oninput='render({{ preserveRightScroll: true }})' onchange='applyRightCatalogSearchChoice()' onblur='tryApplyRightCatalogSearchChoice()' style='display:block; margin:6px 0; width:100%; max-width:460px;' />
-                    <datalist id='catalogCodeSearchList'></datalist>
-                    <select id='catalogCodeSelect' onchange='rememberCatalogCode()'>
-                        ${{rightCatalogOptions}}
-                    </select>
-                </div>
+                <strong>Colnect Candidate</strong>
             </div>
             <div class='panelBody'>
                 ${{imageBox(rightImg, 'Colnect candidate image')}}
@@ -3189,6 +3182,40 @@ async function submitLeftEditor() {{
     render();
 }}
 
+function confirmDestructiveActionCompare(message) {{
+    return new Promise(resolve => {{
+        const dlg = document.createElement('dialog');
+        dlg.className = 'destructiveConfirmDialog';
+        dlg.innerHTML =
+            "<div class='destructiveConfirmHead'>Permanent deletion warning</div>" +
+            "<div class='destructiveConfirmBody'></div>" +
+            "<div class='destructiveConfirmActions'>" +
+            "<button type='button' class='neutral'>Cancel</button>" +
+            "<button type='button' class='destructiveConfirmDelete'>Delete permanently</button>" +
+            "</div>";
+        dlg.querySelector('.destructiveConfirmBody').textContent = String(message || '');
+        let settled = false;
+        const finish = confirmed => {{
+            if (settled) return;
+            settled = true;
+            dlg.close();
+            dlg.remove();
+            resolve(confirmed);
+        }};
+        dlg.querySelector('.neutral').addEventListener('click', () => finish(false));
+        dlg.querySelector('.destructiveConfirmDelete').addEventListener('click', () => finish(true));
+        dlg.addEventListener('cancel', event => {{
+            event.preventDefault();
+            finish(false);
+        }}, {{ once: true }});
+        dlg.addEventListener('close', () => {{
+            if (document.body.contains(dlg)) finish(false);
+        }}, {{ once: true }});
+        document.body.appendChild(dlg);
+        dlg.showModal();
+    }});
+}}
+
 async function deleteCurrentLeft() {{
     const currentLeft = left[leftIdx];
     if (!currentLeft) {{
@@ -3198,8 +3225,8 @@ async function deleteCurrentLeft() {{
 
     const warning = currentLeft.colnect_id
         ? `Deleting this row will also return linked Colnect candidate ${{currentLeft.colnect_id}} to the right side.\n\nContinue?`
-        : 'Delete this left-side base/reference row?';
-    if (!confirm(warning)) return;
+        : 'Delete this left-side base/reference row? This can not be recovered and is permanent!';
+    if (!await confirmDestructiveActionCompare(warning)) return;
 
     const response = await fetch('/delete-left-stamp', {{
         method: 'POST',

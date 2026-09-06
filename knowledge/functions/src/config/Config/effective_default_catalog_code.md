@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_default_catalog_code
-resource: src/config.rs#L1350-L1357
+resource: src/config.rs#L1458-L1465
 generated:
   by: okf-rs/0.4.0
 relationships:

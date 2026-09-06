@@ -18,7 +18,7 @@ use std::process::Command;
 use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
-const EMBEDDED_PDF_HELP: &[u8] = include_bytes!("../Manual.pdf");
+const EMBEDDED_PDF_HELP: &[u8] = include_bytes!("../StampAlbumGenerator2HelpManual.pdf");
 
 thread_local! {
     static SCOPED_ALBUM_CONFIG_DIR: RefCell<Option<PathBuf>> = const { RefCell::new(None) };
@@ -31,15 +31,13 @@ pub fn embedded_pdf_help() -> &'static [u8] {
     EMBEDDED_PDF_HELP
 }
 pub fn load_pdf_content_with_fallback(
-    pdf_path: &str
+    pdf_path: &str,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     match fs::read(pdf_path) {
         Ok(content) => Ok(content),
         Err(_) => Ok(EMBEDDED_PDF_HELP.to_vec()),
     }
-
 }
-
 
 pub fn load_template_content_with_fallback(
     template_path: &str,
@@ -411,6 +409,11 @@ pub fn ensure_config_and_template_files(
     } else {
         current_dir.join(template_path)
     };
+    let pdf_abs: PathBuf = if Path::new(pdf_path).is_absolute() {
+        PathBuf::from(pdf_path)
+    } else {
+        current_dir.join(pdf_path)
+    };
 
     // Always keep config_template.toml in sync with the embedded defaults so
     // that users can see newly added options after upgrading. This file is
@@ -441,12 +444,26 @@ pub fn ensure_config_and_template_files(
         }
     }
 
+    // Keep the installed manual synchronized with the version embedded in the
+    // executable so missing or outdated manuals are restored on startup.
+    if fs::read(&pdf_abs).ok().as_deref() != Some(EMBEDDED_PDF_HELP) {
+        fs::write(&pdf_abs, EMBEDDED_PDF_HELP)?;
+        log::info!(
+            "Updated manual PDF from embedded version at {}",
+            pdf_abs.display()
+        );
+    }
+
     Ok(())
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct HeaderFormatting {
     pub date_format: Option<String>,
+    /// Optional date pattern for stamp-group headers. Supported tokens are
+    /// `{year}`, `{month}`, `{month_num}`, and `{day}`. When set, this takes
+    /// precedence over the legacy `date_format` style selector.
+    pub date_pattern: Option<String>,
     pub label_style: Option<String>,
     pub series_style: Option<String>,
     pub include_currency: Option<bool>,
@@ -715,6 +732,8 @@ pub struct Config {
     pub page_text_centre_vspace: Option<f32>,
     // Optional per-header-line PAGE_TEXT_CENTRE templates and overrides.
     // Each `*_format` should contain a single `{}` placeholder for text.
+    #[serde(default)]
+    pub series_page_text_centre_format_enabled: bool,
     pub series_page_text_centre_format: Option<String>,
     // Optional series-header-specific PAGE_TEXT_CENTRE overrides. When any of
     // these are set, series name lines use these values instead of the generic
@@ -722,14 +741,20 @@ pub struct Config {
     pub series_page_text_centre_font: Option<String>,
     pub series_page_text_centre_size: Option<f32>,
     pub series_page_text_centre_vspace: Option<f32>,
+    #[serde(default)]
+    pub date_page_text_centre_format_enabled: bool,
     pub date_page_text_centre_format: Option<String>,
     pub date_page_text_centre_font: Option<String>,
     pub date_page_text_centre_size: Option<f32>,
     pub date_page_text_centre_vspace: Option<f32>,
+    #[serde(default)]
+    pub watermark_page_text_centre_format_enabled: bool,
     pub watermark_page_text_centre_format: Option<String>,
     pub watermark_page_text_centre_font: Option<String>,
     pub watermark_page_text_centre_size: Option<f32>,
     pub watermark_page_text_centre_vspace: Option<f32>,
+    #[serde(default)]
+    pub engraving_page_text_centre_format_enabled: bool,
     pub engraving_page_text_centre_format: Option<String>,
     pub engraving_page_text_centre_font: Option<String>,
     pub engraving_page_text_centre_size: Option<f32>,
@@ -860,6 +885,8 @@ pub struct ColnectFieldToggles {
 pub struct ReviewUiConfig {
     pub odd_row_color: Option<String>,
     pub even_row_color: Option<String>,
+    pub first_column_color: Option<String>,
+    pub second_column_color: Option<String>,
     pub default_sort_mode: Option<String>,
     pub default_series_checked: Option<bool>,
     pub default_description_checked: Option<bool>,
@@ -933,6 +960,8 @@ impl Config {
             review_ui: Some(ReviewUiConfig {
                 odd_row_color: Some("#ffffff".to_string()),
                 even_row_color: Some("#e6eef4".to_string()),
+                first_column_color: Some("#f2f6fb".to_string()),
+                second_column_color: Some("#ffffff".to_string()),
                 default_sort_mode: Some("year_series_date_catalog".to_string()),
                 default_series_checked: Some(true),
                 default_description_checked: Some(true),
@@ -1010,22 +1039,26 @@ impl Config {
             page_text_centre_font: Some("HN".to_string()),
             page_text_centre_size: Some(8.0),
             page_text_centre_vspace: Some(1.0),
+            series_page_text_centre_format_enabled: false,
             series_page_text_centre_format: None,
             series_page_text_centre_font: None,
             series_page_text_centre_size: None,
             series_page_text_centre_vspace: None,
+            date_page_text_centre_format_enabled: false,
             date_page_text_centre_format: None,
             date_page_text_centre_font: None,
             date_page_text_centre_size: None,
             date_page_text_centre_vspace: None,
+            watermark_page_text_centre_format_enabled: false,
             watermark_page_text_centre_format: None,
             watermark_page_text_centre_font: None,
             watermark_page_text_centre_size: None,
             watermark_page_text_centre_vspace: None,
+            engraving_page_text_centre_format_enabled: false,
             engraving_page_text_centre_format: None,
             engraving_page_text_centre_font: None,
             engraving_page_text_centre_size: None,
-            engraving_page_text_centre_vspace: None,
+            engraving_page_text_centre_vspace: Some(5.0),
             page_text_right_font: Some("HN".to_string()),
             page_text_right_size: Some(10.0),
             page_text_right_vspace: Some(1.0),
@@ -1286,6 +1319,24 @@ impl Config {
             .map(str::trim)
             .filter(|s| !s.is_empty())
             .unwrap_or("#70c1ff")
+    }
+
+    pub fn review_ui_first_column_color(&self) -> &str {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.first_column_color.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("#f2f6fb")
+    }
+
+    pub fn review_ui_second_column_color(&self) -> &str {
+        self.review_ui
+            .as_ref()
+            .and_then(|r| r.second_column_color.as_deref())
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .unwrap_or("#ffffff")
     }
 
     pub fn review_ui_default_sort_mode(&self) -> String {
@@ -2408,7 +2459,11 @@ pub fn load_config(path: &str) -> Config {
     //
     // This comment serves as the canonical reminder for automated assistants and
     // maintainers to update all three places whenever configuration changes.
-    if let Err(e) = ensure_config_and_template_files(path, "config_template.toml","Manual.pdf") {
+    if let Err(e) = ensure_config_and_template_files(
+        path,
+        "config_template.toml",
+        "StampAlbumGenerator2HelpManual.pdf",
+    ) {
         log::warn!(
             "Failed to ensure config/template files for '{}': {}",
             path,

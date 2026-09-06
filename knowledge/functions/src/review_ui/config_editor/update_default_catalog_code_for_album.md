@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: update_default_catalog_code_for_album
-resource: src/review_ui/config_editor.rs#L8-L52
+resource: src/review_ui/config_editor.rs#L9-L55
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -23,7 +23,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn update_default_catalog_code_for_album( album_dir: &std::path::Path, album_name: &str, global_config_path: &str, template_path: &str, requested_code: &str, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub(super) fn update_default_catalog_code_for_album( album_dir: &std::path::Path, album_name: &str, global_config_path: &str, pdf_path: &str, template_path: &str, requested_code: &str, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

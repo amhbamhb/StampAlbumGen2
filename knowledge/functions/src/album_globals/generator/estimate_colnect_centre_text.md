@@ -1,16 +1,13 @@
 ---
 type: Rust Function
 title: estimate_colnect_centre_text
-resource: src/album_globals/generator.rs#L369-L430
+resource: src/album_globals/generator.rs#L369-L426
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/config/Config/colnect_details_enabled
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/Config/effective_colnect_detail_field_set
@@ -29,7 +26,6 @@ relationships:
 # Calls
 
 - [colnect_details_enabled](../../../../functions/src/config/Config/colnect_details_enabled.md)
-- [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [effective_colnect_detail_field_set](../../../../functions/src/config/Config/effective_colnect_detail_field_set.md)
 
 # Called by

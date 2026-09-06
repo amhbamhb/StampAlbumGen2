@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: collect_colnect_csv_files_rec
-resource: src/modes.rs#L141-L158
+resource: src/modes.rs#L137-L154
 visibility: private
 generated:
   by: okf-rs/0.4.0

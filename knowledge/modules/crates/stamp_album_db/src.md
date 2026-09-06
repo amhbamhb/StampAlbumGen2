@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: src
-resource: crates/stamp_album_db/src/lib.rs#L1-L1061
+resource: crates/stamp_album_db/src/lib.rs#L1-L1222
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -12,10 +12,7 @@ relationships:
   - target: external/regex-regex
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/rusqlite-params-types-valueref-connection-result-row
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/super-format-stamps-issued-get-stamps-by-series
+  - target: external/rusqlite-params-connection-optionalextension-result
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -26,19 +23,19 @@ relationships:
 
 # Contains
 
+- [insert_stamp_from_struct](../../../functions/crates/stamp_album_db/src/insert_stamp_from_struct.md)
+- [StampInsert](../../../classes/crates/stamp_album_db/src/StampInsert.md)
 - [StampStub](../../../classes/crates/stamp_album_db/src/StampStub.md)
-- [get_all_series](../../../functions/crates/stamp_album_db/src/get_all_series.md)
-- [leading_int](../../../functions/crates/stamp_album_db/src/leading_int.md)
-- [suffix_key](../../../functions/crates/stamp_album_db/src/suffix_key.md)
-- [read_optional_i32_lossy](../../../functions/crates/stamp_album_db/src/read_optional_i32_lossy.md)
-- [format_stamps_issued](../../../functions/crates/stamp_album_db/src/format_stamps_issued.md)
-- [test_format_integer_only](../../../functions/crates/stamp_album_db/src/test_format_integer_only.md)
-- [test_format_with_decimal](../../../functions/crates/stamp_album_db/src/test_format_with_decimal.md)
-- [test_insert_placeholder](../../../functions/crates/stamp_album_db/src/test_insert_placeholder.md)
-- [test_get_stamps_by_series_tolerates_text_image_dimensions](../../../functions/crates/stamp_album_db/src/test_get_stamps_by_series_tolerates_text_image_dimensions.md)
-- [insert_stamp_placeholder](../../../functions/crates/stamp_album_db/src/insert_stamp_placeholder.md)
-- [sort_stampstubs_inplace](../../../functions/crates/stamp_album_db/src/sort_stampstubs_inplace.md)
 - [get_stamps_by_series](../../../functions/crates/stamp_album_db/src/get_stamps_by_series.md)
+- [get_all_series](../../../functions/crates/stamp_album_db/src/get_all_series.md)
+- [leading_int_and_suffix](../../../functions/crates/stamp_album_db/src/leading_int_and_suffix.md)
+- [sort_stampstubs_inplace](../../../functions/crates/stamp_album_db/src/sort_stampstubs_inplace.md)
+- [is_stampworld_image_url](../../../functions/crates/stamp_album_db/src/is_stampworld_image_url.md)
+- [is_colnect_page_url](../../../functions/crates/stamp_album_db/src/is_colnect_page_url.md)
+- [is_colnect_image_url](../../../functions/crates/stamp_album_db/src/is_colnect_image_url.md)
+- [is_real_image_candidate](../../../functions/crates/stamp_album_db/src/is_real_image_candidate.md)
+- [is_placeholder_image_path](../../../functions/crates/stamp_album_db/src/is_placeholder_image_path.md)
+- [cleanup_stampworld_identity_duplicates](../../../functions/crates/stamp_album_db/src/cleanup_stampworld_identity_duplicates.md)
 - [init_db](../../../functions/crates/stamp_album_db/src/init_db.md)
 - [migrate_stamps_table](../../../functions/crates/stamp_album_db/src/migrate_stamps_table.md)
 - [migrate_fix_block_metadata](../../../functions/crates/stamp_album_db/src/migrate_fix_block_metadata.md)
@@ -51,8 +48,7 @@ relationships:
 
 - `log::{debug, error}`
 - `regex::Regex`
-- `rusqlite::{params, types::ValueRef, Connection, Result, Row}`
-- `super::{format_stamps_issued, get_stamps_by_series}`
+- `rusqlite::{params, Connection, OptionalExtension, Result}`
 
 # Member of
 

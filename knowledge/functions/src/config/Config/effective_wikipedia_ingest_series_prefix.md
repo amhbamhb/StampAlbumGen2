@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_wikipedia_ingest_series_prefix
-resource: src/config.rs#L1367-L1373
+resource: src/config.rs#L1475-L1481
 generated:
   by: okf-rs/0.4.0
 relationships:

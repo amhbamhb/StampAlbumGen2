@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config
-resource: src/config.rs#L1-L2846
+resource: src/config.rs#L1-L2960
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -18,25 +18,25 @@ relationships:
   - target: external/std-fs
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/std-path-path-pathbuf
+  - target: external/std-io-isterminal
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-io-self-write
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/std-io-isterminal
+  - target: external/std-path-path-pathbuf
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-env
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/std-process-command
-    resolved_by: tree-sitter
-    confidence: exact
   - target: external/std-os-unix-process-commandext
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/rfd-filedialog-messagedialog-messagebuttons-messagelevel
+  - target: external/std-process-command
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/rfd-filedialog-messagebuttons-messagedialog-messagelevel
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-collections-hashmap
@@ -57,6 +57,8 @@ relationships:
 # Contains
 
 - [embedded_config_template](../../functions/src/config/embedded_config_template.md)
+- [embedded_pdf_help](../../functions/src/config/embedded_pdf_help.md)
+- [load_pdf_content_with_fallback](../../functions/src/config/load_pdf_content_with_fallback.md)
 - [load_template_content_with_fallback](../../functions/src/config/load_template_content_with_fallback.md)
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
 - [HeaderFormatting](../../classes/src/config/HeaderFormatting.md)
@@ -70,6 +72,8 @@ relationships:
 - [effective_colnect_detail_field_set](../../functions/src/config/Config/effective_colnect_detail_field_set.md)
 - [review_ui_odd_row_color](../../functions/src/config/Config/review_ui_odd_row_color.md)
 - [review_ui_even_row_color](../../functions/src/config/Config/review_ui_even_row_color.md)
+- [review_ui_first_column_color](../../functions/src/config/Config/review_ui_first_column_color.md)
+- [review_ui_second_column_color](../../functions/src/config/Config/review_ui_second_column_color.md)
 - [review_ui_default_sort_mode](../../functions/src/config/Config/review_ui_default_sort_mode.md)
 - [review_ui_series_default_checked](../../functions/src/config/Config/review_ui_series_default_checked.md)
 - [review_ui_description_default_checked](../../functions/src/config/Config/review_ui_description_default_checked.md)
@@ -119,13 +123,13 @@ relationships:
 - `serde::{Deserialize, Serialize}`
 - `std::cell::RefCell`
 - `std::fs`
-- `std::path::{Path, PathBuf}`
-- `std::io::{self, Write}`
 - `std::io::IsTerminal`
+- `std::io::{self, Write}`
+- `std::path::{Path, PathBuf}`
 - `std::env`
-- `std::process::Command`
 - `std::os::unix::process::CommandExt`
-- `rfd::{FileDialog, MessageDialog, MessageButtons, MessageLevel}`
+- `std::process::Command`
+- `rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel}`
 - `std::collections::HashMap`
 - `super::{detect_duplicate_keys, Config}`
 - `std::time::{SystemTime, UNIX_EPOCH}`
