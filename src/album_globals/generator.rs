@@ -1370,37 +1370,39 @@ where
                         } else {
                             String::new()
                         };
-                        if date_text.is_empty() && !year.is_empty() {
-                            if date_format_cfg == "dashes" {
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} - {} - {}", month, day, year);
-                                } else if !month.is_empty() {
-                                    date_text = format!("{} - {}", month, year);
-                                } else if date_text.is_empty() {
-                                    date_text = year.to_string();
+                        if date_text.is_empty() {
+                            if !year.is_empty() {
+                                if date_format_cfg == "dashes" {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} - {} - {}", month, day, year);
+                                    } else if !month.is_empty() {
+                                        date_text = format!("{} - {}", month, year);
+                                    } else {
+                                        date_text = year.to_string();
+                                    }
+                                } else {
+                                    // default to commas style: "Month Day, Year"
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} {}, {}", month, day, year);
+                                    } else if !month.is_empty() {
+                                        date_text = format!("{} {}", month, year);
+                                    } else {
+                                        date_text = year.to_string();
+                                    }
                                 }
                             } else {
-                                // default to commas style: "Month Day, Year"
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} {}, {}", month, day, year);
-                                } else if !month.is_empty() {
-                                    date_text = format!("{} {}", month, year);
-                                } else {
-                                    date_text = year.to_string();
-                                }
-                            }
-                        } else {
-                            // no year available, but maybe month/day exist
-                            if date_format_cfg == "dashes" {
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} - {}", month, day);
+                                // no year available, but maybe month/day exist
+                                if date_format_cfg == "dashes" {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} - {}", month, day);
+                                    } else if !month.is_empty() {
+                                        date_text = month.clone();
+                                    }
+                                } else if !month.is_empty() && !day.is_empty() {
+                                    date_text = format!("{} {}", month, day);
                                 } else if !month.is_empty() {
                                     date_text = month.clone();
                                 }
-                            } else if !month.is_empty() && !day.is_empty() {
-                                date_text = format!("{} {}", month, day);
-                            } else if !month.is_empty() {
-                                date_text = month.clone();
                             }
                         }
                         if !date_text.is_empty() {

@@ -200,6 +200,46 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
+        if method == Method::Post
+            && (req_url == "/api/create-country" || req_url == "/create-country")
+        {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapCreateCountryRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match create_bootstrap_country_or_theme(&req) {
+                    Ok(resp) => resp,
+                    Err(error) => BootstrapCreateCountryResponse {
+                        ok: false,
+                        message: error,
+                        country: None,
+                        db_path: None,
+                    },
+                },
+                Err(error) => BootstrapCreateCountryResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                    country: None,
+                    db_path: None,
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"country\":null,\"db_path\":null}".to_string()
+                }),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/bootstrap-set-albums-root" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
@@ -1785,6 +1825,30 @@ pub(super) fn serve_review_requests(
                 }
                 Err(e) => {
                     log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
+                    "[]".to_string()
+                }
+            };
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get
+            && (req_url == "/api/fresh-left" || req_url.starts_with("/api/fresh-left?"))
+        {
+            let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
+            let resp_json = match load_left_stamps(
+                conn,
+                db_path,
+                album_name,
+                show_imageless_left_rows,
+            ) {
+                Ok(stamps) => serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string()),
+                Err(e) => {
+                    log_runtime_event(&format!("fresh-left: load failed: {}", e));
                     "[]".to_string()
                 }
             };

@@ -1,0 +1,39 @@
+<div id='configEditorBackdrop' class='cfgBackdrop'>
+    <div class='cfgDialog'>
+        <div class='cfgHeader'>
+            <div class='cfgTitleBlock'>
+                <h3 id='cfgEditorTitle'>Edit config.toml</h3>
+                <p>Static template defaults and comments are on the left. Editable current values are on the right.</p>
+            </div>
+            <div class='cfgActionRow'>
+                <button class='cfgPrimaryBtn' onclick='saveConfigEditorChanges()'>OK / Save</button>
+                <button class='cfgSecondaryBtn' onclick='requestCloseConfigEditor()'>Cancel</button>
+            </div>
+        </div>
+        <div class='cfgToolbar'>
+            <span id='cfgEditorStatus' class='badge'>Ready</span>
+            <span id='cfgEditorFieldCount' class='badge'>Fields: 0</span>
+            <button id='cfgAlbumBanner' class='cfgAlbumBanner' type='button' onclick='toggleConfigEditorOverrideFilter()' aria-pressed='false'></button>
+            <button id='cfgDeleteAlbumBtn' class='cfgSecondaryBtn cfgHidden' onclick='deleteAlbumConfigOverride()'>Delete Album Override</button>
+            <input id='cfgSearchInput' type='text' placeholder='Filter by section, key, or comment' oninput='filterConfigEditorFields()' />
+        </div>
+        <div id='cfgEditorBody' class='cfgBody'>
+            <div id='cfgEditorLoadState' class='cfgLoadState'>Load config details to start editing.</div>
+            <div id='cfgEditorSections'></div>
+        </div>
+        <div class='cfgFooter'>
+            <div class='cfgFooterNote'>Saving validates the generated config and reloads the review UI so new values take effect.</div>
+            <div class='cfgActionRow'>
+                <div id='cfgSaveTargetBlock' class='cfgSaveTarget'>
+                    <label for='cfgSaveTarget'>Save target:</label>
+                    <select id='cfgSaveTarget' onchange='onConfigSaveTargetChanged()'>
+                        <option value='album'>Album override</option>
+                        <option value='global'>Global config.toml</option>
+                    </select>
+                </div>
+                <button class='cfgPrimaryBtn' onclick='saveConfigEditorChanges()'>OK / Save</button>
+                <button class='cfgSecondaryBtn' onclick='requestCloseConfigEditor()'>Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>

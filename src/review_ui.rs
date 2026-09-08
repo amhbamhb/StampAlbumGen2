@@ -333,6 +333,19 @@ struct BootstrapStartResponse {
 }
 
 #[derive(Debug, Deserialize)]
+struct BootstrapCreateCountryRequest {
+    name: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapCreateCountryResponse {
+    ok: bool,
+    message: String,
+    country: Option<String>,
+    db_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct BootstrapGeneratePdfRequest {
     country: String,
     #[serde(default)]
@@ -1682,6 +1695,75 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
 
     out.sort_by_key(|a| a.country.to_lowercase());
     out
+}
+
+fn create_bootstrap_country_or_theme(
+    req: &BootstrapCreateCountryRequest,
+) -> Result<BootstrapCreateCountryResponse, String> {
+    let raw_name = req.name.trim();
+    if raw_name.is_empty() {
+        return Err("Country or theme name cannot be empty.".to_string());
+    }
+
+    if raw_name.contains('/') || raw_name.contains('\\') || raw_name.contains("..") {
+        return Err("Name contains invalid characters (/ \\ ..)".to_string());
+    }
+
+    let albums_root = resolve_bootstrap_albums_root()
+        .ok_or_else(|| "Albums root directory could not be resolved.".to_string())?;
+
+    let slug = raw_name.replace(' ', "-");
+    let country_dir = albums_root.join(&slug);
+    let colnect_dir = country_dir.join("colnect");
+    let images_dir = country_dir.join("images");
+    let db_path = country_dir.join(format!("{}.db", slug));
+
+    fs::create_dir_all(&country_dir).map_err(|e| {
+        format!(
+            "Failed to create country directory {}: {}",
+            country_dir.display(),
+            e
+        )
+    })?;
+    fs::create_dir_all(&colnect_dir).map_err(|e| {
+        format!(
+            "Failed to create colnect directory {}: {}",
+            colnect_dir.display(),
+            e
+        )
+    })?;
+    fs::create_dir_all(&images_dir).map_err(|e| {
+        format!(
+            "Failed to create images directory {}: {}",
+            images_dir.display(),
+            e
+        )
+    })?;
+
+    let db_path_str = db_path.to_string_lossy().to_string();
+    if !db_path.exists() {
+        crate::db_utils::init_db(&db_path_str)
+            .map_err(|e| format!("Failed to initialize database {}: {}", db_path.display(), e))?;
+        log_runtime_event(&format!(
+            "Bootstrap: created new country/theme '{}' at {} with initialized database",
+            raw_name,
+            country_dir.display()
+        ));
+    } else {
+        log_runtime_event(&format!(
+            "Bootstrap: country/theme '{}' already exists at {}",
+            raw_name,
+            country_dir.display()
+        ));
+    }
+
+    let display_country = slug.replace('-', " ");
+    Ok(BootstrapCreateCountryResponse {
+        ok: true,
+        message: format!("Country/Theme '{}' is ready.", display_country),
+        country: Some(display_country),
+        db_path: Some(db_path_str),
+    })
 }
 
 fn current_bootstrap_albums_root() -> Option<String> {

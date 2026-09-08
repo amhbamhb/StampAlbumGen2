@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>collect_stampworld_data_with_fetcher — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../../index.html">Home</a> / <a href="../../../../functions/@index.html">functions</a></nav>
+<h1>collect_stampworld_data_with_fetcher</h1>
+<p class="type">Rust Function</p>
+<pre><code>pub fn collect_stampworld_data_with_fetcher( fetcher: &amp;dyn crate::stampworld::fetch::Fetcher, sequencer: &amp;mut i32, _separator: &amp;str, site_name: &amp;str, images_directory: &amp;str, month_number: &amp;dyn Fn(&amp;str) -&gt; String, get_stampworld_image: &amp;dyn Fn(&amp;str, &amp;str, bool) -&gt; ImageStatus, base_url: &amp;str, start_year: i32, end_year: i32, overwrite_images: bool, page_callback: Option&lt;&amp;dyn Fn(usize)&gt;, max_pages: i32, stop_after_no_hits: i32, ) -&gt; Vec&lt;String&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../../functions/src/config/load_config.html">load_config</a></li>
+<li><a href="../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.html">from</a></li>
+<li><a href="../../../../functions/src/stampworld/parser/dedupe_details.html">dedupe_details</a></li>
+<li><a href="../../../../functions/src/album_globals/structs/GenericAttrs/get.html">get</a></li>
+<li><a href="../../../../functions/src/wikipedia/models/ContentSource/as_str.html">as_str</a></li>
+<li><a href="../../../../functions/src/album_utils/text_utils/sanitize_filename.html">sanitize_filename</a></li>
+<li><a href="../../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_stampworld_image.html">get_stampworld_image</a></li>
+<li><a href="../../../../functions/src/stampworld/parser/extract_block_metadata.html">extract_block_metadata</a></li>
+<li><a href="../../../../functions/src/stampworld/parser/compress_context.html">compress_context</a></li>
+<li><a href="../../../../functions/src/stampworld/data_collector/normalize_currency_token.html">normalize_currency_token</a></li>
+<li><a href="../../../../functions/src/stampworld/parser/normalize_stamps_issued.html">normalize_stamps_issued</a></li>
+<li><a href="../../../../functions/src/db_utils/updates/persist_image_dimensions_from_file.html">persist_image_dimensions_from_file</a></li>
+<li><a href="../../../../functions/src/image_utils/get_image_dimensions.html">get_image_dimensions</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../../functions/src/bin/stampworld_debug/main.html">main</a></li>
+<li><a href="../../../../functions/src/stampworld/data_collector/collect_stampworld_data.html">collect_stampworld_data</a></li>
+<li><a href="../../../../functions/tests/db_path_unit/collector_creates_db_at_expected_path.html">collector_creates_db_at_expected_path</a></li>
+<li><a href="../../../../functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db.html">e2e_collect_stampworld_inserts_placeholders_to_db</a></li>
+<li><a href="../../../../functions/tests/fetcher_injection/test_collect_with_fake_fetcher_returns_empty.html">test_collect_with_fake_fetcher_returns_empty</a></li>
+</ul>
+<p class="resource">Source: src/stampworld/data_collector.rs#L30-L1531</p>
+</body>
+</html>

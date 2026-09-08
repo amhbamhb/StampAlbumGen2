@@ -219,9 +219,13 @@ body.pageEnter {
 }
 .reviewSwYearRow {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.reviewSwYearLine {
+  display: flex;
   align-items: center;
-  flex-wrap: wrap;
   gap: 8px;
 }
 .reviewSwYearRow label {
@@ -499,9 +503,9 @@ body.pageEnter {
   border-color: #dfb77e;
 }
 .leftNavRow .LeftNavPreviousCandidate10MinusButton {
-  background: #aa8866;
-  color: #fff;
-  border-color: #8e6d4f;
+  background: #ffd3a7;
+  color: #080808;
+  border-color: #d4a77c;
 }
 .leftNavRow .LeftNavPreviousCandidateButton {
   background: #c87c28;
@@ -535,7 +539,7 @@ body.pageEnter {
   background: #e5c18d;
 }
 .leftNavRow .LeftNavPreviousCandidate10MinusButton:hover {
-  background: #987450;
+  background:  #c79f6e;;
 }
 .leftNavRow .LeftNavPreviousCandidateButton:hover {
   background: #a8641a;
@@ -613,9 +617,9 @@ body.pageEnter {
   border-color: #dfb77e;
 }
 .rightNavRow .RightNavPreviousCandidate10MinusButton {
-  background: #aa8866;
-  color: #fff;
-  border-color: #8e6d4f;
+  background: #ffd3a7;
+  color: #080808;
+  border-color: #d4a77c;
 }
 .rightNavRow .RightNavPreviousCandidateButton {
   background: #c87c28;
@@ -651,7 +655,7 @@ body.pageEnter {
   transform: translateY(-1px);
 }
 .rightNavRow .RightNavPreviousCandidate10MinusButton:hover {
-  background: #a86410;
+  background: #c79f6e;
   transform: translateY(-1px);
 }
 .rightNavRow .RightNavPreviousCandidateButton:hover {
@@ -1213,6 +1217,73 @@ body.pageEnter {
 .reviewNavigationExitButton:hover {
   background: #bd0000;
   border-color: #864d12;
+  cursor: pointer;
+  transform: translateY(-1px);
+}
+.candidateManagementAddButton {
+  background: #2da070;
+  color: #fff;
+  border-color: #228458;
+}
+.candidateManagementAddButton:hover {
+  background: #237d58;
+  border-color: #1c5e3f;
+  cursor: pointer;
+  transform: translateY(-1px);
+}
+.candidateManagementRemoveButton {
+  background: #e90909;
+  color: #fff;
+  border-color: #a8641a;
+}
+.candidateManagementRemoveButton:hover {
+  background: #bd0000;
+  border-color: #864d12;    
+  cursor: pointer;
+  transform: translateY(-1px);
+}
+.candidateManagementUndoButton
+{
+  background: #7a68c0;
+  color: #fff;
+  border-color: #6554a8;
+}
+.candidateManagementUndoButton:hover {
+  background: #6251a6;
+  border-color: #51438a;
+  cursor: pointer;
+  transform: translateY(-1px);
+}
+.matchActionsAssignCanditateButton {
+  background: #2da070;
+  color: #fff;
+  border-color: #228458;
+}
+.matchActionsAssignCanditateButton:hover {
+  background: #237d58;
+  border-color: #1c5e3f;
+  cursor: pointer;
+  transform: translateY(-1px);  
+}
+.matchActionsClearAssignmentButton {
+  background: #e90909;
+  color: #fff;
+  border-color: #a8641a;
+}
+.matchActionsClearAssignmentButton:hover {
+  background: #bd0000;
+  border-color: #864d12;
+  cursor: pointer;
+  transform: translateY(-1px);
+}
+.matchActionsApplyMatchToDB{
+  background: #1c71d1;
+  color: #fff;
+  border-color: #155a9c;
+}
+.matchActionsApplyMatchToDB:hover {
+  background: #155a9c;
+  border-color: #0f3e6b;
   cursor: pointer;
   transform: translateY(-1px);
 }

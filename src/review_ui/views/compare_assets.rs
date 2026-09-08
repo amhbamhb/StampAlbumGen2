@@ -12,7 +12,7 @@ pub(super) fn render_compare_top_html(
     </div>
     <div id='startGuide' class='startGuide'>
         <h2>Start Country Review Session</h2>
-        <h2 ><strong>Current country:</strong> <span id='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
+        <h2 ><strong>Current country:</strong> <span class='currentReviewCountry' style='color:#b45309;' >Unknown</span></h2>
         <p>Use the grouped controls to navigate candidates, assign matches, and apply updates safely without losing CLI/config capabilities.</p>
         <div class='guideStats'>
             <span id='statLeftCount'  class='badge'>Main Collection: 0</span>
@@ -79,39 +79,51 @@ pub(super) fn render_compare_filters_html() -> String {
 
 pub(super) fn render_compare_action_rows_html() -> String {
     r#"    <div class='actionRows'>
-        <div class='actionBar match'>
-            <span class='actionBarTitle'>Match Actions</span>
-            <button class='success' onclick='assignCurrent()'>Assign Candidate</button>
-            <button onclick='clearAssignment()'>Clear Assignment</button>
-            <button class='primary' onclick='applyMatches()'>Apply Matches To DB</button>
-        </div>
-        <div class='actionBar candidate'>
-            <span class='actionBarTitle'>Candidate Management</span>
-            <button class='warn' onclick='openAddDialog()'>Add Colnect As Stamp</button>
-            <button class='danger' onclick='deleteCurrentCandidate()'>Delete Candidate</button>
-            <button onclick='undoLastDelete()'>Undo Delete</button>
-        </div>
-        <div id='matchActionStatus' class='actionMessage'>Ready</div>
-    </div>"#
+
+
+  
+</div>"#
         .to_string()
 }
 
 pub(super) fn render_compare_panels_html() -> String {
     r#"  <div id='comparePanels' class='row'>
-        <div class='col'>
-                        <div class='titleRow'>
-                                <h3>Left: StampWorld Base for <span id='currentReviewSessionCountry'>Unknown</span></h3>
-                                <span id='leftPos' class='badge'></span>
-                        </div>
-                                                <div id='leftActionBanner' class='leftActionBanner'></div>
-            <div id='leftPanel'></div>
+    <div class='col'>
+
+        <div class='titleRow'>
+            <h3>Left: StampWorld Base for <span class='currentReviewCountry' style='color:#b45309;'>Unknown</span></h3>
+            <span id='leftPos' class='badge'></span>
         </div>
-        <div class='col'>
-                        <div class='titleRow'>
-                                <h3>Right: Colnect Candidate for <span id='currentReviewSessionCountry'>Unknown</span></h3>
-                                <span id='rightPos' class='badge'></span>
-                        </div>
-                                                <div id='rightActionBanner' class='rightActionBanner'></div>
+        <div id='leftActionBanner' class='leftActionBanner'></div>
+        <div id='leftPanel'></div>
+    </div>
+
+    <div class='col'>
+  
+        <div class='actionRows'>
+            <div class='actionBar candidate'>
+                <span class='actionBarTitle'>Candidate Management</span>
+                <button class='warn candidateManagementAddButton' onclick='openAddDialog()'>Add Colnect As
+                    Stamp</button>
+                <button class='danger candidateManagementRemoveButton' onclick='deleteCurrentCandidate()'>Delete
+                    Candidate</button>
+                <button class='candidateManagementUndoButton' onclick='undoLastDelete()'>Undo Delete</button>
+
+            </div>
+            <div class='actionBar match'>
+                <span class='actionBarTitle'>Match Actions</span>
+                <button class='success matchActionsAssignCanditateButton' onclick='assignCurrent()'>Assign
+                    Candidate</button>
+                <button class='matchActionsClearAssignmentButton' onclick='clearAssignment()'>Clear Assignment</button>
+                <button class='primary matchActionsApplyMatchToDB' onclick='applyMatches()'>Apply Matches To DB</button>
+            </div>
+            <div id='matchActionStatus' class='actionMessage'>Ready</div>
+            <div class='titleRow'>
+                <h3>Right: Colnect Candidate for <span class='currentReviewCountry'
+                        style='color:#b45309;'>Unknown</span></h3>
+                <span id='rightPos' class='badge'></span>
+            </div>
+            <div id='rightActionBanner' class='rightActionBanner'></div>
             <div id='rightPanel'></div>
         </div>
     </div>"#.to_string()

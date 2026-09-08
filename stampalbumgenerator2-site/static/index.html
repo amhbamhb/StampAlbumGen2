@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Stamp Album Generator 2</title>
+  <meta name="description" content="A friendly home for stamp collectors using Stamp Album Generator 2." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,600;9..144,800&family=Manrope:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles-friendly.css" />
+</head>
+<body>
+  <div class="paper-grain"></div>
+  <header class="hero">
+    <nav class="top-nav">
+      <div class="brand">
+        <img class="brand-mark" src="/media/monogram-256.png" alt="Stamp Album Generator 2 logo" />
+        <span class="brand-name">Stamp Album Generator 2</span>
+      </div>
+      <a class="pill-link" href="#future">Roadmap</a>
+    </nav>
+    <div class="hero-content">
+      <p class="kicker">Built for stamp collectors</p>
+      <h1>Organize your collection into clean printable albums.</h1>
+      <p class="intro">Stamp Album Generator 2 helps collectors automatically transform stamp data into album pages with practical layouts and collector-friendly control.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#releases">Get The App</a>
+        <a class="btn ghost" href="#about">See How It Works</a>
+      </div>
+    </div>
+    <!-- <div class="stamp-stack" aria-hidden="true">
+      <div class="stamp-card">Definitives</div>
+      <div class="stamp-card">Commemoratives</div>
+      <div class="stamp-card">Airmail</div>
+    </div> -->
+  </header>
+
+  <main>
+    <section id="preamble" class="panel">
+      <div>
+        <p class="kicker">Preamble</p>
+        <h2>How some simple scripts grew into Stamp Album Generator 2</h2>
+        <p>This project started as a simple script meant to improve one small part of an AlbumEasy-based workflow. As often happens, a small utility turned into something much larger.</p>
+        <p>Over time, I tried a range of commercial and free album generators, prebuilt PDF sets, and other tools. Many of them had strong features and were likely excellent choices for other collectors. I simply wanted something different for the way I collect and organize albums.</p>
+        <p>At first, the process was mostly manual: copying, pasting, comparing, and refining details from many sources until the results matched what I wanted to see on the page. That eventually led me toward <a class="inline-link" href="#albumeasy">AlbumEasy</a>, which already provided a large part of the flexibility I wanted to build on.</p>
+        <p>From there, the project became a question of improvement and automation. The result is an application that runs as a GUI on both Windows and Linux, while also supporting a full command-line workflow for generating stamp album pages.</p>
+        <p>Because the starting materials were often just images and text, a surprising amount of mathematics went into making the layout work well automatically. Spacing, scaling, alignment, and placement all had to be calculated so the pages would remain readable, balanced, and printable.</p>
+        <p>Of course, the project did not stop there. It grew to include country flags, coats of arms, Wikipedia integration as a work in progress, Colnect import support, StampWorld integration, and automatic configuration behavior at launch, along with a Windows version and continuing refinements.</p>
+        <p>This is still a work in progress, but it is already built around the features and workflow that matter most to me as a collector.</p>
+        <p>The licensing model is also intentional. Under the <a class="inline-link" href="/pages/license.html">Laser Spider Stamp Collector License (LSSCL) v1.0</a>, private collectors using the software for personal collecting activities can use it without a fee and free forever, while commercial or organizational use requires a separate written agreement with Laser Spider LLC.</p>
+        <p>Public source code details will be added later. For now, see the <a class="inline-link" href="/pages/source-code.html">source code placeholder page</a>.</p>
+      </div>
+    </section>
+
+    <section id="albumeasy" class="panel albumeasy">
+      <div class="albumeasy-copy">
+        <p class="kicker">AlbumEasy foundation</p>
+        <h2>AlbumEasy is core to this project</h2>
+        <p><strong>Stamp Album Generation startup:</strong> Pick a country to open its review UI.</p>
+        <p>This program could not be completed without the incredible <strong>AlbumEasy</strong> by Bundu Technology Ltd. It is a foundational part of how this workflow is designed, and it deserves significant credit.</p>
+        <p>Learn more about AlbumEasy and download it here: <a href="https://www.thestampweb.com/albumeasy" target="_blank" rel="noopener noreferrer">Bundu Technology Ltd. AlbumEasy</a>.</p>
+        <p>We have implemented about 70-80% of AlbumEasy commands. You can edit the final output and add any additional commands that are not auto-generated.</p>
+        <p>📁 If you have not yet set up your Albums Root folder, you can do so now or let it auto-detect on launch. The Albums Root is where generated albums and related data are stored, and you can change it later in the config editor.</p>
+        <p>📬 If you have a Colnect inbox export and want to use it for review, you can import it now or later from the config editor. The default expected format is Colnect's "Export" option.</p>
+      </div>
+      <div class="albumeasy-media">
+        <img class="albumeasy-preview" src="/media/app-preview.png" alt="Stamp Album Generator 2 preview" />
+        <img class="albumeasy-wordmark" src="/media/wordmark-256.png" alt="Stamp Album Generator 2 wordmark" />
+      </div>
+    </section>
+
+    <section id="about" class="panel">
+      <div>
+        <h2>Integrated by design</h2>
+        <p>Stamp Album Generator 2 is organized to keep collectors moving: install, configure, review, and generate albums with fewer steps and clearer controls.</p>
+        <p>Behind that smooth experience is a substantial amount of mathematics, from layout and spacing calculations to scaling and placement logic, all working together to produce consistent, printable album pages.</p>
+        <p>The complete documentation is available in one place:</p>
+        <p><a class="inline-link" href="/pages/index2.html">Open the Full Documentation Index</a></p>
+        <p>Quick links:</p>
+        <ul>
+          <li><a class="inline-link" href="/pages/startup-functions.html">Startup Functions (Logical Order)</a></li>
+          <li><a class="inline-link" href="/pages/execution-modes.html">Execution Modes</a></li>
+          <li><a class="inline-link" href="/pages/getting-started.html">Getting Started</a></li>
+          <li><a class="inline-link" href="/pages/configuration-guide.html">Configuration Guide</a></li>
+          <li><a class="inline-link" href="/pages/review-workflow.html">Review Workflow</a></li>
+          <li><a class="inline-link" href="/pages/albumeasy-colnect.html">AlbumEasy + Colnect</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="releases" class="panel releases">
+      <h2>Current release focus</h2>
+      <p class="section-intro">Right now we are publishing app binaries only, with Linux and Windows support first. You can download the latest version without reading all of the detailed instructions.</p>
+      <p>For download integrity, the recommended approach is signed SHA-256 verification, not CRC alone. See the <a class="inline-link" href="/pages/download-verification.html">download verification guide</a> for the exact files and commands.</p>
+      <p>Published checksum files: <a class="inline-link" href="/downloads/current/stamp_album_gen2.sha256">stamp_album_gen2.sha256</a>, <a class="inline-link" href="/downloads/current/stamp_album_gen2.exe.sha256">stamp_album_gen2.exe.sha256</a>, <a class="inline-link" href="/downloads/current/SHA256SUMS.txt">SHA256SUMS.txt</a>, and <a class="inline-link" href="/downloads/current/CRC32SUMS.txt">CRC32SUMS.txt</a>.</p>
+      <p>This is a single Rust binary. On first run, it creates the config files, icons, menu additions, and starter folders automatically.</p>
+      <p>Select a good location for the binary, because on startup it creates files and albums directly below that location. The application can be configured in many ways, but if you skip the <a class="inline-link" href="/pages/index2.html">documentation</a>, your mileage may vary.</p>
+      <div class="release-grid">
+        <article class="release-card">
+          <p class="release-badge" aria-label="Security recommendation">Verify First</p>
+          <h3>Linux Build</h3>
+          <p>Native binary release for Linux collectors.</p>
+          <img class="release-visual" src="/media/wordmark-256.png" alt="Linux release visual" />
+          <p>Current version: <strong class="js-app-version">1.6.51</strong></p>
+          <div class="release-actions">
+            <a class="btn small download-btn" href="/downloads/current/stamp_album_gen2">Download Linux Binary</a>
+            <a class="btn small verify-btn" href="/pages/download-verification.html#linux-verify">Verify Linux Download</a>
+          </div>
+        </article>
+        <article class="release-card">
+          <p class="release-badge" aria-label="Security recommendation">Verify First</p>
+          <h3>Windows Build</h3>
+          <p>Native binary release for Windows collectors.</p>
+          <img class="release-visual" src="/media/monogram-256.png" alt="Windows release visual" />
+          <p>Current version: <strong class="js-app-version">1.6.51</strong></p>
+          <div class="release-actions">
+            <a class="btn small download-btn" href="/downloads/current/stamp_album_gen2.exe">Download Windows Binary</a>
+            <a class="btn small verify-btn" href="/pages/download-verification.html#windows-verify">Verify Windows Download</a>
+          </div>
+        </article>
+      </div>
+      <p class="notice">Source code is not published yet. Public code links will be added later.</p>
+    </section>
+
+    <section id="future" class="panel future">
+      <h2>Future integration</h2>
+      <p>GitHub wiring is prepared for later activation. When enabled, this section can show release notes, docs, and source repository links automatically.</p>
+      <div class="future-card">
+        <p><strong>Planned repository:</strong> github.com/your-org/stampalbumgenerator2</p>
+        <p><strong>Status:</strong> Placeholder only, no live connection yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Copyright © 2025 - <span class="js-current-year">2026</span> Laser Spider LLC. All rights reserved.</p>
+    <p>Stamp Album Generator 2 | Version <span class="js-app-version">1.6.51</span></p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

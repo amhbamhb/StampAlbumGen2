@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Download Verification | Stamp Album Generator 2</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles-friendly.css" />
+</head>
+<body>
+  <div class="page-wrap">
+    <header class="page-header">
+      <h1 class="page-title">Download Verification</h1>
+      <a class="page-home-link" href="/">Back to home</a>
+    </header>
+
+    <section class="page-panel">
+      <p>If you want users to feel secure about a downloaded binary, CRC is not the right primary tool. The best practical baseline for public downloads is a cryptographic hash plus a digital signature.</p>
+      <p>For this project, the recommended release pattern is:</p>
+      <ol>
+        <li>Publish the Linux and Windows binaries.</li>
+        <li>Publish a <strong>SHA256SUMS.txt</strong> file listing the SHA-256 hash for each artifact.</li>
+        <li>Publish a detached signature for that checksum file.</li>
+        <li>Publish the public verification key on the website and keep the private signing key offline.</li>
+      </ol>
+    </section>
+
+    <section class="page-panel">
+      <h2>Published Checksum Files</h2>
+      <p>Current release checksum files are published directly on this site:</p>
+      <ul>
+        <li><a class="inline-link" href="/downloads/current/stamp_album_gen2.sha256">stamp_album_gen2.sha256</a></li>
+        <li><a class="inline-link" href="/downloads/current/stamp_album_gen2.exe.sha256">stamp_album_gen2.exe.sha256</a></li>
+        <li><a class="inline-link" href="/downloads/current/SHA256SUMS.txt">SHA256SUMS.txt</a></li>
+        <li><a class="inline-link" href="/downloads/current/CRC32SUMS.txt">CRC32SUMS.txt</a></li>
+      </ul>
+      <p>Expected artifacts in those files:</p>
+      <ul>
+        <li><strong>stamp_album_gen2</strong> (Linux)</li>
+        <li><strong>stamp_album_gen2.exe</strong> (Windows)</li>
+      </ul>
+    </section>
+
+    <section class="page-panel">
+      <h2>What To Use</h2>
+      <p><strong>Best usable default:</strong> SHA-256 checksums plus a detached signature created with <strong>minisign</strong>.</p>
+      <p>Why this combination works well:</p>
+      <ul>
+        <li>SHA-256 tells the user whether the file they downloaded matches the file you released.</li>
+        <li>A digital signature tells the user the checksum list really came from you, not from an attacker who replaced both the binary and the hash file.</li>
+        <li>Minisign is simpler for many end users than a full GPG workflow, while still providing strong authenticity checks.</li>
+      </ul>
+      <p><strong>Windows-specific extra layer:</strong> if possible, also sign the Windows executable or installer with Authenticode. That improves the Windows trust experience, but it should complement signed checksums, not replace them.</p>
+    </section>
+
+    <section class="page-panel">
+      <h2>Why CRC Is Not Enough</h2>
+      <p>CRC is useful for detecting accidental corruption such as a damaged transfer or storage error. It is not designed to resist intentional tampering.</p>
+      <p>If an attacker can replace the binary, they can also replace a CRC value. That is why public software distribution should use cryptographic hashes and signatures instead.</p>
+    </section>
+
+    <section class="page-panel">
+      <h2>Recommended Release Files</h2>
+      <ul>
+        <li><strong>stamp_album_gen2</strong></li>
+        <li><strong>stamp_album_gen2.exe</strong></li>
+        <li><strong>stamp_album_gen2.sha256</strong></li>
+        <li><strong>stamp_album_gen2.exe.sha256</strong></li>
+        <li><strong>SHA256SUMS.txt</strong></li>
+        <li><strong>SHA256SUMS.txt.minisig</strong></li>
+        <li><strong>minisign-public-key.txt</strong></li>
+      </ul>
+      <p>The important trust rule is this: sign the checksum manifest, then ask users to verify the signature and the file hash.</p>
+    </section>
+
+    <section id="linux-verify" class="page-panel">
+      <h2>Linux Example</h2>
+      <p>Most common check with a per-file checksum:</p>
+      <div class="command-row">
+        <pre id="linux-sha-cmd"><code>sha256sum -c stamp_album_gen2.sha256</code></pre>
+        <button class="copy-btn" data-copy-target="linux-sha-cmd" type="button">Copy</button>
+      </div>
+      <p>Alternative check with the combined manifest:</p>
+      <div class="command-row">
+        <pre id="linux-manifest-cmd"><code>minisign -Vm SHA256SUMS.txt -P "YOUR_PUBLIC_KEY_HERE"
+sha256sum -c SHA256SUMS.txt --ignore-missing</code></pre>
+        <button class="copy-btn" data-copy-target="linux-manifest-cmd" type="button">Copy</button>
+      </div>
+      <p>The first command verifies authenticity. The second confirms that the downloaded binary matches the published SHA-256 value.</p>
+      <p>Optional CRC check for accidental transfer errors:</p>
+      <div class="command-row">
+        <pre id="linux-crc-cmd"><code>cksum stamp_album_gen2
+cat CRC32SUMS.txt</code></pre>
+        <button class="copy-btn" data-copy-target="linux-crc-cmd" type="button">Copy</button>
+      </div>
+      <p>Compare the CRC32 number and byte length from <code>cksum</code> against the <strong>stamp_album_gen2</strong> line in <strong>CRC32SUMS.txt</strong>.</p>
+    </section>
+
+    <section id="windows-verify" class="page-panel">
+      <h2>Windows Example</h2>
+      <p>Most common check with a per-file checksum:</p>
+      <div class="command-row">
+        <pre id="windows-sha-cmd"><code>Get-FileHash .\stamp_album_gen2.exe -Algorithm SHA256</code></pre>
+        <button class="copy-btn" data-copy-target="windows-sha-cmd" type="button">Copy</button>
+      </div>
+      <p>Compare the hash to the value in <strong>stamp_album_gen2.exe.sha256</strong>.</p>
+      <p>On Windows, verify the signature with minisign and compare the SHA-256 hash with PowerShell:</p>
+      <div class="command-row">
+        <pre id="windows-manifest-cmd"><code>minisign -Vm SHA256SUMS.txt -P "YOUR_PUBLIC_KEY_HERE"
+Get-FileHash .\stamp_album_gen2.exe -Algorithm SHA256</code></pre>
+        <button class="copy-btn" data-copy-target="windows-manifest-cmd" type="button">Copy</button>
+      </div>
+      <p>Then compare the reported SHA-256 value with the <strong>stamp_album_gen2.exe</strong> line in <strong>SHA256SUMS.txt</strong>.</p>
+      <p>Optional CRC check on Windows with 7-Zip installed:</p>
+      <div class="command-row">
+        <pre id="windows-crc-cmd"><code>7z h -scrcCRC32 .\stamp_album_gen2.exe</code></pre>
+        <button class="copy-btn" data-copy-target="windows-crc-cmd" type="button">Copy</button>
+      </div>
+      <p>Compare that CRC32 result with the <strong>stamp_album_gen2.exe</strong> line in <strong>CRC32SUMS.txt</strong>.</p>
+    </section>
+
+    <section class="page-panel">
+      <h2>Best-Practice Summary</h2>
+      <ol>
+        <li>Do not rely on CRC as the main trust mechanism.</li>
+        <li>Use SHA-256 for integrity.</li>
+        <li>Use a detached digital signature for authenticity.</li>
+        <li>Keep the signing key offline and publish the public key clearly on the website.</li>
+        <li>Add Authenticode for Windows when practical.</li>
+      </ol>
+      <p>This gives users a verification path that is strong, understandable, and realistic to use on both Linux and Windows.</p>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <p>Copyright © 2025 - <span class="js-current-year">2026</span> Laser Spider LLC. All rights reserved.</p>
+    <p>Stamp Album Generator 2 | Version <span class="js-app-version">1.6.51</span></p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

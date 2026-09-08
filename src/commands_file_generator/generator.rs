@@ -118,7 +118,7 @@ impl CommandsFileGenerator {
         }
     }
 
-    /// Get stampworld image for a stamp
+    // /// Get stampworld image for a stamp
     // pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
     //     // TODO: Implement proper image fetching
     //     None

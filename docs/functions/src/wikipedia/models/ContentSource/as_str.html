@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>as_str — Rust Method</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../../../index.html">Home</a> / <a href="../../../../../functions/@index.html">functions</a></nav>
+<h1>as_str</h1>
+<p class="type">Rust Method</p>
+<pre><code>pub fn as_str(&amp;self) -&gt; &amp;str</code></pre>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/extract_block_metadata_local.html">extract_block_metadata_local</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/insert_stamp.html">insert_stamp</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/emit_commemorative_pages.html">emit_commemorative_pages</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/emit_special_stamps_page.html">emit_special_stamps_page</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator/stamp_dedupe_fingerprints.html">stamp_dedupe_fingerprints</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator/estimate_colnect_centre_text.html">estimate_colnect_centre_text</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator/generate_album_output_conn.html">generate_album_output_conn</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/commemorative_layout/emit_stamp_grid_row.html">emit_stamp_grid_row</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.html">resolve_stamp_heading_label</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders.html">estimate_and_ensure_placeholders</a></li>
+<li><a href="../../../../../functions/src/album_utils/globals/write_globals.html">write_globals</a></li>
+<li><a href="../../../../../functions/src/bin/backfill_image_dims/main.html">main</a></li>
+<li><a href="../../../../../functions/src/bin/stampworld_debug/month_number.html">month_number</a></li>
+<li><a href="../../../../../functions/src/catalog/normalize_catalog_type.html">normalize_catalog_type</a></li>
+<li><a href="../../../../../functions/src/catalog/catalog_display_name.html">catalog_display_name</a></li>
+<li><a href="../../../../../functions/src/colnect/image_fetcher/extract_colnect_image_url.html">extract_colnect_image_url</a></li>
+<li><a href="../../../../../functions/src/colnect/ingest/link_colnect_data.html">link_colnect_data</a></li>
+<li><a href="../../../../../functions/src/commands_file_generator/utils/month_number.html">month_number</a></li>
+<li><a href="../../../../../functions/src/config/Config/review_ui_default_sort_mode.html">review_ui_default_sort_mode</a></li>
+<li><a href="../../../../../functions/src/config/load_slug_overrides.html">load_slug_overrides</a></li>
+<li><a href="../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.html">collect_stampworld_data</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/migrate_stamps_table.html">migrate_stamps_table</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.html">migrate_fix_block_metadata</a></li>
+<li><a href="../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.html">ensure_coat_of_arms_with_fetcher</a></li>
+<li><a href="../../../../../functions/src/modes/numeric_tokens.html">numeric_tokens</a></li>
+<li><a href="../../../../../functions/src/review_ui/mime_from_path.html">mime_from_path</a></li>
+<li><a href="../../../../../functions/src/review_ui/http_handlers/serve_review_requests.html">serve_review_requests</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/apply_matches.html">apply_matches</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/resolve_left_editor_image_path.html">resolve_left_editor_image_path</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/save_left_stamp.html">save_left_stamp</a></li>
+<li><a href="../../../../../functions/src/setup/ensure_linux_desktop_integration.html">ensure_linux_desktop_integration</a></li>
+<li><a href="../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.html">collect_stampworld_data_with_fetcher</a></li>
+<li><a href="../../../../../functions/src/stampworld/parser/extract_block_metadata.html">extract_block_metadata</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/process_1847us_page.html">process_1847us_page</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_single_image_stamp.html">parse_single_image_stamp</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_stamp_from_title_and_description.html">parse_stamp_from_title_and_description</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_ordinary_stamp_line.html">parse_ordinary_stamp_line</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_commemorative_line.html">parse_commemorative_line</a></li>
+<li><a href="../../../../../functions/src/validation/validate_source.html">validate_source</a></li>
+<li><a href="../../../../../functions/src/wikipedia/fetchers/fetch_wikipedia_content.html">fetch_wikipedia_content</a></li>
+<li><a href="../../../../../functions/src/wikipedia/legacy/fetch_and_save_summary_with_fetcher.html">fetch_and_save_summary_with_fetcher</a></li>
+<li><a href="../../../../../functions/tests/data_collector/test_day_month_regex_unicode.html">test_day_month_regex_unicode</a></li>
+</ul>
+<p class="resource">Source: src/wikipedia/models.rs#L9-L14</p>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>generate_album_output_conn — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../../index.html">Home</a> / <a href="../../../../functions/@index.html">functions</a></nav>
+<h1>generate_album_output_conn</h1>
+<p class="type">Rust Function</p>
+<pre><code>pub fn generate_album_output_conn&lt;F&gt;( conn: &amp;Connection, album_name: &amp;str, mut page_callback: Option&lt;F&gt;, start_year: Option&lt;i32&gt;, end_year: Option&lt;i32&gt;, ) -&gt; std::path::PathBuf where F: FnMut(usize),</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../../functions/src/config/load_effective_config.html">load_effective_config</a></li>
+<li><a href="../../../../functions/src/config/Config/with_defaults.html">with_defaults</a></li>
+<li><a href="../../../../functions/src/image_utils/calc_mm_per_pixel_embedded.html">calc_mm_per_pixel_embedded</a></li>
+<li><a href="../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.html">from</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/layout/write_stamp_page_header.html">write_stamp_page_header</a></li>
+<li><a href="../../../../functions/src/album_globals/globals/compute_usable_height.html">compute_usable_height</a></li>
+<li><a href="../../../../functions/src/wikipedia/models/ContentSource/as_str.html">as_str</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/for_each_series.html">for_each_series</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.html">fetch_and_filter_stamps</a></li>
+<li><a href="../../../../functions/src/album_globals/structs/GenericAttrs/get.html">get</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/parse_sort_day.html">parse_sort_day</a></li>
+<li><a href="../../../../functions/src/config/Config/colnect_details_enabled.html">colnect_details_enabled</a></li>
+<li><a href="../../../../functions/src/config/Config/effective_colnect_detail_field_set.html">effective_colnect_detail_field_set</a></li>
+<li><a href="../../../../functions/src/file_utils/resolve_album_image_path.html">resolve_album_image_path</a></li>
+<li><a href="../../../../functions/src/image_utils/estimate_real_dimensions.html">estimate_real_dimensions</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/emit_stamp_diag.html">emit_stamp_diag</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/ensure_placeholder_for_stamp_and_update_db.html">ensure_placeholder_for_stamp_and_update_db</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/commemorative_layout/is_commemorative.html">is_commemorative</a></li>
+<li><a href="../../../../functions/src/album_globals/commemorative_generator/is_special_stamp.html">is_special_stamp</a></li>
+<li><a href="../../../../functions/src/album_globals/commemorative_generator/emit_commemorative_pages.html">emit_commemorative_pages</a></li>
+<li><a href="../../../../functions/src/album_globals/commemorative_generator/emit_special_stamps_page.html">emit_special_stamps_page</a></li>
+<li><a href="../../../../functions/src/album_globals/commemorative_generator/emit_summary_page.html">emit_summary_page</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/stamp_dedupe_fingerprints.html">stamp_dedupe_fingerprints</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/stamp_date_key.html">stamp_date_key</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/build_series_page_text_centre_template.html">build_series_page_text_centre_template</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/build_page_text_template.html">build_page_text_template</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/build_date_page_text_centre_template.html">build_date_page_text_centre_template</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/build_watermark_page_text_centre_template.html">build_watermark_page_text_centre_template</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/helpers/build_engraving_page_text_centre_template.html">build_engraving_page_text_centre_template</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.html">resolve_stamp_heading_label</a></li>
+<li><a href="../../../../functions/src/progress/ProgressIndicator/clear.html">clear</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/format_number_with_commas.html">format_number_with_commas</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/estimate_stamp_body_line_count.html">estimate_stamp_body_line_count</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/estimate_colnect_centre_text.html">estimate_colnect_centre_text</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/emit/estimate_stamp_heading_line_count.html">estimate_stamp_heading_line_count</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/layout/start_stamp_page.html">start_stamp_page</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/layout/write_header_block.html">write_header_block</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/strip_bracket_tags.html">strip_bracket_tags</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/is_effectively_duplicate_text.html">is_effectively_duplicate_text</a></li>
+<li><a href="../../../../functions/src/catalog/normalize_catalog_type.html">normalize_catalog_type</a></li>
+<li><a href="../../../../functions/src/config/Config/effective_default_catalog_code.html">effective_default_catalog_code</a></li>
+<li><a href="../../../../functions/src/album_globals/generator/pad_centre_body_for_side_columns.html">pad_centre_body_for_side_columns</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/emit/emit_stamp.html">emit_stamp</a></li>
+<li><a href="../../../../functions/src/file_utils/get_overwrite_album_from_cli.html">get_overwrite_album_from_cli</a></li>
+<li><a href="../../../../functions/src/time_utils/formatted_now.html">formatted_now</a></li>
+</ul>
+<p class="resource">Source: src/album_globals/generator.rs#L505-L3359</p>
+</body>
+</html>

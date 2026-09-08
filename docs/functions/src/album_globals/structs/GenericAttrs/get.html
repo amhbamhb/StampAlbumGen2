@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>get — Rust Method</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../../../index.html">Home</a> / <a href="../../../../../functions/@index.html">functions</a></nav>
+<h1>get</h1>
+<p class="type">Rust Method</p>
+<pre><code>pub fn get(&amp;self, key: &amp;str) -&gt; Option&lt;&amp;String&gt;</code></pre>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/insert_stamp_placeholder.html">insert_stamp_placeholder</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/extract_block_metadata_local.html">extract_block_metadata_local</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/migrate_fix_block_metadata.html">migrate_fix_block_metadata</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/insert_stamp.html">insert_stamp</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/src/get_stamps_by_country_series.html">get_stamps_by_country_series</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/tests/unit_tests/test_insert_stamp_and_backfill.html">test_insert_stamp_and_backfill</a></li>
+<li><a href="../../../../../functions/crates/stamp_album_db/tests/unit_tests/test_migrate_fix_block_metadata_local.html">test_migrate_fix_block_metadata_local</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/is_commemorative_for_year.html">is_commemorative_for_year</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/is_special_stamp.html">is_special_stamp</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/emit_commemorative_pages.html">emit_commemorative_pages</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/emit_special_stamps_page.html">emit_special_stamps_page</a></li>
+<li><a href="../../../../../functions/src/album_globals/commemorative_generator/emit_summary_page.html">emit_summary_page</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator/stamp_date_key.html">stamp_date_key</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator/stamp_dedupe_fingerprints.html">stamp_dedupe_fingerprints</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator/generate_album_output_conn.html">generate_album_output_conn</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/commemorative_layout/is_commemorative.html">is_commemorative</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/commemorative_layout/emit_stamp_grid_row.html">emit_stamp_grid_row</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/commemorative_layout/build_stamp_description.html">build_stamp_description</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/load_stored_colnect_meta.html">load_stored_colnect_meta</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/set_attr_if_missing.html">set_attr_if_missing</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.html">fetch_and_filter_stamps</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders.html">estimate_and_ensure_placeholders</a></li>
+<li><a href="../../../../../functions/src/album_utils/db_loader/load_stamps_from_db.html">load_stamps_from_db</a></li>
+<li><a href="../../../../../functions/src/album_utils/dimensions/calculate_stamp_dimensions.html">calculate_stamp_dimensions</a></li>
+<li><a href="../../../../../functions/src/bin/backfill_image_dims/process_db.html">process_db</a></li>
+<li><a href="../../../../../functions/src/bin/backfill_image_dims/main.html">main</a></li>
+<li><a href="../../../../../functions/src/bin/migrate_stamps/main.html">main</a></li>
+<li><a href="../../../../../functions/src/colnect/db/load_colnect_info_with_query.html">load_colnect_info_with_query</a></li>
+<li><a href="../../../../../functions/src/colnect/db/hydrate_catalog_codes.html">hydrate_catalog_codes</a></li>
+<li><a href="../../../../../functions/src/colnect/db/get_colnect_info.html">get_colnect_info</a></li>
+<li><a href="../../../../../functions/src/commands_file_generator/image_utils/download_to_path.html">download_to_path</a></li>
+<li><a href="../../../../../functions/src/commands_file_generator/image_utils/get_image.html">get_image</a></li>
+<li><a href="../../../../../functions/src/commands_file_generator/touchstamps/get_touchstamps_stamps.html">get_touchstamps_stamps</a></li>
+<li><a href="../../../../../functions/src/config/load_config.html">load_config</a></li>
+<li><a href="../../../../../functions/src/config/deep_merge_toml_values.html">deep_merge_toml_values</a></li>
+<li><a href="../../../../../functions/src/config/load_config_with_override.html">load_config_with_override</a></li>
+<li><a href="../../../../../functions/src/config/load_slug_overrides.html">load_slug_overrides</a></li>
+<li><a href="../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.html">collect_stampworld_data</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/migration_002_stamps_uniq_key_and_indexes.html">migration_002_stamps_uniq_key_and_indexes</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/enforce_runtime_schema_compatibility.html">enforce_runtime_schema_compatibility</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/migrate_stamps_table.html">migrate_stamps_table</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions.html">run_pending_schema_migrations_adds_missing_columns_and_records_versions</a></li>
+<li><a href="../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.html">migrate_fix_block_metadata</a></li>
+<li><a href="../../../../../functions/src/db_utils/operations/insert_stamp.html">insert_stamp</a></li>
+<li><a href="../../../../../functions/src/db_utils/operations/insert_stamp_placeholder.html">insert_stamp_placeholder</a></li>
+<li><a href="../../../../../functions/src/db_utils/operations/get_stamps_by_country_series.html">get_stamps_by_country_series</a></li>
+<li><a href="../../../../../functions/src/flagdb/country_to_code.html">country_to_code</a></li>
+<li><a href="../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.html">ensure_coat_of_arms_with_fetcher</a></li>
+<li><a href="../../../../../functions/src/image_downloader/download_image.html">download_image</a></li>
+<li><a href="../../../../../functions/src/modes/extract_year.html">extract_year</a></li>
+<li><a href="../../../../../functions/src/modes/run_scraping_mode.html">run_scraping_mode</a></li>
+<li><a href="../../../../../functions/src/review_ui/count_colnect_candidates_in_db.html">count_colnect_candidates_in_db</a></li>
+<li><a href="../../../../../functions/src/review_ui/sync_processed_colnect_candidates_marks_existing_stamp_links.html">sync_processed_colnect_candidates_marks_existing_stamp_links</a></li>
+<li><a href="../../../../../functions/src/review_ui/mark_colnect_candidate_processed_sets_flag_for_matching_candidate.html">mark_colnect_candidate_processed_sets_flag_for_matching_candidate</a></li>
+<li><a href="../../../../../functions/src/review_ui/config_editor/enrich_field_help.html">enrich_field_help</a></li>
+<li><a href="../../../../../functions/src/review_ui/config_editor/build_config_editor_data.html">build_config_editor_data</a></li>
+<li><a href="../../../../../functions/src/review_ui/config_editor/render_config_from_template_values.html">render_config_from_template_values</a></li>
+<li><a href="../../../../../functions/src/review_ui/config_editor/save_full_config_values.html">save_full_config_values</a></li>
+<li><a href="../../../../../functions/src/review_ui/config_editor/build_config_editor_data_for_album.html">build_config_editor_data_for_album</a></li>
+<li><a href="../../../../../functions/src/review_ui/config_editor/save_album_config_diff.html">save_album_config_diff</a></li>
+<li><a href="../../../../../functions/src/review_ui/http_handlers/serve_review_requests.html">serve_review_requests</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/load_left_stamps.html">load_left_stamps</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/load_right_candidates.html">load_right_candidates</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/apply_matches.html">apply_matches</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/load_left_stamp_by_rowid.html">load_left_stamp_by_rowid</a></li>
+<li><a href="../../../../../functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id.html">load_right_candidate_by_colnect_id</a></li>
+<li><a href="../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.html">collect_stampworld_data_with_fetcher</a></li>
+<li><a href="../../../../../functions/src/stampworld/fetch/ReqwestFetcher/fetcher/fetch_text.html">fetch_text</a></li>
+<li><a href="../../../../../functions/src/stampworld/fetch/ReqwestFetcher/fetcher/fetch_bytes.html">fetch_bytes</a></li>
+<li><a href="../../../../../functions/src/stampworld/fetch/fetch_text.html">fetch_text</a></li>
+<li><a href="../../../../../functions/src/stampworld/fetch/fetch_bytes.html">fetch_bytes</a></li>
+<li><a href="../../../../../functions/src/stampworld/parser/extract_block_metadata.html">extract_block_metadata</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/process_1847us_page.html">process_1847us_page</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_single_image_stamp.html">parse_single_image_stamp</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_table_stamps.html">parse_table_stamps</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_stamp_from_title_and_description.html">parse_stamp_from_title_and_description</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_ordinary_stamp_line.html">parse_ordinary_stamp_line</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_liberty_issue_stamp.html">parse_liberty_issue_stamp</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/parse_commemorative_line.html">parse_commemorative_line</a></li>
+<li><a href="../../../../../functions/src/us1847/collector/download_stamp_images.html">download_stamp_images</a></li>
+<li><a href="../../../../../functions/src/wikipedia/database/fetch_and_cache_content.html">fetch_and_cache_content</a></li>
+<li><a href="../../../../../functions/src/wikipedia/database/get_cached_content.html">get_cached_content</a></li>
+<li><a href="../../../../../functions/src/wikipedia/fetchers/fetch_wikipedia_content.html">fetch_wikipedia_content</a></li>
+<li><a href="../../../../../functions/src/wikipedia/ingest/ingest_wikipedia_to_db.html">ingest_wikipedia_to_db</a></li>
+<li><a href="../../../../../functions/src/wikipedia/legacy/fetch_and_save_summary_with_fetcher.html">fetch_and_save_summary_with_fetcher</a></li>
+<li><a href="../../../../../functions/tests/api_reexports/insert_stamp_placeholder_via_crate_reexport.html">insert_stamp_placeholder_via_crate_reexport</a></li>
+<li><a href="../../../../../functions/tests/backfill_image_dims/backfill_image_dimensions_persists_to_db.html">backfill_image_dimensions_persists_to_db</a></li>
+<li><a href="../../../../../functions/tests/data_collector/test_day_month_regex_unicode.html">test_day_month_regex_unicode</a></li>
+<li><a href="../../../../../functions/tests/db_utils/test_insert_stamp_placeholder_allows_distinct_sg_numbers.html">test_insert_stamp_placeholder_allows_distinct_sg_numbers</a></li>
+<li><a href="../../../../../functions/tests/db_utils/test_migrate_fix_block_metadata_basic.html">test_migrate_fix_block_metadata_basic</a></li>
+<li><a href="../../../../../functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db.html">e2e_collect_stampworld_inserts_placeholders_to_db</a></li>
+<li><a href="../../../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.html">test_ensure_placeholder_for_stamp_and_update_db</a></li>
+<li><a href="../../../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.html">wikipedia_ingest_inserts_up_to_max_entries_from_cache</a></li>
+</ul>
+<p class="resource">Source: src/album_globals/structs.rs#L24-L26</p>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>generate_placeholder_for_stamp_with_bg — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../index.html">Home</a> / <a href="../../../functions/@index.html">functions</a></nav>
+<h1>generate_placeholder_for_stamp_with_bg</h1>
+<p class="type">Rust Function</p>
+<pre><code>pub fn generate_placeholder_for_stamp_with_bg&lt;P: AsRef&lt;std::path::Path&gt;&gt;( _album_name: &amp;str, sg_number: &amp;str, year: &amp;str, stamp_bg_color: Option&lt;Rgba&lt;u8&gt;&gt;, series_hint: Option&lt;&amp;str&gt;, out_path: P, ) -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../functions/src/placeholder_image/compute_placeholder_size_for_series.html">compute_placeholder_size_for_series</a></li>
+<li><a href="../../../functions/src/placeholder_image/contrasting_color.html">contrasting_color</a></li>
+<li><a href="../../../functions/src/placeholder_image/is_color_dark.html">is_color_dark</a></li>
+<li><a href="../../../functions/src/placeholder_image/draw_text.html">draw_text</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../functions/tests/placeholder_image_inversion_spec/spec_placeholder_inverts_for_dark_stamp_background.html">spec_placeholder_inverts_for_dark_stamp_background</a></li>
+<li><a href="../../../functions/tests/placeholder_image_series_size/placeholder_series_size_matches_hint.html">placeholder_series_size_matches_hint</a></li>
+</ul>
+<p class="resource">Source: src/placeholder_image.rs#L98-L183</p>
+</body>
+</html>

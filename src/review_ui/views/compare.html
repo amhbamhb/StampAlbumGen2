@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='utf-8'>
+<title>Stamp Album Generator 2</title>
+<link rel='icon' type='image/png' href='/favicon.png'>
+{compare_css}
+</head>
+{compare_top_html}
+    <div class='controlGroups'>
+        <div class='groupCard session'>
+            <h4>Session</h4>
+            <div class='sessionStack'>
+                <div class='sessionSection sessionSectionBlue'>
+                    <div class='sessionSectionTitle'>Configuration</div>
+                    {local_catalog_select_assets}
+                    <div id='configStatus' class='sessionStatusBox sessionStatusBlue'>Ready</div>
+                </div>
+                <div class='sessionSection sessionSectionGreen'>
+                    {import_colnect_files}
+                    {colnect_destination_dir_path}
+                    {colnect_import_status}
+
+                </div>
+                <div class='sessionSection sessionSectionAmber reviewStampWorldSection'>
+                    <div class='sessionSectionTitle'>StampWorld Pull</div>
+                    <div class='sessionRow reviewSwRow reviewSwCountryRow'>
+                        <label>Current country</label>
+                        <span class='badge'><span id='reviewSwCountry'>Unknown</span></span>
+                    </div>
+                    {stampworld_pull_year_setup}
+                    {stampworld_pull_command_preset}
+                    
+                    {stampworld_pull_command_info}
+
+                   {stampworld_pull_review_status}
+
+                </div>
+                <div class='sessionSection sessionSectionAmber'>
+                        <div class='sessionSectionTitle'>PDF</div>
+                        <div class='sessionRow'>
+
+                            {stampworld_generate_pdf_button}
+
+                            {stampworld_sort_order_selector}
+                            {stampworld_start_end_year}
+                            {stampworld_pdf_status}
+
+                    </div>
+
+                </div>
+                {compare_navigation_html}
+            </div>
+        </div>
+    </div>
+{compare_filters_html}
+{compare_action_rows_html}
+{compare_panels_html}
+</div>
+
+{compare_add_modal_html}
+
+{compare_op_busy_modal_html}
+
+<div id='leftEditorBackdrop' class='modal-backdrop'>
+    <div class='modal leftEditorDialog leftEditorCompact'>
+        {left_edit_base_stamp_page}
+        <div class='leftEditorBody'>
+            <section >
+                <h5>Base Stamp Details</h5>
+                <div class='leftEditorSectionBase'>
+                    <div class='leftEditorGrid'>
+
+                        {edit_based_page_top_values}
+
+                        {edit_based_page_stampworld}
+
+                </div>
+            </section>
+            <section class='LeftEditorDimensions'>
+                <h5 >Dimensions</h5>
+                
+                {edit_based_page_dimensions}
+
+            </section>
+            <section class='LeftEditorColnectMeta'>
+                <h5>Colnect Metadata</h5>
+                <div class='leftEditorSectionBody'>
+                    <div class='leftEditorGrid'>
+                        <label>Colnect ID <input id='leftEditorColnectId' type='text' /></label>
+                        <label>Colnect Name <input id='leftEditorColnectName' type='text' /></label>
+                        <label>Colnect Country <input id='leftEditorColnectCountry' type='text' /></label>
+                        <label>Catalog Codes <input id='leftEditorColnectCatalogCodes' type='text' /></label>
+                        <label>Colnect Page URL <input id='leftEditorColnectPageUrl' type='text' /></label>
+                        <label>Colnect Image URL <input id='leftEditorColnectImageUrl' type='text' /></label>
+                        <label>Format <input id='leftEditorColnectFormat' type='text' /></label>
+                        <label>Emission <input id='leftEditorColnectEmission' type='text' /></label>
+                        <label>Printing <input id='leftEditorColnectPrinting' type='text' /></label>
+                        <label>Paper <input id='leftEditorColnectPaper' type='text' /></label>
+                        <label>Gum <input id='leftEditorColnectGum' type='text' /></label>
+                        <label>Face Value <input id='leftEditorColnectFaceValue' type='text' /></label>
+                        <label>Currency <input id='leftEditorColnectCurrency' type='text' /></label>
+                        <label>Ord MI <input id='leftEditorColnectOrdMi' type='text' /></label>
+                        <label>Ord SN <input id='leftEditorColnectOrdSn' type='text' /></label>
+                        <label>Ord YT <input id='leftEditorColnectOrdYt' type='text' /></label>
+                        <label>Ord Catalog (primary) <input id='leftEditorColnectOrdSg' type='text' /></label>
+                        <label>Expiry Date <input id='leftEditorColnectExpiryDate' type='text' /></label>
+                        <label>Print Run <input id='leftEditorColnectPrintRun' type='text' /></label>
+                        <label>Colors <input id='leftEditorColnectColors' type='text' /></label>
+                        <label>Parent Item <input id='leftEditorColnectParentItem' type='text' /></label>
+                        <label>Variant <input id='leftEditorColnectVariant' type='text' /></label>
+                        <label>Overprint Variant <input id='leftEditorColnectOverprintVariant' type='text' /></label>
+                        <label>Score <input id='leftEditorColnectScore' type='text' /></label>
+                        <label>Accuracy <input id='leftEditorColnectAccuracy' type='text' /></label>
+                        <label>List <input id='leftEditorColnectList' type='text' /></label>
+                        <label>Quantity <input id='leftEditorColnectQuantity' type='text' /></label>
+                        <label>Condition <input id='leftEditorColnectCondition' type='text' /></label>
+                    </div>
+                    <div class='leftEditorStack'>
+                        <label>Public Note <textarea id='leftEditorColnectPublicNote'></textarea></label>
+                        <label>Private Note <textarea id='leftEditorColnectPrivateNote'></textarea></label>
+                    </div>
+                </div>
+            </section>
+            <section class='leftEditorSection'>
+                <h5>Image Handling</h5>
+                <div class='leftEditorSectionBody'>
+                    <div class='leftEditorHint'>Items without an image will not stay visible in the left review list.</div>
+                    <div class='leftEditorModes'>
+                        <label id='leftModeKeepWrap'><input id='leftModeKeep' type='radio' name='leftImageMode' value='keep' checked onchange='toggleLeftEditorImageOptions()'/> Keep current image</label>
+                        <label id='leftModeCurrentWrap'><input id='leftModeCurrent' type='radio' name='leftImageMode' value='current_left' onchange='toggleLeftEditorImageOptions()'/> Use current left image</label>
+                        <label><input id='leftModeUpload' type='radio' name='leftImageMode' value='upload' onchange='toggleLeftEditorImageOptions()'/> Upload image</label>
+                    </div>
+                    <div id='leftUploadRow' class='rowx' style='display:none;'>
+                        <label>Upload <input id='leftEditorUploadFile' type='file' accept='image/png,image/jpeg,image/webp'/></label>
+                    </div>
+                </div>
+            </section>
+        </div>
+        <div class='leftEditorActions'>
+            <button onclick='closeLeftEditor()'>Cancel</button>
+            <button class='primary' onclick='submitLeftEditor()'>Save</button>
+        </div>
+    </div>
+</div>
+<script>
+{compare_script_html}
+</script>
+{footer_html}
+{footer_year_script}
+{config_editor_assets}
+</body>
+</html>

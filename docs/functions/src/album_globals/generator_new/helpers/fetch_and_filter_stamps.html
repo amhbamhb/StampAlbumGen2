@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>fetch_and_filter_stamps — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../../../index.html">Home</a> / <a href="../../../../../functions/@index.html">functions</a></nav>
+<h1>fetch_and_filter_stamps</h1>
+<p class="type">Rust Function</p>
+<pre><code>pub fn fetch_and_filter_stamps( conn: &amp;Connection, series: &amp;str, start_year: Option&lt;i32&gt;, end_year: Option&lt;i32&gt;, ) -&gt; SqlResult&lt;Vec&lt;Stamp&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../../../functions/src/config/load_effective_config.html">load_effective_config</a></li>
+<li><a href="../../../../../functions/src/config/Config/effective_default_catalog_code.html">effective_default_catalog_code</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/leading_year_from_series.html">leading_year_from_series</a></li>
+<li><a href="../../../../../functions/src/album_globals/structs/GenericAttrs/set.html">set</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/load_stored_colnect_meta.html">load_stored_colnect_meta</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/set_attr_if_non_empty.html">set_attr_if_non_empty</a></li>
+<li><a href="../../../../../functions/src/colnect/db/get_colnect_info_by_id.html">get_colnect_info_by_id</a></li>
+<li><a href="../../../../../functions/src/colnect/db/get_colnect_info.html">get_colnect_info</a></li>
+<li><a href="../../../../../functions/src/album_globals/generator_new/helpers/set_attr_if_missing.html">set_attr_if_missing</a></li>
+<li><a href="../../../../../functions/src/album_globals/structs/GenericAttrs/get.html">get</a></li>
+<li><a href="../../../../../functions/src/catalog/preferred_catalog_entry.html">preferred_catalog_entry</a></li>
+<li><a href="../../../../../functions/src/catalog/normalize_catalog_number.html">normalize_catalog_number</a></li>
+<li><a href="../../../../../functions/src/catalog/normalize_catalog_type.html">normalize_catalog_type</a></li>
+<li><a href="../../../../../functions/src/catalog/infer_catalog_type_for_number.html">infer_catalog_type_for_number</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../../../functions/src/album_globals/generator/generate_album_output_conn.html">generate_album_output_conn</a></li>
+<li><a href="../../../../../functions/tests/fetch_and_filter_stamps/test_fetch_and_filter_stamps_basic.html">test_fetch_and_filter_stamps_basic</a></li>
+</ul>
+<p class="resource">Source: src/album_globals/generator_new/helpers.rs#L367-L676</p>
+</body>
+</html>

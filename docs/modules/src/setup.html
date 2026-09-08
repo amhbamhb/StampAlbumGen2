@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>setup — Rust Module</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../index.html">Home</a> / <a href="../../modules/@index.html">modules</a></nav>
+<h1>setup</h1>
+<p class="type">Rust Module</p>
+<h2>Contains</h2>
+<ul>
+<li><a href="../../classes/src/setup/LinuxDesktopIntegrationReport.html">LinuxDesktopIntegrationReport</a> — Rust Struct</li>
+<li><a href="../../classes/src/setup/SetupError.html">SetupError</a> — Rust Enum</li>
+<li><a href="../../classes/src/setup/WindowsDesktopIntegrationReport.html">WindowsDesktopIntegrationReport</a> — Rust Struct</li>
+<li><a href="../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.html">from</a> — Rust Method</li>
+<li><a href="../../functions/src/setup/SetupError/std-fmt-display/fmt.html">fmt</a> — Rust Method</li>
+<li><a href="../../functions/src/setup/align_process_working_dir_to_runtime_layout.html">align_process_working_dir_to_runtime_layout</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/align_runtime_dir_noops_when_already_root.html">align_runtime_dir_noops_when_already_root</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/app_state_dir.html">app_state_dir</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/bundled_icon_png.html">bundled_icon_png</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/bundled_windows_icon_ico.html">bundled_windows_icon_ico</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/command_exists.html">command_exists</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/create_windows_shortcut.html">create_windows_shortcut</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/desktop_exec_path.html">desktop_exec_path</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/desktop_exec_value.html">desktop_exec_value</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/desktop_launcher_disable_marker_path.html">desktop_launcher_disable_marker_path</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/desktop_working_dir.html">desktop_working_dir</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/ensure_linux_desktop_integration.html">ensure_linux_desktop_integration</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/ensure_windows_desktop_integration.html">ensure_windows_desktop_integration</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/escape_powershell_single_quoted.html">escape_powershell_single_quoted</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/fallback_runtime_root_from.html">fallback_runtime_root_from</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/find_runtime_root_from.html">find_runtime_root_from</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/get_operating_system_type.html">get_operating_system_type</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/install_linux_desktop_integration.html">install_linux_desktop_integration</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/is_cargo_build_binary.html">is_cargo_build_binary</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/is_desktop_launcher_auto_install_disabled.html">is_desktop_launcher_auto_install_disabled</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/looks_like_runtime_root.html">looks_like_runtime_root</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/mark_desktop_file_trusted.html">mark_desktop_file_trusted</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/query_windows_desktop_dir.html">query_windows_desktop_dir</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/query_windows_programs_dir.html">query_windows_programs_dir</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/refresh_linux_desktop_caches.html">refresh_linux_desktop_caches</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/runtime_root_detects_expected_markers.html">runtime_root_detects_expected_markers</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/runtime_root_from_executable_path.html">runtime_root_from_executable_path</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/runtime_root_search_prefers_exe_directory_markers.html">runtime_root_search_prefers_exe_directory_markers</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/set_desktop_launcher_auto_install_disabled.html">set_desktop_launcher_auto_install_disabled</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/setup_logging.html">setup_logging</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/startup_probe_path.html">startup_probe_path</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/uninstall_linux_desktop_integration.html">uninstall_linux_desktop_integration</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/user_home_dir.html">user_home_dir</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/validate_os.html">validate_os</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/write_startup_probe.html">write_startup_probe</a> — Rust Function</li>
+<li><a href="../../functions/src/setup/write_startup_probe_snapshot.html">write_startup_probe_snapshot</a> — Rust Function</li>
+</ul>
+<h2>Imports</h2>
+<ul>
+<li><code>external/crate-types-ostype</code></li>
+<li><code>external/flexi-logger-cleanup-criterion-filespec-logger-naming</code></li>
+<li><code>external/std-fs-openoptions</code></li>
+<li><code>external/std-io-write</code></li>
+<li><code>external/std-path-path-pathbuf</code></li>
+<li><code>external/std-process-command-stdio</code></li>
+<li><code>external/std-os-unix-fs-permissionsext</code></li>
+<li><code>external/super-align-process-working-dir-to-runtime-layout-find-runtime-root-from-looks-like-runtime-root</code></li>
+<li><code>external/tempfile-tempdir</code></li>
+</ul>
+<h2>Member of</h2>
+<ul>
+<li><a href="../../packages/stamp_album_gen2.html">stamp_album_gen2</a></li>
+</ul>
+<p class="resource">Source: src/setup.rs#L1-L914</p>
+</body>
+</html>
