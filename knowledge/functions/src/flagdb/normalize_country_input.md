@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_country_input
-resource: src/flagdb.rs#L177-L184
+resource: src/flagdb.rs#L179-L185
 generated:
   by: okf-rs/0.4.0
 relationships:

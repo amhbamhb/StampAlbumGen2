@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: numeric_tokens
-resource: src/modes.rs#L573-L579
+resource: src/modes.rs#L569-L575
 visibility: private
 generated:
   by: okf-rs/0.4.0

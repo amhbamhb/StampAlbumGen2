@@ -1,4 +1,17 @@
-[workspace]
+[package.metadata.scripts]
+
+
+# For workspace projects
+[workspace.metadata.scripts]
+lint = "cargo clippy --all-targets -- -D warnings"
+run = "cargo run -- "
+watch = "cargo watch  -w src -x run "
+dev = "cargo build "
+build = "cargo build --release"
+test = "cargo test -- --nocapture"
+copyapp="cp -r target/release/stamp_album_gen2 /home/ray/AlbumGen2/stamp_album_gen2"
+
+[ workspace]
 members = ["crates/stamp_album_db", "."]
 
 [profile.release]
@@ -8,12 +21,14 @@ opt-level = 3
 # Default to minimal in-code country->flag mapping.
 # Enable `full-flag-db` to embed and use `flags/flag_codes.json` at compile time.
 default = []
-full-flag-db = []
+# rfd = ["dep:rfd"]
+# full-flag-db = []
 # Optional GUI folder picker (enables optional `rfd` dependency)
-rfd = ["dep:rfd"]
+# rfd = ["dep:rfd"]
 
 [dependencies]
 csv = "1.2"
+# win_dialog = "1.0.1"
 image = { version = "0.25.10", features = ["png"] }
 ab_glyph = "0.2"
 scraper = "0.26.0"
@@ -45,13 +60,19 @@ urlencoding = "2.1"
 base64 = "0.22"
 # `rfd` provides native file/folder dialogs but pulls GTK on Linux.
 # Make it optional behind the `use-rfd` feature so builds remain portable.
-rfd = { version = "0.9", optional = true }
+
+
+# rfd = {  }
+
+rfd = "0.9"
+
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 resvg = "0.47"
 usvg = "0.47"
 tiny-skia = "0.12.0"
 # Explicit OpenSSL with vendored feature for MUSL builds
 openssl = { version = "0.10.76", optional = true, features = ["vendored"] }
+win_dialog = "1.0.1"
 
 [dev-dependencies]
 assert_cmd = "2.0"

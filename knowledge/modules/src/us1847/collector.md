@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: collector
-resource: src/us1847/collector.rs#L1-L1635
+resource: src/us1847/collector.rs#L1-L1663
 generated:
   by: okf-rs/0.4.0
 relationships:

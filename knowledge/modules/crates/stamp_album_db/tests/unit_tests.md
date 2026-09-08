@@ -9,7 +9,7 @@ relationships:
   - target: external/rusqlite-connection
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/stamp-album-db-get-all-series-get-stamps-by-series-insert-stamp-migrate-fix-block-metadata-sort-stampstubs-inplace-stampstub
+  - target: external/stamp-album-db-get-all-series-get-stamps-by-series-insert-stamp-from-struct-migrate-fix-block-metadata-sort-stampstubs-inplace-stampinsert-stampstub
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -30,8 +30,8 @@ relationships:
 
 - `rusqlite::Connection`
 - `stamp_album_db::{
-    get_all_series, get_stamps_by_series, insert_stamp, migrate_fix_block_metadata,
-    sort_stampstubs_inplace, StampStub,
+    get_all_series, get_stamps_by_series, insert_stamp_from_struct, migrate_fix_block_metadata,
+    sort_stampstubs_inplace, StampInsert, StampStub,
 }`
 
 # Member of

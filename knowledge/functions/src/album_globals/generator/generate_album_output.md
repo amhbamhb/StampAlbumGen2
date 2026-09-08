@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_album_output
-resource: src/album_globals/generator.rs#L3366-L3378
+resource: src/album_globals/generator.rs#L3382-L3394
 generated:
   by: okf-rs/0.4.0
 ---

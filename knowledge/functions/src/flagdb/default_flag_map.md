@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: default_flag_map
-resource: src/flagdb.rs#L13-L27
+resource: src/flagdb.rs#L15-L29
 generated:
   by: okf-rs/0.4.0
 relationships:

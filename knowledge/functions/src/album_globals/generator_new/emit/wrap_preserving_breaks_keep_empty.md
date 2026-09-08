@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: wrap_preserving_breaks_keep_empty
-resource: src/album_globals/generator_new/emit.rs#L57-L71
+resource: src/album_globals/generator_new/emit.rs#L58-L72
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_schema_migrations_table
-resource: src/db_utils/migrations.rs#L207-L217
+resource: src/db_utils/migrations.rs#L210-L220
 generated:
   by: okf-rs/0.4.0
 relationships:

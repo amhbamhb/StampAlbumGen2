@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: country_slug
-resource: src/modes.rs#L160-L162
+resource: src/modes.rs#L156-L158
 visibility: private
 generated:
   by: okf-rs/0.4.0

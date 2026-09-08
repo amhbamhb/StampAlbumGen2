@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_config_from_template_values
-resource: src/review_ui/config_editor.rs#L608-L724
+resource: src/review_ui/config_editor.rs#L612-L728
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: collect_us1847_data
-resource: src/us1847/collector.rs#L1622-L1635
+resource: src/us1847/collector.rs#L1650-L1663
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_compare_navigation_html
-resource: src/review_ui/views/compare_assets.rs#L35-L45
+resource: src/review_ui/views/compare_assets.rs#L35-L44
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_table_stamps
-resource: src/us1847/collector.rs#L630-L682
+resource: src/us1847/collector.rs#L646-L698
 visibility: private
 generated:
   by: okf-rs/0.4.0

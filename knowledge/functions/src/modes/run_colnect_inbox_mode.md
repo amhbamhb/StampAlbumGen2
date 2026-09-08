@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_colnect_inbox_mode
-resource: src/modes.rs#L309-L558
+resource: src/modes.rs#L305-L554
 visibility: private
 generated:
   by: okf-rs/0.4.0

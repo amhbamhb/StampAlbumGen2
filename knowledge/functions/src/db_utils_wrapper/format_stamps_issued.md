@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: format_stamps_issued
-resource: src/db_utils_wrapper.rs#L201-L203
+resource: src/db_utils_wrapper.rs#L204-L206
 generated:
   by: okf-rs/0.4.0
 ---

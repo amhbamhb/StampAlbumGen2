@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>stamp_album_gen2 — Rust Package</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../index.html">Home</a> / <a href="../packages/@index.html">packages</a></nav>
+<h1>stamp_album_gen2</h1>
+<p class="type">Rust Package</p>
+<h2>Contains</h2>
+<ul>
+<li><a href="../modules/build.html">build</a> — Rust Module</li>
+<li><a href="../modules/src.html">src</a> — Rust Module</li>
+<li><a href="../modules/src-2.html">src</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals.html">album_globals</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/commemorative_generator.html">commemorative_generator</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/constants.html">constants</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator.html">generator</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator_new.html">generator_new</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator_new/commemorative_layout.html">commemorative_layout</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator_new/emit.html">emit</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator_new/helpers.html">helpers</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator_new/layout.html">layout</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/generator_new/postprocess.html">postprocess</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/globals.html">globals</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/helpers.html">helpers</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/page_functions.html">page_functions</a> — Rust Module</li>
+<li><a href="../modules/src/album_globals/structs.html">structs</a> — Rust Module</li>
+<li><a href="../modules/src/album_utils.html">album_utils</a> — Rust Module</li>
+<li><a href="../modules/src/album_utils/db_loader.html">db_loader</a> — Rust Module</li>
+<li><a href="../modules/src/album_utils/dimensions.html">dimensions</a> — Rust Module</li>
+<li><a href="../modules/src/album_utils/globals.html">globals</a> — Rust Module</li>
+<li><a href="../modules/src/album_utils/text_utils.html">text_utils</a> — Rust Module</li>
+<li><a href="../modules/src/bin/backfill_image_dims.html">backfill_image_dims</a> — Rust Module</li>
+<li><a href="../modules/src/bin/insert_test.html">insert_test</a> — Rust Module</li>
+<li><a href="../modules/src/bin/inspect_image_paths.html">inspect_image_paths</a> — Rust Module</li>
+<li><a href="../modules/src/bin/migrate_fix_block_metadata.html">migrate_fix_block_metadata</a> — Rust Module</li>
+<li><a href="../modules/src/bin/migrate_stamps.html">migrate_stamps</a> — Rust Module</li>
+<li><a href="../modules/src/bin/stampworld_debug.html">stampworld_debug</a> — Rust Module</li>
+<li><a href="../modules/src/catalog.html">catalog</a> — Rust Module</li>
+<li><a href="../modules/src/cli.html">cli</a> — Rust Module</li>
+<li><a href="../modules/src/colnect.html">colnect</a> — Rust Module</li>
+<li><a href="../modules/src/colnect/db.html">db</a> — Rust Module</li>
+<li><a href="../modules/src/colnect/image_fetcher.html">image_fetcher</a> — Rust Module</li>
+<li><a href="../modules/src/colnect/ingest.html">ingest</a> — Rust Module</li>
+<li><a href="../modules/src/colnect/parser.html">parser</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator.html">commands_file_generator</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator/album_creation.html">album_creation</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator/data_collection.html">data_collection</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator/generator.html">generator</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator/image_utils.html">image_utils</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator/touchstamps.html">touchstamps</a> — Rust Module</li>
+<li><a href="../modules/src/commands_file_generator/utils.html">utils</a> — Rust Module</li>
+<li><a href="../modules/src/config.html">config</a> — Rust Module</li>
+<li><a href="../modules/src/data_sources.html">data_sources</a> — Rust Module</li>
+<li><a href="../modules/src/data_sources/stampworld.html">stampworld</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils.html">db_utils</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/formatting.html">formatting</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/init.html">init</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/migrations.html">migrations</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/operations.html">operations</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/sort.html">sort</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/structs.html">structs</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils/updates.html">updates</a> — Rust Module</li>
+<li><a href="../modules/src/db_utils_wrapper.html">db_utils_wrapper</a> — Rust Module</li>
+<li><a href="../modules/src/file_utils.html">file_utils</a> — Rust Module</li>
+<li><a href="../modules/src/flagdb.html">flagdb</a> — Rust Module</li>
+<li><a href="../modules/src/image_downloader.html">image_downloader</a> — Rust Module</li>
+<li><a href="../modules/src/image_utils.html">image_utils</a> — Rust Module</li>
+<li><a href="../modules/src/modes.html">modes</a> — Rust Module</li>
+<li><a href="../modules/src/placeholder_image.html">placeholder_image</a> — Rust Module</li>
+<li><a href="../modules/src/progress.html">progress</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui.html">review_ui</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/config_editor.html">config_editor</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/html_templates.html">html_templates</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/http_handlers.html">http_handlers</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/matcher_service.html">matcher_service</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views.html">views</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views/bootstrap.html">bootstrap</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views/bootstrap_assets.html">bootstrap_assets</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views/compare.html">compare</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views/compare_assets.html">compare_assets</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views/shared.html">shared</a> — Rust Module</li>
+<li><a href="../modules/src/review_ui/views/tests.html">tests</a> — Rust Module</li>
+<li><a href="../modules/src/runtime_defaults.html">runtime_defaults</a> — Rust Module</li>
+<li><a href="../modules/src/sample_images.html">sample_images</a> — Rust Module</li>
+<li><a href="../modules/src/setup.html">setup</a> — Rust Module</li>
+<li><a href="../modules/src/stampworld.html">stampworld</a> — Rust Module</li>
+<li><a href="../modules/src/stampworld/data_collector.html">data_collector</a> — Rust Module</li>
+<li><a href="../modules/src/stampworld/fetch.html">fetch</a> — Rust Module</li>
+<li><a href="../modules/src/stampworld/parser.html">parser</a> — Rust Module</li>
+<li><a href="../modules/src/stampworld/state.html">state</a> — Rust Module</li>
+<li><a href="../modules/src/time_utils.html">time_utils</a> — Rust Module</li>
+<li><a href="../modules/src/types.html">types</a> — Rust Module</li>
+<li><a href="../modules/src/us1847.html">us1847</a> — Rust Module</li>
+<li><a href="../modules/src/us1847/collector.html">collector</a> — Rust Module</li>
+<li><a href="../modules/src/validation.html">validation</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia.html">wikipedia</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/database.html">database</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/fetchers.html">fetchers</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/formatters.html">formatters</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/ingest.html">ingest</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/legacy.html">legacy</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/models.html">models</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/parsers.html">parsers</a> — Rust Module</li>
+<li><a href="../modules/src/wikipedia/utils.html">utils</a> — Rust Module</li>
+<li><a href="../modules/tests/album_globals.html">album_globals</a> — Rust Module</li>
+<li><a href="../modules/tests/album_stamp_img_integration_test.html">album_stamp_img_integration_test</a> — Rust Module</li>
+<li><a href="../modules/tests/album_stamp_img_new_setting_usage.html">album_stamp_img_new_setting_usage</a> — Rust Module</li>
+<li><a href="../modules/tests/album_year_filter.html">album_year_filter</a> — Rust Module</li>
+<li><a href="../modules/tests/api_reexports.html">api_reexports</a> — Rust Module</li>
+<li><a href="../modules/tests/backfill_image_dims.html">backfill_image_dims</a> — Rust Module</li>
+<li><a href="../modules/tests/cli_args.html">cli_args</a> — Rust Module</li>
+<li><a href="../modules/tests/cli_option_validation.html">cli_option_validation</a> — Rust Module</li>
+<li><a href="../modules/tests/cli_param_matrix.html">cli_param_matrix</a> — Rust Module</li>
+<li><a href="../modules/tests/colnect_integration.html">colnect_integration</a> — Rust Module</li>
+<li><a href="../modules/tests/config_init_tests.html">config_init_tests</a> — Rust Module</li>
+<li><a href="../modules/tests/config_parameter_validation.html">config_parameter_validation</a> — Rust Module</li>
+<li><a href="../modules/tests/config_template_key_usage_audit.html">config_template_key_usage_audit</a> — Rust Module</li>
+<li><a href="../modules/tests/config_values.html">config_values</a> — Rust Module</li>
+<li><a href="../modules/tests/config_values_label.html">config_values_label</a> — Rust Module</li>
+<li><a href="../modules/tests/config_values_simple.html">config_values_simple</a> — Rust Module</li>
+<li><a href="../modules/tests/config_values_suite.html">config_values_suite</a> — Rust Module</li>
+<li><a href="../modules/tests/data_collector.html">data_collector</a> — Rust Module</li>
+<li><a href="../modules/tests/db_path_unit.html">db_path_unit</a> — Rust Module</li>
+<li><a href="../modules/tests/db_utils.html">db_utils</a> — Rust Module</li>
+<li><a href="../modules/tests/e2e_collect_stampworld_db.html">e2e_collect_stampworld_db</a> — Rust Module</li>
+<li><a href="../modules/tests/e2e_fake_fetcher_wikipedia.html">e2e_fake_fetcher_wikipedia</a> — Rust Module</li>
+<li><a href="../modules/tests/embedded_flags.html">embedded_flags</a> — Rust Module</li>
+<li><a href="../modules/tests/engraving_column.html">engraving_column</a> — Rust Module</li>
+<li><a href="../modules/tests/ensure_coa_integration.html">ensure_coa_integration</a> — Rust Module</li>
+<li><a href="../modules/tests/fetch_and_filter_stamps.html">fetch_and_filter_stamps</a> — Rust Module</li>
+<li><a href="../modules/tests/fetcher_injection.html">fetcher_injection</a> — Rust Module</li>
+<li><a href="../modules/tests/filename_year_inference_fixed.html">filename_year_inference_fixed</a> — Rust Module</li>
+<li><a href="../modules/tests/flagdb.html">flagdb</a> — Rust Module</li>
+<li><a href="../modules/tests/for_each_series.html">for_each_series</a> — Rust Module</li>
+<li><a href="../modules/tests/generate_conn_in_memory.html">generate_conn_in_memory</a> — Rust Module</li>
+<li><a href="../modules/tests/header_date.html">header_date</a> — Rust Module</li>
+<li><a href="../modules/tests/ingest_switzerland.html">ingest_switzerland</a> — Rust Module</li>
+<li><a href="../modules/tests/load_example_config.html">load_example_config</a> — Rust Module</li>
+<li><a href="../modules/tests/page_break_overflow.html">page_break_overflow</a> — Rust Module</li>
+<li><a href="../modules/tests/page_callback.html">page_callback</a> — Rust Module</li>
+<li><a href="../modules/tests/page_fit_regression.html">page_fit_regression</a> — Rust Module</li>
+<li><a href="../modules/tests/perforation_header.html">perforation_header</a> — Rust Module</li>
+<li><a href="../modules/tests/perforation_header_negative.html">perforation_header_negative</a> — Rust Module</li>
+<li><a href="../modules/tests/phase1_generate_conn.html">phase1_generate_conn</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_helper_test.html">placeholder_helper_test</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_image.html">placeholder_image</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_image_contrast.html">placeholder_image_contrast</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_image_inversion_spec.html">placeholder_image_inversion_spec</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_image_series_size.html">placeholder_image_series_size</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_image_size.html">placeholder_image_size</a> — Rust Module</li>
+<li><a href="../modules/tests/placeholder_regeneration.html">placeholder_regeneration</a> — Rust Module</li>
+<li><a href="../modules/tests/save_overwrite.html">save_overwrite</a> — Rust Module</li>
+<li><a href="../modules/tests/series_issue_date_order_tests.html">series_issue_date_order_tests</a> — Rust Module</li>
+<li><a href="../modules/tests/series_ordering.html">series_ordering</a> — Rust Module</li>
+<li><a href="../modules/tests/stamp_flags_dir_lookup.html">stamp_flags_dir_lookup</a> — Rust Module</li>
+<li><a href="../modules/tests/test_image_naming.html">test_image_naming</a> — Rust Module</li>
+<li><a href="../modules/tests/test_stampworld_parsing.html">test_stampworld_parsing</a> — Rust Module</li>
+<li><a href="../modules/tests/test_wikipedia_vspace.html">test_wikipedia_vspace</a> — Rust Module</li>
+<li><a href="../modules/tests/tmp_file_flushed.html">tmp_file_flushed</a> — Rust Module</li>
+<li><a href="../modules/tests/usable_height.html">usable_height</a> — Rust Module</li>
+<li><a href="../modules/tests/wikipedia_and_config_tests.html">wikipedia_and_config_tests</a> — Rust Module</li>
+</ul>
+<p class="resource">Source: Cargo.toml#L1</p>
+</body>
+</html>

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: helpers
-resource: src/album_globals/generator_new/helpers.rs#L1-L933
+resource: src/album_globals/generator_new/helpers.rs#L1-L951
 generated:
   by: okf-rs/0.4.0
 relationships:

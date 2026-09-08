@@ -368,9 +368,7 @@ fn pad_centre_body_for_side_columns(
 /// `\n`-separated string matching the format used in `centre_body`.
 fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -> String {
     let colnect_enabled = config.colnect_details_enabled();
-    let detail_layout = config
-        .stamp_detail_layout.as_deref()
-        .unwrap_or("inline");
+    let detail_layout = config.stamp_detail_layout.as_deref().unwrap_or("inline");
     if !colnect_enabled || detail_layout == "minimal" {
         return String::new();
     }
@@ -1322,6 +1320,10 @@ where
                 if let Some(stamp) = first_stamp {
                     // Optionally include a date line in the header (from DB year/month/day)
                     if config.include_date.unwrap_or(true) {
+                        let date_pattern_cfg = config
+                            .header_formatting
+                            .as_ref()
+                            .and_then(|hf| hf.date_pattern.clone());
                         let date_format_cfg = config
                             .header_formatting
                             .as_ref()
@@ -1329,16 +1331,16 @@ where
                             .unwrap_or_else(|| "commas".to_string());
                         let year = stamp.attrs.get("year").map(|s| s.trim()).unwrap_or("");
                         let day = stamp.attrs.get("day").map(|s| s.trim()).unwrap_or("");
+                        let month_num = stamp
+                            .attrs
+                            .get("month_num")
+                            .map(|s| s.trim())
+                            .unwrap_or("");
                         let month_raw = stamp.attrs.get("month").map(|s| s.trim()).unwrap_or("");
                         let month = if !month_raw.is_empty() {
                             month_raw.to_string()
                         } else {
                             // fall back to numeric month -> name
-                            let month_num = stamp
-                                .attrs
-                                .get("month_num")
-                                .map(|s| s.trim())
-                                .unwrap_or("0");
                             if let Ok(mn) = month_num.parse::<usize>() {
                                 if (1..=12).contains(&mn) {
                                     MONTH_NAMES[mn].to_string()
@@ -1349,38 +1351,58 @@ where
                                 "".to_string()
                             }
                         };
-                        let mut date_text = String::new();
-                        if !year.is_empty() {
-                            if date_format_cfg == "dashes" {
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} - {} - {}", month, day, year);
-                                } else if !month.is_empty() {
-                                    date_text = format!("{} - {}", month, year);
-                                } else {
-                                    date_text = year.to_string();
-                                }
+                        let pattern_is_complete = !year.is_empty()
+                            && !month.is_empty()
+                            && !day.is_empty();
+                        let mut date_text = if let Some(pattern) = date_pattern_cfg {
+                            // Replace the documented tokens independently so
+                            // users can choose either named or numeric months
+                            // and any ordering/separators they prefer.
+                            if pattern_is_complete {
+                                pattern
+                                    .replace("{year}", year)
+                                    .replace("{month}", &month)
+                                    .replace("{month_num}", month_num)
+                                    .replace("{day}", day)
                             } else {
-                                // default to commas style: "Month Day, Year"
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} {}, {}", month, day, year);
-                                } else if !month.is_empty() {
-                                    date_text = format!("{} {}", month, year);
-                                } else {
-                                    date_text = year.to_string();
-                                }
+                                String::new()
                             }
                         } else {
-                            // no year available, but maybe month/day exist
-                            if date_format_cfg == "dashes" {
-                                if !month.is_empty() && !day.is_empty() {
-                                    date_text = format!("{} - {}", month, day);
+                            String::new()
+                        };
+                        if date_text.is_empty() {
+                            if !year.is_empty() {
+                                if date_format_cfg == "dashes" {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} - {} - {}", month, day, year);
+                                    } else if !month.is_empty() {
+                                        date_text = format!("{} - {}", month, year);
+                                    } else {
+                                        date_text = year.to_string();
+                                    }
+                                } else {
+                                    // default to commas style: "Month Day, Year"
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} {}, {}", month, day, year);
+                                    } else if !month.is_empty() {
+                                        date_text = format!("{} {}", month, year);
+                                    } else {
+                                        date_text = year.to_string();
+                                    }
+                                }
+                            } else {
+                                // no year available, but maybe month/day exist
+                                if date_format_cfg == "dashes" {
+                                    if !month.is_empty() && !day.is_empty() {
+                                        date_text = format!("{} - {}", month, day);
+                                    } else if !month.is_empty() {
+                                        date_text = month.clone();
+                                    }
+                                } else if !month.is_empty() && !day.is_empty() {
+                                    date_text = format!("{} {}", month, day);
                                 } else if !month.is_empty() {
                                     date_text = month.clone();
                                 }
-                            } else if !month.is_empty() && !day.is_empty() {
-                                date_text = format!("{} {}", month, day);
-                            } else if !month.is_empty() {
-                                date_text = month.clone();
                             }
                         }
                         if !date_text.is_empty() {
@@ -1660,7 +1682,7 @@ where
                     + header_block_height
                     + vspace_after_header
                     + max_row_height
-                    + row_font_spacing 
+                    + row_font_spacing
                     + vertical_safety; // include vertical safety padding
                                        // Reserve extra room for footers/AlbumEasy page decorations to avoid overlap
                                        // Bumped to 11mm (was 10.0) to avoid a subtle footer bleed observed in rendered PDFs.
@@ -3515,7 +3537,7 @@ fn center_tmp_pages(
 
         // Count actual rows on this page and configured maximum.
         let rows_on_page = all_row_indices.len();
-    let cfg_max_rows = config.max_rows_per_page.unwrap_or(4);
+        let cfg_max_rows = config.max_rows_per_page.unwrap_or(4);
 
         // Do not attempt to center when there is no meaningful extra space,
         // or when the page already contains the max allowed rows.

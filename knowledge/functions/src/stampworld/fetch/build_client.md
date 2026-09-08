@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_client
-resource: src/stampworld/fetch.rs#L123-L125
+resource: src/stampworld/fetch.rs#L125-L127
 generated:
   by: okf-rs/0.4.0
 relationships:

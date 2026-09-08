@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stamp_flags_dir_lookup_found_coa_svg
-resource: tests/stamp_flags_dir_lookup.rs#L4-L35
+resource: tests/stamp_flags_dir_lookup.rs#L4-L38
 visibility: private
 generated:
   by: okf-rs/0.4.0

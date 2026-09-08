@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: add_colnect_stamp_to_stamps
-resource: src/review_ui/matcher_service.rs#L844-L1094
+resource: src/review_ui/matcher_service.rs#L852-L1102
 generated:
   by: okf-rs/0.4.0
 relationships:

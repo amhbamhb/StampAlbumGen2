@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: process_1847us_page
-resource: src/us1847/collector.rs#L34-L244
+resource: src/us1847/collector.rs#L34-L260
 generated:
   by: okf-rs/0.4.0
 relationships:

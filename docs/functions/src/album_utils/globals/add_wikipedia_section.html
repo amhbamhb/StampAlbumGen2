@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>add_wikipedia_section — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../../index.html">Home</a> / <a href="../../../../functions/@index.html">functions</a></nav>
+<h1>add_wikipedia_section</h1>
+<p class="type">Rust Function</p>
+<p><span class="visibility">private</span></p>
+<pre><code>fn add_wikipedia_section&lt;W: Write&gt;( writer: &amp;mut W, album_name: &amp;str, cfg: &amp;crate::config::Config, mut page_counter: usize, conn_opt: Option&lt;&amp;rusqlite::Connection&gt;, ) -&gt; usize</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../../functions/src/album_globals/globals/compute_usable_height.html">compute_usable_height</a></li>
+<li><a href="../../../../functions/src/wikipedia/database/get_cached_content.html">get_cached_content</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/layout/write_page_start.html">write_page_start</a></li>
+<li><a href="../../../../functions/src/album_utils/globals/parse_content_into_sections.html">parse_content_into_sections</a></li>
+<li><a href="../../../../functions/src/wikipedia/utils/estimate_header_height.html">estimate_header_height</a></li>
+<li><a href="../../../../functions/src/wikipedia/utils/estimate_text_height.html">estimate_text_height</a></li>
+<li><a href="../../../../functions/src/album_utils/globals/create_greedy_pages.html">create_greedy_pages</a></li>
+<li><a href="../../../../functions/src/album_utils/globals/create_balanced_pages.html">create_balanced_pages</a></li>
+<li><a href="../../../../functions/src/album_globals/generator_new/layout/write_page_vspace.html">write_page_vspace</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../../functions/src/album_utils/globals/write_globals.html">write_globals</a></li>
+</ul>
+<p class="resource">Source: src/album_utils/globals.rs#L656-L1086</p>
+</body>
+</html>

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_scraping_mode
-resource: src/modes.rs#L1430-L1892
+resource: src/modes.rs#L1427-L1894
 generated:
   by: okf-rs/0.4.0
 relationships:

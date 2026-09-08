@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ingest_wikipedia_to_db
-resource: src/wikipedia/ingest.rs#L11-L153
+resource: src/wikipedia/ingest.rs#L11-L151
 generated:
   by: okf-rs/0.4.0
 relationships:

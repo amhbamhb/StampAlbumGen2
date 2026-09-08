@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: HeaderFormatting
-resource: src/config.rs#L397-L423
+resource: src/config.rs#L461-L491
 generated:
   by: okf-rs/0.4.0
 ---

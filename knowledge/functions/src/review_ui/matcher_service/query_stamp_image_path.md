@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: query_stamp_image_path
-resource: src/review_ui/matcher_service.rs#L1112-L1119
+resource: src/review_ui/matcher_service.rs#L1120-L1127
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Execution Modes | Stamp Album Generator 2</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/styles-friendly.css" />
+</head>
+<body>
+  <div class="page-wrap">
+    <header class="page-header">
+      <h1 class="page-title">Execution Modes (After Startup)</h1>
+      <a class="page-home-link" href="/pages/index2.html">Back to docs index</a>
+    </header>
+
+    <section class="page-panel">
+      <p>After startup validation, the application routes into one of the main operating modes.</p>
+      <h2>1. Review UI Mode</h2>
+      <p>When `--review-ui` is active (or auto-enabled on no-arg interactive launch), the app enters startup selector flow and then compare/review flow.</p>
+      <ul>
+        <li>Startup selector: `run_review_ui_bootstrap(...)`</li>
+        <li>Main review server/session: `run_review_ui(...)`</li>
+      </ul>
+
+      <h2>2. Database Mode</h2>
+      <p>`run_database_mode(...)` handles output generation from an existing database path, and can also process Colnect import flows.</p>
+      <ul>
+        <li>Opens/initializes target database</li>
+        <li>Optionally ingests Colnect CSV data</li>
+        <li>Runs album output generation from DB contents</li>
+      </ul>
+
+      <h2>3. Scraping Mode</h2>
+      <p>`run_scraping_mode(...)` handles source scraping workflows (for example, StampWorld or US1847), then produces local output in canonical country storage.</p>
+      <ul>
+        <li>Validates and resolves site and album naming</li>
+        <li>Builds collector/generator configuration</li>
+        <li>Executes scrape/import and output stages</li>
+      </ul>
+
+      <p>Primary implementation references: `src/modes.rs`, `src/review_ui.rs`, and `src/validation.rs`.</p>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <p>Copyright © 2025 - <span class="js-current-year">2026</span> Laser Spider LLC. All rights reserved.</p>
+    <p>Stamp Album Generator 2 | Version <span class="js-app-version">1.6.51</span></p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

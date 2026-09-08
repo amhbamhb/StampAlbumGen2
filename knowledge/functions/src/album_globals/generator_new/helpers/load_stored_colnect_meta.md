@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_stored_colnect_meta
-resource: src/album_globals/generator_new/helpers.rs#L255-L332
+resource: src/album_globals/generator_new/helpers.rs#L266-L343
 visibility: private
 generated:
   by: okf-rs/0.4.0

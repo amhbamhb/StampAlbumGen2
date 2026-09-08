@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compute_page_used_height
-resource: src/album_globals/generator_new/postprocess.rs#L300-L423
+resource: src/album_globals/generator_new/postprocess.rs#L300-L422
 generated:
   by: okf-rs/0.4.0
 relationships:

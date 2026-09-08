@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_ensure_placeholder_for_stamp_and_update_db
-resource: tests/placeholder_helper_test.rs#L27-L104
+resource: tests/placeholder_helper_test.rs#L27-L107
 visibility: private
 generated:
   by: okf-rs/0.4.0

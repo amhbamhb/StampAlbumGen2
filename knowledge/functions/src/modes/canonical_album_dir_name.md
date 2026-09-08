@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: canonical_album_dir_name
-resource: src/modes.rs#L43-L45
+resource: src/modes.rs#L39-L41
 visibility: private
 generated:
   by: okf-rs/0.4.0

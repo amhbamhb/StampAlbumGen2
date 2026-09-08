@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: estimate_text_height
-resource: src/wikipedia/utils.rs#L5-L60
+resource: src/wikipedia/utils.rs#L5-L59
 generated:
   by: okf-rs/0.4.0
 relationships:

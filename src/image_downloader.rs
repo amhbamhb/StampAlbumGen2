@@ -208,7 +208,9 @@ pub fn download_missing_stamp_images(
 /// This re-opens and re-saves each image which removes embedded ICC profiles
 /// and other metadata that can confuse Qt's color management. Returns the
 /// number of files normalized (successful rewrites).
-pub fn normalize_album_images_for_pdf(album_name: &str) -> Result<usize, Box<dyn std::error::Error>> {
+pub fn normalize_album_images_for_pdf(
+    album_name: &str,
+) -> Result<usize, Box<dyn std::error::Error>> {
     let images_dir = crate::file_utils::resolve_album_dir(album_name).join("images");
     if !images_dir.exists() {
         return Ok(0);
@@ -224,7 +226,12 @@ pub fn normalize_album_images_for_pdf(album_name: &str) -> Result<usize, Box<dyn
         // Only attempt common image extensions
         if let Some(ext) = path.extension().and_then(|s| s.to_str()) {
             let lower = ext.to_ascii_lowercase();
-            if lower != "png" && lower != "jpg" && lower != "jpeg" && lower != "webp" && lower != "gif" {
+            if lower != "png"
+                && lower != "jpg"
+                && lower != "jpeg"
+                && lower != "webp"
+                && lower != "gif"
+            {
                 continue;
             }
         } else {

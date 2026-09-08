@@ -487,22 +487,143 @@ pub struct StampStub {
     pub multi_perf: bool,
 }
 
-/// Return stamps for a given series/year. Minimal implementation for now.
+/// Return stamps for a given series/year.
 pub fn get_stamps_by_series(
-    _conn: &Connection,
-    _series: &str,
+    conn: &Connection,
+    series: &str,
     _year: &str,
 ) -> Result<Vec<StampStub>> {
-    Ok(Vec::new())
+    let mut stmt = conn.prepare(
+        "SELECT year, month, month_num, day, sg_number, type, '' as stamp_type, denomination, color, description, '' as desc, '' as catalog_num, stamps_issued, mint_condition, unused, used, letter_fdc, currency, image_path, remote_image_url, original_image_url, image_width_px, image_height_px, watermark, design, engraving, perforation, series, context, issue_location, quantity_printed, 0 as multi_perf FROM stamps WHERE series = ?1 ORDER BY year, sg_number"
+    )?;
+    let stamp_iter = stmt.query_map(params![series], |row| {
+        Ok(StampStub {
+            year: row.get::<_, Option<i32>>(0)?.unwrap_or_default(),
+            month: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
+            month_num: row.get::<_, Option<i32>>(2)?.unwrap_or_default(),
+            day: row.get::<_, Option<String>>(3)?.unwrap_or_default(),
+            sg_number: row.get::<_, Option<String>>(4)?.unwrap_or_default(),
+            r#type: row.get::<_, Option<String>>(5)?.unwrap_or_default(),
+            stamp_type: row.get::<_, Option<String>>(6)?.unwrap_or_default(),
+            denomination: row.get::<_, Option<String>>(7)?.unwrap_or_default(),
+            color: row.get::<_, Option<String>>(8)?.unwrap_or_default(),
+            description: row.get::<_, Option<String>>(9)?.unwrap_or_default(),
+            desc: row.get::<_, Option<String>>(10)?.unwrap_or_default(),
+            catalog_num: row.get::<_, Option<String>>(11)?.unwrap_or_default(),
+            stamps_issued: row.get::<_, Option<String>>(12)?.unwrap_or_default(),
+            mint_condition: row.get::<_, Option<String>>(13)?.unwrap_or_default(),
+            unused: row.get::<_, Option<String>>(14)?.unwrap_or_default(),
+            used: row.get::<_, Option<String>>(15)?.unwrap_or_default(),
+            letter_fdc: row.get::<_, Option<String>>(16)?.unwrap_or_default(),
+            currency: row.get::<_, Option<String>>(17)?.unwrap_or_default(),
+            image_path: row.get::<_, Option<String>>(18)?.unwrap_or_default(),
+            remote_image_url: row.get::<_, Option<String>>(19)?.unwrap_or_default(),
+            original_image_url: row.get::<_, Option<String>>(20)?.unwrap_or_default(),
+            image_width_px: row.get::<_, Option<i32>>(21)?,
+            image_height_px: row.get::<_, Option<i32>>(22)?,
+            watermark: row.get::<_, Option<String>>(23)?.unwrap_or_default(),
+            design: row.get::<_, Option<String>>(24)?.unwrap_or_default(),
+            engraving: row.get::<_, Option<String>>(25)?.unwrap_or_default(),
+            perforation: row.get::<_, Option<String>>(26)?.unwrap_or_default(),
+            series: row.get::<_, Option<String>>(27)?.unwrap_or_default(),
+            context: row.get::<_, Option<String>>(28)?.unwrap_or_default(),
+            issue_location: row.get::<_, Option<String>>(29)?.unwrap_or_default(),
+            quantity_printed: row.get::<_, Option<String>>(30)?.unwrap_or_default(),
+            multi_perf: row.get::<_, i32>(31)? != 0,
+        })
+    })?;
+    let mut results = Vec::new();
+    for s in stamp_iter {
+        results.push(s?);
+    }
+    Ok(results)
 }
 
-/// Return all series names. Minimal implementation.
-pub fn get_all_series(_conn: &Connection) -> Result<Vec<String>> {
-    Ok(Vec::new())
+/// Return all series names.
+pub fn get_all_series(conn: &Connection) -> Result<Vec<String>> {
+    let mut stmt = conn.prepare(
+        "SELECT DISTINCT series FROM stamps WHERE series IS NOT NULL AND series != '' ORDER BY series",
+    )?;
+    let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+    let mut res = Vec::new();
+    for s in rows {
+        res.push(s?);
+    }
+    Ok(res)
 }
 
 /// Sort stamp stubs in place. No-op placeholder.
-pub fn sort_stampstubs_inplace(_v: &mut [StampStub]) {}
+fn leading_int_and_suffix(s: &str) -> (Option<i64>, String) {
+    let mut chars = s.chars();
+    let mut num_str = String::new();
+    while let Some(c) = chars.next() {
+        if c.is_ascii_digit() {
+            num_str.push(c);
+        } else {
+            // first non-digit - remainder is the rest of the string starting at this char
+            let mut rem = String::new();
+            rem.push(c);
+            rem.extend(chars);
+            return (
+                if num_str.is_empty() {
+                    None
+                } else {
+                    num_str.parse::<i64>().ok()
+                },
+                rem,
+            );
+        }
+    }
+    // consumed all chars; whole string may be numeric
+    if num_str.is_empty() {
+        (None, String::new())
+    } else {
+        (num_str.parse::<i64>().ok(), String::new())
+    }
+}
+
+/// Sort stamp stubs in place using natural ordering for numeric prefixes.
+pub fn sort_stampstubs_inplace(v: &mut [StampStub]) {
+    v.sort_by(|a, b| {
+        let (ai, asuf) = leading_int_and_suffix(&a.sg_number);
+        let (bi, bsuf) = leading_int_and_suffix(&b.sg_number);
+        match (ai, bi) {
+            (Some(na), Some(nb)) => {
+                if na != nb {
+                    return na.cmp(&nb);
+                }
+                // same leading number: empty suffix sorts before non-empty
+                if asuf.is_empty() && !bsuf.is_empty() {
+                    return std::cmp::Ordering::Less;
+                }
+                if !asuf.is_empty() && bsuf.is_empty() {
+                    return std::cmp::Ordering::Greater;
+                }
+                // Prefer alphabetic suffixes before non-alphabetic (e.g. "AT" before "*")
+                let a_first_alpha = asuf
+                    .chars()
+                    .next()
+                    .map(|c| c.is_alphabetic())
+                    .unwrap_or(false);
+                let b_first_alpha = bsuf
+                    .chars()
+                    .next()
+                    .map(|c| c.is_alphabetic())
+                    .unwrap_or(false);
+                if a_first_alpha && !b_first_alpha {
+                    return std::cmp::Ordering::Less;
+                }
+                if !a_first_alpha && b_first_alpha {
+                    return std::cmp::Ordering::Greater;
+                }
+                asuf.cmp(&bsuf)
+            }
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => a.sg_number.cmp(&b.sg_number),
+        }
+    });
+}
 
 // Lightweight helper stubs used by insert logic. These mirror small
 // utilities from the main crate but kept local so the DB crate builds.
@@ -874,7 +995,8 @@ pub fn insert_stamp(
             needs_update = true;
         }
         if !image_path.trim().is_empty()
-            && (is_empty(&existing_image_path) || existing_image_path.starts_with("images/no_image"))
+            && (is_empty(&existing_image_path)
+                || existing_image_path.starts_with("images/no_image"))
         {
             needs_update = true;
         }
@@ -1125,7 +1247,7 @@ pub fn get_stamps_by_country_series(
     series: &str,
 ) -> Result<Vec<StampCountrySeriesRow>> {
     let mut stmt = conn.prepare(
-        "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
+        "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year, sg_number"
     )?;
     let stamp_iter = stmt.query_map(params![country, series], |row| {
         Ok((

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: emit_image_only
-resource: src/album_globals/generator_new/emit.rs#L345-L364
+resource: src/album_globals/generator_new/emit.rs#L366-L389
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`pub fn emit_image_only<W: Write>(out: &mut W, ctx: &EmitContext, options: Option<&str>) -> std::io::Result<()>`
+`pub fn emit_image_only<W: Write>( out: &mut W, ctx: &EmitContext, options: Option<&str>, ) -> std::io::Result<()>`
 
 # Calls
 

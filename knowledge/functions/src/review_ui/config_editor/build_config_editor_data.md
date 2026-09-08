@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_config_editor_data
-resource: src/review_ui/config_editor.rs#L509-L606
+resource: src/review_ui/config_editor.rs#L512-L610
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -41,7 +41,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn build_config_editor_data( config_path: &str, template_path: &str, ) -> Result<Vec<ConfigEditorSection>, Box<dyn std::error::Error>>`
+`pub(super) fn build_config_editor_data( config_path: &str, template_path: &str, pdf_path: &str, ) -> Result<Vec<ConfigEditorSection>, Box<dyn std::error::Error>>`
 
 # Calls
 

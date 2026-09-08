@@ -1,0 +1,71 @@
+---
+query: can you do both suggestions c4 and SAeuence diagram
+references:
+  - "File: /src/review_ui/views/MainOverview.mmd"
+  - "File: /home/ray/.copilot/instructions/claude-guidelines.instructions.md"
+  - "File: /.github/copilot-instructions.md"
+  - "File: /home/ray/.claude/CLAUDE.md"
+  - "File: /AGENTS.md"
+  - "File: /CLAUDE.md"
+generationTime: 2026-09-01T13:38:09.936Z
+---
+C4Container
+    title StampAlbumGen2 Review UI - Container Architecture
+
+    Person(user, "Stamp Collector", "Uses Review UI in web browser")
+    
+    System_Boundary(b1, "StampAlbumGen2 Application") {
+        Container(cli, "CLI Entry Point", "Rust binary", "Parses arguments, manages config, routes modes")
+        
+        Container_Boundary(b2, "Review UI Mode") {
+            Container(bootstrap_srv, "Bootstrap Server", "HTTP/Tokio", "Country selection and database picker")
+            Container(review_srv, "Review Server", "HTTP/Tokio", "Main compare/match interface")
+            Container(config_editor, "Config Editor", "HTTP handlers", "Embedded config.toml editor")
+        }
+        
+        Container_Boundary(b3, "Rendering Layer") {
+            Container(bootstrap_html, "Bootstrap Assets", "HTML/CSS/JS", "Country picker UI and JS logic")
+            Container(compare_html, "Compare Assets", "HTML/CSS/JS", "Stamp comparison view and handlers")
+        }
+        
+        Container_Boundary(b4, "Business Logic") {
+            Container(matcher, "Matcher Logic", "Rust functions", "Left/right candidate matching")
+            Container(db_ops, "Database Operations", "SQL queries", "Stamp CRUD and sync operations")
+            Container(colnect_sync, "Colnect Sync", "CSV import logic", "Parse and ingest Colnect data")
+        }
+        
+        ContainerDb(sqlite_db, "SQLite Database", "SQLite", "Country album data, stamps, matches")
+        ContainerDb(config_toml, "Config Files", "TOML", "Runtime config, album settings")
+    }
+    
+    System_Ext(stampworld, "StampWorld Website", "Web scraper target")
+    System_Ext(colnect_api, "Colnect.com", "CSV export source")
+    System_Ext(neXperts, "neXperts Flag API", "Flag image fetcher")
+
+    Rel(user, cli, "Launches binary", "command line")
+    Rel(cli, bootstrap_srv, "Starts bootstrap", "spawns HTTP")
+    Rel(user, bootstrap_html, "Browses to localhost", "HTTP browser")
+    Rel(bootstrap_html, bootstrap_srv, "Selects country", "POST JSON")
+    Rel(bootstrap_srv, review_srv, "Transitions to", "set state")
+    Rel(user, compare_html, "Navigates to compare", "GET /")
+    Rel(compare_html, review_srv, "Apply matches, edit stamps", "POST/GET JSON")
+    Rel(review_srv, db_ops, "Query and update", "sync SQL")
+    Rel(db_ops, sqlite_db, "Read/write rows", "JDBC-like")
+    Rel(review_srv, matcher, "Build payload", "invoke functions")
+    Rel(review_srv, config_editor, "Save config", "POST")
+    Rel(config_editor, config_toml, "Persist settings", "file I/O")
+    Rel(review_srv, colnect_sync, "Import Colnect CSV", "parse + ingest")
+    Rel(colnect_sync, sqlite_db, "Insert candidates", "SQL")
+    Rel(cli, stampworld, "Scrapes data", "HTTP GET")
+    Rel(cli, colnect_api, "Downloads CSV", "HTTP GET")
+    Rel(cli, neXperts, "Fetches flags", "API calls")
+
+    UpdateRelStyle(user, cli, $offsetX="5", $offsetY="-20")
+    UpdateRelStyle(user, bootstrap_html, $offsetY="40")
+    UpdateRelStyle(cli, bootstrap_srv, $offsetX="40", $offsetY="-40")
+    UpdateRelStyle(bootstrap_html, bootstrap_srv, $offsetX="-80", $offsetY="20")
+    UpdateRelStyle(bootstrap_srv, review_srv, $offsetY="-30")
+    UpdateRelStyle(compare_html, review_srv, $offsetX="-120", $offsetY="0")
+    UpdateRelStyle(review_srv, db_ops, $offsetX="80", $offsetY="-10")
+    UpdateRelStyle(db_ops, sqlite_db, $offsetY="20", $offsetX="60")
+    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")

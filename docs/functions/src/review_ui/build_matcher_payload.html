@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>build_matcher_payload — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../index.html">Home</a> / <a href="../../../functions/@index.html">functions</a></nav>
+<h1>build_matcher_payload</h1>
+<p class="type">Rust Function</p>
+<p><span class="visibility">private</span></p>
+<pre><code>fn build_matcher_payload( conn: &amp;Connection, db_path: &amp;str, album_name: &amp;str, default_catalog_code: &amp;str, default_sort_mode: &amp;str, odd_row_color: &amp;str, even_row_color: &amp;str, series_default_checked: bool, description_default_checked: bool, watermark_default_checked: bool, design_default_checked: bool, engraving_default_checked: bool, perforation_default_checked: bool, context_default_checked: bool, colnect_links_default_checked: bool, colnect_image_url_default_checked: bool, colnect_metadata_default_checked: bool, replace_sg_number_default_checked: bool, right_unmatched_only_default_checked: bool, albumeasy_auto_generate_pdf_default: bool, albumeasy_cli_configured: bool, catalog_family_options: &amp;[String], show_imageless_left_rows: bool, ) -&gt; Result&lt;MatcherPayload, Box&lt;dyn std::error::Error&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../functions/src/review_ui/matcher_service/load_left_stamps.html">load_left_stamps</a></li>
+<li><a href="../../../functions/src/review_ui/matcher_service/load_right_candidates.html">load_right_candidates</a></li>
+<li><a href="../../../functions/src/review_ui/album_dir_for_ui.html">album_dir_for_ui</a></li>
+<li><a href="../../../functions/src/review_ui/count_colnect_csv_files_rec.html">count_colnect_csv_files_rec</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../functions/src/review_ui/run_review_ui.html">run_review_ui</a></li>
+<li><a href="../../../functions/src/review_ui/http_handlers/serve_review_requests.html">serve_review_requests</a></li>
+</ul>
+<p class="resource">Source: src/review_ui.rs#L2175-L2235</p>
+</body>
+</html>

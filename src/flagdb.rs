@@ -5,8 +5,8 @@ use std::path::{Path, PathBuf};
 
 use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 use image::GenericImageView;
-use std::time::{SystemTime, UNIX_EPOCH};
 use rusqlite::Connection;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Small local flag DB: map lowercase country name -> ISO alpha-2 code
 /// We'll initialize it with a compact set and allow loading from a JSON file
@@ -74,59 +74,59 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
 
     // Optional full map path: if enabled, fall back to an embedded copy of
     // flag_codes.json and try to write it back to disk for future runs.
-    if let Some(full_map) = load_embedded_flag_map_if_enabled() {
-        return full_map;
-    }
+    // if let Some(full_map) = load_embedded_flag_map_if_enabled() {
+    //     return full_map;
+    // }
 
     default_flag_map()
 }
 
-#[cfg(feature = "full-flag-db")]
-fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
-    const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
+// #[cfg(feature = "full-flag-db")]
+// fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
+//     const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
 
-    if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(EMBEDDED_FLAGS_JSON) {
-        // Attempt to write the embedded json to the preferred writable location
-        // (cwd 'flags' preferred). Ignore write errors; runtime lookups still
-        // succeed from the in-memory map if writes are not possible.
-        let prefer_dirs: Vec<PathBuf> = vec![
-            PathBuf::from("flags"),
-            std::env::current_exe()
-                .ok()
-                .and_then(|e| e.parent().map(|p| p.to_path_buf()))
-                .unwrap_or_else(|| PathBuf::from("flags")),
-            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
-        ];
+//     if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(EMBEDDED_FLAGS_JSON) {
+//         // Attempt to write the embedded json to the preferred writable location
+//         // (cwd 'flags' preferred). Ignore write errors; runtime lookups still
+//         // succeed from the in-memory map if writes are not possible.
+//         let prefer_dirs: Vec<PathBuf> = vec![
+//             PathBuf::from("flags"),
+//             std::env::current_exe()
+//                 .ok()
+//                 .and_then(|e| e.parent().map(|p| p.to_path_buf()))
+//                 .unwrap_or_else(|| PathBuf::from("flags")),
+//             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"),
+//         ];
 
-        let cwd_flags = PathBuf::from("flags");
-        if fs::create_dir_all(&cwd_flags).is_ok() {
-            let out_path = cwd_flags.join("flag_codes.json");
-            let _ = fs::write(&out_path, EMBEDDED_FLAGS_JSON);
-        } else {
-            for dir in prefer_dirs.iter() {
-                if fs::create_dir_all(dir).is_ok() {
-                    let out_path = dir.join("flag_codes.json");
-                    if fs::write(&out_path, EMBEDDED_FLAGS_JSON).is_ok() {
-                        break;
-                    }
-                }
-            }
-        }
+//         let cwd_flags = PathBuf::from("flags");
+//         if fs::create_dir_all(&cwd_flags).is_ok() {
+//             let out_path = cwd_flags.join("flag_codes.json");
+//             let _ = fs::write(&out_path, EMBEDDED_FLAGS_JSON);
+//         } else {
+//             for dir in prefer_dirs.iter() {
+//                 if fs::create_dir_all(dir).is_ok() {
+//                     let out_path = dir.join("flag_codes.json");
+//                     if fs::write(&out_path, EMBEDDED_FLAGS_JSON).is_ok() {
+//                         break;
+//                     }
+//                 }
+//             }
+//         }
 
-        return Some(
-            j.into_iter()
-                .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
-                .collect(),
-        );
-    }
+//         return Some(
+//             j.into_iter()
+//                 .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
+//                 .collect(),
+//         );
+//     }
 
-    None
-}
+//     None
+// }
 
-#[cfg(not(feature = "full-flag-db"))]
-fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
-    None
-}
+// #[cfg(not(feature = "full-flag-db"))]
+// fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
+//     None
+// }
 
 /// Given a country name, attempt to return an alpha-2 code (lowercase) using simple normalization.
 pub fn country_to_code(country: &str) -> Option<String> {
@@ -452,10 +452,22 @@ pub fn ensure_coat_of_arms_with_fetcher(
     // Query restcountries API for coatOfArms URL. Try v5 first, then v3 as fallback.
     // Prefer minimal-field v5 endpoint, fall back to other shapes
     let candidates = vec![
-        format!("https://restcountries.com/v5.1/alpha/{}?fields=coatOfArms", alpha),
-        format!("https://restcountries.com/v5.1/alpha?codes={}&fields=coatOfArms", alpha),
-        format!("https://restcountries.com/v3.1/alpha/{}?fields=coatOfArms", alpha),
-        format!("https://restcountries.com/v3.1/alpha?codes={}&fields=coatOfArms", alpha),
+        format!(
+            "https://restcountries.com/v5.1/alpha/{}?fields=coatOfArms",
+            alpha
+        ),
+        format!(
+            "https://restcountries.com/v5.1/alpha?codes={}&fields=coatOfArms",
+            alpha
+        ),
+        format!(
+            "https://restcountries.com/v3.1/alpha/{}?fields=coatOfArms",
+            alpha
+        ),
+        format!(
+            "https://restcountries.com/v3.1/alpha?codes={}&fields=coatOfArms",
+            alpha
+        ),
     ];
 
     let mut body: Option<String> = None;
@@ -474,7 +486,12 @@ pub fn ensure_coat_of_arms_with_fetcher(
     }
 
     // If restcountries did not provide usable coat, try neXperts countries API (provides /coa/{code}.svg/png)
-    if body.is_none() || body.as_ref().map(|s| s.contains("deprecated")).unwrap_or(false) {
+    if body.is_none()
+        || body
+            .as_ref()
+            .map(|s| s.contains("deprecated"))
+            .unwrap_or(false)
+    {
         // try neXperts country full info first
         let nex_info_url = format!("https://countries.nexperts.nl/{alpha}");
         if let Ok((_s, b)) = fetcher.fetch_text(&nex_info_url) {
@@ -484,11 +501,17 @@ pub fn ensure_coat_of_arms_with_fetcher(
             if let Some(coa_url) = extract_coa_from_nexperts_html(&b, &alpha) {
                 // download bytes
                 if let Ok((_st, _headers, bytes)) = fetcher.fetch_bytes(&coa_url) {
-                    let ext = if coa_url.to_lowercase().ends_with(".png") {"png"} else {"svg"};
+                    let ext = if coa_url.to_lowercase().ends_with(".png") {
+                        "png"
+                    } else {
+                        "svg"
+                    };
                     let final_path = target_dir.join(format!("{}.{}", alpha, ext));
                     let mut out = std::fs::File::create(&final_path)?;
                     out.write_all(&bytes)?;
-                    if ext=="png" { return Ok(final_path.to_string_lossy().to_string()); }
+                    if ext == "png" {
+                        return Ok(final_path.to_string_lossy().to_string());
+                    }
                     let png_path = final_path.with_extension("png");
                     if try_rasterize_svg_to_png(&final_path, &png_path).unwrap_or(false) {
                         return Ok(png_path.to_string_lossy().to_string());

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compute_page_used_height
-resource: src/album_globals/generator.rs#L3689-L3812
+resource: src/album_globals/generator.rs#L3705-L3828
 visibility: private
 generated:
   by: okf-rs/0.4.0

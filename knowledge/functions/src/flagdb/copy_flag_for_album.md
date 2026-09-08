@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: copy_flag_for_album
-resource: src/flagdb.rs#L285-L301
+resource: src/flagdb.rs#L297-L313
 generated:
   by: okf-rs/0.4.0
 relationships:

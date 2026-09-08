@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>sync_missing_stamps_from_colnect — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../index.html">Home</a> / <a href="../../../functions/@index.html">functions</a></nav>
+<h1>sync_missing_stamps_from_colnect</h1>
+<p class="type">Rust Function</p>
+<p><span class="visibility">private</span></p>
+<pre><code>fn sync_missing_stamps_from_colnect( conn: &amp;rusqlite::Connection, ) -&gt; Result&lt;usize, Box&lt;dyn std::error::Error&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../functions/src/modes/remap_colnect_sg_to_existing_stamps.html">remap_colnect_sg_to_existing_stamps</a></li>
+<li><a href="../../../functions/src/modes/backfill_colnect_links_on_existing_stamps.html">backfill_colnect_links_on_existing_stamps</a></li>
+<li><a href="../../../functions/src/config/load_config.html">load_config</a></li>
+<li><a href="../../../functions/src/config/Config/effective_default_catalog_code.html">effective_default_catalog_code</a></li>
+<li><a href="../../../functions/src/modes/infer_and_fix_catalog_codes_for_colnect_rows.html">infer_and_fix_catalog_codes_for_colnect_rows</a></li>
+</ul>
+<p class="resource">Source: src/modes.rs#L564-L1218</p>
+</body>
+</html>

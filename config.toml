@@ -1,939 +1,304 @@
-###################################
-# Page
-###################################
-[page]
-# Physical page size and margins (mm)
-# Typical values:
-# - US Letter: 216.0 x 279.4
-# - A4: 210.0 x 297.0
-album_page_width_mm = 216.0
-album_page_height_mm = 279.4
-page_top_margin_mm = 10
-page_bottom_margin_mm = 10.0
-page_left_margin_mm = 10.0
-page_right_margin_mm = 10.0
-
-# Page border and spacing controls
-# page_border_outer  : outer line thickness
-# page_border_inner1 : first inner line thickness
-# page_border_inner2 : second inner line thickness
-# page_border_spacing: gap between border lines
-page_border_outer = 0.1
-page_border_inner1 = 0.5
-page_border_inner2 = 0.1
-page_border_spacing = 1.0
-# Gap between album pages when rendering multiple pages per output sheet
-album_pages_spacing_h = 3.0
-album_pages_spacing_v = 3.0
-# Maximum vertical spacer emitted between sections before a new page is preferred
-max_page_vspace_mm = 10.0
-
-###################################
-# Header / Footer
-###################################
-[header]
-# Font token for the page title area (for example HN, HB, TN)
-album_pages_title_font = "HN"
-# Title font size in points
-album_pages_title_size = 10.0
-# Title position: L (left), C (center), R (right)
-album_pages_header_position = "C"
-
-# Header content toggles
-include_design = true
-include_engraving = true
-include_watermark = true
-include_perforation = true
-include_catalog_numbers = true
-include_series = true
-include_country = true
-include_date = true
-
-# Spacing around section headers (mm)
-# Space before each section heading
-header_vspace_before_mm = 1.0
-# Space after each section heading
-header_vspace_after_mm = 2.0
-
-[footer]
-# Enable/disable page number footer
-album_pages_footer_number_enabled = true
-album_pages_footer_number_font = "HN"
-album_pages_footer_number_size = 8.0
-# Position: L (left), C (center), R (right)
-album_pages_footer_number_position = "C"
-# Starting page number
-album_pages_footer_number_start = 1
-# Prefix/suffix around the page counter token
-album_pages_footer_number_before = "Page "
-album_pages_footer_number_after = " of $PAGES$"
-
-###################################
-# Stamps
-###################################
-[stamps]
-# Base sizing (mm)
-# Base width/height reference used when real dimensions are unavailable
-reference_width_mm = 19.0
-reference_height_mm = 25.0
-# Target box height for stamp image rows
-target_stamp_height_mm = 25.0
-# Fine adjustment applied on top of each stamp's emitted box size.
-stamp_box_adjust = 0.0
-
-# Packing limits
-# Hard cap of stamps placed in one row
-max_stamps_per_row = 5
-# Hard cap of rows per page
-max_rows_per_page = 4
-# Extra horizontal safety space to reduce clipping/overflows
-packing_horizontal_safety_mm = 8.0
-# Extra vertical safety space to reduce clipping/overflows
-packing_vertical_safety_mm = 1.0
-# Additional vertical gap between distinct series rows
-series_row_gap_mm = 0.0
-
-# Stamp details layout
-# - inline: details inside stamp text fields
-# - separate_rows: details in dedicated row/box area
-# - minimal: no detail metadata
-stamp_detail_layout = "separate_rows"
-# Font size (in points) used for the separate detail row emitted below each stamp
-# when stamp_detail_layout = "separate_rows". This controls the text size for
-# description, catalog codes, color, and other metadata displayed beneath stamps.
-# Default: 6 (small enough to fit several lines without pushing stamps apart)
-stamp_detail_font_size = 6
-# Vertical spacing (mm) used as the vspace in the ROW_START_ES command that opens
-# the detail row. This controls the gap between the stamp image row and the detail
-# text row below it. Only applies when stamp_detail_layout = "separate_rows".
-# Default: 3.5 mm
-stamp_detail_vspace = 3.5
-
-# Stamp row value visibility (under each image)
-# Left value: denomination / face value fallback
-include_denomination = true
-# Center top value: print-run / stamps-issued count
-include_stamps_issued = true
-# Center body text: main stamp description
-include_description = true
-# Center bottom text: stamp color such as multicoloured
-include_color = true
-# Right first value: mint condition (falls back to unused when mint is empty)
-include_mint_unused = true
-# Right second value: used value/condition
-include_used = true
-
-# Large-stamp behavior
-# Allow one oversized stamp to consume most of a page
-allow_single_large_stamp_per_page = true
-# Fraction of usable width/height at which a stamp is considered "large"
-single_stamp_threshold_pct = 0.7
-# Extra usable page height padding when fitting rows
-usable_height_padding_mm = 1.0
-
-# Row text/image metrics
-# Estimated text line height used for spacing calculations
-text_line_height_mm = 2.6
-# Gap between image and text blocks inside stamp rows
-image_spacing_mm = 1.0
-
-# Global stamp image sizing offsets (mm)
-# Width/height offsets applied after base dimension estimation
-extra_width_mm = 3.0
-extra_height_mm = 3.0
-# Keep source image proportions when true
-album_stamp_img_new_setting_preserve_aspect = true
-preserve_aspect = true
-# Legacy/global aspect-ratio guard (keep true in most cases)
-album_stamp_img_aspect_ratio = true
-
-# Global scale multiplier applied to ALL size/spacing values before rendering.
-# Use to uniformly scale an entire layout up or down without editing each field.
-# 1.0 = no scaling.  Example: 0.9 shrinks everything 10 %.
-global_scale = 1.0
-
-# Row-height accounting
-# When true, the estimated stamp heading height is included in row height
-# calculations (prevents headings from overlapping subsequent rows).
-stamp_heading_in_row_height = false
-# When true, the page vertical spacer (PAGE_VSPACE) height is included in
-# row height calculations.
-pages_vspace_in_row_height = false
-
-# Stamp heading style
-# Default catalog family used when choosing a catalog number from Colnect.
-# Examples:
-# - sn = Scott
-# - sg = Stanley Gibbons
-# - mi = Michel
-# - yt = Yvert
-# - afa = AFA
-# - ank = ANK
-# - nvp = NVPH
-# - un = Unificato
-# - col = Colnect codes
-# - wad = WNS (WADP Numbering System)
-# Tip: this should usually match one of the catalog codes listed in
-#      [review_ui].catalog_family_options.
-default_catalog_code = "sn"
-# Font token for the heading line above each stamp entry
-stamp_heading_font = "HN"
-# Heading font size in points
-stamp_heading_size = 6.0
-# "auto" = use the display name for default_catalog_code
-# ""     = hide the label entirely
-# Any other text value is used verbatim as the heading label.
-stamp_heading_label = "auto"
-
-###################################
-# Layout
-###################################
-[layout]
-# Extra inter-character spacing for row text
-row_font_spacing = 0.1
-# Extra spacing around header text blocks
-header_font_spacing = 2.0
-# Conservative page-fit padding before forcing a new page
-page_fit_conservative_buffer_mm = 2.0
-
-# Custom PAGE_VSPACE marker string written into album output.
-# When set, the generator emits this token instead of a numeric PAGE_VSPACE
-# value; a post-processor can then replace the token with concrete numbers.
-# Leave empty to emit standard numeric PAGE_VSPACE values.
-page_vspace_marker = ""
-
-# ROW_START_ES behavior
-# Diagnostic marker row emitted before each series row group
-row_start_es_enabled = true
-row_start_es_font = "HN"
-row_start_es_size = 6.0
-row_start_es_spacing = 0.1
-row_start_es_vspace = 6.0
-row_start_es_marker = "ROW_START_ES"
-
-# Row packing diagnostics / centering
-# NOTE: enable_row_centering is accepted by the config parser but is NOT
-# currently applied — row centering is a prototype feature that has not been
-# implemented in the layout engine.  Leave true for future compatibility.
-enable_row_centering = true
-# Emit diagnostics for stamps-per-row decisions
-show_stamps_per_row = true
-# Order strategy for series sorting: first_date, first_sg, first_sg_desc, alpha
-series_order = "first_date"
-
-###################################
-# StampWorld Scrape Options
-###################################
-[stampworld]
-# This section documents all StampWorld run options used by CLI/Review UI.
-# These values are defaults/reference values for run presets.
-#
-# Equivalent CLI source selector.
-source = "stampworld"
-# StampWorld site/country slug (for example: Great-Britain, Netherlands).
-site_name = ""
-# Local album folder name. Empty means use site_name.
-album_name = ""
-# Optional full base URL override. Leave empty for automatic URL construction.
-base_url = ""
-# Scrape year range.
-start_year = 1840
-end_year = 2026
-# Overwrite modes.
-overwrite_album = false
-overwrite_images = false
-# Page traversal controls:
-# - max_pages = 0 means no explicit page cap.
-max_pages = 0
-# Stop after this many consecutive pages with no matching rows.
-stop_after_no_hits = 3
-# If true, auto-accept top typo suggestion for source/site-name prompts.
-accept_top_suggestion = false
-# Review UI preset shortcut.
-# Allowed values:
-# - basic           : no extra flags
-# - overwrite_album : --overwrite-album
-# - overwrite_all   : --overwrite-album --overwrite-images
-# - bounded_pages   : --max-pages 25 --stop-after-no-hits 3
-# - accept_typo     : --yes
-preset = "basic"
-# Extra raw flags appended by Review UI command helpers.
-extra_flags = ""
-
-###################################
-# Colnect Metadata / Field Selection
-###################################
 [colnect]
-# This section controls which stamp metadata fields sourced from Colnect.net
-# are included in generated album pages (under each stamp entry).
-#
-# Why this section is important:
-# - Colnect provides rich stamp metadata (designers, paper type, print run, etc.)
-#   that goes far beyond basic catalog numbers and dates.
-# - Including too many fields creates cluttered, hard-to-read album pages.
-# - Carefully selecting fields lets you tune the level of detail per collection.
-#
-# HOW FIELD SELECTION WORKS (read carefully — two mechanisms interact):
-#
-# Mechanism 1: detail_fields (comma-separated list)
-#   - Simple fallback used only when NO [colnect.fields] value is explicitly set.
-#   - Lists field names in the order you want them displayed.
-#   - Easy to change without touching individual toggles.
-#
-# Mechanism 2: [colnect.fields] per-field toggles
-#   - Takes PRECEDENCE over detail_fields when at least one field is explicitly
-#     set (true or false).
-#   - If any toggle is present, the detail_fields list is ignored.
-#   - This means album overrides can disable a global true field by setting it
-#     to false locally.
-#   - Use this for precise per-field control.
-#
-# Recommended approach:
-# - Use detail_fields for quick experimentation.
-# - Switch to [colnect.fields] toggles once you know which fields you want.
-# - Never mix both active simultaneously (detail_fields will be silently ignored).
-
-# Master toggle: set false to suppress ALL Colnect metadata from album output.
-# Why important:
-# - Provides a single switch to strip all Colnect detail without deleting config.
-# - Useful when generating clean overview pages without metadata clutter.
+detail_fields = "print_run,themes,designers,printing_type"
 include_details = true
 
-# MECHANISM 1: Comma-list field selection (active when no [colnect.fields] values are set)
-#
-# List field names in display order, separated by commas.
-# Only fields listed here will appear in the album output.
-#
-# All available field names:
-#   name           - Colnect item title/name
-#   catalog_codes  — Cross-catalog identifiers (Scott, SG, Michel, etc.)
-#   country        - Country value from Colnect
-#   colnect_link   - Colnect page URL
-#   issued_on      — Official issue date
-#   expiry_date    — Date stamp was withdrawn from sale (if known)
-#   width          - Width only (mm)
-#   height         - Height only (mm)
-#   size           — Physical stamp dimensions (mm)
-#   themes         — Subject/topic tags (e.g. "Animals", "Space", "Royalty")
-#   printing       — Printing process (e.g. recess, lithography, photogravure)
-#   printing_type  — Sub-type of printing method
-#   paper          — Paper type used (e.g. chalk-surfaced, ordinary)
-#   gum            — Gum/adhesive type (e.g. PVA, gum arabic)
-#   designers      — Stamp designer credit(s)
-#   printers       — Printing firm credit(s)
-#   colors         — Color description as listed in catalog
-#   watermark      — Watermark type/orientation
-#   format         — Stamp format (e.g. vertical, horizontal, se-tenant)
-#   emission       — Emission type (e.g. definitive, commemorative, airmail)
-#   perforation    — Perforation gauge(s)
-#   face_value     — Denomination as printed on stamp
-#   currency       - Currency label (e.g. Dutch cent)
-#   print_run      — Known or estimated quantity printed
-#   score          — Colnect community popularity/score value
-#   accuracy       - Colnect confidence/accuracy value
-#   ord_mi         - Michel ordering/ranking value from Colnect
-#   ord_sn         - Scott ordering/ranking value from Colnect
-#   ord_yt         - Yvert ordering/ranking value from Colnect
-#   ord_sg         - SG ordering/ranking value from Colnect
-#   parent_item    - Parent Colnect item ID/reference
-#   variant        - Variant marker
-#   overprint_variant - Overprint variant marker
-#   list           - List metadata from Colnect
-#   quantity       - Quantity metadata from Colnect
-#   condition      - Condition metadata from Colnect
-#   public_note    - Public note text from Colnect
-#   private_note   - Private note text from Colnect
-#   description    — Free-text description from Colnect
-detail_fields = "print_run,themes,designers,printing_type"
-
-# MECHANISM 2: Per-field toggles (takes precedence over detail_fields above)
-#
-# Set any field to true to include it; false to exclude it.
-# As soon as at least one field is explicitly set here (true or false),
-# detail_fields is ignored entirely.
-#
-# Why use toggles instead of detail_fields:
-# - More explicit and readable for permanent configs.
-# - Easy to enable/disable individual fields without retyping the whole list.
-# - Allows commenting out a field without losing its position.
 [colnect.fields]
-name = false           # Colnect item title/name
-catalog_codes = true   # Cross-catalog identifiers (sn:540, sg:824, etc.)
-country = false        # Country value from Colnect
-colnect_link = false   # Colnect page URL
-issued_on = true       # Official issue/release date
-expiry_date = true     # Withdrawal-from-sale date (often unknown)
-width = false          # Width only, in mm
-height = false         # Height only, in mm
-size = true            # Physical stamp size in mm (width x height)
-themes = true          # Subject tags / topical categories
-printing = true        # Printing process (e.g. recess, offset lithography)
-printing_type = true   # Sub-category of printing method
-paper = true           # Paper type or surface
-gum = true             # Gum/adhesive type (PVA, dextrin, etc.)
-designers = true       # Designer name(s)
-printers = true        # Printer/manufacturer name(s)
-colors = true          # Color description from catalog
-watermark = true       # Watermark type and orientation
-format = true          # Stamp format (vertical, horizontal, miniature sheet, etc.)
-emission = true        # Emission category (definitive, commemorative, airmail, etc.)
-perforation = true     # Perforation gauge(s) - e.g. 14 x 13.5
-face_value = true      # Denomination as printed on stamp
-currency = false       # Currency label (e.g. Dutch cent)
-print_run = true       # Quantity printed (if known)
-score = true           # Colnect community popularity score (0-100)
-accuracy = false       # Colnect confidence/accuracy value
-ord_mi = false         # Michel ordering/ranking value from Colnect
-ord_sn = false         # Scott ordering/ranking value from Colnect
-ord_yt = false         # Yvert ordering/ranking value from Colnect
-ord_sg = false         # SG ordering/ranking value from Colnect
-parent_item = false    # Parent Colnect item ID/reference
-variant = false        # Variant marker
-overprint_variant = false # Overprint variant marker
-list = false           # List metadata from Colnect
-quantity = false       # Quantity metadata from Colnect
-condition = false      # Condition metadata from Colnect
-public_note = false    # Public note text from Colnect
-private_note = false   # Private note text from Colnect
-description = true     # Free-text description from Colnect page
-
-###################################
-# Preserved Extra Keys
-###################################
+accuracy = false
+catalog_codes = true
+colnect_link = false
+colors = true
+condition = false
+country = false
+currency = false
+description = true
+designers = true
+emission = true
+expiry_date = true
+face_value = true
+format = true
+gum = true
+height = false
+issued_on = true
+list = false
+name = false
+ord_mi = false
+ord_sg = false
+ord_sn = false
+ord_yt = false
+overprint_variant = false
+paper = true
+parent_item = false
+perforation = true
+print_run = true
+printers = true
+printing = true
+printing_type = true
+private_note = false
+public_note = false
+quantity = false
+score = true
+size = true
+themes = true
+variant = false
+watermark = true
+width = false
 
 [colnect.fields.layout]
-# Legacy passthrough section kept for backward compatibility.
-# These values mirror layout-level settings used elsewhere.
 pages_vspace_in_row_height = true
 stamp_heading_in_row_height = true
 
 [colnect.fields.runtime]
-# Legacy passthrough section kept for backward compatibility.
-# These values mirror runtime-level diagnostics settings.
 calibration_csv = ""
 date_format = "commas"
 detailed_page_fit = false
 detailed_page_fit_diagnostics = false
 emit_placeholder_diagnostics = false
 
-
-###################################
-# Colors
-###################################
 [colors]
-# AlbumEasy color values:
-# - Named HTML/CSS colors (examples):
-#   black, white, red, blue, darkblue, navy, green, darkgreen,
-#   teal, purple, maroon, olive, gray, silver, orange, gold,
-#   brown, cyan, magenta, yellow
-# - Hex colors are also supported:
-#   #RRGGBB (example: #1E4A7A)
-#   #RGB    (short form, example: #F80)
-#
-# Tips:
-# - Keep quotes around values in TOML.
-# - Use hex colors for exact, repeatable output between systems.
-# - Start with border/text colors first, then tune title/header/footer.
 color_album_border = "darkblue"
 color_album_footer = "darkblue"
 color_album_header = "darkblue"
-color_album_title = "darkblue"
 color_album_margin_txt = "darkblue"
+color_album_title = "darkblue"
+color_stamp_background = "black"
 color_stamp_border = "black"
 color_stamp_heading = "black"
 color_stamp_text = "black"
-color_stamp_background = "black"
 
-###################################
-# Flag Cover
-###################################
-[flag_cover]
-# Cover page behavior:
-# - When true, prepend a dedicated cover page before stamp pages.
-# - If a flag image is found, use the image-based layout.
-# - If no flag image is found, use the text-only layout values below.
-print_flag_cover = true
-# Preferred rendered flag image size on the cover (mm).
-# Typical ranges:
-# - width : 120.0 .. 180.0
-# - height: 60.0  .. 110.0
-# Keep the width/height ratio close to the source flag to avoid distortion.
-flag_cover_img_w_mm = 160.0
-flag_cover_img_h_mm = 80.0
-
-# Cover page background color (see [colors] section for supported values).
-# Leave empty to use the default white/unset background.
-flag_cover_background_color = ""
-
-# Cover element rendering order.
-# List which elements appear on the cover and in what order.
-# Recognized values: "coat" (coat of arms), "flag", "name" (country name text).
-# Remove an entry to omit that element from the cover entirely.
-flag_cover_elements = ["flag", "coat", "name"]
-
-# Coat-of-arms image size on the cover (mm).
-# Used when a coat_of_arms image is included in the cover layout.
-flag_cover_coat_img_w_mm = 80.0
-flag_cover_coat_img_h_mm = 80.0
-
-# IMAGE-BASED COVER LAYOUT
-# Top spacing from page content area to the first cover element.
-flag_cover_page_vspace_top = 20.0
-# Vertical gap between the flag image and title text (mm).
-flag_cover_image_vspace_after = 12.0
-# Font token for title shown under/near the flag image.
-# NOTE: flag_cover_image_title_font is accepted but NOT currently applied —
-# the font for image-based cover titles is hardcoded to "TB" internally.
-flag_cover_image_title_font = "HN"
-# Title size (points) for image-based cover.
-flag_cover_image_title_size = 32.0
-# Additional scale multiplier for image-based title text.
-# 1.0 = no scaling, >1.0 larger, <1.0 smaller.
-flag_cover_image_title_scale = 1.0
-
-# TEXT-ONLY COVER LAYOUT (used when no flag image is available)
-# Top spacing from page content area to title (mm).
-flag_cover_text_only_vspace_top = 24.0
-# Font token for title in text-only mode.
-# NOTE: flag_cover_text_only_title_font is accepted but NOT currently applied —
-# the font for text-only cover titles is hardcoded to "TB" internally.
-flag_cover_text_only_title_font = "HN"
-# Title size (points) for text-only cover.
-flag_cover_text_only_title_size = 48.0
-# Additional scale multiplier for text-only title text.
-# Useful when you want coarse adjustment without changing base size.
-flag_cover_text_only_title_scale = 1.0
-# Extra space after text-only title block (mm).
-# Increase this if first content on next section appears too tight.
-flag_cover_text_only_vspace_after = 18.0
-
-# Allow overwriting existing downloaded flag/coat images when true
-# When false (default) existing files will be kept and not re-downloaded.
-flag_cover_overwrite_flag = false
-flag_cover_overwrite_coa = false
-
-###################################
-# Wikipedia Data Sources
-###################################
 [data_sources]
-# Wikipedia source behavior:
-# - `fetch_wikipedia` controls whether online fetch/cache is attempted.
-# - `include_wikipedia_content` controls whether fetched content is rendered
-#   into album output pages.
-# - `wikipedia_ingest_*` controls fallback DB-row insertion when scraping
-#   returns little/no stamp data.
-#
-# Typical setups:
-# - Scrape-only (fast/minimal): fetch=false, include=false
-# - Enriched pages           : fetch=true,  include=true
-# - Fallback assist only     : fetch=true,  include=false, ingest_enable=true
-#
-# Note: network fetch may slow generation on first run; cached content reduces
-#       repeated fetch cost on later runs.
-
-# When true, attempt to fetch/cache Wikipedia content during generation
-fetch_wikipedia = false
-# When true, include fetched Wikipedia paragraphs/sections in output pages
-include_wikipedia_content = false
-# SQLite cache file for fetched Wikipedia snippets/articles
-# - Relative path is resolved from runtime working directory
-# - You may use an absolute path if you want a shared cache location
-wikipedia_cache_db_path = "wikipedia_cache.db"
-# When true, insert fallback rows into album DB when scrape has no hits
-# (or too few useful rows), using Wikipedia-derived metadata
-wikipedia_ingest_enable = true
-# Maximum number of fallback ingest rows inserted per run
-# Typical range: 5..30 (lower = safer/manual, higher = more auto-fill)
-wikipedia_ingest_max_entries = 12
-# Series label prefix applied to ingested fallback rows
-# Example output series: "Wikipedia import - Postal history"
-wikipedia_ingest_series_prefix = "Wikipedia import"
-# Behavior for grouped/range-like stamp references:
-# - placeholders: keep compact placeholders for grouped ranges (default)
-# - expand      : expand grouped ranges into individual row candidates
-# - keep        : preserve grouped source form as-is
 expand_grouped_ranges = "placeholders"
+fetch_wikipedia = false
+include_wikipedia_content = false
+wikipedia_cache_db_path = "wikipedia_cache.db"
+wikipedia_ingest_enable = true
+wikipedia_ingest_max_entries = 12
+wikipedia_ingest_series_prefix = "Wikipedia import"
 
-###################################
-# Wikipedia
-###################################
-[wikipedia]
-# Wikipedia page rendering controls (applies when Wikipedia content is included)
-#
-# Tuning workflow (recommended):
-# 1) Set fonts/sizes for readability.
-# 2) Adjust paragraph padding + spacing.
-# 3) Pick pagination strategy.
-# 4) Optionally enable centering/math spacing tweaks.
+[diagnostics]
+calibration_csv = ""
+detailed_page_fit = false
+detailed_page_fit_diagnostics = false
+emit_placeholder_diagnostics = false
 
-# Base font for high-level Wikipedia content blocks
-# NOTE: content_wiki_font and content_wiki_font_size are legacy fields
-# superseded by wikipedia_paragraph_font and wikipedia_paragraph_font_size
-# below.  They are accepted for backward compatibility but are NOT read
-# by the rendering pipeline — update wikipedia_paragraph_font instead.
-content_wiki_font = "HN"
-# Base size (points) for content-level text
-content_wiki_font_size = 12
+[flag_cover]
+flag_cover_background_color = ""
+flag_cover_coat_img_h_mm = 80.0
+flag_cover_coat_img_w_mm = 80.0
+flag_cover_elements = [
+    "flag",
+    "coat",
+    "name",
+]
+flag_cover_image_title_font = "HN"
+flag_cover_image_title_scale = 1.0
+flag_cover_image_title_size = 32.0
+flag_cover_image_vspace_after = 12.0
+flag_cover_img_h_mm = 80.0
+flag_cover_img_w_mm = 160.0
+flag_cover_overwrite_coa = false
+flag_cover_overwrite_flag = false
+flag_cover_page_vspace_top = 20.0
+flag_cover_text_only_title_font = "HN"
+flag_cover_text_only_title_scale = 1.0
+flag_cover_text_only_title_size = 48.0
+flag_cover_text_only_vspace_after = 18.0
+flag_cover_text_only_vspace_top = 24.0
+print_flag_cover = true
 
-# Body paragraph font and size (points)
-wikipedia_paragraph_font = "HN"
-wikipedia_paragraph_font_size = 11
+[footer]
+album_pages_footer_number_after = " of $PAGES$"
+album_pages_footer_number_before = "Page "
+album_pages_footer_number_enabled = true
+album_pages_footer_number_font = "HN"
+album_pages_footer_number_position = "C"
+album_pages_footer_number_size = 8.0
+album_pages_footer_number_start = 1
 
-# Paragraph alignment options: JUSTIFIED | LEFT | RIGHT | CENTER
-wikipedia_paragraph_alignment = "JUSTIFIED"
+[header]
+album_pages_header_position = "C"
+album_pages_title_font = "HN"
+album_pages_title_size = 10.0
+header_vspace_after_mm = 2.0
+header_vspace_before_mm = 1.0
+include_catalog_numbers = true
+include_country = true
+include_date = true
+include_design = true
+include_engraving = true
+include_perforation = true
+include_series = true
+include_watermark = true
 
-# Left and right inner paragraph padding (mm)
-# Typical range: 4.0 .. 12.0
-wikipedia_paragraph_padding = 8.0
-wikipedia_paragraph_right_padding = 8.0
+[header_formatting]
+date_format = "commas"
+date_pattern = "{month} {day}, {year}"
 
-# Paragraph vertical spacing (mm). Controls the gap between paragraphs.
-# Typical range: 1.0 .. 3.5
-# Lower = denser text, higher = more breathing room
-wikipedia_paragraph_vspace = 2.0
-
-# Section title font/size and spacing
-wikipedia_section_title_font = "HN"
-wikipedia_section_title_font_size = 13
-# Gap after section title before paragraph text (mm)
-wikipedia_section_title_spacing = 4.0
-
-# Pagination strategy:
-# - balanced     : packs content efficiently while keeping reasonable spacing
-# - conservative : leaves extra safety space to reduce overflow risk
-wikipedia_pagination_strategy = "balanced"
-
-# Conservative-mode free-space fraction kept on each page
-# Typical range: 0.70 .. 0.90
-# Higher value = more free space, fewer paragraphs per page
-wikipedia_pagination_conservative_fraction = 0.8
-
-# Center the Wikipedia text block horizontally within available content area
-wikipedia_center_content = false
-
-# Add wider spacing around inline math-like fragments/symbols
-# Helpful for readability in mixed text/math passages
-wikipedia_use_math_spacing = true
-
-###################################
-# Image / DPI
-###################################
 [images]
-# Image and DPI settings are critical because they control how pixel-based
-# source images are translated into real-world print dimensions (mm/inches).
-# If these values are mis-tuned, stamps can look too large/small, rows may
-# overflow page bounds, and placeholder boxes can drift from real image sizes.
-
-# Target DPI used in rendering math and dimension conversions.
-# Why important:
-# - DPI is the bridge between pixels and physical print size.
-# - A stable DPI keeps generated AlbumEasy layout consistent across systems.
-# - Changing this can affect computed stamp/image dimensions and pagination.
 force_dpi = 96.0
-
-# If true, keep real measured dimensions when available.
-# sizing_mode: "real_world" emits physical DPI-derived sizes as-is.
-# "fit_box" clamps stamp height to target_stamp_height_mm.
+placeholder_always_overwrite = true
 sizing_mode = "fit_box"
 
-# Rebuild placeholder image files if sizing changes.
-# Why important:
-# - Prevents stale placeholders from masking updated sizing logic.
-# - Keeps fallback visuals aligned with current layout calculations.
-# - Especially useful while tuning dimensions or after changing DPI/offsets.
-placeholder_always_overwrite = true
+[layout]
+enable_row_centering = true
+header_font_spacing = 2.0
+page_fit_conservative_buffer_mm = 2.0
+page_vspace_marker = ""
+row_font_spacing = 0.1
+row_start_es_enabled = true
+row_start_es_font = "HN"
+row_start_es_marker = "ROW_START_ES"
+row_start_es_size = 6.0
+row_start_es_spacing = 0.1
+row_start_es_vspace = 6.0
+series_order = "first_date"
+show_stamps_per_row = true
 
-###################################
-# Text Rendering Templates / Fallbacks
-###################################
+[page]
+album_page_height_mm = 279.4
+album_page_width_mm = 216.0
+album_pages_spacing_h = 3.0
+album_pages_spacing_v = 3.0
+max_page_vspace_mm = 10.0
+page_border_inner1 = 0.5
+page_border_inner2 = 0.1
+page_border_outer = 0.1
+page_border_spacing = 1.0
+page_bottom_margin_mm = 10.0
+page_left_margin_mm = 10.0
+page_right_margin_mm = 10.0
+page_top_margin_mm = 10
+
+[review_ui]
+catalog_family_options = [
+    "sn|Scott Number|814224",
+    "sg|Stanley Gibbons|705728",
+    "mi|Michel|1126331",
+    "yt|Yvert et Tellier|925704",
+    "afa|AFA number|116770",
+    "ank|ANK|8320",
+    "nvp|NVPH|18985",
+    "un|Unificato|169053",
+    "col|Colnect codes|445975",
+    "wad|WADP Numbering System - WNS|91196",
+]
+default_colnect_image_url_checked = true
+default_colnect_links_checked = true
+default_colnect_metadata_checked = true
+default_context_checked = true
+default_description_checked = true
+default_design_checked = true
+default_engraving_checked = true
+default_perforation_checked = true
+default_replace_sg_number_checked = true
+default_right_unmatched_only_checked = true
+default_series_checked = true
+default_sort_mode = "year_series_date_catalog"
+default_watermark_checked = true
+even_row_color = "#6280eb"
+first_column_color = "#f2f6fb"
+odd_row_color = "#ffffff"
+second_column_color = "#ffffff"
+
+[runtime]
+albumeasy_auto_generate_pdf = true
+albumeasy_cli_path = "/home/ray/work/AlbumEasy/AlbumEasy.sh"
+bootstrap_albums_root_path = ""
+pdf_dx_logging = false
+show_progress_indicator = true
+
+[stamps]
+album_stamp_img_aspect_ratio = true
+album_stamp_img_new_setting_preserve_aspect = true
+allow_single_large_stamp_per_page = true
+default_catalog_code = "sn"
+extra_height_mm = 3.0
+extra_width_mm = 3.0
+global_scale = 1.0
+image_spacing_mm = 1.0
+include_color = true
+include_denomination = true
+include_description = true
+include_mint_unused = true
+include_stamps_issued = true
+include_used = true
+max_rows_per_page = 4
+max_stamps_per_row = 5
+packing_horizontal_safety_mm = 8.0
+packing_vertical_safety_mm = 1.0
+pages_vspace_in_row_height = false
+preserve_aspect = true
+reference_height_mm = 25.0
+reference_width_mm = 19.0
+series_row_gap_mm = 0.0
+single_stamp_threshold_pct = 0.7
+stamp_box_adjust = 0.0
+stamp_detail_font_size = 6
+stamp_detail_layout = "separate_rows"
+stamp_detail_vspace = 3.5
+stamp_heading_font = "HN"
+stamp_heading_in_row_height = false
+stamp_heading_label = "auto"
+stamp_heading_size = 6.0
+target_stamp_height_mm = 25.0
+text_line_height_mm = 2.6
+usable_height_padding_mm = 1.0
+
+[stampworld]
+accept_top_suggestion = false
+album_name = ""
+base_url = ""
+end_year = 2026
+extra_flags = ""
+max_pages = 0
+overwrite_album = false
+overwrite_images = false
+preset = "basic"
+site_name = ""
+source = "stampworld"
+start_year = 1840
+stop_after_no_hits = 3
+
 [text_templates]
-# This section controls how reusable text macros are emitted into AlbumEasy
-# commands (font, size, alignment, and vertical spacing behavior).
-#
-# Why this section is important:
-# - Keeps typography consistent across page labels and metadata lines.
-# - Allows global style tuning without changing generator code.
-# - Helps avoid layout drift when switching fonts/sizes between systems.
-#
-# Tuning workflow (recommended):
-# 1) Adjust the format templates only if you need custom AlbumEasy syntax.
-# 2) Tune fallback font/size/vspace values for readability and spacing.
-# 3) Tune specialized templates (series/date/watermark/engraving) last.
-#
-# CORE FORMAT TEMPLATES
-# These are full template strings used when explicit formatted output is needed.
-# Requirement: each template must include exactly one "{}" placeholder.
-# The placeholder is replaced with generated text content at runtime.
-#
-# Why important:
-# - Wrong syntax or missing placeholder can break text emission.
-# - This is the highest-control override layer for page text rendering.
-page_text_format = ""
-page_text_centre_format = ""
-page_text_right_format = ""
-
-# BASE FALLBACKS (GENERAL PAGE TEXT)
-# Used when a full format template is not explicitly overridden.
-#
-# Why important:
-# - Acts as safe defaults for consistent output.
-# - Simplifies style changes (adjust once, apply in many places).
-page_text_font = "HN"
-page_text_size = 10.0
-page_text_vspace = 1.0
-
-# CENTER TEXT FALLBACKS (GENERIC)
-# Default centered text style for non-specialized centered lines.
-page_text_centre_font = "HN"
-page_text_centre_size = 8.0
-page_text_centre_vspace = 1.0
-
-# SPECIALIZED CENTER TEXT FALLBACKS
-# These allow independent styling for specific metadata classes.
-# Keep these aligned unless you intentionally want visual differentiation.
-
-# Series line centered text (for series labels/headings)
-series_page_text_centre_font = "HN"
-series_page_text_centre_size = 8.0
-series_page_text_centre_vspace = 1.0
-
-# Date line centered text
 date_page_text_centre_font = "HN"
 date_page_text_centre_size = 8.0
 date_page_text_centre_vspace = 1.0
-
-# Watermark line centered text
+engraving_page_text_centre_font = "HN"
+engraving_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+engraving_page_text_centre_format_enabled = false
+engraving_page_text_centre_size = 8.0
+engraving_page_text_centre_vspace = 1.0
+page_text_centre_font = "HN"
+page_text_centre_format = ""
+page_text_centre_size = 8.0
+page_text_centre_vspace = 1.0
+page_text_font = "HN"
+page_text_format = ""
+page_text_right_font = "HN"
+page_text_right_format = ""
+page_text_right_size = 10.0
+page_text_right_vspace = 1.0
+page_text_size = 10.0
+page_text_vspace = 1.0
+series_page_text_centre_font = "HN"
+series_page_text_centre_size = 8.0
+series_page_text_centre_vspace = 1.0
 watermark_page_text_centre_font = "HN"
 watermark_page_text_centre_size = 8.0
 watermark_page_text_centre_vspace = 1.0
 
-# Engraving line centered text
-engraving_page_text_centre_font = "HN"
-engraving_page_text_centre_size = 8.0
-engraving_page_text_centre_vspace = 1.0
-
-# RIGHT-ALIGNED TEXT FALLBACKS
-# Used for right-anchored page labels/metadata when no full right template
-# override is provided.
-page_text_right_font = "HN"
-page_text_right_size = 10.0
-page_text_right_vspace = 1.0
-
-# PER-TYPE FORMAT OVERRIDES
-# These optional templates override the generic page_text_centre_format for
-# specific metadata categories (series, date, watermark, engraving).
-# Leave commented/empty to inherit from page_text_centre_format or fallback
-# font/size/vspace values above.
-#
-# Format rules: must contain exactly one "{}" placeholder that is replaced
-# with the actual text at runtime.
-#
-# Examples (uncomment and edit to use):
-# series_page_text_centre_format    = 'PAGE_TEXT_CENTRE (HB 9 "{}" 1.0)'
-# date_page_text_centre_format      = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
-# watermark_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
-# engraving_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
-
-###################################
-# Header Formatting
-###################################
-[header_formatting]
-# Fine-grained controls for how stamp-group headers are formatted.
-# These fields live in a separate sub-section and are NOT promoted to the
-# top-level config — they must be set here in [header_formatting].
-
-# Date display style for stamp issue dates shown in group headers.
-# Allowed values:
-#   "commas" (default) : "Month Day, Year"  e.g. "January 15, 1960"
-#   "dashes"           : "Month - Day - Year"  e.g. "January - 15 - 1960"
-date_format = "commas"
-
-###################################
-# Diagnostics / Advanced
-###################################
-[diagnostics]
-# These options are off by default and are intended for debugging layout and
-# rendering issues.  Enabling them adds verbose output to the generated album
-# files and/or the terminal log.
-
-# Emit per-stamp PAGE_FIT diagnostics for every stamp placed on a page.
-# Useful when stamps are being cut off or rows overflow unexpectedly.
-# detailed_page_fit is a short alias; detailed_page_fit_diagnostics is the
-# canonical name — both control the same feature.
-detailed_page_fit = false
-detailed_page_fit_diagnostics = false
-
-# Emit extra diagnostics for placeholder expansion steps.
-# Helps trace which placeholder tokens are resolved vs left unexpanded.
-emit_placeholder_diagnostics = false
-
-# Path to a DPI calibration CSV file.
-# When set, calibration data from this file is loaded to fine-tune DPI
-# calculations for your specific printer/output environment.
-# Leave empty to skip calibration.
-calibration_csv = ""
-
-###################################
-# Runtime / Integration Settings
-###################################
-[runtime]
-# This section controls how the generator behaves at startup and integrates
-# with external tools (AlbumEasy PDF renderer) and the Review UI.
-#
-# Why this section is important:
-# - Determines where the generator looks for input data (Colnect inbox).
-# - Controls AlbumEasy integration so PDFs can be built automatically.
-# - Allows the Review UI to locate the correct Albums root across different
-#   install locations (especially relevant on Windows with external runtime).
-#
-# Typical setup steps:
-# 1) If using Colnect export, set colnect_inbox_path to your inbox folder.
-# 2) Set albumeasy_cli_path if AlbumEasy is installed (enables PDF generation).
-# 3) Set bootstrap_albums_root_path if auto-detection picks the wrong folder.
-# 4) Optionally enable pdf_dx_logging for troubleshooting PDF failures.
-
-# Show animated progress spinner/messages in terminal runs.
-# Set false to suppress noise in automated/CI environments.
-show_progress_indicator = true
-
-# Directory scanned for Colnect export CSV files when using:
-# --source colnectexport (without an explicit --colnect-inbox argument).
-#
-# Leave this unset to let the Review UI prefer each album's local `colnect`
-# folder instead of a shared global inbox.
-
-# Path to the AlbumEasy CLI executable for post-generation PDF rendering.
-# Leave empty to disable automatic PDF rendering (manual AlbumEasy use only).
-#
-# Why important:
-# - When set along with albumeasy_auto_generate_pdf = true, the generator
-#   will call AlbumEasy automatically after each album .txt file is written.
-# - Must be the exact path to the executable on your system.
-#
-# Linux example:
-#   albumeasy_cli_path = "/path/to/AlbumEasy/AlbumEasy.sh"
-# Windows examples (TOML escaping required for backslashes):
-#   Single-quoted (no escaping needed):
-#     albumeasy_cli_path = 'C:\Program Files (x86)\AlbumEasy\AlbumEasy.exe'
-#   Double-quoted (escape each backslash with \\):
-#     albumeasy_cli_path = "C:\\Program Files (x86)\\AlbumEasy\\AlbumEasy.exe"
-albumeasy_cli_path = "/home/ray/work/AlbumEasy/AlbumEasy.sh"
-
-# Optional override for the Albums root directory used by the Review UI at startup.
-#
-# Why important:
-# - The generator normally auto-detects the Albums root from the executable or
-#   working directory location. This can fail when the executable is installed
-#   in a different folder from the Albums data (e.g. external runtime on Windows).
-# - Set this to either:
-#   a) The Albums directory itself  (e.g. "E:\user\Documents\Stampgen\Albums")
-#   b) A parent folder containing Albums (e.g. "E:\user\Documents\Stampgen")
-# - Leave empty to rely on automatic detection.
-bootstrap_albums_root_path = ""
-
-# When true, automatically call AlbumEasy after each .txt file is generated.
-# Requires albumeasy_cli_path to be set to a valid executable.
-# Equivalent to running: <albumeasy_cli_path> -c <generated_txt>
-albumeasy_auto_generate_pdf = true
-
-# Enable additional PDF generation diagnostics written to the Logs/ directory.
-#
-# Why important:
-# - Useful when PDFs fail silently, images do not appear, or AlbumEasy exits
-#   with errors that are hard to trace from terminal output alone.
-# - Keep false in normal use; set true only when troubleshooting PDF issues.
-pdf_dx_logging = false
-
-###################################
-# Review UI / Stamp Browser Settings
-###################################
-[review_ui]
-# This section configures the built-in web-based stamp browser and review tool.
-#
-# Why this section is important:
-# - Controls the visual appearance of the metadata comparison tables.
-# - Sets default checkbox states for which fields appear when reviewing stamps.
-# - Defines the list of stamp catalog families shown in catalog selectors.
-#
-# The Review UI is launched with: stamp_album_gen2 --review-ui
-# It serves a local browser page for inspecting, comparing, and correcting
-# stamp data before generating final album pages.
-
-# TABLE ROW COLORS
-# Alternating background colors for the left/right metadata comparison tables.
-# Use any valid HTML color name or #RRGGBB hex value.
-# Why important:
-# - Makes long metadata rows easier to read at a glance.
-# - Odd = first/third/... rows; Even = second/fourth/... rows.
-odd_row_color = "#ffffff"
-even_row_color = "#6280eb"
-
-# DEFAULT FIELD CHECKBOX STATES
-# These control which metadata fields are pre-selected when the Review UI loads.
-# Users can toggle any field interactively; these are just the startup defaults.
-#
-# Why important:
-# - Reduces noise for common workflows (e.g. hide rarely-used fields by default).
-# - Changes here apply only to the initial state; user selections are not saved.
-# - `default_sort_mode` sets the initial left-panel ordering when Review UI opens.
-#
-# Review UI startup sort order for the left-panel stamp list.
-# Allowed values:
-# - "year_series_date_catalog" : year then issue date in series then catalog number
-# - "catalog"             : catalog number
-# - "year_catalog"        : year then catalog number
-# - "series_catalog"      : series then catalog number
-# - "series_date_catalog" : series then issue date then catalog number
-# - "rowid"          : database row id
-# - "colnect_id"     : Colnect ID
-default_sort_mode = "year_series_date_catalog"
-
-# Stamp metadata fields:
-default_series_checked = true
-default_description_checked = true
-default_watermark_checked = true
-default_design_checked = true
-default_engraving_checked = true
-default_perforation_checked = true
-default_context_checked = true
-
-# Colnect data fields:
-default_colnect_links_checked = true
-default_colnect_image_url_checked = true
-default_colnect_metadata_checked = true
-default_replace_sg_number_checked = true
-default_right_unmatched_only_checked = true
-
-# CATALOG FAMILY OPTIONS
-# List of stamp catalog families shown in the Review UI catalog selectors.
-# These power the "preferred catalog" dropdown and the "Other catalogs" fallback list.
-#
-# Format per entry: "code|label|count"
-# - code  : short identifier used in catalog_codes fields (e.g. "sn", "sg")
-# - label : human-readable name displayed in the selector
-# - count : optional approximate global stamp count (informational only)
-#
-# Why this list matters:
-# - Controls what appears in the catalog selection dropdowns in the UI.
-# - The `code` values must match what is stored in your album DB catalog_codes
-#   fields (sourced from Colnect). Using an unlisted code still works but will
-#   not appear in the selector UI.
-# - Entries are shown in order; put most commonly used catalogs first.
-# - If empty, the UI falls back to built-in defaults (no selector shown).
-#
-# Tip: the `code` here should match [stamps].default_catalog_code so the
-#      preferred catalog is pre-selected in the UI on load.
-#
-# ALL RECOGNIZED CATALOG CODES (as of this version):
-#   sn  = Scott Number (US; widely used in North American collections)
-#   sg  = Stanley Gibbons (UK; standard for Commonwealth/British issues)
-#   mi  = Michel (German; dominant in Europe)
-#   yt  = Yvert et Tellier (French; standard in Francophone collections)
-#   afa = AFA (Scandinavian; used for Nordic countries)
-#   ank = ANK / Ankerbuch (Austrian catalog)
-#   nvp = NVPH (Dutch; Netherlands Philatelic catalog)
-#   un  = Unificato (Italian catalog)
-#   col = Colnect internal codes (unique to the Colnect database)
-#   wad = WADP / WNS Numbering System (UN postal agency standard)
-catalog_family_options = ["sn|Scott Number|814224", "sg|Stanley Gibbons|705728", "mi|Michel|1126331", "yt|Yvert et Tellier|925704", "afa|AFA number|116770", "ank|ANK|8320", "nvp|NVPH|18985", "un|Unificato|169053", "col|Colnect codes|445975", "wad|WADP Numbering System - WNS|91196"]
-
+[wikipedia]
+content_wiki_font = "HN"
+content_wiki_font_size = 12
+wikipedia_center_content = false
+wikipedia_pagination_conservative_fraction = 0.8
+wikipedia_pagination_strategy = "balanced"
+wikipedia_paragraph_alignment = "JUSTIFIED"
+wikipedia_paragraph_font = "HN"
+wikipedia_paragraph_font_size = 11
+wikipedia_paragraph_padding = 8.0
+wikipedia_paragraph_right_padding = 8.0
+wikipedia_paragraph_vspace = 2.0
+wikipedia_section_title_font = "HN"
+wikipedia_section_title_font_size = 13
+wikipedia_section_title_spacing = 4.0
+wikipedia_use_math_spacing = true

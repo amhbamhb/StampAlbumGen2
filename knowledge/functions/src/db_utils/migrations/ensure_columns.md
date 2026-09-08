@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_columns
-resource: src/db_utils/migrations.rs#L138-L152
+resource: src/db_utils/migrations.rs#L141-L155
 visibility: private
 generated:
   by: okf-rs/0.4.0

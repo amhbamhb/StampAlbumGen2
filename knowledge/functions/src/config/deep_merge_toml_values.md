@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: deep_merge_toml_values
-resource: src/config.rs#L2625-L2640
+resource: src/config.rs#L2739-L2754
 visibility: private
 generated:
   by: okf-rs/0.4.0

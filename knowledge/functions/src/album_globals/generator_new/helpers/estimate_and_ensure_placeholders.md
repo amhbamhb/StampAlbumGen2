@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: estimate_and_ensure_placeholders
-resource: src/album_globals/generator_new/helpers.rs#L681-L867
+resource: src/album_globals/generator_new/helpers.rs#L692-L881
 generated:
   by: okf-rs/0.4.0
 relationships:

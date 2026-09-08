@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_watermark_default_checked
-resource: src/config.rs#L1273-L1278
+resource: src/config.rs#L1381-L1386
 generated:
   by: okf-rs/0.4.0
 relationships:

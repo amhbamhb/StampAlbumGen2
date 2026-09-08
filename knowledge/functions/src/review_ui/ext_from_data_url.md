@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ext_from_data_url
-resource: src/review_ui.rs#L2317-L2336
+resource: src/review_ui.rs#L2345-L2364
 visibility: private
 generated:
   by: okf-rs/0.4.0

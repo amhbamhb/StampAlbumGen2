@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_stamp_if_not_exists
-resource: src/us1847/collector.rs#L1280-L1416
+resource: src/us1847/collector.rs#L1308-L1444
 visibility: private
 generated:
   by: okf-rs/0.4.0

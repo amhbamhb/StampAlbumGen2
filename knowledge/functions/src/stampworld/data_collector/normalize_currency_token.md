@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_currency_token
-resource: src/stampworld/data_collector.rs#L1271-L1295
+resource: src/stampworld/data_collector.rs#L1273-L1297
 visibility: private
 generated:
   by: okf-rs/0.4.0

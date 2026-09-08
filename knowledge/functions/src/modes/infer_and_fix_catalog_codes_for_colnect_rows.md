@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: infer_and_fix_catalog_codes_for_colnect_rows
-resource: src/modes.rs#L67-L105
+resource: src/modes.rs#L63-L101
 visibility: private
 generated:
   by: okf-rs/0.4.0

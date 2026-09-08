@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: config_field_id
-resource: src/review_ui/config_editor.rs#L54-L60
+resource: src/review_ui/config_editor.rs#L57-L63
 visibility: private
 generated:
   by: okf-rs/0.4.0

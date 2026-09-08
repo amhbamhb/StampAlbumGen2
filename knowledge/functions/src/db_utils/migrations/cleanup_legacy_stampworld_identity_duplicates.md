@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: cleanup_legacy_stampworld_identity_duplicates
-resource: src/db_utils/migrations.rs#L154-L205
+resource: src/db_utils/migrations.rs#L157-L208
 visibility: private
 generated:
   by: okf-rs/0.4.0

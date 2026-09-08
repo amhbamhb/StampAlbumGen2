@@ -1,4 +1,4 @@
-use stamp_album_gen2::db_utils::{init_db, StampInsert, insert_stamp_from_struct};
+use stamp_album_gen2::db_utils::{init_db, insert_stamp_from_struct, StampInsert};
 use std::env;
 
 fn main() {

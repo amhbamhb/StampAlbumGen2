@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
-  - target: external/stamp-album-gen2-db-utils-init-db-insert-stamp
+  - target: external/stamp-album-gen2-db-utils-init-db-insert-stamp-from-struct-stampinsert
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-env
@@ -24,7 +24,7 @@ relationships:
 
 # Imports
 
-- `stamp_album_gen2::db_utils::{init_db, insert_stamp}`
+- `stamp_album_gen2::db_utils::{init_db, insert_stamp_from_struct, StampInsert}`
 - `std::env`
 
 # Member of

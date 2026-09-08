@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: format_stamp_heading
-resource: src/album_globals/generator_new/emit.rs#L124-L146
+resource: src/album_globals/generator_new/emit.rs#L125-L147
 visibility: private
 generated:
   by: okf-rs/0.4.0

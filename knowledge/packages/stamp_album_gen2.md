@@ -128,6 +128,7 @@ generated:
 - [embedded_flags](../modules/tests/embedded_flags.md)
 - [engraving_column](../modules/tests/engraving_column.md)
 - [ensure_coa_integration](../modules/tests/ensure_coa_integration.md)
+- [ensure_coa_local](../modules/tests/ensure_coa_local.md)
 - [fetch_and_filter_stamps](../modules/tests/fetch_and_filter_stamps.md)
 - [fetcher_injection](../modules/tests/fetcher_injection.md)
 - [filename_year_inference_fixed](../modules/tests/filename_year_inference_fixed.md)

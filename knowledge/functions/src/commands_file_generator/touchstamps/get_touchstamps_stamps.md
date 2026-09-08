@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/commands_file_generator/touchstamps/get_touchstamps_image
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/commands_file_generator/image_utils/get_image
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -22,3 +25,4 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [get_touchstamps_image](../../../../functions/src/commands_file_generator/touchstamps/get_touchstamps_image.md)
+- [get_image](../../../../functions/src/commands_file_generator/image_utils/get_image.md)

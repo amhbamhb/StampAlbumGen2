@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: download_stamp_images
-resource: src/us1847/collector.rs#L1418-L1504
+resource: src/us1847/collector.rs#L1446-L1532
 visibility: private
 generated:
   by: okf-rs/0.4.0

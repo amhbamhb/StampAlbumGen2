@@ -1,0 +1,136 @@
+/* Compare page controls */
+.initiallyHidden {
+  display: none;
+}
+.reviewColnectDestination {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #35566d;
+}
+/* .reviewSwYearSpacer {
+  padding: 15px;
+} */
+.reviewSwExtraFlagsInput {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.reviewSwRunButton {
+  background-color: lightgreen;
+  color: black;
+
+}
+.reviewSwRunButton:hover {
+  background-color: #00b300;
+  color: white;
+  transform: translateY(-1px);
+}
+.reviewPdfSortLabel {
+  margin: 0 0 0 0.4em;
+  font-size: 0.9em;
+}
+.reviewPdfSortSelect,
+.reviewPdfYearInput {
+  padding: 2px 4px;
+  font-size: 0.9em;
+}
+.reviewPdfYearLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.reviewPdfGenerateButton {
+  background-color: mistyrose;
+  color: black;
+}
+.reviewPdfYearHint,
+.reviewPdfYearLabel {
+  color: steelblue;
+  font-size: 0.9em;
+
+}
+.reviewPdfYearInput {
+  width: 78px;
+}
+.reviewPdfAlwaysShowLabel {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 0.9em;
+}
+.reviewPreviousCandidateButton {
+  background: #c87c28;
+  color: #fff;
+  border-color: #a8641a;
+}
+.reviewPreviousCandidateButton:hover {
+  background: #a8641a;
+  color: #fff;
+  border-color: #8b5015;
+    transform: translateY(-1px);
+}
+.reviewPreviousCandidate10MinusButton {
+  background: #aa8866;
+  color: #fff;
+  border-color: #c0c0c0;
+
+}
+.reviewPreviousCandidate10MinusButton:hover {
+  background: #aa8866;
+  color: #fff;
+  border-color: #c0c0c0;
+  transform: translateY(-1px);
+}
+
+.reviewNextCandidateButton {
+  background: #2da070;
+  color: #fff;
+  border-color: #228458;
+}
+.reviewNextCandidateButton:hover {
+  background: #228458;
+  color: #fff;
+  border-color: #1b5c3f;
+    transform: translateY(-1px);
+}
+.reviewNextCandidate10PlusButton {
+  background: #2da200;
+  color: #fff;
+  border-color: #c0c0c0;
+
+}
+.reviewNextCandidate10PlusButton:hover {
+  background: #2da200;
+  color: #fff;
+  border-color: #c0c0c0;
+  transform: translateY(-1px);
+}
+.DeleteCurrentCandidateButton {
+  background: #f00641;
+  color: #fff;
+  border-color: #fc0404;
+}
+.DeleteCurrentCandidateButton:hover {
+  background: #fc0404;
+  color: #fff;
+  border-color: #f00641;
+  transform: translateY(-1px);
+}
+.EditCurrentBaseStamp {
+  background: lightblue; 
+  color: #000;
+  border-color: #61c6ee;
+}
+.EditCurrentBaseStamp:hover {
+  background: hsl(202, 58%, 66%);
+  color: #000;
+  border-color: #61c6ee;
+  transform: translateY(-1px);
+}
+.leftEditorTitle {
+  font-size: 3em;
+  font-weight: bold;
+  margin-bottom: 0.5em;
+  color: #35566d;
+}

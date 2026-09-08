@@ -118,23 +118,23 @@ impl CommandsFileGenerator {
         }
     }
 
-    /// Get stampworld image for a stamp
-    pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
-        // TODO: Implement proper image fetching
-        None
-    }
+    // /// Get stampworld image for a stamp
+    // pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
+    //     // TODO: Implement proper image fetching
+    //     None
+    // }
 
-    /// Get image from colnect
-    pub fn get_colnect_image(&mut self, _stamp: &Stamp) -> Option<String> {
-        // TODO: Implement proper image fetching
-        None
-    }
+    // /// Get image from colnect
+    // pub fn get_colnect_image(&mut self, _stamp: &Stamp) -> Option<String> {
+    //     // TODO: Implement proper image fetching
+    //     None
+    // }
 
-    /// Get image for a stamp
-    pub fn get_image(&mut self, _stamp: &Stamp) -> Option<String> {
-        // TODO: Implement proper image fetching
-        None
-    }
+    // /// Get image for a stamp
+    // pub fn get_image(&mut self, _stamp: &Stamp) -> Option<String> {
+    //     // TODO: Implement proper image fetching
+    //     None
+    // }
 
     /// Collect stampworld data
     pub fn collect_stampworld_data<'a>(
@@ -182,21 +182,22 @@ impl CommandsFileGenerator {
         };
 
         info!("Invoking commands_file_generator::data_collection::collect_stampworld_data with base_url='{}'", params.base_url);
-        let mut dparams = crate::commands_file_generator::data_collection::CollectStampworldParams {
-            sequencer: &mut sequencer,
-            separator: &self.separator,
-            site_name: &self.country,
-            images_directory: &self.image_path,
-            month_number_fn: &month_number_fn,
-            downloader: &downloader,
-            base_url: params.base_url,
-            start_year: params.start_year,
-            end_year: params.end_year,
-            overwrite_images: params.overwrite_images,
-            page_callback: params.page_callback,
-            max_pages: params.max_pages,
-            stop_after_no_hits: params.stop_after_no_hits,
-        };
+        let mut dparams =
+            crate::commands_file_generator::data_collection::CollectStampworldParams {
+                sequencer: &mut sequencer,
+                separator: &self.separator,
+                site_name: &self.country,
+                images_directory: &self.image_path,
+                month_number_fn: &month_number_fn,
+                downloader: &downloader,
+                base_url: params.base_url,
+                start_year: params.start_year,
+                end_year: params.end_year,
+                overwrite_images: params.overwrite_images,
+                page_callback: params.page_callback,
+                max_pages: params.max_pages,
+                stop_after_no_hits: params.stop_after_no_hits,
+            };
         let stamp_data = collect_stampworld_data(&mut dparams);
 
         info!(

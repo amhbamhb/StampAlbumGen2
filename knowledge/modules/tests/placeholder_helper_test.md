@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: placeholder_helper_test
-resource: tests/placeholder_helper_test.rs#L1-L104
+resource: tests/placeholder_helper_test.rs#L1-L107
 generated:
   by: okf-rs/0.4.0
 relationships:

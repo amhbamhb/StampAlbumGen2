@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_commemorative_line
-resource: src/us1847/collector.rs#L1219-L1278
+resource: src/us1847/collector.rs#L1247-L1306
 visibility: private
 generated:
   by: okf-rs/0.4.0

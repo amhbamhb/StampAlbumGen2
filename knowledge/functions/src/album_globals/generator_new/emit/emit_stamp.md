@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: emit_stamp
-resource: src/album_globals/generator_new/emit.rs#L289-L340
+resource: src/album_globals/generator_new/emit.rs#L298-L361
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -20,7 +20,7 @@ relationships:
 
 # Signature
 
-`pub fn emit_stamp<W: Write>(out: &mut W, has_image: bool, ctx: &EmitContext) -> std::io::Result<()>`
+`pub fn emit_stamp<W: Write>( out: &mut W, has_image: bool, ctx: &EmitContext, ) -> std::io::Result<()>`
 
 # Calls
 

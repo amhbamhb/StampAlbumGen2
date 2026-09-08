@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_coat_of_arms_with_fetcher
-resource: src/flagdb.rs#L310-L428
+resource: src/flagdb.rs#L322-L669
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -12,10 +12,22 @@ relationships:
   - target: functions/src/flagdb/try_rasterize_svg_to_png
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/config/load_effective_config
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/cache_country_info
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/extract_coa_from_nexperts_html
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/extract_from_obj
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -32,8 +44,12 @@ relationships:
 
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [try_rasterize_svg_to_png](../../../functions/src/flagdb/try_rasterize_svg_to_png.md)
+- [load_effective_config](../../../functions/src/config/load_effective_config.md)
+- [cache_country_info](../../../functions/src/flagdb/cache_country_info.md)
+- [extract_coa_from_nexperts_html](../../../functions/src/flagdb/extract_coa_from_nexperts_html.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../functions/src/wikipedia/models/ContentSource/as_str.md)
+- [extract_from_obj](../../../functions/src/flagdb/extract_from_obj.md)
 
 # Called by
 

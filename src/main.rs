@@ -97,6 +97,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Parse CLI arguments
     let mut cli = Cli::parse();
+    match setup_logging() {
+        Ok(_) => {
+            write_startup_probe("logging.setup", "flexi_logger initialized");
+        }
+        Err(e) => {
+            write_startup_probe("logging.setup.error", &e.to_string());
+            return Err(Box::new(e));
+        }
+    }
     // If a local source file was provided, expose it to StampWorld code paths
     // via the global EXTRACT_FILE_NAME so the collector can parse local HTML
     // instead of performing network requests.
@@ -148,7 +157,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // we align the process working directory to the executable layout. This
     // allows the initial-startup dialog to operate in the directory the user
     // actually launched the binary from.
-    if let Err(e) = config::ensure_config_and_template_files("config.toml", "config_template.toml") {
+    if let Err(e) = config::ensure_config_and_template_files(
+        "config.toml",
+        "config_template.toml",
+        "StampAlbumGenerator2HelpManual.pdf",
+    ) {
         log::warn!("Failed to ensure config template file: {}", e);
     }
 
@@ -353,7 +366,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             continue;
                         }
                         ReviewUiBootstrapOutcome::Selected(boxed) => {
-                            let ReviewUiSelected { db_path, country, server, bind } = *boxed;
+                            let ReviewUiSelected {
+                                db_path,
+                                country,
+                                server,
+                                bind,
+                            } = *boxed;
                             log_runtime_event(&format!(
                                 "Review UI: selected '{}' with database {}",
                                 country, db_path
@@ -396,6 +414,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         &album_cfg.review_ui_default_sort_mode(),
                         album_cfg.review_ui_odd_row_color(),
                         album_cfg.review_ui_even_row_color(),
+                        album_cfg.review_ui_first_column_color(),
+                        album_cfg.review_ui_second_column_color(),
                         album_cfg.review_ui_series_default_checked(),
                         album_cfg.review_ui_description_default_checked(),
                         album_cfg.review_ui_watermark_default_checked(),
@@ -508,17 +528,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if let Err(error) = validate_year_range(cli.start_year, cli.end_year) {
         print_validation_error(&error);
         std::process::exit(1);
-    }
-
-    // Setup logging
-    match setup_logging() {
-        Ok(_) => {
-            write_startup_probe("logging.setup", "flexi_logger initialized");
-        }
-        Err(e) => {
-            write_startup_probe("logging.setup.error", &e.to_string());
-            return Err(Box::new(e));
-        }
     }
 
     // Validate OS

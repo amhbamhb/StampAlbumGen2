@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_album_config_diff
-resource: src/review_ui/config_editor.rs#L816-L923
+resource: src/review_ui/config_editor.rs#L822-L930
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -35,7 +35,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn save_album_config_diff( album_dir: &std::path::Path, album_name: &str, global_config_path: &str, template_path: &str, all_ui_values: &HashMap<String, String>, ) -> Result<usize, Box<dyn std::error::Error>>`
+`pub(super) fn save_album_config_diff( album_dir: &std::path::Path, album_name: &str, global_config_path: &str, pdf_path: &str, template_path: &str, all_ui_values: &HashMap<String, String>, ) -> Result<usize, Box<dyn std::error::Error>>`
 
 # Calls
 

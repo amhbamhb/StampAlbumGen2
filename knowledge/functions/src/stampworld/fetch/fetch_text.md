@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: fetch_text
-resource: src/stampworld/fetch.rs#L131-L136
+resource: src/stampworld/fetch.rs#L133-L138
 generated:
   by: okf-rs/0.4.0
 relationships:

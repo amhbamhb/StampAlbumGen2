@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migration_003_colnect_schema_alignment
-resource: src/db_utils/migrations.rs#L339-L341
+resource: src/db_utils/migrations.rs#L342-L344
 visibility: private
 generated:
   by: okf-rs/0.4.0

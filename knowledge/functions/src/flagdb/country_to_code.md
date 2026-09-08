@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: country_to_code
-resource: src/flagdb.rs#L130-L172
+resource: src/flagdb.rs#L132-L174
 generated:
   by: okf-rs/0.4.0
 relationships:

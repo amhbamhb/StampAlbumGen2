@@ -10,7 +10,9 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
         let after_country = &filename[country_start + 8..]; // Skip "country_"
         if let Some(dash_pos) = after_country.find('-') {
             let after_dash = &after_country[dash_pos + 1..];
-            after_dash.find('_').map(|underscore_pos| after_dash[..underscore_pos].to_string())
+            after_dash
+                .find('_')
+                .map(|underscore_pos| after_dash[..underscore_pos].to_string())
         } else {
             None
         }
@@ -21,7 +23,9 @@ fn parse_colnect_csv_filename(csv_path: &str) -> Option<(String, String)> {
     // Extract year: look for "year_YYYY"
     let year = if let Some(year_start) = filename.find("year_") {
         let after_year = &filename[year_start + 5..]; // Skip "year_"
-        after_year.find('.').map(|dot_pos| after_year[..dot_pos].to_string())
+        after_year
+            .find('.')
+            .map(|dot_pos| after_year[..dot_pos].to_string())
     } else {
         None
     };
@@ -594,10 +598,12 @@ fn sync_missing_stamps_from_colnect(
 
         let col_series_l = col_series.to_lowercase();
         let cand_series_l = cand_series.to_lowercase();
-        if !col_series_l.is_empty() && !cand_series_l.is_empty()
-            && (cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l)) {
-                score += 10;
-            }
+        if !col_series_l.is_empty()
+            && !cand_series_l.is_empty()
+            && (cand_series_l.contains(&col_series_l) || col_series_l.contains(&cand_series_l))
+        {
+            score += 10;
+        }
 
         if !cand_image_path.trim().is_empty() {
             score += 5;
@@ -1699,15 +1705,17 @@ pub fn run_scraping_mode(
         }
     } else {
         // Call StampWorld collector
-        cfg.collect_stampworld_data(crate::commands_file_generator::generator::CollectStampworldCallParams {
-            base_url: &base_url,
-            overwrite_images: cli.overwrite_images,
-            page_callback: None::<&dyn Fn(usize)>,
-            max_pages: cli.max_pages,
-            stop_after_no_hits: cli.stop_after_no_hits,
-            start_year: cli.start_year,
-            end_year: cli.end_year,
-        })
+        cfg.collect_stampworld_data(
+            crate::commands_file_generator::generator::CollectStampworldCallParams {
+                base_url: &base_url,
+                overwrite_images: cli.overwrite_images,
+                page_callback: None::<&dyn Fn(usize)>,
+                max_pages: cli.max_pages,
+                stop_after_no_hits: cli.stop_after_no_hits,
+                start_year: cli.start_year,
+                end_year: cli.end_year,
+            },
+        )
     };
     match pages {
         Ok(pages) => {

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_stamps_by_country_series
-resource: crates/stamp_album_db/src/lib.rs#L1032-L1061
+resource: crates/stamp_album_db/src/lib.rs#L1193-L1222
 generated:
   by: okf-rs/0.4.0
 relationships:

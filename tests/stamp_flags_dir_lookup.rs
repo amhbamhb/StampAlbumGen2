@@ -25,7 +25,10 @@ fn stamp_flags_dir_lookup_found_coa_svg() {
 
     assert!(res.is_ok(), "ensure_coat_of_arms should find local svg");
     let path = res.unwrap();
-    assert!(std::path::Path::new(&path).exists(), "returned path should exist");
+    assert!(
+        std::path::Path::new(&path).exists(),
+        "returned path should exist"
+    );
     // Should be either svg or png
     let ext = std::path::Path::new(&path)
         .extension()

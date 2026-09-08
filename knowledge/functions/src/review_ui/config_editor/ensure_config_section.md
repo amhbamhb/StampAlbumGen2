@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_config_section
-resource: src/review_ui/config_editor.rs#L400-L416
+resource: src/review_ui/config_editor.rs#L403-L419
 visibility: private
 generated:
   by: okf-rs/0.4.0

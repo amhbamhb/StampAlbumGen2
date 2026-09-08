@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_try_rasterize_svg_to_png_roundtrip
-resource: src/flagdb.rs#L735-L760
+resource: src/flagdb.rs#L1123-L1148
 visibility: private
 generated:
   by: okf-rs/0.4.0

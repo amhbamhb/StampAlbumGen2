@@ -1,12 +1,15 @@
 ---
 type: Rust Module
 title: review_ui
-resource: src/review_ui.rs#L1-L2946
+resource: src/review_ui.rs#L1-L2982
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
   - target: external/base64-engine
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/log-debug
     resolved_by: tree-sitter
     confidence: exact
   - target: external/rusqlite-params-connection
@@ -206,6 +209,7 @@ relationships:
 # Imports
 
 - `base64::Engine`
+- `log::debug`
 - `rusqlite::{params, Connection}`
 - `serde::{Deserialize, Serialize}`
 - `std::collections::{HashMap, VecDeque}`

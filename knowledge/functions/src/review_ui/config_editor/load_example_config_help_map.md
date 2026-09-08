@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_example_config_help_map
-resource: src/review_ui/config_editor.rs#L101-L153
+resource: src/review_ui/config_editor.rs#L104-L156
 visibility: private
 generated:
   by: okf-rs/0.4.0

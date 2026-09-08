@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compare_html_contains_backend_recovery_banner
-resource: src/review_ui/views/tests.rs#L72-L78
+resource: src/review_ui/views/tests.rs#L74-L80
 visibility: private
 generated:
   by: okf-rs/0.4.0

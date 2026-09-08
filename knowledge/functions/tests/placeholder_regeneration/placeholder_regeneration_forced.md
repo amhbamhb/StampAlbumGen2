@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: placeholder_regeneration_forced
-resource: tests/placeholder_regeneration.rs#L9-L102
+resource: tests/placeholder_regeneration.rs#L9-L106
 visibility: private
 generated:
   by: okf-rs/0.4.0

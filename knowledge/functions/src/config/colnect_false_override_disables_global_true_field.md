@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_false_override_disables_global_true_field
-resource: src/config.rs#L2447-L2485
+resource: src/config.rs#L2559-L2597
 visibility: private
 generated:
   by: okf-rs/0.4.0

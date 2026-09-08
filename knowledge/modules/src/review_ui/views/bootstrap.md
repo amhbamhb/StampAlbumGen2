@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: bootstrap
-resource: src/review_ui/views/bootstrap.rs#L1-L63
+resource: src/review_ui/views/bootstrap.rs#L1-L65
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/super-bootstrap-assets-bootstrap-head-css-render-bootstrap-body-html-render-bootstrap-script-html
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/super-shared-reconnectbannerparams-runtimelogpanelparams
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -31,6 +34,7 @@ relationships:
 - `super::bootstrap_assets::{
     bootstrap_head_css, render_bootstrap_body_html, render_bootstrap_script_html,
 }`
+- `super::shared::{ReconnectBannerParams, RuntimeLogPanelParams}`
 
 # Member of
 

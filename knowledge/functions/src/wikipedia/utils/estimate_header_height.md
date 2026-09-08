@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: estimate_header_height
-resource: src/wikipedia/utils.rs#L63-L85
+resource: src/wikipedia/utils.rs#L62-L84
 generated:
   by: okf-rs/0.4.0
 relationships:

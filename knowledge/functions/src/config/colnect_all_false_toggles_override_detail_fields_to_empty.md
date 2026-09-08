@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_all_false_toggles_override_detail_fields_to_empty
-resource: src/config.rs#L2431-L2444
+resource: src/config.rs#L2543-L2556
 visibility: private
 generated:
   by: okf-rs/0.4.0

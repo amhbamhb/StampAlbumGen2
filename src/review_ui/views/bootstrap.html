@@ -1,0 +1,126 @@
+<div class='card'>
+    {reconnect_banner_html}
+    <h1>Stamp Album Generator 2</h1>
+    <h2>Start Review UI</h2>
+    <p style='font-size:12px;color:#5b6f81;margin-top:4px;'>Colnect inbox hint: {inbox_hint}</p>
+    <details id='introPanel' class='introPanel' open>
+      <summary><span class='introArrow'>&#9660;</span> About this app &amp; setup hints <span class='introDimTag'>click to expand / collapse</span></summary>
+      <div class='introPanelBody'>
+        <p><strong>Stamp Album Generation</strong> startup. Pick a country to open its Review UI.</p>
+        <p>This program could not be completed without the incredible Album Easy program by Bundu Technology Ltd. <a href='https://www.thestampweb.com/albumeasy' target='_blank' rel='noopener noreferrer'>AlbumEasy</a></p>
+        <div class='hintRow'><span class='hintIcon'>&#128193;</span><span>If you have not yet set up your Albums Root folder, you can do so now or let it auto-detect on launch. The Albums Root is where the generated albums and related data will be stored. You can change this later in the config editor.</span></div>
+        <div class='hintRow'><span class='hintIcon'>&#128236;</span><span>If you have a Colnect inbox export and want to use it for the review, you can import it now or later from the config editor. The default expected format is the &ldquo;Export for AlbumEasy&rdquo; option from Colnect.</span></div>
+      </div>
+    </details>
+    <div class='row'>
+        <label for='countrySel'>Country</label>
+        <select id='countrySel' onchange='onCountrySelectionChanged()'></select>
+        <button class='primary' onclick='startReview()'>Open Review</button>
+        <button class='btn-refresh' onclick='refreshState()'>Refresh</button>
+        <button class='btn-config' onclick='openConfigEditor()'>Edit Config</button>
+        <button class='btn-pdf' onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
+        <button class='btn-import' onclick='importColnectFiles()'>Import Colnect</button>
+        <button class='danger' onclick='logoutApp()'>Logout</button>
+    </div>
+    <div class='row'>
+        <span id='countryCount' class='badge'>Countries: 0</span>
+        <button class='btn-create-theme' onclick='promptCreateCountryOrTheme()'>&#65291; Create New Country or Theme</button>
+    </div>
+    <dialog id='createCountryDialog' class='createCountryDialog'>
+        <div style='display:flex;flex-direction:column;gap:12px;'>
+            <h3 style='margin:0;color:var(--accent-ink);'>Create New Country or Theme</h3>
+            <p style='margin:0;font-size:13px;color:var(--muted-text);'>
+                Enter a country or topic/theme name (e.g. <code>Dog Stamps</code>, <code>Space Exploration</code>, or <code>Fiji</code>).
+                This creates the album directory, database, and folders ready for Review UI and Colnect imports.
+            </p>
+            <label for='newCountryNameInput' style='font-weight:600;'>Country or Theme Name</label>
+            <input id='newCountryNameInput' type='text' placeholder='e.g. Dog Stamps' style='width:100%;box-sizing:border-box;' />
+            <div id='createCountryStatus' style='font-size:12px;min-height:18px;'></div>
+            <div style='display:flex;gap:8px;justify-content:flex-end;'>
+                <button id='createCountryCancelBtn' type='button' onclick='closeCreateCountryDialog()'>Cancel</button>
+                <button id='createCountrySubmitBtn' type='button' class='primary' onclick='submitCreateCountryOrTheme()'>Create &amp; Initialize</button>
+            </div>
+        </div>
+    </dialog>
+    <details id='albumsRootPanel' class='albumsRootPanel collapsibleSection' open>
+        <summary><span class='introArrow'>&#9660;</span> Albums Root <span id='albumsRootResolved' class='badge'>Albums root: auto</span> <span class='introDimTag'>click to expand / collapse</span></summary>
+        <div class='collapsibleSectionBody'>
+            <p class='albumsRootHint'>Select your Albums root folder (usually named <code>Albums</code>). All startup actions in this page use that location.</p>
+            <div class='row albumsRootActions'>
+                <label for='albumsRootPath'>Folder</label>
+                <input id='albumsRootPath' type='text' placeholder='Type Albums path or pick with folder chooser' style='min-width:420px;' />
+                <button onclick='browseAlbumsRootPath()'>&#128193; Pick Albums Root...</button>
+                <button class='primary' onclick='setAlbumsRootPath()'>&#10003; Apply</button>
+                <button onclick='clearAlbumsRootPath()'>&#8635; Reset</button>
+            </div>
+            <div id='albumsRootStatus' class='albumsRootStatus'>Ready</div>
+        </div>
+    </details>
+    <div id='countryPanel' class='panel'></div>
+    <details id='stampworldPanel' class='panel warn collapsibleSection' style='display:none;' open>
+        <summary><span class='introArrow'>&#9660;</span> Run StampWorld pull for this country (including additional pull). <span class='introDimTag'>click to expand / collapse</span></summary>
+        <div class='collapsibleSectionBody'>
+            <strong id='swPanelLead'>StampWorld pull is available for this country.</strong>
+            <p id='swPanelHint' style='margin-top:6px;'>Use this to pull additional StampWorld data for existing countries or create a new country.</p>
+            <div class='row' id='swCountryRow'>
+                <label>StampWorld Country</label>
+                <input id='swCountry' type='text' />
+            </div>
+            <div class='row' id='swCountryFixedRow' style='display:none;'>
+                <label for='swCountryFixed'>StampWorld Country</label>
+                <input id='swCountryFixed' type='text' />
+                <label for='swStartYear'>Start Year</label>
+                <select id='swStartYear'></select>
+                <label for='swEndYear'>End Year</label>
+                <select id='swEndYear'></select>
+            </div>
+            <div class='row'>
+                <label>Command Preset</label>
+                <select id='swPreset'>
+                    <option value='basic'>Basic Pull</option>
+                    <option value='overwrite_album'>Overwrite Album Output</option>
+                    <option value='overwrite_all'>Overwrite Album + Images</option>
+                    <option value='bounded_pages'>Limit Pages (fast test)</option>
+                    <option value='accept_typo'>Auto Accept Source Typos</option>
+                </select>
+            </div>
+            <div class='row'>
+                <label>Extra Flags</label>
+                <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:420px;' />
+            </div>
+            <div class='row'>
+                <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
+            </div>
+            <div class='row'>
+                <strong>Suggested command:</strong>
+                <code id='swCmd'></code>
+            </div>
+            <div id='swStatus' class='status'></div>
+        </div>
+    </details>
+    <details id='colnectCopyPanel' class='colnectCopyPanel collapsibleSection' open>
+        <summary><span class='introArrow'>&#9660;</span> Import Colnect Files <span class='introDimTag'>click to expand / collapse</span></summary>
+        <div class='collapsibleSectionBody'>
+            <div class='row' style='margin-top:8px;'>
+                <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>
+                <span id='colnectCopyCountBadge' class='badge'>Files: 0</span>
+            </div>
+            <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
+                Destination: <code id='colnectDirPath'>(select a country)</code>
+            </div>
+            <div id='colnectCopyStatus' class='colnectCopyStatus'>Ready</div>
+            <div id='colnectCopyLog' class='colnectCopyLog'></div>
+        </div>
+    </details>
+    <div id='status' class='status'></div>
+    {runtime_log_panel_html}
+    <div id='loadingBox' class='loadingBox'>
+        <div class='loadingRow'>
+            <span class='spinner'></span>
+            <div>
+                <strong>Preparing Review UI<span id='loadingDotsTitle' class='dots'></span></strong><br/>
+                <span id='loadingText'>Loading country data and opening the compare view. This may take a few seconds.</span>
+            </div>
+        </div>
+    </div>
+</div>

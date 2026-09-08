@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>run_review_ui — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../index.html">Home</a> / <a href="../../../functions/@index.html">functions</a></nav>
+<h1>run_review_ui</h1>
+<p class="type">Rust Function</p>
+<pre><code>pub fn run_review_ui( db_path: &amp;str, album_name_opt: Option&lt;&amp;str&gt;, prebound_server: Option&lt;(Server, String)&gt;, bind_addr_opt: Option&lt;&amp;str&gt;, open_browser: bool, default_catalog_code: &amp;str, default_sort_mode: &amp;str, odd_row_color: &amp;str, even_row_color: &amp;str, series_default_checked: bool, description_default_checked: bool, watermark_default_checked: bool, design_default_checked: bool, engraving_default_checked: bool, perforation_default_checked: bool, context_default_checked: bool, colnect_links_default_checked: bool, colnect_image_url_default_checked: bool, colnect_metadata_default_checked: bool, replace_sg_number_default_checked: bool, right_unmatched_only_default_checked: bool, albumeasy_auto_generate_pdf_default: bool, albumeasy_cli_configured: bool, catalog_family_options: &amp;[String], ) -&gt; Result&lt;ReviewUiRunOutcome, Box&lt;dyn std::error::Error&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../functions/src/review_ui/log_runtime_event.html">log_runtime_event</a></li>
+<li><a href="../../../functions/src/review_ui/matcher_service/sync_processed_colnect_candidates.html">sync_processed_colnect_candidates</a></li>
+<li><a href="../../../functions/src/review_ui/build_matcher_payload.html">build_matcher_payload</a></li>
+<li><a href="../../../functions/src/review_ui/bind_review_server.html">bind_review_server</a></li>
+<li><a href="../../../functions/src/review_ui/already_running_url.html">already_running_url</a></li>
+<li><a href="../../../functions/src/review_ui/open_review_ui_url.html">open_review_ui_url</a></li>
+<li><a href="../../../functions/src/review_ui/http_handlers/serve_review_requests.html">serve_review_requests</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../functions/src/main.html">main</a></li>
+</ul>
+<p class="resource">Source: src/review_ui.rs#L2659-L2871</p>
+</body>
+</html>

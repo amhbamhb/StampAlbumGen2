@@ -64,7 +64,8 @@ __pycache__/
 
 
 # Ignore all .toml files except config.toml
-*.html
+!*.html
+!src/review_ui/views/compare.html
 testing/*
 Logs/
 logs/   

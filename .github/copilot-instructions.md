@@ -51,6 +51,8 @@ Before creating any commit, all relevant tests must pass.
 
 Avoid unchecked `unwrap()` in runtime code paths.
 
+When new Rust files require embedded HTML, JavaScript, or CSS, keep those assets in separate files and include them at compile time with `include_str!`.
+
 1. Do not use `unwrap()` unless the surrounding function guarantees a safe fallback or explicit error/early-return path.
 2. Prefer `?`, `ok_or_else`, `unwrap_or_else`, or explicit `match` with a meaningful error message.
 3. In request handlers and background tasks, return structured errors instead of panicking.

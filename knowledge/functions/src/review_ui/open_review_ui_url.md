@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: open_review_ui_url
-resource: src/review_ui.rs#L1344-L1363
+resource: src/review_ui.rs#L1351-L1370
 visibility: private
 generated:
   by: okf-rs/0.4.0

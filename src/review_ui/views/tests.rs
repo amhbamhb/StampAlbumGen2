@@ -13,6 +13,8 @@ fn minimal_payload() -> MatcherPayload {
         default_sort_mode: "year_series_date_catalog".to_string(),
         odd_row_color: "#ffffff".to_string(),
         even_row_color: "#f2f2f2".to_string(),
+        first_column_color: "#f2f6fb".to_string(),
+        second_column_color: "#ffffff".to_string(),
         series_default_checked: true,
         description_default_checked: true,
         watermark_default_checked: true,

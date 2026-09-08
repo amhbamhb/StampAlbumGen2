@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: placeholder_regeneration
-resource: tests/placeholder_regeneration.rs#L1-L102
+resource: tests/placeholder_regeneration.rs#L1-L106
 generated:
   by: okf-rs/0.4.0
 relationships:

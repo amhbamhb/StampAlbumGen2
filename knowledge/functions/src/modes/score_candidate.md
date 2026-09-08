@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: score_candidate
-resource: src/modes.rs#L581-L616
+resource: src/modes.rs#L577-L613
 visibility: private
 generated:
   by: okf-rs/0.4.0

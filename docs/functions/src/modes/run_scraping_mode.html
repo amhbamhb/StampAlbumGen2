@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>run_scraping_mode — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../index.html">Home</a> / <a href="../../../functions/@index.html">functions</a></nav>
+<h1>run_scraping_mode</h1>
+<p class="type">Rust Function</p>
+<pre><code>pub fn run_scraping_mode( cli: &amp;crate::cli::Cli, show_progress: bool, source: &amp;str, ) -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../functions/src/progress/ProgressIndicator/new_with_config.html">new_with_config</a></li>
+<li><a href="../../../functions/src/progress/ProgressIndicator/finish_with_error.html">finish_with_error</a></li>
+<li><a href="../../../functions/src/modes/canonical_album_dir_name.html">canonical_album_dir_name</a></li>
+<li><a href="../../../functions/src/progress/ProgressIndicator/set_message.html">set_message</a></li>
+<li><a href="../../../functions/src/config/load_slug_overrides.html">load_slug_overrides</a></li>
+<li><a href="../../../functions/src/album_globals/structs/GenericAttrs/get.html">get</a></li>
+<li><a href="../../../functions/src/config/load_config.html">load_config</a></li>
+<li><a href="../../../functions/src/config/Config/effective_colnect_inbox_path.html">effective_colnect_inbox_path</a></li>
+<li><a href="../../../functions/src/file_utils/set_db_path_from_cli.html">set_db_path_from_cli</a></li>
+<li><a href="../../../functions/src/file_utils/set_overwrite_album_from_cli.html">set_overwrite_album_from_cli</a></li>
+<li><a href="../../../functions/src/us1847/collector/process_1847us_page.html">process_1847us_page</a></li>
+<li><a href="../../../functions/src/config/Config/wikipedia_ingest_enabled.html">wikipedia_ingest_enabled</a></li>
+<li><a href="../../../functions/src/wikipedia/ingest/ingest_wikipedia_to_db.html">ingest_wikipedia_to_db</a></li>
+<li><a href="../../../functions/src/config/Config/effective_wikipedia_ingest_max_entries.html">effective_wikipedia_ingest_max_entries</a></li>
+<li><a href="../../../functions/src/config/Config/effective_wikipedia_ingest_series_prefix.html">effective_wikipedia_ingest_series_prefix</a></li>
+<li><a href="../../../functions/src/flagdb/copy_flag_for_album.html">copy_flag_for_album</a></li>
+<li><a href="../../../functions/src/stampworld/fetch/ReqwestFetcher/new_for_api.html">new_for_api</a></li>
+<li><a href="../../../functions/src/wikipedia/database/fetch_and_cache_content.html">fetch_and_cache_content</a></li>
+<li><a href="../../../functions/src/colnect/parser/parse_csv.html">parse_csv</a></li>
+<li><a href="../../../functions/src/config/Config/effective_default_catalog_code.html">effective_default_catalog_code</a></li>
+<li><a href="../../../functions/src/colnect/ingest/ingest_colnect_data_with_default_catalog.html">ingest_colnect_data_with_default_catalog</a></li>
+<li><a href="../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.html">from</a></li>
+<li><a href="../../../functions/src/config/with_album_config_override.html">with_album_config_override</a></li>
+<li><a href="../../../functions/src/progress/ProgressIndicator/finish_with_message.html">finish_with_message</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../functions/src/main.html">main</a></li>
+</ul>
+<p class="resource">Source: src/modes.rs#L1430-L1892</p>
+</body>
+</html>

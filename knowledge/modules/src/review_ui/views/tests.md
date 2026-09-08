@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: tests
-resource: src/review_ui/views/tests.rs#L1-L87
+resource: src/review_ui/views/tests.rs#L1-L89
 generated:
   by: okf-rs/0.4.0
 relationships:

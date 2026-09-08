@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: column_names
-resource: src/db_utils/migrations.rs#L523-L530
+resource: src/db_utils/migrations.rs#L526-L533
 visibility: private
 generated:
   by: okf-rs/0.4.0

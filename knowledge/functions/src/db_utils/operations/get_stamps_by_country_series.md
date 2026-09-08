@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_stamps_by_country_series
-resource: src/db_utils/operations.rs#L555-L599
+resource: src/db_utils/operations.rs#L183-L227
 generated:
   by: okf-rs/0.4.0
 relationships:

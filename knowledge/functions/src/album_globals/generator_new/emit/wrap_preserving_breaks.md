@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: wrap_preserving_breaks
-resource: src/album_globals/generator_new/emit.rs#L44-L55
+resource: src/album_globals/generator_new/emit.rs#L45-L56
 visibility: private
 generated:
   by: okf-rs/0.4.0

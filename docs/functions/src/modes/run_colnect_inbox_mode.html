@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>run_colnect_inbox_mode — Rust Function</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../../index.html">Home</a> / <a href="../../../functions/@index.html">functions</a></nav>
+<h1>run_colnect_inbox_mode</h1>
+<p class="type">Rust Function</p>
+<p><span class="visibility">private</span></p>
+<pre><code>fn run_colnect_inbox_mode( cli: &amp;crate::cli::Cli, show_progress: bool, ) -&gt; Result&lt;(), Box&lt;dyn std::error::Error&gt;&gt;</code></pre>
+<h2>Calls</h2>
+<ul>
+<li><a href="../../../functions/src/progress/ProgressIndicator/new_with_config.html">new_with_config</a></li>
+<li><a href="../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.html">from</a></li>
+<li><a href="../../../functions/src/progress/ProgressIndicator/set_message.html">set_message</a></li>
+<li><a href="../../../functions/src/modes/collect_colnect_csv_files_rec.html">collect_colnect_csv_files_rec</a></li>
+<li><a href="../../../functions/src/modes/country_slug.html">country_slug</a></li>
+<li><a href="../../../functions/src/modes/parse_colnect_csv_filename.html">parse_colnect_csv_filename</a></li>
+<li><a href="../../../functions/src/modes/move_to_country_inbox.html">move_to_country_inbox</a></li>
+<li><a href="../../../functions/src/colnect/parser/parse_csv.html">parse_csv</a></li>
+<li><a href="../../../functions/src/modes/infer_country_from_stamps.html">infer_country_from_stamps</a></li>
+<li><a href="../../../functions/src/modes/canonical_album_dir_name.html">canonical_album_dir_name</a></li>
+<li><a href="../../../functions/src/modes/ensure_colnect_import_history_table.html">ensure_colnect_import_history_table</a></li>
+<li><a href="../../../functions/src/modes/file_sha256.html">file_sha256</a></li>
+<li><a href="../../../functions/src/modes/has_import_checksum.html">has_import_checksum</a></li>
+<li><a href="../../../functions/src/config/load_config.html">load_config</a></li>
+<li><a href="../../../functions/src/config/Config/effective_default_catalog_code.html">effective_default_catalog_code</a></li>
+<li><a href="../../../functions/src/colnect/ingest/ingest_colnect_data_with_mode.html">ingest_colnect_data_with_mode</a></li>
+<li><a href="../../../functions/src/modes/record_import_history.html">record_import_history</a></li>
+<li><a href="../../../functions/src/config/with_album_config_override.html">with_album_config_override</a></li>
+<li><a href="../../../functions/src/progress/ProgressIndicator/finish_with_message.html">finish_with_message</a></li>
+</ul>
+<h2>Called by</h2>
+<ul>
+<li><a href="../../../functions/src/modes/run_database_mode.html">run_database_mode</a></li>
+</ul>
+<p class="resource">Source: src/modes.rs#L309-L558</p>
+</body>
+</html>

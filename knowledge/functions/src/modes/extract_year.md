@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_year
-resource: src/modes.rs#L569-L571
+resource: src/modes.rs#L565-L567
 visibility: private
 generated:
   by: okf-rs/0.4.0

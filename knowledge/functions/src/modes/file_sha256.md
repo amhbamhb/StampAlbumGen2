@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: file_sha256
-resource: src/modes.rs#L164-L183
+resource: src/modes.rs#L160-L179
 visibility: private
 generated:
   by: okf-rs/0.4.0

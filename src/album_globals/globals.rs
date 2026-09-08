@@ -27,14 +27,14 @@ pub fn compute_usable_height(cfg: &Config) -> f64 {
     let defaults = Config::with_defaults();
     let border_spacing = cfg
         .page_border_spacing
-        .unwrap_or(defaults.page_border_spacing.unwrap()) as f64;
+        .unwrap_or(defaults.page_border_spacing.unwrap_or(6.0)) as f64;
     let total_border = border_outer + border_inner1 + border_inner2 + border_spacing;
-    let usable_height_padding =
+    let usable_height_padding: f64 =
         cfg.usable_height_padding_mm
-            .unwrap_or(defaults.usable_height_padding_mm.unwrap()) as f64;
+            .unwrap_or(defaults.usable_height_padding_mm.unwrap_or(2.0)) as f64;
     let pages_spacing_v = cfg
         .album_pages_spacing_v
-        .unwrap_or(defaults.album_pages_spacing_v.unwrap()) as f64;
+        .unwrap_or(defaults.album_pages_spacing_v.unwrap_or(6.0)) as f64;
     page_height
         - top_margin
         - bottom_margin

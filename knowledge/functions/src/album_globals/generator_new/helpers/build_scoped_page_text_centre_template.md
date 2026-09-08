@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_scoped_page_text_centre_template
-resource: src/album_globals/generator_new/helpers.rs#L165-L192
+resource: src/album_globals/generator_new/helpers.rs#L170-L200
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -24,7 +24,7 @@ relationships:
 
 # Signature
 
-`fn build_scoped_page_text_centre_template( cfg: &Config, format_opt: Option<String>, font_opt: Option<String>, size_opt: Option<f32>, vspace_opt: Option<f32>, ) -> String`
+`fn build_scoped_page_text_centre_template( cfg: &Config, format_enabled: bool, format_opt: Option<String>, font_opt: Option<String>, size_opt: Option<f32>, vspace_opt: Option<f32>, ) -> String`
 
 # Calls
 

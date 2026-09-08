@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: SaveConfigEditorRequest
-resource: src/review_ui.rs#L1213-L1215
+resource: src/review_ui.rs#L1220-L1222
 visibility: private
 generated:
   by: okf-rs/0.4.0

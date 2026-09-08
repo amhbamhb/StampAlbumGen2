@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_stamp_placeholder
-resource: src/db_utils/operations.rs#L511-L552
+resource: src/db_utils/operations.rs#L139-L180
 generated:
   by: okf-rs/0.4.0
 relationships:

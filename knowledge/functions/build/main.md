@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: build.rs#L3-L30
+resource: build.rs#L3-L36
 visibility: private
 generated:
   by: okf-rs/0.4.0

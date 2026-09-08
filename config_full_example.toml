@@ -132,9 +132,32 @@ page_text_centre_font = "TN"
 page_text_centre_size = 8.0
 page_text_centre_vspace = 1.0
 
+# Optional per-type centered text format overrides.
+# Set a *_format_enabled value to true to use its matching format string.
+# Each format must contain exactly one "{}" placeholder for the generated text.
+series_page_text_centre_format_enabled = false
+series_page_text_centre_format = 'PAGE_TEXT_CENTRE (HB 9 "{}" 1.0)'
+date_page_text_centre_format_enabled = false
+date_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+watermark_page_text_centre_format_enabled = false
+watermark_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+engraving_page_text_centre_format_enabled = false
+engraving_page_text_centre_format = 'PAGE_TEXT_CENTRE (TN 8 "{}" 1.0)'
+
 page_text_right_font = "HN"
 page_text_right_size = 10.0
 page_text_right_vspace = 1.0
+
+# --- Stamp-group header date formatting ---
+# `date_pattern` takes precedence over the legacy `date_format` selector.
+# Supported tokens are {year}, {month}, {month_num}, and {day}.
+# Examples:
+#   "{month} {day}, {year}" -> "January 15, 1960"
+#   "{month_num}-{day}-{year}" -> "1-15-1960"
+#   "{year}-{month_num}-{day}" -> "1960-1-15"
+[header_formatting]
+date_pattern = "{month} {day}, {year}"
+date_format = "commas"
 
 # Placeholder overwrite behavior (default: true)
 # When true, placeholders generated with explicit mm/mm_per_px mappings will
@@ -168,6 +191,8 @@ pdf_dx_logging = false
 [review_ui]
 odd_row_color = "#ffffff"
 even_row_color = "#e6eef4"
+first_column_color = "#f2f6fb"
+second_column_color = "#ffffff"
 default_sort_mode = "year_series_date_catalog"
 
 # Default checkbox states for field selection in review mode

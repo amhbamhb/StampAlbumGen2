@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_stamp_heading_lines
-resource: src/album_globals/generator_new/emit.rs#L90-L122
+resource: src/album_globals/generator_new/emit.rs#L91-L123
 visibility: private
 generated:
   by: okf-rs/0.4.0

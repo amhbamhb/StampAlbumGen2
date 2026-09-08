@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: fetch_bytes
-resource: src/stampworld/fetch.rs#L113-L119
+resource: src/stampworld/fetch.rs#L115-L121
 visibility: private
 generated:
   by: okf-rs/0.4.0

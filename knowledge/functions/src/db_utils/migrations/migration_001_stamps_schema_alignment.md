@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migration_001_stamps_schema_alignment
-resource: src/db_utils/migrations.rs#L272-L290
+resource: src/db_utils/migrations.rs#L275-L293
 visibility: private
 generated:
   by: okf-rs/0.4.0

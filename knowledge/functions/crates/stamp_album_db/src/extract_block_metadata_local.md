@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_block_metadata_local
-resource: crates/stamp_album_db/src/lib.rs#L523-L565
+resource: crates/stamp_album_db/src/lib.rs#L683-L725
 visibility: private
 generated:
   by: okf-rs/0.4.0

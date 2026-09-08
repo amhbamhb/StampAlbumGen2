@@ -1,5 +1,6 @@
 # Classes
 
+- [StampInsert](../classes/crates/stamp_album_db/src/StampInsert.md) — Rust Struct
 - [StampStub](../classes/crates/stamp_album_db/src/StampStub.md) — Rust Struct
 - [ReviewUiLaunchState](../classes/src/ReviewUiLaunchState.md) — Rust Enum
 - [GeneratedAlbumArtifacts](../classes/src/album_globals/GeneratedAlbumArtifacts.md) — Rust Struct
@@ -17,6 +18,9 @@
 - [ColnectInfo](../classes/src/colnect/db/ColnectInfo.md) — Rust Struct
 - [ColnectImageFetchStats](../classes/src/colnect/image_fetcher/ColnectImageFetchStats.md) — Rust Struct
 - [ColnectStamp](../classes/src/colnect/parser/ColnectStamp.md) — Rust Struct
+- [CreateAlbumParams](../classes/src/commands_file_generator/album_creation/CreateAlbumParams.md) — Rust Struct
+- [CollectStampworldParams](../classes/src/commands_file_generator/data_collection/CollectStampworldParams.md) — Rust Struct
+- [CollectStampworldCallParams](../classes/src/commands_file_generator/generator/CollectStampworldCallParams.md) — Rust Struct
 - [CommandsFileGenerator](../classes/src/commands_file_generator/generator/CommandsFileGenerator.md) — Rust Struct
 - [SeriesInfo](../classes/src/commands_file_generator/image_utils/SeriesInfo.md) — Rust Struct
 - [ColnectConfig](../classes/src/config/ColnectConfig.md) — Rust Struct
@@ -24,6 +28,7 @@
 - [Config](../classes/src/config/Config.md) — Rust Struct
 - [HeaderFormatting](../classes/src/config/HeaderFormatting.md) — Rust Struct
 - [ReviewUiConfig](../classes/src/config/ReviewUiConfig.md) — Rust Struct
+- [StampInsert](../classes/src/db_utils/operations/StampInsert.md) — Rust Struct
 - [SeriesStub](../classes/src/db_utils/structs/SeriesStub.md) — Rust Struct
 - [StampStub](../classes/src/db_utils/structs/StampStub.md) — Rust Struct
 - [PlaceholderImageOptions](../classes/src/placeholder_image/PlaceholderImageOptions.md) — Rust Struct
@@ -91,6 +96,8 @@
 - [UpdateDefaultCatalogResponse](../classes/src/review_ui/UpdateDefaultCatalogResponse.md) — Rust Struct
 - [BootstrapHandlersState](../classes/src/review_ui/http_handlers/BootstrapHandlersState.md) — Rust Struct
 - [ReviewHandlersState](../classes/src/review_ui/http_handlers/ReviewHandlersState.md) — Rust Struct
+- [ReconnectBannerParams](../classes/src/review_ui/views/shared/ReconnectBannerParams.md) — Rust Struct
+- [RuntimeLogPanelParams](../classes/src/review_ui/views/shared/RuntimeLogPanelParams.md) — Rust Struct
 - [LinuxDesktopIntegrationReport](../classes/src/setup/LinuxDesktopIntegrationReport.md) — Rust Struct
 - [SetupError](../classes/src/setup/SetupError.md) — Rust Enum
 - [WindowsDesktopIntegrationReport](../classes/src/setup/WindowsDesktopIntegrationReport.md) — Rust Struct

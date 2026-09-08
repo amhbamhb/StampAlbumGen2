@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: create_album
-resource: src/commands_file_generator/album_creation.rs#L15-L188
+resource: src/commands_file_generator/album_creation.rs#L26-L193
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -31,7 +31,7 @@ relationships:
 
 # Signature
 
-`pub fn create_album<P: AsRef<std::path::Path>>( file_path: P, data: &[String], album_name: &str, separator: &str, fix_sizes: bool, formats: &[String], emissions: &[String], catalog_name: &str, ) -> usize`
+`pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize`
 
 # Calls
 

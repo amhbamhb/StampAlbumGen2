@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: has_downloaded_images
-resource: src/modes.rs#L107-L132
+resource: src/modes.rs#L103-L128
 visibility: private
 generated:
   by: okf-rs/0.4.0

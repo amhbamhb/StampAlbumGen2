@@ -46,9 +46,6 @@ relationships:
   - target: functions/src/flagdb/load_flag_map_from_fs
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/flagdb/load_embedded_flag_map_if_enabled
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/flagdb/ensure_flag_image_with_fetcher
     resolved_by: tree-sitter
     confidence: exact
@@ -142,7 +139,6 @@ relationships:
 - [resolve_runtime_albums_root](../../../../../functions/src/file_utils/resolve_runtime_albums_root.md)
 - [find_config_path](../../../../../functions/src/file_utils/find_config_path.md)
 - [load_flag_map_from_fs](../../../../../functions/src/flagdb/load_flag_map_from_fs.md)
-- [load_embedded_flag_map_if_enabled](../../../../../functions/src/flagdb/load_embedded_flag_map_if_enabled.md)
 - [ensure_flag_image_with_fetcher](../../../../../functions/src/flagdb/ensure_flag_image_with_fetcher.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [resolve_runtime_albums_root](../../../../../functions/src/modes/resolve_runtime_albums_root.md)

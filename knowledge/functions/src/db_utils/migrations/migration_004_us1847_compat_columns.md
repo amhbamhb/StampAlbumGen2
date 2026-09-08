@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migration_004_us1847_compat_columns
-resource: src/db_utils/migrations.rs#L343-L358
+resource: src/db_utils/migrations.rs#L346-L361
 visibility: private
 generated:
   by: okf-rs/0.4.0

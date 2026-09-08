@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_all_series
-resource: src/db_utils_wrapper.rs#L102-L174
+resource: src/db_utils_wrapper.rs#L105-L177
 generated:
   by: okf-rs/0.4.0
 ---

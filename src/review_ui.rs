@@ -1,11 +1,11 @@
 use base64::Engine;
+use log::debug;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
-use log::debug;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Mutex, OnceLock};
@@ -122,7 +122,7 @@ pub fn tail_current_log(lines_count: usize) -> Vec<String> {
 
     // Read the last N lines efficiently
     match fs::File::open(log_path) {
-            Ok(file) => {
+        Ok(file) => {
             let reader = BufReader::new(file);
             let mut lines_iter = reader.lines().map_while(Result::ok);
             let _first_line: Option<String> = lines_iter.next();
@@ -285,6 +285,8 @@ struct MatcherPayload {
     default_sort_mode: String,
     odd_row_color: String,
     even_row_color: String,
+    first_column_color: String,
+    second_column_color: String,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -324,6 +326,19 @@ struct BootstrapStartRequest {
 
 #[derive(Debug, Serialize)]
 struct BootstrapStartResponse {
+    ok: bool,
+    message: String,
+    country: Option<String>,
+    db_path: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct BootstrapCreateCountryRequest {
+    name: String,
+}
+
+#[derive(Debug, Serialize)]
+struct BootstrapCreateCountryResponse {
     ok: bool,
     message: String,
     country: Option<String>,
@@ -631,8 +646,12 @@ fn save_runtime_string_setting(key: &str, value: Option<&str>) -> Result<(), Str
 }
 
 fn ensure_runtime_startup_files() -> Result<(), String> {
-    crate::config::ensure_config_and_template_files("config.toml", "config_template.toml")
-        .map_err(|e| format!("failed to initialize startup config files: {}", e))
+    crate::config::ensure_config_and_template_files(
+        "config.toml",
+        "config_template.toml",
+        "StampAlbumGenerator2HelpManual.pdf",
+    )
+    .map_err(|e| format!("failed to initialize startup config files: {}", e))
 }
 
 fn is_directory_empty(path: &Path) -> Result<bool, String> {
@@ -1678,6 +1697,75 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
     out
 }
 
+fn create_bootstrap_country_or_theme(
+    req: &BootstrapCreateCountryRequest,
+) -> Result<BootstrapCreateCountryResponse, String> {
+    let raw_name = req.name.trim();
+    if raw_name.is_empty() {
+        return Err("Country or theme name cannot be empty.".to_string());
+    }
+
+    if raw_name.contains('/') || raw_name.contains('\\') || raw_name.contains("..") {
+        return Err("Name contains invalid characters (/ \\ ..)".to_string());
+    }
+
+    let albums_root = resolve_bootstrap_albums_root()
+        .ok_or_else(|| "Albums root directory could not be resolved.".to_string())?;
+
+    let slug = raw_name.replace(' ', "-");
+    let country_dir = albums_root.join(&slug);
+    let colnect_dir = country_dir.join("colnect");
+    let images_dir = country_dir.join("images");
+    let db_path = country_dir.join(format!("{}.db", slug));
+
+    fs::create_dir_all(&country_dir).map_err(|e| {
+        format!(
+            "Failed to create country directory {}: {}",
+            country_dir.display(),
+            e
+        )
+    })?;
+    fs::create_dir_all(&colnect_dir).map_err(|e| {
+        format!(
+            "Failed to create colnect directory {}: {}",
+            colnect_dir.display(),
+            e
+        )
+    })?;
+    fs::create_dir_all(&images_dir).map_err(|e| {
+        format!(
+            "Failed to create images directory {}: {}",
+            images_dir.display(),
+            e
+        )
+    })?;
+
+    let db_path_str = db_path.to_string_lossy().to_string();
+    if !db_path.exists() {
+        crate::db_utils::init_db(&db_path_str)
+            .map_err(|e| format!("Failed to initialize database {}: {}", db_path.display(), e))?;
+        log_runtime_event(&format!(
+            "Bootstrap: created new country/theme '{}' at {} with initialized database",
+            raw_name,
+            country_dir.display()
+        ));
+    } else {
+        log_runtime_event(&format!(
+            "Bootstrap: country/theme '{}' already exists at {}",
+            raw_name,
+            country_dir.display()
+        ));
+    }
+
+    let display_country = slug.replace('-', " ");
+    Ok(BootstrapCreateCountryResponse {
+        ok: true,
+        message: format!("Country/Theme '{}' is ready.", display_country),
+        country: Some(display_country),
+        db_path: Some(db_path_str),
+    })
+}
+
 fn current_bootstrap_albums_root() -> Option<String> {
     resolve_bootstrap_albums_root().map(|p| p.to_string_lossy().to_string())
 }
@@ -2091,20 +2179,34 @@ fn resolve_image_abs(db_path: &str, album_name: &str, rel_image_path: &str) -> S
     }
 
     let p1 = crate::file_utils::resolve_album_image_path(album_name, rel);
-    debug!("resolve_image_abs: db_path='{}' album='{}' rel='{}' -> p1='{}' (exists={})", db_path, album_name, rel, p1.display(), p1.exists());
+    debug!(
+        "resolve_image_abs: db_path='{}' album='{}' rel='{}' -> p1='{}' (exists={})",
+        db_path,
+        album_name,
+        rel,
+        p1.display(),
+        p1.exists()
+    );
     if p1.exists() {
         return p1.to_string_lossy().to_string();
     }
 
     if let Some(parent) = Path::new(db_path).parent() {
         let p2 = parent.join(rel);
-        debug!("resolve_image_abs: checking parent path p2='{}' (exists={})", p2.display(), p2.exists());
+        debug!(
+            "resolve_image_abs: checking parent path p2='{}' (exists={})",
+            p2.display(),
+            p2.exists()
+        );
         if p2.exists() {
             return p2.to_string_lossy().to_string();
         }
     }
 
-    debug!("resolve_image_abs: no local image resolved for rel='{}'", rel);
+    debug!(
+        "resolve_image_abs: no local image resolved for rel='{}'",
+        rel
+    );
     String::new()
 }
 
@@ -2184,6 +2286,8 @@ fn build_matcher_payload(
     default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
+    first_column_color: &str,
+    second_column_color: &str,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -2220,6 +2324,8 @@ fn build_matcher_payload(
         default_sort_mode: default_sort_mode.to_string(),
         odd_row_color: odd_row_color.to_string(),
         even_row_color: even_row_color.to_string(),
+        first_column_color: first_column_color.to_string(),
+        second_column_color: second_column_color.to_string(),
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -2650,12 +2756,14 @@ pub fn run_review_ui_bootstrap(
     }
 
     Ok(match selected {
-        Some((db_path, country)) => ReviewUiBootstrapOutcome::Selected(Box::new(ReviewUiSelected {
-            db_path,
-            country,
-            server,
-            bind,
-        })),
+        Some((db_path, country)) => {
+            ReviewUiBootstrapOutcome::Selected(Box::new(ReviewUiSelected {
+                db_path,
+                country,
+                server,
+                bind,
+            }))
+        }
         None => ReviewUiBootstrapOutcome::Exit,
     })
 }
@@ -2670,6 +2778,8 @@ pub fn run_review_ui(
     default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
+    first_column_color: &str,
+    second_column_color: &str,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -2748,6 +2858,8 @@ pub fn run_review_ui(
         default_sort_mode,
         odd_row_color,
         even_row_color,
+        first_column_color,
+        second_column_color,
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -2844,6 +2956,8 @@ pub fn run_review_ui(
         default_sort_mode,
         odd_row_color,
         even_row_color,
+        first_column_color,
+        second_column_color,
         series_default_checked,
         description_default_checked,
         watermark_default_checked,

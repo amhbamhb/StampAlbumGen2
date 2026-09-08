@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_stamp_heading_label
-resource: src/album_globals/generator_new/emit.rs#L224-L282
+resource: src/album_globals/generator_new/emit.rs#L233-L291
 generated:
   by: okf-rs/0.4.0
 relationships:

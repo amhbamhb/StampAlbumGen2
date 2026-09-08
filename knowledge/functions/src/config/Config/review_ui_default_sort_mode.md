@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_default_sort_mode
-resource: src/config.rs#L1234-L1257
+resource: src/config.rs#L1342-L1365
 generated:
   by: okf-rs/0.4.0
 relationships:

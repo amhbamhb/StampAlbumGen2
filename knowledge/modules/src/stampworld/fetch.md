@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: fetch
-resource: src/stampworld/fetch.rs#L1-L166
+resource: src/stampworld/fetch.rs#L1-L168
 generated:
   by: okf-rs/0.4.0
 relationships:

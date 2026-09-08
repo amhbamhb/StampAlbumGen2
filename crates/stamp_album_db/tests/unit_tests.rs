@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 use stamp_album_db::{
     get_all_series, get_stamps_by_series, insert_stamp_from_struct, migrate_fix_block_metadata,
-    sort_stampstubs_inplace, StampStub, StampInsert,
+    sort_stampstubs_inplace, StampInsert, StampStub,
 };
 
 fn make_stub(sg: &str, year: i32) -> StampStub {
@@ -126,6 +126,10 @@ fn test_insert_stamp_and_backfill() {
             month_num INTEGER,
             day TEXT,
             sg_number TEXT,
+            catalog_code TEXT DEFAULT '',
+            stampworld_image_url TEXT DEFAULT '',
+            colnect_page_url TEXT DEFAULT '',
+            colnect_image_url TEXT DEFAULT '',
             type TEXT,
             denomination TEXT,
             color TEXT,

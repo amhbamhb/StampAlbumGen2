@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_odd_row_color
-resource: src/config.rs#L1216-L1223
+resource: src/config.rs#L1306-L1313
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -35,5 +35,4 @@ WHERE id NOT IN (
 );
 
 COMMIT;
-
 -- End of script

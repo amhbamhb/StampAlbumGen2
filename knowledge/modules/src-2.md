@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: src
-resource: src/main.rs#L1-L593
+resource: src/main.rs#L1-L602
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,7 +9,7 @@ relationships:
   - target: external/clap-commandfactory-parser
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/stamp-album-gen2-cli-cli-config-modes-run-database-mode-run-scraping-mode-review-ui-log-runtime-event-run-review-ui-run-review-ui-bootstrap-reviewuibootstrapoutcome-reviewuirunoutcome-setup-align-process-working-dir-to-runtime-layout-ensure-linux-desktop-integration-ensure-windows-desktop-integration-install-linux-desktop-integration-setup-logging-startup-probe-path-uninstall-linux-desktop-integration-validate-os-write-startup-probe-write-startup-probe-snapshot-validation-print-validation-error-validate-source-validate-user-input-validate-year-range
+  - target: external/stamp-album-gen2-cli-cli-config-modes-run-database-mode-run-scraping-mode-review-ui-log-runtime-event-run-review-ui-run-review-ui-bootstrap-reviewuibootstrapoutcome-reviewuirunoutcome-reviewuiselected-setup-align-process-working-dir-to-runtime-layout-ensure-linux-desktop-integration-ensure-windows-desktop-integration-install-linux-desktop-integration-setup-logging-startup-probe-path-uninstall-linux-desktop-integration-validate-os-write-startup-probe-write-startup-probe-snapshot-validation-print-validation-error-validate-source-validate-user-input-validate-year-range
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-io-isterminal
@@ -35,7 +35,7 @@ relationships:
     modes::{run_database_mode, run_scraping_mode},
     review_ui::{
         log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
-        ReviewUiRunOutcome,
+        ReviewUiRunOutcome, ReviewUiSelected,
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,

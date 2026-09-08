@@ -162,7 +162,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
-            if method == Method::Get && req_url == "/" {
+        if method == Method::Get && req_url == "/" {
             let mut resp = Response::from_string(html.to_string());
             if let Ok(h) =
                 Header::from_bytes(&b"Content-Type"[..], &b"text/html; charset=utf-8"[..])
@@ -192,6 +192,46 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             };
             let mut resp = Response::from_string(
                 serde_json::to_string(&state).unwrap_or_else(|_| "{\"countries\":[]}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post
+            && (req_url == "/api/create-country" || req_url == "/create-country")
+        {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<BootstrapCreateCountryRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match create_bootstrap_country_or_theme(&req) {
+                    Ok(resp) => resp,
+                    Err(error) => BootstrapCreateCountryResponse {
+                        ok: false,
+                        message: error,
+                        country: None,
+                        db_path: None,
+                    },
+                },
+                Err(error) => BootstrapCreateCountryResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                    country: None,
+                    db_path: None,
+                },
+            };
+
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"country\":null,\"db_path\":null}".to_string()
+                }),
             );
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -615,7 +655,11 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
         }
 
         if method == Method::Get && req_url == "/api/config-editor" {
-            let resp_json = match build_config_editor_data("config.toml", "config_template.toml") {
+            let resp_json = match build_config_editor_data(
+                "config.toml",
+                "config_template.toml",
+                "StampAlbumGenerator2HelpManual.pdf",
+            ) {
                 Ok(sections) => serde_json::to_string(&ConfigEditorDataResponse {
                     ok: true,
                     message: "Config editor data loaded".to_string(),
@@ -658,6 +702,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                 Ok(req) => match save_full_config_values(
                     "config.toml",
                     "config_template.toml",
+                    "StampAlbumGenerator2HelpManual.pdf",
                     &req.values,
                 ) {
                     Ok(_) => SaveConfigEditorResponse {
@@ -1035,6 +1080,8 @@ pub(super) fn serve_review_requests(
     default_sort_mode: &str,
     odd_row_color: &str,
     even_row_color: &str,
+    first_column_color: &str,
+    second_column_color: &str,
     series_default_checked: bool,
     description_default_checked: bool,
     watermark_default_checked: bool,
@@ -1304,6 +1351,7 @@ pub(super) fn serve_review_requests(
             let resp_json = match build_config_editor_data_for_album(
                 "config.toml",
                 "config_template.toml",
+                "StampAlbumGenerator2HelpManual.pdf",
                 &album_dir,
             ) {
                 Ok((sections, has_override)) => serde_json::to_string(&ConfigEditorDataResponse {
@@ -1347,6 +1395,8 @@ pub(super) fn serve_review_requests(
                     default_sort_mode,
                     odd_row_color,
                     even_row_color,
+                    first_column_color,
+                    second_column_color,
                     series_default_checked,
                     description_default_checked,
                     watermark_default_checked,
@@ -1499,16 +1549,11 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&save_left_stamp(
-                    conn,
-                    db_path,
-                    album_name,
-                    req,
-                ))
-                .unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
-                        .to_string()
-                }),
+                Ok(req) => serde_json::to_string(&save_left_stamp(conn, db_path, album_name, req))
+                    .unwrap_or_else(|_| {
+                        "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
+                            .to_string()
+                    }),
                 Err(e) => serde_json::to_string(&SaveLeftStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1791,6 +1836,30 @@ pub(super) fn serve_review_requests(
             continue;
         }
 
+        if method == Method::Get
+            && (req_url == "/api/fresh-left" || req_url.starts_with("/api/fresh-left?"))
+        {
+            let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
+            let resp_json = match load_left_stamps(
+                conn,
+                db_path,
+                album_name,
+                show_imageless_left_rows,
+            ) {
+                Ok(stamps) => serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string()),
+                Err(e) => {
+                    log_runtime_event(&format!("fresh-left: load failed: {}", e));
+                    "[]".to_string()
+                }
+            };
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/api/review-pick-colnect-file" {
             let result = pick_and_copy_colnect_file_for_db(db_path);
             let mut resp =
@@ -1821,6 +1890,7 @@ pub(super) fn serve_review_requests(
                         album_name,
                         "config.toml",
                         "config_template.toml",
+                        "StampAlbumGenerator2HelpManual.pdf",
                         &req.default_catalog_code,
                     ) {
                         Ok(saved) => serde_json::to_string(&UpdateDefaultCatalogResponse {
@@ -1867,6 +1937,7 @@ pub(super) fn serve_review_requests(
                     &album_dir,
                     album_name,
                     "config.toml",
+                    "StampAlbumGenerator2HelpManual.pdf",
                     "config_template.toml",
                     &req.values,
                 ) {
@@ -1960,6 +2031,7 @@ pub(super) fn serve_review_requests(
                 Ok(req) => match save_full_config_values(
                     "config.toml",
                     "config_template.toml",
+                    "StampAlbumGenerator2HelpManual.pdf",
                     &req.values,
                 ) {
                     Ok(_) => SaveConfigEditorResponse {

@@ -16,18 +16,20 @@ fn placeholder_regeneration_forced() {
     let target_w_mm = 54.6_f64;
     let target_h_mm = 24.2_f64;
 
-    let rel_a = ensure_placeholder_image_for_stamp_with_hint(
-        album_a,
-        sg_a,
-        year_a,
-        None,
-        None,
-        Some(target_w_mm),
-        Some(target_h_mm),
-        Some(mm_per_px),
-        Some(mm_per_px),
-    )
-    .expect("placeholder creation failed");
+    let opts_a = stamp_album_gen2::placeholder_image::PlaceholderImageOptions {
+        album_name: album_a,
+        catalog_number: sg_a,
+        year: year_a,
+        series_hint: None,
+        stamp_bg_color: None,
+        target_mm_w: Some(target_w_mm),
+        target_mm_h: Some(target_h_mm),
+        mm_per_px_w: Some(mm_per_px),
+        mm_per_px_h: Some(mm_per_px),
+    };
+
+    let rel_a =
+        ensure_placeholder_image_for_stamp_with_hint(&opts_a).expect("placeholder creation failed");
 
     let album_dir_a = Path::new("Albums").join(album_a.replace(' ', "-"));
     println!("placeholder rel='{}'", rel_a);
@@ -70,18 +72,20 @@ fn placeholder_regeneration_forced() {
         let _ = fs::remove_dir_all(&album_dir_b);
     }
 
-    let rel_b = ensure_placeholder_image_for_stamp_with_hint(
-        album_b,
-        sg_b,
-        year_b,
-        None,
-        None,
-        Some(target_b_w),
-        Some(target_b_h),
-        Some(mm_per_px_b),
-        Some(mm_per_px_b),
-    )
-    .expect("placeholder creation failed B");
+    let opts_b = stamp_album_gen2::placeholder_image::PlaceholderImageOptions {
+        album_name: album_b,
+        catalog_number: sg_b,
+        year: year_b,
+        series_hint: None,
+        stamp_bg_color: None,
+        target_mm_w: Some(target_b_w),
+        target_mm_h: Some(target_b_h),
+        mm_per_px_w: Some(mm_per_px_b),
+        mm_per_px_h: Some(mm_per_px_b),
+    };
+
+    let rel_b = ensure_placeholder_image_for_stamp_with_hint(&opts_b)
+        .expect("placeholder creation failed B");
 
     let img_path_b = album_dir_b.join(&rel_b);
     assert!(

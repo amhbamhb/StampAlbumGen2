@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: Config
-resource: src/config.rs#L426-L743
+resource: src/config.rs#L494-L825
 generated:
   by: okf-rs/0.4.0
 ---

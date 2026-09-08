@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_runtime_log_panel_html
-resource: src/review_ui/views/shared.rs#L55-L92
+resource: src/review_ui/views/shared.rs#L68-L95
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,7 +16,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn render_runtime_log_panel_html( panel_id: &str, panel_style: &str, header_style: &str, controls_style: &str, body_id: &str, textarea_id: &str, checkbox_id: &str, toggle_fn: &str, copy_fn: &str, ) -> String`
+`pub(super) fn render_runtime_log_panel_html(params: &RuntimeLogPanelParams) -> String`
 
 # Called by
 

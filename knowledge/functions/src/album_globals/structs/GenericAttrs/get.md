@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/crates/stamp_album_db/src/insert_stamp_placeholder
+  - target: functions/crates/stamp_album_db/src/insert_stamp_from_struct
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/crates/stamp_album_db/src/extract_block_metadata_local
@@ -135,9 +135,6 @@ relationships:
   - target: functions/src/db_utils/migrations/migrate_fix_block_metadata
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/db_utils/operations/insert_stamp
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/db_utils/operations/insert_stamp_placeholder
     resolved_by: tree-sitter
     confidence: exact
@@ -145,6 +142,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/country_to_code
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/extract_from_obj
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/ensure_coat_of_arms_with_fetcher
@@ -293,7 +293,7 @@ relationships:
 
 # Called by
 
-- [insert_stamp_placeholder](../../../../../functions/crates/stamp_album_db/src/insert_stamp_placeholder.md)
+- [insert_stamp_from_struct](../../../../../functions/crates/stamp_album_db/src/insert_stamp_from_struct.md)
 - [extract_block_metadata_local](../../../../../functions/crates/stamp_album_db/src/extract_block_metadata_local.md)
 - [migrate_fix_block_metadata](../../../../../functions/crates/stamp_album_db/src/migrate_fix_block_metadata.md)
 - [insert_stamp](../../../../../functions/crates/stamp_album_db/src/insert_stamp.md)
@@ -336,10 +336,10 @@ relationships:
 - [migrate_stamps_table](../../../../../functions/src/db_utils/migrations/migrate_stamps_table.md)
 - [run_pending_schema_migrations_adds_missing_columns_and_records_versions](../../../../../functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions.md)
 - [migrate_fix_block_metadata](../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.md)
-- [insert_stamp](../../../../../functions/src/db_utils/operations/insert_stamp.md)
 - [insert_stamp_placeholder](../../../../../functions/src/db_utils/operations/insert_stamp_placeholder.md)
 - [get_stamps_by_country_series](../../../../../functions/src/db_utils/operations/get_stamps_by_country_series.md)
 - [country_to_code](../../../../../functions/src/flagdb/country_to_code.md)
+- [extract_from_obj](../../../../../functions/src/flagdb/extract_from_obj.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [download_image](../../../../../functions/src/image_downloader/download_image.md)
 - [extract_year](../../../../../functions/src/modes/extract_year.md)

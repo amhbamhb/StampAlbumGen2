@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_config_editor_data_for_album
-resource: src/review_ui/config_editor.rs#L765-L811
+resource: src/review_ui/config_editor.rs#L770-L817
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -23,7 +23,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn build_config_editor_data_for_album( global_config_path: &str, template_path: &str, album_dir: &std::path::Path, ) -> Result<(Vec<ConfigEditorSection>, bool), Box<dyn std::error::Error>>`
+`pub(super) fn build_config_editor_data_for_album( global_config_path: &str, template_path: &str, pdf_path: &str, album_dir: &std::path::Path, ) -> Result<(Vec<ConfigEditorSection>, bool), Box<dyn std::error::Error>>`
 
 # Calls
 

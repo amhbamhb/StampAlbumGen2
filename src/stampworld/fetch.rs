@@ -87,10 +87,7 @@ impl ReqwestFetcher {
                 .unwrap(),
         );
         // Prefer JSON responses from APIs
-        default_headers.insert(
-            reqwest::header::ACCEPT,
-            "application/json".parse().unwrap(),
-        );
+        default_headers.insert(reqwest::header::ACCEPT, "application/json".parse().unwrap());
 
         let client = reqwest::blocking::Client::builder()
             .default_headers(default_headers)

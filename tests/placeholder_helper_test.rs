@@ -48,18 +48,21 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
     let mm_per_px_w = 0.5_f32; // -> 80 px
     let mm_per_px_h = 0.5_f32; // -> 50 px
 
+    let opts = stamp_album_gen2::album_globals::generator_new::helpers::PlaceholderCallOptions {
+        album_name: album_name,
+        series_name: Some(series_name),
+        catalog_number: sg_number,
+        year: "1900",
+        target_w_mm: Some(target_w_mm),
+        target_h_mm: Some(target_h_mm),
+        mm_per_pixel_w: Some(mm_per_px_w),
+        mm_per_pixel_h: Some(mm_per_px_h),
+    };
+
     let res = stamp_album_gen2::album_globals::generator_new::helpers::ensure_placeholder_for_stamp_and_update_db(
         &conn,
-        album_name,
-        series_name,
-        sg_number,
-        sg_number, // catalog_number (same as sg for this test)
-        "1900",
-        target_w_mm,
-        target_h_mm,
-        mm_per_px_w,
-        mm_per_px_h,
-        None, // no writer
+        &opts,
+        None,
     );
 
     assert!(res.is_some(), "helper should return Some on success");

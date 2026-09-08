@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sync_us1847_to_stamps
-resource: src/us1847/collector.rs#L1506-L1620
+resource: src/us1847/collector.rs#L1534-L1648
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: fetch_text
-resource: src/stampworld/fetch.rs#L106-L111
+resource: src/stampworld/fetch.rs#L108-L113
 visibility: private
 generated:
   by: okf-rs/0.4.0

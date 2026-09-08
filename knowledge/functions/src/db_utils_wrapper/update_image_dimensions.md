@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: update_image_dimensions
-resource: src/db_utils_wrapper.rs#L211-L224
+resource: src/db_utils_wrapper.rs#L214-L227
 generated:
   by: okf-rs/0.4.0
 ---

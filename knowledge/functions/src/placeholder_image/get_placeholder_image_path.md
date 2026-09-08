@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_placeholder_image_path
-resource: src/placeholder_image.rs#L825-L834
+resource: src/placeholder_image.rs#L820-L829
 generated:
   by: okf-rs/0.4.0
 relationships:

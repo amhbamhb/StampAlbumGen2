@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: compare_assets
-resource: src/review_ui/views/compare_assets.rs#L1-L609
+resource: src/review_ui/views/compare_assets.rs#L1-L170
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -20,7 +20,6 @@ relationships:
 - [render_compare_panels_html](../../../../functions/src/review_ui/views/compare_assets/render_compare_panels_html.md)
 - [render_add_modal_html](../../../../functions/src/review_ui/views/compare_assets/render_add_modal_html.md)
 - [render_op_busy_modal_html](../../../../functions/src/review_ui/views/compare_assets/render_op_busy_modal_html.md)
-- [render_left_editor_modal_html](../../../../functions/src/review_ui/views/compare_assets/render_left_editor_modal_html.md)
 - [compare_head_css](../../../../functions/src/review_ui/views/compare_assets/compare_head_css.md)
 
 # Member of

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: build
-resource: build.rs#L1-L30
+resource: build.rs#L1-L36
 generated:
   by: okf-rs/0.4.0
 relationships:

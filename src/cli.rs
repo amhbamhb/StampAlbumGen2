@@ -29,6 +29,7 @@ pub struct Cli {
     #[arg(long)]
     pub base_url: Option<String>,
 
+    /// Start year for scraping (default 1840). Use --start-year 0 to scrape all years.
     #[arg(long, default_value_t = 1840)]
     pub start_year: i32,
 
@@ -36,9 +37,11 @@ pub struct Cli {
     #[arg(long, default_value_t = crate::runtime_defaults::default_end_year())]
     pub end_year: i32,
 
+    /// When true, overwrite existing album and image files. Default: false
     #[arg(long, default_value_t = false)]
     pub overwrite_album: bool,
 
+    /// When true, overwrite existing image files. Default: false
     #[arg(long, default_value_t = false)]
     pub overwrite_images: bool,
 

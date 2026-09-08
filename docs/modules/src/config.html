@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>config — Rust Module</title>
+<style>
+:root { color-scheme: light dark; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+nav { font-size: 0.9rem; margin-bottom: 1.5rem; opacity: 0.8; }
+nav a { color: inherit; }
+h1 { margin-bottom: 0.25rem; }
+.type { opacity: 0.7; margin-top: 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.visibility { display: inline-block; background: #8882; padding: 0.1rem 0.5rem; border-radius: 0.3rem; font-size: 0.8rem; }
+pre { background: #8881; padding: 0.75rem 1rem; border-radius: 0.4rem; overflow-x: auto; }
+.resource, .tags { font-size: 0.85rem; opacity: 0.7; }
+ul { padding-left: 1.25rem; }
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<nav><a href="../../index.html">Home</a> / <a href="../../modules/@index.html">modules</a></nav>
+<h1>config</h1>
+<p class="type">Rust Module</p>
+<h2>Contains</h2>
+<ul>
+<li><a href="../../classes/src/config/ColnectConfig.html">ColnectConfig</a> — Rust Struct</li>
+<li><a href="../../classes/src/config/ColnectFieldToggles.html">ColnectFieldToggles</a> — Rust Struct</li>
+<li><a href="../../classes/src/config/Config.html">Config</a> — Rust Struct</li>
+<li><a href="../../classes/src/config/HeaderFormatting.html">HeaderFormatting</a> — Rust Struct</li>
+<li><a href="../../classes/src/config/ReviewUiConfig.html">ReviewUiConfig</a> — Rust Struct</li>
+<li><a href="../../functions/src/config/Config/albumeasy_auto_pdf_enabled.html">albumeasy_auto_pdf_enabled</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/colnect_details_enabled.html">colnect_details_enabled</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_albumeasy_cli_path.html">effective_albumeasy_cli_path</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_bootstrap_albums_root_path.html">effective_bootstrap_albums_root_path</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_colnect_detail_field_set.html">effective_colnect_detail_field_set</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_colnect_detail_fields.html">effective_colnect_detail_fields</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_colnect_inbox_path.html">effective_colnect_inbox_path</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_default_catalog_code.html">effective_default_catalog_code</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_stamp_heading_label.html">effective_stamp_heading_label</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_wikipedia_ingest_max_entries.html">effective_wikipedia_ingest_max_entries</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/effective_wikipedia_ingest_series_prefix.html">effective_wikipedia_ingest_series_prefix</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/pdf_dx_logging_enabled.html">pdf_dx_logging_enabled</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_catalog_family_options.html">review_ui_catalog_family_options</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_colnect_image_url_default_checked.html">review_ui_colnect_image_url_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_colnect_links_default_checked.html">review_ui_colnect_links_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_colnect_metadata_default_checked.html">review_ui_colnect_metadata_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_context_default_checked.html">review_ui_context_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_default_sort_mode.html">review_ui_default_sort_mode</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_description_default_checked.html">review_ui_description_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_design_default_checked.html">review_ui_design_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_engraving_default_checked.html">review_ui_engraving_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_even_row_color.html">review_ui_even_row_color</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_odd_row_color.html">review_ui_odd_row_color</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_perforation_default_checked.html">review_ui_perforation_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_replace_sg_number_default_checked.html">review_ui_replace_sg_number_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_right_unmatched_only_default_checked.html">review_ui_right_unmatched_only_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_series_default_checked.html">review_ui_series_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/review_ui_watermark_default_checked.html">review_ui_watermark_default_checked</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/wikipedia_ingest_enabled.html">wikipedia_ingest_enabled</a> — Rust Method</li>
+<li><a href="../../functions/src/config/Config/with_defaults.html">with_defaults</a> — Rust Method</li>
+<li><a href="../../functions/src/config/album_override_section_value_wins_over_root_for_stamp_visibility_keys.html">album_override_section_value_wins_over_root_for_stamp_visibility_keys</a> — Rust Function</li>
+<li><a href="../../functions/src/config/check_config_staleness.html">check_config_staleness</a> — Rust Function</li>
+<li><a href="../../functions/src/config/colnect_all_false_toggles_override_detail_fields_to_empty.html">colnect_all_false_toggles_override_detail_fields_to_empty</a> — Rust Function</li>
+<li><a href="../../functions/src/config/colnect_false_override_disables_global_true_field.html">colnect_false_override_disables_global_true_field</a> — Rust Function</li>
+<li><a href="../../functions/src/config/colnect_fields_boolean_toggles_are_parsed.html">colnect_fields_boolean_toggles_are_parsed</a> — Rust Function</li>
+<li><a href="../../functions/src/config/colnect_printing_type_alias_is_supported.html">colnect_printing_type_alias_is_supported</a> — Rust Function</li>
+<li><a href="../../functions/src/config/create_config_from_template.html">create_config_from_template</a> — Rust Function</li>
+<li><a href="../../functions/src/config/deep_merge_toml_values.html">deep_merge_toml_values</a> — Rust Function</li>
+<li><a href="../../functions/src/config/detect_duplicate_keys.html">detect_duplicate_keys</a> — Rust Function</li>
+<li><a href="../../functions/src/config/duplicate_detection_finds_duplicates_in_same_section.html">duplicate_detection_finds_duplicates_in_same_section</a> — Rust Function</li>
+<li><a href="../../functions/src/config/duplicate_detection_ignores_same_key_in_different_sections.html">duplicate_detection_ignores_same_key_in_different_sections</a> — Rust Function</li>
+<li><a href="../../functions/src/config/embedded_config_template.html">embedded_config_template</a> — Rust Function</li>
+<li><a href="../../functions/src/config/ensure_config_and_template_files.html">ensure_config_and_template_files</a> — Rust Function</li>
+<li><a href="../../functions/src/config/extract_keys.html">extract_keys</a> — Rust Function</li>
+<li><a href="../../functions/src/config/load_config.html">load_config</a> — Rust Function</li>
+<li><a href="../../functions/src/config/load_config_with_override.html">load_config_with_override</a> — Rust Function</li>
+<li><a href="../../functions/src/config/load_effective_config.html">load_effective_config</a> — Rust Function</li>
+<li><a href="../../functions/src/config/load_slug_overrides.html">load_slug_overrides</a> — Rust Function</li>
+<li><a href="../../functions/src/config/load_template_content_with_fallback.html">load_template_content_with_fallback</a> — Rust Function</li>
+<li><a href="../../functions/src/config/scoped_album_override_applies_stamp_visibility_keys_in_effective_config.html">scoped_album_override_applies_stamp_visibility_keys_in_effective_config</a> — Rust Function</li>
+<li><a href="../../functions/src/config/with_album_config_override.html">with_album_config_override</a> — Rust Function</li>
+</ul>
+<h2>Imports</h2>
+<ul>
+<li><code>external/log-debug-info</code></li>
+<li><code>external/serde-deserialize-serialize</code></li>
+<li><code>external/std-cell-refcell</code></li>
+<li><code>external/std-fs</code></li>
+<li><code>external/std-path-path-pathbuf</code></li>
+<li><code>external/std-io-self-write</code></li>
+<li><code>external/std-io-isterminal</code></li>
+<li><code>external/std-env</code></li>
+<li><code>external/std-process-command</code></li>
+<li><code>external/std-os-unix-process-commandext</code></li>
+<li><code>external/rfd-filedialog-messagedialog-messagebuttons-messagelevel</code></li>
+<li><code>external/std-collections-hashmap</code></li>
+<li><code>external/super-detect-duplicate-keys-config</code></li>
+<li><code>external/std-time-systemtime-unix-epoch</code></li>
+</ul>
+<h2>Member of</h2>
+<ul>
+<li><a href="../../packages/stamp_album_gen2.html">stamp_album_gen2</a></li>
+</ul>
+<p class="resource">Source: src/config.rs#L1-L2846</p>
+</body>
+</html>
