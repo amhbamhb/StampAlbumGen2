@@ -55,6 +55,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let local_catalog_select_assets =
         " <div class='sessionRow'>
                         <button onclick='openConfigEditor()'>Edit Local Config</button>
+                        <button onclick='openSiteAccountsDialog()'>Site Accounts</button>
                         <label for='defaultCatalogSelect'>Local Catalog</label>
                         <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
                             <option value='sg'>Stanley Gibbons (SG)</option>

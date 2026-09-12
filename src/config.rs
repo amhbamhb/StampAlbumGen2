@@ -571,6 +571,8 @@ pub struct Config {
     // Dedicated Colnect detail-output controls. If present, this section
     // takes precedence over legacy top-level Colnect detail keys.
     pub colnect: Option<ColnectConfig>,
+    // Dedicated StampWorld scraper and auth controls.
+    pub stampworld: Option<StampworldConfig>,
     // Review UI visual controls.
     pub review_ui: Option<ReviewUiConfig>,
     // Font size for stamp details in separate_rows mode (e.g., 6, 7, 8)
@@ -825,7 +827,17 @@ pub struct Config {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct StampworldConfig {
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub auto_login: Option<bool>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
 pub struct ColnectConfig {
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub auto_login: Option<bool>,
     // Master toggle for including Colnect detail metadata in output.
     // Defaults to true when omitted.
     pub include_details: Option<bool>,
@@ -907,6 +919,66 @@ pub struct ReviewUiConfig {
 }
 
 impl Config {
+    pub fn effective_stampworld_username(&self) -> Option<String> {
+        std::env::var("STAMPWORLD_USER")
+            .or_else(|_| std::env::var("STAMPWORLD_USERNAME"))
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                self.stampworld
+                    .as_ref()
+                    .and_then(|s| s.username.clone())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            })
+    }
+
+    pub fn effective_stampworld_password(&self) -> Option<String> {
+        std::env::var("STAMPWORLD_PASS")
+            .or_else(|_| std::env::var("STAMPWORLD_PASSWORD"))
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                self.stampworld
+                    .as_ref()
+                    .and_then(|s| s.password.clone())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            })
+    }
+
+    pub fn effective_colnect_username(&self) -> Option<String> {
+        std::env::var("COLNECT_USER")
+            .or_else(|_| std::env::var("COLNECT_USERNAME"))
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                self.colnect
+                    .as_ref()
+                    .and_then(|s| s.username.clone())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            })
+    }
+
+    pub fn effective_colnect_password(&self) -> Option<String> {
+        std::env::var("COLNECT_PASS")
+            .or_else(|_| std::env::var("COLNECT_PASSWORD"))
+            .ok()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                self.colnect
+                    .as_ref()
+                    .and_then(|s| s.password.clone())
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+            })
+    }
+
     /// Returns a Config with all default values set (used for auto-fixing missing config fields)
     pub fn with_defaults() -> Self {
         Config {

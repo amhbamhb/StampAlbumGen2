@@ -1177,6 +1177,98 @@ async function submitCreateCountryOrTheme() {
     }
 }
 
+async function loadAccountAuthStatus() {
+    try {
+        const res = await fetch('/api/account-auth-status');
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data && data.ok) {
+            if (data.stampworld) {
+                const swInput = document.getElementById('swUsernameInput');
+                if (swInput && !swInput.value) swInput.value = data.stampworld.username || '';
+            }
+            if (data.colnect) {
+                const colInput = document.getElementById('colUsernameInput');
+                if (colInput && !colInput.value) colInput.value = data.colnect.username || '';
+            }
+            return data;
+        }
+    } catch (_) {}
+    return null;
+}
+
+function openSiteAccountsDialog() {
+    const dialog = document.getElementById('siteAccountsDialog');
+    if (!dialog) return;
+    loadAccountAuthStatus();
+    const statusEl = document.getElementById('siteAccountsStatus');
+    if (statusEl) {
+        statusEl.innerText = '';
+        statusEl.style.color = '';
+    }
+    if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+    } else {
+        dialog.style.display = 'block';
+    }
+}
+
+function closeSiteAccountsDialog() {
+    const dialog = document.getElementById('siteAccountsDialog');
+    if (!dialog) return;
+    if (typeof dialog.close === 'function') {
+        dialog.close();
+    } else {
+        dialog.style.display = 'none';
+    }
+}
+
+async function submitSiteAccounts() {
+    const swUser = (document.getElementById('swUsernameInput')?.value || '').trim();
+    const swPass = document.getElementById('swPasswordInput')?.value || '';
+    const colUser = (document.getElementById('colUsernameInput')?.value || '').trim();
+    const colPass = document.getElementById('colPasswordInput')?.value || '';
+    const statusEl = document.getElementById('siteAccountsStatus');
+
+    if (statusEl) {
+        statusEl.style.color = 'var(--accent-ink,#2b4c7e)';
+        statusEl.innerText = 'Saving site account credentials...';
+    }
+
+    try {
+        const res = await fetch('/api/save-site-credentials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                stampworld_username: swUser,
+                stampworld_password: swPass,
+                colnect_username: colUser,
+                colnect_password: colPass
+            })
+        });
+        const data = await res.json();
+        if (data && data.ok) {
+            if (statusEl) {
+                statusEl.style.color = 'green';
+                statusEl.innerText = data.message || 'Saved successfully!';
+            }
+            setTimeout(() => {
+                closeSiteAccountsDialog();
+            }, 800);
+        } else {
+            if (statusEl) {
+                statusEl.style.color = 'red';
+                statusEl.innerText = (data && data.message) ? data.message : 'Failed to save credentials.';
+            }
+        }
+    } catch (err) {
+        if (statusEl) {
+            statusEl.style.color = 'red';
+            statusEl.innerText = 'Error: ' + err.message;
+        }
+    }
+}
+
 async function startReview() {
     const sel = document.getElementById('countrySel');
     if (!sel.value) {

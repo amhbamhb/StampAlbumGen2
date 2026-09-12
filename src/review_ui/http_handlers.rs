@@ -521,6 +521,60 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
+        if method == Method::Get && req_url == "/api/account-auth-status" {
+            let response = get_account_auth_status();
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| "{\"ok\":false}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/save-site-credentials" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<SaveSiteCredentialsRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match save_site_credentials(
+                    req.stampworld_username.as_deref(),
+                    req.stampworld_password.as_deref(),
+                    req.colnect_username.as_deref(),
+                    req.colnect_password.as_deref(),
+                ) {
+                    Ok(_) => SaveSiteCredentialsResponse {
+                        ok: true,
+                        message: "Site account credentials saved successfully to config.toml"
+                            .to_string(),
+                    },
+                    Err(error) => SaveSiteCredentialsResponse {
+                        ok: false,
+                        message: error,
+                    },
+                },
+                Err(error) => SaveSiteCredentialsResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                },
+            };
+
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
+                }));
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Get && req_url == "/api/albumeasy-status" {
             let cfg = crate::config::load_config("config.toml");
             let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
@@ -1840,18 +1894,16 @@ pub(super) fn serve_review_requests(
             && (req_url == "/api/fresh-left" || req_url.starts_with("/api/fresh-left?"))
         {
             let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
-            let resp_json = match load_left_stamps(
-                conn,
-                db_path,
-                album_name,
-                show_imageless_left_rows,
-            ) {
-                Ok(stamps) => serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string()),
-                Err(e) => {
-                    log_runtime_event(&format!("fresh-left: load failed: {}", e));
-                    "[]".to_string()
-                }
-            };
+            let resp_json =
+                match load_left_stamps(conn, db_path, album_name, show_imageless_left_rows) {
+                    Ok(stamps) => {
+                        serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string())
+                    }
+                    Err(e) => {
+                        log_runtime_event(&format!("fresh-left: load failed: {}", e));
+                        "[]".to_string()
+                    }
+                };
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);

@@ -63,7 +63,7 @@ __pycache__/
 
 
 
-# Ignore all .toml files except config.toml
+# HTML exceptions
 !*.html
 !src/review_ui/views/compare.html
 testing/*
@@ -145,9 +145,16 @@ demo_outputs/bleeding_risk_scenario.pdf
 artifacts/stamp_album_gen2
 artifacts/stamp_album_gen2.exe.sha256
 
-# Ignore per-album test config files (allow repo-level config.toml)
+# Local runtime configs and credentials (templates remain tracked)
+config.toml
+/artifacts/config.toml
 /Albums/*/config.toml
 /Albums/**/config.toml
+*.cookie
+*.cookies
+.cookies_*.json
+.stampworld_cookies.json
+.colnect_cookies.json
 
 # Build outputs and release artifacts
 /artifacts/*.exe

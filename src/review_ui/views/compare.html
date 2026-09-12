@@ -62,6 +62,48 @@
 
 {compare_op_busy_modal_html}
 
+<dialog id='siteAccountsDialog' class='siteAccountsDialog' style='padding:20px;border-radius:8px;border:1px solid var(--border-color, #ccc);max-width:540px;width:90%;box-sizing:border-box;'>
+    <div style='display:flex;flex-direction:column;gap:14px;'>
+        <h3 style='margin:0;color:var(--accent-ink,#2b4c7e);'>Site Account Credentials</h3>
+        <p style='margin:0;font-size:13px;color:var(--muted-text,#555);line-height:1.4;'>
+            StampWorld and Colnect require registered accounts to access stamp data.
+            Save your login credentials below. They are saved in <code>config.toml</code> (which is strictly excluded from Git version control).
+        </p>
+
+        <div style='background:#f7f9fa;border:1px solid #e1e8ed;border-radius:6px;padding:12px;'>
+            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
+                <strong style='font-size:14px;color:#2b4c7e;'>StampWorld Account</strong>
+                <a href='https://www.stampworld.com/en/profiles/register/' target='_blank' rel='noopener noreferrer' style='font-size:12px;color:#0066cc;text-decoration:underline;'>Register at StampWorld &rarr;</a>
+            </div>
+            <div style='display:flex;flex-direction:column;gap:8px;'>
+                <label style='font-size:12px;font-weight:600;'>Username</label>
+                <input id='swUsernameInput' type='text' placeholder='StampWorld username' style='width:100%;box-sizing:border-box;padding:6px;' />
+                <label style='font-size:12px;font-weight:600;'>Password</label>
+                <input id='swPasswordInput' type='password' placeholder='StampWorld password' style='width:100%;box-sizing:border-box;padding:6px;' />
+            </div>
+        </div>
+
+        <div style='background:#f7f9fa;border:1px solid #e1e8ed;border-radius:6px;padding:12px;'>
+            <div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;'>
+                <strong style='font-size:14px;color:#2b4c7e;'>Colnect Account</strong>
+                <a href='https://colnect.com/en/account/create' target='_blank' rel='noopener noreferrer' style='font-size:12px;color:#0066cc;text-decoration:underline;'>Register at Colnect &rarr;</a>
+            </div>
+            <div style='display:flex;flex-direction:column;gap:8px;'>
+                <label style='font-size:12px;font-weight:600;'>Username</label>
+                <input id='colUsernameInput' type='text' placeholder='Colnect username' style='width:100%;box-sizing:border-box;padding:6px;' />
+                <label style='font-size:12px;font-weight:600;'>Password</label>
+                <input id='colPasswordInput' type='password' placeholder='Colnect password' style='width:100%;box-sizing:border-box;padding:6px;' />
+            </div>
+        </div>
+
+        <div id='siteAccountsStatus' style='font-size:12px;min-height:18px;'></div>
+        <div style='display:flex;gap:8px;justify-content:flex-end;'>
+            <button type='button' onclick='closeSiteAccountsDialog()'>Cancel</button>
+            <button type='button' class='primary' onclick='submitSiteAccounts()'>Save Credentials</button>
+        </div>
+    </div>
+</dialog>
+
 <div id='leftEditorBackdrop' class='modal-backdrop'>
     <div class='modal leftEditorDialog leftEditorCompact'>
         {left_edit_base_stamp_page}
