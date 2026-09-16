@@ -64,7 +64,7 @@ base64 = "0.23"
 
 # rfd = {  }
 
-rfd = "0.17"
+rfd = { version = "0.17", default-features = true }
 
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 resvg = "0.48"
