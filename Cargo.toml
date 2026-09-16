@@ -32,12 +32,14 @@ csv = "1.2"
 image = { version = "0.25.10", features = ["png"] }
 ab_glyph = "0.2"
 scraper = "0.27"
+
 # For MUSL builds, we need rustls instead of native OpenSSL to avoid cross-compilation issues
 # Using feature flags to conditionally use rustls on MUSL targets
 reqwest = { version = "0.13.2", features = ["blocking", "json"] }
 lazy_static = "1.5.0"
 regex = "1.10"
 rusqlite = { version = "0.40", features = ["bundled"] }
+
 log = "0.4"
 stamp_album_db = { path = "crates/stamp_album_db" }
 env_logger = "0.11.10"
@@ -58,6 +60,7 @@ tiny_http = "0.12"
 webbrowser = "1.0"
 urlencoding = "2.1"
 base64 = "0.23"
+
 # `rfd` provides native file/folder dialogs but pulls GTK on Linux.
 # Make it optional behind the `use-rfd` feature so builds remain portable.
 
@@ -67,6 +70,7 @@ base64 = "0.23"
 rfd = { version = "0.17", default-features = true }
 
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
+
 resvg = "0.48"
 usvg = "0.48"
 tiny-skia = "0.12.0"
@@ -79,6 +83,7 @@ assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.6"
 serial_test = "4.0"
+
 
 [package]
 name = "stamp_album_gen2"
