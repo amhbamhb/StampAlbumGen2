@@ -15,7 +15,7 @@ use std::process::Command;
 // folder picker and a Yes/No confirmation dialog, otherwise fall back
 // to a console prompt (only when a terminal is present).
 // #[cfg(feature = "rfd")]
-use rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel};
+use rfd::{FileDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
 const EMBEDDED_PDF_HELP: &[u8] = include_bytes!("../StampAlbumGenerator2HelpManual.pdf");
@@ -163,7 +163,8 @@ pub fn ensure_config_and_template_files(
                     // Mark that the GUI was invoked so we don't fall back to
                     // a console prompt in non-interactive launches.
                     // gui_initiated = true;
-                    if proceed {
+                   // for OkCancel button sets:
+                    if proceed == MessageDialogResult::Ok {
                         match FileDialog::new()
                             .set_title(
                                 "Select directory to move/copy binary to (Cancel to keep current)",
@@ -252,7 +253,7 @@ pub fn ensure_config_and_template_files(
                             .show();
 
                         debug!("GUI move dialog result: {}", do_move);
-                        if do_move {
+                        if do_move == MessageDialogResult::Yes {
                             match fs::rename(&exe_path, &dest) {
                                 Ok(()) => info!("Moved executable to {}", dest.display()),
                                 Err(e) => {
@@ -300,7 +301,7 @@ pub fn ensure_config_and_template_files(
                                 .set_level(MessageLevel::Info)
                                 .show();
                             debug!("GUI copy dialog result: {}", do_copy);
-                            if do_copy {
+                            if do_copy == MessageDialogResult::Yes {
                                 fs::copy(&exe_path, &dest)?;
                                 info!("Copied executable to {}", dest.display());
                                 // Write template/config into the target to avoid
