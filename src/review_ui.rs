@@ -176,13 +176,13 @@ impl Drop for PdfGenerationGuard {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct DbField {
     key: String,
     value: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct LeftStamp {
     rowid: i64,
     sg_number: String,
@@ -235,7 +235,7 @@ struct LeftStamp {
     all_db_fields: Vec<DbField>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct RightCandidate {
     colnect_id: String,
     sg_number: String,
@@ -283,13 +283,13 @@ struct RightCandidate {
     catalog_code_pairs: Vec<CatalogCodePair>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct CatalogCodePair {
     catalog_type: String,
     code: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug,serde::Serialize, serde::Deserialize)]
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
@@ -320,7 +320,7 @@ struct MatcherPayload {
     catalog_family_options: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 struct BootstrapCountryInfo {
     country: String,
     db_path: String,
@@ -329,18 +329,18 @@ struct BootstrapCountryInfo {
     colnect_dir: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde::Serialize)]
 struct BootstrapStateResponse {
     countries: Vec<BootstrapCountryInfo>,
     albums_root: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct BootstrapStartRequest {
     country: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct BootstrapStartResponse {
     ok: bool,
     message: String,
@@ -348,12 +348,12 @@ struct BootstrapStartResponse {
     db_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct BootstrapCreateCountryRequest {
     name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde::Serialize)]
 struct BootstrapCreateCountryResponse {
     ok: bool,
     message: String,
@@ -361,7 +361,7 @@ struct BootstrapCreateCountryResponse {
     db_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct BootstrapGeneratePdfRequest {
     country: String,
     #[serde(default)]
