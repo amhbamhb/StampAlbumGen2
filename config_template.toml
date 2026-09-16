@@ -911,7 +911,7 @@ auto_login = false
 
 
 
-[colnect_login]
+[colnect]
 # Colnect registration link: https://colnect.com/en/account/create
 # Account credentials used for Colnect catalog and image searches.
 # Store credentials here or set via COLNECT_USER / COLNECT_PASS env vars.
@@ -923,7 +923,6 @@ auto_login = false
 ###################################
 # Colnect Metadata / Field Selection
 ###################################
-[colnect]
 # This section controls which stamp metadata fields sourced from Colnect.net
 # are included in generated album pages (under each stamp entry).
 #
