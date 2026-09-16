@@ -798,7 +798,7 @@ even_row_color = "#299af0"
 # - First column: metadata field name/key.
 # - Second column: metadata value.
 # A subtle row tint is layered over these column colors when rows alternate.
-first_column_color = "#0db115"
+first_column_color = "#a4f0a8"
 second_column_color = "#ffffff"
 
 # DEFAULT FIELD CHECKBOX STATES
@@ -896,10 +896,33 @@ catalog_family_options = [
 	"wad|WADP Numbering System - WNS|91196"
 ]
 
+
+###################################
+# Site Authentication & Credentials
+###################################
+[stampworld]
+# StampWorld registration link: https://www.stampworld.com/en/profiles/register/
+# Account credentials used for catalog data and image retrieval.
+# Store credentials here or set via STAMPWORLD_USER / STAMPWORLD_PASS env vars.
+# NEVER commit real passwords to Git.
+username = ""
+password = ""
+auto_login = false
+
+
+
+[colnect]
+# Colnect registration link: https://colnect.com/en/account/create
+# Account credentials used for Colnect catalog and image searches.
+# Store credentials here or set via COLNECT_USER / COLNECT_PASS env vars.
+# NEVER commit real passwords to Git.
+username = ""
+password = ""
+auto_login = false
+
 ###################################
 # Colnect Metadata / Field Selection
 ###################################
-[colnect]
 # This section controls which stamp metadata fields sourced from Colnect.net
 # are included in generated album pages (under each stamp entry).
 #

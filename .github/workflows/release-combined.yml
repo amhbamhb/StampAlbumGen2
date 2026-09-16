@@ -128,7 +128,7 @@ jobs:
 
       - name: Build release
         run: |
-          cargo build --release --features rfd
+          cargo build --release 
 
       - name: Package artifact
         shell: bash

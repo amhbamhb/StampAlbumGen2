@@ -12,6 +12,7 @@ use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 use tiny_http::{Header, Method, Response, Server, StatusCode};
+use http_handlers::{serve_bootstrap_requests, serve_review_requests, ReviewHandlersStateRequests};
 
 mod views;
 use views::{render_bootstrap_html, render_html};
@@ -29,7 +30,7 @@ use matcher_service::{
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
 mod http_handlers;
-use http_handlers::{serve_bootstrap_requests, serve_review_requests};
+
 
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 const RUNTIME_LOG_CAP: usize = 800;
@@ -49,10 +50,26 @@ fn bootstrap_albums_root_override() -> &'static Mutex<Option<PathBuf>> {
     BOOTSTRAP_ALBUMS_ROOT_OVERRIDE.get_or_init(|| Mutex::new(None))
 }
 
+pub fn sanitize_credentials_in_text(raw: &str) -> String {
+    let mut clean = raw.to_string();
+    for key in &["password", "pass", "secret", "token"] {
+        let json_pattern = format!(r#"(?i)("{}":\s*")[^"]+(")"#, key);
+        if let Ok(re) = regex::Regex::new(&json_pattern) {
+            clean = re.replace_all(&clean, "${1}********$2").to_string();
+        }
+        let kv_pattern = format!(r#"(?i)({}\s*=\s*)(?:"[^"]*"|'[^']*'|[^\s,;&]+)"#, key);
+        if let Ok(re) = regex::Regex::new(&kv_pattern) {
+            clean = re.replace_all(&clean, "${1}\"********\"").to_string();
+        }
+    }
+    clean
+}
+
 pub fn log_runtime_event(message: &str) {
-    eprintln!("{}", message);
+    let sanitized = sanitize_credentials_in_text(message);
+    eprintln!("{}", sanitized);
     if let Ok(mut q) = runtime_log_buffer().lock() {
-        q.push_back(message.to_string());
+        q.push_back(sanitized);
         while q.len() > RUNTIME_LOG_CAP {
             let _ = q.pop_front();
         }
@@ -160,13 +177,13 @@ impl Drop for PdfGenerationGuard {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct DbField {
     key: String,
     value: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct LeftStamp {
     rowid: i64,
     sg_number: String,
@@ -219,7 +236,7 @@ struct LeftStamp {
     all_db_fields: Vec<DbField>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct RightCandidate {
     colnect_id: String,
     sg_number: String,
@@ -267,13 +284,13 @@ struct RightCandidate {
     catalog_code_pairs: Vec<CatalogCodePair>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
 struct CatalogCodePair {
     catalog_type: String,
     code: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug,serde::Serialize, serde::Deserialize)]
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
@@ -304,7 +321,7 @@ struct MatcherPayload {
     catalog_family_options: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, serde::Serialize)]
 struct BootstrapCountryInfo {
     country: String,
     db_path: String,
@@ -313,18 +330,18 @@ struct BootstrapCountryInfo {
     colnect_dir: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde::Serialize)]
 struct BootstrapStateResponse {
     countries: Vec<BootstrapCountryInfo>,
     albums_root: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct BootstrapStartRequest {
     country: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 struct BootstrapStartResponse {
     ok: bool,
     message: String,
@@ -332,12 +349,12 @@ struct BootstrapStartResponse {
     db_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct BootstrapCreateCountryRequest {
     name: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, serde::Serialize)]
 struct BootstrapCreateCountryResponse {
     ok: bool,
     message: String,
@@ -345,7 +362,7 @@ struct BootstrapCreateCountryResponse {
     db_path: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, serde::Deserialize)]
 struct BootstrapGeneratePdfRequest {
     country: String,
     #[serde(default)]
@@ -660,6 +677,130 @@ fn is_directory_empty(path: &Path) -> Result<bool, String> {
     Ok(entries.next().is_none())
 }
 
+#[derive(Debug, Serialize)]
+pub struct SiteAccountDetail {
+    pub configured: bool,
+    pub username: String,
+    pub has_password: bool,
+    pub register_url: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct AccountAuthStatusResponse {
+    pub ok: bool,
+    pub stampworld: SiteAccountDetail,
+    pub colnect: SiteAccountDetail,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SaveSiteCredentialsRequest {
+    #[serde(default)]
+    pub stampworld_username: Option<String>,
+    #[serde(default)]
+    pub stampworld_password: Option<String>,
+    #[serde(default)]
+    pub colnect_username: Option<String>,
+    #[serde(default)]
+    pub colnect_password: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SaveSiteCredentialsResponse {
+    pub ok: bool,
+    pub message: String,
+}
+
+pub fn get_account_auth_status() -> AccountAuthStatusResponse {
+    let cfg = crate::config::load_config("config.toml");
+    let sw_user = cfg.effective_stampworld_username().unwrap_or_default();
+    let sw_pass = cfg.effective_stampworld_password().unwrap_or_default();
+    let col_user = cfg.effective_colnect_username().unwrap_or_default();
+    let col_pass = cfg.effective_colnect_password().unwrap_or_default();
+
+    AccountAuthStatusResponse {
+        ok: true,
+        stampworld: SiteAccountDetail {
+            configured: !sw_user.trim().is_empty() && !sw_pass.trim().is_empty(),
+            username: sw_user,
+            has_password: !sw_pass.trim().is_empty(),
+            register_url: "https://www.stampworld.com/en/profiles/register/".to_string(),
+        },
+        colnect: SiteAccountDetail {
+            configured: !col_user.trim().is_empty() && !col_pass.trim().is_empty(),
+            username: col_user,
+            has_password: !col_pass.trim().is_empty(),
+            register_url: "https://colnect.com/en/account/create".to_string(),
+        },
+    }
+}
+
+pub fn save_site_credentials(
+    stampworld_user: Option<&str>,
+    stampworld_pass: Option<&str>,
+    colnect_user: Option<&str>,
+    colnect_pass: Option<&str>,
+) -> Result<(), String> {
+    ensure_runtime_startup_files()?;
+    let config_path =
+        find_global_config_path().ok_or_else(|| "could not locate config.toml".to_string())?;
+    let content = fs::read_to_string(&config_path)
+        .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
+    let mut root_table = toml::from_str::<toml::Table>(&content)
+        .map_err(|e| format!("invalid TOML in {}: {}", config_path.display(), e))?;
+
+    if let Some(user) = stampworld_user {
+        let sw_tbl = root_table
+            .entry("stampworld")
+            .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
+            .as_table_mut()
+            .ok_or_else(|| "stampworld config section is not a table".to_string())?;
+        sw_tbl.insert(
+            "username".to_string(),
+            toml::Value::String(user.trim().to_string()),
+        );
+    }
+    if let Some(pass) = stampworld_pass {
+        let sw_tbl = root_table
+            .entry("stampworld")
+            .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
+            .as_table_mut()
+            .ok_or_else(|| "stampworld config section is not a table".to_string())?;
+        sw_tbl.insert(
+            "password".to_string(),
+            toml::Value::String(pass.to_string()),
+        );
+    }
+
+    if let Some(user) = colnect_user {
+        let col_tbl = root_table
+            .entry("colnect")
+            .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
+            .as_table_mut()
+            .ok_or_else(|| "colnect config section is not a table".to_string())?;
+        col_tbl.insert(
+            "username".to_string(),
+            toml::Value::String(user.trim().to_string()),
+        );
+    }
+    if let Some(pass) = colnect_pass {
+        let col_tbl = root_table
+            .entry("colnect")
+            .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
+            .as_table_mut()
+            .ok_or_else(|| "colnect config section is not a table".to_string())?;
+        col_tbl.insert(
+            "password".to_string(),
+            toml::Value::String(pass.to_string()),
+        );
+    }
+
+    let rendered = toml::to_string_pretty(&root_table)
+        .map_err(|e| format!("failed to render updated config TOML: {}", e))?;
+    fs::write(&config_path, rendered)
+        .map_err(|e| format!("failed to write {}: {}", config_path.display(), e))?;
+    Ok(())
+}
+
 fn save_runtime_albumeasy_cli_path(cli_path: &str) -> Result<(), String> {
     let path = cli_path.trim();
     if path.is_empty() {
@@ -680,6 +821,15 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     }
     if req.start_year > req.end_year {
         return Err("Start year must be less than or equal to end year".to_string());
+    }
+
+    let cfg = crate::config::load_config("config.toml");
+    let sw_user = cfg.effective_stampworld_username().unwrap_or_default();
+    let sw_pass = cfg.effective_stampworld_password().unwrap_or_default();
+    if sw_user.trim().is_empty() || sw_pass.trim().is_empty() {
+        return Err(
+            "StampWorld account login credentials are missing. Please register at https://www.stampworld.com/en/profiles/register/ and save your username and password in Site Accounts before pulling StampWorld data.".to_string(),
+        );
     }
 
     let slug = country.replace(' ', "-");
@@ -2945,19 +3095,52 @@ pub fn run_review_ui(
         log_runtime_event("Review UI: waiting for bootstrap tab to load compare view...");
     }
 
-    let review_state = serve_review_requests(
-        &server,
-        &conn,
-        db_path,
-        &album_name,
-        &html,
-        &right_map,
-        default_catalog_code,
-        default_sort_mode,
-        odd_row_color,
-        even_row_color,
-        first_column_color,
-        second_column_color,
+    // struct ReviewState {
+    //     reload_requested: bool,
+    //     return_to_start_requested: bool,
+    //     conn: Connection,
+    //     db_path: String,
+    //     album_name: String,
+    //     html: String,
+    //     right_map: HashMap<String, RightCandidate>,
+    //     default_catalog_code: String,
+    //     default_sort_mode: String,
+    //     odd_row_color: String,
+    //     even_row_color: String,
+    //     first_column_color: String,
+    //     second_column_color: String,
+    //     series_default_checked: bool,
+    //     description_default_checked: bool,
+    //     watermark_default_checked: bool,
+    //     design_default_checked: bool,
+    //     engraving_default_checked: bool,
+    //     perforation_default_checked: bool,
+    //     context_default_checked: bool,
+    //     colnect_links_default_checked: bool,
+    //     colnect_image_url_default_checked: bool,
+    //     colnect_metadata_default_checked: bool,
+    //     replace_sg_number_default_checked: bool,
+    //     right_unmatched_only_default_checked: bool,
+    //     albumeasy_auto_generate_pdf_default: bool,
+    //     albumeasy_cli_configured: bool,
+    //     catalog_family_options: Vec<String>,
+    // }
+    // When calling serve_review_requests:
+let review_state = serve_review_requests(
+    &server,
+    ReviewHandlersStateRequests {
+        
+        conn,
+        db_path: db_path.to_string(),
+        album_name: album_name.to_string(),
+        html,
+        right_map,
+        default_catalog_code: default_catalog_code.to_string(),
+        default_sort_mode: default_sort_mode.to_string(),
+        odd_row_color: odd_row_color.to_string(),
+        even_row_color: even_row_color.to_string()  ,
+        first_column_color: first_column_color.to_string(),
+        second_column_color: second_column_color.to_string(),
         series_default_checked,
         description_default_checked,
         watermark_default_checked,
@@ -2972,8 +3155,10 @@ pub fn run_review_ui(
         right_unmatched_only_default_checked,
         albumeasy_auto_generate_pdf_default,
         albumeasy_cli_configured,
-        catalog_family_options,
-    );
+        catalog_family_options: catalog_family_options.to_vec(),
+    },
+);
+
     let reload_requested = review_state.reload_requested;
     let return_to_start_requested = review_state.return_to_start_requested;
 

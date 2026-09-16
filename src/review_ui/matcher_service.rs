@@ -1117,6 +1117,30 @@ pub(super) fn restore_colnect_candidate_to_queue(
     )
 }
 
+impl<'a> LeftEditorImageInput<'a> {
+    fn for_save(req: &'a SaveLeftStampRequest, existing_image_path: &'a str) -> Self {
+        Self {
+            image_mode: req.image_mode.as_deref(),
+            source_rowid: Some(req.rowid),
+            current_image_path: Some(existing_image_path),
+            upload_data_url: req.upload_data_url.as_deref(),
+            upload_filename: req.upload_filename.as_deref(),
+            file_token: &req.sg_number,
+        }
+    }
+
+    fn for_add(req: &'a AddLeftStampRequest) -> Self {
+        Self {
+            image_mode: req.image_mode.as_deref(),
+            source_rowid: req.source_rowid,
+            current_image_path: None,
+            upload_data_url: req.upload_data_url.as_deref(),
+            upload_filename: req.upload_filename.as_deref(),
+            file_token: &req.sg_number,
+        }
+    }
+}
+
 pub(super) fn query_stamp_image_path(conn: &Connection, rowid: i64) -> Result<String, String> {
     conn.query_row(
         "SELECT COALESCE(image_path, '') FROM stamps WHERE rowid = ?1",
@@ -1126,19 +1150,24 @@ pub(super) fn query_stamp_image_path(conn: &Connection, rowid: i64) -> Result<St
     .map_err(|e| format!("failed to read image path from row {}: {}", rowid, e))
 }
 
-pub(super) fn resolve_left_editor_image_path(
+struct LeftEditorImageInput<'a> {
+    image_mode: Option<&'a str>,
+    source_rowid: Option<i64>,
+    current_image_path: Option<&'a str>,
+    upload_data_url: Option<&'a str>,
+    upload_filename: Option<&'a str>,
+    file_token: &'a str,
+}
+
+fn resolve_left_editor_image_path(
     conn: &Connection,
     db_path: &str,
     album_name: &str,
-    image_mode: Option<&str>,
-    source_rowid: Option<i64>,
-    current_image_path: Option<&str>,
-    upload_data_url: Option<&str>,
-    upload_filename: Option<&str>,
-    file_token: &str,
-) -> Result<String, String> {
-    let mode = image_mode
-        .unwrap_or(if current_image_path.is_some() {
+    input: LeftEditorImageInput<'_>,
+)  -> Result<String, String> {
+     let mode = input
+        .image_mode
+        .unwrap_or(if input.current_image_path.is_some() {
             "keep"
         } else {
             "current_left"
@@ -1147,9 +1176,9 @@ pub(super) fn resolve_left_editor_image_path(
         .to_ascii_lowercase();
 
     match mode.as_str() {
-        "keep" => Ok(current_image_path.unwrap_or("").trim().to_string()),
+        "keep" => Ok(input.current_image_path.unwrap_or("").trim().to_string()),
         "current_left" => {
-            let Some(rowid) = source_rowid else {
+            let Some(rowid) = input.source_rowid else {
                 return Err("current-left image mode requires a source row".to_string());
             };
             let image_path = query_stamp_image_path(conn, rowid)?;
@@ -1159,15 +1188,15 @@ pub(super) fn resolve_left_editor_image_path(
             Ok(image_path)
         }
         "upload" => {
-            let Some(data_url) = upload_data_url else {
+            let Some(data_url) = input.upload_data_url else {
                 return Err("upload image mode requires an uploaded file".to_string());
             };
             store_uploaded_image_from_data_url(
                 db_path,
                 album_name,
-                file_token,
+                input.file_token,
                 data_url,
-                upload_filename,
+                input.upload_filename,
             )
         }
         other => Err(format!("unsupported image mode: {}", other)),
@@ -1206,17 +1235,13 @@ pub(super) fn save_left_stamp(
         }
     };
 
-    let image_path = match resolve_left_editor_image_path(
-        conn,
-        db_path,
-        album_name,
-        req.image_mode.as_deref(),
-        Some(req.rowid),
-        Some(existing_image_path.as_str()),
-        req.upload_data_url.as_deref(),
-        req.upload_filename.as_deref(),
-        &req.sg_number,
-    ) {
+// save_left_stamp
+let image_path = match resolve_left_editor_image_path(
+    conn,
+    db_path,
+    album_name,
+    LeftEditorImageInput::for_save(&req, existing_image_path.as_str()),
+)   {
         Ok(value) => value,
         Err(message) => {
             return SaveLeftStampResponse {
@@ -1381,17 +1406,13 @@ pub(super) fn add_left_stamp(
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| album_name.to_string());
 
-    let image_path = match resolve_left_editor_image_path(
-        conn,
-        db_path,
-        album_name,
-        req.image_mode.as_deref(),
-        req.source_rowid,
-        None,
-        req.upload_data_url.as_deref(),
-        req.upload_filename.as_deref(),
-        &req.sg_number,
-    ) {
+// add_left_stamp
+let image_path = match resolve_left_editor_image_path(
+    conn,
+    db_path,
+    album_name,
+    LeftEditorImageInput::for_add(&req),
+)  {
         Ok(value) => value,
         Err(message) => {
             return AddLeftStampResponse {

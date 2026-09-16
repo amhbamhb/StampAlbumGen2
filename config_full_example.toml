@@ -180,6 +180,23 @@ albumeasy_cli_path = ""
 # Leave empty to use automatic detection.
 bootstrap_albums_root_path = ""
 
+# --- Site Authentication & Credentials ---
+# NEVER commit real credentials to Git.
+[stampworld]
+# Registration: https://www.stampworld.com/en/profiles/register/
+username = ""
+password = ""
+auto_login = false
+
+[colnect]
+# Registration: https://colnect.com/en/account/create
+username = ""
+password = ""
+auto_login = false
+include_details = true
+
+bootstrap_albums_root_path = ""
+
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = false
 

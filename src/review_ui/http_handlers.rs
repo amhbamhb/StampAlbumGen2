@@ -1,5 +1,11 @@
 use super::*;
 
+
+
+
+
+
+
 fn bundled_favicon_png() -> &'static [u8] {
     include_bytes!("../../assets/icons/favicon.png")
 }
@@ -514,6 +520,60 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                         .to_string()
                 }))
                 .with_status_code(status_code);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/account-auth-status" {
+            let response = get_account_auth_status();
+            let mut resp = Response::from_string(
+                serde_json::to_string(&response).unwrap_or_else(|_| "{\"ok\":false}".to_string()),
+            );
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+        if method == Method::Post && req_url == "/api/save-site-credentials" {
+            let mut body = String::new();
+            if request.as_reader().read_to_string(&mut body).is_err() {
+                let _ = request.respond(Response::empty(StatusCode(400)));
+                continue;
+            }
+
+            let parsed: Result<SaveSiteCredentialsRequest, _> = serde_json::from_str(&body);
+            let response = match parsed {
+                Ok(req) => match save_site_credentials(
+                    req.stampworld_username.as_deref(),
+                    req.stampworld_password.as_deref(),
+                    req.colnect_username.as_deref(),
+                    req.colnect_password.as_deref(),
+                ) {
+                    Ok(_) => SaveSiteCredentialsResponse {
+                        ok: true,
+                        message: "Site account credentials saved successfully to config.toml"
+                            .to_string(),
+                    },
+                    Err(error) => SaveSiteCredentialsResponse {
+                        ok: false,
+                        message: error,
+                    },
+                },
+                Err(error) => SaveSiteCredentialsResponse {
+                    ok: false,
+                    message: format!("invalid request: {}", error),
+                },
+            };
+
+            let mut resp =
+                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
+                }));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -1069,34 +1129,67 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
     }
 }
 
+// In http_handlers.rs:
+pub(super) struct ReviewHandlersStateRequests {
+    pub(super) conn: Connection,
+    pub(super) db_path: String,
+    pub(super) album_name: String,
+    pub(super) html: String,
+    pub(super) right_map: HashMap<String, RightCandidate>,
+    pub(super) default_catalog_code: String,
+    pub(super) default_sort_mode: String,
+    pub(super) odd_row_color: String,
+    pub(super) even_row_color: String,
+    pub(super) first_column_color: String,
+    pub(super) second_column_color: String,
+    pub(super) series_default_checked: bool,
+    pub(super) description_default_checked: bool,
+    pub(super) watermark_default_checked: bool,
+    pub(super) design_default_checked: bool,
+    pub(super) engraving_default_checked: bool,
+    pub(super) perforation_default_checked: bool,
+    pub(super) context_default_checked: bool,
+    pub(super) colnect_links_default_checked: bool,
+    pub(super) colnect_image_url_default_checked: bool,
+    pub(super) colnect_metadata_default_checked: bool,
+    pub(super) replace_sg_number_default_checked: bool,
+    pub(super) right_unmatched_only_default_checked: bool,
+    pub(super) albumeasy_auto_generate_pdf_default: bool,
+    pub(super) albumeasy_cli_configured: bool,
+    pub(super) catalog_family_options: Vec<String>,
+}
+// struct ReviewHandlersStateRequests {
+//     // server: Server,
+//     conn: Connection,
+//     db_path: String,
+//     album_name: String,
+//     html: String,
+//     right_map: HashMap<String, RightCandidate>,
+//     default_catalog_code: String,
+//     default_sort_mode: String,
+//     odd_row_color: String,
+//     even_row_color: String,
+//     first_column_color: String,
+//     second_column_color: String,
+//     series_default_checked: bool,
+//     description_default_checked: bool,
+//     watermark_default_checked: bool,
+//     design_default_checked: bool,
+//     engraving_default_checked: bool,
+//     perforation_default_checked: bool,
+//     context_default_checked: bool,
+//     colnect_links_default_checked: bool,
+//     colnect_image_url_default_checked: bool,
+//     colnect_metadata_default_checked: bool,
+//     replace_sg_number_default_checked: bool,
+//     right_unmatched_only_default_checked: bool,
+//     albumeasy_auto_generate_pdf_default: bool,
+//     albumeasy_cli_configured: bool,
+//     catalog_family_options: Vec<String>,
+// }
 pub(super) fn serve_review_requests(
     server: &Server,
-    conn: &Connection,
-    db_path: &str,
-    album_name: &str,
-    html: &str,
-    right_map: &HashMap<String, RightCandidate>,
-    default_catalog_code: &str,
-    default_sort_mode: &str,
-    odd_row_color: &str,
-    even_row_color: &str,
-    first_column_color: &str,
-    second_column_color: &str,
-    series_default_checked: bool,
-    description_default_checked: bool,
-    watermark_default_checked: bool,
-    design_default_checked: bool,
-    engraving_default_checked: bool,
-    perforation_default_checked: bool,
-    context_default_checked: bool,
-    colnect_links_default_checked: bool,
-    colnect_image_url_default_checked: bool,
-    colnect_metadata_default_checked: bool,
-    replace_sg_number_default_checked: bool,
-    right_unmatched_only_default_checked: bool,
-    albumeasy_auto_generate_pdf_default: bool,
-    albumeasy_cli_configured: bool,
-    catalog_family_options: &[String],
+input: ReviewHandlersStateRequests
 ) -> ReviewHandlersState {
     let reload_requested = false;
     let mut return_to_start_requested = false;
@@ -1347,7 +1440,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Get && req_url == "/api/config-editor" {
-            let album_dir = album_dir_for_ui(db_path, album_name);
+            let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
             let resp_json = match build_config_editor_data_for_album(
                 "config.toml",
                 "config_template.toml",
@@ -1358,7 +1451,7 @@ pub(super) fn serve_review_requests(
                     ok: true,
                     message: "Config editor data loaded".to_string(),
                     sections,
-                    album_name: album_name.to_string(),
+                    album_name: input.album_name.to_string(),
                     has_album_override: has_override,
                 })
                 .unwrap_or_else(|_| {
@@ -1368,7 +1461,7 @@ pub(super) fn serve_review_requests(
                     ok: false,
                     message: format!("Failed to load config editor data: {}", error),
                     sections: Vec::new(),
-                    album_name: album_name.to_string(),
+                    album_name: input.album_name.to_string(),
                     has_album_override: false,
                 })
                 .unwrap_or_else(|_| {
@@ -1388,30 +1481,30 @@ pub(super) fn serve_review_requests(
             let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
             let html = if show_imageless_left_rows {
                 match build_matcher_payload(
-                    conn,
-                    db_path,
-                    album_name,
-                    default_catalog_code,
-                    default_sort_mode,
-                    odd_row_color,
-                    even_row_color,
-                    first_column_color,
-                    second_column_color,
-                    series_default_checked,
-                    description_default_checked,
-                    watermark_default_checked,
-                    design_default_checked,
-                    engraving_default_checked,
-                    perforation_default_checked,
-                    context_default_checked,
-                    colnect_links_default_checked,
-                    colnect_image_url_default_checked,
-                    colnect_metadata_default_checked,
-                    replace_sg_number_default_checked,
-                    right_unmatched_only_default_checked,
-                    albumeasy_auto_generate_pdf_default,
-                    albumeasy_cli_configured,
-                    catalog_family_options,
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
+                    &input.default_catalog_code,
+                    &input.default_sort_mode,
+                    &input.odd_row_color,
+                    &input.even_row_color,
+                    &input.first_column_color,
+                    &input.second_column_color,
+                    input.series_default_checked,
+                    input.description_default_checked,
+                    input.watermark_default_checked,
+                    input.design_default_checked,
+                    input.engraving_default_checked,
+                    input.perforation_default_checked,
+                    input.context_default_checked,
+                    input.colnect_links_default_checked,
+                    input.colnect_image_url_default_checked,
+                    input.colnect_metadata_default_checked,
+                    input.replace_sg_number_default_checked,
+                    input.right_unmatched_only_default_checked,
+                    input.albumeasy_auto_generate_pdf_default,
+                    input.albumeasy_cli_configured,
+                    &input.catalog_family_options,
                     show_imageless_left_rows,
                 ) {
                     Ok(payload) => render_html(&payload),
@@ -1420,11 +1513,11 @@ pub(super) fn serve_review_requests(
                             "Review UI: failed to reload compare payload with image-less rows: {}",
                             error
                         ));
-                        html.to_string()
+                        input.html.clone()
                     }
                 }
             } else {
-                html.to_string()
+                input.html.clone()
             };
 
             let mut resp = Response::from_string(html);
@@ -1508,12 +1601,12 @@ pub(super) fn serve_review_requests(
             let parsed: Result<ApplyMatchesEnvelope, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&apply_matches(
-                    conn,
-                    db_path,
-                    album_name,
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
                     req.matches,
                     req.fields,
-                    right_map,
+                    &input.right_map,
                 ))
                 .unwrap_or_else(|_| {
                     "{\"updated_rows\":0,\"skipped_rows\":0,\"skipped_details\":[],\"processed_colnect_ids\":[],\"errors\":[\"serialization failed\"]}"
@@ -1549,7 +1642,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&save_left_stamp(conn, db_path, album_name, req))
+                Ok(req) => serde_json::to_string(&save_left_stamp(&input.conn, &input.db_path, &input.album_name, req))
                     .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
                             .to_string()
@@ -1582,7 +1675,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<AddLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&add_left_stamp(conn, db_path, album_name, req))
+                Ok(req) => serde_json::to_string(&add_left_stamp(&input.conn, &input.db_path, &input.album_name, req))
                     .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
                             .to_string()
@@ -1614,7 +1707,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<DeleteLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&delete_left_stamp(conn, req)).unwrap_or_else(|_| {
+                Ok(req) => serde_json::to_string(&delete_left_stamp(&input.conn,  req)).unwrap_or_else(|_| {
                     "{\"ok\":false,\"message\":\"serialization failed\",\"deleted_rowid\":null,\"restored_colnect_id\":null}".to_string()
                 }),
                 Err(e) => serde_json::to_string(&DeleteLeftStampResponse {
@@ -1646,9 +1739,9 @@ pub(super) fn serve_review_requests(
             let parsed: Result<ClearLeftColnectLinkRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&clear_left_colnect_link(
-                    conn,
-                    db_path,
-                    album_name,
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
                     req,
                 ))
                 .unwrap_or_else(|_| {
@@ -1685,9 +1778,9 @@ pub(super) fn serve_review_requests(
             let parsed: Result<AddColnectStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&add_colnect_stamp_to_stamps(
-                    conn,
-                    db_path,
-                    album_name,
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
                     req,
                 ))
                 .unwrap_or_else(|_| {
@@ -1722,7 +1815,7 @@ pub(super) fn serve_review_requests(
 
             let parsed: Result<DeleteColnectCandidateRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&delete_colnect_candidate(conn, req)).unwrap_or_else(|_| {
+                Ok(req) => serde_json::to_string(&delete_colnect_candidate(&input.conn,  req)).unwrap_or_else(|_| {
                     "{\"ok\":false,\"message\":\"serialization failed\",\"deleted_stamp_rows\":0,\"deleted_code_rows\":0}".to_string()
                 }),
                 Err(e) => serde_json::to_string(&DeleteColnectCandidateResponse {
@@ -1754,7 +1847,7 @@ pub(super) fn serve_review_requests(
             let parsed: Result<UndoColnectDeleteRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => {
-                    serde_json::to_string(&undo_colnect_delete(conn, req)).unwrap_or_else(|_| {
+                    serde_json::to_string(&undo_colnect_delete(&input.conn,  req)).unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}"
                             .to_string()
                     })
@@ -1787,10 +1880,10 @@ pub(super) fn serve_review_requests(
             let parsed: Result<ColnectImportRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
                 Ok(req) => serde_json::to_string(&colnect_import_data(
-                    conn,
+                    &input.conn,
                     req,
-                    db_path,
-                    album_name,
+                    &input.db_path,
+                    &input.album_name,
                 ))
                     .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
@@ -1819,7 +1912,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Get && req_url == "/api/fresh-candidates" {
-            let resp_json = match load_right_candidates(conn, db_path, album_name) {
+            let resp_json = match load_right_candidates(&input.conn, &input.db_path, &input.album_name) {
                 Ok(candidates) => {
                     serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
                 }
@@ -1840,18 +1933,16 @@ pub(super) fn serve_review_requests(
             && (req_url == "/api/fresh-left" || req_url.starts_with("/api/fresh-left?"))
         {
             let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
-            let resp_json = match load_left_stamps(
-                conn,
-                db_path,
-                album_name,
-                show_imageless_left_rows,
-            ) {
-                Ok(stamps) => serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string()),
-                Err(e) => {
-                    log_runtime_event(&format!("fresh-left: load failed: {}", e));
-                    "[]".to_string()
-                }
-            };
+            let resp_json =
+                match load_left_stamps(&input.conn, &input.db_path, &input.album_name, show_imageless_left_rows) {
+                    Ok(stamps) => {
+                        serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string())
+                    }
+                    Err(e) => {
+                        log_runtime_event(&format!("fresh-left: load failed: {}", e));
+                        "[]".to_string()
+                    }
+                };
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -1861,7 +1952,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Post && req_url == "/api/review-pick-colnect-file" {
-            let result = pick_and_copy_colnect_file_for_db(db_path);
+            let result = pick_and_copy_colnect_file_for_db(&input.db_path);
             let mut resp =
                 Response::from_string(serde_json::to_string(&result).unwrap_or_else(|_| {
                     "{\"ok\":false,\"picked\":false,\"message\":\"serialization error\"}"
@@ -1882,12 +1973,12 @@ pub(super) fn serve_review_requests(
             }
 
             let parsed: Result<UpdateDefaultCatalogRequest, _> = serde_json::from_str(&body);
-            let album_dir = album_dir_for_ui(db_path, album_name);
+            let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
             let resp_json = match parsed {
                 Ok(req) => {
                     match update_default_catalog_code_for_album(
                         &album_dir,
-                        album_name,
+                        &input.album_name,
                         "config.toml",
                         "config_template.toml",
                         "StampAlbumGenerator2HelpManual.pdf",
@@ -1931,11 +2022,11 @@ pub(super) fn serve_review_requests(
                 continue;
             }
             let parsed: Result<SaveConfigEditorRequest, _> = serde_json::from_str(&body);
-            let album_dir = album_dir_for_ui(db_path, album_name);
+            let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
             let response = match parsed {
                 Ok(req) => match save_album_config_diff(
                     &album_dir,
-                    album_name,
+                    &input.album_name,
                     "config.toml",
                     "StampAlbumGenerator2HelpManual.pdf",
                     "config_template.toml",
@@ -1947,7 +2038,7 @@ pub(super) fn serve_review_requests(
                             "Album override saved ({} changed field{}) for {}. New generation actions will use it immediately.",
                             n,
                             if n == 1 { "" } else { "s" },
-                            album_name
+                            &input.album_name
                         ),
                         reload_required: false,
                     },
@@ -1979,7 +2070,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Post && req_url == "/api/config-editor-delete-album-override" {
-            let album_dir = album_dir_for_ui(db_path, album_name);
+            let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
             let override_path = album_dir.join("config.toml");
             let response = if override_path.exists() {
                 match fs::remove_file(&override_path) {
@@ -1987,7 +2078,7 @@ pub(super) fn serve_review_requests(
                         ok: true,
                         message: format!(
                             "Album config override for {} deleted. Refresh the page if you want to reload the current view.",
-                            album_name
+                            &input.album_name
                         ),
                         reload_required: false,
                     },
@@ -2000,7 +2091,7 @@ pub(super) fn serve_review_requests(
             } else {
                 SaveConfigEditorResponse {
                     ok: false,
-                    message: format!("No album config override found for {}.", album_name),
+                    message: format!("No album config override found for {}.", &input.album_name),
                     reload_required: false,
                 }
             };
@@ -2154,15 +2245,15 @@ pub(super) fn serve_review_requests(
                 .unwrap_or(false);
 
             let (real_image_rows, local_real_files) =
-                best_effort_prepare_images_for_pdf(conn, album_name);
+                best_effort_prepare_images_for_pdf(&input.conn, &input.album_name);
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let album_dir = album_dir_for_ui(db_path, album_name);
+                let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
                 crate::config::with_album_config_override(&album_dir, || {
                     crate::album_globals::generate_album_output_conn_with_pdf_override(
-                        conn,
-                        album_name,
+                        &input.conn,
+                        &input.album_name,
                         None::<fn(usize)>,
                         req_start_year,
                         req_end_year,
@@ -2287,7 +2378,7 @@ pub(super) fn serve_review_requests(
         }
 
         if method == Method::Post && req_url == "/api/open-country-folder" {
-            let folder = album_dir_for_ui(db_path, album_name);
+            let folder = album_dir_for_ui(&input.db_path, &input.album_name);
             let folder_str = folder.to_string_lossy();
             let opened = open_folder_in_file_manager(&folder_str);
             let resp_json = if opened {
@@ -2323,14 +2414,14 @@ pub(super) fn serve_review_requests(
                 Ok(req) => {
                     if req.generate_album {
                         let (real_image_rows, local_real_files) =
-                            best_effort_prepare_images_for_pdf(conn, album_name);
-                        let album_dir = album_dir_for_ui(db_path, album_name);
+                            best_effort_prepare_images_for_pdf(&input.conn, &input.album_name);
+                        let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
                         let generated = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
                             || {
                                 crate::config::with_album_config_override(&album_dir, || {
                                     crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                        conn,
-                                        album_name,
+                                        &input.conn,
+                                        &input.album_name,
                                         None::<fn(usize)>,
                                         req.start_year,
                                         req.end_year,
@@ -2409,3 +2500,4 @@ pub(super) fn serve_review_requests(
         return_to_start_requested,
     }
 }
+

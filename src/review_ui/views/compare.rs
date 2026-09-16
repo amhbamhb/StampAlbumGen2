@@ -55,6 +55,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let local_catalog_select_assets =
         " <div class='sessionRow'>
                         <button onclick='openConfigEditor()'>Edit Local Config</button>
+                        <button onclick='openSiteAccountsDialog()'>Site Accounts</button>
                         <label for='defaultCatalogSelect'>Local Catalog</label>
                         <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
                             <option value='sg'>Stanley Gibbons (SG)</option>
@@ -332,9 +333,9 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
         .replace("{compare_add_modal_html}", &compare_add_modal_html)
         .replace("{compare_op_busy_modal_html}", &compare_op_busy_modal_html)
         // .replace("{left_edit_base_stamp_page}", &left_edit_base_stamp_page)
-        .replace("{edit_based_page_top_values}", &edit_based_page_top_values)
-        .replace("{edit_based_page_stampworld}", &edit_based_page_stampworld)
-        .replace("{edit_based_page_dimensions}", &edit_based_page_dimensions)
+        .replace("{edit_based_page_top_values}", edit_based_page_top_values)
+        .replace("{edit_based_page_stampworld}", edit_based_page_stampworld)
+        .replace("{edit_based_page_dimensions}", edit_based_page_dimensions)
         .replace("{footer_html}", &render_app_footer_html())
         .replace("{footer_year_script}", &render_footer_year_script())
         .replace("{config_editor_assets}", &render_config_editor_assets())
