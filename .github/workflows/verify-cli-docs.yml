@@ -26,10 +26,10 @@ jobs:
           toolchain: stable
 
       - name: Build
-        run: cargo build --features rfd
+        run: cargo build 
 
       - name: Capture CLI help
-        run: cargo run --features rfd -- --help > help.txt
+        run: cargo run  -- --help > help.txt
 
       - name: Compare help to docs/CLI_USAGE.md (normalize trailing newlines)
         run: |
