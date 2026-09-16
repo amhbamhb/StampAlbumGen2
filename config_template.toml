@@ -896,6 +896,30 @@ catalog_family_options = [
 	"wad|WADP Numbering System - WNS|91196"
 ]
 
+
+###################################
+# Site Authentication & Credentials
+###################################
+[stampworld]
+# StampWorld registration link: https://www.stampworld.com/en/profiles/register/
+# Account credentials used for catalog data and image retrieval.
+# Store credentials here or set via STAMPWORLD_USER / STAMPWORLD_PASS env vars.
+# NEVER commit real passwords to Git.
+username = ""
+password = ""
+auto_login = false
+
+
+
+[colnect_login]
+# Colnect registration link: https://colnect.com/en/account/create
+# Account credentials used for Colnect catalog and image searches.
+# Store credentials here or set via COLNECT_USER / COLNECT_PASS env vars.
+# NEVER commit real passwords to Git.
+username = ""
+password = ""
+auto_login = false
+
 ###################################
 # Colnect Metadata / Field Selection
 ###################################
@@ -928,27 +952,6 @@ catalog_family_options = [
 # - Use detail_fields for quick experimentation.
 # - Switch to [colnect.fields] toggles once you know which fields you want.
 # - Never mix both active simultaneously (detail_fields will be silently ignored).
-
-###################################
-# Site Authentication & Credentials
-###################################
-[stampworld]
-# StampWorld registration link: https://www.stampworld.com/en/profiles/register/
-# Account credentials used for catalog data and image retrieval.
-# Store credentials here or set via STAMPWORLD_USER / STAMPWORLD_PASS env vars.
-# NEVER commit real passwords to Git.
-username = ""
-password = ""
-auto_login = false
-
-[colnect]
-# Colnect registration link: https://colnect.com/en/account/create
-# Account credentials used for Colnect catalog and image searches.
-# Store credentials here or set via COLNECT_USER / COLNECT_PASS env vars.
-# NEVER commit real passwords to Git.
-username = ""
-password = ""
-auto_login = false
 
 # Master toggle: set false to suppress ALL Colnect metadata from album output.
 # Why important:
