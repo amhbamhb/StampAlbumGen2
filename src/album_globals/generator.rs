@@ -498,7 +498,7 @@ fn estimate_stamp_body_line_count(
 /// Main entry point for AlbumEasy output generation.
 /// Queries the database, formats output, and writes to a .txt file for AlbumEasy import.
 /// Returns the path to the generated output file.
-pub fn generate_album_output_conn<F>(
+pub async fn generate_album_output_conn<F>(
     conn: &Connection,
     album_name: &str,
     mut page_callback: Option<F>,
@@ -716,10 +716,10 @@ where
         Some(conn),
         passed_start_year,
         passed_end_year,
-    );
+    ).await;
 
     // Start page counter after the globals section
-    let starting_page_number = pages_from_globals + 1;
+    let starting_page_number = pages_from_globals + 1.await;
 
     // Emit page header for first stamp page
     let _ = crate::album_globals::generator_new::layout::write_stamp_page_header(
@@ -3381,7 +3381,7 @@ where
 /// other modules) working while allowing callers that already hold a
 /// Connection to use the more efficient conn-based variant.
 /// Returns the path to the generated output file.
-pub fn generate_album_output<F>(
+pub async fn generate_album_output<F>(
     db_path: &str,
     album_name: &str,
     page_callback: Option<F>,

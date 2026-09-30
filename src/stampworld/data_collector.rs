@@ -5,31 +5,116 @@ use regex::Regex;
 use rusqlite::params;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
-
-// Precompiled regexes used across the module
-pub static RANGE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"^\s*\d+\s*\p{Pd}\s*\d+\s*$").expect("invalid range regex"));
-
-pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
-    // Matches "1. January", "12. Feb", " 3. März", case-insensitive, accepts Unicode letters and hyphens
-    Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$").expect("invalid day-month regex")
-});
-
-// Hoisted regexes that were previously constructed inside loops.
-pub static YEAR_RANGE_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex"));
-
-pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#)
-        .expect("invalid group url regex")
-});
-
+use std::path::PathBuf;
+use tokio::task;
+// Import the asynchronous fetcher functionality
+use crate::stampworld::fetch::{Fetcher, ReqwestFetcher}; 
+// Re-import parser helpers (assuming they are still in stampworld::parser)
 // Import parser helpers from the extracted parser module. These helpers were
 // previously defined here; they have been moved to `stampworld::parser` so
 // they can be unit tested and reused independently from the large collector.
 use crate::stampworld::parser::{
     compress_context, dedupe_details, extract_block_metadata, normalize_stamps_issued,
 };
+
+
+// Precompiled regexes used across the module
+pub static RANGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\s*\d+\s*\p{Pd}\s*\d+\s*$").expect("invalid range regex"));
+
+pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
+    // Matches "1. January", "12. Feb", " 3. März", case-insensitive, accepts Unicode letters and hyphens
+    Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$").expect("invalid day-month regex")
+});
+
+pub static YEAR_RANGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex"));
+
+pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#)
+        .expect("invalid group url regex")
+});
+
+/// Entry point for asynchronous StampWorld data collection.
+/// Entry point for asynchronous StampWorld data collection.
+pub async fn collect_stampworld_data_async(
+    fetcher: &dyn Fetcher,
+    site_name: &str,
+    images_directory: &str,
+    start_year: i32,
+    end_year: i32,
+    overwrite_images: bool,
+    page_callback: Option<&dyn Fn(usize)>,
+    max_pages: i32,
+    stop_after_no_hits: i32,
+) -> Vec<String> {
+    info!(
+        "collect_stampworld_data_async called for {} range {}..{}. Using async fetching.",
+        site_name, start_year, end_year
+    );
+
+    let cfg = crate::config::load_config("config.toml");
+    let emit_row_diag = cfg.detailed_page_fit_diagnostics.unwrap_or(false);
+
+    let images_parent = PathBuf::from(images_directory).parent().unwrap_or(&PathBuf::from(images_directory));
+    let country_db_name = site_name.replace("/", "-");
+    let _album_basename = images_parent.file_name().unwrap_or_default(); // Used for context, not directly in result
+
+    let mut results = Vec::new();
+    let mut dedupe_set = HashSet::new();
+    let mut consecutive_no_hits = 0;
+
+    // Use a dedicated client for image fetching to ensure proper headers
+    let image_fetcher = ReqwestFetcher::new_for_images();
+
+    for page in 1..=max_pages {
+        // Check stop condition before starting the next fetch
+        if consecutive_no_hits >= stop_after_no_hits {
+            info!("Stopping scraping: Reached {} consecutive no-hit pages.", stop_after_no_hits);
+            break;
+        }
+
+        let url = format!("{page}", page);
+
+        // Spawn the fetch operation to run concurrently
+        let fetch_handle = task::spawn(async move {
+            fetcher.fetch_text(&url)
+        });
+
+        match fetch_handle.await {
+            Ok(Ok((status, html))) => {
+                if let Some(callback) = page_callback {
+                    // Corrected logic: use page as usize for the callback index if necessary.
+                    if callback(page as usize) {
+                        // Successfully fetched HTML, proceed to parsing (synchronous part)
+                        let html_content = html.trim().to_string();
+                        results.push(html_content);
+                    }
+                } else {
+                    // Handle case where page_callback is None or logic changes
+                    for td in &tds2 {
+                        results.push(
+                            td.text()
+                                .collect::<String>()
+                                .trim()
+                                .to_string(),
+                        );
+                    }
+                }
+            }
+            Ok(Err(_)) => {
+                // Handle error during fetch (e.g., 404, network error)
+                consecutive_no_hits += 1;
+                error!("Failed to fetch page {} for site {}", page, site_name);
+            }
+            Err(e) => {
+                // Handle task spawning/joining error
+                error!("Task failed while fetching page {}: {:?}", page, e);
+                consecutive_no_hits += 1;
+            }
+        }
+    }
+
+    results
+}
 
 /// Consolidated StampWorld collector implementing the key heuristics:
 /// - Prefer images scoped to a stamp row; fall back to block/global images only when needed

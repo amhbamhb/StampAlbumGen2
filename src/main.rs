@@ -35,7 +35,8 @@ use stamp_album_gen2::{
 };
 use std::io::IsTerminal;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main] 
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::panic::set_hook(Box::new(|panic_info| {
         let location = panic_info
             .location()

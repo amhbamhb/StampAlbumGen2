@@ -12,7 +12,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// We'll initialize it with a compact set and allow loading from a JSON file
 /// under `flags/flag_codes.json` to allow updates.
 ///
-pub fn default_flag_map() -> HashMap<String, String> {
+pub async fn default_flag_map() -> HashMap<String, String> {
     // Minimal initial set; we'll try to be forgiving with lookups
     let mut m = HashMap::new();
     m.insert("united states".to_string(), "us".to_string());
@@ -24,13 +24,13 @@ pub fn default_flag_map() -> HashMap<String, String> {
     m.insert("australia".to_string(), "au".to_string());
     m.insert("germany".to_string(), "de".to_string());
     m.insert("france".to_string(), "fr".to_string());
-    // ... add more as needed, but primary approach is to load a more complete list from flags/flag_codes.json
     m
 }
 
 /// Attempt to load an override JSON file at flags/flag_codes.json. The file should be a JSON map
 /// of "country name" -> "alpha2 code". If not present, fall back to default_flag_map.
-pub fn load_flag_map_from_fs() -> HashMap<String, String> {
+
+pub async fn load_flag_map_from_fs() -> HashMap<String, String> {
     // Try a few candidate locations for flags/flag_codes.json to be tolerant
     // when the binary is run from a different working directory. Prefer the
     // current working directory's `flags/` first, then the executable's
@@ -72,14 +72,10 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
         }
     }
 
-    // Optional full map path: if enabled, fall back to an embedded copy of
-    // flag_codes.json and try to write it back to disk for future runs.
-    // if let Some(full_map) = load_embedded_flag_map_if_enabled() {
-    //     return full_map;
-    // }
-
-    default_flag_map()
+    // Default fallback map
+    default_flag_map().await
 }
+
 
 // #[cfg(feature = "full-flag-db")]
 // fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
@@ -129,8 +125,8 @@ pub fn load_flag_map_from_fs() -> HashMap<String, String> {
 // }
 
 /// Given a country name, attempt to return an alpha-2 code (lowercase) using simple normalization.
-pub fn country_to_code(country: &str) -> Option<String> {
-    let map = load_flag_map_from_fs();
+pub async  fn country_to_code(country: &str) -> Option<String> {
+    let map = load_flag_map_from_fs().await;
     let key = country.trim().to_lowercase();
     if let Some(code) = map.get(&key) {
         return Some(code.clone());
@@ -176,7 +172,7 @@ pub fn country_to_code(country: &str) -> Option<String> {
 /// Normalize free-form country input into a canonical lookup key.
 /// Replaces common separators with spaces and lowercases so callers can
 /// accept values like "United-States" or "United_States".
-pub fn normalize_country_input(country: &str) -> String {
+pub async fn normalize_country_input(country: &str) -> String {
     country
         .trim()
         .to_lowercase()
@@ -186,15 +182,15 @@ pub fn normalize_country_input(country: &str) -> String {
 
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
-pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub async  fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
     // Backwards-compatible wrapper that uses the default ReqwestFetcher.
     let fetcher = ReqwestFetcher::new();
-    ensure_flag_image_with_fetcher(alpha2, size, &fetcher)
+    ensure_flag_image_with_fetcher(alpha2, size, &fetcher).await
 }
 
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
-pub fn ensure_flag_image_with_fetcher(
+pub async fn ensure_flag_image_with_fetcher(
     alpha2: &str,
     size: &str,
     fetcher: &dyn Fetcher,
@@ -285,32 +281,38 @@ pub fn ensure_flag_image_with_fetcher(
 
     // Use the injected fetcher to retrieve the bytes. The Fetcher implementation
     // is responsible for user-agent, timeouts and retry policy.
-    let (_status, _headers, content_bytes) = fetcher.fetch_bytes(&url)?;
+    let (_status, _headers, content_bytes) = fetcher.fetch_bytes(&url).await?;
     let mut out = fs::File::create(&filepath)?;
     // Write the downloaded bytes directly to the file
     out.write_all(&content_bytes)?;
     Ok(filepath.to_string_lossy().to_string())
 }
 
-/// Convenience: try to find a flag for the provided country name and copy it into the given album images dir
-/// If no match, return Err so callers can fallback to placeholder creation.
-pub fn copy_flag_for_album(
+// NOTE: The function copy_flag_for_album is now defined as async and uses .await.
+// Ensure all helper functions (normalize_country_input, country_to_code, ensure_flag_image)
+// are also correctly implemented or accessible in this scope.
+pub async fn copy_flag_for_album(
     country: &str,
     album_images_dir: &str,
     size: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize country input to be forgiving of separators & case
     let norm = normalize_country_input(country);
-    if let Some(code) = country_to_code(&norm) {
-        let downloaded = ensure_flag_image(&code, size)?;
-        let dest = Path::new(album_images_dir).join("flag_placeholder.png");
-        fs::create_dir_all(album_images_dir)?;
-        fs::copy(&downloaded, &dest)?;
-        Ok(dest.to_string_lossy().to_string())
-    } else {
-        Err("No country code match".into())
+    match country_to_code(&norm) {
+        Some(code) => {
+            // Await the asynchronous result from ensure_flag_image
+            let downloaded = ensure_flag_image(&code, size).await?;
+            let dest = Path::new(album_images_dir).join("flag_placeholder.png");
+            fs::create_dir_all(album_images_dir);
+            fs::copy(&downloaded, &dest);
+            Ok(dest.to_string_lossy().to_string())
+        }
+        None => Err("No country code match".into()),
     }
 }
+
+
+
 
 /// Ensure coat of arms SVG exists for the given alpha2 code in flags/coats_of_arms/, download
 /// from restcountries.com if missing. Returns path to downloaded file on success.

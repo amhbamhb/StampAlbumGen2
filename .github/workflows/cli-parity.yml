@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Build
-run: cargo build
+        run: cargo build
       - name: Make scripts executable
         run: |
           chmod +x scripts/cli_parity_test.sh

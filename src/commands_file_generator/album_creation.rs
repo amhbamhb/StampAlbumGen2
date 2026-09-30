@@ -23,7 +23,7 @@ pub struct CreateAlbumParams<'a> {
     pub catalog_name: &'a str,
 }
 
-pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize {
+pub async fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize {
     use std::fs::File;
     use std::io::{BufWriter, Write};
     let path = params.file_path;
@@ -35,7 +35,7 @@ pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize {
         }
     };
     let mut writer = BufWriter::new(file);
-    let page_count = write_globals(&mut writer, params.album_name);
+    let page_count = write_globals(&mut writer, params.album_name).await;
     let mut prev_year = String::new();
     let mut prev_series = String::new();
     let mut prev_date = String::new();
@@ -193,10 +193,10 @@ pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize {
 }
 
 /// Write global album configuration
-pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) -> usize {
+pub async fn write_globals<W: Write>(writer: &mut W, album_name: &str) -> usize {
     let _cfg = crate::config::load_config("config.toml");
     // No DB connection or explicit year range available here: pass None values
-    crate::album_globals::write_globals(writer, album_name, None, None, None)
+    crate::album_globals::write_globals(writer, album_name, None, None, None).await
 }
 
 /// Save stamp data to a file

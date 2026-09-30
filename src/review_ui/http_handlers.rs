@@ -96,7 +96,7 @@ fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (u
             used: String::new(),
             letter_fdc: String::new(),
             currency: String::new(),
-            image_path,
+            image_path: String::new(),
             remote_image_url: remote_url,
             original_image_url: String::new(),
             image_width_px: None,
