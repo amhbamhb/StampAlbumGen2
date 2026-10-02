@@ -163,7 +163,7 @@ pub fn ensure_config_and_template_files(
                     // Mark that the GUI was invoked so we don't fall back to
                     // a console prompt in non-interactive launches.
                     // gui_initiated = true;
-                   // for OkCancel button sets:
+                    // for OkCancel button sets:
                     if proceed == MessageDialogResult::Ok {
                         match FileDialog::new()
                             .set_title(
@@ -2568,8 +2568,7 @@ pub async fn with_album_config_override_async<R, Fut>(
 where
     Fut: std::future::Future<Output = R>,
 {
-    let previous =
-        SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(Some(album_dir.to_path_buf())));
+    let previous = SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(Some(album_dir.to_path_buf())));
     let result = f().await;
     SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(previous));
     result

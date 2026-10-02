@@ -12,7 +12,10 @@ pub trait Fetcher: Send + Sync {
     async fn fetch_text(&self, url: &str) -> Result<(StatusCode, String), reqwest::Error>;
 
     /// Fetch raw bytes for a URL, returning (status, headers, bytes).
-    async fn fetch_bytes(&self, url: &str) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error>;
+    async fn fetch_bytes(
+        &self,
+        url: &str,
+    ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error>;
 }
 
 // --- Implementation ---
@@ -34,7 +37,9 @@ impl ReqwestFetcher {
         );
         default_headers.insert(
             reqwest::header::ACCEPT,
-            reqwest::header::HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"),
+            reqwest::header::HeaderValue::from_static(
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            ),
         );
 
         let client = Client::builder()
@@ -75,7 +80,9 @@ impl ReqwestFetcher {
         let mut default_headers = reqwest::header::HeaderMap::new();
         default_headers.insert(
             reqwest::header::USER_AGENT,
-            reqwest::header::HeaderValue::from_static("StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)"),
+            reqwest::header::HeaderValue::from_static(
+                "StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)",
+            ),
         );
         // Prefer JSON responses from APIs
         default_headers.insert(
@@ -109,7 +116,10 @@ impl Fetcher for ReqwestFetcher {
         Ok((status, body))
     }
 
-    async fn fetch_bytes(&self, url: &str) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
+    async fn fetch_bytes(
+        &self,
+        url: &str,
+    ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
         let resp = self.client.get(url).send().await?;
         let status = resp.status();
         let headers = resp.headers().clone();
@@ -130,7 +140,10 @@ pub fn build_image_client() -> Client {
 }
 
 /// Helper function for fetching text, now synchronous as required by the trait.
-pub async fn fetch_text(client: &Client, url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+pub async fn fetch_text(
+    client: &Client,
+    url: &str,
+) -> Result<(StatusCode, String), reqwest::Error> {
     let resp = client.get(url).send().await?;
     let status = resp.status();
     let body = resp.text().await?;

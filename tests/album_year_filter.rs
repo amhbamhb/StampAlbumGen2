@@ -115,8 +115,7 @@ async fn test_generate_album_filters_by_year_open_ended() {
     let conn = populate_test_db();
     // start=1976, end=None -> include 1976 and 1977
     let output_path =
-        generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None)
-            .await;
+        generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None).await;
     let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
     assert!(contents.contains(" : 1002 \\n Perforation"));
     assert!(contents.contains(" : 1003 \\n Perforation"));

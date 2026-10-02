@@ -23,7 +23,10 @@ impl Fetcher for FakeFetcher {
         Ok((StatusCode::OK, self.html_fixture.clone()))
     }
 
-    async fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
+    async fn fetch_bytes(
+        &self,
+        _url: &str,
+    ) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
         Ok((StatusCode::NOT_FOUND, HeaderMap::new(), Vec::new()))
     }
 }

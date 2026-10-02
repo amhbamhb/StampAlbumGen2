@@ -37,9 +37,7 @@ pub mod us1847;
 // db utilities refactored into modular structure
 pub mod db_utils;
 pub use db_utils::{
-
-insert_stamp, insert_stamp_placeholder, migrate_fix_block_metadata, migrate_stamps_table,
-
+    insert_stamp, insert_stamp_placeholder, migrate_fix_block_metadata, migrate_stamps_table,
 };
 
 pub mod image_downloader;
@@ -56,7 +54,4 @@ pub use types::{ImageStatus, OSType, SeriesInfo};
 // pub use crate::config::{load_slug_overrides, Config, HeaderFormatting};
 pub use config::load_effective_config;
 
-
-
 // Re-export selected DB helpers for convenience tests and external callers
-

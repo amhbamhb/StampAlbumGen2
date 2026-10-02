@@ -1,11 +1,5 @@
 use super::*;
 
-
-
-
-
-
-
 fn bundled_favicon_png() -> &'static [u8] {
     include_bytes!("../../assets/icons/favicon.png")
 }
@@ -1199,7 +1193,7 @@ pub(super) struct ReviewHandlersStateRequests {
 // }
 pub(super) fn serve_review_requests(
     server: &Server,
-input: ReviewHandlersStateRequests
+    input: ReviewHandlersStateRequests,
 ) -> ReviewHandlersState {
     let reload_requested = false;
     let mut return_to_start_requested = false;
@@ -1652,11 +1646,16 @@ input: ReviewHandlersStateRequests
 
             let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&save_left_stamp(&input.conn, &input.db_path, &input.album_name, req))
-                    .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
-                            .to_string()
-                    }),
+                Ok(req) => serde_json::to_string(&save_left_stamp(
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
+                    req,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
+                        .to_string()
+                }),
                 Err(e) => serde_json::to_string(&SaveLeftStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1685,11 +1684,16 @@ input: ReviewHandlersStateRequests
 
             let parsed: Result<AddLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&add_left_stamp(&input.conn, &input.db_path, &input.album_name, req))
-                    .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
-                            .to_string()
-                    }),
+                Ok(req) => serde_json::to_string(&add_left_stamp(
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
+                    req,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
+                        .to_string()
+                }),
                 Err(e) => serde_json::to_string(&AddLeftStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1856,12 +1860,11 @@ input: ReviewHandlersStateRequests
 
             let parsed: Result<UndoColnectDeleteRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => {
-                    serde_json::to_string(&undo_colnect_delete(&input.conn,  req)).unwrap_or_else(|_| {
+                Ok(req) => serde_json::to_string(&undo_colnect_delete(&input.conn, req))
+                    .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}"
                             .to_string()
-                    })
-                }
+                    }),
                 Err(e) => serde_json::to_string(&UndoColnectDeleteResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1922,15 +1925,16 @@ input: ReviewHandlersStateRequests
         }
 
         if method == Method::Get && req_url == "/api/fresh-candidates" {
-            let resp_json = match load_right_candidates(&input.conn, &input.db_path, &input.album_name) {
-                Ok(candidates) => {
-                    serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
-                }
-                Err(e) => {
-                    log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
-                    "[]".to_string()
-                }
-            };
+            let resp_json =
+                match load_right_candidates(&input.conn, &input.db_path, &input.album_name) {
+                    Ok(candidates) => {
+                        serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
+                    }
+                    Err(e) => {
+                        log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
+                        "[]".to_string()
+                    }
+                };
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -1943,16 +1947,18 @@ input: ReviewHandlersStateRequests
             && (req_url == "/api/fresh-left" || req_url.starts_with("/api/fresh-left?"))
         {
             let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
-            let resp_json =
-                match load_left_stamps(&input.conn, &input.db_path, &input.album_name, show_imageless_left_rows) {
-                    Ok(stamps) => {
-                        serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string())
-                    }
-                    Err(e) => {
-                        log_runtime_event(&format!("fresh-left: load failed: {}", e));
-                        "[]".to_string()
-                    }
-                };
+            let resp_json = match load_left_stamps(
+                &input.conn,
+                &input.db_path,
+                &input.album_name,
+                show_imageless_left_rows,
+            ) {
+                Ok(stamps) => serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string()),
+                Err(e) => {
+                    log_runtime_event(&format!("fresh-left: load failed: {}", e));
+                    "[]".to_string()
+                }
+            };
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -2529,4 +2535,3 @@ input: ReviewHandlersStateRequests
         return_to_start_requested,
     }
 }
-

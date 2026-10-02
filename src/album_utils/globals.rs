@@ -442,15 +442,14 @@ pub async fn write_globals<W: Write>(
         let mut coat_path_opt: Option<String> = None;
         let p = crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320").await; // <-- ADD .await and ?
         if let Ok(p) = p {
-        if let Some(fname) = std::path::Path::new(&p)
-            .file_name()
-            .and_then(|s| s.to_str())
-        {
-            flag_path_opt = Some(format!("images/{}", fname));
-        } else {
-            flag_path_opt = Some(p);
-        }
-        
+            if let Some(fname) = std::path::Path::new(&p)
+                .file_name()
+                .and_then(|s| s.to_str())
+            {
+                flag_path_opt = Some(format!("images/{}", fname));
+            } else {
+                flag_path_opt = Some(p);
+            }
         }
         if let Ok(p) = crate::flagdb::copy_coa_for_album(album_name, &album_images_dir).await {
             if let Some(fname) = std::path::Path::new(&p)

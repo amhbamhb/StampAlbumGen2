@@ -12,8 +12,7 @@ pub async fn write_globals<W: std::io::Write>(
     // Use the canonical globals writer from `album_utils` so all callers get the
     // same header block. The user-supplied album header is implemented there.
     crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year).await
-}   
-
+}
 
 /// Compute usable height (mm) given a Config. This mirrors the logic used
 /// inside `generate_album_output` and is exposed for unit testing.

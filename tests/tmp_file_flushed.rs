@@ -42,7 +42,8 @@ async fn test_temp_file_flush_and_output_non_empty() {
         Option::<fn(usize)>::None,
         Some(1970),
         Some(1970),
-    ).await;
+    )
+    .await;
 
     let out = td
         .path()

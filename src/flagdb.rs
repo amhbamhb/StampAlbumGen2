@@ -76,7 +76,6 @@ pub async fn load_flag_map_from_fs() -> HashMap<String, String> {
     default_flag_map().await
 }
 
-
 // #[cfg(feature = "full-flag-db")]
 // fn load_embedded_flag_map_if_enabled() -> Option<HashMap<String, String>> {
 //     const EMBEDDED_FLAGS_JSON: &str = include_str!("../flags/flag_codes.json");
@@ -125,7 +124,7 @@ pub async fn load_flag_map_from_fs() -> HashMap<String, String> {
 // }
 
 /// Given a country name, attempt to return an alpha-2 code (lowercase) using simple normalization.
-pub async  fn country_to_code(country: &str) -> Option<String> {
+pub async fn country_to_code(country: &str) -> Option<String> {
     let map = load_flag_map_from_fs().await;
     let key = country.trim().to_lowercase();
     if let Some(code) = map.get(&key) {
@@ -182,7 +181,10 @@ pub async fn normalize_country_input(country: &str) -> String {
 
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
 /// size example: "w80" or "w320". Returns path to downloaded file on success.
-pub async  fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn ensure_flag_image(
+    alpha2: &str,
+    size: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     // Backwards-compatible wrapper that uses the default ReqwestFetcher.
     let fetcher = ReqwestFetcher::new();
     ensure_flag_image_with_fetcher(alpha2, size, &fetcher).await
@@ -310,9 +312,6 @@ pub async fn copy_flag_for_album(
         None => Err("No country code match".into()),
     }
 }
-
-
-
 
 /// Ensure coat of arms SVG exists for the given alpha2 code in flags/coats_of_arms/, download
 /// from restcountries.com if missing. Returns path to downloaded file on success.

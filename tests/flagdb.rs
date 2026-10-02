@@ -10,7 +10,10 @@ async fn test_load_builtin_map() {
 #[tokio::test]
 async fn test_country_to_code_normalization() {
     assert_eq!(country_to_code("Israel").await, Some("il".to_string()));
-    assert_eq!(country_to_code("United States").await, Some("us".to_string()));
+    assert_eq!(
+        country_to_code("United States").await,
+        Some("us".to_string())
+    );
     assert_eq!(country_to_code("U.S.A.").await, Some("us".to_string()));
     assert_eq!(country_to_code("UK").await, Some("gb".to_string()));
 }

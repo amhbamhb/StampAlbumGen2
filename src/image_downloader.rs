@@ -37,8 +37,7 @@ pub async fn download_image(
     // Use the centralized fetch image client and fetch_bytes helper so tests
     // can inject a fake fetcher if needed.
     let client = crate::stampworld::fetch::build_image_client();
-    let (status, headers, bytes) = match crate::stampworld::fetch::fetch_bytes(&client, url).await
-    {
+    let (status, headers, bytes) = match crate::stampworld::fetch::fetch_bytes(&client, url).await {
         Ok((s, h, b)) => (s, h, b),
         Err(e) => {
             warn!(

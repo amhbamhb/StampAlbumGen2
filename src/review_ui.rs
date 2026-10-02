@@ -1,4 +1,5 @@
 use base64::Engine;
+use http_handlers::{serve_bootstrap_requests, serve_review_requests, ReviewHandlersStateRequests};
 use log::debug;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,6 @@ use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 use tiny_http::{Header, Method, Response, Server, StatusCode};
-use http_handlers::{serve_bootstrap_requests, serve_review_requests, ReviewHandlersStateRequests};
 
 mod views;
 use views::{render_bootstrap_html, render_html};
@@ -30,7 +30,6 @@ use matcher_service::{
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
 mod http_handlers;
-
 
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 const RUNTIME_LOG_CAP: usize = 800;
@@ -290,7 +289,7 @@ struct CatalogCodePair {
     code: String,
 }
 
-#[derive(Debug,serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
@@ -3126,38 +3125,37 @@ pub fn run_review_ui(
     //     catalog_family_options: Vec<String>,
     // }
     // When calling serve_review_requests:
-let review_state = serve_review_requests(
-    &server,
-    ReviewHandlersStateRequests {
-        
-        conn,
-        db_path: db_path.to_string(),
-        album_name: album_name.to_string(),
-        html,
-        right_map,
-        default_catalog_code: default_catalog_code.to_string(),
-        default_sort_mode: default_sort_mode.to_string(),
-        odd_row_color: odd_row_color.to_string(),
-        even_row_color: even_row_color.to_string()  ,
-        first_column_color: first_column_color.to_string(),
-        second_column_color: second_column_color.to_string(),
-        series_default_checked,
-        description_default_checked,
-        watermark_default_checked,
-        design_default_checked,
-        engraving_default_checked,
-        perforation_default_checked,
-        context_default_checked,
-        colnect_links_default_checked,
-        colnect_image_url_default_checked,
-        colnect_metadata_default_checked,
-        replace_sg_number_default_checked,
-        right_unmatched_only_default_checked,
-        albumeasy_auto_generate_pdf_default,
-        albumeasy_cli_configured,
-        catalog_family_options: catalog_family_options.to_vec(),
-    },
-);
+    let review_state = serve_review_requests(
+        &server,
+        ReviewHandlersStateRequests {
+            conn,
+            db_path: db_path.to_string(),
+            album_name: album_name.to_string(),
+            html,
+            right_map,
+            default_catalog_code: default_catalog_code.to_string(),
+            default_sort_mode: default_sort_mode.to_string(),
+            odd_row_color: odd_row_color.to_string(),
+            even_row_color: even_row_color.to_string(),
+            first_column_color: first_column_color.to_string(),
+            second_column_color: second_column_color.to_string(),
+            series_default_checked,
+            description_default_checked,
+            watermark_default_checked,
+            design_default_checked,
+            engraving_default_checked,
+            perforation_default_checked,
+            context_default_checked,
+            colnect_links_default_checked,
+            colnect_image_url_default_checked,
+            colnect_metadata_default_checked,
+            replace_sg_number_default_checked,
+            right_unmatched_only_default_checked,
+            albumeasy_auto_generate_pdf_default,
+            albumeasy_cli_configured,
+            catalog_family_options: catalog_family_options.to_vec(),
+        },
+    );
 
     let reload_requested = review_state.reload_requested;
     let return_to_start_requested = review_state.return_to_start_requested;

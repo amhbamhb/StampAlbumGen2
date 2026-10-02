@@ -7,7 +7,7 @@ use scraper::{Html, Selector};
 use std::collections::HashSet;
 use std::path::PathBuf;
 // Import the asynchronous fetcher functionality
-use crate::stampworld::fetch::{Fetcher, ReqwestFetcher}; 
+use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
 // Re-import parser helpers (assuming they are still in stampworld::parser)
 // Import parser helpers from the extracted parser module. These helpers were
 // previously defined here; they have been moved to `stampworld::parser` so
@@ -16,16 +16,17 @@ use crate::stampworld::parser::{
     compress_context, dedupe_details, extract_block_metadata, normalize_stamps_issued,
 };
 
-
 // Precompiled regexes used across the module
-pub static RANGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"^\s*\d+\s*\p{Pd}\s*\d+\s*$").expect("invalid range regex"));
+pub static RANGE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"^\s*\d+\s*\p{Pd}\s*\d+\s*$").expect("invalid range regex"));
 
 pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
     // Matches "1. January", "12. Feb", " 3. März", case-insensitive, accepts Unicode letters and hyphens
     Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$").expect("invalid day-month regex")
 });
 
-pub static YEAR_RANGE_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex"));
+pub static YEAR_RANGE_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex"));
 
 pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r#"https?://[^"']+/stamps/[^"']+/Postage[- ]stamps/g\d+/"#)
@@ -68,11 +69,14 @@ pub async fn collect_stampworld_data_async(
     for page in 1..=max_pages {
         // Check stop condition before starting the next fetch
         if consecutive_no_hits >= stop_after_no_hits {
-            info!("Stopping scraping: Reached {} consecutive no-hit pages.", stop_after_no_hits);
+            info!(
+                "Stopping scraping: Reached {} consecutive no-hit pages.",
+                stop_after_no_hits
+            );
             break;
         }
 
-        let url = format!("{page}", );
+        let url = format!("{page}",);
 
         let fetch_result = fetcher.fetch_text(&url).await;
 

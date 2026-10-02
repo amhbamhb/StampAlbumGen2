@@ -40,23 +40,24 @@ async fn test_collect_with_fake_fetcher_returns_empty() {
     // Use the fake fetcher which returns empty HTML for every request
     let fetcher = FakeFetcher;
 
-    let result = stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
-        &fetcher,
-        &mut sequencer,
-        separator,
-        site_name,
-        images_directory,
-        &month_number,
-        &get_stampworld_image,
-        base_url,
-        1900,
-        1901,
-        false,
-        None,
-        1, // max_pages=1 to keep it quick
-        1,
-    )
-    .await;
+    let result =
+        stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
+            &fetcher,
+            &mut sequencer,
+            separator,
+            site_name,
+            images_directory,
+            &month_number,
+            &get_stampworld_image,
+            base_url,
+            1900,
+            1901,
+            false,
+            None,
+            1, // max_pages=1 to keep it quick
+            1,
+        )
+        .await;
 
     // For an empty HTML page we'd expect no stamp lines collected
     assert!(result.is_empty());

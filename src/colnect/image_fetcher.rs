@@ -43,7 +43,9 @@ impl ReqwestFetcher {
         );
         default_headers.insert(
             reqwest::header::ACCEPT,
-            reqwest::header::HeaderValue::from_static("text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"),
+            reqwest::header::HeaderValue::from_static(
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            ),
         );
 
         let client = Client::builder()
@@ -84,7 +86,9 @@ impl ReqwestFetcher {
         let mut default_headers = reqwest::header::HeaderMap::new();
         default_headers.insert(
             reqwest::header::USER_AGENT,
-            reqwest::header::HeaderValue::from_static("StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)"),
+            reqwest::header::HeaderValue::from_static(
+                "StampAlbumGen2/1.0 (https://github.com/your-repo/stamp-album-gen2)",
+            ),
         );
         // Prefer JSON responses from APIs
         default_headers.insert(
@@ -115,7 +119,10 @@ impl Fetcher for ReqwestFetcher {
         Ok((status, body))
     }
 
-    async fn fetch_bytes(&self, url: &str) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
+    async fn fetch_bytes(
+        &self,
+        url: &str,
+    ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
         let resp = self.client.get(url).send().await?;
         let status = resp.status();
         let headers = resp.headers().clone();
@@ -132,7 +139,10 @@ pub fn build_client() -> Client {
 pub fn build_image_client() -> Client {
     ReqwestFetcher::new_for_images().client().clone()
 }
-pub async fn fetch_text(client: &Client, url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+pub async fn fetch_text(
+    client: &Client,
+    url: &str,
+) -> Result<(StatusCode, String), reqwest::Error> {
     let resp = client.get(url).send().await?;
     let status = resp.status();
     let body = resp.text().await?;
@@ -152,7 +162,11 @@ pub async fn fetch_bytes(
 /// Resolves the Colnect image URL from a StampWorld page URL.
 pub fn resolve_colnect_image_url(page_url: &str) -> Result<String, Box<dyn std::error::Error>> {
     // Placeholder implementation for now. Actual logic requires knowledge of the StampWorld structure or other endpoints.
-    Err(format!("resolve_colnect_image_url not yet implemented in this context for URL: {}", page_url).into())
+    Err(format!(
+        "resolve_colnect_image_url not yet implemented in this context for URL: {}",
+        page_url
+    )
+    .into())
 }
 
 #[cfg(test)]
@@ -162,14 +176,18 @@ mod tests {
     #[test]
     fn test_fetch_text_invalid_url_err() {
         let f = ReqwestFetcher::new();
-        let res = tokio::runtime::Runtime::new().unwrap().block_on(fetch_text(f.client(),   "http:::/::invalid-url"));
+        let res = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(fetch_text(f.client(), "http:::/::invalid-url"));
         assert!(res.is_err());
     }
 
     #[test]
     fn test_fetch_bytes_invalid_url_err() {
         let f = ReqwestFetcher::new();
-        let res = tokio::runtime::Runtime::new().unwrap().block_on(fetch_bytes(f.client(), "http:::/::invalid-url"));
+        let res = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(fetch_bytes(f.client(), "http:::/::invalid-url"));
         assert!(res.is_err());
     }
 }
