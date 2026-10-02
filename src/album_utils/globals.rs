@@ -452,7 +452,7 @@ pub async fn write_globals<W: Write>(
         }
         
         }
-        if let Ok(p) = crate::flagdb::copy_coa_for_album(album_name, &album_images_dir) {
+        if let Ok(p) = crate::flagdb::copy_coa_for_album(album_name, &album_images_dir).await {
             if let Some(fname) = std::path::Path::new(&p)
                 .file_name()
                 .and_then(|s| s.to_str())

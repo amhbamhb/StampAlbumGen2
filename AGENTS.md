@@ -17,7 +17,7 @@ StampAlbumGen2 is a Rust CLI application that generates AlbumEasy stamp-album pa
 
 ## Repository Layout
 
-```
+```text
 src/                   Application source code
   main.rs              CLI entry point
   cli.rs               CLI flags/options (clap)

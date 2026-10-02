@@ -302,7 +302,7 @@ fn move_to_country_inbox(
     }
 }
 
-fn run_colnect_inbox_mode(
+async fn run_colnect_inbox_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -510,15 +510,17 @@ fn run_colnect_inbox_mode(
                         .parent()
                         .map(std::path::Path::to_path_buf)
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    let output_path = crate::config::with_album_config_override(&album_dir, || {
-                        crate::album_globals::generate_album_output_conn(
-                            &conn,
-                            album_country,
-                            None::<fn(usize)>,
-                            Some(cli.start_year),
-                            Some(cli.end_year),
-                        )
-                    });
+                    let output_path =
+                        crate::config::with_album_config_override_async(&album_dir, || {
+                            crate::album_globals::generate_album_output_conn(
+                                &conn,
+                                album_country,
+                                None::<fn(usize)>,
+                                Some(cli.start_year),
+                                Some(cli.end_year),
+                            )
+                        })
+                        .await;
                     generated += 1;
                     info!(
                         "Generated album for {}: {}",
@@ -1215,14 +1217,14 @@ fn sync_missing_stamps_from_colnect(
 }
 
 /// Run the database-only mode (generate album from existing database)
-pub fn run_database_mode(
+pub async fn run_database_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use log::{error, info, warn};
 
     if cli.source == "colnectexport" && cli.colnect_inbox.is_some() {
-        return run_colnect_inbox_mode(cli, show_progress);
+        return run_colnect_inbox_mode(cli, show_progress).await;
     }
 
     // Output-only mode: use the provided db_path and album_name
@@ -1404,7 +1406,7 @@ pub fn run_database_mode(
         .parent()
         .map(std::path::Path::to_path_buf)
         .unwrap_or_else(|| std::path::PathBuf::from("."));
-    let output_path = crate::config::with_album_config_override(&album_dir, || {
+    let output_path = crate::config::with_album_config_override_async(&album_dir, || {
         crate::album_globals::generate_album_output_conn(
             &conn,
             &album_name,
@@ -1412,7 +1414,8 @@ pub fn run_database_mode(
             Some(cli.start_year),
             Some(cli.end_year),
         )
-    });
+    })
+    .await;
 
     progress.finish_with_message(&format!(
         "Album '{}' generated successfully! 📄 File: {}",
@@ -1424,7 +1427,7 @@ pub fn run_database_mode(
 }
 
 /// Run the scraping mode (scrape StampWorld and generate album)
-pub fn run_scraping_mode(
+pub async fn run_scraping_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
     source: &str,
@@ -1716,6 +1719,7 @@ pub fn run_scraping_mode(
                 end_year: cli.end_year,
             },
         )
+        .await
     };
     match pages {
         Ok(pages) => {
@@ -1778,6 +1782,7 @@ pub fn run_scraping_mode(
                         progress.set_message("🏳️ Downloading country flag...");
                         let album_images = cfg.image_path.clone();
                         match crate::flagdb::copy_flag_for_album(&site_name, &album_images, "w320")
+                            .await
                         {
                             Ok(p) => info!("Copied flag into album images: {}", p),
                             Err(e) => info!(
@@ -1801,7 +1806,9 @@ pub fn run_scraping_mode(
                             &site_name,
                             cache_db_path,
                             &fetcher,
-                        ) {
+                        )
+                        .await
+                        {
                             Ok(_) => info!(
                                 "✅ Successfully cached Wikipedia content for '{}'",
                                 site_name
@@ -1847,15 +1854,17 @@ pub fn run_scraping_mode(
                         .parent()
                         .map(std::path::Path::to_path_buf)
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    let output_path = crate::config::with_album_config_override(&album_dir, || {
-                        crate::album_globals::generate_album_output_conn(
-                            &conn,
-                            &canonical_storage_dir,
-                            None::<fn(usize)>,
-                            Some(cli.start_year),
-                            Some(cli.end_year),
-                        )
-                    });
+                    let output_path =
+                        crate::config::with_album_config_override_async(&album_dir, || {
+                            crate::album_globals::generate_album_output_conn(
+                                &conn,
+                                &canonical_storage_dir,
+                                None::<fn(usize)>,
+                                Some(cli.start_year),
+                                Some(cli.end_year),
+                            )
+                        })
+                        .await;
 
                     // Use the same final success wording as database mode so
                     // parity tests see identical output. When running with a

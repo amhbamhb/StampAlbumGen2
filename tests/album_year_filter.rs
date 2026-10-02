@@ -89,8 +89,8 @@ fn populate_test_db() -> Connection {
     conn
 }
 
-#[test]
-fn test_generate_album_filters_by_year_exact() {
+#[tokio::test]
+async fn test_generate_album_filters_by_year_exact() {
     let conn = populate_test_db();
     // Generate album output restricted to 1976 only
     let output_path = generate_album_output_conn(
@@ -99,7 +99,8 @@ fn test_generate_album_filters_by_year_exact() {
         Some(|_p| {}),
         Some(1976),
         Some(1976),
-    );
+    )
+    .await;
     let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
     // Should contain only the 1976 stamp (1002) and exclude 1975/1977 (1001/1003).
     // Catalog heading prefix depends on configured default catalog (e.g. SG/Scott),
@@ -109,12 +110,13 @@ fn test_generate_album_filters_by_year_exact() {
     assert!(!contents.contains(" : 1003 \\n Perforation"));
 }
 
-#[test]
-fn test_generate_album_filters_by_year_open_ended() {
+#[tokio::test]
+async fn test_generate_album_filters_by_year_open_ended() {
     let conn = populate_test_db();
     // start=1976, end=None -> include 1976 and 1977
     let output_path =
-        generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None);
+        generate_album_output_conn(&conn, "Example Series", Some(|_p| {}), Some(1976), None)
+            .await;
     let contents = std::fs::read_to_string(&output_path).expect("read generated output file");
     assert!(contents.contains(" : 1002 \\n Perforation"));
     assert!(contents.contains(" : 1003 \\n Perforation"));

@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use reqwest::header::HeaderMap;
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
@@ -16,18 +17,19 @@ impl FakeFetcher {
     }
 }
 
+#[async_trait]
 impl Fetcher for FakeFetcher {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         Ok((StatusCode::OK, self.html_fixture.clone()))
     }
 
-    fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
+    async fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
         Ok((StatusCode::NOT_FOUND, HeaderMap::new(), Vec::new()))
     }
 }
 
-#[test]
-fn e2e_collect_stampworld_inserts_placeholders_to_db() {
+#[tokio::test]
+async fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     // Prepare a temporary images directory so the collector creates a DB file we can inspect
     let td = tempdir().expect("tempdir");
     // Create a minimal config.toml in the temp dir so load_config finds expand_grouped_ranges
@@ -116,7 +118,8 @@ fn e2e_collect_stampworld_inserts_placeholders_to_db() {
             None,
             1,
             1,
-        );
+        )
+        .await;
 
     // Collector returns a compact STAMP line vector; we only assert placeholders exist.
 

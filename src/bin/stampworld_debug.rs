@@ -28,24 +28,25 @@ impl LocalFetcher {
     }
 }
 
+#[async_trait::async_trait]
 impl stamp_album_gen2::stampworld::fetch::Fetcher for LocalFetcher {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         if let Some(s) = &self.local_html {
             Ok((StatusCode::OK, s.clone()))
         } else {
             // Delegate to ReqwestFetcher when no local HTML available
             let r = stamp_album_gen2::stampworld::fetch::ReqwestFetcher::new();
-            r.fetch_text(_url)
+            r.fetch_text(_url).await
         }
     }
 
-    fn fetch_bytes(
+    async fn fetch_bytes(
         &self,
         url: &str,
     ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
         // Not needed for this debug run; delegate to ReqwestFetcher
         let r = stamp_album_gen2::stampworld::fetch::ReqwestFetcher::new_for_images();
-        r.fetch_bytes(url)
+        r.fetch_bytes(url).await
     }
 }
 
@@ -68,7 +69,8 @@ fn month_number(_m: &str) -> String {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     // Allow overriding HTML path via env var DEBUG_HTML_PATH; default to temp dir saved file
     let html_path = env::var("DEBUG_HTML_PATH").unwrap_or_else(|_| {
         let temp_path = std::env::temp_dir().join("stampworld_can_1848_1910_page1.html");
@@ -118,7 +120,8 @@ fn main() {
         Some(&|p: usize| println!("[debug] page callback: page={}", p)),
         1, // limit to 1 page for quick debug
         3,
-    );
+    )
+    .await;
 
     println!("[debug] Collector returned {} STAMP lines", pages.len());
     for (i, line) in pages.iter().enumerate().take(20) {

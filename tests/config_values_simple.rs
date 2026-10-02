@@ -73,8 +73,8 @@ fn make_test_db_simple(db_path: &str) {
     );
 }
 
-#[test]
-fn config_values_simple_no_placeholder() {
+#[tokio::test]
+async fn config_values_simple_no_placeholder() {
     // Initialize logging for this test
     let _ = env_logger::builder().is_test(true).try_init();
 
@@ -102,7 +102,8 @@ fn config_values_simple_no_placeholder() {
         Option::<fn(usize)>::None,
         Some(1974),
         Some(1975),
-    );
+    )
+    .await;
 
     let out1 = td
         .path()
@@ -122,7 +123,8 @@ fn config_values_simple_no_placeholder() {
         Option::<fn(usize)>::None,
         Some(1974),
         Some(1975),
-    );
+    )
+    .await;
 
     let out2 = td
         .path()

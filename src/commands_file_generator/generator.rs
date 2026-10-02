@@ -137,7 +137,7 @@ impl CommandsFileGenerator {
     // }
 
     /// Collect stampworld data
-    pub fn collect_stampworld_data<'a>(
+    pub async fn collect_stampworld_data<'a>(
         &mut self,
         params: CollectStampworldCallParams<'a>,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
@@ -198,7 +198,7 @@ impl CommandsFileGenerator {
                 max_pages: params.max_pages,
                 stop_after_no_hits: params.stop_after_no_hits,
             };
-        let stamp_data = collect_stampworld_data(&mut dparams);
+        let stamp_data = collect_stampworld_data(&mut dparams).await;
 
         info!(
             "Returned from collect_stampworld_data; received {} stamp data lines",
@@ -215,7 +215,7 @@ impl CommandsFileGenerator {
     }
 
     /// Create album file
-    pub fn create_album(&self) -> usize {
+    pub async fn create_album(&self) -> usize {
         let params = crate::commands_file_generator::album_creation::CreateAlbumParams {
             file_path: std::path::Path::new(&self.album_path),
             data: &self.stamp_data,
@@ -226,7 +226,7 @@ impl CommandsFileGenerator {
             emissions: &self.emissions,
             catalog_name: &self.catalog_name,
         };
-        crate::commands_file_generator::album_creation::create_album(params)
+        crate::commands_file_generator::album_creation::create_album(params).await
     }
 
     /// Save stamp data to file

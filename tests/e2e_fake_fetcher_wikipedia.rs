@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use reqwest::header::HeaderMap;
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
@@ -16,24 +17,26 @@ impl FakeFetcher {
     }
 }
 
+#[async_trait]
 impl Fetcher for FakeFetcher {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         Ok((StatusCode::OK, self.response_body.clone()))
     }
 
-    fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
+    async fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
         Ok((StatusCode::OK, HeaderMap::new(), Vec::new()))
     }
 }
 
-#[test]
-fn e2e_wikipedia_fetcher_fake() {
+#[tokio::test]
+async fn e2e_wikipedia_fetcher_fake() {
     let td = tempdir().unwrap();
     let album_dir = td.path().to_str().unwrap();
     let fixture = r#"{"extract":"This is a fake extract for testing."}"#;
     let fetcher = FakeFetcher::new(fixture);
-    let res =
-        wikipedia::fetch_and_save_summary_with_fetcher("Test Topic", album_dir, &fetcher).unwrap();
+    let res = wikipedia::fetch_and_save_summary_with_fetcher("Test Topic", album_dir, &fetcher)
+        .await
+        .unwrap();
     let content = std::fs::read_to_string(res).unwrap();
     assert_eq!(content, "This is a fake extract for testing.");
 }

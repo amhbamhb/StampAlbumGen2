@@ -54,12 +54,13 @@ pub async fn collect_stampworld_data_async(
     let cfg = crate::config::load_config("config.toml");
     let emit_row_diag = cfg.detailed_page_fit_diagnostics.unwrap_or(false);
 
-    let images_parent = PathBuf::from(images_directory).parent().unwrap_or(&PathBuf::from(images_directory));
+    let images_dir_buf = PathBuf::from(images_directory);
+    let images_parent = images_dir_buf.parent().unwrap_or(&images_dir_buf);
     let country_db_name = site_name.replace("/", "-");
     let _album_basename = images_parent.file_name().unwrap_or_default(); // Used for context, not directly in result
 
     let mut results = Vec::new();
-    let mut dedupe_set = HashSet::new();
+    let mut dedupe_set: HashSet<String> = HashSet::new();
     let mut consecutive_no_hits = 0;
 
     // Use a dedicated client for image fetching to ensure proper headers
@@ -72,43 +73,23 @@ pub async fn collect_stampworld_data_async(
             break;
         }
 
-        let url = format!("{page}", page);
+        let url = format!("{page}", );
 
-        // Spawn the fetch operation to run concurrently
-        let fetch_handle = task::spawn(async move {
-            fetcher.fetch_text(&url)
-        });
+        let fetch_result = fetcher.fetch_text(&url).await;
 
-        match fetch_handle.await {
-            Ok(Ok((status, html))) => {
+        match fetch_result {
+            Ok((_status, html)) => {
                 if let Some(callback) = page_callback {
-                    // Corrected logic: use page as usize for the callback index if necessary.
-                    if callback(page as usize) {
-                        // Successfully fetched HTML, proceed to parsing (synchronous part)
-                        let html_content = html.trim().to_string();
-                        results.push(html_content);
-                    }
-                } else {
-                    // Handle case where page_callback is None or logic changes
-                    for td in &tds2 {
-                        results.push(
-                            td.text()
-                                .collect::<String>()
-                                .trim()
-                                .to_string(),
-                        );
-                    }
+                    // Notify the caller of progress for this page.
+                    callback(page as usize);
                 }
+                let html_content = html.trim().to_string();
+                results.push(html_content);
             }
-            Ok(Err(_)) => {
+            Err(_) => {
                 // Handle error during fetch (e.g., 404, network error)
                 consecutive_no_hits += 1;
                 error!("Failed to fetch page {} for site {}", page, site_name);
-            }
-            Err(e) => {
-                // Handle task spawning/joining error
-                error!("Task failed while fetching page {}: {:?}", page, e);
-                consecutive_no_hits += 1;
             }
         }
     }
@@ -121,7 +102,7 @@ pub async fn collect_stampworld_data_async(
 /// - Stop after N consecutive pages that add zero new stamps (`stop_after_no_hits`)
 /// - In-run dedupe using an in-memory HashSet keyed by country||series||sg_number
 /// - Enforce requested year range strictly
-pub fn collect_stampworld_data_with_fetcher(
+pub async fn collect_stampworld_data_with_fetcher(
     fetcher: &dyn crate::stampworld::fetch::Fetcher,
     sequencer: &mut i32,
     _separator: &str,
@@ -236,7 +217,7 @@ pub fn collect_stampworld_data_with_fetcher(
                 }
             }
         } else {
-            match fetcher.fetch_text(&url) {
+            match fetcher.fetch_text(&url).await {
                 Ok((s, b)) => (s, b),
                 Err(e) => {
                     error!("Problem retrieving page {}: {}", url, e);
@@ -697,7 +678,7 @@ pub fn collect_stampworld_data_with_fetcher(
                                                 s, detail_url
                                             );
                                             if let Ok((_status, text)) =
-                                                fetcher.fetch_text(&detail_url)
+                                                fetcher.fetch_text(&detail_url).await
                                             {
                                                 let doc = Html::parse_document(&text);
                                                 // Search table rows and try to find the row containing this sg_number anchor/id
@@ -1620,7 +1601,7 @@ pub fn collect_stampworld_data_with_fetcher(
 /// Backwards-compatible wrapper which constructs the default ReqwestFetcher and
 /// calls the injected-fetcher implementation. Callers that wish to inject a
 /// test double should call `collect_stampworld_data_with_fetcher` directly.
-pub fn collect_stampworld_data(
+pub async fn collect_stampworld_data(
     sequencer: &mut i32,
     _separator: &str,
     site_name: &str,
@@ -1653,4 +1634,5 @@ pub fn collect_stampworld_data(
         max_pages,
         stop_after_no_hits,
     )
+    .await
 }

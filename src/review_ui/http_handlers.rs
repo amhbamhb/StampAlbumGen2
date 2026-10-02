@@ -30,7 +30,7 @@ fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
     crate::file_utils::resolve_album_image_path(album_name, image_path).exists()
 }
 
-fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
+async fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
     let mut stmt = match conn.prepare(
         "SELECT
             COALESCE(sg_number, ''),
@@ -113,7 +113,7 @@ fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (u
         });
     }
 
-    let _ = crate::image_downloader::download_missing_stamp_images(&stubs, album_name);
+    let _ = crate::image_downloader::download_missing_stamp_images(&stubs, album_name).await;
 
     let mut existing_real_files_after = 0usize;
     if let Ok(mut verify_stmt) = conn.prepare("SELECT COALESCE(image_path, '') FROM stamps") {
@@ -919,23 +919,33 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                             match crate::db_utils::init_db(&c.db_path) {
                                 Ok(conn) => {
                                     let (real_image_rows, local_real_files) =
-                                        best_effort_prepare_images_for_pdf(&conn, &c.country);
+                                        tokio::task::block_in_place(|| {
+                                            tokio::runtime::Handle::current().block_on(
+                                                best_effort_prepare_images_for_pdf(
+                                                    &conn, &c.country,
+                                                ),
+                                            )
+                                        });
                                     // Normalize images (strip ICC / rewrite) before PDF generation
                                     let _ = crate::image_downloader::normalize_album_images_for_pdf(&c.country);
                                     let album_dir = album_dir_for_ui(&c.db_path, &c.country);
-                                    let artifacts = crate::config::with_album_config_override(
-                                        &album_dir,
-                                        || {
-                                            crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                                &conn,
-                                                &c.country,
-                                                None::<fn(usize)>,
-                                                req.start_year,
-                                                req.end_year,
-                                                Some(true),
-                                            )
-                                        },
-                                    );
+                                    let artifacts = tokio::task::block_in_place(|| {
+                                        tokio::runtime::Handle::current().block_on(
+                                            crate::config::with_album_config_override_async(
+                                                &album_dir,
+                                                || {
+                                                    crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                                        &conn,
+                                                        &c.country,
+                                                        None::<fn(usize)>,
+                                                        req.start_year,
+                                                        req.end_year,
+                                                        Some(true),
+                                                    )
+                                                },
+                                            ),
+                                        )
+                                    });
                                     if let Some(pdf_path) = artifacts.generated_pdf_path.as_ref() {
                                         let _ = open_local_path(pdf_path);
                                     }
@@ -2244,20 +2254,28 @@ input: ReviewHandlersStateRequests
                 .and_then(|x| x.as_bool())
                 .unwrap_or(false);
 
-            let (real_image_rows, local_real_files) =
-                best_effort_prepare_images_for_pdf(&input.conn, &input.album_name);
+            let (real_image_rows, local_real_files) = tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(best_effort_prepare_images_for_pdf(
+                    &input.conn,
+                    &input.album_name,
+                ))
+            });
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
-                crate::config::with_album_config_override(&album_dir, || {
-                    crate::album_globals::generate_album_output_conn_with_pdf_override(
-                        &input.conn,
-                        &input.album_name,
-                        None::<fn(usize)>,
-                        req_start_year,
-                        req_end_year,
-                        Some(true),
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(
+                        crate::config::with_album_config_override_async(&album_dir, || {
+                            crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                &input.conn,
+                                &input.album_name,
+                                None::<fn(usize)>,
+                                req_start_year,
+                                req_end_year,
+                                Some(true),
+                            )
+                        }),
                     )
                 })
             })) {
@@ -2414,18 +2432,29 @@ input: ReviewHandlersStateRequests
                 Ok(req) => {
                     if req.generate_album {
                         let (real_image_rows, local_real_files) =
-                            best_effort_prepare_images_for_pdf(&input.conn, &input.album_name);
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(
+                                    best_effort_prepare_images_for_pdf(
+                                        &input.conn,
+                                        &input.album_name,
+                                    ),
+                                )
+                            });
                         let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
                         let generated = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
                             || {
-                                crate::config::with_album_config_override(&album_dir, || {
-                                    crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                        &input.conn,
-                                        &input.album_name,
-                                        None::<fn(usize)>,
-                                        req.start_year,
-                                        req.end_year,
-                                        Some(req.generate_pdf),
+                                tokio::task::block_in_place(|| {
+                                    tokio::runtime::Handle::current().block_on(
+                                        crate::config::with_album_config_override_async(&album_dir, || {
+                                            crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                                &input.conn,
+                                                &input.album_name,
+                                                None::<fn(usize)>,
+                                                req.start_year,
+                                                req.end_year,
+                                                Some(req.generate_pdf),
+                                            )
+                                        }),
                                     )
                                 })
                             },

@@ -23,7 +23,7 @@ pub struct CollectStampworldParams<'a> {
     pub stop_after_no_hits: i32,
 }
 
-pub fn collect_stampworld_data<'a>(params: &mut CollectStampworldParams<'a>) -> Vec<String> {
+pub async fn collect_stampworld_data<'a>(params: &mut CollectStampworldParams<'a>) -> Vec<String> {
     info!("commands_file_generator::data_collection::collect_stampworld_data invoked");
     crate::stampworld::collect_stampworld_data(
         params.sequencer,
@@ -40,4 +40,5 @@ pub fn collect_stampworld_data<'a>(params: &mut CollectStampworldParams<'a>) -> 
         params.max_pages,
         params.stop_after_no_hits,
     )
+    .await
 }

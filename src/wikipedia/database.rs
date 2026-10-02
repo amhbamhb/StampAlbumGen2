@@ -3,7 +3,7 @@ use rusqlite::{params, Connection};
 
 /// Database-based content management for Wikipedia and Grokipedia
 /// Store content in cache database for integration with album generation
-pub fn fetch_and_cache_content(
+pub async fn fetch_and_cache_content(
     topic: &str,
     cache_db_path: &str,
     fetcher: &dyn crate::stampworld::fetch::Fetcher,
@@ -65,7 +65,7 @@ pub fn fetch_and_cache_content(
     log::info!("No cached content found, attempting to fetch from Grokipedia first");
 
     // Try Grokipedia first
-    match crate::wikipedia::fetchers::fetch_grokipedia_content(topic, fetcher) {
+    match crate::wikipedia::fetchers::fetch_grokipedia_content(topic, fetcher).await {
         Ok(content) => {
             log::info!(
                 "Grokipedia fetch successful, content length: {}",
@@ -99,7 +99,7 @@ pub fn fetch_and_cache_content(
     log::info!("Attempting Wikipedia fallback");
 
     // Fall back to Wikipedia
-    match crate::wikipedia::fetchers::fetch_wikipedia_content(topic, fetcher) {
+    match crate::wikipedia::fetchers::fetch_wikipedia_content(topic, fetcher).await {
         Ok(content) => {
             log::info!(
                 "Wikipedia fetch successful, content length: {}",

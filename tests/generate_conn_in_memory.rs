@@ -6,8 +6,8 @@ use tempfile::tempdir;
 /// Clean integration test: create an in-memory DB, insert one stamp row, call
 /// the conn-taking generator API and assert an output file is written under a
 /// temporary Albums directory.
-#[test]
-fn test_generate_conn_in_memory_clean() {
+#[tokio::test]
+async fn test_generate_conn_in_memory_clean() {
     // Use a temp dir and switch cwd so relative Albums paths resolve there
     let tmp = tempdir().expect("tempdir");
     let orig_cwd = env::current_dir().expect("cwd");
@@ -60,7 +60,8 @@ fn test_generate_conn_in_memory_clean() {
         None::<fn(usize)>,
         Some(1900),
         Some(2000),
-    );
+    )
+    .await;
     assert!(
         output_file.exists(),
         "Expected output file to exist: {}",

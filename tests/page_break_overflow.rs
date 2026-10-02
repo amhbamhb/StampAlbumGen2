@@ -8,8 +8,8 @@ use tempfile::tempdir;
 // height and force the generator to emit a new page. Verify the emitted AlbumEasy
 // text contains the expected PAGE_START followed by ROW_START_ES for the forced
 // page break (Page 2).
-#[test]
-fn overflowing_row_moves_to_next_page_and_emits_row_start() {
+#[tokio::test]
+async fn overflowing_row_moves_to_next_page_and_emits_row_start() {
     lazy_static! {
         static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
     }
@@ -125,7 +125,8 @@ single_stamp_threshold_pct = 0.5
         None::<fn(usize)>,
         None,
         None,
-    );
+    )
+    .await;
 
     // Restore cwd
     std::env::set_current_dir(orig_cwd).expect("restore cwd");

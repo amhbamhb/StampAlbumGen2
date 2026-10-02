@@ -16,7 +16,7 @@ use std::path::Path;
 ///
 /// # Returns
 /// * `Result<(), Box<dyn std::error::Error>>` - Success or error
-pub fn download_image(
+pub async fn download_image(
     url: &str,
     local_path: &Path,
     sg: &str,
@@ -37,7 +37,8 @@ pub fn download_image(
     // Use the centralized fetch image client and fetch_bytes helper so tests
     // can inject a fake fetcher if needed.
     let client = crate::stampworld::fetch::build_image_client();
-    let (status, headers, bytes) = match crate::stampworld::fetch::fetch_bytes(&client, url) {
+    let (status, headers, bytes) = match crate::stampworld::fetch::fetch_bytes(&client, url).await
+    {
         Ok((s, h, b)) => (s, h, b),
         Err(e) => {
             warn!(
@@ -111,7 +112,7 @@ pub fn download_image(
 ///
 /// # Returns
 /// * `Result<String, Box<dyn std::error::Error>>` - The final image path or error
-pub fn download_stamp_image_if_missing(
+pub async fn download_stamp_image_if_missing(
     image_path: &str,
     remote_url: &str,
     album_name: &str,
@@ -129,7 +130,7 @@ pub fn download_stamp_image_if_missing(
     }
 
     // Try to download the image (instrumented)
-    match download_image(remote_url, &local_path, sg) {
+    match download_image(remote_url, &local_path, sg).await {
         Ok(_) => {
             // Ensure file now exists
             if local_path.exists() {
@@ -156,7 +157,7 @@ pub fn download_stamp_image_if_missing(
 ///
 /// # Returns
 /// * `Result<(), Box<dyn std::error::Error>>` - Success or error
-pub fn download_missing_stamp_images(
+pub async fn download_missing_stamp_images(
     stamps: &[crate::db_utils::StampStub],
     album_name: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -177,7 +178,9 @@ pub fn download_missing_stamp_images(
                     &stamp.remote_image_url,
                     album_name,
                     &stamp.sg_number,
-                ) {
+                )
+                .await
+                {
                     Ok(_) => {
                         downloaded_count += 1;
                     }

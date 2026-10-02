@@ -7,8 +7,8 @@ use tempfile::tempdir;
 // Regression test: ensure a header+row that would otherwise overlap the footer
 // is moved to the next page. This mirrors the integration test used earlier but
 // provides a lightweight guard to prevent regressions to the `page_fit` logic.
-#[test]
-fn page_fit_regression_for_conservative_buffer() {
+#[tokio::test]
+async fn page_fit_regression_for_conservative_buffer() {
     lazy_static! {
         static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
     }
@@ -111,7 +111,8 @@ page_fit_conservative_buffer_mm = 11.0
         None::<fn(usize)>,
         None,
         None,
-    );
+    )
+    .await;
     std::env::set_current_dir(orig).expect("restore cwd");
 
     // Verify output contains forced page 2 sequence. The generator may include inferred years in the filename,

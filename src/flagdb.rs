@@ -271,7 +271,7 @@ pub async fn ensure_flag_image_with_fetcher(
     let overwrite_flag = cfg.flag_cover_overwrite_flag.unwrap_or(false);
     if overwrite_flag || !filepath.exists() {
         // try neXperts endpoints for flag (prefer PNG then SVG)
-        if let Ok(p) = try_fetch_nexperts_resource(fetcher, alpha2, "flags", size) {
+        if let Ok(p) = try_fetch_nexperts_resource(fetcher, alpha2, "flags", size).await {
             return Ok(p);
         }
     }
@@ -297,8 +297,8 @@ pub async fn copy_flag_for_album(
     size: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize country input to be forgiving of separators & case
-    let norm = normalize_country_input(country);
-    match country_to_code(&norm) {
+    let norm = normalize_country_input(country).await;
+    match country_to_code(&norm).await {
         Some(code) => {
             // Await the asynchronous result from ensure_flag_image
             let downloaded = ensure_flag_image(&code, size).await?;
@@ -316,12 +316,12 @@ pub async fn copy_flag_for_album(
 
 /// Ensure coat of arms SVG exists for the given alpha2 code in flags/coats_of_arms/, download
 /// from restcountries.com if missing. Returns path to downloaded file on success.
-pub fn ensure_coat_of_arms(alpha2: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn ensure_coat_of_arms(alpha2: &str) -> Result<String, Box<dyn std::error::Error>> {
     let fetcher = ReqwestFetcher::new_for_api();
-    ensure_coat_of_arms_with_fetcher(alpha2, &fetcher)
+    ensure_coat_of_arms_with_fetcher(alpha2, &fetcher).await
 }
 
-pub fn ensure_coat_of_arms_with_fetcher(
+pub async fn ensure_coat_of_arms_with_fetcher(
     alpha2: &str,
     fetcher: &dyn Fetcher,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -420,7 +420,7 @@ pub fn ensure_coat_of_arms_with_fetcher(
     // This provides a predictable, high-quality asset set.
     if overwrite_coa || !filepath.exists() {
         let nex_png = format!("https://countries.nexperts.nl/coa/{}.png", alpha);
-        if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&nex_png) {
+        if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&nex_png).await {
             let target_dir_coa = PathBuf::from("flags").join("coats_of_arms");
             let _ = std::fs::create_dir_all(&target_dir_coa);
             let out_path = target_dir_coa.join(format!("{}.png", alpha));
@@ -437,7 +437,7 @@ pub fn ensure_coat_of_arms_with_fetcher(
 
         // Try neXperts SVG
         let nex_svg = format!("https://countries.nexperts.nl/coa/{}.svg", alpha);
-        if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&nex_svg) {
+        if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&nex_svg).await {
             let target_dir_coa = PathBuf::from("flags").join("coats_of_arms");
             let _ = std::fs::create_dir_all(&target_dir_coa);
             let out_path = target_dir_coa.join(format!("{}.svg", alpha));
@@ -475,7 +475,7 @@ pub fn ensure_coat_of_arms_with_fetcher(
     let mut body: Option<String> = None;
     let mut last_err: Option<String> = None;
     for url in candidates.iter() {
-        match fetcher.fetch_text(url) {
+        match fetcher.fetch_text(url).await {
             Ok((_s, b)) => {
                 body = Some(b);
                 break;
@@ -496,13 +496,13 @@ pub fn ensure_coat_of_arms_with_fetcher(
     {
         // try neXperts country full info first
         let nex_info_url = format!("https://countries.nexperts.nl/{alpha}");
-        if let Ok((_s, b)) = fetcher.fetch_text(&nex_info_url) {
+        if let Ok((_s, b)) = fetcher.fetch_text(&nex_info_url).await {
             // save a copy into a small sqlite cache for future
             let _ = cache_country_info(&alpha, &b);
             // try to parse links to coa or flag from the returned content (it's HTML)
             if let Some(coa_url) = extract_coa_from_nexperts_html(&b, &alpha) {
                 // download bytes
-                if let Ok((_st, _headers, bytes)) = fetcher.fetch_bytes(&coa_url) {
+                if let Ok((_st, _headers, bytes)) = fetcher.fetch_bytes(&coa_url).await {
                     let ext = if coa_url.to_lowercase().ends_with(".png") {
                         "png"
                     } else {
@@ -623,7 +623,7 @@ pub fn ensure_coat_of_arms_with_fetcher(
         }
 
         // Download the bytes and inspect headers to decide extension
-        let (_s, headers, bytes) = fetcher.fetch_bytes(&coa_url)?;
+        let (_s, headers, bytes) = fetcher.fetch_bytes(&coa_url).await?;
 
         // Decide on extension: prefer Content-Type header, fall back to URL suffix
         let mut ext = None::<&str>;
@@ -671,14 +671,14 @@ pub fn ensure_coat_of_arms_with_fetcher(
 }
 
 /// Convenience: try to find a coat of arms for the provided country name and copy it into the given album images dir
-pub fn copy_coa_for_album(
+pub async fn copy_coa_for_album(
     country: &str,
     album_images_dir: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     // Normalize input to handle hyphens/underscores and casing
-    let norm = normalize_country_input(country);
-    if let Some(code) = country_to_code(&norm) {
-        let downloaded = ensure_coat_of_arms(&code)?;
+    let norm = normalize_country_input(country).await;
+    if let Some(code) = country_to_code(&norm).await {
+        let downloaded = ensure_coat_of_arms(&code).await?;
         fs::create_dir_all(album_images_dir)?;
         let src_path = Path::new(&downloaded).to_path_buf();
         // If the source is a small PNG, try to find an SVG sibling and
@@ -968,7 +968,7 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
 
 // --- neXperts helpers -----------------------------------------------------
 
-fn try_fetch_nexperts_resource(
+async fn try_fetch_nexperts_resource(
     fetcher: &dyn Fetcher,
     alpha: &str,
     resource: &str,
@@ -977,7 +977,7 @@ fn try_fetch_nexperts_resource(
     // resource: "flags" or "coa"
     // Build direct resource URL: https://countries.nexperts.nl/{resource}/{alpha}.png (or .svg)
     let png_url = format!("https://countries.nexperts.nl/{}/{}.png", resource, alpha);
-    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&png_url) {
+    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&png_url).await {
         let target_dir = Path::new("flags");
         let _ = std::fs::create_dir_all(target_dir);
         let out_path = target_dir.join(format!("{}-{}.png", alpha, size));
@@ -987,7 +987,7 @@ fn try_fetch_nexperts_resource(
     }
     // Try svg
     let svg_url = format!("https://countries.nexperts.nl/{}/{}.svg", resource, alpha);
-    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&svg_url) {
+    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&svg_url).await {
         let target_dir = Path::new("flags");
         let _ = std::fs::create_dir_all(target_dir);
         let out_path = target_dir.join(format!("{}.svg", alpha));

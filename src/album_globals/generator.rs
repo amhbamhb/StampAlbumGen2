@@ -716,10 +716,11 @@ where
         Some(conn),
         passed_start_year,
         passed_end_year,
-    ).await;
+    )
+    .await;
 
     // Start page counter after the globals section
-    let starting_page_number = pages_from_globals + 1.await;
+    let starting_page_number = pages_from_globals + 1;
 
     // Emit page header for first stamp page
     let _ = crate::album_globals::generator_new::layout::write_stamp_page_header(
@@ -3392,7 +3393,7 @@ where
     F: FnMut(usize),
 {
     let conn = init_db(db_path).expect("Failed to open database");
-    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year)
+    generate_album_output_conn(&conn, album_name, page_callback, start_year, end_year).await
 }
 
 /// Post-process the temporary album text file and insert a numeric

@@ -104,7 +104,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => {
             write_startup_probe("logging.setup.error", &e.to_string());
-            return Err(Box::new(e));
+            return Err(Box::new(e) as Box<dyn std::error::Error>);
         }
     }
     // If a local source file was provided, expose it to StampWorld code paths
@@ -177,7 +177,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => {
             write_startup_probe("runtime.align.error", &e.to_string());
-            return Err(Box::new(e));
+            return Err(Box::new(e) as Box<dyn std::error::Error>);
         }
     };
 
@@ -551,7 +551,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             && (cli.colnect_csv.is_some() || cli.colnect_inbox.is_some()))
     {
         // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
-        run_database_mode(&cli, show_progress)?;
+        run_database_mode(&cli, show_progress).await?;
     } else if effective_source == "stampworld" || effective_source == "us1847" {
         // Scraping mode
         // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
@@ -583,7 +583,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             );
         } else {
-            run_scraping_mode(&cli, show_progress, &effective_source)?;
+            run_scraping_mode(&cli, show_progress, &effective_source).await?;
         }
     } else {
         // No db_path and not stampworld: require db_path

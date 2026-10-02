@@ -429,8 +429,8 @@ include_date = true
     println!("  Top-level vs header_formatting conflict - handled gracefully");
 }
 
-#[test]
-fn test_config_with_actual_generation() {
+#[tokio::test]
+async fn test_config_with_actual_generation() {
     println!("Testing config parameters actually affect output generation");
 
     let temp_dir = tempdir().expect("Failed to create temp directory");
@@ -454,7 +454,8 @@ fn test_config_with_actual_generation() {
         Option::<fn(usize)>::None,
         Some(1974),
         Some(1974),
-    );
+    )
+    .await;
 
     let output_path = temp_dir
         .path()
@@ -485,7 +486,8 @@ include_design = true
         Option::<fn(usize)>::None,
         Some(1974),
         Some(1974),
-    );
+    )
+    .await;
 
     let modified_output = if output_path.exists() {
         fs::read_to_string(&output_path).unwrap_or_default()

@@ -1,15 +1,17 @@
+use async_trait::async_trait;
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
 use tempfile::tempdir;
 
 struct FakeFetcherEmpty;
 
+#[async_trait]
 impl Fetcher for FakeFetcherEmpty {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         Ok((StatusCode::OK, "<html><body></body></html>".to_string()))
     }
 
-    fn fetch_bytes(
+    async fn fetch_bytes(
         &self,
         _url: &str,
     ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
@@ -21,8 +23,8 @@ impl Fetcher for FakeFetcherEmpty {
     }
 }
 
-#[test]
-fn collector_creates_db_at_expected_path() {
+#[tokio::test]
+async fn collector_creates_db_at_expected_path() {
     // Create a temp dir and an images/ child to simulate album layout
     let td = tempdir().expect("tempdir");
     let images_dir = td.path().join("images");
@@ -59,7 +61,8 @@ fn collector_creates_db_at_expected_path() {
         None,
         1,
         1,
-    );
+    )
+    .await;
 
     // Compute expected DB path the same way the collector does
     let db_parent = images_dir_str.replace("/images", "");

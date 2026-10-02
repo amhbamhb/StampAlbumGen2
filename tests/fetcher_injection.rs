@@ -1,10 +1,12 @@
+use async_trait::async_trait;
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
 
 struct FakeFetcher;
 
+#[async_trait]
 impl Fetcher for FakeFetcher {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         // Return an empty HTML document for any URL
         Ok((
             StatusCode::OK,
@@ -12,7 +14,7 @@ impl Fetcher for FakeFetcher {
         ))
     }
 
-    fn fetch_bytes(
+    async fn fetch_bytes(
         &self,
         _url: &str,
     ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
@@ -22,8 +24,8 @@ impl Fetcher for FakeFetcher {
     }
 }
 
-#[test]
-fn test_collect_with_fake_fetcher_returns_empty() {
+#[tokio::test]
+async fn test_collect_with_fake_fetcher_returns_empty() {
     // Prepare inputs; use a temp dir under /tmp to avoid writing into workspace
     let mut sequencer: i32 = 0;
     let separator = "@";
@@ -53,7 +55,8 @@ fn test_collect_with_fake_fetcher_returns_empty() {
         None,
         1, // max_pages=1 to keep it quick
         1,
-    );
+    )
+    .await;
 
     // For an empty HTML page we'd expect no stamp lines collected
     assert!(result.is_empty());

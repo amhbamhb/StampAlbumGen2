@@ -5,8 +5,8 @@ use tempfile::tempdir;
 
 /// Test that the generated series header includes a formatted date line when
 /// the DB row contains year/month/day and the config enables `include_date`.
-#[test]
-fn test_series_header_includes_date() {
+#[tokio::test]
+async fn test_series_header_includes_date() {
     // Use a temp dir and switch cwd so relative Albums paths resolve there
     let tmp = tempdir().expect("tempdir");
     let orig_cwd = env::current_dir().expect("cwd");
@@ -61,7 +61,8 @@ fn test_series_header_includes_date() {
         None::<fn(usize)>,
         Some(1900),
         Some(2000),
-    );
+    )
+    .await;
 
     let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1900-2000.txt");
     assert!(

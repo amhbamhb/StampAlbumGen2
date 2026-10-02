@@ -58,8 +58,8 @@ fn make_test_db_multi(db_path: &str) {
     }
 }
 
-#[test]
-fn config_values_suite_iterates_and_changes_output() {
+#[tokio::test]
+async fn config_values_suite_iterates_and_changes_output() {
     // This suite iterates a set of config keys and verifies that toggling or
     // changing values produces a different AlbumEasy TXT output (quick sanity)
     let td = tempdir().expect("tempdir");
@@ -140,7 +140,8 @@ fn config_values_suite_iterates_and_changes_output() {
             Option::<fn(usize)>::None,
             Some(1974),
             Some(1975),
-        );
+        )
+        .await;
         println!("[GENERATE] after generate album={} (cfg1)", album);
         let out1 = td
             .path()
@@ -190,7 +191,8 @@ fn config_values_suite_iterates_and_changes_output() {
             Option::<fn(usize)>::None,
             Some(1974),
             Some(1975),
-        );
+        )
+        .await;
         println!("[GENERATE] after generate album={} (cfg2)", album);
         let out2 = td
             .path()
@@ -230,7 +232,8 @@ fn config_values_suite_iterates_and_changes_output() {
         Option::<fn(usize)>::None,
         Some(1974),
         Some(1975),
-    );
+    )
+    .await;
     let full_path = td
         .path()
         .join("Albums")

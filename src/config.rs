@@ -2557,6 +2557,24 @@ pub fn with_album_config_override<R>(album_dir: &Path, f: impl FnOnce() -> R) ->
     })
 }
 
+/// Async sibling of [`with_album_config_override`]. Unlike the sync version, this
+/// actually awaits the future produced by `f` while the thread-local override is
+/// set, so the override stays in effect for the whole async operation instead of
+/// being reset before the future's body actually runs.
+pub async fn with_album_config_override_async<R, Fut>(
+    album_dir: &Path,
+    f: impl FnOnce() -> Fut,
+) -> R
+where
+    Fut: std::future::Future<Output = R>,
+{
+    let previous =
+        SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(Some(album_dir.to_path_buf())));
+    let result = f().await;
+    SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(previous));
+    result
+}
+
 pub fn load_effective_config(path: &str) -> Config {
     let album_dir = SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.borrow().clone());
     match album_dir {

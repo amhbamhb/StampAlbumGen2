@@ -16,8 +16,8 @@ fn make_test_db(db_path: &str) {
         .expect("insert placeholder");
 }
 
-#[test]
-fn test_temp_file_flush_and_output_non_empty() {
+#[tokio::test]
+async fn test_temp_file_flush_and_output_non_empty() {
     // Minimal test that ensures generator produces STAMP lines in the output file
     // (this implicitly verifies the temp file was flushed before reading).
     let td = tempdir().expect("tempdir");
@@ -42,7 +42,7 @@ fn test_temp_file_flush_and_output_non_empty() {
         Option::<fn(usize)>::None,
         Some(1970),
         Some(1970),
-    );
+    ).await;
 
     let out = td
         .path()

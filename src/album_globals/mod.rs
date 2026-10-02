@@ -256,7 +256,7 @@ fn generated_artifacts_from_path(
 // but fall back to the original `generator` implementation if the
 // refactored function produced no usable output (this keeps tests and
 // callers working while `generator_new` is incrementally completed).
-pub fn generate_album_output_conn<F>(
+pub async fn generate_album_output_conn<F>(
     conn: &Connection,
     album_name: &str,
     page_callback: Option<F>,
@@ -274,10 +274,11 @@ where
         end_year,
         None,
     )
+    .await
     .output_txt_path
 }
 
-pub fn generate_album_output_conn_with_pdf_override<F>(
+pub async fn generate_album_output_conn_with_pdf_override<F>(
     conn: &Connection,
     album_name: &str,
     page_callback: Option<F>,
@@ -288,10 +289,12 @@ pub fn generate_album_output_conn_with_pdf_override<F>(
 where
     F: FnMut(usize),
 {
-    // Call refactored implementation without moving the caller's callback.
+    // The refactored implementation is still a stub; preserve the callback
+    // for the original implementation until the refactor can generate output.
     let path = generator_new::generate_album_output_conn::<F>(
         conn, album_name, None, start_year, end_year,
     );
+
     if path.exists() {
         if let Ok(meta) = std::fs::metadata(&path) {
             if meta.len() > 0 {
@@ -299,6 +302,7 @@ where
             }
         }
     }
+
     // Fallback to original implementation
     let path = generator::generate_album_output_conn(
         conn,
@@ -306,11 +310,12 @@ where
         page_callback,
         start_year,
         end_year,
-    );
+    )
+    .await;
     generated_artifacts_from_path(path, generate_pdf_override)
 }
 
-pub fn generate_album_output<F>(
+pub async fn generate_album_output<F>(
     db_path: &str,
     album_name: &str,
     page_callback: Option<F>,
@@ -320,7 +325,8 @@ pub fn generate_album_output<F>(
 where
     F: FnMut(usize),
 {
-    // Call refactored implementation without moving the caller's callback.
+    // The refactored implementation is still a stub; preserve the callback
+    // for the original implementation until the refactor can generate output.
     let path =
         generator_new::generate_album_output::<F>(db_path, album_name, None, start_year, end_year);
     if path.exists() {
@@ -331,7 +337,8 @@ where
         }
     }
     let path =
-        generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year);
+        generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year)
+            .await;
     generated_artifacts_from_path(path, None).output_txt_path
 }
 
