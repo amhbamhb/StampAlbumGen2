@@ -6,7 +6,6 @@ use rusqlite::params;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
 use std::path::PathBuf;
-use tokio::task;
 // Import the asynchronous fetcher functionality
 use crate::stampworld::fetch::{Fetcher, ReqwestFetcher}; 
 // Re-import parser helpers (assuming they are still in stampworld::parser)
@@ -41,7 +40,7 @@ pub async fn collect_stampworld_data_async(
     images_directory: &str,
     start_year: i32,
     end_year: i32,
-    overwrite_images: bool,
+    _overwrite_images: bool,
     page_callback: Option<&dyn Fn(usize)>,
     max_pages: i32,
     stop_after_no_hits: i32,
@@ -52,19 +51,19 @@ pub async fn collect_stampworld_data_async(
     );
 
     let cfg = crate::config::load_config("config.toml");
-    let emit_row_diag = cfg.detailed_page_fit_diagnostics.unwrap_or(false);
+    let _emit_row_diag = cfg.detailed_page_fit_diagnostics.unwrap_or(false);
 
     let images_dir_buf = PathBuf::from(images_directory);
     let images_parent = images_dir_buf.parent().unwrap_or(&images_dir_buf);
-    let country_db_name = site_name.replace("/", "-");
+    let _country_db_name = site_name.replace("/", "-");
     let _album_basename = images_parent.file_name().unwrap_or_default(); // Used for context, not directly in result
 
     let mut results = Vec::new();
-    let mut dedupe_set: HashSet<String> = HashSet::new();
+    let _dedupe_set: HashSet<String> = HashSet::new();
     let mut consecutive_no_hits = 0;
 
     // Use a dedicated client for image fetching to ensure proper headers
-    let image_fetcher = ReqwestFetcher::new_for_images();
+    let _image_fetcher = ReqwestFetcher::new_for_images();
 
     for page in 1..=max_pages {
         // Check stop condition before starting the next fetch

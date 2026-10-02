@@ -1,5 +1,4 @@
 use reqwest::{Client, StatusCode};
-use std::collections::HashMap;
 use std::time::Duration;
 
 /// A lightweight trait that allows injecting a test double for network
@@ -7,10 +6,18 @@ use std::time::Duration;
 /// implement a fake `Fetcher`.
 pub trait Fetcher {
     /// Fetch text body for a URL, returning status and the textual body.
-    async fn fetch_text(&self, url: &str) -> Result<(StatusCode, String), reqwest::Error>;
+    fn fetch_text(
+        &self,
+        url: &str,
+    ) -> impl std::future::Future<Output = Result<(StatusCode, String), reqwest::Error>> + Send;
 
     /// Fetch raw bytes for a URL, returning (status, headers, bytes).
-    async fn fetch_bytes(&self, url: &str) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error>;
+    fn fetch_bytes(
+        &self,
+        url: &str,
+    ) -> impl std::future::Future<
+        Output = Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error>,
+    > + Send;
 }
 
 /// Default Reqwest-based fetcher implementation.

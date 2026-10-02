@@ -303,8 +303,8 @@ pub async fn copy_flag_for_album(
             // Await the asynchronous result from ensure_flag_image
             let downloaded = ensure_flag_image(&code, size).await?;
             let dest = Path::new(album_images_dir).join("flag_placeholder.png");
-            fs::create_dir_all(album_images_dir);
-            fs::copy(&downloaded, &dest);
+            fs::create_dir_all(album_images_dir)?;
+            fs::copy(&downloaded, &dest)?;
             Ok(dest.to_string_lossy().to_string())
         }
         None => Err("No country code match".into()),

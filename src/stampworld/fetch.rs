@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 use reqwest::{Client, StatusCode};
-use std::collections::HashMap;
 use std::time::Duration;
 
 // --- Trait Definition (With async_trait) ---
