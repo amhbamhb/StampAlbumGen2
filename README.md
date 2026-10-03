@@ -200,8 +200,8 @@ Force overwrite existing config (creates backup first):
  When used with `--db-path`, this run also proceeds to album generation.
 - `--colnect-inbox <DIR>`
  Recursively discover and process Colnect CSV files country-by-country.
-	If omitted in `colnectexport` mode, falls back to `colnect_inbox_path` in
-	`config.toml`.
+ If omitted in `colnectexport` mode, falls back to `colnect_inbox_path` in
+ `config.toml`.
  By default this mode is ingestion-only; run a follow-up
  `--db-path ... --album-name ...` command to generate pages, or use
  `--colnect-generate-after-import` to auto-generate in the same run.
@@ -313,7 +313,7 @@ Navigate left stamps with **Prev / Next** and right candidates with
 Only checked fields are written when **Apply Matches To DB** is clicked:
 
 | Checkbox | What it writes |
-|----------|---------------|
+| ---------- | --------------- |
 | **series** | Colnect series name → `series` column |
 | **description** *(default on)* | Colnect item name → `description` column |
 | **watermark** | Colnect watermark |

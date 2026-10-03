@@ -656,9 +656,9 @@ pub struct Config {
     // Backwards-compatible alias for detailed_page_fit_diagnostics
     pub detailed_page_fit: Option<bool>,
 
-    // When true, include the stamp heading height in the row height calculation
+    // Legacy compatibility flag. Visible headings are always measured for safe pagination.
     pub stamp_heading_in_row_height: Option<bool>,
-    // When true, include pages vertical vspace in row height calculations
+    // Legacy compatibility flag. Explicit vertical spacing is always measured.
     pub pages_vspace_in_row_height: Option<bool>,
 
     // Packing safety margins (mm) - used to add small horizontal/vertical

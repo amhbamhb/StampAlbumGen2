@@ -73,7 +73,7 @@ available, `node --test tests/site_accounts_ui.cjs`.
 |-----------|------|---------|-------------|
 | `row_start_es_enabled` | bool | true | Enable automatic ROW_START_ES |
 | `row_start_es_font` | String | "6" | Font for ROW_START_ES |
-| `row_start_es_size` | f32 | 0.10 | Font size for ROW_START_ES |
+| `row_start_es_size` | f32 | 6.0 | Font size in points for ROW_START_ES |
 | `row_start_es_spacing` | f32 | 1.0 | Horizontal spacing between stamps |
 | `row_start_es_vspace` | f32 | 5.0 | Vertical space after ROW_START_ES |
 | `row_start_es_marker` | String | "ROW_START_ES" | Custom marker for row starts |
@@ -137,7 +137,7 @@ available, `node --test tests/site_accounts_ui.cjs`.
 | `stamp_heading_font` | String | "HN" | Font for stamp headings |
 | `stamp_heading_size` | f32 | 10.0 | Size for stamp headings |
 | `stamp_heading_label` | String | "auto" | Label prefix for stamp headings. Use `auto` to follow catalog family dynamically per stamp; set empty string to hide heading labels. |
-| `stamp_heading_in_row_height` | bool | false | Include heading in row height calc |
+| `stamp_heading_in_row_height` | bool | false | Legacy compatibility flag; visible headings are always measured |
 
 ### Review UI Catalog Families
 
@@ -203,7 +203,7 @@ available, `node --test tests/site_accounts_ui.cjs`.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `pages_vspace_in_row_height` | bool | false | Include vspace in row height calculations |
+| `pages_vspace_in_row_height` | bool | false | Legacy compatibility flag; explicit spacing is always measured |
 
 ### Debugging & Diagnostics
 
@@ -225,7 +225,48 @@ available, `node --test tests/site_accounts_ui.cjs`.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `page_vspace_marker` | String | "(6)" | Custom marker for page vspace |
+| `page_vspace_marker` | String | "" | Legacy compatibility setting; header spacers now use configured numeric values |
+
+### Colnect Pagination and Vertical Spacing
+
+`inline` and `separate_rows` currently place details in the stamp's centre text
+column; `minimal` suppresses the detail body. Pagination now counts the exact
+formatted text emitted for the selected fields, including explicit blank lines,
+instead of independently wrapping Colnect values into shorter estimated lines.
+The tallest stamp determines each row's height.
+
+Visible headings are measured using their configured point size. Body text uses
+`text_line_height_mm` as a minimum allowance, never smaller than the selected
+`row_start_es_size` converted to millimetres. Both legacy height-accounting flags
+remain accepted, but neither can disable accounting for visible content.
+
+- `header_vspace_before_mm` and `header_vspace_after_mm` are preserved in output.
+- `row_start_es_vspace` is included in row placement.
+- `series_row_gap_mm` adds an explicit gap between rows of the same series and
+  is included in pagination before any centering is applied.
+- `page_fit_conservative_buffer_mm` is honored by every active fit check.
+- `max_page_vspace_mm` limits additional top-centering space. Set it to `0` to
+  disable centering. Centering never replaces explicit header or row spacing.
+
+Generated `# ROW_HEIGHT` and `# HEADER_HEIGHT` comments let the centering pass
+use the same measurements as pagination. `# PAGE_CENTERING` marks only the
+automatically added top spacer, allowing repeat processing without accumulating
+extra gaps. Horizontal packing and metadata wrapping are unchanged.
+
+Regression commands:
+
+```sh
+cargo test --lib layout -- --test-threads=1
+cargo test --lib postprocess -- --test-threads=1
+cargo test --test page_fit_regression --test page_break_overflow --test usable_height -- --test-threads=1
+```
+
+The optional `colnect_layout_spain` test uses `STAMP_LAYOUT_SPAIN_FIXTURE` to
+locate a local Spain album. Run it with `--ignored --nocapture`. It copies the
+database and images into an isolated workspace and strips login credentials and
+runtime paths from copied configurations. `STAMP_LAYOUT_OUTPUT_DIR` can name an
+empty directory to retain generated output for PDF inspection. Without that
+variable, the temporary workspace is deleted after testing.
 
 ## Header Formatting Sub-Section
 

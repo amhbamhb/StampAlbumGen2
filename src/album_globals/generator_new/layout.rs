@@ -107,8 +107,34 @@ pub fn emit_row_start_es<W: Write>(
     super::helpers::emit_row_start_es(out, Some(config))
 }
 
-/// Write a buffered header block: vspace before, the header lines, and vspace after.
-/// Returns the total vertical millimetre height consumed by the block.
+/// Measure the font and spacing from an emitted PAGE_TEXT command.
+pub(crate) fn page_text_height(line: &str, fallback: f64) -> f64 {
+    let Some((prefix, text)) = line.split_once('"') else {
+        return fallback;
+    };
+    let Some((text, suffix)) = text.rsplit_once('"') else {
+        return fallback;
+    };
+    let size = prefix
+        .split_whitespace()
+        .last()
+        .and_then(|v| v.parse::<f64>().ok());
+    let spacing = suffix
+        .trim()
+        .trim_end_matches(')')
+        .trim()
+        .parse::<f64>()
+        .ok();
+    match (size, spacing) {
+        (Some(size), Some(spacing)) => {
+            let lines = 1 + text.matches("\\n").count() + text.matches('\n').count();
+            lines as f64 * size * 25.4 / 72.0 + spacing
+        }
+        _ => fallback,
+    }
+}
+
+/// Write explicitly configured spacing without replacing it with marker tokens.
 pub fn write_header_block<W: Write>(
     out: &mut W,
     pending_lines: &[(String, f64)],
@@ -116,31 +142,60 @@ pub fn write_header_block<W: Write>(
     v_after: f64,
     _config: &crate::config::Config,
 ) -> std::io::Result<f64> {
-    // Emit the leading vspace, header text lines, then trailing vspace.
-    // If the config requests a non-empty page_vspace_marker token, emit that
-    // instead of numeric PAGE_VSPACE values so the postprocessor can
-    // replace tokens with concrete values later.
-    // An empty marker string is treated as "disabled" (use numeric values).
-    let effective_marker = _config
-        .page_vspace_marker
-        .as_deref()
-        .filter(|m| !m.trim().is_empty());
-    if let Some(marker) = effective_marker {
-        write_page_vspace_marker(out, marker)?;
-    } else {
-        write_page_vspace(out, v_before)?;
-    }
+    write_page_vspace(out, v_before)?;
 
     for (line, _h) in pending_lines.iter() {
         writeln!(out, "{}", line)?;
     }
+    let text_height: f64 = pending_lines.iter().map(|(_, h)| *h).sum();
+    writeln!(out, "# HEADER_HEIGHT mm={:.4}", text_height)?;
 
-    if let Some(marker) = effective_marker {
-        write_page_vspace_marker(out, marker)?;
-    } else {
-        write_page_vspace(out, v_after)?;
+    write_page_vspace(out, v_after)?;
+
+    Ok(v_before + text_height + v_after)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn header_measurement_matches_font_spacing_and_explicit_breaks() {
+        assert!(
+            (page_text_height("PAGE_TEXT_CENTRE (HN 8 \"Series\" 1.0)", 0.0)
+                - (8.0 * 25.4 / 72.0 + 1.0))
+                .abs()
+                < 0.001
+        );
+        assert!(
+            (page_text_height("PAGE_TEXT_CENTRE (HN 8 \"A\\nB\" 2.0)", 0.0)
+                - (16.0 * 25.4 / 72.0 + 2.0))
+                .abs()
+                < 0.001
+        );
+        assert_eq!(page_text_height("# comment", 3.0), 3.0);
     }
 
-    let text_height: f64 = pending_lines.iter().map(|(_, h)| *h).sum();
-    Ok(v_before + text_height + v_after)
+    #[test]
+    fn header_spacing_is_numeric_even_with_a_legacy_marker() {
+        let config = crate::config::Config {
+            page_vspace_marker: Some("legacy-marker".to_string()),
+            ..Default::default()
+        };
+        let mut output = Vec::new();
+        let height = write_header_block(
+            &mut output,
+            &[("PAGE_TEXT_CENTRE (HN 8 \"Series\" 1.0)".to_string(), 4.0)],
+            1.0,
+            2.0,
+            &config,
+        )
+        .expect("write header");
+        let output = String::from_utf8(output).expect("UTF-8 output");
+        assert_eq!(height, 7.0);
+        assert!(output.starts_with("PAGE_VSPACE (1)\n"));
+        assert!(output.ends_with("PAGE_VSPACE (2)\n"));
+        assert!(output.contains("# HEADER_HEIGHT mm=4.0000"));
+        assert!(!output.contains("legacy-marker"));
+    }
 }
