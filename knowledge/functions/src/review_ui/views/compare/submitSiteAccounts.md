@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: submitSiteAccounts
-resource: src/review_ui/views/compare.js#L1556-L1600
+resource: src/review_ui/views/compare.js#L1558-L1602
 generated:
   by: okf-rs/0.4.0
 ---

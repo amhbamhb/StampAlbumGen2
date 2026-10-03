@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: upsertLeftRow
-resource: src/review_ui/views/compare.js#L1026-L1032
+resource: src/review_ui/views/compare.js#L1027-L1033
 generated:
   by: okf-rs/0.4.0
 relationships:

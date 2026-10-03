@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: browseAlbumsRootPath
-resource: src/review_ui/views/bootstrap.js#L289-L302
+resource: src/review_ui/views/bootstrap.js#L291-L304
 generated:
   by: okf-rs/0.4.0
 relationships:

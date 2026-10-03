@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: pickAndCopyColnectFile
-resource: src/review_ui/views/bootstrap.js#L1014-L1046
+resource: src/review_ui/views/bootstrap.js#L1018-L1050
 generated:
   by: okf-rs/0.4.0
 relationships:

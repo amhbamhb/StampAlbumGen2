@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: serve_bootstrap_requests
-resource: src/review_ui/http_handlers.rs#L372-L1317
+resource: src/review_ui/http_handlers.rs#L475-L1423
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/http_handlers/handle_site_account_request
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/http_handlers/handle_country_url_request
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/bundled_favicon_png
@@ -88,6 +91,9 @@ relationships:
   - target: functions/src/review_ui/run_review_ui_bootstrap
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
     resolved_by: tree-sitter
     confidence: exact
@@ -100,6 +106,7 @@ relationships:
 # Calls
 
 - [handle_site_account_request](../../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
+- [handle_country_url_request](../../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [bundled_favicon_png](../../../../functions/src/review_ui/http_handlers/bundled_favicon_png.md)
 - [ping_response_json](../../../../functions/src/review_ui/http_handlers/ping_response_json.md)
 - [scan_bootstrap_countries](../../../../functions/src/review_ui/scan_bootstrap_countries.md)
@@ -129,4 +136,5 @@ relationships:
 # Called by
 
 - [run_review_ui_bootstrap](../../../../functions/src/review_ui/run_review_ui_bootstrap.md)
+- [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)

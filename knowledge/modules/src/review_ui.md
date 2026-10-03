@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: review_ui
-resource: src/review_ui.rs#L1-L3383
+resource: src/review_ui.rs#L1-L3425
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -73,6 +73,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/rusqlite-connection
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/clap-parser
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -218,6 +221,7 @@ relationships:
 - [colnect_import_data](../../functions/src/review_ui/colnect_import_data.md)
 - [run_review_ui_bootstrap](../../functions/src/review_ui/run_review_ui_bootstrap.md)
 - [run_review_ui](../../functions/src/review_ui/run_review_ui.md)
+- [stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url](../../functions/src/review_ui/stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url.md)
 - [site_accounts_preserve_saved_passwords_and_unrelated_config](../../functions/src/review_ui/site_accounts_preserve_saved_passwords_and_unrelated_config.md)
 - [site_accounts_reject_invalid_config_without_overwriting_it](../../functions/src/review_ui/site_accounts_reject_invalid_config_without_overwriting_it.md)
 - [sync_processed_colnect_candidates_marks_existing_stamp_links](../../functions/src/review_ui/sync_processed_colnect_candidates_marks_existing_stamp_links.md)
@@ -257,6 +261,7 @@ relationships:
         mark_colnect_candidate_processed, sync_processed_colnect_candidates,
     }`
 - `rusqlite::Connection`
+- `clap::Parser`
 
 # Member of
 

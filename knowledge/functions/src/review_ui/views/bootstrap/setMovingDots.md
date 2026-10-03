@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setMovingDots
-resource: src/review_ui/views/bootstrap.js#L497-L518
+resource: src/review_ui/views/bootstrap.js#L499-L520
 generated:
   by: okf-rs/0.4.0
 relationships:

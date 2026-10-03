@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshRightCandidatesRealtime
-resource: src/review_ui/views/compare.js#L557-L577
+resource: src/review_ui/views/compare.js#L558-L578
 generated:
   by: okf-rs/0.4.0
 relationships:

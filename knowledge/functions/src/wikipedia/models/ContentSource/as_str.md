@@ -63,7 +63,7 @@ relationships:
   - target: functions/src/config/Config/review_ui_default_sort_mode
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_slug_overrides
+  - target: functions/src/config/try_load_slug_overrides
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/data_sources/stampworld/collect_stampworld_data
@@ -165,7 +165,7 @@ relationships:
 - [link_colnect_data](../../../../../functions/src/colnect/ingest/link_colnect_data.md)
 - [month_number](../../../../../functions/src/commands_file_generator/utils/month_number.md)
 - [review_ui_default_sort_mode](../../../../../functions/src/config/Config/review_ui_default_sort_mode.md)
-- [load_slug_overrides](../../../../../functions/src/config/load_slug_overrides.md)
+- [try_load_slug_overrides](../../../../../functions/src/config/try_load_slug_overrides.md)
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [migrate_stamps_table](../../../../../functions/src/db_utils/migrations/migrate_stamps_table.md)
 - [migrate_fix_block_metadata](../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.md)

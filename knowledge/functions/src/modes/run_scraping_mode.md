@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_scraping_mode
-resource: src/modes.rs#L1430-L1918
+resource: src/modes.rs#L1430-L1893
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -18,10 +18,13 @@ relationships:
   - target: functions/src/progress/ProgressIndicator/set_message
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_slug_overrides
+  - target: functions/src/stampworld/country_url/listing_url_from_country_url
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/structs/GenericAttrs/get
+  - target: functions/src/config/try_load_slug_overrides
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/stampworld/country_url/listing_url
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/Config/effective_colnect_inbox_path
@@ -91,8 +94,9 @@ relationships:
 - [finish_with_error](../../../functions/src/progress/ProgressIndicator/finish_with_error.md)
 - [canonical_album_dir_name](../../../functions/src/modes/canonical_album_dir_name.md)
 - [set_message](../../../functions/src/progress/ProgressIndicator/set_message.md)
-- [load_slug_overrides](../../../functions/src/config/load_slug_overrides.md)
-- [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [listing_url_from_country_url](../../../functions/src/stampworld/country_url/listing_url_from_country_url.md)
+- [try_load_slug_overrides](../../../functions/src/config/try_load_slug_overrides.md)
+- [listing_url](../../../functions/src/stampworld/country_url/listing_url.md)
 - [effective_colnect_inbox_path](../../../functions/src/config/Config/effective_colnect_inbox_path.md)
 - [set_db_path_from_cli](../../../functions/src/file_utils/set_db_path_from_cli.md)
 - [set_overwrite_album_from_cli](../../../functions/src/file_utils/set_overwrite_album_from_cli.md)

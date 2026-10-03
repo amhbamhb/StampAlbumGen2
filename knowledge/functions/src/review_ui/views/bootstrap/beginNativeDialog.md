@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: beginNativeDialog
-resource: src/review_ui/views/bootstrap.js#L124-L133
+resource: src/review_ui/views/bootstrap.js#L126-L135
 generated:
   by: okf-rs/0.4.0
 relationships:

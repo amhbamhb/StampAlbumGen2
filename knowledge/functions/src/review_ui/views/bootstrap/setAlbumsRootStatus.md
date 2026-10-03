@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setAlbumsRootStatus
-resource: src/review_ui/views/bootstrap.js#L267-L274
+resource: src/review_ui/views/bootstrap.js#L269-L276
 generated:
   by: okf-rs/0.4.0
 relationships:

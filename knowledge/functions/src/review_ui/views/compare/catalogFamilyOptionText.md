@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: catalogFamilyOptionText
-resource: src/review_ui/views/compare.js#L2649-L2654
+resource: src/review_ui/views/compare.js#L2651-L2656
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: endNativeDialog
-resource: src/review_ui/views/bootstrap.js#L135-L139
+resource: src/review_ui/views/bootstrap.js#L137-L141
 generated:
   by: okf-rs/0.4.0
 relationships:

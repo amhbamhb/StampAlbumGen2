@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: makeSortModeDefault
-resource: src/review_ui/views/compare.js#L1848-L1856
+resource: src/review_ui/views/compare.js#L1850-L1858
 generated:
   by: okf-rs/0.4.0
 relationships:

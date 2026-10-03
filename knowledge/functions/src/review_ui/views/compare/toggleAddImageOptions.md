@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: toggleAddImageOptions
-resource: src/review_ui/views/compare.js#L2545-L2552
+resource: src/review_ui/views/compare.js#L2547-L2554
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: nextLeft
-resource: src/review_ui/views/compare.js#L2371-L2375
+resource: src/review_ui/views/compare.js#L2373-L2377
 generated:
   by: okf-rs/0.4.0
 ---

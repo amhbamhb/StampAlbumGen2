@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: normalizeCatalogNumber
-resource: src/review_ui/views/compare.js#L841-L850
+resource: src/review_ui/views/compare.js#L842-L851
 generated:
   by: okf-rs/0.4.0
 relationships:

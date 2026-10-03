@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: fetchBackendHealth
-resource: src/review_ui/views/bootstrap.js#L63-L75
+resource: src/review_ui/views/bootstrap.js#L65-L77
 generated:
   by: okf-rs/0.4.0
 relationships:

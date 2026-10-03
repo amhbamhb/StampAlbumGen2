@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: openReviewAfterStampWorld
-resource: src/review_ui/views/bootstrap.js#L768-L776
+resource: src/review_ui/views/bootstrap.js#L772-L780
 generated:
   by: okf-rs/0.4.0
 relationships:

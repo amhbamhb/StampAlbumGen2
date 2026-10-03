@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: compareIssueDateParts
-resource: src/review_ui/views/compare.js#L933-L944
+resource: src/review_ui/views/compare.js#L934-L945
 generated:
   by: okf-rs/0.4.0
 relationships:

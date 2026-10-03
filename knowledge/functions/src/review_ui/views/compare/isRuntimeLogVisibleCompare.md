@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: isRuntimeLogVisibleCompare
-resource: src/review_ui/views/compare.js#L314-L317
+resource: src/review_ui/views/compare.js#L315-L318
 generated:
   by: okf-rs/0.4.0
 relationships:

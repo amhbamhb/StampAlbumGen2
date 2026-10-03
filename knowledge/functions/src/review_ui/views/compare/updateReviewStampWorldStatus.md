@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateReviewStampWorldStatus
-resource: src/review_ui/views/compare.js#L1287-L1298
+resource: src/review_ui/views/compare.js#L1288-L1299
 generated:
   by: okf-rs/0.4.0
 relationships:

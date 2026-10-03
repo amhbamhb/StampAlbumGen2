@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: logRuntimeCompare
-resource: src/review_ui/views/compare.js#L189-L197
+resource: src/review_ui/views/compare.js#L190-L198
 generated:
   by: okf-rs/0.4.0
 relationships:

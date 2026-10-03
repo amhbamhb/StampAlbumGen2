@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: scrollToPanels
-resource: src/review_ui/views/compare.js#L1247-L1249
+resource: src/review_ui/views/compare.js#L1248-L1250
 generated:
   by: okf-rs/0.4.0
 ---

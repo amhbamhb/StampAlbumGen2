@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: navigateWithFade
-resource: src/review_ui/views/compare.js#L468-L474
+resource: src/review_ui/views/compare.js#L469-L475
 generated:
   by: okf-rs/0.4.0
 relationships:

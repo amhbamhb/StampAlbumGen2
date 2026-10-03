@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applyLeftEditorCatalogSearchChoice
-resource: src/review_ui/views/compare.js#L2689-L2695
+resource: src/review_ui/views/compare.js#L2691-L2697
 generated:
   by: okf-rs/0.4.0
 relationships:

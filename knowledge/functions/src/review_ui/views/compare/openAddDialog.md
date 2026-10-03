@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: openAddDialog
-resource: src/review_ui/views/compare.js#L2554-L2577
+resource: src/review_ui/views/compare.js#L2556-L2579
 generated:
   by: okf-rs/0.4.0
 relationships:

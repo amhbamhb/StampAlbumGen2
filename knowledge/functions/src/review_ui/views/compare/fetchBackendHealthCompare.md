@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: fetchBackendHealthCompare
-resource: src/review_ui/views/compare.js#L248-L260
+resource: src/review_ui/views/compare.js#L249-L261
 generated:
   by: okf-rs/0.4.0
 relationships:

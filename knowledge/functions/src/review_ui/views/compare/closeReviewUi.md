@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: closeReviewUi
-resource: src/review_ui/views/compare.js#L3241-L3381
+resource: src/review_ui/views/compare.js#L3243-L3383
 generated:
   by: okf-rs/0.4.0
 relationships:

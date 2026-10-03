@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: toggleLeftEditorCatalogCodeCustom
-resource: src/review_ui/views/compare.js#L2611-L2616
+resource: src/review_ui/views/compare.js#L2613-L2618
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: restorePdfUiState
-resource: src/review_ui/views/compare.js#L96-L117
+resource: src/review_ui/views/compare.js#L97-L118
 generated:
   by: okf-rs/0.4.0
 relationships:

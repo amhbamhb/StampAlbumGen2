@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: SaveSiteCredentialsResponse
-resource: src/review_ui.rs#L739-L742
+resource: src/review_ui.rs#L741-L744
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applyRuntimeLogVisibilityCompare
-resource: src/review_ui/views/compare.js#L319-L323
+resource: src/review_ui/views/compare.js#L320-L324
 generated:
   by: okf-rs/0.4.0
 relationships:

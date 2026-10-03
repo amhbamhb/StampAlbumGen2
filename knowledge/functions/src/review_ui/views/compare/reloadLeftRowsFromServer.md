@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: reloadLeftRowsFromServer
-resource: src/review_ui/views/compare.js#L531-L555
+resource: src/review_ui/views/compare.js#L532-L556
 generated:
   by: okf-rs/0.4.0
 relationships:

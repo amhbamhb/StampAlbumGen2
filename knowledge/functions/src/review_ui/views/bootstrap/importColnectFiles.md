@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: importColnectFiles
-resource: src/review_ui/views/bootstrap.js#L1387-L1488
+resource: src/review_ui/views/bootstrap.js#L1391-L1492
 generated:
   by: okf-rs/0.4.0
 relationships:

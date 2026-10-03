@@ -7,6 +7,7 @@ const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 const configDefaultSortMode = String(payload.default_sort_mode || 'year_series_date_catalog').toLowerCase();
 const reviewCountryName = String(payload.album_name || '').trim();
+const stampworldCountryUrl = new StampWorldCountryUrl(() => reviewCountryName);
 const reviewPdfFilters = new ReviewPdfFilters(reviewCountryName || 'default');
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
 const stampWorldYearsStorageKey = 'reviewui.stampWorldYears.' + String(payload.album_name || 'default');
@@ -1428,6 +1429,7 @@ async function runReviewStampWorldPull() {
 
     try {
         const payload = { country: country, start_year: startYear, end_year: endYear, preset: preset, extra_flags: extraFlags };
+        await stampworldCountryUrl.ensureSaved(country);
         emitReviewClientLog('run request sending POST /api/stampworld-run');
         const r = await fetch('/api/stampworld-run', {
             method: 'POST',
@@ -3886,6 +3888,7 @@ if (reviewPdfAlwaysShowEl) {
 updatePdfPreviewControls();
 restorePdfUiState();
 initReviewStampWorldPanel();
+stampworldCountryUrl.load(reviewCountryName);
 initReviewPdfYearInputs();
 reviewPdfFilters.init();
 

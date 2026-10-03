@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: copyRuntimeLogCompare
-resource: src/review_ui/views/compare.js#L424-L434
+resource: src/review_ui/views/compare.js#L425-L435
 generated:
   by: okf-rs/0.4.0
 relationships:

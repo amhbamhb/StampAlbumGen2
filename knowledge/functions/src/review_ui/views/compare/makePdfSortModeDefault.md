@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: makePdfSortModeDefault
-resource: src/review_ui/views/compare.js#L1858-L1866
+resource: src/review_ui/views/compare.js#L1860-L1868
 generated:
   by: okf-rs/0.4.0
 relationships:

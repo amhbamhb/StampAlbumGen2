@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: pickAndCopyColnectFileReview
-resource: src/review_ui/views/compare.js#L3691-L3777
+resource: src/review_ui/views/compare.js#L3693-L3779
 generated:
   by: okf-rs/0.4.0
 ---

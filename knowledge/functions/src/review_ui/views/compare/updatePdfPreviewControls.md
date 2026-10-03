@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updatePdfPreviewControls
-resource: src/review_ui/views/compare.js#L119-L124
+resource: src/review_ui/views/compare.js#L120-L125
 generated:
   by: okf-rs/0.4.0
 relationships:

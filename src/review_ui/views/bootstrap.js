@@ -1,4 +1,6 @@
 let countries = [];
+const stampworldCountryUrl = new StampWorldCountryUrl(() =>
+    getEffectiveStampworldCountry(document.getElementById('countrySel')?.value));
 let loadingDotsTimer = null;
 let loadingPhaseTimer = null;
 let bootstrapPdfRequestInFlight = false;
@@ -600,6 +602,7 @@ function getEffectiveStampworldCountry(country) {
 
 function suggestedStampworldCommand(country) {
     const c = getEffectiveStampworldCountry(country);
+    stampworldCountryUrl.load(c);
     const currentYear = new Date().getFullYear();
     const defaultStartYear = Math.max(stampworldMinYear, currentYear - 2);
     const y1 = document.getElementById('swStartYear')?.value || String(defaultStartYear);
@@ -737,6 +740,7 @@ async function runStampWorldPull() {
     stampworldRunRequested = true;
 
     try {
+        await stampworldCountryUrl.ensureSaved(country);
         const r = await fetch('/api/stampworld-run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

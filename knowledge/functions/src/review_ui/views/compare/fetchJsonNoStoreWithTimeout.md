@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: fetchJsonNoStoreWithTimeout
-resource: src/review_ui/views/compare.js#L60-L72
+resource: src/review_ui/views/compare.js#L61-L73
 generated:
   by: okf-rs/0.4.0
 relationships:

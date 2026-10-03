@@ -109,7 +109,9 @@
 - [BootstrapHandlersState](../classes/src/review_ui/http_handlers/BootstrapHandlersState.md) — Rust Struct
 - [ReviewHandlersState](../classes/src/review_ui/http_handlers/ReviewHandlersState.md) — Rust Struct
 - [ReviewHandlersStateRequests](../classes/src/review_ui/http_handlers/ReviewHandlersStateRequests.md) — Rust Struct
+- [SaveRequest](../classes/src/review_ui/http_handlers/SaveRequest.md) — Rust Struct
 - [LeftEditorImageInput](../classes/src/review_ui/matcher_service/LeftEditorImageInput.md) — Rust Struct
+- [StampWorldCountryUrl](../classes/src/review_ui/views/country_url/StampWorldCountryUrl.md) — JavaScript Class
 - [ReviewPdfFilters](../classes/src/review_ui/views/pdf_filters/ReviewPdfFilters.md) — JavaScript Class
 - [ReconnectBannerParams](../classes/src/review_ui/views/shared/ReconnectBannerParams.md) — Rust Struct
 - [RuntimeLogPanelParams](../classes/src/review_ui/views/shared/RuntimeLogPanelParams.md) — Rust Struct

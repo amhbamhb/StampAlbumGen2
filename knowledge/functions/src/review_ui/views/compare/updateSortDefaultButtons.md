@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateSortDefaultButtons
-resource: src/review_ui/views/compare.js#L914-L924
+resource: src/review_ui/views/compare.js#L915-L925
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: populateYearSelect
-resource: src/review_ui/views/bootstrap.js#L533-L543
+resource: src/review_ui/views/bootstrap.js#L535-L545
 generated:
   by: okf-rs/0.4.0
 relationships:

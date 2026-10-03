@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: compareBySortMode
-resource: src/review_ui/views/compare.js#L946-L1008
+resource: src/review_ui/views/compare.js#L947-L1009
 generated:
   by: okf-rs/0.4.0
 relationships:

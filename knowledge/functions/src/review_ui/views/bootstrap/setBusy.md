@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setBusy
-resource: src/review_ui/views/bootstrap.js#L520-L527
+resource: src/review_ui/views/bootstrap.js#L522-L529
 generated:
   by: okf-rs/0.4.0
 relationships:

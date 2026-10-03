@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: confirmDestructiveActionCompare
-resource: src/review_ui/views/compare.js#L3011-L3043
+resource: src/review_ui/views/compare.js#L3013-L3045
 generated:
   by: okf-rs/0.4.0
 relationships:

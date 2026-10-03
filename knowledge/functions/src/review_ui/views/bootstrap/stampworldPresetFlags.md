@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: stampworldPresetFlags
-resource: src/review_ui/views/bootstrap.js#L574-L581
+resource: src/review_ui/views/bootstrap.js#L576-L583
 generated:
   by: okf-rs/0.4.0
 relationships:

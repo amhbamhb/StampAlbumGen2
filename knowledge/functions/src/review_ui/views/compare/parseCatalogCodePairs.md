@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: parseCatalogCodePairs
-resource: src/review_ui/views/compare.js#L852-L868
+resource: src/review_ui/views/compare.js#L853-L869
 generated:
   by: okf-rs/0.4.0
 relationships:

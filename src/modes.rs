@@ -1572,45 +1572,20 @@ pub async fn run_scraping_mode(
         // This file (looked up like `config.toml`) may contain a table
         // `[slug_overrides]` mapping the provided site_name to a canonical
         // StampWorld slug (which may contain '!' or other punctuation).
-        let overrides = crate::config::load_slug_overrides("slug_overrides.toml");
-        // Helper to percent-encode a slug for a path component
-        // Prefer hyphen-separated slugs for multi-word site/album names
-        let encode = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
-
-        // If the caller requested the full open range (0..9999) treat this
-        // as an intent to fetch the album/main slug page rather than the
-        // 'Postage stamps' year-range listing. In that case construct URLs
-        // like: https://www.stampworld.com/en/stamps/<slug>/?page=
-        let use_main_slug = cli.start_year == 0 && cli.end_year == 9999;
-
-        if let Some(canon) = overrides.get(&site_name) {
-            // If there's an explicit override, use it verbatim (but still
-            // percent-encode reserved characters for the URL path).
-            let encoded = encode(canon);
-            // Avoid printing slug override details in normal runs.
-            if use_main_slug {
-                format!("https://www.stampworld.com/en/stamps/{}/?page=", encoded)
-            } else {
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                    encoded, cli.start_year, cli.end_year
-                )
-            }
+        if let Some(url) = &cli.stampworld_country_url {
+            crate::stampworld::country_url::listing_url_from_country_url(
+                url,
+                cli.start_year,
+                cli.end_year,
+            )?
         } else {
-            // Minimal percent-encoding for common problematic characters
-            // that appear in StampWorld site names (space, '!' and '/').
-            let encoded_site = encode(&site_name);
-            if use_main_slug {
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/?page=",
-                    encoded_site
-                )
-            } else {
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                    encoded_site, cli.start_year, cli.end_year
-                )
-            }
+            let overrides = crate::config::try_load_slug_overrides("slug_overrides.toml")?;
+            crate::stampworld::country_url::listing_url(
+                &site_name,
+                cli.start_year,
+                cli.end_year,
+                &overrides,
+            )
         }
     };
     // Load full config (so flag/wiki toggles are available)

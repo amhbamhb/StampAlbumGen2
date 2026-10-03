@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setRightSearchStatus
-resource: src/review_ui/views/compare.js#L1087-L1090
+resource: src/review_ui/views/compare.js#L1088-L1091
 generated:
   by: okf-rs/0.4.0
 relationships:

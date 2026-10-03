@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: ensureCopyableAlertDialogCompare
-resource: src/review_ui/views/compare.js#L354-L376
+resource: src/review_ui/views/compare.js#L355-L377
 generated:
   by: okf-rs/0.4.0
 relationships:

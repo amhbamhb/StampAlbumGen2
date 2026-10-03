@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: removeLeftRow
-resource: src/review_ui/views/compare.js#L1034-L1038
+resource: src/review_ui/views/compare.js#L1035-L1039
 generated:
   by: okf-rs/0.4.0
 relationships:

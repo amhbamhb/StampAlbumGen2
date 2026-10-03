@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateReviewStampWorldCommand
-resource: src/review_ui/views/compare.js#L1282-L1285
+resource: src/review_ui/views/compare.js#L1283-L1286
 generated:
   by: okf-rs/0.4.0
 relationships:

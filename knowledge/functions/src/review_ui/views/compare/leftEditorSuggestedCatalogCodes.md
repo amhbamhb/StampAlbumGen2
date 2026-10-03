@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: leftEditorSuggestedCatalogCodes
-resource: src/review_ui/views/compare.js#L2634-L2647
+resource: src/review_ui/views/compare.js#L2636-L2649
 generated:
   by: okf-rs/0.4.0
 relationships:

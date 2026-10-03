@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: availableCandidatesForCurrentLeft
-resource: src/review_ui/views/compare.js#L1756-L1775
+resource: src/review_ui/views/compare.js#L1758-L1777
 generated:
   by: okf-rs/0.4.0
 relationships:

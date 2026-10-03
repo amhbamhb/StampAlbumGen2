@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setLeftEditorCatalogCodeValue
-resource: src/review_ui/views/compare.js#L2759-L2761
+resource: src/review_ui/views/compare.js#L2761-L2763
 generated:
   by: okf-rs/0.4.0
 relationships:

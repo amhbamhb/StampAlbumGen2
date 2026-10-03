@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config
-resource: src/config.rs#L1-L3104
+resource: src/config.rs#L1-L3125
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -115,6 +115,8 @@ relationships:
 - [deep_merge_toml_values](../../functions/src/config/deep_merge_toml_values.md)
 - [load_config_with_override](../../functions/src/config/load_config_with_override.md)
 - [load_slug_overrides](../../functions/src/config/load_slug_overrides.md)
+- [slug_override_path](../../functions/src/config/slug_override_path.md)
+- [try_load_slug_overrides](../../functions/src/config/try_load_slug_overrides.md)
 - [albumeasy_pdf_timeout_defaults_and_positive_overrides](../../functions/src/config/albumeasy_pdf_timeout_defaults_and_positive_overrides.md)
 - [albumeasy_pdf_timeout_album_runtime_override_wins](../../functions/src/config/albumeasy_pdf_timeout_album_runtime_override_wins.md)
 - [colnect_fields_boolean_toggles_are_parsed](../../functions/src/config/colnect_fields_boolean_toggles_are_parsed.md)

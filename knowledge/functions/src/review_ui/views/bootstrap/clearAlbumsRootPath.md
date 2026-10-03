@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: clearAlbumsRootPath
-resource: src/review_ui/views/bootstrap.js#L331-L348
+resource: src/review_ui/views/bootstrap.js#L333-L350
 generated:
   by: okf-rs/0.4.0
 relationships:

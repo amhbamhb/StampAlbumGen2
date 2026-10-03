@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: rightSearchText
-resource: src/review_ui/views/compare.js#L1064-L1085
+resource: src/review_ui/views/compare.js#L1065-L1086
 generated:
   by: okf-rs/0.4.0
 relationships:

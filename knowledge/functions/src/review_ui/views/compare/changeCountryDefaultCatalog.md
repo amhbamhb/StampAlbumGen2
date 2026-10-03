@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: changeCountryDefaultCatalog
-resource: src/review_ui/views/compare.js#L797-L805
+resource: src/review_ui/views/compare.js#L798-L806
 generated:
   by: okf-rs/0.4.0
 relationships:

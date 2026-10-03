@@ -141,7 +141,7 @@ relationships:
   - target: functions/src/config/load_config_with_override
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_slug_overrides
+  - target: functions/src/config/try_load_slug_overrides
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/data_sources/stampworld/collect_stampworld_data
@@ -183,9 +183,6 @@ relationships:
   - target: functions/src/modes/extract_year
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/modes/run_scraping_mode
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/review_ui/count_colnect_candidates_in_db
     resolved_by: tree-sitter
     confidence: exact
@@ -216,6 +213,9 @@ relationships:
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
     resolved_by: tree-sitter
     confidence: exact
@@ -241,6 +241,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/stampworld/country_url/listing_url
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/stampworld/country_url/load_country_url
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
@@ -380,7 +386,7 @@ relationships:
 - [load_config](../../../../../functions/src/config/load_config.md)
 - [deep_merge_toml_values](../../../../../functions/src/config/deep_merge_toml_values.md)
 - [load_config_with_override](../../../../../functions/src/config/load_config_with_override.md)
-- [load_slug_overrides](../../../../../functions/src/config/load_slug_overrides.md)
+- [try_load_slug_overrides](../../../../../functions/src/config/try_load_slug_overrides.md)
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [migration_002_stamps_uniq_key_and_indexes](../../../../../functions/src/db_utils/migrations/migration_002_stamps_uniq_key_and_indexes.md)
 - [enforce_runtime_schema_compatibility](../../../../../functions/src/db_utils/migrations/enforce_runtime_schema_compatibility.md)
@@ -394,7 +400,6 @@ relationships:
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [download_image](../../../../../functions/src/image_downloader/download_image.md)
 - [extract_year](../../../../../functions/src/modes/extract_year.md)
-- [run_scraping_mode](../../../../../functions/src/modes/run_scraping_mode.md)
 - [count_colnect_candidates_in_db](../../../../../functions/src/review_ui/count_colnect_candidates_in_db.md)
 - [sync_processed_colnect_candidates_marks_existing_stamp_links](../../../../../functions/src/review_ui/sync_processed_colnect_candidates_marks_existing_stamp_links.md)
 - [mark_colnect_candidate_processed_sets_flag_for_matching_candidate](../../../../../functions/src/review_ui/mark_colnect_candidate_processed_sets_flag_for_matching_candidate.md)
@@ -405,6 +410,7 @@ relationships:
 - [build_config_editor_data_for_album](../../../../../functions/src/review_ui/config_editor/build_config_editor_data_for_album.md)
 - [save_album_config_diff](../../../../../functions/src/review_ui/config_editor/save_album_config_diff.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
+- [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [load_left_stamps](../../../../../functions/src/review_ui/matcher_service/load_left_stamps.md)
@@ -414,6 +420,8 @@ relationships:
 - [load_right_candidate_by_colnect_id](../../../../../functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id.md)
 - [catalogDisplayName](../../../../../functions/src/review_ui/views/compare/catalogDisplayName.md)
 - [inferInitialCatalogCodeFromLeftRows](../../../../../functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows.md)
+- [listing_url](../../../../../functions/src/stampworld/country_url/listing_url.md)
+- [load_country_url](../../../../../functions/src/stampworld/country_url/load_country_url.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
 - [fetch_text](../../../../../functions/src/stampworld/fetch/ReqwestFetcher/fetcher/fetch_text.md)
 - [fetch_bytes](../../../../../functions/src/stampworld/fetch/ReqwestFetcher/fetcher/fetch_bytes.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_review_ui_bootstrap
-resource: src/review_ui.rs#L2943-L2999
+resource: src/review_ui.rs#L2946-L3002
 generated:
   by: okf-rs/0.4.0
 relationships:

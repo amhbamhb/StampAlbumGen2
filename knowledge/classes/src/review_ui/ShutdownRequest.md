@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ShutdownRequest
-resource: src/review_ui.rs#L1353-L1361
+resource: src/review_ui.rs#L1356-L1364
 visibility: private
 generated:
   by: okf-rs/0.4.0

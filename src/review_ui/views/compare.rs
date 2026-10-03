@@ -298,7 +298,8 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                     </div>";
 
     let compare_script_html = format!(
-        "{}\n{}",
+        "{}\n{}\n{}",
+        include_str!("country_url.js"),
         include_str!("pdf_filters.js"),
         include_str!("compare.js")
     )
@@ -309,6 +310,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     )
     .replace("{footer_year_update_js}", FOOTER_YEAR_UPDATE_JS);
     include_str!("compare.html")
+        .replace("{country_url_controls}", include_str!("country_url.html"))
         .replace("{{", "{")
         .replace("}}", "}")
         .replace("{compare_css}", &compare_css)

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: appendColnectCopyLog
-resource: src/review_ui/views/bootstrap.js#L1048-L1057
+resource: src/review_ui/views/bootstrap.js#L1052-L1061
 generated:
   by: okf-rs/0.4.0
 relationships:

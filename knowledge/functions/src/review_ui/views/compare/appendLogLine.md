@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: appendLogLine
-resource: src/review_ui/views/compare.js#L3589-L3597
+resource: src/review_ui/views/compare.js#L3591-L3599
 generated:
   by: okf-rs/0.4.0
 relationships:

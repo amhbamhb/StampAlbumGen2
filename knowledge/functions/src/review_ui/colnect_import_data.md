@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_import_data
-resource: src/review_ui.rs#L2734-L2930
+resource: src/review_ui.rs#L2737-L2933
 visibility: private
 generated:
   by: okf-rs/0.4.0

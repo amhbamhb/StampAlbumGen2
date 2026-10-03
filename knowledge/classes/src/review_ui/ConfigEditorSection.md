@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ConfigEditorSection
-resource: src/review_ui.rs#L1415-L1420
+resource: src/review_ui.rs#L1418-L1423
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshRuntimeLogCompare
-resource: src/review_ui/views/compare.js#L395-L416
+resource: src/review_ui/views/compare.js#L396-L417
 generated:
   by: okf-rs/0.4.0
 relationships:

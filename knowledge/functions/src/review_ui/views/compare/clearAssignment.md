@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: clearAssignment
-resource: src/review_ui/views/compare.js#L2403-L2411
+resource: src/review_ui/views/compare.js#L2405-L2413
 generated:
   by: okf-rs/0.4.0
 relationships:

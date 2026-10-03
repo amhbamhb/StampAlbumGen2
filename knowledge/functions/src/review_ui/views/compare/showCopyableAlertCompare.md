@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: showCopyableAlertCompare
-resource: src/review_ui/views/compare.js#L378-L389
+resource: src/review_ui/views/compare.js#L379-L390
 generated:
   by: okf-rs/0.4.0
 relationships:

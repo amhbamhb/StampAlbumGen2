@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: usedColnectIds
-resource: src/review_ui/views/compare.js#L1747-L1754
+resource: src/review_ui/views/compare.js#L1749-L1756
 generated:
   by: okf-rs/0.4.0
 relationships:

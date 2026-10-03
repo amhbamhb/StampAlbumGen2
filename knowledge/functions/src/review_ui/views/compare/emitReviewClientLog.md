@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: emitReviewClientLog
-resource: src/review_ui/views/compare.js#L199-L208
+resource: src/review_ui/views/compare.js#L200-L209
 generated:
   by: okf-rs/0.4.0
 relationships:

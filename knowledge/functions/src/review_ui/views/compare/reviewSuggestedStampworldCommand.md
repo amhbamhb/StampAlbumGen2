@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: reviewSuggestedStampworldCommand
-resource: src/review_ui/views/compare.js#L1272-L1280
+resource: src/review_ui/views/compare.js#L1273-L1281
 generated:
   by: okf-rs/0.4.0
 relationships:

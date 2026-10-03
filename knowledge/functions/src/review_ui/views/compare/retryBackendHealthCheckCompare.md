@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: retryBackendHealthCheckCompare
-resource: src/review_ui/views/compare.js#L310-L312
+resource: src/review_ui/views/compare.js#L311-L313
 generated:
   by: okf-rs/0.4.0
 relationships:

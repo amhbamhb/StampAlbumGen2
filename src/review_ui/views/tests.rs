@@ -98,3 +98,14 @@ fn compare_html_has_country_scoped_pdf_filters_only_on_review_screen() {
     assert!(html.contains("filters: reviewPdfFilters.getSelection()"));
     assert!(!render_bootstrap_html(None).contains("reviewPdfemissionSummary"));
 }
+
+#[test]
+fn both_pull_screens_embed_saved_country_url_controls() {
+    for html in [render_bootstrap_html(None), render_html(&minimal_payload())] {
+        assert!(html.contains("id='stampworldCountryUrl'"));
+        assert!(html.contains("id='saveStampworldCountryUrl'"));
+        assert!(html.contains("class StampWorldCountryUrl"));
+        assert!(html.contains("await stampworldCountryUrl.ensureSaved(country)"));
+        assert!(!html.contains("{country_url_controls}"));
+    }
+}

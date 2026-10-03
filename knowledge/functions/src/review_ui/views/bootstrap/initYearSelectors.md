@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: initYearSelectors
-resource: src/review_ui/views/bootstrap.js#L545-L562
+resource: src/review_ui/views/bootstrap.js#L547-L564
 generated:
   by: okf-rs/0.4.0
 relationships:

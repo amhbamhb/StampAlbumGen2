@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: checkAlbumeasyStatusAfterPull
-resource: src/review_ui/views/bootstrap.js#L902-L915
+resource: src/review_ui/views/bootstrap.js#L906-L919
 generated:
   by: okf-rs/0.4.0
 relationships:

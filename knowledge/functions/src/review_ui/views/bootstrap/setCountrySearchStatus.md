@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setCountrySearchStatus
-resource: src/review_ui/views/bootstrap.js#L255-L258
+resource: src/review_ui/views/bootstrap.js#L257-L260
 generated:
   by: okf-rs/0.4.0
 relationships:

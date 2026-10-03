@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: showCopyableAlert
-resource: src/review_ui/views/bootstrap.js#L205-L216
+resource: src/review_ui/views/bootstrap.js#L207-L218
 generated:
   by: okf-rs/0.4.0
 relationships:

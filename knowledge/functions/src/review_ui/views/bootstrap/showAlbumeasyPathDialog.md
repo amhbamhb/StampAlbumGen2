@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: showAlbumeasyPathDialog
-resource: src/review_ui/views/bootstrap.js#L830-L891
+resource: src/review_ui/views/bootstrap.js#L834-L895
 generated:
   by: okf-rs/0.4.0
 relationships:

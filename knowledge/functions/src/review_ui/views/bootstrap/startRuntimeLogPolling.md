@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startRuntimeLogPolling
-resource: src/review_ui/views/bootstrap.js#L237-L241
+resource: src/review_ui/views/bootstrap.js#L239-L243
 generated:
   by: okf-rs/0.4.0
 relationships:

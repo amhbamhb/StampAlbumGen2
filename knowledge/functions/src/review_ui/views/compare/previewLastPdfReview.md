@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: previewLastPdfReview
-resource: src/review_ui/views/compare.js#L134-L182
+resource: src/review_ui/views/compare.js#L135-L183
 generated:
   by: okf-rs/0.4.0
 ---

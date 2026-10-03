@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applySuccessfulMatchToLocalLeft
-resource: src/review_ui/views/compare.js#L2413-L2474
+resource: src/review_ui/views/compare.js#L2415-L2476
 generated:
   by: okf-rs/0.4.0
 relationships:

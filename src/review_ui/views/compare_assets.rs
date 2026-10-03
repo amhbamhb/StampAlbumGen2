@@ -175,8 +175,9 @@ pub(super) fn render_op_busy_modal_html() -> String {
 
 pub(super) fn compare_head_css() -> String {
     format!(
-        "<style>{}{}</style>",
+        "<style>{}{}{}</style>",
         include_str!("compare_assets.css"),
-        include_str!("compare.css")
+        include_str!("compare.css"),
+        include_str!("country_url.css")
     )
 }

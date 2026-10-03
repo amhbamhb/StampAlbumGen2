@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: stopLoadingPhases
-resource: src/review_ui/views/bootstrap.js#L490-L495
+resource: src/review_ui/views/bootstrap.js#L492-L497
 generated:
   by: okf-rs/0.4.0
 relationships:

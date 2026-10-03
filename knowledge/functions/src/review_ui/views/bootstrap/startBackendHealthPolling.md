@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startBackendHealthPolling
-resource: src/review_ui/views/bootstrap.js#L109-L117
+resource: src/review_ui/views/bootstrap.js#L111-L119
 generated:
   by: okf-rs/0.4.0
 relationships:

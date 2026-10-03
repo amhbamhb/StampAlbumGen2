@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: SelectedMatch
-resource: src/review_ui.rs#L1121-L1128
+resource: src/review_ui.rs#L1124-L1131
 visibility: private
 generated:
   by: okf-rs/0.4.0
