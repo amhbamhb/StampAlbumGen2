@@ -135,12 +135,162 @@ pub(super) struct ReviewHandlersState {
     pub return_to_start_requested: bool,
 }
 
+fn handle_site_account_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let url = request.url();
+    let (body, status) = if method == Method::Get && url == "/api/account-auth-status" {
+        (
+            serde_json::json!(get_account_auth_status()),
+            StatusCode(200),
+        )
+    } else if method == Method::Post && url == "/api/save-site-credentials" {
+        let mut body = String::new();
+        let result = match request.as_reader().read_to_string(&mut body) {
+            Ok(_) => match serde_json::from_str::<SaveSiteCredentialsRequest>(&body) {
+                Ok(req) => save_site_credentials(
+                    req.stampworld_username.as_deref(),
+                    req.stampworld_password.as_deref(),
+                    req.colnect_username.as_deref(),
+                    req.colnect_password.as_deref(),
+                )
+                .map_err(|error| (error, StatusCode(500))),
+                Err(_) => Err((
+                    "Invalid credentials request JSON".to_string(),
+                    StatusCode(400),
+                )),
+            },
+            Err(_) => Err((
+                "Failed to read credentials request".to_string(),
+                StatusCode(400),
+            )),
+        };
+        let (response, status) = match result {
+            Ok(()) => (
+                SaveSiteCredentialsResponse {
+                    ok: true,
+                    message: "Site account credentials saved successfully to config.toml"
+                        .to_string(),
+                },
+                StatusCode(200),
+            ),
+            Err((message, status)) => {
+                log_runtime_event(&format!("Site Accounts: {}", message));
+                (SaveSiteCredentialsResponse { ok: false, message }, status)
+            }
+        };
+        (serde_json::json!(response), status)
+    } else {
+        return Some(request);
+    };
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!(
+            "Site Accounts: failed to send response: {}",
+            error
+        ));
+    }
+    None
+}
+
+#[cfg(test)]
+mod site_account_tests {
+    use super::*;
+
+    fn review_input() -> ReviewHandlersStateRequests {
+        ReviewHandlersStateRequests {
+            conn: Connection::open_in_memory().expect("test database"),
+            db_path: String::new(),
+            album_name: String::new(),
+            html: String::new(),
+            right_map: HashMap::new(),
+            default_catalog_code: String::new(),
+            default_sort_mode: String::new(),
+            odd_row_color: String::new(),
+            even_row_color: String::new(),
+            first_column_color: String::new(),
+            second_column_color: String::new(),
+            series_default_checked: false,
+            description_default_checked: false,
+            watermark_default_checked: false,
+            design_default_checked: false,
+            engraving_default_checked: false,
+            perforation_default_checked: false,
+            context_default_checked: false,
+            colnect_links_default_checked: false,
+            colnect_image_url_default_checked: false,
+            colnect_metadata_default_checked: false,
+            replace_sg_number_default_checked: false,
+            right_unmatched_only_default_checked: false,
+            albumeasy_auto_generate_pdf_default: false,
+            albumeasy_cli_configured: false,
+            catalog_family_options: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn site_accounts_routes_return_json_in_bootstrap_and_review_modes() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("test client");
+            // Invalid bodies exercise save routing without touching the user's config.
+            for body in ["", "{", r#"{"stampworld_password":42}"#] {
+                let response = client
+                    .post(format!("http://{addr}/api/save-site-credentials"))
+                    .body(body)
+                    .send()
+                    .expect("credentials response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let data: serde_json::Value = response.json().expect("JSON error response");
+                assert_eq!(data["ok"], false);
+                assert_eq!(data["message"], "Invalid credentials request JSON");
+            }
+            let response = client
+                .get(format!("http://{addr}/api/account-auth-status"))
+                .send()
+                .expect("account status response");
+            assert_eq!(response.status().as_u16(), 200);
+            let data: serde_json::Value = response.json().expect("JSON account status");
+            assert_eq!(data["ok"], true);
+            for site in ["stampworld", "colnect"] {
+                assert!(data[site]["username"].is_string());
+                assert!(data[site]["has_password"].is_boolean());
+                assert!(data[site].get("password").is_none());
+            }
+            server.unblock();
+            worker.join().expect("server worker");
+        }
+    }
+}
+
 pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
     let reload_requested = false;
 
-    for mut request in server.incoming_requests() {
+    for request in server.incoming_requests() {
+        let Some(mut request) = handle_site_account_request(request) else {
+            continue;
+        };
         let method = request.method().clone();
         let req_url = request.url().to_string();
 
@@ -514,60 +664,6 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                         .to_string()
                 }))
                 .with_status_code(status_code);
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Get && req_url == "/api/account-auth-status" {
-            let response = get_account_auth_status();
-            let mut resp = Response::from_string(
-                serde_json::to_string(&response).unwrap_or_else(|_| "{\"ok\":false}".to_string()),
-            );
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/api/save-site-credentials" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<SaveSiteCredentialsRequest, _> = serde_json::from_str(&body);
-            let response = match parsed {
-                Ok(req) => match save_site_credentials(
-                    req.stampworld_username.as_deref(),
-                    req.stampworld_password.as_deref(),
-                    req.colnect_username.as_deref(),
-                    req.colnect_password.as_deref(),
-                ) {
-                    Ok(_) => SaveSiteCredentialsResponse {
-                        ok: true,
-                        message: "Site account credentials saved successfully to config.toml"
-                            .to_string(),
-                    },
-                    Err(error) => SaveSiteCredentialsResponse {
-                        ok: false,
-                        message: error,
-                    },
-                },
-                Err(error) => SaveSiteCredentialsResponse {
-                    ok: false,
-                    message: format!("invalid request: {}", error),
-                },
-            };
-
-            let mut resp =
-                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
-                }));
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
             }
@@ -1198,7 +1294,10 @@ pub(super) fn serve_review_requests(
     let reload_requested = false;
     let mut return_to_start_requested = false;
 
-    for mut request in server.incoming_requests() {
+    for request in server.incoming_requests() {
+        let Some(mut request) = handle_site_account_request(request) else {
+            continue;
+        };
         let method = request.method().clone();
         let req_url = request.url().to_string();
 

@@ -711,6 +711,10 @@ pub struct SaveSiteCredentialsResponse {
 
 pub fn get_account_auth_status() -> AccountAuthStatusResponse {
     let cfg = crate::config::load_config("config.toml");
+    account_auth_status_from_config(&cfg)
+}
+
+fn account_auth_status_from_config(cfg: &crate::config::Config) -> AccountAuthStatusResponse {
     let sw_user = cfg.effective_stampworld_username().unwrap_or_default();
     let sw_pass = cfg.effective_stampworld_password().unwrap_or_default();
     let col_user = cfg.effective_colnect_username().unwrap_or_default();
@@ -742,7 +746,23 @@ pub fn save_site_credentials(
     ensure_runtime_startup_files()?;
     let config_path =
         find_global_config_path().ok_or_else(|| "could not locate config.toml".to_string())?;
-    let content = fs::read_to_string(&config_path)
+    save_site_credentials_to_path(
+        &config_path,
+        stampworld_user,
+        stampworld_pass,
+        colnect_user,
+        colnect_pass,
+    )
+}
+
+fn save_site_credentials_to_path(
+    config_path: &Path,
+    stampworld_user: Option<&str>,
+    stampworld_pass: Option<&str>,
+    colnect_user: Option<&str>,
+    colnect_pass: Option<&str>,
+) -> Result<(), String> {
+    let content = fs::read_to_string(config_path)
         .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
     let mut root_table = toml::from_str::<toml::Table>(&content)
         .map_err(|e| format!("invalid TOML in {}: {}", config_path.display(), e))?;
@@ -758,7 +778,7 @@ pub fn save_site_credentials(
             toml::Value::String(user.trim().to_string()),
         );
     }
-    if let Some(pass) = stampworld_pass {
+    if let Some(pass) = stampworld_pass.filter(|pass| !pass.is_empty()) {
         let sw_tbl = root_table
             .entry("stampworld")
             .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
@@ -781,7 +801,7 @@ pub fn save_site_credentials(
             toml::Value::String(user.trim().to_string()),
         );
     }
-    if let Some(pass) = colnect_pass {
+    if let Some(pass) = colnect_pass.filter(|pass| !pass.is_empty()) {
         let col_tbl = root_table
             .entry("colnect")
             .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
@@ -795,7 +815,7 @@ pub fn save_site_credentials(
 
     let rendered = toml::to_string_pretty(&root_table)
         .map_err(|e| format!("failed to render updated config TOML: {}", e))?;
-    fs::write(&config_path, rendered)
+    fs::write(config_path, rendered)
         .map_err(|e| format!("failed to write {}: {}", config_path.display(), e))?;
     Ok(())
 }
@@ -3190,6 +3210,77 @@ mod tests {
         mark_colnect_candidate_processed, sync_processed_colnect_candidates,
     };
     use rusqlite::Connection;
+
+    #[test]
+    fn site_accounts_preserve_saved_passwords_and_unrelated_config() {
+        let dir = tempfile::tempdir().expect("temp config directory");
+        let path = dir.path().join("config.toml");
+        std::fs::write(
+            &path,
+            "[stampworld]\nusername = 'sw-test'\npassword = 'sw-test-secret'\n\
+             [colnect]\nusername = 'col-test'\npassword = 'col-test-secret'\n\
+             [runtime]\nbootstrap_albums_root_path = 'Albums'\n",
+        )
+        .expect("write test config");
+        super::save_site_credentials_to_path(&path, Some(" updated "), Some(""), None, None)
+            .expect("save without replacing passwords");
+        let content = std::fs::read_to_string(&path).expect("read config");
+        let table: toml::Table = toml::from_str(&content).expect("parse saved config");
+        assert_eq!(table["stampworld"]["username"].as_str(), Some("updated"));
+        assert_eq!(
+            table["stampworld"]["password"].as_str(),
+            Some("sw-test-secret")
+        );
+        assert_eq!(
+            table["colnect"]["password"].as_str(),
+            Some("col-test-secret")
+        );
+        assert_eq!(
+            table["runtime"]["bootstrap_albums_root_path"].as_str(),
+            Some("Albums")
+        );
+        super::save_site_credentials_to_path(&path, None, Some("new-secret"), None, Some(""))
+            .expect("replace StampWorld password only");
+        let cfg: crate::config::Config =
+            toml::from_str(&std::fs::read_to_string(&path).expect("read updated config"))
+                .expect("parse config");
+        assert_eq!(
+            cfg.stampworld
+                .as_ref()
+                .expect("stampworld section")
+                .password
+                .as_deref(),
+            Some("new-secret")
+        );
+        let status = super::account_auth_status_from_config(&cfg);
+        assert!(status.stampworld.configured);
+        assert!(status.colnect.configured);
+        assert_eq!(
+            status.stampworld.username,
+            cfg.effective_stampworld_username()
+                .expect("effective username")
+        );
+        let json = serde_json::to_string(&status).expect("serialize account status");
+        assert!(!json.contains("new-secret"));
+        assert!(!json.contains("col-test-secret"));
+    }
+
+    #[test]
+    fn site_accounts_reject_invalid_config_without_overwriting_it() {
+        let dir = tempfile::tempdir().expect("temp config directory");
+        let path = dir.path().join("config.toml");
+        for content in ["[stampworld", "stampworld = 'not a table'"] {
+            std::fs::write(&path, content).expect("write invalid config");
+            assert!(
+                super::save_site_credentials_to_path(&path, Some("test"), None, None, None)
+                    .is_err()
+            );
+            assert_eq!(
+                std::fs::read_to_string(&path).expect("read config"),
+                content
+            );
+        }
+    }
 
     #[test]
     fn sync_processed_colnect_candidates_marks_existing_stamp_links() {

@@ -2,6 +2,28 @@
 
 ## Complete Config Parameters from config.rs (UPDATED)
 
+### Site Account Credentials
+
+Set `username` and `password` under `[stampworld]` and `[colnect]` in the
+local, Git-ignored `config.toml`. The Site Accounts dialog is available on
+both the startup page and the album Review page. It loads configured usernames
+and indicates whether a password is already saved, without returning passwords
+to the browser. Leave a password field blank to retain the saved password;
+enter a new password to replace it.
+
+Environment variables take precedence over file settings: `STAMPWORLD_USER`
+(or `STAMPWORLD_USERNAME`), `STAMPWORLD_PASS` (or `STAMPWORLD_PASSWORD`),
+`COLNECT_USER` (or `COLNECT_USERNAME`), and `COLNECT_PASS`
+(or `COLNECT_PASSWORD`).
+
+If Site Accounts reports an empty response, restart with the updated application
+binary and reload the browser page. Credential endpoints must be available in
+the running server, not just in the page's JavaScript.
+
+Credential regressions can be checked with
+`cargo test --lib site_accounts -- --test-threads=1` and, when Node.js is
+available, `node --test tests/site_accounts_ui.cjs`.
+
 ### Core Stamp Dimensions
 
 | Parameter | Type | Default | Description |
