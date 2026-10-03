@@ -42,8 +42,8 @@ fn wait_for_generated_pdf_with_timing(
     timeout: Duration,
     poll_every: Duration,
 ) -> bool {
-    let deadline = Instant::now() + timeout;
-    while Instant::now() < deadline {
+    let started = Instant::now();
+    loop {
         if let Ok(meta) = std::fs::metadata(expected_pdf_path) {
             if meta.len() > 0 {
                 let is_newer = match (previous_modified, meta.modified()) {
@@ -56,16 +56,23 @@ fn wait_for_generated_pdf_with_timing(
                 }
             }
         }
-        std::thread::sleep(poll_every);
+        let remaining = timeout.saturating_sub(started.elapsed());
+        if remaining.is_zero() {
+            return false;
+        }
+        std::thread::sleep(poll_every.min(remaining));
     }
-    false
 }
 
-fn wait_for_generated_pdf(expected_pdf_path: &Path, previous_modified: Option<SystemTime>) -> bool {
+fn wait_for_generated_pdf(
+    expected_pdf_path: &Path,
+    previous_modified: Option<SystemTime>,
+    timeout: Duration,
+) -> bool {
     wait_for_generated_pdf_with_timing(
         expected_pdf_path,
         previous_modified,
-        Duration::from_secs(8),
+        timeout,
         Duration::from_millis(200),
     )
 }
@@ -82,6 +89,7 @@ fn maybe_generate_album_pdf_with_settings(
     output_txt_path: &Path,
     generate_pdf: bool,
     cli_path: Option<&str>,
+    pdf_timeout: Duration,
 ) -> (Option<PathBuf>, Option<String>) {
     if !generate_pdf {
         return (None, None);
@@ -151,7 +159,7 @@ fn maybe_generate_album_pdf_with_settings(
                 "AlbumEasy CLI completed successfully for {}",
                 output_txt_path.display()
             );
-            if wait_for_generated_pdf(&expected_pdf_path, previous_modified) {
+            if wait_for_generated_pdf(&expected_pdf_path, previous_modified, pdf_timeout) {
                 if pdf_dx_logging_enabled() {
                     let meta = std::fs::metadata(&expected_pdf_path).ok();
                     let bytes = meta.as_ref().map(|m| m.len()).unwrap_or(0);
@@ -168,7 +176,7 @@ fn maybe_generate_album_pdf_with_settings(
                     log::warn!(
                         "[pdf-dx] timeout waiting for fresh PDF path='{}' timeout_ms={} total_elapsed_ms={}",
                         expected_pdf_path.display(),
-                        Duration::from_secs(80).as_millis(),
+                        pdf_timeout.as_millis(),
                         started.elapsed().as_millis()
                     );
                 }
@@ -180,8 +188,9 @@ fn maybe_generate_album_pdf_with_settings(
                 (
                     None,
                     Some(format!(
-                        "AlbumEasy ran but no PDF appeared at '{}' within 80 seconds",
-                        expected_pdf_path.display()
+                        "AlbumEasy ran but no PDF appeared at '{}' within {} seconds",
+                        expected_pdf_path.display(),
+                        pdf_timeout.as_secs()
                     )),
                 )
             }
@@ -242,8 +251,13 @@ fn generated_artifacts_from_path(
     let cfg = crate::config::load_effective_config("config.toml");
     let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
     let generate_pdf = generate_pdf_override.unwrap_or_else(|| cfg.albumeasy_auto_pdf_enabled());
-    let (generated_pdf_path, pdf_failure_reason) =
-        maybe_generate_album_pdf_with_settings(&output_txt_path, generate_pdf, cli_path.as_deref());
+    let pdf_timeout = Duration::from_secs(u64::from(cfg.albumeasy_pdf_timeout_secs()));
+    let (generated_pdf_path, pdf_failure_reason) = maybe_generate_album_pdf_with_settings(
+        &output_txt_path,
+        generate_pdf,
+        cli_path.as_deref(),
+        pdf_timeout,
+    );
 
     GeneratedAlbumArtifacts {
         output_txt_path,
@@ -347,6 +361,66 @@ mod tests {
     use super::wait_for_generated_pdf_with_timing;
     use std::fs;
     use std::time::{Duration, SystemTime};
+
+    #[test]
+    fn wait_for_generated_pdf_rejects_missing_empty_and_stale_files() {
+        let dir = tempfile::tempdir().expect("PDF test directory");
+        let path = dir.path().join("album.pdf");
+        let timeout = Duration::from_millis(30);
+        let poll = Duration::from_millis(100);
+        assert!(!wait_for_generated_pdf_with_timing(
+            &path, None, timeout, poll
+        ));
+        fs::write(&path, b"").expect("empty PDF");
+        assert!(!wait_for_generated_pdf_with_timing(
+            &path, None, timeout, poll
+        ));
+        fs::write(&path, b"old PDF").expect("stale PDF");
+        let modified = fs::metadata(&path)
+            .expect("metadata")
+            .modified()
+            .expect("mtime");
+        assert!(!wait_for_generated_pdf_with_timing(
+            &path,
+            Some(modified),
+            timeout,
+            poll
+        ));
+        assert!(wait_for_generated_pdf_with_timing(
+            &path, None, timeout, poll
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn albumeasy_pdf_timeout_failure_reports_actual_wait() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().expect("launcher test directory");
+        let launcher = dir.path().join("AlbumEasy test.sh");
+        fs::write(
+            &launcher,
+            include_str!("../../tests/fixtures/albumeasy_success.sh"),
+        )
+        .expect("write test launcher");
+        fs::set_permissions(&launcher, fs::Permissions::from_mode(0o755))
+            .expect("launcher permissions");
+        let txt = dir.path().join("album.txt");
+        fs::write(&txt, b"").expect("test album");
+        let (pdf, failure) = super::maybe_generate_album_pdf_with_settings(
+            &txt,
+            true,
+            launcher.to_str(),
+            Duration::from_secs(1),
+        );
+        assert!(pdf.is_none());
+        assert_eq!(
+            failure,
+            Some(format!(
+                "AlbumEasy ran but no PDF appeared at '{}' within 1 seconds",
+                txt.with_extension("pdf").display(),
+            ))
+        );
+    }
 
     #[test]
     fn wait_for_generated_pdf_detects_delayed_new_write() {

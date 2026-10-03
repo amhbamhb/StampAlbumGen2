@@ -105,6 +105,15 @@ Manual bump:
 ./scripts/update_versions.sh --set 1.2.3
 ```
 
+The version helper requires Bash. Invoking it through `sh` is also supported:
+the script switches to Bash automatically while preserving its arguments.
+On Windows, run it from Git Bash or WSL.
+
+```bash
+sh scripts/update_versions.sh minor --dry-run
+node --test tests/update_versions_shell.cjs
+```
+
 Validate automation:
 
 ```bash

@@ -24,6 +24,17 @@ Credential regressions can be checked with
 `cargo test --lib site_accounts -- --test-threads=1` and, when Node.js is
 available, `node --test tests/site_accounts_ui.cjs`.
 
+### AlbumEasy PDF Wait
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `albumeasy_pdf_timeout_secs` | positive integer | 300 | Seconds to wait for a fresh PDF after the AlbumEasy launcher exits |
+
+Set this at the root or under `[runtime]` in global or album configuration.
+For large albums on external storage, `600` allows ten minutes. Zero and negative
+values are invalid. This setting controls PDF discovery, not a timeout for the
+AlbumEasy process itself. An unchanged pre-existing PDF is not accepted.
+
 ### Core Stamp Dimensions
 
 | Parameter | Type | Default | Description |

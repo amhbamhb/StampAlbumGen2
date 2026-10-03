@@ -209,6 +209,9 @@ bootstrap_albums_root_path = ""
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = false
 
+# Positive seconds to wait for a fresh PDF after the AlbumEasy launcher exits.
+albumeasy_pdf_timeout_secs = 300
+
 # DX/support switch for additional PDF generation diagnostics in Logs/
 pdf_dx_logging = false
 

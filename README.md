@@ -246,6 +246,19 @@ If your CI runner lacks GUI libraries (GTK on Linux), keep `USE_RFD` disabled. T
 
 ### Diagnostics
 
+Automatic PDF generation waits up to 300 seconds for a fresh PDF after the
+AlbumEasy launcher exits. For large albums or slow external drives, increase
+the positive `albumeasy_pdf_timeout_secs` value in the global configuration
+or the album's configuration:
+
+```toml
+[runtime]
+albumeasy_pdf_timeout_secs = 600
+```
+
+This wait does not limit AlbumEasy's process runtime. Timeout messages report
+the configured value; an existing, unchanged PDF is not treated as new output.
+
 - `--pdf-dx-logging`
   Enable additional PDF generation diagnostics for support/debugging.
   Logs are written to `Logs/stamp_album_gen2-*.log`.

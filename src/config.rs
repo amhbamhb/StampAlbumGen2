@@ -795,6 +795,8 @@ pub struct Config {
     // When true, run AlbumEasy in console mode (-c) after generating the
     // album text file so the PDF is produced automatically.
     pub albumeasy_auto_generate_pdf: Option<bool>,
+    // Seconds to wait for a fresh PDF after the AlbumEasy launcher exits.
+    pub albumeasy_pdf_timeout_secs: Option<std::num::NonZeroU32>,
     // When true, emit additional PDF generation diagnostics to logs.
     // This is intended as a support/DX switch for shipped binaries.
     pub pdf_dx_logging: Option<bool>,
@@ -1146,6 +1148,7 @@ impl Config {
             albumeasy_cli_path: None,
             bootstrap_albums_root_path: None,
             albumeasy_auto_generate_pdf: Some(false),
+            albumeasy_pdf_timeout_secs: std::num::NonZeroU32::new(300),
             pdf_dx_logging: Some(false),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
@@ -1597,6 +1600,12 @@ impl Config {
     /// to produce PDF output automatically.
     pub fn albumeasy_auto_pdf_enabled(&self) -> bool {
         self.albumeasy_auto_generate_pdf.unwrap_or(false)
+    }
+
+    /// Maximum PDF discovery wait after the AlbumEasy launcher exits.
+    pub fn albumeasy_pdf_timeout_secs(&self) -> u32 {
+        self.albumeasy_pdf_timeout_secs
+            .map_or(300, |value| value.get())
     }
 
     /// True when additional PDF generation diagnostics should be emitted.
@@ -2329,6 +2338,11 @@ pub fn load_config(path: &str) -> Config {
                                         defaults.albumeasy_auto_generate_pdf;
                                     has_missing = true;
                                 }
+                                if cfg.albumeasy_pdf_timeout_secs.is_none() {
+                                    cfg.albumeasy_pdf_timeout_secs =
+                                        defaults.albumeasy_pdf_timeout_secs;
+                                    has_missing = true;
+                                }
                                 if cfg.pdf_dx_logging.is_none() {
                                     cfg.pdf_dx_logging = defaults.pdf_dx_logging;
                                     has_missing = true;
@@ -2815,6 +2829,46 @@ pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
 #[cfg(test)]
 mod tests {
     use super::{detect_duplicate_keys, Config};
+
+    #[test]
+    fn albumeasy_pdf_timeout_defaults_and_positive_overrides() {
+        assert_eq!(Config::with_defaults().albumeasy_pdf_timeout_secs(), 300);
+        let legacy: Config = toml::from_str("").expect("legacy config");
+        assert_eq!(legacy.albumeasy_pdf_timeout_secs(), 300);
+        let custom: Config =
+            toml::from_str("albumeasy_pdf_timeout_secs = 600").expect("custom PDF timeout");
+        assert_eq!(custom.albumeasy_pdf_timeout_secs(), 600);
+        let roundtrip: Config =
+            toml::from_str(&toml::to_string(&custom).expect("serialize timeout"))
+                .expect("deserialize timeout");
+        assert_eq!(roundtrip.albumeasy_pdf_timeout_secs(), 600);
+        for invalid in ["0", "-1", "1.5", "\"600\""] {
+            assert!(
+                toml::from_str::<Config>(&format!("albumeasy_pdf_timeout_secs = {invalid}"))
+                    .is_err(),
+                "invalid timeout accepted: {invalid}"
+            );
+        }
+    }
+
+    #[test]
+    fn albumeasy_pdf_timeout_album_runtime_override_wins() {
+        let dir = tempfile::tempdir().expect("album config directory");
+        std::fs::write(
+            dir.path().join("config.toml"),
+            "[runtime]\nalbumeasy_pdf_timeout_secs = 600\n",
+        )
+        .expect("write album config");
+        let global = dir.path().join("global.toml");
+        std::fs::write(
+            &global,
+            toml::to_string(&Config::with_defaults()).expect("serialize global config"),
+        )
+        .expect("write global config");
+        let merged =
+            super::load_config_with_override(global.to_str().expect("global path"), dir.path());
+        assert_eq!(merged.albumeasy_pdf_timeout_secs(), 600);
+    }
 
     #[test]
     fn colnect_fields_boolean_toggles_are_parsed() {

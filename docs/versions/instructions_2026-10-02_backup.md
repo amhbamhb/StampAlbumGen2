@@ -1,0 +1,58 @@
+# Stamp Album Generator - Instructions
+# Version: 1.10.0
+# Last Updated: 2026-10-02
+# Previous Versions: docs/versions/instructions_2025-09-18_v1.md
+
+# Best Practices
+- Follow Rust coding standards and conventions.
+- Write modular and reusable code.
+- Include unit tests for critical functions.
+- Use version control effectively with Git.
+- Always use best practices for security and performance.
+- Keep your code organized and well-documented.
+- Commit changes frequently with clear messages.
+- Use descriptive names for files and directories.
+- Review and test your code before pushing.
+ - When adding, removing or renaming configuration keys, ALWAYS update all of the following:
+	 1) the `Config` struct (and its `with_defaults()` implementation) in `src/config.rs`
+	 2) the `config_template.toml` file (human-friendly template with comments)
+	 3) the default-creation logic in `src/config.rs` which copies `config_template.toml` when
+			`config.toml` is absent. This ensures runtime defaults, templates and generated files stay in sync.
+- Use GitLab Issues for project-related questions.
+
+# Git repository Structure
+- Source code is in `/src`.
+- Configuration files are in `/config.toml` and `/config_template.toml`.
+- Documentation is in `/docs`, `/API_DOCUMENTATION.md`, `/CONTRIBUTING.md`, `/RELEASE_NOTES.md`.
+- Tests are in `/tests`.
+- Example data is in `/examples`.
+- Stamp collections are in `/Albums/{country name}/`.
+- Archived source files are in `/Archive`.
+- Image assets are in `/images`.
+- Build artifacts are in `/target`.
+
+# SQLite Database
+- Databases are stored in `/Albums/{country name}/{country name}.db`.
+- Database backups are stored as `{country name}.db.backup`.
+
+# Postage Stamps
+- Store stamp images in `Albums/{country name}/images/`.
+
+
+
+# StampEasy Output
+- Output files are generated in `/Albums/{country name}`.
+- Album text files are named `{country name}.txt`.
+- Extract files are named `{country name}_extract.txt`.
+- Review the output logs in the project root (timestamped .log files).
+
+# Developing with Automated Version Management
+- Refer to `docs/AUTOMATION_SETUP.md` for setup instructions.
+- Use `docs/AUTOMATION_QUICK_REFERENCE.md` for quick usage.
+- Consult `docs/AUTOMATION_SYSTEM_DOCUMENTATION.md` for full technical details.
+
+# Development Testing
+- Run tests with:
+- use a single year for all testing
+- use best pratices for testing (ie. testing in seperate file(s) for unit tests, etc.)
+
