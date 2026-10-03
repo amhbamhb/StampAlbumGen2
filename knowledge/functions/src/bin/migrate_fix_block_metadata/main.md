@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/init
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/time_utils/formatted_now
     resolved_by: tree-sitter
     confidence: exact
@@ -18,4 +21,5 @@ relationships:
 
 # Calls
 
+- [init](../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/init.md)
 - [formatted_now](../../../../functions/src/time_utils/formatted_now.md)

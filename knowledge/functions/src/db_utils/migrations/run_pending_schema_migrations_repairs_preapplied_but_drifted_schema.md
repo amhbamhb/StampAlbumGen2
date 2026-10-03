@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_pending_schema_migrations_repairs_preapplied_but_drifted_schema
-resource: src/db_utils/migrations.rs#L634-L684
+resource: src/db_utils/migrations.rs#L867-L917
 visibility: private
 generated:
   by: okf-rs/0.4.0

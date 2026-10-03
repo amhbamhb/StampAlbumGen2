@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: operations
-resource: src/db_utils/operations.rs#L1-L363
+resource: src/db_utils/operations.rs#L1-L365
 generated:
   by: okf-rs/0.4.0
 relationships:

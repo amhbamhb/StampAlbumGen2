@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_albumeasy_cli_path
-resource: src/config.rs#L1508-L1513
+resource: src/config.rs#L1584-L1589
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -15,6 +15,9 @@ relationships:
   - target: functions/src/review_ui/http_handlers/serve_bootstrap_requests
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/album_colnect_pdf_filters/verify_filtered_output
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -26,3 +29,4 @@ relationships:
 - [generated_artifacts_from_path](../../../../functions/src/album_globals/generated_artifacts_from_path.md)
 - [main](../../../../functions/src/main.md)
 - [serve_bootstrap_requests](../../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
+- [verify_filtered_output](../../../../functions/tests/album_colnect_pdf_filters/verify_filtered_output.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: commemorative_layout
-resource: src/album_globals/generator_new/commemorative_layout.rs#L1-L250
+resource: src/album_globals/generator_new/commemorative_layout.rs#L1-L297
 generated:
   by: okf-rs/0.4.0
 relationships:

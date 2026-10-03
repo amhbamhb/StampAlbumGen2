@@ -1,11 +1,14 @@
 ---
 type: Rust Function
 title: serve_bootstrap_requests
-resource: src/review_ui/http_handlers.rs#L138-L1030
+resource: src/review_ui/http_handlers.rs#L372-L1317
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/review_ui/http_handlers/handle_site_account_request
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/bundled_favicon_png
     resolved_by: tree-sitter
     confidence: exact
@@ -16,6 +19,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/current_bootstrap_albums_root
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/create_bootstrap_country_or_theme
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/set_bootstrap_albums_root_override
@@ -34,9 +40,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/start_bootstrap_stampworld_job
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/config/load_config
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/Config/effective_albumeasy_cli_path
@@ -66,7 +69,7 @@ relationships:
   - target: functions/src/review_ui/album_dir_for_ui
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/with_album_config_override
+  - target: functions/src/config/with_album_config_override_async
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generate_album_output_conn_with_pdf_override
@@ -85,6 +88,9 @@ relationships:
   - target: functions/src/review_ui/run_review_ui_bootstrap
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -93,17 +99,18 @@ relationships:
 
 # Calls
 
+- [handle_site_account_request](../../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
 - [bundled_favicon_png](../../../../functions/src/review_ui/http_handlers/bundled_favicon_png.md)
 - [ping_response_json](../../../../functions/src/review_ui/http_handlers/ping_response_json.md)
 - [scan_bootstrap_countries](../../../../functions/src/review_ui/scan_bootstrap_countries.md)
 - [current_bootstrap_albums_root](../../../../functions/src/review_ui/current_bootstrap_albums_root.md)
+- [create_bootstrap_country_or_theme](../../../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
 - [set_bootstrap_albums_root_override](../../../../functions/src/review_ui/set_bootstrap_albums_root_override.md)
 - [pick_bootstrap_albums_root_via_dialog](../../../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md)
 - [stampworld_job_state](../../../../functions/src/review_ui/stampworld_job_state.md)
 - [tail_current_log](../../../../functions/src/review_ui/tail_current_log.md)
 - [log_runtime_event](../../../../functions/src/review_ui/log_runtime_event.md)
 - [start_bootstrap_stampworld_job](../../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
-- [load_config](../../../../functions/src/config/load_config.md)
 - [effective_albumeasy_cli_path](../../../../functions/src/config/Config/effective_albumeasy_cli_path.md)
 - [save_runtime_albumeasy_cli_path](../../../../functions/src/review_ui/save_runtime_albumeasy_cli_path.md)
 - [pick_albumeasy_cli_path_via_dialog](../../../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog.md)
@@ -113,7 +120,7 @@ relationships:
 - [best_effort_prepare_images_for_pdf](../../../../functions/src/review_ui/http_handlers/best_effort_prepare_images_for_pdf.md)
 - [normalize_album_images_for_pdf](../../../../functions/src/image_downloader/normalize_album_images_for_pdf.md)
 - [album_dir_for_ui](../../../../functions/src/review_ui/album_dir_for_ui.md)
-- [with_album_config_override](../../../../functions/src/config/with_album_config_override.md)
+- [with_album_config_override_async](../../../../functions/src/config/with_album_config_override_async.md)
 - [generate_album_output_conn_with_pdf_override](../../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 - [open_local_path](../../../../functions/src/review_ui/open_local_path.md)
 - [colnect_import_data](../../../../functions/src/review_ui/colnect_import_data.md)
@@ -122,3 +129,4 @@ relationships:
 # Called by
 
 - [run_review_ui_bootstrap](../../../../functions/src/review_ui/run_review_ui_bootstrap.md)
+- [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)

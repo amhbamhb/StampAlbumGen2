@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: series_issue_date_order_tests
-resource: tests/series_issue_date_order_tests.rs#L1-L180
+resource: tests/series_issue_date_order_tests.rs#L1-L181
 generated:
   by: okf-rs/0.4.0
 relationships:

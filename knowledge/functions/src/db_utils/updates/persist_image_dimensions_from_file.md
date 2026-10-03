@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/image_utils/get_image_dimensions
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/db_utils/updates/update_image_dimensions
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
     resolved_by: tree-sitter
@@ -28,6 +31,7 @@ relationships:
 # Calls
 
 - [get_image_dimensions](../../../../functions/src/image_utils/get_image_dimensions.md)
+- [update_image_dimensions](../../../../functions/src/db_utils/updates/update_image_dimensions.md)
 
 # Called by
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_effectively_duplicate_text
-resource: src/album_globals/generator.rs#L149-L163
+resource: src/album_globals/generator.rs#L152-L166
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,7 +11,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/build_stamp_text
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -26,4 +26,4 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [build_stamp_text](../../../../functions/src/album_globals/generator/build_stamp_text.md)

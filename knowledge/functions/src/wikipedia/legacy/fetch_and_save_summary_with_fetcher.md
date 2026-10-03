@@ -23,7 +23,7 @@ relationships:
 
 # Signature
 
-`pub fn fetch_and_save_summary_with_fetcher( topic: &str, album_dir: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn fetch_and_save_summary_with_fetcher( topic: &str, album_dir: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

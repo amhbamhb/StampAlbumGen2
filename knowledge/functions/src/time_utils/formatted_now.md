@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_utils/globals/write_globals
@@ -44,7 +44,7 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [write_globals](../../../functions/src/album_utils/globals/write_globals.md)
 - [main](../../../functions/src/bin/backfill_image_dims/main.md)
 - [main](../../../functions/src/bin/migrate_fix_block_metadata/main.md)

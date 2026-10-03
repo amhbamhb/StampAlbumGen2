@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick_and_copy_colnect_file_to_dir
-resource: src/review_ui.rs#L1867-L1973
+resource: src/review_ui.rs#L2150-L2256
 visibility: private
 generated:
   by: okf-rs/0.4.0

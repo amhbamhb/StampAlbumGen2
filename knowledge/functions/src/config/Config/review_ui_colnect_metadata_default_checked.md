@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_colnect_metadata_default_checked
-resource: src/config.rs#L1430-L1435
+resource: src/config.rs#L1506-L1511
 generated:
   by: okf-rs/0.4.0
 relationships:

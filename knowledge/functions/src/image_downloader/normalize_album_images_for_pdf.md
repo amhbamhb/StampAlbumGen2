@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_album_images_for_pdf
-resource: src/image_downloader.rs#L211-L271
+resource: src/image_downloader.rs#L213-L273
 generated:
   by: okf-rs/0.4.0
 relationships:

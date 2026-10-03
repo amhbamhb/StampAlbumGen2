@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: count_colnect_candidates_in_db
-resource: src/review_ui.rs#L1625-L1646
+resource: src/review_ui.rs#L1839-L1860
 visibility: private
 generated:
   by: okf-rs/0.4.0

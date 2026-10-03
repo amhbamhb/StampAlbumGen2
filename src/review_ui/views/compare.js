@@ -7,6 +7,7 @@ const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 const configDefaultSortMode = String(payload.default_sort_mode || 'year_series_date_catalog').toLowerCase();
 const reviewCountryName = String(payload.album_name || '').trim();
+const reviewPdfFilters = new ReviewPdfFilters(reviewCountryName || 'default');
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
 const stampWorldYearsStorageKey = 'reviewui.stampWorldYears.' + String(payload.album_name || 'default');
 const pdfYearsStorageKey = 'reviewui.pdfYears.' + String(payload.album_name || 'default');
@@ -544,6 +545,7 @@ async function reloadLeftRowsFromServer(preferredRowid = null) {
             sortLeftRows(currentRowid);
             render();
             logRuntimeCompare(`Reloaded ${left.length} left rows from server`);
+            await reviewPdfFilters.refresh();
             return true;
         }
     } catch (e) {
@@ -567,6 +569,7 @@ async function refreshRightCandidatesRealtime(restoredColnectId = null) {
             setMatchStatus('Updated, but restored candidate is filtered out or unavailable right now.');
         }
         render();
+        await reviewPdfFilters.refresh();
         return true;
     } catch (_) {
         return false;
@@ -3002,6 +3005,7 @@ async function submitLeftEditor() {
     closeLeftEditor();
     document.getElementById('status').innerText = payload.message || 'Left-side item saved';
     render();
+    await reviewPdfFilters.refresh();
 }
 
 function confirmDestructiveActionCompare(message) {
@@ -3462,11 +3466,24 @@ async function generatePdfNowReview() {
         if (alwaysOpenPdfEl) alwaysOpenPdfEl.disabled = active;
         if (startYearInput) startYearInput.disabled = active;
         if (endYearInput) endYearInput.disabled = active;
+        reviewPdfFilters.setDisabled(active);
     };
 
     if (window.__reviewPdfRequestInFlight === true) {
         if (statusEl) statusEl.innerText = 'PDF generation already in progress. Please wait.';
         if (statusWrap) statusWrap.style.display = 'inline-flex';
+        return;
+    }
+
+    window.__reviewPdfRequestInFlight = true;
+    setPdfUiState(true, 'Refreshing country PDF filters...');
+    try {
+        await reviewPdfFilters.refresh();
+        reviewPdfFilters.assertReady();
+    } catch (error) {
+        window.__reviewPdfRequestInFlight = false;
+        if (statusEl) statusEl.classList.add('pdfStatusFail');
+        setPdfUiState(false, error.message);
         return;
     }
 
@@ -3498,7 +3515,8 @@ async function generatePdfNowReview() {
             body: JSON.stringify({
                 start_year: startYear,
                 end_year: endYear,
-                open_pdf: !!alwaysOpenPdfEl?.checked
+                open_pdf: !!alwaysOpenPdfEl?.checked,
+                filters: reviewPdfFilters.getSelection()
             })
         });
         const j = await res.json();
@@ -3869,6 +3887,7 @@ updatePdfPreviewControls();
 restorePdfUiState();
 initReviewStampWorldPanel();
 initReviewPdfYearInputs();
+reviewPdfFilters.init();
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;

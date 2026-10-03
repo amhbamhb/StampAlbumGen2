@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: install_linux_desktop_integration
-resource: src/setup.rs#L903-L916
+resource: src/setup.rs#L857-L870
 generated:
   by: okf-rs/0.4.0
 relationships:

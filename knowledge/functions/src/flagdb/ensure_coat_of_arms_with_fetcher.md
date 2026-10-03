@@ -38,7 +38,7 @@ relationships:
 
 # Signature
 
-`pub fn ensure_coat_of_arms_with_fetcher( alpha2: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn ensure_coat_of_arms_with_fetcher( alpha2: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

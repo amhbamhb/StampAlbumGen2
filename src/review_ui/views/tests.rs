@@ -87,3 +87,14 @@ fn compare_html_contains_runtime_log_hooks() {
     assert!(html.contains("id='showRuntimeLogCompare'"));
     assert!(html.contains("copyRuntimeLogCompare()"));
 }
+
+#[test]
+fn compare_html_has_country_scoped_pdf_filters_only_on_review_screen() {
+    let html = render_html(&minimal_payload());
+    assert!(html.contains("id='reviewPdfemissionSummary'>Emission: All"));
+    assert!(html.contains("id='reviewPdfformatSummary'>Format: All"));
+    assert!(html.contains("class ReviewPdfFilters"));
+    assert!(html.contains("reviewui.pdf.colnectFilters."));
+    assert!(html.contains("filters: reviewPdfFilters.getSelection()"));
+    assert!(!render_bootstrap_html(None).contains("reviewPdfemissionSummary"));
+}

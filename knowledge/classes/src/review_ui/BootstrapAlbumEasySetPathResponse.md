@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapAlbumEasySetPathResponse
-resource: src/review_ui.rs#L445-L448
+resource: src/review_ui.rs#L506-L509
 visibility: private
 generated:
   by: okf-rs/0.4.0

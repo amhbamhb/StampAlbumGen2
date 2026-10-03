@@ -7,13 +7,19 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generator_new/commemorative_layout/build_stamp_description
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/generate_album_output_conn
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/maybe_generate_album_pdf_with_settings
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generated_artifacts_from_path
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/bin/backfill_image_dims/main
@@ -94,6 +100,15 @@ relationships:
   - target: functions/src/review_ui/http_handlers/serve_review_requests
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/bootstrap/pollStampWorldStatus
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/bootstrap/openReviewAfterStampWorld
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/compare/applyRightCatalogSearchChoice
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/setup/startup_probe_path
     resolved_by: tree-sitter
     confidence: exact
@@ -115,7 +130,13 @@ relationships:
   - target: functions/src/setup/ensure_linux_desktop_integration
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/stampworld/data_collector/collect_stampworld_data_async
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -126,9 +147,11 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
+- [build_stamp_description](../../../../../functions/src/album_globals/generator_new/commemorative_layout/build_stamp_description.md)
 - [generate_album_output_conn](../../../../../functions/src/album_globals/generator_new/generate_album_output_conn.md)
 - [maybe_generate_album_pdf_with_settings](../../../../../functions/src/album_globals/maybe_generate_album_pdf_with_settings.md)
+- [generated_artifacts_from_path](../../../../../functions/src/album_globals/generated_artifacts_from_path.md)
 - [main](../../../../../functions/src/bin/backfill_image_dims/main.md)
 - [main](../../../../../functions/src/bin/inspect_image_paths/main.md)
 - [ensure_config_and_template_files](../../../../../functions/src/config/ensure_config_and_template_files.md)
@@ -155,6 +178,9 @@ relationships:
 - [album_dir_for_ui](../../../../../functions/src/review_ui/album_dir_for_ui.md)
 - [colnect_import_data](../../../../../functions/src/review_ui/colnect_import_data.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
+- [pollStampWorldStatus](../../../../../functions/src/review_ui/views/bootstrap/pollStampWorldStatus.md)
+- [openReviewAfterStampWorld](../../../../../functions/src/review_ui/views/bootstrap/openReviewAfterStampWorld.md)
+- [applyRightCatalogSearchChoice](../../../../../functions/src/review_ui/views/compare/applyRightCatalogSearchChoice.md)
 - [startup_probe_path](../../../../../functions/src/setup/startup_probe_path.md)
 - [refresh_linux_desktop_caches](../../../../../functions/src/setup/refresh_linux_desktop_caches.md)
 - [user_home_dir](../../../../../functions/src/setup/user_home_dir.md)
@@ -162,4 +188,6 @@ relationships:
 - [query_windows_programs_dir](../../../../../functions/src/setup/query_windows_programs_dir.md)
 - [ensure_windows_desktop_integration](../../../../../functions/src/setup/ensure_windows_desktop_integration.md)
 - [ensure_linux_desktop_integration](../../../../../functions/src/setup/ensure_linux_desktop_integration.md)
+- [collect_stampworld_data_async](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_async.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
+- [spain_colnect_layout_packs_rich_rows_without_losing_stamps](../../../../../functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps.md)

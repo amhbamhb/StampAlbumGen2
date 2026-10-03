@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_stampworld_args
-resource: src/review_ui.rs#L501-L518
+resource: src/review_ui.rs#L562-L579
 visibility: private
 generated:
   by: okf-rs/0.4.0

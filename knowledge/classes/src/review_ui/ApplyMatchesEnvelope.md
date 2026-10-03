@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ApplyMatchesEnvelope
-resource: src/review_ui.rs#L932-L935
+resource: src/review_ui.rs#L1146-L1149
 visibility: private
 generated:
   by: okf-rs/0.4.0

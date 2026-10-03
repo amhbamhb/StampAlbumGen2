@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_series_order_uses_earliest_issue_date
-resource: tests/series_issue_date_order_tests.rs#L135-L180
+resource: tests/series_issue_date_order_tests.rs#L136-L181
 visibility: private
 generated:
   by: okf-rs/0.4.0

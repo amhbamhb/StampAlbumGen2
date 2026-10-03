@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: download_missing_stamp_images
-resource: src/image_downloader.rs#L159-L205
+resource: src/image_downloader.rs#L159-L207
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -20,7 +20,7 @@ relationships:
 
 # Signature
 
-`pub fn download_missing_stamp_images( stamps: &[crate::db_utils::StampStub], album_name: &str, ) -> Result<(), Box<dyn std::error::Error>>`
+`pub async fn download_missing_stamp_images( stamps: &[crate::db_utils::StampStub], album_name: &str, ) -> Result<(), Box<dyn std::error::Error>>`
 
 # Calls
 

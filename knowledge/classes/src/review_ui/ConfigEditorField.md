@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ConfigEditorField
-resource: src/review_ui.rs#L1184-L1198
+resource: src/review_ui.rs#L1398-L1412
 visibility: private
 generated:
   by: okf-rs/0.4.0

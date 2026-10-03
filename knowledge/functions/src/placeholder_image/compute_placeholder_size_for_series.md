@@ -6,9 +6,6 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/config/load_config
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/image_utils/calc_mm_per_pixel_embedded
     resolved_by: tree-sitter
     confidence: exact
@@ -33,7 +30,6 @@ relationships:
 
 # Calls
 
-- [load_config](../../../functions/src/config/load_config.md)
 - [calc_mm_per_pixel_embedded](../../../functions/src/image_utils/calc_mm_per_pixel_embedded.md)
 - [get_scaling_for_series](../../../functions/src/sample_images/get_scaling_for_series.md)
 

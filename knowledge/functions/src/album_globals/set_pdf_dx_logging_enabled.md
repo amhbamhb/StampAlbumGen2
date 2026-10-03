@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_pdf_dx_logging_enabled
-resource: src/album_globals/mod.rs#L31-L33
+resource: src/album_globals/mod.rs#L32-L34
 generated:
   by: okf-rs/0.4.0
 relationships:

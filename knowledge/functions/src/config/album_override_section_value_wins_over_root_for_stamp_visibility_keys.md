@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: album_override_section_value_wins_over_root_for_stamp_visibility_keys
-resource: src/config.rs#L2629-L2669
+resource: src/config.rs#L3003-L3043
 visibility: private
 generated:
   by: okf-rs/0.4.0

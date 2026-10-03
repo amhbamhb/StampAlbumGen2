@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: process_stamps
-resource: src/commands_file_generator/generator.rs#L244-L248
+resource: src/commands_file_generator/generator.rs#L188-L192
 generated:
   by: okf-rs/0.4.0
 ---

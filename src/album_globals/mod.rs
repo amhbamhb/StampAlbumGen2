@@ -5,6 +5,7 @@ pub mod generator_new;
 pub mod globals;
 pub mod helpers;
 pub mod page_functions;
+pub mod selection;
 pub mod structs;
 
 // Re-export main types and functions for convenience
@@ -324,6 +325,60 @@ where
         page_callback,
         start_year,
         end_year,
+    )
+    .await;
+    generated_artifacts_from_path(path, generate_pdf_override)
+}
+
+/// Generate a Review PDF selection, rejecting empty results before any output writes.
+/// Unfiltered callers retain the existing generator forwarding behavior.
+pub async fn generate_album_output_conn_with_filters(
+    conn: &Connection,
+    album_name: &str,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+    generate_pdf_override: Option<bool>,
+    filters: &selection::ColnectPdfFilters,
+) -> Result<GeneratedAlbumArtifacts, String> {
+    filters.validate()?;
+    if filters.is_all() {
+        return Ok(generate_album_output_conn_with_pdf_override(
+            conn,
+            album_name,
+            None::<fn(usize)>,
+            start_year,
+            end_year,
+            generate_pdf_override,
+        )
+        .await);
+    }
+    let prepared = selection::prepare_pdf_stamps(conn, filters, start_year, end_year)?;
+    Ok(generate_album_output_conn_with_prepared_pdf(
+        conn,
+        album_name,
+        start_year,
+        end_year,
+        generate_pdf_override,
+        prepared,
+    )
+    .await)
+}
+
+pub(crate) async fn generate_album_output_conn_with_prepared_pdf(
+    conn: &Connection,
+    album_name: &str,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+    generate_pdf_override: Option<bool>,
+    prepared: selection::PreparedPdfStamps,
+) -> GeneratedAlbumArtifacts {
+    let path = generator::generate_album_output_conn_prepared(
+        conn,
+        album_name,
+        None::<fn(usize)>,
+        start_year,
+        end_year,
+        Some(prepared),
     )
     .await;
     generated_artifacts_from_path(path, generate_pdf_override)

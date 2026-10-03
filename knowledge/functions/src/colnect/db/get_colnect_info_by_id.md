@@ -13,7 +13,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -29,4 +29,4 @@ relationships:
 
 # Called by
 
-- [fetch_and_filter_stamps](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)

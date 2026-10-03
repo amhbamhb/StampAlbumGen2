@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: compare_assets
-resource: src/review_ui/views/compare_assets.rs#L1-L170
+resource: src/review_ui/views/compare_assets.rs#L1-L182
 generated:
   by: okf-rs/0.4.0
 relationships:

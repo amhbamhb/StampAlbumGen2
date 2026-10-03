@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: tmp_file_flushed
-resource: tests/tmp_file_flushed.rs#L1-L66
+resource: tests/tmp_file_flushed.rs#L1-L67
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -175,6 +175,20 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                 class='reviewPdfYearInput' />
         </div>
 
+        <div class='reviewPdfMetadataFilters'>
+            <details class='reviewPdfFilter'>
+                <summary id='reviewPdfemissionSummary'>Emission: All</summary>
+                <div id='reviewPdfemissionChoices' class='reviewPdfFilterChoices' role='group' aria-label='PDF emission choices'></div>
+            </details>
+            <details class='reviewPdfFilter'>
+                <summary id='reviewPdfformatSummary'>Format: All</summary>
+                <div id='reviewPdfformatChoices' class='reviewPdfFilterChoices' role='group' aria-label='PDF format choices'></div>
+            </details>
+            <button id='reviewPdfRefreshFilters' type='button'>Refresh filter choices</button>
+            <span id='reviewPdfFilterStatus' role='status' aria-live='polite'>Loading country filter choices...</span>
+            <small>Emission/Format apply to Generate PDF Now only. Generate &amp; Close uses the year range, without these filters.</small>
+        </div>
+
         <label for='reviewPdfAlwaysShow' class='reviewPdfAlwaysShowLabel'>
 
             <input id='reviewPdfAlwaysShow' type='checkbox' onchange='togglePdfAlwaysOpenPreference()' />Always open PDF after generation</label>";
@@ -283,13 +297,17 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                         <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
                     </div>";
 
-    let compare_script_html = include_str!("compare.js")
-        .replace("{json}", &json)
-        .replace(
-            "{backend_not_responding_message}",
-            BACKEND_NOT_RESPONDING_MESSAGE,
-        )
-        .replace("{footer_year_update_js}", FOOTER_YEAR_UPDATE_JS);
+    let compare_script_html = format!(
+        "{}\n{}",
+        include_str!("pdf_filters.js"),
+        include_str!("compare.js")
+    )
+    .replace("{json}", &json)
+    .replace(
+        "{backend_not_responding_message}",
+        BACKEND_NOT_RESPONDING_MESSAGE,
+    )
+    .replace("{footer_year_update_js}", FOOTER_YEAR_UPDATE_JS);
     include_str!("compare.html")
         .replace("{{", "{")
         .replace("}}", "}")

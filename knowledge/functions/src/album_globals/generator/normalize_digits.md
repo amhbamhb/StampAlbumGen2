@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_digits
-resource: src/album_globals/generator.rs#L33-L35
+resource: src/album_globals/generator.rs#L36-L38
 visibility: private
 generated:
   by: okf-rs/0.4.0

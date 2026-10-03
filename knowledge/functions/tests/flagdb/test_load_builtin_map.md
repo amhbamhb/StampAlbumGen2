@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_load_builtin_map()`
+`async fn test_load_builtin_map()`
 
 # Calls
 

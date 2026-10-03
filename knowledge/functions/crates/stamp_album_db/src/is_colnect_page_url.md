@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_colnect_page_url
-resource: crates/stamp_album_db/src/lib.rs#L583-L585
+resource: crates/stamp_album_db/src/lib.rs#L634-L636
 visibility: private
 generated:
   by: okf-rs/0.4.0

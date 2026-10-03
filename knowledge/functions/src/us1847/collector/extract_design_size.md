@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_design_size
-resource: src/us1847/collector.rs#L938-L989
+resource: src/us1847/collector.rs#L922-L973
 visibility: private
 generated:
   by: okf-rs/0.4.0

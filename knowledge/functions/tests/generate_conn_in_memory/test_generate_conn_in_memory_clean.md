@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_generate_conn_in_memory_clean
-resource: tests/generate_conn_in_memory.rs#L10-L71
+resource: tests/generate_conn_in_memory.rs#L10-L72
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_generate_conn_in_memory_clean()`
+`async fn test_generate_conn_in_memory_clean()`
 
 # Calls
 

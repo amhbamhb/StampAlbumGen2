@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_review_ui
-resource: src/review_ui.rs#L2689-L2907
+resource: src/review_ui.rs#L3001-L3237
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -35,7 +35,7 @@ relationships:
 
 # Signature
 
-`pub fn run_review_ui( db_path: &str, album_name_opt: Option<&str>, prebound_server: Option<(Server, String)>, bind_addr_opt: Option<&str>, open_browser: bool, default_catalog_code: &str, default_sort_mode: &str, odd_row_color: &str, even_row_color: &str, first_column_color: &str, second_column_color: &str, series_default_checked: bool, description_default_checked: bool, watermark_default_checked: bool, design_default_checked: bool, engraving_default_checked: bool, perforation_default_checked: bool, context_default_checked: bool, colnect_links_default_checked: bool, colnect_image_url_default_checked: bool, colnect_metadata_default_checked: bool, replace_sg_number_default_checked: bool, right_unmatched_only_default_checked: bool, albumeasy_auto_generate_pdf_default: bool, albumeasy_cli_configured: bool, catalog_family_options: &[String], ) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>>`
+`pub fn run_review_ui( db_path: &str, album_name_opt: Option<&str>, prebound_server: Option<(Server, String)>, bind_addr_opt: Option<&str>, open_browser: bool, opts: &MatcherPayloadOptions<'_>, ) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>>`
 
 # Calls
 

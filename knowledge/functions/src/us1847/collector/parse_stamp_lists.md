@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_stamp_lists
-resource: src/us1847/collector.rs#L550-L558
+resource: src/us1847/collector.rs#L534-L542
 visibility: private
 generated:
   by: okf-rs/0.4.0

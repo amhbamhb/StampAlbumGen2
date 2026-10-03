@@ -19,6 +19,9 @@ relationships:
   - target: functions/src/review_ui/build_matcher_payload
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/serve_review_requests
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -34,3 +37,4 @@ relationships:
 # Called by
 
 - [build_matcher_payload](../../../../functions/src/review_ui/build_matcher_payload.md)
+- [serve_review_requests](../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)

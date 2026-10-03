@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapStartRequest
-resource: src/review_ui.rs#L323-L325
+resource: src/review_ui.rs#L339-L341
 visibility: private
 generated:
   by: okf-rs/0.4.0

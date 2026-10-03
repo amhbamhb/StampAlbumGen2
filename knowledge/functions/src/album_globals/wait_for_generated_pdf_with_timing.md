@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: wait_for_generated_pdf_with_timing
-resource: src/album_globals/mod.rs#L39-L62
+resource: src/album_globals/mod.rs#L40-L66
 visibility: private
 generated:
   by: okf-rs/0.4.0

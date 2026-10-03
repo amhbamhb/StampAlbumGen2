@@ -26,7 +26,7 @@ relationships:
 
 # Signature
 
-`pub fn copy_coa_for_album( country: &str, album_images_dir: &str, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn copy_coa_for_album( country: &str, album_images_dir: &str, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

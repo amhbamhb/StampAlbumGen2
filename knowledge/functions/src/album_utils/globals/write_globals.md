@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_globals
-resource: src/album_utils/globals.rs#L7-L686
+resource: src/album_utils/globals.rs#L7-L687
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -37,7 +37,7 @@ relationships:
 
 # Signature
 
-`pub fn write_globals<W: Write>( writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>, ) -> usize`
+`pub async fn write_globals<W: Write>( writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>, ) -> usize`
 
 # Calls
 

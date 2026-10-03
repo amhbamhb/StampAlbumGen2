@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: create_greedy_pages
-resource: src/album_utils/globals.rs#L1281-L1313
+resource: src/album_utils/globals.rs#L1282-L1314
 visibility: private
 generated:
   by: okf-rs/0.4.0

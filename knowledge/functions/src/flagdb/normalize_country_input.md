@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_country_input
-resource: src/flagdb.rs#L179-L185
+resource: src/flagdb.rs#L173-L179
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,7 +16,7 @@ relationships:
 
 # Signature
 
-`pub fn normalize_country_input(country: &str) -> String`
+`pub async fn normalize_country_input(country: &str) -> String`
 
 # Called by
 

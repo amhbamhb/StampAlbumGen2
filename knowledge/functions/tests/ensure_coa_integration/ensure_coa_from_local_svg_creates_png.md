@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn ensure_coa_from_local_svg_creates_png()`
+`async fn ensure_coa_from_local_svg_creates_png()`
 
 # Calls
 

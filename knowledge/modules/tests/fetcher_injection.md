@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: fetcher_injection
-resource: tests/fetcher_injection.rs#L1-L60
+resource: tests/fetcher_injection.rs#L1-L66
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/async-trait-async-trait
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/reqwest-statuscode
     resolved_by: tree-sitter
     confidence: exact
@@ -27,6 +30,7 @@ relationships:
 
 # Imports
 
+- `async_trait::async_trait`
 - `reqwest::StatusCode`
 - `stamp_album_gen2::stampworld::fetch::Fetcher`
 

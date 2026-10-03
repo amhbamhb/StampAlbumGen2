@@ -10,7 +10,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders
@@ -31,6 +31,6 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [estimate_and_ensure_placeholders](../../../functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders.md)
 - [calculate_stamp_dimensions](../../../functions/src/album_utils/dimensions/calculate_stamp_dimensions.md)

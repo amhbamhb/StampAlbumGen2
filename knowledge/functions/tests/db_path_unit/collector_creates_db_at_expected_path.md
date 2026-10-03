@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: collector_creates_db_at_expected_path
-resource: tests/db_path_unit.rs#L25-L81
+resource: tests/db_path_unit.rs#L27-L86
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn collector_creates_db_at_expected_path()`
+`async fn collector_creates_db_at_expected_path()`
 
 # Calls
 

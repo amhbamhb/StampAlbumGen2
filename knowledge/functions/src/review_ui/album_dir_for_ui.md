@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: album_dir_for_ui
-resource: src/review_ui.rs#L2265-L2274
+resource: src/review_ui.rs#L2577-L2586
 visibility: private
 generated:
   by: okf-rs/0.4.0

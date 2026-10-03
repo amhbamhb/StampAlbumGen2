@@ -48,7 +48,13 @@ relationships:
   - target: functions/src/album_globals/generator/stamp_dedupe_fingerprints
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/build_stamp_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generator/stamp_content_height
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/commemorative_layout/is_commemorative
@@ -66,10 +72,16 @@ relationships:
   - target: functions/src/album_globals/generator_new/helpers/set_attr_if_missing
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/selection/ColnectPdfFilters/matches
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/selection/colnect_pdf_options
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_utils/db_loader/load_stamps_from_db
@@ -96,13 +108,28 @@ relationships:
   - target: functions/src/colnect/db/get_colnect_info
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_bytes
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/colnect/image_fetcher/fetch_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/colnect/image_fetcher/fetch_bytes
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/commands_file_generator/image_utils/download_to_path
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/commands_file_generator/image_utils/get_image
+  - target: functions/src/commands_file_generator/image_utils/get_image_blocking
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/commands_file_generator/touchstamps/get_touchstamps_stamps
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/config/Config/albumeasy_pdf_timeout_secs
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/load_config
@@ -129,10 +156,10 @@ relationships:
   - target: functions/src/db_utils/migrations/migrate_stamps_table
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions
+  - target: functions/src/db_utils/migrations/migrate_fix_block_metadata
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/db_utils/migrations/migrate_fix_block_metadata
+  - target: functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/db_utils/operations/insert_stamp_placeholder
@@ -186,6 +213,12 @@ relationships:
   - target: functions/src/review_ui/config_editor/save_album_config_diff
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/serve_review_requests
     resolved_by: tree-sitter
     confidence: exact
@@ -202,6 +235,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/compare/catalogDisplayName
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
@@ -282,6 +321,9 @@ relationships:
   - target: functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/review_pdf_filters_ui/fixture
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache
     resolved_by: tree-sitter
     confidence: exact
@@ -307,14 +349,18 @@ relationships:
 - [emit_summary_page](../../../../../functions/src/album_globals/commemorative_generator/emit_summary_page.md)
 - [stamp_date_key](../../../../../functions/src/album_globals/generator/stamp_date_key.md)
 - [stamp_dedupe_fingerprints](../../../../../functions/src/album_globals/generator/stamp_dedupe_fingerprints.md)
-- [generate_album_output_conn](../../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [build_stamp_text](../../../../../functions/src/album_globals/generator/build_stamp_text.md)
+- [stamp_content_height](../../../../../functions/src/album_globals/generator/stamp_content_height.md)
+- [generate_album_output_conn_prepared](../../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [is_commemorative](../../../../../functions/src/album_globals/generator_new/commemorative_layout/is_commemorative.md)
 - [emit_stamp_grid_row](../../../../../functions/src/album_globals/generator_new/commemorative_layout/emit_stamp_grid_row.md)
 - [build_stamp_description](../../../../../functions/src/album_globals/generator_new/commemorative_layout/build_stamp_description.md)
 - [load_stored_colnect_meta](../../../../../functions/src/album_globals/generator_new/helpers/load_stored_colnect_meta.md)
 - [set_attr_if_missing](../../../../../functions/src/album_globals/generator_new/helpers/set_attr_if_missing.md)
-- [fetch_and_filter_stamps](../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)
 - [estimate_and_ensure_placeholders](../../../../../functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders.md)
+- [matches](../../../../../functions/src/album_globals/selection/ColnectPdfFilters/matches.md)
+- [colnect_pdf_options](../../../../../functions/src/album_globals/selection/colnect_pdf_options.md)
 - [load_stamps_from_db](../../../../../functions/src/album_utils/db_loader/load_stamps_from_db.md)
 - [calculate_stamp_dimensions](../../../../../functions/src/album_utils/dimensions/calculate_stamp_dimensions.md)
 - [process_db](../../../../../functions/src/bin/backfill_image_dims/process_db.md)
@@ -323,9 +369,14 @@ relationships:
 - [load_colnect_info_with_query](../../../../../functions/src/colnect/db/load_colnect_info_with_query.md)
 - [hydrate_catalog_codes](../../../../../functions/src/colnect/db/hydrate_catalog_codes.md)
 - [get_colnect_info](../../../../../functions/src/colnect/db/get_colnect_info.md)
+- [fetch_text](../../../../../functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_text.md)
+- [fetch_bytes](../../../../../functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_bytes.md)
+- [fetch_text](../../../../../functions/src/colnect/image_fetcher/fetch_text.md)
+- [fetch_bytes](../../../../../functions/src/colnect/image_fetcher/fetch_bytes.md)
 - [download_to_path](../../../../../functions/src/commands_file_generator/image_utils/download_to_path.md)
-- [get_image](../../../../../functions/src/commands_file_generator/image_utils/get_image.md)
+- [get_image_blocking](../../../../../functions/src/commands_file_generator/image_utils/get_image_blocking.md)
 - [get_touchstamps_stamps](../../../../../functions/src/commands_file_generator/touchstamps/get_touchstamps_stamps.md)
+- [albumeasy_pdf_timeout_secs](../../../../../functions/src/config/Config/albumeasy_pdf_timeout_secs.md)
 - [load_config](../../../../../functions/src/config/load_config.md)
 - [deep_merge_toml_values](../../../../../functions/src/config/deep_merge_toml_values.md)
 - [load_config_with_override](../../../../../functions/src/config/load_config_with_override.md)
@@ -334,8 +385,8 @@ relationships:
 - [migration_002_stamps_uniq_key_and_indexes](../../../../../functions/src/db_utils/migrations/migration_002_stamps_uniq_key_and_indexes.md)
 - [enforce_runtime_schema_compatibility](../../../../../functions/src/db_utils/migrations/enforce_runtime_schema_compatibility.md)
 - [migrate_stamps_table](../../../../../functions/src/db_utils/migrations/migrate_stamps_table.md)
-- [run_pending_schema_migrations_adds_missing_columns_and_records_versions](../../../../../functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions.md)
 - [migrate_fix_block_metadata](../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.md)
+- [run_pending_schema_migrations_adds_missing_columns_and_records_versions](../../../../../functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions.md)
 - [insert_stamp_placeholder](../../../../../functions/src/db_utils/operations/insert_stamp_placeholder.md)
 - [get_stamps_by_country_series](../../../../../functions/src/db_utils/operations/get_stamps_by_country_series.md)
 - [country_to_code](../../../../../functions/src/flagdb/country_to_code.md)
@@ -353,12 +404,16 @@ relationships:
 - [save_full_config_values](../../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
 - [build_config_editor_data_for_album](../../../../../functions/src/review_ui/config_editor/build_config_editor_data_for_album.md)
 - [save_album_config_diff](../../../../../functions/src/review_ui/config_editor/save_album_config_diff.md)
+- [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
+- [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [load_left_stamps](../../../../../functions/src/review_ui/matcher_service/load_left_stamps.md)
 - [load_right_candidates](../../../../../functions/src/review_ui/matcher_service/load_right_candidates.md)
 - [apply_matches](../../../../../functions/src/review_ui/matcher_service/apply_matches.md)
 - [load_left_stamp_by_rowid](../../../../../functions/src/review_ui/matcher_service/load_left_stamp_by_rowid.md)
 - [load_right_candidate_by_colnect_id](../../../../../functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id.md)
+- [catalogDisplayName](../../../../../functions/src/review_ui/views/compare/catalogDisplayName.md)
+- [inferInitialCatalogCodeFromLeftRows](../../../../../functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
 - [fetch_text](../../../../../functions/src/stampworld/fetch/ReqwestFetcher/fetcher/fetch_text.md)
 - [fetch_bytes](../../../../../functions/src/stampworld/fetch/ReqwestFetcher/fetcher/fetch_bytes.md)
@@ -385,4 +440,5 @@ relationships:
 - [test_migrate_fix_block_metadata_basic](../../../../../functions/tests/db_utils/test_migrate_fix_block_metadata_basic.md)
 - [e2e_collect_stampworld_inserts_placeholders_to_db](../../../../../functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db.md)
 - [test_ensure_placeholder_for_stamp_and_update_db](../../../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.md)
+- [fixture](../../../../../functions/tests/review_pdf_filters_ui/fixture.md)
 - [wikipedia_ingest_inserts_up_to_max_entries_from_cache](../../../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.md)

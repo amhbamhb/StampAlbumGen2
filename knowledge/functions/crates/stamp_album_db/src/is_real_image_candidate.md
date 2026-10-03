@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_real_image_candidate
-resource: crates/stamp_album_db/src/lib.rs#L591-L594
+resource: crates/stamp_album_db/src/lib.rs#L642-L645
 visibility: private
 generated:
   by: okf-rs/0.4.0

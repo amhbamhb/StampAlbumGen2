@@ -1,0 +1,24 @@
+---
+type: JavaScript Function
+title: closeReviewUi
+resource: src/review_ui/views/compare.js#L3241-L3381
+generated:
+  by: okf-rs/0.4.0
+relationships:
+  calls:
+  - target: functions/src/review_ui/views/compare/setOperationBusy
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/compare/html
+    resolved_by: tree-sitter
+    confidence: exact
+---
+
+# Signature
+
+`async function closeReviewUi()`
+
+# Calls
+
+- [setOperationBusy](../../../../../functions/src/review_ui/views/compare/setOperationBusy.md)
+- [html](../../../../../functions/src/review_ui/views/compare/html.md)

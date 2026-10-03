@@ -77,11 +77,11 @@ relationships:
 - [create_windows_shortcut](../../functions/src/setup/create_windows_shortcut.md)
 - [ensure_windows_desktop_integration](../../functions/src/setup/ensure_windows_desktop_integration.md)
 - [ensure_linux_desktop_integration](../../functions/src/setup/ensure_linux_desktop_integration.md)
+- [uninstall_linux_desktop_integration](../../functions/src/setup/uninstall_linux_desktop_integration.md)
+- [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
 - [runtime_root_detects_expected_markers](../../functions/src/setup/runtime_root_detects_expected_markers.md)
 - [runtime_root_search_prefers_exe_directory_markers](../../functions/src/setup/runtime_root_search_prefers_exe_directory_markers.md)
 - [align_runtime_dir_noops_when_already_root](../../functions/src/setup/align_runtime_dir_noops_when_already_root.md)
-- [uninstall_linux_desktop_integration](../../functions/src/setup/uninstall_linux_desktop_integration.md)
-- [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
 
 # Imports
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stamp_dedupe_fingerprints
-resource: src/album_globals/generator.rs#L75-L108
+resource: src/album_globals/generator.rs#L78-L111
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -23,7 +23,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -42,4 +42,4 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)

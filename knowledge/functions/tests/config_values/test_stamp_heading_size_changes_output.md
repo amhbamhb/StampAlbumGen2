@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_stamp_heading_size_changes_output
-resource: tests/config_values.rs#L46-L110
+resource: tests/config_values.rs#L46-L112
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`fn test_stamp_heading_size_changes_output()`
+`async fn test_stamp_heading_size_changes_output()`
 
 # Calls
 

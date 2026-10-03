@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: filename_infers_db_min_max_when_none_fixed
-resource: tests/filename_year_inference_fixed.rs#L27-L61
+resource: tests/filename_year_inference_fixed.rs#L26-L61
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn filename_infers_db_min_max_when_none_fixed()`
+`async fn filename_infers_db_min_max_when_none_fixed()`
 
 # Calls
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: phase1_generate_with_in_memory_conn
-resource: tests/phase1_generate_conn.rs#L10-L78
+resource: tests/phase1_generate_conn.rs#L10-L79
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn phase1_generate_with_in_memory_conn()`
+`async fn phase1_generate_with_in_memory_conn()`
 
 # Calls
 

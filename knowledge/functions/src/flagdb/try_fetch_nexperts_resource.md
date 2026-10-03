@@ -18,7 +18,7 @@ relationships:
 
 # Signature
 
-`fn try_fetch_nexperts_resource( fetcher: &dyn Fetcher, alpha: &str, resource: &str, size: &str, ) -> Result<String, Box<dyn std::error::Error>>`
+`async fn try_fetch_nexperts_resource( fetcher: &dyn Fetcher, alpha: &str, resource: &str, size: &str, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

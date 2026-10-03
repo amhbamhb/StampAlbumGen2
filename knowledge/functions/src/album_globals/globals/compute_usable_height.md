@@ -10,7 +10,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/page_functions/new_row
@@ -40,7 +40,7 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [new_row](../../../../functions/src/album_globals/page_functions/new_row.md)
 - [add_wikipedia_section](../../../../functions/src/album_utils/globals/add_wikipedia_section.md)
 - [compute_usable_height_basic](../../../../functions/tests/album_globals/compute_usable_height_basic.md)

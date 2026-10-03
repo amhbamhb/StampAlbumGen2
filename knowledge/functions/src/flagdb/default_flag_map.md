@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: default_flag_map
-resource: src/flagdb.rs#L15-L29
+resource: src/flagdb.rs#L15-L28
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,7 +16,7 @@ relationships:
 
 # Signature
 
-`pub fn default_flag_map() -> HashMap<String, String>`
+`pub async fn default_flag_map() -> HashMap<String, String>`
 
 # Called by
 

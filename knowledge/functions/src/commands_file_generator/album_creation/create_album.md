@@ -31,7 +31,7 @@ relationships:
 
 # Signature
 
-`pub fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize`
+`pub async fn create_album<'a>(params: CreateAlbumParams<'a>) -> usize`
 
 # Calls
 

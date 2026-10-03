@@ -368,6 +368,36 @@ Fields in the dialog:
 After confirming, all available Colnect metadata fields are written to the new
 stamp row alongside the fields entered in the dialog.
 
+### Review PDF Emission and Format Filters
+
+The Review screen's **PDF** section provides **Emission** and **Format**
+checkbox dropdowns before **Generate PDF Now**. Both default to **All**.
+Select one or several values, or choose **All** to clear that field's selection.
+For example, select **Official** and **Definitive**, then select **Stamp** under
+Format.
+
+- Choices are looked up dynamically from the current country's album records,
+  including stored Colnect metadata and reference-data fallback. There is no
+  fixed list of categories. Unmatched right-panel candidates are not themselves
+  album records.
+- Multiple choices in one field use **OR**; Emission, Format, and the year range
+  combine using **AND**.
+- **All** includes records without metadata. With an active filter, missing
+  metadata is included only if **Unknown / not recorded** is selected.
+- Choices are remembered separately for each country in this browser. The
+  browser must allow local storage, and the same local server address/port must
+  be used to restore them. Storage failures are shown beside the controls.
+- **Refresh filter choices** updates the dropdowns after imports or edits;
+  generation also refreshes them. Unavailable remembered choices remain visible
+  and selected rather than silently changing the selection to All.
+- Filters affect the generated AlbumEasy text and PDF, not database records or
+  left/right panel visibility. A filtered selection with no matching stamps
+  reports an error and leaves the previous output unchanged.
+- These filters apply only to **Generate PDF Now** on the Review screen.
+  Country-selection-screen generation and **Generate & Close** remain
+  unfiltered by Emission/Format. Existing output naming is unchanged, so a
+  successful filtered run replaces the output for the same album/year range.
+
 ### Delete Colnect Candidate
 
 The **Delete Colnect Candidate** button performs a **soft delete** on the

@@ -6,10 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/center_tmp_pages
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/album_globals/generator_new/postprocess/center_tmp_pages
+  - target: functions/src/album_globals/generator_new/postprocess/center_page
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -20,5 +17,4 @@ relationships:
 
 # Called by
 
-- [center_tmp_pages](../../../../../functions/src/album_globals/generator/center_tmp_pages.md)
-- [center_tmp_pages](../../../../../functions/src/album_globals/generator_new/postprocess/center_tmp_pages.md)
+- [center_page](../../../../../functions/src/album_globals/generator_new/postprocess/center_page.md)

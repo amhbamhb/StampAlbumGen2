@@ -1,13 +1,16 @@
 ---
 type: Rust Function
 title: download_stamp_images
-resource: src/us1847/collector.rs#L1446-L1532
+resource: src/us1847/collector.rs#L1430-L1516
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/album_globals/structs/GenericAttrs/get
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/db_utils/updates/persist_image_dimensions_from_file
@@ -26,6 +29,7 @@ relationships:
 # Calls
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [status](../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status.md)
 - [persist_image_dimensions_from_file](../../../../functions/src/db_utils/updates/persist_image_dimensions_from_file.md)
 
 # Called by

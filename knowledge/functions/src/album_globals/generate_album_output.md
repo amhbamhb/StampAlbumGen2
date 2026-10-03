@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_album_output
-resource: src/album_globals/mod.rs#L313-L336
+resource: src/album_globals/mod.rs#L387-L412
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -13,7 +13,7 @@ relationships:
 
 # Signature
 
-`pub fn generate_album_output<F>( db_path: &str, album_name: &str, page_callback: Option<F>, start_year: Option<i32>, end_year: Option<i32>, ) -> std::path::PathBuf where F: FnMut(usize),`
+`pub async fn generate_album_output<F>( db_path: &str, album_name: &str, page_callback: Option<F>, start_year: Option<i32>, end_year: Option<i32>, ) -> std::path::PathBuf where F: FnMut(usize),`
 
 # Calls
 

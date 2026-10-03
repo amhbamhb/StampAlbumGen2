@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_fixture_stamp
-resource: tests/album_year_filter.rs#L5-L47
+resource: tests/album_year_filter.rs#L18-L60
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn insert_fixture_stamp( conn: &Connection, year: i32, month: &str, month_num: i32, day: &str, sg_number: &str, denomination: &str, color: &str, description: &str, image_path: &str, )`
+`fn insert_fixture_stamp(conn: &Connection, stamp: &FixtureStamp)`
 
 # Called by
 

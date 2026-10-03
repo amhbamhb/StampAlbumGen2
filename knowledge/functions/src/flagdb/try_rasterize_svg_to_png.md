@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/flagdb/ensure_flag_image_with_fetcher
     resolved_by: tree-sitter
@@ -27,6 +31,10 @@ relationships:
 # Signature
 
 `fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std::error::Error>>`
+
+# Calls
+
+- [status](../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status.md)
 
 # Called by
 

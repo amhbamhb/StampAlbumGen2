@@ -907,9 +907,24 @@ fn stamp_content_height(
 pub async fn generate_album_output_conn<F>(
     conn: &Connection,
     album_name: &str,
+    page_callback: Option<F>,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+) -> std::path::PathBuf
+where
+    F: FnMut(usize),
+{
+    generate_album_output_conn_prepared(conn, album_name, page_callback, start_year, end_year, None)
+        .await
+}
+
+pub(crate) async fn generate_album_output_conn_prepared<F>(
+    conn: &Connection,
+    album_name: &str,
     mut page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
+    prepared: Option<super::selection::PreparedPdfStamps>,
 ) -> std::path::PathBuf
 where
     F: FnMut(usize),
@@ -1251,10 +1266,17 @@ where
             cb(page_counter);
         }
         // Fetch stamps + year-filter + conversion into Stamp objects via helper.
-        let stamps_iter = crate::album_globals::generator_new::helpers::
-            fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
-            .expect("Failed to get stamps");
+        let stamps_iter = if let Some(selected) = prepared.as_ref() {
+            selected.get(series).cloned().unwrap_or_default()
+        } else {
+            crate::album_globals::generator_new::helpers::
+                fetch_and_filter_stamps(conn, series, passed_start_year, passed_end_year)
+                .expect("Failed to get stamps")
+        };
         let mut stamps_vec = stamps_iter;
+        if prepared.is_some() && stamps_vec.is_empty() {
+            return;
+        }
         // Re-sort by year + issue date + catalog number right before layout emission so
         // updates applied in Review UI are reflected in final PDF order.
         let parse_catalog_key = |raw: &str| {

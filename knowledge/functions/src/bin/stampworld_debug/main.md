@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: src/bin/stampworld_debug.rs#L71-L134
+resource: src/bin/stampworld_debug.rs#L73-L139
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`fn main()`
+`async fn main()`
 
 # Calls
 

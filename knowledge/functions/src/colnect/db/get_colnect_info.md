@@ -16,7 +16,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/colnect_integration/test_colnect_integration
@@ -54,7 +54,7 @@ relationships:
 
 # Called by
 
-- [fetch_and_filter_stamps](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)
 - [test_colnect_integration](../../../../functions/tests/colnect_integration/test_colnect_integration.md)
 - [test_exact_match_returns_correct_stamp](../../../../functions/tests/colnect_integration/test_exact_match_returns_correct_stamp.md)
 - [test_nondgit_suffix_variant_is_accepted](../../../../functions/tests/colnect_integration/test_nondgit_suffix_variant_is_accepted.md)

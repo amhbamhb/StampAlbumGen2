@@ -6,7 +6,13 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/build_stamp_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generator_new/postprocess/center_tmp_pages
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generator_new/postprocess/full_pages_covers_and_disabled_centering_get_no_extra_space
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/colnect/parser/parse_csv
@@ -29,7 +35,9 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [build_stamp_text](../../../../functions/src/album_globals/generator/build_stamp_text.md)
+- [center_tmp_pages](../../../../functions/src/album_globals/generator_new/postprocess/center_tmp_pages.md)
+- [full_pages_covers_and_disabled_centering_get_no_extra_space](../../../../functions/src/album_globals/generator_new/postprocess/full_pages_covers_and_disabled_centering_get_no_extra_space.md)
 - [parse_csv](../../../../functions/src/colnect/parser/parse_csv.md)
 - [drop](../../../../functions/src/progress/ProgressIndicator/drop/drop.md)
 - [load_example_config_help_map](../../../../functions/src/review_ui/config_editor/load_example_config_help_map.md)

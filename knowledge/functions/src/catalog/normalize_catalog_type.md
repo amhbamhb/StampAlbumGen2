@@ -10,13 +10,13 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/catalog/catalog_display_name
@@ -52,9 +52,9 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [resolve_stamp_heading_label](../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md)
-- [fetch_and_filter_stamps](../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)
 - [catalog_display_name](../../../functions/src/catalog/catalog_display_name.md)
 - [parse_catalog_codes](../../../functions/src/catalog/parse_catalog_codes.md)
 - [preferred_catalog_entry](../../../functions/src/catalog/preferred_catalog_entry.md)

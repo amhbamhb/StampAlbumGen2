@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config
-resource: src/config.rs#L1-L2960
+resource: src/config.rs#L1-L3104
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -36,7 +36,7 @@ relationships:
   - target: external/std-process-command
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/rfd-filedialog-messagebuttons-messagedialog-messagelevel
+  - target: external/rfd-filedialog-messagebuttons-messagedialog-messagedialogresult-messagelevel
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-collections-hashmap
@@ -63,9 +63,14 @@ relationships:
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
 - [HeaderFormatting](../../classes/src/config/HeaderFormatting.md)
 - [Config](../../classes/src/config/Config.md)
+- [StampworldConfig](../../classes/src/config/StampworldConfig.md)
 - [ColnectConfig](../../classes/src/config/ColnectConfig.md)
 - [ColnectFieldToggles](../../classes/src/config/ColnectFieldToggles.md)
 - [ReviewUiConfig](../../classes/src/config/ReviewUiConfig.md)
+- [effective_stampworld_username](../../functions/src/config/Config/effective_stampworld_username.md)
+- [effective_stampworld_password](../../functions/src/config/Config/effective_stampworld_password.md)
+- [effective_colnect_username](../../functions/src/config/Config/effective_colnect_username.md)
+- [effective_colnect_password](../../functions/src/config/Config/effective_colnect_password.md)
 - [with_defaults](../../functions/src/config/Config/with_defaults.md)
 - [colnect_details_enabled](../../functions/src/config/Config/colnect_details_enabled.md)
 - [effective_colnect_detail_fields](../../functions/src/config/Config/effective_colnect_detail_fields.md)
@@ -97,6 +102,7 @@ relationships:
 - [effective_albumeasy_cli_path](../../functions/src/config/Config/effective_albumeasy_cli_path.md)
 - [effective_bootstrap_albums_root_path](../../functions/src/config/Config/effective_bootstrap_albums_root_path.md)
 - [albumeasy_auto_pdf_enabled](../../functions/src/config/Config/albumeasy_auto_pdf_enabled.md)
+- [albumeasy_pdf_timeout_secs](../../functions/src/config/Config/albumeasy_pdf_timeout_secs.md)
 - [pdf_dx_logging_enabled](../../functions/src/config/Config/pdf_dx_logging_enabled.md)
 - [check_config_staleness](../../functions/src/config/check_config_staleness.md)
 - [extract_keys](../../functions/src/config/extract_keys.md)
@@ -104,7 +110,13 @@ relationships:
 - [detect_duplicate_keys](../../functions/src/config/detect_duplicate_keys.md)
 - [load_config](../../functions/src/config/load_config.md)
 - [with_album_config_override](../../functions/src/config/with_album_config_override.md)
+- [with_album_config_override_async](../../functions/src/config/with_album_config_override_async.md)
 - [load_effective_config](../../functions/src/config/load_effective_config.md)
+- [deep_merge_toml_values](../../functions/src/config/deep_merge_toml_values.md)
+- [load_config_with_override](../../functions/src/config/load_config_with_override.md)
+- [load_slug_overrides](../../functions/src/config/load_slug_overrides.md)
+- [albumeasy_pdf_timeout_defaults_and_positive_overrides](../../functions/src/config/albumeasy_pdf_timeout_defaults_and_positive_overrides.md)
+- [albumeasy_pdf_timeout_album_runtime_override_wins](../../functions/src/config/albumeasy_pdf_timeout_album_runtime_override_wins.md)
 - [colnect_fields_boolean_toggles_are_parsed](../../functions/src/config/colnect_fields_boolean_toggles_are_parsed.md)
 - [colnect_printing_type_alias_is_supported](../../functions/src/config/colnect_printing_type_alias_is_supported.md)
 - [colnect_all_false_toggles_override_detail_fields_to_empty](../../functions/src/config/colnect_all_false_toggles_override_detail_fields_to_empty.md)
@@ -113,9 +125,6 @@ relationships:
 - [duplicate_detection_finds_duplicates_in_same_section](../../functions/src/config/duplicate_detection_finds_duplicates_in_same_section.md)
 - [album_override_section_value_wins_over_root_for_stamp_visibility_keys](../../functions/src/config/album_override_section_value_wins_over_root_for_stamp_visibility_keys.md)
 - [scoped_album_override_applies_stamp_visibility_keys_in_effective_config](../../functions/src/config/scoped_album_override_applies_stamp_visibility_keys_in_effective_config.md)
-- [deep_merge_toml_values](../../functions/src/config/deep_merge_toml_values.md)
-- [load_config_with_override](../../functions/src/config/load_config_with_override.md)
-- [load_slug_overrides](../../functions/src/config/load_slug_overrides.md)
 
 # Imports
 
@@ -129,7 +138,7 @@ relationships:
 - `std::env`
 - `std::os::unix::process::CommandExt`
 - `std::process::Command`
-- `rfd::{FileDialog, MessageButtons, MessageDialog, MessageLevel}`
+- `rfd::{FileDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel}`
 - `std::collections::HashMap`
 - `super::{detect_duplicate_keys, Config}`
 - `std::time::{SystemTime, UNIX_EPOCH}`

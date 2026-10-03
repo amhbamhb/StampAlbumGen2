@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: month_number
-resource: src/bin/stampworld_debug.rs#L52-L69
+resource: src/bin/stampworld_debug.rs#L53-L70
 visibility: private
 generated:
   by: okf-rs/0.4.0

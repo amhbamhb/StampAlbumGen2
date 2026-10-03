@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: custom_padding_and_margins
-resource: tests/usable_height.rs#L15-L34
+resource: tests/usable_height.rs#L15-L36
 visibility: private
 generated:
   by: okf-rs/0.4.0

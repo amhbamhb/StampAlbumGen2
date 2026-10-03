@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_colnect_detail_field_set
-resource: src/config.rs#L1129-L1304
+resource: src/config.rs#L1205-L1380
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,10 +10,10 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/estimate_colnect_centre_text
+  - target: functions/src/album_globals/generator/build_stamp_text
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/colnect_fields_boolean_toggles_are_parsed
@@ -40,8 +40,8 @@ relationships:
 
 # Called by
 
-- [estimate_colnect_centre_text](../../../../functions/src/album_globals/generator/estimate_colnect_centre_text.md)
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [build_stamp_text](../../../../functions/src/album_globals/generator/build_stamp_text.md)
+- [generate_album_output_conn_prepared](../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [colnect_fields_boolean_toggles_are_parsed](../../../../functions/src/config/colnect_fields_boolean_toggles_are_parsed.md)
 - [colnect_printing_type_alias_is_supported](../../../../functions/src/config/colnect_printing_type_alias_is_supported.md)
 - [colnect_all_false_toggles_override_detail_fields_to_empty](../../../../functions/src/config/colnect_all_false_toggles_override_detail_fields_to_empty.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_compare_action_rows_html
-resource: src/review_ui/views/compare_assets.rs#L80-L97
+resource: src/review_ui/views/compare_assets.rs#L80-L87
 generated:
   by: okf-rs/0.4.0
 relationships:

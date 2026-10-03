@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_first_column_color
-resource: src/config.rs#L1324-L1331
+resource: src/config.rs#L1400-L1407
 generated:
   by: okf-rs/0.4.0
 relationships:

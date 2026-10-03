@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sync_missing_stamps_from_colnect
-resource: src/modes.rs#L560-L1215
+resource: src/modes.rs#L562-L1217
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,9 +11,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/modes/backfill_colnect_links_on_existing_stamps
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/config/load_config
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/Config/effective_default_catalog_code
@@ -32,6 +29,5 @@ relationships:
 
 - [remap_colnect_sg_to_existing_stamps](../../../functions/src/modes/remap_colnect_sg_to_existing_stamps.md)
 - [backfill_colnect_links_on_existing_stamps](../../../functions/src/modes/backfill_colnect_links_on_existing_stamps.md)
-- [load_config](../../../functions/src/config/load_config.md)
 - [effective_default_catalog_code](../../../functions/src/config/Config/effective_default_catalog_code.md)
 - [infer_and_fix_catalog_codes_for_colnect_rows](../../../functions/src/modes/infer_and_fix_catalog_codes_for_colnect_rows.md)

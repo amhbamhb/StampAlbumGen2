@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: collect_stampworld_data
-resource: src/commands_file_generator/generator.rs#L140-L209
+resource: src/commands_file_generator/generator.rs#L84-L153
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,7 +16,7 @@ relationships:
 
 # Signature
 
-`pub fn collect_stampworld_data<'a>( &mut self, params: CollectStampworldCallParams<'a>, ) -> Result<Vec<String>, Box<dyn std::error::Error>>`
+`pub async fn collect_stampworld_data<'a>( &mut self, params: CollectStampworldCallParams<'a>, ) -> Result<Vec<String>, Box<dyn std::error::Error>>`
 
 # Calls
 

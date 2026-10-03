@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: migrate_fix_block_metadata
-resource: crates/stamp_album_db/src/lib.rs#L678-L854
+resource: crates/stamp_album_db/src/lib.rs#L729-L905
 generated:
   by: okf-rs/0.4.0
 relationships:

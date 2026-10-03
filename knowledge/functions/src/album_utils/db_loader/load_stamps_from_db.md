@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/db_utils/formatting/format_stamps_issued
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -18,3 +21,4 @@ relationships:
 # Calls
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [format_stamps_issued](../../../../functions/src/db_utils/formatting/format_stamps_issued.md)

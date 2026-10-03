@@ -370,6 +370,38 @@ struct BootstrapGeneratePdfRequest {
     end_year: Option<i32>,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReviewGeneratePdfRequest {
+    #[serde(default)]
+    start_year: Option<i32>,
+    #[serde(default)]
+    end_year: Option<i32>,
+    #[serde(default)]
+    open_pdf: bool,
+    #[serde(default)]
+    filters: crate::album_globals::selection::ColnectPdfFilters,
+}
+
+impl ReviewGeneratePdfRequest {
+    fn validate(&self) -> Result<(), String> {
+        self.filters.validate()?;
+        if self
+            .start_year
+            .is_some_and(|year| !(1840..=2100).contains(&year))
+            || self
+                .end_year
+                .is_some_and(|year| !(1840..=2100).contains(&year))
+        {
+            return Err("PDF years must be between 1840 and 2100, or blank.".into());
+        }
+        if matches!((self.start_year, self.end_year), (Some(start), Some(end)) if start > end) {
+            return Err("PDF start year must not be after the end year.".into());
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Serialize)]
 struct BootstrapGeneratePdfResponse {
     ok: bool,

@@ -1,13 +1,13 @@
 ---
 type: Rust Function
 title: leading_year_from_series
-resource: src/album_globals/generator_new/helpers.rs#L362-L373
+resource: src/album_globals/generator_new/helpers.rs#L364-L375
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -18,4 +18,4 @@ relationships:
 
 # Called by
 
-- [fetch_and_filter_stamps](../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: emit_commemorative_page
-resource: src/album_globals/generator_new/commemorative_layout.rs#L218-L250
+resource: src/album_globals/generator_new/commemorative_layout.rs#L265-L297
 generated:
   by: okf-rs/0.4.0
 relationships:

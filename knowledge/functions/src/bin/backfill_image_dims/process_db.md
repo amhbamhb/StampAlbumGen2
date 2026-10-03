@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: process_db
-resource: src/bin/backfill_image_dims.rs#L31-L85
+resource: src/bin/backfill_image_dims.rs#L27-L81
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,6 +11,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/bin/backfill_image_dims/resolve_dimensions
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/db_utils/updates/update_image_dimensions
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -27,6 +30,7 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [resolve_dimensions](../../../../functions/src/bin/backfill_image_dims/resolve_dimensions.md)
+- [update_image_dimensions](../../../../functions/src/db_utils/updates/update_image_dimensions.md)
 
 # Called by
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_flag_map_from_fs
-resource: src/flagdb.rs#L33-L82
+resource: src/flagdb.rs#L32-L76
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -23,7 +23,7 @@ relationships:
 
 # Signature
 
-`pub fn load_flag_map_from_fs() -> HashMap<String, String>`
+`pub async fn load_flag_map_from_fs() -> HashMap<String, String>`
 
 # Calls
 

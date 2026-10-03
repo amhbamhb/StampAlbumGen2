@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_query_param
-resource: src/review_ui.rs#L2174-L2183
+resource: src/review_ui.rs#L2457-L2466
 visibility: private
 generated:
   by: okf-rs/0.4.0

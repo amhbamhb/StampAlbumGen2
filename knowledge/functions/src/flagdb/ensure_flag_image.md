@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_flag_image
-resource: src/flagdb.rs#L189-L193
+resource: src/flagdb.rs#L183-L190
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`pub fn ensure_flag_image(alpha2: &str, size: &str) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn ensure_flag_image( alpha2: &str, size: &str, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

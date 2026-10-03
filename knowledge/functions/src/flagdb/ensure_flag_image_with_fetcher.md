@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_flag_image_with_fetcher
-resource: src/flagdb.rs#L197-L293
+resource: src/flagdb.rs#L194-L290
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -26,7 +26,7 @@ relationships:
 
 # Signature
 
-`pub fn ensure_flag_image_with_fetcher( alpha2: &str, size: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn ensure_flag_image_with_fetcher( alpha2: &str, size: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

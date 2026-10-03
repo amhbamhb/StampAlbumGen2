@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: e2e_collect_stampworld_db
-resource: tests/e2e_collect_stampworld_db.rs#L1-L165
+resource: tests/e2e_collect_stampworld_db.rs#L1-L173
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/async-trait-async-trait
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/reqwest-header-headermap
     resolved_by: tree-sitter
     confidence: exact
@@ -37,6 +40,7 @@ relationships:
 
 # Imports
 
+- `async_trait::async_trait`
 - `reqwest::header::HeaderMap`
 - `reqwest::StatusCode`
 - `stamp_album_gen2::stampworld::fetch::Fetcher`

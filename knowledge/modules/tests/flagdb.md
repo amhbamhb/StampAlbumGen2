@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: flagdb
-resource: tests/flagdb.rs#L1-L21
+resource: tests/flagdb.rs#L1-L24
 generated:
   by: okf-rs/0.4.0
 relationships:

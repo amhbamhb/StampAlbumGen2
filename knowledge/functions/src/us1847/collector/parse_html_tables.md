@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_html_tables
-resource: src/us1847/collector.rs#L262-L548
+resource: src/us1847/collector.rs#L258-L532
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -39,7 +39,7 @@ relationships:
 
 # Signature
 
-`fn parse_html_tables( client: &Client, conn: &Connection, document: &Html, series_id: i64, series_title: &str, site_name: &str, start_year: i32, end_year: i32, image_path: &str, overwrite_images: bool, ) -> Result<usize, Box<dyn Error>>`
+`fn parse_html_tables( client: &Client, conn: &Connection, document: &Html, series_id: i64, series_title: &str, opts: &Us1847PageOptions<'_>, ) -> Result<usize, Box<dyn Error>>`
 
 # Calls
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_colnect_csv_file
-resource: src/review_ui.rs#L1596-L1603
+resource: src/review_ui.rs#L1810-L1817
 visibility: private
 generated:
   by: okf-rs/0.4.0

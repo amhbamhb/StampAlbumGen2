@@ -15,6 +15,22 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
+fn review_pdf_error(message: &str, status: u16) -> Response<std::io::Cursor<Vec<u8>>> {
+    log_runtime_event(&format!("Review PDF: {message}"));
+    let body = serde_json::json!({
+        "ok": false,
+        "message": message,
+        "generated_output_path": null,
+        "generated_pdf_path": null
+    })
+    .to_string();
+    let mut response = Response::from_string(body).with_status_code(StatusCode(status));
+    if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+        response = response.with_header(header);
+    }
+    response
+}
+
 fn is_real_image_path(image_path: &str) -> bool {
     let p = image_path.trim();
     !p.is_empty() && !p.to_ascii_lowercase().starts_with("images/no_image")
@@ -231,6 +247,77 @@ mod site_account_tests {
             albumeasy_cli_configured: false,
             catalog_family_options: Vec::new(),
         }
+    }
+
+    #[test]
+    fn review_pdf_filters_routes_validate_requests_and_report_empty_selection() {
+        let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+        let addr = server.server_addr().to_ip().expect("TCP address");
+        let worker_server = server.clone();
+        let worker = std::thread::spawn(move || {
+            let mut input = review_input();
+            input.conn = crate::db_utils::init_db(":memory:").expect("country DB");
+            input
+                .conn
+                .execute(
+                    "INSERT INTO stamps (country, series, year, sg_number, type,
+                 colnect_emission, colnect_format, uniq_key)
+                 VALUES ('Testland', 'Test Series', 1976, '1001', 'Postage',
+                 'Official', 'Stamp', 'one')",
+                    [],
+                )
+                .expect("fixture");
+            serve_review_requests(&worker_server, input);
+        });
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .expect("test client");
+        let options: serde_json::Value = client
+            .get(format!("http://{addr}/api/review-pdf-options"))
+            .send()
+            .expect("options response")
+            .json()
+            .expect("options");
+        assert_eq!(
+            options["options"]["emission"],
+            serde_json::json!(["Official"])
+        );
+        assert_eq!(options["options"]["format"], serde_json::json!(["Stamp"]));
+        for body in [
+            "{",
+            r#"{"filters":{"emission":"Official"}}"#,
+            r#"{"filters":{"paper":["Coated"]}}"#,
+            r#"{"start_year":1977,"end_year":1976}"#,
+            r#"{"start_year":999999999999}"#,
+        ] {
+            let response = client
+                .post(format!("http://{addr}/generate-pdf-now"))
+                .body(body)
+                .send()
+                .expect("invalid request response");
+            assert_eq!(response.status().as_u16(), 400);
+            assert_eq!(response.headers()["content-type"], "application/json");
+            let error: serde_json::Value = response.json().expect("error JSON");
+            assert_eq!(error["ok"], false);
+        }
+        let response = client
+            .post(format!("http://{addr}/generate-pdf-now"))
+            .json(&serde_json::json!({"filters":{"emission":["Not present"]}}))
+            .send()
+            .expect("empty selection response");
+        assert_eq!(response.status().as_u16(), 422);
+        let error: serde_json::Value = response.json().expect("empty JSON");
+        assert!(error["message"]
+            .as_str()
+            .expect("message")
+            .contains("No stamps match"));
+        client
+            .post(format!("http://{addr}/shutdown"))
+            .json(&serde_json::json!({"generate_album":false}))
+            .send()
+            .expect("shutdown");
+        worker.join().expect("server worker");
     }
 
     #[test]
@@ -2027,6 +2114,28 @@ pub(super) fn serve_review_requests(
             continue;
         }
 
+        if method == Method::Get && req_url == "/api/review-pdf-options" {
+            let response = match crate::album_globals::selection::colnect_pdf_options(&input.conn) {
+                Ok(options) => {
+                    let mut response = Response::from_string(
+                        serde_json::json!({"ok": true, "options": options}).to_string(),
+                    );
+                    if let Ok(header) =
+                        Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..])
+                    {
+                        response = response.with_header(header);
+                    }
+                    response
+                }
+                Err(error) => review_pdf_error(
+                    &format!("Failed to load country PDF filter choices: {error}"),
+                    500,
+                ),
+            };
+            let _ = request.respond(response);
+            continue;
+        }
+
         if method == Method::Get && req_url == "/api/fresh-candidates" {
             let resp_json =
                 match load_right_candidates(&input.conn, &input.db_path, &input.album_name) {
@@ -2316,7 +2425,10 @@ pub(super) fn serve_review_requests(
         if method == Method::Post && req_url == "/generate-pdf-now" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
+                let _ = request.respond(review_pdf_error(
+                    "Failed to read PDF generation request.",
+                    400,
+                ));
                 continue;
             }
 
@@ -2342,26 +2454,39 @@ pub(super) fn serve_review_requests(
                 continue;
             };
 
-            let parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
-
-            let (req_start_year, req_end_year) = parsed_body
-                .as_ref()
-                .ok()
-                .map(|v| {
-                    let sy = v
-                        .get("start_year")
-                        .and_then(|x| x.as_i64())
-                        .map(|x| x as i32);
-                    let ey = v.get("end_year").and_then(|x| x.as_i64()).map(|x| x as i32);
-                    (sy, ey)
-                })
-                .unwrap_or((None, None));
-            let req_open_pdf = parsed_body
-                .as_ref()
-                .ok()
-                .and_then(|v| v.get("open_pdf"))
-                .and_then(|x| x.as_bool())
-                .unwrap_or(false);
+            let req = match serde_json::from_str::<ReviewGeneratePdfRequest>(&body) {
+                Ok(req) => req,
+                Err(error) => {
+                    let _ = request.respond(review_pdf_error(
+                        &format!("Invalid PDF request: {error}"),
+                        400,
+                    ));
+                    continue;
+                }
+            };
+            if let Err(error) = req.validate() {
+                let _ = request.respond(review_pdf_error(&error, 400));
+                continue;
+            }
+            let req_start_year = req.start_year;
+            let req_end_year = req.end_year;
+            let req_open_pdf = req.open_pdf;
+            let prepared = if req.filters.is_all() {
+                None
+            } else {
+                match crate::album_globals::selection::prepare_pdf_stamps(
+                    &input.conn,
+                    &req.filters,
+                    req_start_year,
+                    req_end_year,
+                ) {
+                    Ok(stamps) => Some(stamps),
+                    Err(error) => {
+                        let _ = request.respond(review_pdf_error(&error, 422));
+                        continue;
+                    }
+                }
+            };
 
             let (real_image_rows, local_real_files) = tokio::task::block_in_place(|| {
                 tokio::runtime::Handle::current().block_on(best_effort_prepare_images_for_pdf(
@@ -2375,15 +2500,28 @@ pub(super) fn serve_review_requests(
                 let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
                 tokio::task::block_in_place(|| {
                     tokio::runtime::Handle::current().block_on(
-                        crate::config::with_album_config_override_async(&album_dir, || {
-                            crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                &input.conn,
-                                &input.album_name,
-                                None::<fn(usize)>,
-                                req_start_year,
-                                req_end_year,
-                                Some(true),
-                            )
+                        crate::config::with_album_config_override_async(&album_dir, || async {
+                            if let Some(stamps) = prepared {
+                                crate::album_globals::generate_album_output_conn_with_prepared_pdf(
+                                    &input.conn,
+                                    &input.album_name,
+                                    req_start_year,
+                                    req_end_year,
+                                    Some(true),
+                                    stamps,
+                                )
+                                .await
+                            } else {
+                                crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                    &input.conn,
+                                    &input.album_name,
+                                    None::<fn(usize)>,
+                                    req_start_year,
+                                    req_end_year,
+                                    Some(true),
+                                )
+                                .await
+                            }
                         }),
                     )
                 })

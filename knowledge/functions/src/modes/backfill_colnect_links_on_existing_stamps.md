@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: backfill_colnect_links_on_existing_stamps
-resource: src/modes.rs#L735-L1093
+resource: src/modes.rs#L737-L1095
 visibility: private
 generated:
   by: okf-rs/0.4.0

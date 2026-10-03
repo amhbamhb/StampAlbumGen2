@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: save_stamp_data
-resource: src/commands_file_generator/generator.rs#L233-L241
+resource: src/commands_file_generator/generator.rs#L177-L185
 generated:
   by: okf-rs/0.4.0
 ---

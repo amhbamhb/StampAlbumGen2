@@ -1,13 +1,13 @@
 ---
 type: Rust Function
 title: format_number_with_commas
-resource: src/album_globals/generator.rs#L174-L225
+resource: src/album_globals/generator.rs#L177-L228
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/build_stamp_text
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -18,4 +18,4 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [build_stamp_text](../../../../functions/src/album_globals/generator/build_stamp_text.md)

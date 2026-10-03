@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`pub fn fetch_grokipedia_content( topic: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn fetch_grokipedia_content( topic: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: country_to_code
-resource: src/flagdb.rs#L132-L174
+resource: src/flagdb.rs#L126-L168
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -23,7 +23,7 @@ relationships:
 
 # Signature
 
-`pub fn country_to_code(country: &str) -> Option<String>`
+`pub async fn country_to_code(country: &str) -> Option<String>`
 
 # Calls
 

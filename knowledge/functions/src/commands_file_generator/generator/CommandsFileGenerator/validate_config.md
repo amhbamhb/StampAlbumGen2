@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: validate_config
-resource: src/commands_file_generator/generator.rs#L251-L262
+resource: src/commands_file_generator/generator.rs#L195-L206
 generated:
   by: okf-rs/0.4.0
 ---

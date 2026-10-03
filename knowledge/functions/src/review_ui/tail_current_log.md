@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: tail_current_log
-resource: src/review_ui.rs#L71-L140
+resource: src/review_ui.rs#L87-L156
 generated:
   by: okf-rs/0.4.0
 relationships:

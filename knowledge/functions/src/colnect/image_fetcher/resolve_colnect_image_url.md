@@ -1,17 +1,10 @@
 ---
 type: Rust Function
 title: resolve_colnect_image_url
-resource: src/colnect/image_fetcher.rs#L146-L150
+resource: src/colnect/image_fetcher.rs#L163-L170
 generated:
   by: okf-rs/0.4.0
 relationships:
-  calls:
-  - target: functions/src/stampworld/fetch/build_client
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/colnect/image_fetcher/extract_colnect_image_url
-    resolved_by: tree-sitter
-    confidence: exact
   called_by:
   - target: functions/src/review_ui/http_handlers/serve_review_requests
     resolved_by: tree-sitter
@@ -23,12 +16,7 @@ relationships:
 
 # Signature
 
-`pub fn resolve_colnect_image_url(page_url: &str) -> Option<String>`
-
-# Calls
-
-- [build_client](../../../../functions/src/stampworld/fetch/build_client.md)
-- [extract_colnect_image_url](../../../../functions/src/colnect/image_fetcher/extract_colnect_image_url.md)
+`pub fn resolve_colnect_image_url(page_url: &str) -> Result<String, Box<dyn std::error::Error>>`
 
 # Called by
 

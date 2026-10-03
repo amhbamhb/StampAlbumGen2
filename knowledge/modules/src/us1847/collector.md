@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: collector
-resource: src/us1847/collector.rs#L1-L1663
+resource: src/us1847/collector.rs#L1-L1632
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -36,6 +36,7 @@ relationships:
 # Contains
 
 - [StampInfo](../../../classes/src/us1847/collector/StampInfo.md)
+- [Us1847PageOptions](../../../classes/src/us1847/collector/Us1847PageOptions.md)
 - [process_1847us_page](../../../functions/src/us1847/collector/process_1847us_page.md)
 - [parse_html_tables](../../../functions/src/us1847/collector/parse_html_tables.md)
 - [collect_text](../../../functions/src/us1847/collector/collect_text.md)
@@ -51,7 +52,6 @@ relationships:
 - [insert_stamp_if_not_exists](../../../functions/src/us1847/collector/insert_stamp_if_not_exists.md)
 - [download_stamp_images](../../../functions/src/us1847/collector/download_stamp_images.md)
 - [sync_us1847_to_stamps](../../../functions/src/us1847/collector/sync_us1847_to_stamps.md)
-- [collect_us1847_data](../../../functions/src/us1847/collector/collect_us1847_data.md)
 
 # Imports
 

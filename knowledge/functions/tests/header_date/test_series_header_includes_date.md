@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_series_header_includes_date
-resource: tests/header_date.rs#L9-L84
+resource: tests/header_date.rs#L9-L85
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_series_header_includes_date()`
+`async fn test_series_header_includes_date()`
 
 # Calls
 

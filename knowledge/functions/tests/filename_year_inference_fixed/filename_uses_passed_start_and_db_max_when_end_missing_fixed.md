@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: filename_uses_passed_start_and_db_max_when_end_missing_fixed
-resource: tests/filename_year_inference_fixed.rs#L64-L94
+resource: tests/filename_year_inference_fixed.rs#L64-L95
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn filename_uses_passed_start_and_db_max_when_end_missing_fixed()`
+`async fn filename_uses_passed_start_and_db_max_when_end_missing_fixed()`
 
 # Calls
 

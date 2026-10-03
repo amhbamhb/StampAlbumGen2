@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: usable_height
-resource: tests/usable_height.rs#L1-L34
+resource: tests/usable_height.rs#L1-L36
 generated:
   by: okf-rs/0.4.0
 relationships:

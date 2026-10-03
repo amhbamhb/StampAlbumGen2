@@ -9,9 +9,6 @@ relationships:
   - target: functions/src/placeholder_image/compute_placeholder_size_for_series
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_config
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/placeholder_image/is_color_dark
     resolved_by: tree-sitter
     confidence: exact
@@ -40,7 +37,6 @@ relationships:
 # Calls
 
 - [compute_placeholder_size_for_series](../../../functions/src/placeholder_image/compute_placeholder_size_for_series.md)
-- [load_config](../../../functions/src/config/load_config.md)
 - [is_color_dark](../../../functions/src/placeholder_image/is_color_dark.md)
 - [draw_text](../../../functions/src/placeholder_image/draw_text.md)
 - [generate_placeholder_image_with_options](../../../functions/src/placeholder_image/generate_placeholder_image_with_options.md)

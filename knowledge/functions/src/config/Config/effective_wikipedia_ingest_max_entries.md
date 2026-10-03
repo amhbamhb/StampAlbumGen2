@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_wikipedia_ingest_max_entries
-resource: src/config.rs#L1471-L1473
+resource: src/config.rs#L1547-L1549
 generated:
   by: okf-rs/0.4.0
 relationships:

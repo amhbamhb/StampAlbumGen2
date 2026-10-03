@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_migrate_fix_block_metadata_local
-resource: crates/stamp_album_db/tests/unit_tests.rs#L195-L220
+resource: crates/stamp_album_db/tests/unit_tests.rs#L199-L231
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -383,6 +383,34 @@ pub fn fetch_and_filter_stamps(
     start_year: Option<i32>,
     end_year: Option<i32>,
 ) -> SqlResult<Vec<Stamp>> {
+    fetch_and_filter_stamps_impl(conn, series, start_year, end_year, false)
+}
+
+pub(crate) fn fetch_and_filter_stamps_for_selection(
+    conn: &Connection,
+    series: &str,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+) -> SqlResult<Vec<Stamp>> {
+    fetch_and_filter_stamps_impl(conn, series, start_year, end_year, true)
+}
+
+fn fetch_and_filter_stamps_impl(
+    conn: &Connection,
+    series: &str,
+    start_year: Option<i32>,
+    end_year: Option<i32>,
+    strict_colnect: bool,
+) -> SqlResult<Vec<Stamp>> {
+    let has_colnect_table = if strict_colnect {
+        conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='colnect_stamps')",
+            [],
+            |row| row.get::<_, bool>(0),
+        )?
+    } else {
+        true
+    };
     let default_catalog_code =
         crate::config::load_effective_config("config.toml").effective_default_catalog_code();
     // Fast path: when a single target year is requested, ask the DB helper
@@ -454,7 +482,12 @@ pub fn fetch_and_filter_stamps(
         // Prefer Colnect values already merged into `stamps` rows via Review UI.
         // This keeps output aligned with user-selected metadata even when SG mapping
         // does not match Colnect sg_number exactly.
-        let stored_colnect = load_stored_colnect_meta(conn, &stamp).ok().flatten();
+        let stored_result = load_stored_colnect_meta(conn, &stamp);
+        let stored_colnect = if strict_colnect {
+            stored_result?
+        } else {
+            stored_result.ok().flatten()
+        };
         let lookup_colnect_id = stored_colnect.as_ref().map(|m| m.colnect_id.clone());
         if let Some(meta) = stored_colnect.as_ref() {
             set_attr_if_non_empty(&mut attrs, "catalog_code", &meta.catalog_code);
@@ -498,11 +531,17 @@ pub fn fetch_and_filter_stamps(
         }
 
         // Enrich missing attributes from Colnect reference tables.
-        let colnect_lookup = if let Some(cid) = lookup_colnect_id.filter(|id| !id.trim().is_empty())
-        {
-            get_colnect_info_by_id(conn, &cid).ok().flatten()
+        let lookup_result = if !has_colnect_table {
+            Ok(None)
+        } else if let Some(cid) = lookup_colnect_id.filter(|id| !id.trim().is_empty()) {
+            get_colnect_info_by_id(conn, &cid)
         } else {
-            get_colnect_info(conn, &stamp.sg_number).ok().flatten()
+            get_colnect_info(conn, &stamp.sg_number)
+        };
+        let colnect_lookup = if strict_colnect {
+            lookup_result?
+        } else {
+            lookup_result.ok().flatten()
         };
 
         if let Some(colnect) = colnect_lookup {

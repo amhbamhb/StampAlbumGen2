@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_stamps_by_series
-resource: src/db_utils/operations.rs#L230-L283
+resource: src/db_utils/operations.rs#L232-L285
 generated:
   by: okf-rs/0.4.0
 ---

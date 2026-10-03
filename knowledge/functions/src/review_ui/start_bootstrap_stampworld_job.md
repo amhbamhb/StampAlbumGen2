@@ -1,12 +1,18 @@
 ---
 type: Rust Function
 title: start_bootstrap_stampworld_job
-resource: src/review_ui.rs#L663-L904
+resource: src/review_ui.rs#L868-L1118
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/config/Config/effective_stampworld_username
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/config/Config/effective_stampworld_password
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/resolve_bootstrap_albums_root
     resolved_by: tree-sitter
     confidence: exact
@@ -40,6 +46,8 @@ relationships:
 
 # Calls
 
+- [effective_stampworld_username](../../../functions/src/config/Config/effective_stampworld_username.md)
+- [effective_stampworld_password](../../../functions/src/config/Config/effective_stampworld_password.md)
 - [resolve_bootstrap_albums_root](../../../functions/src/review_ui/resolve_bootstrap_albums_root.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [stampworld_job_state](../../../functions/src/review_ui/stampworld_job_state.md)

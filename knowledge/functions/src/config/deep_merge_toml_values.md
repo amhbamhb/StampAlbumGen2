@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: deep_merge_toml_values
-resource: src/config.rs#L2739-L2754
+resource: src/config.rs#L2606-L2621
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,10 +11,10 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/config/colnect_false_override_disables_global_true_field
+  - target: functions/src/config/load_config_with_override
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_config_with_override
+  - target: functions/src/config/colnect_false_override_disables_global_true_field
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -29,5 +29,5 @@ relationships:
 
 # Called by
 
-- [colnect_false_override_disables_global_true_field](../../../functions/src/config/colnect_false_override_disables_global_true_field.md)
 - [load_config_with_override](../../../functions/src/config/load_config_with_override.md)
+- [colnect_false_override_disables_global_true_field](../../../functions/src/config/colnect_false_override_disables_global_true_field.md)
