@@ -1667,11 +1667,6 @@ pub async fn run_scraping_mode(
     progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
     let pages = if source == "us1847" {
         // For 1847us.com, we process a single URL directly
-        let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(60))
-            .build()
-            .expect("Failed to build reqwest client");
-
         // Initialize DB
         let conn = match crate::db_utils::init_db(&db_path) {
             Ok(c) => c,
@@ -1681,18 +1676,36 @@ pub async fn run_scraping_mode(
             }
         };
 
-        match crate::us1847::collector::process_1847us_page(
-            &client,
-            &conn,
-            &base_url,
-            &crate::us1847::collector::Us1847PageOptions {
-                site_name: &site_name,
-                start_year: cli.start_year,
-                end_year: cli.end_year,
-                image_path: &cfg.image_path,
-                overwrite_images: cli.overwrite_images,
-            },
-        ) {
+        // reqwest::blocking owns an internal Tokio runtime and panics if it is
+        // created or dropped inside an async task, so run the whole blocking
+        // scrape on a dedicated OS thread.
+        let opts = crate::us1847::collector::Us1847PageOptions {
+            site_name: &site_name,
+            start_year: cli.start_year,
+            end_year: cli.end_year,
+            image_path: &cfg.image_path,
+            overwrite_images: cli.overwrite_images,
+        };
+        let base_url_ref = base_url.as_str();
+        let scrape_result: Result<usize, String> = std::thread::scope(|scope| {
+            scope
+                .spawn(move || {
+                    let client = reqwest::blocking::Client::builder()
+                        .timeout(std::time::Duration::from_secs(60))
+                        .build()
+                        .map_err(|e| format!("Failed to build reqwest client: {}", e))?;
+                    crate::us1847::collector::process_1847us_page(
+                        &client,
+                        &conn,
+                        base_url_ref,
+                        &opts,
+                    )
+                    .map_err(|e| e.to_string())
+                })
+                .join()
+                .unwrap_or_else(|_| Err("1847us scrape thread panicked".to_string()))
+        });
+        match scrape_result.map_err(Box::<dyn std::error::Error>::from) {
             Ok(stamp_count) => {
                 progress.set_message(&format!(
                     "✅ 1847US scraping complete! Found {} stamps.",
