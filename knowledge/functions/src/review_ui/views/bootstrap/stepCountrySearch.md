@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: stepCountrySearch
-resource: src/review_ui/views/bootstrap.js#L444-L461
+resource: src/review_ui/views/bootstrap.js#L446-L463
 generated:
   by: okf-rs/0.4.0
 relationships:

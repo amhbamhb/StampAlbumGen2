@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ConfigEditorDataResponse
-resource: src/review_ui.rs#L1423-L1431
+resource: src/review_ui.rs#L1426-L1434
 visibility: private
 generated:
   by: okf-rs/0.4.0

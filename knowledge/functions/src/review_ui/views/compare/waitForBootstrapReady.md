@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: waitForBootstrapReady
-resource: src/review_ui/views/compare.js#L476-L494
+resource: src/review_ui/views/compare.js#L477-L495
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: parseCatalogTypesFromRaw
-resource: src/review_ui/views/compare.js#L2618-L2632
+resource: src/review_ui/views/compare.js#L2620-L2634
 generated:
   by: okf-rs/0.4.0
 relationships:

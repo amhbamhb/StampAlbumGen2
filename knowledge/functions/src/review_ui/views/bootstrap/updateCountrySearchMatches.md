@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateCountrySearchMatches
-resource: src/review_ui/views/bootstrap.js#L407-L442
+resource: src/review_ui/views/bootstrap.js#L409-L444
 generated:
   by: okf-rs/0.4.0
 relationships:

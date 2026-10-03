@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: normalizeIndex
-resource: src/review_ui/views/compare.js#L1777-L1783
+resource: src/review_ui/views/compare.js#L1779-L1785
 generated:
   by: okf-rs/0.4.0
 relationships:

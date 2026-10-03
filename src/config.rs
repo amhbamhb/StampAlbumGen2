@@ -2769,7 +2769,16 @@ pub fn load_config_with_override(global_path: &str, album_dir: &std::path::Path)
 /// [slug_overrides]
 /// "British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
 pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
-    // Search upward from cwd like load_config
+    match try_load_slug_overrides(path) {
+        Ok(overrides) => overrides,
+        Err(error) => {
+            log::error!("Failed to load StampWorld country mappings: {error}");
+            HashMap::new()
+        }
+    }
+}
+
+pub(crate) fn slug_override_path(path: &str) -> Result<std::path::PathBuf, String> {
     let try_paths = {
         let mut paths = Vec::new();
 
@@ -2801,29 +2810,41 @@ pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
         paths
     };
 
-    for candidate in try_paths.iter() {
-        if let Ok(content) = fs::read_to_string(candidate) {
-            if let Ok(value) = toml::from_str::<toml::Value>(&content) {
-                if let Some(table) = value.get("slug_overrides") {
-                    if let Some(tbl) = table.as_table() {
-                        let mut out = HashMap::new();
-                        for (k, v) in tbl.iter() {
-                            if let Some(s) = v.as_str() {
-                                out.insert(k.clone(), s.to_string());
-                            }
-                        }
-                        log::info!(
-                            "Loaded slug_overrides from {} ({} entries)",
-                            candidate.display(),
-                            out.len()
-                        );
-                        return out;
-                    }
-                }
-            }
+    for candidate in try_paths {
+        match fs::metadata(&candidate) {
+            Ok(_) => return Ok(candidate),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("Cannot access {}: {error}", candidate.display())),
         }
     }
-    HashMap::new()
+    std::env::current_dir()
+        .map(|dir| dir.join(path))
+        .map_err(|error| format!("Cannot resolve country mapping location: {error}"))
+}
+
+pub(crate) fn try_load_slug_overrides(path: &str) -> Result<HashMap<String, String>, String> {
+    let candidate = slug_override_path(path)?;
+    let content = match fs::read_to_string(&candidate) {
+        Ok(content) => content,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(error) => return Err(format!("Cannot read {}: {error}", candidate.display())),
+    };
+    let value: toml::Value = toml::from_str(&content)
+        .map_err(|error| format!("Invalid {}: {error}", candidate.display()))?;
+    let Some(table) = value.get("slug_overrides") else {
+        return Ok(HashMap::new());
+    };
+    let table = table
+        .as_table()
+        .ok_or_else(|| "slug_overrides must be a TOML table".to_string())?;
+    table
+        .iter()
+        .map(|(country, slug)| {
+            slug.as_str()
+                .map(|slug| (country.clone(), slug.to_string()))
+                .ok_or_else(|| format!("StampWorld mapping for {country} must be text"))
+        })
+        .collect()
 }
 
 #[cfg(test)]

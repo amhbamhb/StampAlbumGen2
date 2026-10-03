@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setMatchStatus
-resource: src/review_ui/views/compare.js#L210-L214
+resource: src/review_ui/views/compare.js#L211-L215
 generated:
   by: okf-rs/0.4.0
 relationships:

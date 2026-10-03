@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: pruneAssignmentsToExistingCandidates
-resource: src/review_ui/views/compare.js#L518-L529
+resource: src/review_ui/views/compare.js#L519-L530
 generated:
   by: okf-rs/0.4.0
 relationships:

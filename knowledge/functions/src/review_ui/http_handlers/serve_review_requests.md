@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: serve_review_requests
-resource: src/review_ui/http_handlers.rs#L1377-L2778
+resource: src/review_ui/http_handlers.rs#L1483-L2887
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/http_handlers/handle_site_account_request
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/http_handlers/handle_country_url_request
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/bundled_favicon_png
@@ -142,6 +145,9 @@ relationships:
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
     resolved_by: tree-sitter
     confidence: exact
@@ -154,6 +160,7 @@ relationships:
 # Calls
 
 - [handle_site_account_request](../../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
+- [handle_country_url_request](../../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [bundled_favicon_png](../../../../functions/src/review_ui/http_handlers/bundled_favicon_png.md)
 - [ping_response_json](../../../../functions/src/review_ui/http_handlers/ping_response_json.md)
 - [stampworld_job_state](../../../../functions/src/review_ui/stampworld_job_state.md)
@@ -201,4 +208,5 @@ relationships:
 
 - [run_review_ui](../../../../functions/src/review_ui/run_review_ui.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
+- [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)

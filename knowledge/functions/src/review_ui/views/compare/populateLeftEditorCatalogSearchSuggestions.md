@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: populateLeftEditorCatalogSearchSuggestions
-resource: src/review_ui/views/compare.js#L2680-L2687
+resource: src/review_ui/views/compare.js#L2682-L2689
 generated:
   by: okf-rs/0.4.0
 relationships:

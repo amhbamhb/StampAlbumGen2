@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateAlbumsRootHint
-resource: src/review_ui/views/bootstrap.js#L260-L265
+resource: src/review_ui/views/bootstrap.js#L262-L267
 generated:
   by: okf-rs/0.4.0
 relationships:

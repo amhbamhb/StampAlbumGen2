@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: pollImportLog
-resource: src/review_ui/views/bootstrap.js#L1414-L1429
+resource: src/review_ui/views/bootstrap.js#L1418-L1433
 generated:
   by: okf-rs/0.4.0
 relationships:

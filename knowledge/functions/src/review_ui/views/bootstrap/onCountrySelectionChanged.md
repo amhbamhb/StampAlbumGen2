@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: onCountrySelectionChanged
-resource: src/review_ui/views/bootstrap.js#L350-L357
+resource: src/review_ui/views/bootstrap.js#L352-L359
 generated:
   by: okf-rs/0.4.0
 relationships:

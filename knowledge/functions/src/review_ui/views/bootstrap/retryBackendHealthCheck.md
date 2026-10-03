@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: retryBackendHealthCheck
-resource: src/review_ui/views/bootstrap.js#L119-L122
+resource: src/review_ui/views/bootstrap.js#L121-L124
 generated:
   by: okf-rs/0.4.0
 relationships:

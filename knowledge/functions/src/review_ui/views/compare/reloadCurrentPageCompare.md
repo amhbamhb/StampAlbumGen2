@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: reloadCurrentPageCompare
-resource: src/review_ui/views/compare.js#L230-L233
+resource: src/review_ui/views/compare.js#L231-L234
 generated:
   by: okf-rs/0.4.0
 ---

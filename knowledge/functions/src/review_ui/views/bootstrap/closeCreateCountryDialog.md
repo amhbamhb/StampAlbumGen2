@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: closeCreateCountryDialog
-resource: src/review_ui/views/bootstrap.js#L1124-L1127
+resource: src/review_ui/views/bootstrap.js#L1128-L1131
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startRuntimeLogPollingCompare
-resource: src/review_ui/views/compare.js#L418-L422
+resource: src/review_ui/views/compare.js#L419-L423
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setReconnectBanner
-resource: src/review_ui/views/bootstrap.js#L50-L61
+resource: src/review_ui/views/bootstrap.js#L52-L63
 generated:
   by: okf-rs/0.4.0
 relationships:

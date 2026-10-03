@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setReconnectBannerCompare
-resource: src/review_ui/views/compare.js#L235-L246
+resource: src/review_ui/views/compare.js#L236-L247
 generated:
   by: okf-rs/0.4.0
 relationships:

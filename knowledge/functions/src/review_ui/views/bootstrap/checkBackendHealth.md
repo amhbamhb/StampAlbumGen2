@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: checkBackendHealth
-resource: src/review_ui/views/bootstrap.js#L77-L107
+resource: src/review_ui/views/bootstrap.js#L79-L109
 generated:
   by: okf-rs/0.4.0
 relationships:

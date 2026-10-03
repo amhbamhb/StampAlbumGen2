@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: normalizeCatalogCodeForUi
-resource: src/review_ui/views/compare.js#L744-L755
+resource: src/review_ui/views/compare.js#L745-L756
 generated:
   by: okf-rs/0.4.0
 relationships:

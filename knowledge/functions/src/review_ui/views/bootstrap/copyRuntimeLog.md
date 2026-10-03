@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: copyRuntimeLog
-resource: src/review_ui/views/bootstrap.js#L243-L253
+resource: src/review_ui/views/bootstrap.js#L245-L255
 generated:
   by: okf-rs/0.4.0
 relationships:

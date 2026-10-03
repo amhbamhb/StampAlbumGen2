@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: isRuntimeLogVisible
-resource: src/review_ui/views/bootstrap.js#L141-L144
+resource: src/review_ui/views/bootstrap.js#L143-L146
 generated:
   by: okf-rs/0.4.0
 relationships:

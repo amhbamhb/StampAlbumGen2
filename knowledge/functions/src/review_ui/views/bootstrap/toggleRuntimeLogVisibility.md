@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: toggleRuntimeLogVisibility
-resource: src/review_ui/views/bootstrap.js#L152-L157
+resource: src/review_ui/views/bootstrap.js#L154-L159
 generated:
   by: okf-rs/0.4.0
 relationships:

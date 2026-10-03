@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_runtime_startup_files
-resource: src/review_ui.rs#L696-L703
+resource: src/review_ui.rs#L698-L705
 visibility: private
 generated:
   by: okf-rs/0.4.0

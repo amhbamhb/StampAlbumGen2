@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: reviewStampworldPresetFlags
-resource: src/review_ui/views/compare.js#L1263-L1270
+resource: src/review_ui/views/compare.js#L1264-L1271
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applyRuntimeLogVisibility
-resource: src/review_ui/views/bootstrap.js#L146-L150
+resource: src/review_ui/views/bootstrap.js#L148-L152
 generated:
   by: okf-rs/0.4.0
 relationships:

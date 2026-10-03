@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: removeCandidateFromUi
-resource: src/review_ui/views/compare.js#L496-L516
+resource: src/review_ui/views/compare.js#L497-L517
 generated:
   by: okf-rs/0.4.0
 relationships:

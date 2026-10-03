@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: runReviewStampWorldPull
-resource: src/review_ui/views/compare.js#L1397-L1478
+resource: src/review_ui/views/compare.js#L1398-L1480
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -13,6 +13,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/logRuntimeCompare
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/country_url/StampWorldCountryUrl/ensureSaved
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/pollReviewStampWorldStatus
@@ -29,4 +32,5 @@ relationships:
 - [emitReviewClientLog](../../../../../functions/src/review_ui/views/compare/emitReviewClientLog.md)
 - [updateReviewStampWorldStatus](../../../../../functions/src/review_ui/views/compare/updateReviewStampWorldStatus.md)
 - [logRuntimeCompare](../../../../../functions/src/review_ui/views/compare/logRuntimeCompare.md)
+- [ensureSaved](../../../../../functions/src/review_ui/views/country_url/StampWorldCountryUrl/ensureSaved.md)
 - [pollReviewStampWorldStatus](../../../../../functions/src/review_ui/views/compare/pollReviewStampWorldStatus.md)

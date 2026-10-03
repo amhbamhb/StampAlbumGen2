@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: ensureCopyableAlertDialog
-resource: src/review_ui/views/bootstrap.js#L181-L203
+resource: src/review_ui/views/bootstrap.js#L183-L205
 generated:
   by: okf-rs/0.4.0
 relationships:

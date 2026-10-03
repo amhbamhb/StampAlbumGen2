@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: render
-resource: src/review_ui/views/compare.js#L2035-L2348
+resource: src/review_ui/views/compare.js#L2037-L2350
 generated:
   by: okf-rs/0.4.0
 relationships:

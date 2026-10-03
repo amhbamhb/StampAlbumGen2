@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applyAlbumsRootResponse
-resource: src/review_ui/views/bootstrap.js#L276-L287
+resource: src/review_ui/views/bootstrap.js#L278-L289
 generated:
   by: okf-rs/0.4.0
 relationships:

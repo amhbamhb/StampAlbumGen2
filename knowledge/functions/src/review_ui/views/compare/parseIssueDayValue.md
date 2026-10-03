@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: parseIssueDayValue
-resource: src/review_ui/views/compare.js#L926-L931
+resource: src/review_ui/views/compare.js#L927-L932
 generated:
   by: okf-rs/0.4.0
 relationships:

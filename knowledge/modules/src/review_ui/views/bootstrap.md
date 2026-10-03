@@ -1,7 +1,7 @@
 ---
 type: JavaScript Module
 title: bootstrap
-resource: src/review_ui/views/bootstrap.js#L1-L1598
+resource: src/review_ui/views/bootstrap.js#L1-L1602
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -17,6 +17,10 @@ pub struct Cli {
     #[arg(long)]
     pub site_name: Option<String>,
 
+    /// Override only the StampWorld source URL; country and album names are unchanged.
+    #[arg(long)]
+    pub stampworld_country_url: Option<String>,
+
     /// Album name to generate
     #[arg(long)]
     pub album_name: Option<String>,

@@ -76,6 +76,7 @@
 - [compare](../modules/src/review_ui/views/compare.md) — JavaScript Module
 - [compare](../modules/src/review_ui/views/compare-2.md) — Rust Module
 - [compare_assets](../modules/src/review_ui/views/compare_assets.md) — Rust Module
+- [country_url](../modules/src/review_ui/views/country_url.md) — JavaScript Module
 - [pdf_filters](../modules/src/review_ui/views/pdf_filters.md) — JavaScript Module
 - [shared](../modules/src/review_ui/views/shared.md) — Rust Module
 - [tests](../modules/src/review_ui/views/tests.md) — Rust Module
@@ -83,6 +84,7 @@
 - [sample_images](../modules/src/sample_images.md) — Rust Module
 - [setup](../modules/src/setup.md) — Rust Module
 - [stampworld](../modules/src/stampworld.md) — Rust Module
+- [country_url](../modules/src/stampworld/country_url.md) — Rust Module
 - [data_collector](../modules/src/stampworld/data_collector.md) — Rust Module
 - [fetch](../modules/src/stampworld/fetch.md) — Rust Module
 - [parser](../modules/src/stampworld/parser.md) — Rust Module
@@ -158,6 +160,7 @@
 - [series_ordering](../modules/tests/series_ordering.md) — Rust Module
 - [site_accounts_ui](../modules/tests/site_accounts_ui.md) — JavaScript Module
 - [stamp_flags_dir_lookup](../modules/tests/stamp_flags_dir_lookup.md) — Rust Module
+- [stampworld_country_url_ui](../modules/tests/stampworld_country_url_ui.md) — JavaScript Module
 - [test_image_naming](../modules/tests/test_image_naming.md) — Rust Module
 - [test_stampworld_parsing](../modules/tests/test_stampworld_parsing.md) — Rust Module
 - [test_wikipedia_vspace](../modules/tests/test_wikipedia_vspace.md) — Rust Module

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startBackendHealthPollingCompare
-resource: src/review_ui/views/compare.js#L300-L308
+resource: src/review_ui/views/compare.js#L301-L309
 generated:
   by: okf-rs/0.4.0
 relationships:

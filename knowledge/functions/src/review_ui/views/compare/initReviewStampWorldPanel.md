@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: initReviewStampWorldPanel
-resource: src/review_ui/views/compare.js#L1648-L1697
+resource: src/review_ui/views/compare.js#L1650-L1699
 generated:
   by: okf-rs/0.4.0
 relationships:

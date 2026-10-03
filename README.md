@@ -66,7 +66,46 @@ Scrape StampWorld for a country/year range:
  --end-year 1950
 ```
 
-Scrape US1847 mode:
+### Remember a StampWorld country URL
+
+Multiword country names already convert spaces to hyphens automatically:
+`South Korea` becomes `South-Korea`, `British Canada` becomes `British-Canada`,
+and `North Korean Occ. South Korea` becomes `North-Korean-Occ.-South-Korea`.
+Quote multiword country names when entering CLI commands.
+
+Both the startup and Review **StampWorld Pull** panels show the resolved country
+URL. If automatic naming does not match the site, paste the country page URL
+into **StampWorld country URL (optional)** and click **Save country URL**.
+Unsaved edits are also validated and saved before a pull starts; invalid URLs
+or save failures block that pull. Clear the field and save to restore automatic
+naming. Switching countries loads that country's saved setting and discards
+unsaved edits from the previous country.
+
+Settings persist across restarts in the existing `slug_overrides.toml` file:
+the application searches the working-folder ancestors first, then executable
+ancestors, and creates the file in the working folder if none exists. No database
+table is needed. Saving preserves other mappings/settings but may reformat the
+TOML and remove comments. Malformed or unreadable mapping files produce an
+explicit error rather than silently using a different URL.
+
+Mappings are keyed by the exact country name. They affect only the source URL,
+not country display names, album names, folders or databases. Each UI pull passes
+its resolved URL to the subprocess, so a different pull working folder cannot
+cause a different mapping to be used. Existing plain CLI pulls use the saved
+mapping; an optional `--stampworld-country-url` argument supplies a one-run
+override without saving it:
+
+```bash
+./stamp_album_gen2 --source stampworld --site-name "South Korea" \
+ --album-name "South Korea" --start-year 1970 --end-year 1980 \
+ --stampworld-country-url https://www.stampworld.com/en/stamps/South-Korea/
+```
+
+Use a full HTTPS URL under `www.stampworld.com/en/stamps/<country>/`, without
+year-range paths, query parameters, credentials or fragments. Validation checks
+the URL shape; it does not check whether StampWorld currently serves that page.
+
+### Scrape US1847
 
 ```bash
 ./stamp_album_gen2 \

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: selectedCatalogCodeForCurrent
-resource: src/review_ui/views/compare.js#L1908-L1918
+resource: src/review_ui/views/compare.js#L1910-L1920
 generated:
   by: okf-rs/0.4.0
 relationships:

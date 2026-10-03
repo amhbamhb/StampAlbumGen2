@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: copyTextToClipboardCompare
-resource: src/review_ui/views/compare.js#L332-L352
+resource: src/review_ui/views/compare.js#L333-L353
 generated:
   by: okf-rs/0.4.0
 relationships:

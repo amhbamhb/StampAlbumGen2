@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: copyTextToClipboard
-resource: src/review_ui/views/bootstrap.js#L159-L179
+resource: src/review_ui/views/bootstrap.js#L161-L181
 generated:
   by: okf-rs/0.4.0
 relationships:

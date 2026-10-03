@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: html
-resource: src/review_ui/views/compare.js#L610-L614
+resource: src/review_ui/views/compare.js#L611-L615
 generated:
   by: okf-rs/0.4.0
 relationships:

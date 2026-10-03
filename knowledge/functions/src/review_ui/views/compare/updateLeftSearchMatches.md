@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateLeftSearchMatches
-resource: src/review_ui/views/compare.js#L1123-L1161
+resource: src/review_ui/views/compare.js#L1124-L1162
 generated:
   by: okf-rs/0.4.0
 relationships:

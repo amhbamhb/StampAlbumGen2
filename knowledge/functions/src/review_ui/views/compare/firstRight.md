@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: firstRight
-resource: src/review_ui/views/compare.js#L1814-L1821
+resource: src/review_ui/views/compare.js#L1816-L1823
 generated:
   by: okf-rs/0.4.0
 relationships:

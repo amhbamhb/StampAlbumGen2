@@ -559,7 +559,7 @@ fn preset_flags(preset: &Option<String>) -> Vec<String> {
     }
 }
 
-fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String> {
+fn build_stampworld_args(req: &BootstrapStampWorldRunRequest, country_url: &str) -> Vec<String> {
     let country = req.country.trim().to_string();
     let mut args = vec![
         "--source".to_string(),
@@ -572,6 +572,8 @@ fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String> {
         req.start_year.to_string(),
         "--end-year".to_string(),
         req.end_year.to_string(),
+        "--stampworld-country-url".to_string(),
+        country_url.to_string(),
     ];
     args.extend(preset_flags(&req.preset));
     args.extend(parse_extra_flags(&req.extra_flags));
@@ -873,6 +875,7 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     if req.start_year > req.end_year {
         return Err("Start year must be less than or equal to end year".to_string());
     }
+    let (country_url, _) = crate::stampworld::country_url::load_country_url(&country)?;
 
     let cfg = crate::config::load_config("config.toml");
     let sw_user = cfg.effective_stampworld_username().unwrap_or_default();
@@ -911,7 +914,7 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
 
     let exe =
         std::env::current_exe().map_err(|e| format!("failed to resolve executable: {}", e))?;
-    let args = build_stampworld_args(&req);
+    let args = build_stampworld_args(&req, &country_url);
     let display_cmd = format!(
         "{} {}",
         exe.display(),
@@ -3242,6 +3245,45 @@ mod tests {
         mark_colnect_candidate_processed, sync_processed_colnect_candidates,
     };
     use rusqlite::Connection;
+
+    #[test]
+    fn stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url() {
+        use clap::Parser;
+        for (country, slug) in [
+            ("South Korea", "South-Korea"),
+            (
+                "North Korean Occ. South Korea",
+                "North-Korean-Occ.-South-Korea",
+            ),
+            ("British Canada", "British-Canada"),
+        ] {
+            let url = format!("https://www.stampworld.com/en/stamps/{slug}/");
+            let req = super::BootstrapStampWorldRunRequest {
+                country: country.into(),
+                start_year: 1970,
+                end_year: 1980,
+                preset: None,
+                extra_flags: None,
+            };
+            let args = super::build_stampworld_args(&req, &url);
+            let cli = crate::cli::Cli::try_parse_from(
+                std::iter::once("stamp_album_gen2".to_string()).chain(args),
+            )
+            .expect("valid pull arguments");
+            assert_eq!(cli.site_name.as_deref(), Some(country));
+            assert_eq!(cli.album_name.as_deref(), Some(country));
+            assert_eq!(cli.stampworld_country_url.as_deref(), Some(url.as_str()));
+            assert_eq!(
+                crate::stampworld::country_url::listing_url_from_country_url(
+                    cli.stampworld_country_url.as_deref().expect("snapshot URL"),
+                    cli.start_year,
+                    cli.end_year,
+                )
+                .expect("listing"),
+                format!("{url}Postage%20stamps/1970-1980?page="),
+            );
+        }
+    }
 
     #[test]
     fn site_accounts_preserve_saved_passwords_and_unrelated_config() {

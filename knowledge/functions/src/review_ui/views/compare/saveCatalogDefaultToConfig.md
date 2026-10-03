@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: saveCatalogDefaultToConfig
-resource: src/review_ui/views/compare.js#L807-L840
+resource: src/review_ui/views/compare.js#L808-L841
 generated:
   by: okf-rs/0.4.0
 relationships:

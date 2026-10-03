@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: resetPdfSortModeDefault
-resource: src/review_ui/views/compare.js#L1886-L1898
+resource: src/review_ui/views/compare.js#L1888-L1900
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setOperationBusy
-resource: src/review_ui/views/compare.js#L436-L462
+resource: src/review_ui/views/compare.js#L437-L463
 generated:
   by: okf-rs/0.4.0
 relationships:

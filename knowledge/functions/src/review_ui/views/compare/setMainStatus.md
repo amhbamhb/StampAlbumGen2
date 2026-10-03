@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setMainStatus
-resource: src/review_ui/views/compare.js#L184-L187
+resource: src/review_ui/views/compare.js#L185-L188
 generated:
   by: okf-rs/0.4.0
 relationships:

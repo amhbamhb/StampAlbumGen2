@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: changeSortMode
-resource: src/review_ui/views/compare.js#L1832-L1840
+resource: src/review_ui/views/compare.js#L1834-L1842
 generated:
   by: okf-rs/0.4.0
 relationships:

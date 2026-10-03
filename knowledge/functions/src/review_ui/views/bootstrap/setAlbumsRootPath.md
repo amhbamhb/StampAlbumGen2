@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setAlbumsRootPath
-resource: src/review_ui/views/bootstrap.js#L304-L329
+resource: src/review_ui/views/bootstrap.js#L306-L331
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshRuntimeLog
-resource: src/review_ui/views/bootstrap.js#L222-L235
+resource: src/review_ui/views/bootstrap.js#L224-L237
 generated:
   by: okf-rs/0.4.0
 relationships:

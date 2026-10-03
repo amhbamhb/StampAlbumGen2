@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setBusy
-resource: src/review_ui/views/compare.js#L464-L466
+resource: src/review_ui/views/compare.js#L465-L467
 generated:
   by: okf-rs/0.4.0
 relationships:

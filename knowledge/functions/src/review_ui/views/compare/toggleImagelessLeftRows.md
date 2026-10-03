@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: toggleImagelessLeftRows
-resource: src/review_ui/views/compare.js#L620-L629
+resource: src/review_ui/views/compare.js#L621-L630
 generated:
   by: okf-rs/0.4.0
 relationships:

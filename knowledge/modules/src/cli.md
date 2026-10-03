@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: cli
-resource: src/cli.rs#L1-L134
+resource: src/cli.rs#L1-L138
 generated:
   by: okf-rs/0.4.0
 relationships:

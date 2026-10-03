@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: lastLeft
-resource: src/review_ui/views/compare.js#L1797-L1801
+resource: src/review_ui/views/compare.js#L1799-L1803
 generated:
   by: okf-rs/0.4.0
 ---

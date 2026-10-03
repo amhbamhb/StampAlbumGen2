@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: inferInitialCatalogCodeFromLeftRows
-resource: src/review_ui/views/compare.js#L757-L788
+resource: src/review_ui/views/compare.js#L758-L789
 generated:
   by: okf-rs/0.4.0
 relationships:

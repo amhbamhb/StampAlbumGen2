@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applyCountrySearchSelection
-resource: src/review_ui/views/bootstrap.js#L370-L405
+resource: src/review_ui/views/bootstrap.js#L372-L407
 generated:
   by: okf-rs/0.4.0
 relationships:

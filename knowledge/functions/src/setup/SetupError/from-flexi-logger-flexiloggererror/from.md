@@ -34,7 +34,7 @@ relationships:
   - target: functions/src/config/load_config
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_slug_overrides
+  - target: functions/src/config/slug_override_path
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/data_sources/stampworld/collect_stampworld_data
@@ -130,6 +130,9 @@ relationships:
   - target: functions/src/setup/ensure_linux_desktop_integration
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/stampworld/country_url/multiword_names_and_explicit_mappings_build_the_expected_urls
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_async
     resolved_by: tree-sitter
     confidence: exact
@@ -156,7 +159,7 @@ relationships:
 - [main](../../../../../functions/src/bin/inspect_image_paths/main.md)
 - [ensure_config_and_template_files](../../../../../functions/src/config/ensure_config_and_template_files.md)
 - [load_config](../../../../../functions/src/config/load_config.md)
-- [load_slug_overrides](../../../../../functions/src/config/load_slug_overrides.md)
+- [slug_override_path](../../../../../functions/src/config/slug_override_path.md)
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [init_db](../../../../../functions/src/db_utils/init/init_db.md)
 - [resolve_runtime_albums_root](../../../../../functions/src/file_utils/resolve_runtime_albums_root.md)
@@ -188,6 +191,7 @@ relationships:
 - [query_windows_programs_dir](../../../../../functions/src/setup/query_windows_programs_dir.md)
 - [ensure_windows_desktop_integration](../../../../../functions/src/setup/ensure_windows_desktop_integration.md)
 - [ensure_linux_desktop_integration](../../../../../functions/src/setup/ensure_linux_desktop_integration.md)
+- [multiword_names_and_explicit_mappings_build_the_expected_urls](../../../../../functions/src/stampworld/country_url/multiword_names_and_explicit_mappings_build_the_expected_urls.md)
 - [collect_stampworld_data_async](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_async.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
 - [spain_colnect_layout_packs_rich_rows_without_losing_stamps](../../../../../functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps.md)

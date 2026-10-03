@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: getEffectiveStampworldCountry
-resource: src/review_ui/views/bootstrap.js#L583-L599
+resource: src/review_ui/views/bootstrap.js#L585-L601
 generated:
   by: okf-rs/0.4.0
 relationships:

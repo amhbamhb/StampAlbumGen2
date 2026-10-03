@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_account_auth_status
-resource: src/review_ui.rs#L744-L747
+resource: src/review_ui.rs#L746-L749
 generated:
   by: okf-rs/0.4.0
 relationships:

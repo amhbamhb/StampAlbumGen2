@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setConfigStatus
-resource: src/review_ui/views/compare.js#L216-L220
+resource: src/review_ui/views/compare.js#L217-L221
 generated:
   by: okf-rs/0.4.0
 relationships:

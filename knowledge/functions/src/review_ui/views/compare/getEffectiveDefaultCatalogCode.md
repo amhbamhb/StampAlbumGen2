@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: getEffectiveDefaultCatalogCode
-resource: src/review_ui/views/compare.js#L790-L795
+resource: src/review_ui/views/compare.js#L791-L796
 generated:
   by: okf-rs/0.4.0
 relationships:

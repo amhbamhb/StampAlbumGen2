@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: fmt
-resource: src/review_ui/views/compare.js#L609
+resource: src/review_ui/views/compare.js#L610
 generated:
   by: okf-rs/0.4.0
 relationships:

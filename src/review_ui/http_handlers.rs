@@ -214,6 +214,62 @@ fn handle_site_account_request(mut request: tiny_http::Request) -> Option<tiny_h
     None
 }
 
+fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let path = request.url().split('?').next().unwrap_or("");
+    if path != "/api/stampworld-country-url"
+        || !matches!(request.method(), Method::Get | Method::Post)
+    {
+        return Some(request);
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct SaveRequest {
+        country: String,
+        url: String,
+    }
+    let result = if request.method() == &Method::Get {
+        let country = parse_query_param(request.url(), "country").unwrap_or_default();
+        crate::stampworld::country_url::load_country_url(&country)
+    } else {
+        let mut body = String::new();
+        request
+            .as_reader()
+            .read_to_string(&mut body)
+            .map_err(|error| format!("Cannot read country URL request: {error}"))
+            .and_then(|_| {
+                serde_json::from_str::<SaveRequest>(&body)
+                    .map_err(|error| format!("Invalid country URL request: {error}"))
+            })
+            .and_then(|input| {
+                crate::stampworld::country_url::save_country_url(&input.country, &input.url)
+            })
+    };
+    let (body, status) = match result {
+        Ok((url, custom)) => (
+            serde_json::json!({"ok":true, "url":url, "custom":custom}),
+            StatusCode(200),
+        ),
+        Err(error) => {
+            log_runtime_event(&format!("StampWorld country URL: {error}"));
+            (
+                serde_json::json!({"ok":false, "message":error}),
+                StatusCode(400),
+            )
+        }
+    };
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!("StampWorld country URL response failed: {error}"));
+    }
+    None
+}
+
 #[cfg(test)]
 mod site_account_tests {
     use super::*;
@@ -321,6 +377,53 @@ mod site_account_tests {
     }
 
     #[test]
+    fn country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("test client");
+            for body in [
+                "{",
+                r#"{"country":"","url":""}"#,
+                r#"{"country":"South Korea","url":"https://example.invalid/"}"#,
+                r#"{"country":"South Korea","url":42}"#,
+            ] {
+                let response = client
+                    .post(format!("http://{addr}/api/stampworld-country-url"))
+                    .body(body)
+                    .send()
+                    .expect("country URL response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let data: serde_json::Value = response.json().expect("JSON error response");
+                assert_eq!(data["ok"], false);
+                assert!(data["message"]
+                    .as_str()
+                    .is_some_and(|message| !message.is_empty()));
+            }
+            let response = client
+                .get(format!("http://{addr}/api/stampworld-country-url"))
+                .send()
+                .expect("missing country response");
+            assert_eq!(response.status().as_u16(), 400);
+            server.unblock();
+            worker.join().expect("server worker");
+        }
+    }
+
+    #[test]
     fn site_accounts_routes_return_json_in_bootstrap_and_review_modes() {
         for review in [false, true] {
             let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
@@ -375,7 +478,10 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
     let reload_requested = false;
 
     for request in server.incoming_requests() {
-        let Some(mut request) = handle_site_account_request(request) else {
+        let Some(request) = handle_site_account_request(request) else {
+            continue;
+        };
+        let Some(mut request) = handle_country_url_request(request) else {
             continue;
         };
         let method = request.method().clone();
@@ -1382,7 +1488,10 @@ pub(super) fn serve_review_requests(
     let mut return_to_start_requested = false;
 
     for request in server.incoming_requests() {
-        let Some(mut request) = handle_site_account_request(request) else {
+        let Some(request) = handle_site_account_request(request) else {
+            continue;
+        };
+        let Some(mut request) = handle_country_url_request(request) else {
             continue;
         };
         let method = request.method().clone();

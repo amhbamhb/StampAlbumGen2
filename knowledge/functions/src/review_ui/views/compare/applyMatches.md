@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: applyMatches
-resource: src/review_ui/views/compare.js#L2476-L2535
+resource: src/review_ui/views/compare.js#L2478-L2537
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startLoadingPhases
-resource: src/review_ui/views/bootstrap.js#L463-L488
+resource: src/review_ui/views/bootstrap.js#L465-L490
 generated:
   by: okf-rs/0.4.0
 relationships:

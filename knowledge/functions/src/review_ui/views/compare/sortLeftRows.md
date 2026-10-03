@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: sortLeftRows
-resource: src/review_ui/views/compare.js#L1010-L1024
+resource: src/review_ui/views/compare.js#L1011-L1025
 generated:
   by: okf-rs/0.4.0
 relationships:

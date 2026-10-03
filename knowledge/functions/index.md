@@ -309,6 +309,8 @@
 - [load_slug_overrides](../functions/src/config/load_slug_overrides.md) — Rust Function
 - [load_template_content_with_fallback](../functions/src/config/load_template_content_with_fallback.md) — Rust Function
 - [scoped_album_override_applies_stamp_visibility_keys_in_effective_config](../functions/src/config/scoped_album_override_applies_stamp_visibility_keys_in_effective_config.md) — Rust Function
+- [slug_override_path](../functions/src/config/slug_override_path.md) — Rust Function
+- [try_load_slug_overrides](../functions/src/config/try_load_slug_overrides.md) — Rust Function
 - [with_album_config_override](../functions/src/config/with_album_config_override.md) — Rust Function
 - [with_album_config_override_async](../functions/src/config/with_album_config_override_async.md) — Rust Function
 - [collect_stampworld_data](../functions/src/data_sources/stampworld/collect_stampworld_data.md) — Rust Function
@@ -513,6 +515,8 @@
 - [get_runtime_log_lines](../functions/src/review_ui/get_runtime_log_lines.md) — Rust Function
 - [best_effort_prepare_images_for_pdf](../functions/src/review_ui/http_handlers/best_effort_prepare_images_for_pdf.md) — Rust Function
 - [bundled_favicon_png](../functions/src/review_ui/http_handlers/bundled_favicon_png.md) — Rust Function
+- [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md) — Rust Function
+- [handle_country_url_request](../functions/src/review_ui/http_handlers/handle_country_url_request.md) — Rust Function
 - [handle_site_account_request](../functions/src/review_ui/http_handlers/handle_site_account_request.md) — Rust Function
 - [is_real_image_path](../functions/src/review_ui/http_handlers/is_real_image_path.md) — Rust Function
 - [local_image_file_exists](../functions/src/review_ui/http_handlers/local_image_file_exists.md) — Rust Function
@@ -585,6 +589,7 @@
 - [site_accounts_reject_invalid_config_without_overwriting_it](../functions/src/review_ui/site_accounts_reject_invalid_config_without_overwriting_it.md) — Rust Function
 - [stampworld_db_snapshot](../functions/src/review_ui/stampworld_db_snapshot.md) — Rust Function
 - [stampworld_job_state](../functions/src/review_ui/stampworld_job_state.md) — Rust Function
+- [stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url](../functions/src/review_ui/stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url.md) — Rust Function
 - [start_bootstrap_stampworld_job](../functions/src/review_ui/start_bootstrap_stampworld_job.md) — Rust Function
 - [store_uploaded_image_from_data_url](../functions/src/review_ui/store_uploaded_image_from_data_url.md) — Rust Function
 - [sync_processed_colnect_candidates_marks_existing_stamp_links](../functions/src/review_ui/sync_processed_colnect_candidates_marks_existing_stamp_links.md) — Rust Function
@@ -843,6 +848,10 @@
 - [render_compare_panels_html](../functions/src/review_ui/views/compare_assets/render_compare_panels_html.md) — Rust Function
 - [render_compare_top_html](../functions/src/review_ui/views/compare_assets/render_compare_top_html.md) — Rust Function
 - [render_op_busy_modal_html](../functions/src/review_ui/views/compare_assets/render_op_busy_modal_html.md) — Rust Function
+- [constructor](../functions/src/review_ui/views/country_url/StampWorldCountryUrl/constructor.md) — JavaScript Method
+- [ensureSaved](../functions/src/review_ui/views/country_url/StampWorldCountryUrl/ensureSaved.md) — JavaScript Method
+- [load](../functions/src/review_ui/views/country_url/StampWorldCountryUrl/load.md) — JavaScript Method
+- [message](../functions/src/review_ui/views/country_url/StampWorldCountryUrl/message.md) — JavaScript Method
 - [assertReady](../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/assertReady.md) — JavaScript Method
 - [change](../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/change.md) — JavaScript Method
 - [constructor](../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/constructor.md) — JavaScript Method
@@ -863,6 +872,7 @@
 - [bootstrap_html_exposes_edit_config_action](../functions/src/review_ui/views/tests/bootstrap_html_exposes_edit_config_action.md) — Rust Function
 - [bootstrap_html_uses_custom_inbox_hint_when_present](../functions/src/review_ui/views/tests/bootstrap_html_uses_custom_inbox_hint_when_present.md) — Rust Function
 - [bootstrap_html_uses_default_inbox_hint_when_missing](../functions/src/review_ui/views/tests/bootstrap_html_uses_default_inbox_hint_when_missing.md) — Rust Function
+- [both_pull_screens_embed_saved_country_url_controls](../functions/src/review_ui/views/tests/both_pull_screens_embed_saved_country_url_controls.md) — Rust Function
 - [compare_html_contains_backend_recovery_banner](../functions/src/review_ui/views/tests/compare_html_contains_backend_recovery_banner.md) — Rust Function
 - [compare_html_contains_runtime_log_hooks](../functions/src/review_ui/views/tests/compare_html_contains_runtime_log_hooks.md) — Rust Function
 - [compare_html_embeds_payload_and_core_shell](../functions/src/review_ui/views/tests/compare_html_embeds_payload_and_core_shell.md) — Rust Function
@@ -908,6 +918,18 @@
 - [validate_os](../functions/src/setup/validate_os.md) — Rust Function
 - [write_startup_probe](../functions/src/setup/write_startup_probe.md) — Rust Function
 - [write_startup_probe_snapshot](../functions/src/setup/write_startup_probe_snapshot.md) — Rust Function
+- [country_page_url](../functions/src/stampworld/country_url/country_page_url.md) — Rust Function
+- [first_save_creates_a_mapping_file_and_invalid_table_is_not_overwritten](../functions/src/stampworld/country_url/first_save_creates_a_mapping_file_and_invalid_table_is_not_overwritten.md) — Rust Function
+- [invalid_urls_cannot_be_saved_as_country_paths](../functions/src/stampworld/country_url/invalid_urls_cannot_be_saved_as_country_paths.md) — Rust Function
+- [listing_url](../functions/src/stampworld/country_url/listing_url.md) — Rust Function
+- [listing_url_from_country_url](../functions/src/stampworld/country_url/listing_url_from_country_url.md) — Rust Function
+- [load_country_url](../functions/src/stampworld/country_url/load_country_url.md) — Rust Function
+- [multiword_names_and_explicit_mappings_build_the_expected_urls](../functions/src/stampworld/country_url/multiword_names_and_explicit_mappings_build_the_expected_urls.md) — Rust Function
+- [save_country_url](../functions/src/stampworld/country_url/save_country_url.md) — Rust Function
+- [save_mapping_at](../functions/src/stampworld/country_url/save_mapping_at.md) — Rust Function
+- [saved_mappings_survive_reload_and_preserve_other_settings](../functions/src/stampworld/country_url/saved_mappings_survive_reload_and_preserve_other_settings.md) — Rust Function
+- [slug_from_url](../functions/src/stampworld/country_url/slug_from_url.md) — Rust Function
+- [validate_country](../functions/src/stampworld/country_url/validate_country.md) — Rust Function
 - [collect_stampworld_data](../functions/src/stampworld/data_collector/collect_stampworld_data.md) — Rust Function
 - [collect_stampworld_data_async](../functions/src/stampworld/data_collector/collect_stampworld_data_async.md) — Rust Function
 - [collect_stampworld_data_with_fetcher](../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md) — Rust Function
@@ -1131,6 +1153,8 @@
 - [write_config](../functions/tests/series_issue_date_order_tests/write_config.md) — Rust Function
 - [test_get_all_series_asc_desc_simple](../functions/tests/series_ordering/test_get_all_series_asc_desc_simple.md) — Rust Function
 - [stamp_flags_dir_lookup_found_coa_svg](../functions/tests/stamp_flags_dir_lookup/stamp_flags_dir_lookup_found_coa_svg.md) — Rust Function
+- [harness](../functions/tests/stampworld_country_url_ui/harness.md) — JavaScript Function
+- [response](../functions/tests/stampworld_country_url_ui/response.md) — JavaScript Function
 - [deterministic_target_name_is_sanitized](../functions/tests/test_image_naming/deterministic_target_name_is_sanitized.md) — Rust Function
 - [downloader_skips_existing_file_when_not_overwrite](../functions/tests/test_image_naming/downloader_skips_existing_file_when_not_overwrite.md) — Rust Function
 - [description_extraction_prefers_td6_with_fallback](../functions/tests/test_stampworld_parsing/description_extraction_prefers_td6_with_fallback.md) — Rust Function

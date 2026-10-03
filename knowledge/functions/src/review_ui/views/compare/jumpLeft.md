@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: jumpLeft
-resource: src/review_ui/views/compare.js#L1785-L1789
+resource: src/review_ui/views/compare.js#L1787-L1791
 generated:
   by: okf-rs/0.4.0
 relationships:

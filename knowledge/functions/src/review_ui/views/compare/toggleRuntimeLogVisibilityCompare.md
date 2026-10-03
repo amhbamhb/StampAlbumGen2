@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: toggleRuntimeLogVisibilityCompare
-resource: src/review_ui/views/compare.js#L325-L330
+resource: src/review_ui/views/compare.js#L326-L331
 generated:
   by: okf-rs/0.4.0
 relationships:

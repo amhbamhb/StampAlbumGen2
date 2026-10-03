@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateStampWorldRunStatus
-resource: src/review_ui/views/bootstrap.js#L613-L621
+resource: src/review_ui/views/bootstrap.js#L616-L624
 generated:
   by: okf-rs/0.4.0
 relationships:

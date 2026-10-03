@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: togglePdfAlwaysOpenPreference
-resource: src/review_ui/views/compare.js#L126-L132
+resource: src/review_ui/views/compare.js#L127-L133
 generated:
   by: okf-rs/0.4.0
 ---

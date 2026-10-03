@@ -1,0 +1,18 @@
+.stampworldCountryUrlControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.stampworldCountryUrlControls input {
+  flex: 1 1 320px;
+  min-width: 0;
+  padding: 6px;
+}
+.stampworldCountryUrlControls small,
+#stampworldCountryUrlStatus {
+  flex-basis: 100%;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}

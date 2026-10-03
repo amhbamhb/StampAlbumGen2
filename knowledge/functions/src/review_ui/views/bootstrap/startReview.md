@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startReview
-resource: src/review_ui/views/bootstrap.js#L1302-L1372
+resource: src/review_ui/views/bootstrap.js#L1306-L1376
 generated:
   by: okf-rs/0.4.0
 relationships:

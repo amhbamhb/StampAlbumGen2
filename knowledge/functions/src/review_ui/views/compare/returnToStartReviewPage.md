@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: returnToStartReviewPage
-resource: src/review_ui/views/compare.js#L3383-L3439
+resource: src/review_ui/views/compare.js#L3385-L3441
 generated:
   by: okf-rs/0.4.0
 relationships:

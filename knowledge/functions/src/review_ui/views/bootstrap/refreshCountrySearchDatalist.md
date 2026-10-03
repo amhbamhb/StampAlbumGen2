@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshCountrySearchDatalist
-resource: src/review_ui/views/bootstrap.js#L359-L368
+resource: src/review_ui/views/bootstrap.js#L361-L370
 generated:
   by: okf-rs/0.4.0
 relationships:

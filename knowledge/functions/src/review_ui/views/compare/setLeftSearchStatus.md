@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setLeftSearchStatus
-resource: src/review_ui/views/compare.js#L1040-L1043
+resource: src/review_ui/views/compare.js#L1041-L1044
 generated:
   by: okf-rs/0.4.0
 relationships:

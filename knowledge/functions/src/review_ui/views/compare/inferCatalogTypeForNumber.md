@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: inferCatalogTypeForNumber
-resource: src/review_ui/views/compare.js#L870-L877
+resource: src/review_ui/views/compare.js#L871-L878
 generated:
   by: okf-rs/0.4.0
 relationships:
