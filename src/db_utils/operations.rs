@@ -179,27 +179,29 @@ pub fn insert_stamp_placeholder(
     }
 }
 
+/// Row returned by [`get_stamps_by_country_series`]: id, country, series, year, month,
+/// month_num, day, description, image_path, remote_image_url, perforation, context.
+pub type CountrySeriesStampRow = (
+    i32,
+    String,
+    String,
+    i32,
+    String,
+    i32,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+);
+
 /// Get stamps by country and series.
 pub fn get_stamps_by_country_series(
     conn: &Connection,
     country: &str,
     series: &str,
-) -> Result<
-    Vec<(
-        i32,
-        String,
-        String,
-        i32,
-        String,
-        i32,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-    )>,
-> {
+) -> Result<Vec<CountrySeriesStampRow>> {
     let mut stmt = conn.prepare(
         "SELECT id, country, series, year, month, month_num, day, description, image_path, remote_image_url, perforation, context FROM stamps WHERE country = ?1 AND series = ?2 ORDER BY year"
     )?;

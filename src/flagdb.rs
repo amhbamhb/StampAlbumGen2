@@ -29,7 +29,6 @@ pub async fn default_flag_map() -> HashMap<String, String> {
 
 /// Attempt to load an override JSON file at flags/flag_codes.json. The file should be a JSON map
 /// of "country name" -> "alpha2 code". If not present, fall back to default_flag_map.
-
 pub async fn load_flag_map_from_fs() -> HashMap<String, String> {
     // Try a few candidate locations for flags/flag_codes.json to be tolerant
     // when the binary is run from a different working directory. Prefer the
@@ -452,7 +451,7 @@ pub async fn ensure_coat_of_arms_with_fetcher(
 
     // Query restcountries API for coatOfArms URL. Try v5 first, then v3 as fallback.
     // Prefer minimal-field v5 endpoint, fall back to other shapes
-    let candidates = vec![
+    let candidates = [
         format!(
             "https://restcountries.com/v5.1/alpha/{}?fields=coatOfArms",
             alpha

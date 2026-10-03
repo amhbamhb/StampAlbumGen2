@@ -20,8 +20,8 @@ use stamp_album_gen2::{
     config,
     modes::{run_database_mode, run_scraping_mode},
     review_ui::{
-        log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
-        ReviewUiRunOutcome, ReviewUiSelected,
+        log_runtime_event, run_review_ui, run_review_ui_bootstrap, MatcherPayloadOptions,
+        ReviewUiBootstrapOutcome, ReviewUiRunOutcome, ReviewUiSelected,
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
@@ -295,7 +295,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 db_path: String,
                 album_name: Option<String>,
                 open_browser: bool,
-                prebound: Option<(tiny_http::Server, String)>,
+                prebound: Option<Box<(tiny_http::Server, String)>>,
             },
         }
 
@@ -381,7 +381,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 db_path,
                                 album_name: Some(country),
                                 open_browser: false,
-                                prebound: Some((server, bind)),
+                                prebound: Some(Box::new((server, bind))),
                             };
                         }
                     }
@@ -408,30 +408,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let run_outcome = match run_review_ui(
                         &db_path,
                         album_name.as_deref(),
-                        prebound,
+                        prebound.map(|pb| *pb),
                         cli.review_ui_bind.as_deref(),
                         open_browser,
-                        &album_cfg.effective_default_catalog_code(),
-                        &album_cfg.review_ui_default_sort_mode(),
-                        album_cfg.review_ui_odd_row_color(),
-                        album_cfg.review_ui_even_row_color(),
-                        album_cfg.review_ui_first_column_color(),
-                        album_cfg.review_ui_second_column_color(),
-                        album_cfg.review_ui_series_default_checked(),
-                        album_cfg.review_ui_description_default_checked(),
-                        album_cfg.review_ui_watermark_default_checked(),
-                        album_cfg.review_ui_design_default_checked(),
-                        album_cfg.review_ui_engraving_default_checked(),
-                        album_cfg.review_ui_perforation_default_checked(),
-                        album_cfg.review_ui_context_default_checked(),
-                        album_cfg.review_ui_colnect_links_default_checked(),
-                        album_cfg.review_ui_colnect_image_url_default_checked(),
-                        album_cfg.review_ui_colnect_metadata_default_checked(),
-                        album_cfg.review_ui_replace_sg_number_default_checked(),
-                        album_cfg.review_ui_right_unmatched_only_default_checked(),
-                        album_cfg.albumeasy_auto_pdf_enabled(),
-                        album_cfg.effective_albumeasy_cli_path().is_some(),
-                        &album_cfg.review_ui_catalog_family_options(),
+                        &MatcherPayloadOptions {
+                            default_catalog_code: &album_cfg.effective_default_catalog_code(),
+                            default_sort_mode: &album_cfg.review_ui_default_sort_mode(),
+                            odd_row_color: album_cfg.review_ui_odd_row_color(),
+                            even_row_color: album_cfg.review_ui_even_row_color(),
+                            first_column_color: album_cfg.review_ui_first_column_color(),
+                            second_column_color: album_cfg.review_ui_second_column_color(),
+                            series_default_checked: album_cfg.review_ui_series_default_checked(),
+                            description_default_checked: album_cfg
+                                .review_ui_description_default_checked(),
+                            watermark_default_checked: album_cfg
+                                .review_ui_watermark_default_checked(),
+                            design_default_checked: album_cfg.review_ui_design_default_checked(),
+                            engraving_default_checked: album_cfg
+                                .review_ui_engraving_default_checked(),
+                            perforation_default_checked: album_cfg
+                                .review_ui_perforation_default_checked(),
+                            context_default_checked: album_cfg.review_ui_context_default_checked(),
+                            colnect_links_default_checked: album_cfg
+                                .review_ui_colnect_links_default_checked(),
+                            colnect_image_url_default_checked: album_cfg
+                                .review_ui_colnect_image_url_default_checked(),
+                            colnect_metadata_default_checked: album_cfg
+                                .review_ui_colnect_metadata_default_checked(),
+                            replace_sg_number_default_checked: album_cfg
+                                .review_ui_replace_sg_number_default_checked(),
+                            right_unmatched_only_default_checked: album_cfg
+                                .review_ui_right_unmatched_only_default_checked(),
+                            albumeasy_auto_generate_pdf_default: album_cfg
+                                .albumeasy_auto_pdf_enabled(),
+                            albumeasy_cli_configured: album_cfg
+                                .effective_albumeasy_cli_path()
+                                .is_some(),
+                            catalog_family_options: &album_cfg.review_ui_catalog_family_options(),
+                        },
                     ) {
                         Ok(outcome) => outcome,
                         Err(e) => {

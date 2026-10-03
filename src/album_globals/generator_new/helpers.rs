@@ -63,27 +63,29 @@ pub fn emit_row_start_es(
 
 /// Emit a concise per-stamp diagnostic line that mirrors the legacy generator
 /// output. Centralizing this helps keep `generator.rs` free of direct writes.
-pub fn emit_stamp_diag<W: Write>(
-    output: &mut W,
-    sg: &str,
-    source: &str,
-    est_w_mm: f64,
-    est_h_mm: f64,
-    px_w: i32,
-    px_h: i32,
-    img: &str,
-) -> std::io::Result<()> {
+pub fn emit_stamp_diag<W: Write>(output: &mut W, diag: &StampDiag<'_>) -> std::io::Result<()> {
     writeln!(
         output,
         "# STAMP_DIAG sg=\"{}\" source=\"{}\" est_w_mm=\"{:.2}\" est_h_mm=\"{:.2}\" px=\"{}x{}\" img=\"{}\"",
-        sg.replace('"', "'"),
-        source,
-        est_w_mm,
-        est_h_mm,
-        px_w,
-        px_h,
-        img.replace('"', "'")
+        diag.sg.replace('"', "'"),
+        diag.source,
+        diag.est_w_mm,
+        diag.est_h_mm,
+        diag.px_w,
+        diag.px_h,
+        diag.img.replace('"', "'")
     )
+}
+
+/// Values written by [`emit_stamp_diag`].
+pub struct StampDiag<'a> {
+    pub sg: &'a str,
+    pub source: &'a str,
+    pub est_w_mm: f64,
+    pub est_h_mm: f64,
+    pub px_w: i32,
+    pub px_h: i32,
+    pub img: &'a str,
 }
 
 pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {

@@ -17,6 +17,9 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
+/// Buffered header: (lines with widths, vspace_before, vspace_after).
+type PendingHeader = (Vec<(String, f64)>, f64, f64);
+
 fn json_escape(s: &str) -> String {
     s.replace('\\', "\\\\")
         .replace('"', "\\\"")
@@ -1078,13 +1081,15 @@ where
             let diag_px_h = s.image_height_px.unwrap_or(0);
             let _ = crate::album_globals::generator_new::helpers::emit_stamp_diag(
                 &mut output,
-                &diag_sg,
-                est_source,
-                diag_w_mm,
-                diag_h_mm,
-                diag_px_w,
-                diag_px_h,
-                &diag_img_path,
+                &crate::album_globals::generator_new::helpers::StampDiag {
+                    sg: &diag_sg,
+                    source: est_source,
+                    est_w_mm: diag_w_mm,
+                    est_h_mm: diag_h_mm,
+                    px_w: diag_px_w,
+                    px_h: diag_px_h,
+                    img: &diag_img_path,
+                },
             );
 
             // If the stamp has no image and therefore no stored pixel dims, create
@@ -1291,7 +1296,7 @@ where
         // the first row on the same page. This avoids leaving a header on a
         // page with no associated stamps if a subsequent check forces a
         // page break after the header was previously emitted.
-        let mut header_pending: Option<(Vec<(String, f64)>, f64, f64)> = None; // (lines, vspace_before, vspace_after)
+        let mut header_pending: Option<PendingHeader> = None;
         let mut row_idx = 0;
         while row_idx < stamp_rows.len() {
             let need_header = !header_written;

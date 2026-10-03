@@ -1488,27 +1488,31 @@ pub(super) fn serve_review_requests(
                     &input.conn,
                     &input.db_path,
                     &input.album_name,
-                    &input.default_catalog_code,
-                    &input.default_sort_mode,
-                    &input.odd_row_color,
-                    &input.even_row_color,
-                    &input.first_column_color,
-                    &input.second_column_color,
-                    input.series_default_checked,
-                    input.description_default_checked,
-                    input.watermark_default_checked,
-                    input.design_default_checked,
-                    input.engraving_default_checked,
-                    input.perforation_default_checked,
-                    input.context_default_checked,
-                    input.colnect_links_default_checked,
-                    input.colnect_image_url_default_checked,
-                    input.colnect_metadata_default_checked,
-                    input.replace_sg_number_default_checked,
-                    input.right_unmatched_only_default_checked,
-                    input.albumeasy_auto_generate_pdf_default,
-                    input.albumeasy_cli_configured,
-                    &input.catalog_family_options,
+                    &MatcherPayloadOptions {
+                        default_catalog_code: &input.default_catalog_code,
+                        default_sort_mode: &input.default_sort_mode,
+                        odd_row_color: &input.odd_row_color,
+                        even_row_color: &input.even_row_color,
+                        first_column_color: &input.first_column_color,
+                        second_column_color: &input.second_column_color,
+                        series_default_checked: input.series_default_checked,
+                        description_default_checked: input.description_default_checked,
+                        watermark_default_checked: input.watermark_default_checked,
+                        design_default_checked: input.design_default_checked,
+                        engraving_default_checked: input.engraving_default_checked,
+                        perforation_default_checked: input.perforation_default_checked,
+                        context_default_checked: input.context_default_checked,
+                        colnect_links_default_checked: input.colnect_links_default_checked,
+                        colnect_image_url_default_checked: input.colnect_image_url_default_checked,
+                        colnect_metadata_default_checked: input.colnect_metadata_default_checked,
+                        replace_sg_number_default_checked: input.replace_sg_number_default_checked,
+                        right_unmatched_only_default_checked: input
+                            .right_unmatched_only_default_checked,
+                        albumeasy_auto_generate_pdf_default: input
+                            .albumeasy_auto_generate_pdf_default,
+                        albumeasy_cli_configured: input.albumeasy_cli_configured,
+                        catalog_family_options: &input.catalog_family_options,
+                    },
                     show_imageless_left_rows,
                 ) {
                     Ok(payload) => render_html(&payload),
@@ -2054,7 +2058,7 @@ pub(super) fn serve_review_requests(
                             "Album override saved ({} changed field{}) for {}. New generation actions will use it immediately.",
                             n,
                             if n == 1 { "" } else { "s" },
-                            &input.album_name
+                            input.album_name
                         ),
                         reload_required: false,
                     },
@@ -2094,7 +2098,7 @@ pub(super) fn serve_review_requests(
                         ok: true,
                         message: format!(
                             "Album config override for {} deleted. Refresh the page if you want to reload the current view.",
-                            &input.album_name
+                            input.album_name
                         ),
                         reload_required: false,
                     },
@@ -2107,7 +2111,7 @@ pub(super) fn serve_review_requests(
             } else {
                 SaveConfigEditorResponse {
                     ok: false,
-                    message: format!("No album config override found for {}.", &input.album_name),
+                    message: format!("No album config override found for {}.", input.album_name),
                     reload_required: false,
                 }
             };

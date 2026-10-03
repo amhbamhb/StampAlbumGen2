@@ -244,7 +244,7 @@ pub fn ensure_config_and_template_files(
                         // First ask whether to Move; if No, ask whether to Copy.
                         let do_move = MessageDialog::new()
                             .set_title("Move binary to target?")
-                            .set_description(&format!(
+                            .set_description(format!(
                                 "Move the running binary to {}?\n\nChoose Yes to move, No to consider copying, Cancel to skip.",
                                 target.display()
                             ))
@@ -293,7 +293,7 @@ pub fn ensure_config_and_template_files(
                             // copying. If they decline again, treat as Skip.
                             let do_copy = MessageDialog::new()
                                 .set_title("Copy binary to target?")
-                                .set_description(&format!(
+                                .set_description(format!(
                                     "Copy the running binary to {}?\n\nChoose Yes to copy, No/Cancel to skip.",
                                     target.display()
                                 ))
