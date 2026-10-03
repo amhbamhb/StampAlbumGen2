@@ -1,6 +1,5 @@
 use lazy_static::lazy_static;
-use std::sync::Mutex;
-use tempfile;
+use tokio::sync::Mutex;
 
 lazy_static! {
     static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
@@ -25,7 +24,7 @@ fn insert_minimal_stamp(conn: &rusqlite::Connection, year: i32, sg_number: &str)
 
 #[tokio::test]
 async fn filename_infers_db_min_max_when_none_fixed() {
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+    let _lock = TEST_CWD_MUTEX.lock().await;
     let tmp = tempfile::tempdir().unwrap();
     let cwd = tmp.path();
     let orig_dir = std::env::current_dir().unwrap();
@@ -63,7 +62,7 @@ async fn filename_infers_db_min_max_when_none_fixed() {
 
 #[tokio::test]
 async fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+    let _lock = TEST_CWD_MUTEX.lock().await;
     let tmp = tempfile::tempdir().unwrap();
     let cwd = tmp.path();
     let orig_dir = std::env::current_dir().unwrap();
@@ -97,7 +96,7 @@ async fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
 
 #[tokio::test]
 async fn filename_uses_db_min_and_passed_end_when_start_missing_fixed() {
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+    let _lock = TEST_CWD_MUTEX.lock().await;
     let tmp = tempfile::tempdir().unwrap();
     let cwd = tmp.path();
     let orig_dir = std::env::current_dir().unwrap();

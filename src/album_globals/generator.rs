@@ -428,17 +428,31 @@ fn estimate_colnect_centre_text(stamp: &Stamp, config: &crate::config::Config) -
     parts.join("\\n")
 }
 
+/// Text columns used by [`estimate_stamp_body_line_count`].
+struct StampBodyText<'a> {
+    raw_left: &'a str,
+    raw_stamps_issued: &'a str,
+    raw_description: &'a str,
+    raw_color: &'a str,
+    raw_colnect: &'a str,
+    right_first_line: &'a str,
+    right_second_line: &'a str,
+}
+
 fn estimate_stamp_body_line_count(
-    raw_left: &str,
-    raw_stamps_issued: &str,
-    raw_description: &str,
-    raw_color: &str,
-    raw_colnect: &str,
-    right_first_line: &str,
-    right_second_line: &str,
+    text: &StampBodyText<'_>,
     emit_width: f64,
     emit_height: f64,
 ) -> usize {
+    let StampBodyText {
+        raw_left,
+        raw_stamps_issued,
+        raw_description,
+        raw_color,
+        raw_colnect,
+        right_first_line,
+        right_second_line,
+    } = *text;
     let chars_per_line = estimate_chars_per_line_for_stamp(emit_width, emit_height);
     let left = wrap_left_for_estimate(raw_left, (chars_per_line / 3).max(4));
     // In three-column layout, centre column is narrower than full stamp width.
@@ -1628,13 +1642,15 @@ where
                     };
                     let right_second_line = if include_used { used_raw.as_str() } else { "" };
                     let text_lines = estimate_stamp_body_line_count(
-                        &raw_left,
-                        &raw_stamps_issued,
-                        &raw_description,
-                        &raw_color,
-                        &estimate_colnect_centre_text(stamp, &config),
-                        right_first_line,
-                        right_second_line,
+                        &StampBodyText {
+                            raw_left: &raw_left,
+                            raw_stamps_issued: &raw_stamps_issued,
+                            raw_description: &raw_description,
+                            raw_color: &raw_color,
+                            raw_colnect: &estimate_colnect_centre_text(stamp, &config),
+                            right_first_line,
+                            right_second_line,
+                        },
                         estimated_emit_width,
                         adj_est_height,
                     );
@@ -1857,13 +1873,15 @@ where
                 };
                 let right_second_line = if include_used { used_raw.as_str() } else { "" };
                 let text_lines = estimate_stamp_body_line_count(
-                    &raw_left,
-                    &raw_stamps_issued,
-                    &raw_description,
-                    &raw_color,
-                    &estimate_colnect_centre_text(stamp, &config),
-                    right_first_line,
-                    right_second_line,
+                    &StampBodyText {
+                        raw_left: &raw_left,
+                        raw_stamps_issued: &raw_stamps_issued,
+                        raw_description: &raw_description,
+                        raw_color: &raw_color,
+                        raw_colnect: &estimate_colnect_centre_text(stamp, &config),
+                        right_first_line,
+                        right_second_line,
+                    },
                     estimated_emit_width,
                     adj_est_height,
                 );
@@ -2082,13 +2100,15 @@ where
                         let estimated_emit_width =
                             est_width_mm + effective_stamp_box_adjust;
                         let text_lines = estimate_stamp_body_line_count(
-                            &raw_left,
-                            &raw_stamps_issued,
-                            &raw_description,
-                            &raw_color,
-                            "", // StampStub lacks colnect attrs; forward-peek estimate only
-                            right_first_line,
-                            right_second_line,
+                            &StampBodyText {
+                                raw_left: &raw_left,
+                                raw_stamps_issued: &raw_stamps_issued,
+                                raw_description: &raw_description,
+                                raw_color: &raw_color,
+                                raw_colnect: "", // StampStub lacks colnect attrs; forward-peek estimate only
+                                right_first_line,
+                                right_second_line,
+                            },
                             estimated_emit_width,
                             adj_est_height,
                         );

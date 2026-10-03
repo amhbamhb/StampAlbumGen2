@@ -33,19 +33,36 @@ pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
         .expect("invalid group url regex")
 });
 
+/// Inputs for a StampWorld collection run.
+pub struct CollectStampworldParams<'a> {
+    pub sequencer: &'a mut i32,
+    pub separator: &'a str,
+    pub site_name: &'a str,
+    pub images_directory: &'a str,
+    pub month_number_fn: &'a dyn Fn(&str) -> String,
+    pub downloader: &'a dyn Fn(&str, &str, bool) -> ImageStatus,
+    pub base_url: &'a str,
+    pub start_year: i32,
+    pub end_year: i32,
+    pub overwrite_images: bool,
+    pub page_callback: Option<&'a dyn Fn(usize)>,
+    pub max_pages: i32,
+    pub stop_after_no_hits: i32,
+}
+
 /// Entry point for asynchronous StampWorld data collection.
 /// Entry point for asynchronous StampWorld data collection.
 pub async fn collect_stampworld_data_async(
     fetcher: &dyn Fetcher,
-    site_name: &str,
-    images_directory: &str,
-    start_year: i32,
-    end_year: i32,
-    _overwrite_images: bool,
-    page_callback: Option<&dyn Fn(usize)>,
-    max_pages: i32,
-    stop_after_no_hits: i32,
+    params: &CollectStampworldParams<'_>,
 ) -> Vec<String> {
+    let site_name = params.site_name;
+    let images_directory = params.images_directory;
+    let start_year = params.start_year;
+    let end_year = params.end_year;
+    let page_callback = params.page_callback;
+    let max_pages = params.max_pages;
+    let stop_after_no_hits = params.stop_after_no_hits;
     info!(
         "collect_stampworld_data_async called for {} range {}..{}. Using async fetching.",
         site_name, start_year, end_year
@@ -107,20 +124,23 @@ pub async fn collect_stampworld_data_async(
 /// - Enforce requested year range strictly
 pub async fn collect_stampworld_data_with_fetcher(
     fetcher: &dyn crate::stampworld::fetch::Fetcher,
-    sequencer: &mut i32,
-    _separator: &str,
-    site_name: &str,
-    images_directory: &str,
-    month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
-    base_url: &str,
-    start_year: i32,
-    end_year: i32,
-    overwrite_images: bool,
-    page_callback: Option<&dyn Fn(usize)>,
-    max_pages: i32,
-    stop_after_no_hits: i32,
+    params: CollectStampworldParams<'_>,
 ) -> Vec<String> {
+    let CollectStampworldParams {
+        sequencer,
+        separator: _separator,
+        site_name,
+        images_directory,
+        month_number_fn: month_number,
+        downloader: get_stampworld_image,
+        base_url,
+        start_year,
+        end_year,
+        overwrite_images,
+        page_callback,
+        max_pages,
+        stop_after_no_hits,
+    } = params;
     info!(
         "collect_stampworld_data called for {} base_url={} range={}..{}",
         site_name, base_url, start_year, end_year
@@ -1604,38 +1624,8 @@ pub async fn collect_stampworld_data_with_fetcher(
 /// Backwards-compatible wrapper which constructs the default ReqwestFetcher and
 /// calls the injected-fetcher implementation. Callers that wish to inject a
 /// test double should call `collect_stampworld_data_with_fetcher` directly.
-pub async fn collect_stampworld_data(
-    sequencer: &mut i32,
-    _separator: &str,
-    site_name: &str,
-    images_directory: &str,
-    month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
-    base_url: &str,
-    start_year: i32,
-    end_year: i32,
-    overwrite_images: bool,
-    page_callback: Option<&dyn Fn(usize)>,
-    max_pages: i32,
-    stop_after_no_hits: i32,
-) -> Vec<String> {
+pub async fn collect_stampworld_data(params: CollectStampworldParams<'_>) -> Vec<String> {
     info!("stampworld::collect_stampworld_data wrapper invoked");
     let fetcher = crate::stampworld::fetch::ReqwestFetcher::new();
-    collect_stampworld_data_with_fetcher(
-        &fetcher,
-        sequencer,
-        _separator,
-        site_name,
-        images_directory,
-        month_number,
-        get_stampworld_image,
-        base_url,
-        start_year,
-        end_year,
-        overwrite_images,
-        page_callback,
-        max_pages,
-        stop_after_no_hits,
-    )
-    .await
+    collect_stampworld_data_with_fetcher(&fetcher, params).await
 }

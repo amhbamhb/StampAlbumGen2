@@ -43,19 +43,21 @@ async fn test_collect_with_fake_fetcher_returns_empty() {
     let result =
         stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
             &fetcher,
-            &mut sequencer,
-            separator,
-            site_name,
-            images_directory,
-            &month_number,
-            &get_stampworld_image,
-            base_url,
-            1900,
-            1901,
-            false,
-            None,
-            1, // max_pages=1 to keep it quick
-            1,
+            stamp_album_gen2::stampworld::data_collector::CollectStampworldParams {
+                sequencer: &mut sequencer,
+                separator,
+                site_name,
+                images_directory,
+                month_number_fn: &month_number,
+                downloader: &get_stampworld_image,
+                base_url,
+                start_year: 1900,
+                end_year: 1901,
+                overwrite_images: false,
+                page_callback: None,
+                max_pages: 1, // max_pages=1 to keep it quick
+                stop_after_no_hits: 1,
+            },
         )
         .await;
 

@@ -2,18 +2,31 @@ use rusqlite::Connection;
 use stamp_album_gen2::album_globals::generate_album_output_conn;
 use stamp_album_gen2::db_utils::init_db;
 
-fn insert_fixture_stamp(
-    conn: &Connection,
+#[derive(Clone, Copy)]
+struct FixtureStamp<'a> {
     year: i32,
-    month: &str,
+    month: &'a str,
     month_num: i32,
-    day: &str,
-    sg_number: &str,
-    denomination: &str,
-    color: &str,
-    description: &str,
-    image_path: &str,
-) {
+    day: &'a str,
+    sg_number: &'a str,
+    denomination: &'a str,
+    color: &'a str,
+    description: &'a str,
+    image_path: &'a str,
+}
+
+fn insert_fixture_stamp(conn: &Connection, stamp: &FixtureStamp) {
+    let FixtureStamp {
+        year,
+        month,
+        month_num,
+        day,
+        sg_number,
+        denomination,
+        color,
+        description,
+        image_path,
+    } = *stamp;
     let uniq_key = format!("testcountry|Example Series|{}", sg_number);
     conn.execute(
         "INSERT INTO stamps (
@@ -52,39 +65,45 @@ fn populate_test_db() -> Connection {
     let conn = init_db(":memory:").expect("init in-memory db");
     insert_fixture_stamp(
         &conn,
-        1975,
-        "January",
-        1,
-        "1",
-        "1001",
-        "1p",
-        "Red",
-        "Desc 1975",
-        "images/1975.jpg",
+        &FixtureStamp {
+            year: 1975,
+            month: "January",
+            month_num: 1,
+            day: "1",
+            sg_number: "1001",
+            denomination: "1p",
+            color: "Red",
+            description: "Desc 1975",
+            image_path: "images/1975.jpg",
+        },
     );
     insert_fixture_stamp(
         &conn,
-        1976,
-        "February",
-        2,
-        "2",
-        "1002",
-        "2p",
-        "Blue",
-        "Desc 1976",
-        "images/1976.jpg",
+        &FixtureStamp {
+            year: 1976,
+            month: "February",
+            month_num: 2,
+            day: "2",
+            sg_number: "1002",
+            denomination: "2p",
+            color: "Blue",
+            description: "Desc 1976",
+            image_path: "images/1976.jpg",
+        },
     );
     insert_fixture_stamp(
         &conn,
-        1977,
-        "March",
-        3,
-        "3",
-        "1003",
-        "3p",
-        "Green",
-        "Desc 1977",
-        "images/1977.jpg",
+        &FixtureStamp {
+            year: 1977,
+            month: "March",
+            month_num: 3,
+            day: "3",
+            sg_number: "1003",
+            denomination: "3p",
+            color: "Green",
+            description: "Desc 1977",
+            image_path: "images/1977.jpg",
+        },
     );
     conn
 }

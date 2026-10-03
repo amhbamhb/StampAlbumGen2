@@ -147,7 +147,7 @@ album_stamp_img_new_setting_preserve_aspect = false
 
     // Load the config (this tests the parsing)
     let output = Command::new("cargo")
-        .args(&["run", "--", "--help"])
+        .args(["run", "--", "--help"])
         .current_dir(".")
         .output()
         .expect("Failed to run cargo");

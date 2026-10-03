@@ -107,19 +107,21 @@ async fn main() {
 
     let pages = stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
         &fetcher,
-        &mut seq,
-        "_",
-        "Canada",
-        &images_dir,
-        &month_number,
-        &get_image,
-        base_url,
-        1848,
-        1910,
-        false,
-        Some(&|p: usize| println!("[debug] page callback: page={}", p)),
-        1, // limit to 1 page for quick debug
-        3,
+        stamp_album_gen2::stampworld::data_collector::CollectStampworldParams {
+            sequencer: &mut seq,
+            separator: "_",
+            site_name: "Canada",
+            images_directory: &images_dir,
+            month_number_fn: &month_number,
+            downloader: &get_image,
+            base_url,
+            start_year: 1848,
+            end_year: 1910,
+            overwrite_images: false,
+            page_callback: Some(&|p: usize| println!("[debug] page callback: page={}", p)),
+            max_pages: 1, // limit to 1 page for quick debug
+            stop_after_no_hits: 3,
+        },
     )
     .await;
 

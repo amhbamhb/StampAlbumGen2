@@ -1,8 +1,8 @@
 use lazy_static::lazy_static;
 use std::fs;
 use std::io::Read;
-use std::sync::Mutex;
 use tempfile::tempdir;
+use tokio::sync::Mutex;
 
 // Integration test: create a tiny config and DB so a row will overflow the usable
 // height and force the generator to emit a new page. Verify the emitted AlbumEasy
@@ -13,7 +13,7 @@ async fn overflowing_row_moves_to_next_page_and_emits_row_start() {
     lazy_static! {
         static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
     }
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+    let _lock = TEST_CWD_MUTEX.lock().await;
     // Prepare temporary workspace
     let td = tempdir().expect("tempdir");
     let td_path = td.path();
@@ -116,7 +116,7 @@ single_stamp_threshold_pct = 0.5
 
     // Change current_dir to tempdir so load_config finds our config.toml
     let orig_cwd = std::env::current_dir().expect("cwd");
-    std::env::set_current_dir(&td_path).expect("chdir");
+    std::env::set_current_dir(td_path).expect("chdir");
 
     // Run generation: this will write Albums/TestAlbum/TestAlbum.txt inside td
     stamp_album_gen2::album_globals::generate_album_output(

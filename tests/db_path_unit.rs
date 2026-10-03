@@ -48,19 +48,21 @@ async fn collector_creates_db_at_expected_path() {
     // Run collector; it will initialize the DB at the expected path
     let _ = stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
         &fetcher,
-        &mut sequencer,
-        separator,
-        site_name,
-        &images_dir_str,
-        &month_number,
-        &get_stampworld_image,
-        base_url,
-        2000,
-        2001,
-        false,
-        None,
-        1,
-        1,
+        stamp_album_gen2::stampworld::data_collector::CollectStampworldParams {
+            sequencer: &mut sequencer,
+            separator,
+            site_name,
+            images_directory: &images_dir_str,
+            month_number_fn: &month_number,
+            downloader: &get_stampworld_image,
+            base_url,
+            start_year: 2000,
+            end_year: 2001,
+            overwrite_images: false,
+            page_callback: None,
+            max_pages: 1,
+            stop_after_no_hits: 1,
+        },
     )
     .await;
 

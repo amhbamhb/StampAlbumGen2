@@ -518,172 +518,6 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{ensure_schema_migrations_table, run_pending_schema_migrations};
-    use rusqlite::Connection;
-
-    fn column_names(conn: &Connection, table_name: &str) -> Vec<String> {
-        let pragma = format!("PRAGMA table_info({})", table_name);
-        let mut stmt = conn.prepare(&pragma).expect("prepare pragma");
-        stmt.query_map([], |row| row.get::<_, String>(1))
-            .expect("query table info")
-            .collect::<std::result::Result<Vec<_>, _>>()
-            .expect("collect columns")
-    }
-
-    #[test]
-    fn run_pending_schema_migrations_adds_missing_columns_and_records_versions() {
-        let conn = Connection::open_in_memory().expect("in-memory db");
-        conn.execute(
-            "CREATE TABLE stamps (
-                id INTEGER PRIMARY KEY,
-                country TEXT,
-                series TEXT,
-                year INTEGER,
-                sg_number TEXT,
-                image_path TEXT,
-                stampworld_image_url TEXT
-            )",
-            [],
-        )
-        .expect("create legacy stamps");
-        conn.execute(
-            "CREATE TABLE colnect_stamps (
-                id INTEGER PRIMARY KEY,
-                sg_number TEXT,
-                colnect_id TEXT UNIQUE
-            )",
-            [],
-        )
-        .expect("create legacy colnect_stamps");
-        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
-            .expect("create legacy us1847_series");
-        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
-            .expect("create legacy us1847_stamps");
-
-        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
-        run_pending_schema_migrations(&conn).expect("run migrations");
-
-        let versions: i64 = conn
-            .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| {
-                row.get(0)
-            })
-            .expect("count migrations");
-        assert_eq!(versions, 4);
-
-        let stamps_columns = column_names(&conn, "stamps");
-        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
-        assert!(stamps_columns.iter().any(|name| name == "issue_location"));
-        assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
-
-        let colnect_columns = column_names(&conn, "colnect_stamps");
-        assert!(colnect_columns.iter().any(|name| name == "series"));
-        assert!(colnect_columns.iter().any(|name| name == "is_processed"));
-
-        let us1847_series_columns = column_names(&conn, "us1847_series");
-        assert!(us1847_series_columns
-            .iter()
-            .any(|name| name == "design_size_portrait"));
-
-        let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
-        assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
-    }
-
-    #[test]
-    fn run_pending_schema_migrations_rebuilds_unexpected_stamps_schema() {
-        let conn = Connection::open_in_memory().expect("in-memory db");
-        conn.execute(
-            "CREATE TABLE stamps (
-                id INTEGER PRIMARY KEY,
-                country TEXT,
-                series TEXT,
-                year INTEGER,
-                sg_number TEXT,
-                odd_legacy_column TEXT
-            )",
-            [],
-        )
-        .expect("create divergent stamps");
-        conn.execute(
-            "CREATE TABLE colnect_stamps (
-                id INTEGER PRIMARY KEY,
-                sg_number TEXT,
-                colnect_id TEXT UNIQUE
-            )",
-            [],
-        )
-        .expect("create legacy colnect_stamps");
-        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
-            .expect("create legacy us1847_series");
-        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
-            .expect("create legacy us1847_stamps");
-
-        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
-        run_pending_schema_migrations(&conn).expect("run migrations");
-
-        let stamps_columns = column_names(&conn, "stamps");
-        assert!(!stamps_columns
-            .iter()
-            .any(|name| name == "odd_legacy_column"));
-        assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
-        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
-    }
-
-    #[test]
-    fn run_pending_schema_migrations_repairs_preapplied_but_drifted_schema() {
-        let conn = Connection::open_in_memory().expect("in-memory db");
-        conn.execute(
-            "CREATE TABLE stamps (
-                id INTEGER PRIMARY KEY,
-                country TEXT,
-                series TEXT,
-                year INTEGER,
-                sg_number TEXT,
-                image_path TEXT
-            )",
-            [],
-        )
-        .expect("create legacy stamps");
-        conn.execute(
-            "CREATE TABLE colnect_stamps (
-                id INTEGER PRIMARY KEY,
-                sg_number TEXT,
-                colnect_id TEXT UNIQUE
-            )",
-            [],
-        )
-        .expect("create legacy colnect_stamps");
-        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
-            .expect("create legacy us1847_series");
-        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
-            .expect("create legacy us1847_stamps");
-
-        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
-        conn.execute(
-            "INSERT INTO schema_migrations(version, name) VALUES
-                (1, 'stamps_schema_alignment'),
-                (2, 'stamps_uniq_key_and_indexes'),
-                (3, 'colnect_schema_alignment'),
-                (4, 'us1847_compat_columns')",
-            [],
-        )
-        .expect("seed schema versions");
-
-        run_pending_schema_migrations(&conn).expect("run migrations with pre-applied versions");
-
-        let stamps_columns = column_names(&conn, "stamps");
-        assert!(stamps_columns.iter().any(|name| name == "catalog_code"));
-        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
-
-        let colnect_columns = column_names(&conn, "colnect_stamps");
-        assert!(colnect_columns.iter().any(|name| name == "series"));
-
-        let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
-        assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
-    }
-}
-
 /// Migration to fix rows where block metadata (design/engraving/perforation)
 /// were stored as concatenated block text. This function heuristically
 /// detects suspect rows, parses their `context` / combined text using the
@@ -915,4 +749,170 @@ pub fn migrate_fix_block_metadata(conn: &Connection) -> Result<()> {
         updates
     );
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ensure_schema_migrations_table, run_pending_schema_migrations};
+    use rusqlite::Connection;
+
+    fn column_names(conn: &Connection, table_name: &str) -> Vec<String> {
+        let pragma = format!("PRAGMA table_info({})", table_name);
+        let mut stmt = conn.prepare(&pragma).expect("prepare pragma");
+        stmt.query_map([], |row| row.get::<_, String>(1))
+            .expect("query table info")
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .expect("collect columns")
+    }
+
+    #[test]
+    fn run_pending_schema_migrations_adds_missing_columns_and_records_versions() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                sg_number TEXT,
+                image_path TEXT,
+                stampworld_image_url TEXT
+            )",
+            [],
+        )
+        .expect("create legacy stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (
+                id INTEGER PRIMARY KEY,
+                sg_number TEXT,
+                colnect_id TEXT UNIQUE
+            )",
+            [],
+        )
+        .expect("create legacy colnect_stamps");
+        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_series");
+        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_stamps");
+
+        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
+        run_pending_schema_migrations(&conn).expect("run migrations");
+
+        let versions: i64 = conn
+            .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
+            .expect("count migrations");
+        assert_eq!(versions, 4);
+
+        let stamps_columns = column_names(&conn, "stamps");
+        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+        assert!(stamps_columns.iter().any(|name| name == "issue_location"));
+        assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
+
+        let colnect_columns = column_names(&conn, "colnect_stamps");
+        assert!(colnect_columns.iter().any(|name| name == "series"));
+        assert!(colnect_columns.iter().any(|name| name == "is_processed"));
+
+        let us1847_series_columns = column_names(&conn, "us1847_series");
+        assert!(us1847_series_columns
+            .iter()
+            .any(|name| name == "design_size_portrait"));
+
+        let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
+        assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
+    }
+
+    #[test]
+    fn run_pending_schema_migrations_rebuilds_unexpected_stamps_schema() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                sg_number TEXT,
+                odd_legacy_column TEXT
+            )",
+            [],
+        )
+        .expect("create divergent stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (
+                id INTEGER PRIMARY KEY,
+                sg_number TEXT,
+                colnect_id TEXT UNIQUE
+            )",
+            [],
+        )
+        .expect("create legacy colnect_stamps");
+        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_series");
+        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_stamps");
+
+        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
+        run_pending_schema_migrations(&conn).expect("run migrations");
+
+        let stamps_columns = column_names(&conn, "stamps");
+        assert!(!stamps_columns
+            .iter()
+            .any(|name| name == "odd_legacy_column"));
+        assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
+        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+    }
+
+    #[test]
+    fn run_pending_schema_migrations_repairs_preapplied_but_drifted_schema() {
+        let conn = Connection::open_in_memory().expect("in-memory db");
+        conn.execute(
+            "CREATE TABLE stamps (
+                id INTEGER PRIMARY KEY,
+                country TEXT,
+                series TEXT,
+                year INTEGER,
+                sg_number TEXT,
+                image_path TEXT
+            )",
+            [],
+        )
+        .expect("create legacy stamps");
+        conn.execute(
+            "CREATE TABLE colnect_stamps (
+                id INTEGER PRIMARY KEY,
+                sg_number TEXT,
+                colnect_id TEXT UNIQUE
+            )",
+            [],
+        )
+        .expect("create legacy colnect_stamps");
+        conn.execute("CREATE TABLE us1847_series (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_series");
+        conn.execute("CREATE TABLE us1847_stamps (id INTEGER PRIMARY KEY)", [])
+            .expect("create legacy us1847_stamps");
+
+        ensure_schema_migrations_table(&conn).expect("create schema migrations table");
+        conn.execute(
+            "INSERT INTO schema_migrations(version, name) VALUES
+                (1, 'stamps_schema_alignment'),
+                (2, 'stamps_uniq_key_and_indexes'),
+                (3, 'colnect_schema_alignment'),
+                (4, 'us1847_compat_columns')",
+            [],
+        )
+        .expect("seed schema versions");
+
+        run_pending_schema_migrations(&conn).expect("run migrations with pre-applied versions");
+
+        let stamps_columns = column_names(&conn, "stamps");
+        assert!(stamps_columns.iter().any(|name| name == "catalog_code"));
+        assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
+
+        let colnect_columns = column_names(&conn, "colnect_stamps");
+        assert!(colnect_columns.iter().any(|name| name == "series"));
+
+        let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
+        assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
+    }
 }

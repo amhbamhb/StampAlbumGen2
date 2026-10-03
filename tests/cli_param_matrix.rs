@@ -28,7 +28,7 @@ fn cli_param_matrix_core_cases() {
 
     // Case 2: unknown source -> suggestions printed
     let mut cmd2 = Command::cargo_bin("stamp_album_gen2").unwrap();
-    cmd2.args(&["--source", "stmpworld", "--album-name", "T"])
+    cmd2.args(["--source", "stmpworld", "--album-name", "T"])
         .assert()
         .failure()
         .stderr(
@@ -38,7 +38,7 @@ fn cli_param_matrix_core_cases() {
 
     // Case 3: malformed years (start > end)
     let mut cmd3 = Command::cargo_bin("stamp_album_gen2").unwrap();
-    cmd3.args(&[
+    cmd3.args([
         "--start-year",
         "2000",
         "--end-year",
@@ -58,7 +58,7 @@ fn cli_param_matrix_core_cases() {
     writeln!(tmp, "this is not a sqlite db").unwrap();
     let path = tmp.path().to_string_lossy().to_string();
     let mut cmd4 = Command::cargo_bin("stamp_album_gen2").unwrap();
-    cmd4.args(&["--db-path", &path, "--album-name", "T"])
+    cmd4.args(["--db-path", &path, "--album-name", "T"])
         .assert()
         .failure()
         .stderr(
@@ -68,7 +68,7 @@ fn cli_param_matrix_core_cases() {
 
     // Case 5: unknown flag should produce clap's error help
     let mut cmd5 = Command::cargo_bin("stamp_album_gen2").unwrap();
-    cmd5.args(&["--no-such-flag", "--album-name", "T"])
+    cmd5.args(["--no-such-flag", "--album-name", "T"])
         .assert()
         .failure()
         .stderr(
@@ -82,7 +82,7 @@ fn cli_param_matrix_core_cases() {
     // or it may still print the Unrecognized source message; we only assert it doesn't panic and exits cleanly.
     let output6 = Command::cargo_bin("stamp_album_gen2")
         .unwrap()
-        .args(&["--source", "stmpworld", "--yes", "--album-name", "T"])
+        .args(["--source", "stmpworld", "--yes", "--album-name", "T"])
         .output()
         .expect("run cmd6");
 
@@ -107,7 +107,7 @@ fn cli_param_matrix_core_cases() {
     let tmpdb_path = tmpdb.path().to_string_lossy().to_string();
     let output7 = Command::cargo_bin("stamp_album_gen2")
         .unwrap()
-        .args(&["--db-path", &tmpdb_path, "--album-name", "T"])
+        .args(["--db-path", &tmpdb_path, "--album-name", "T"])
         .output()
         .expect("run cmd7");
 

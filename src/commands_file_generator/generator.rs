@@ -62,62 +62,6 @@ pub struct CommandsFileGenerator {
 }
 
 impl CommandsFileGenerator {
-    /// Create a new CommandsFileGenerator instance
-    pub fn new(
-        album_name: String,
-        country: Country,
-        year: String,
-        month: String,
-        day: String,
-        series: String,
-        catalog_name: String,
-        formats: Vec<String>,
-        emissions: Vec<String>,
-        separator: String,
-        fix_sizes: bool,
-        overwrite_album: bool,
-        data_source: String,
-        stampworld_url: String,
-        colnect_url: String,
-        touchstamps_url: String,
-        image_path: String,
-        album_path: String,
-        extract_path: String,
-        config: Config,
-    ) -> Self {
-        Self {
-            album_name,
-            country,
-            year,
-            month,
-            day,
-            series,
-            catalog_name,
-            formats,
-            emissions,
-            separator,
-            fix_sizes,
-            overwrite_album,
-            data_source,
-            stampworld_url,
-            colnect_url,
-            touchstamps_url,
-            image_path,
-            album_path,
-            extract_path,
-            config,
-            stamps: Vec::new(),
-            stamp_data: Vec::new(),
-            series_info: HashMap::new(),
-            image_urls: HashMap::new(),
-            image_paths: HashMap::new(),
-            catalog_nums: HashMap::new(),
-            stampworld_data: Vec::new(),
-            colnect_data: Vec::new(),
-            touchstamps_data: Vec::new(),
-        }
-    }
-
     // /// Get stampworld image for a stamp
     // pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
     //     // TODO: Implement proper image fetching
@@ -284,27 +228,36 @@ impl CommandsFileGenerator {
 
 impl Default for CommandsFileGenerator {
     fn default() -> Self {
-        Self::new(
-            String::new(),
-            Country::default(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            Vec::new(),
-            Vec::new(),
-            ",".to_string(),
-            false,
-            false,
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            Config::default(),
-        )
+        Self {
+            album_name: String::new(),
+            country: Country::default(),
+            year: String::new(),
+            month: String::new(),
+            day: String::new(),
+            series: String::new(),
+            catalog_name: String::new(),
+            formats: Vec::new(),
+            emissions: Vec::new(),
+            separator: ",".to_string(),
+            fix_sizes: false,
+            overwrite_album: false,
+            data_source: String::new(),
+            stampworld_url: String::new(),
+            colnect_url: String::new(),
+            touchstamps_url: String::new(),
+            image_path: String::new(),
+            album_path: String::new(),
+            extract_path: String::new(),
+            config: Config::default(),
+            stamps: Vec::new(),
+            stamp_data: Vec::new(),
+            series_info: HashMap::new(),
+            image_urls: HashMap::new(),
+            image_paths: HashMap::new(),
+            catalog_nums: HashMap::new(),
+            stampworld_data: Vec::new(),
+            colnect_data: Vec::new(),
+            touchstamps_data: Vec::new(),
+        }
     }
 }

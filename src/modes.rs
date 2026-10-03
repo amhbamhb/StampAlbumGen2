@@ -1685,11 +1685,13 @@ pub async fn run_scraping_mode(
             &client,
             &conn,
             &base_url,
-            &site_name,
-            cli.start_year,
-            cli.end_year,
-            &cfg.image_path,
-            cli.overwrite_images,
+            &crate::us1847::collector::Us1847PageOptions {
+                site_name: &site_name,
+                start_year: cli.start_year,
+                end_year: cli.end_year,
+                image_path: &cfg.image_path,
+                overwrite_images: cli.overwrite_images,
+            },
         ) {
             Ok(stamp_count) => {
                 progress.set_message(&format!(

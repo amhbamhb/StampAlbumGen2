@@ -20,7 +20,7 @@ fn test_load_example_config_roundtrip() {
 
     // Change current dir so load_config searches upward and finds our temp config
     let orig = env::current_dir().expect("cwd");
-    env::set_current_dir(&td_path).expect("chdir to tempdir");
+    env::set_current_dir(td_path).expect("chdir to tempdir");
 
     // Call loader from the library crate
     let cfg = stamp_album_gen2::config::load_config("config.toml");

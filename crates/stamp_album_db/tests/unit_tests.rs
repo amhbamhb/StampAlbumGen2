@@ -211,7 +211,14 @@ fn test_migrate_fix_block_metadata_local() {
     }
     assert!(res.is_ok(), "migration failed");
 
-    let row: (Option<String>, Option<String>, Option<String>, Option<String>, Option<String>) = conn.query_row(
+    type FiveOptStrings = (
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+        Option<String>,
+    );
+    let row: FiveOptStrings = conn.query_row(
         "SELECT watermark, design, engraving, perforation, currency FROM stamps WHERE sg_number = '1'",
         [],
         |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),

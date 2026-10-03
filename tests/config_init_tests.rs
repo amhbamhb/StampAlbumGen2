@@ -17,7 +17,7 @@ fn test_create_config_from_template_creates_when_missing() {
 
     // run the initializer
     let orig_cwd = std::env::current_dir().unwrap();
-    std::env::set_current_dir(&cwd).unwrap();
+    std::env::set_current_dir(cwd).unwrap();
     let res = stamp_album_gen2::config::create_config_from_template("config.toml", false);
     std::env::set_current_dir(orig_cwd).unwrap();
     assert!(res.is_ok());
@@ -43,7 +43,7 @@ fn test_create_config_from_template_force_backups_and_overwrites() {
     fs::write(&template_path, "# new template\nnew = 2\n").unwrap();
 
     let orig_cwd = std::env::current_dir().unwrap();
-    std::env::set_current_dir(&cwd).unwrap();
+    std::env::set_current_dir(cwd).unwrap();
     let res = stamp_album_gen2::config::create_config_from_template("config.toml", true);
     std::env::set_current_dir(orig_cwd).unwrap();
     assert!(res.is_ok());
@@ -54,7 +54,7 @@ fn test_create_config_from_template_force_backups_and_overwrites() {
 
     // There should be a backup file with a .bak. timestamp suffix
     let mut found_backup = false;
-    for entry in fs::read_dir(&cwd).unwrap() {
+    for entry in fs::read_dir(cwd).unwrap() {
         let entry = entry.unwrap();
         let name = entry.file_name().into_string().unwrap();
         if name.starts_with("config.toml.bak.") {
