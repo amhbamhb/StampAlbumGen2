@@ -26,7 +26,7 @@ echo "� Checking current formatting status..."
 
 # Determine optional features for cargo commands (enable with USE_RFD=1)
 if [ "${USE_RFD:-0}" = "1" ]; then
-    CARGO_FEATURES=""
+    CARGO_FEATURES="--features rfd"
 else
     CARGO_FEATURES=""
 fi

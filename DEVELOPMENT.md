@@ -27,6 +27,27 @@ cargo build --release
 cargo build --features full-flag-db
 ```
 
+## Optional Native Dialogs
+
+Default builds omit native dialogs and their Wayland dependencies. First-run
+installation uses a terminal prompt when stdin is interactive; otherwise it
+continues in the current directory without prompting. The browser Review UI is
+unchanged.
+
+To retain native folder/confirmation dialogs on Windows or Linux, build with
+`cargo build --release --features rfd`. For development checks, use
+`USE_RFD=1 ./format-and-check.sh` (or `cargo clippy --features rfd` on Windows).
+On Ubuntu, the optional Linux dialog build requires `pkg-config` and
+`libwayland-dev` at build time, and the Wayland client library and a working
+desktop portal/backend at runtime. An X11 desktop can provide these; a Wayland
+session is not required. Native-dialog builds are intended for graphical sessions.
+
+The release workflow installs those Ubuntu build prerequisites defensively, but
+ships the Linux artifact without dialogs; the Windows artifact retains them.
+For Linux distribution, inspect shared libraries with `ldd` and test on X11,
+Wayland, and headless systems. Build against the oldest supported glibc baseline
+to support older distributions; removing Wayland does not remove that requirement.
+
 ## Main Development Files
 
 - `src/main.rs` main executable entry point

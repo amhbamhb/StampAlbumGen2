@@ -14,7 +14,7 @@ use std::process::Command;
 // `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
 // folder picker and a Yes/No confirmation dialog, otherwise fall back
 // to a console prompt (only when a terminal is present).
-// #[cfg(feature = "rfd")]
+#[cfg(feature = "rfd")]
 use rfd::{FileDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
@@ -146,8 +146,8 @@ pub fn ensure_config_and_template_files(
                 // binary from a GUI (double-click/file-manager).
                 let has_tty = io::stdin().is_terminal();
 
-                let gui_initiated = true;
-                // #[cfg(feature = "rfd")]
+                let gui_initiated = cfg!(feature = "rfd");
+                #[cfg(feature = "rfd")]
                 {
                     // Ask the user first with an explicit OK/Cancel dialog whether
                     // they want to pick a folder to move/copy the binary. OK will
@@ -163,7 +163,7 @@ pub fn ensure_config_and_template_files(
                     // Mark that the GUI was invoked so we don't fall back to
                     // a console prompt in non-interactive launches.
                     // gui_initiated = true;
-                   // for OkCancel button sets:
+                    // for OkCancel button sets:
                     if proceed == MessageDialogResult::Ok {
                         match FileDialog::new()
                             .set_title(
@@ -224,6 +224,11 @@ pub fn ensure_config_and_template_files(
                 }
 
                 if let Some(target) = picked_opt {
+                    let target = if target.is_absolute() {
+                        target
+                    } else {
+                        env::current_dir()?.join(target)
+                    };
                     println!("Selected target directory: {}", target.display());
                     debug!("Selected target directory: {}", target.display());
 
@@ -238,7 +243,7 @@ pub fn ensure_config_and_template_files(
                         .ok_or("Failed to determine executable name")?;
                     let dest = target.join(exe_file_name);
 
-                    // #[cfg(feature = "rfd")]
+                    #[cfg(feature = "rfd")]
                     {
                         // Use a two-step dialog to offer Move / Copy / Skip.
                         // First ask whether to Move; if No, ask whether to Copy.
@@ -336,14 +341,16 @@ pub fn ensure_config_and_template_files(
                         }
                     }
 
-                    // #[cfg(not(feature = "rfd"))]
+                    #[cfg(not(feature = "rfd"))]
                     {
                         // Console fallback for headful TTY sessions.
                         loop {
                             print!("Move binary to target (m), Copy (c), or Skip (s)? [m/c/s]: ");
                             io::stdout().flush().ok();
                             let mut choice = String::new();
-                            io::stdin().read_line(&mut choice).ok();
+                            if io::stdin().read_line(&mut choice)? == 0 {
+                                break;
+                            }
                             let choice = choice.trim().to_lowercase();
 
                             if choice == "m" {
@@ -358,6 +365,11 @@ pub fn ensure_config_and_template_files(
                                         );
                                     }
                                 }
+                                ensure_default_files(
+                                    &target.join(config_path),
+                                    &target.join(template_path),
+                                    &target.join(pdf_path),
+                                )?;
                                 env::set_current_dir(&target)?;
                                 #[cfg(unix)]
                                 {
@@ -372,6 +384,11 @@ pub fn ensure_config_and_template_files(
                             } else if choice == "c" {
                                 fs::copy(&exe_path, &dest)?;
                                 info!("Copied executable to {}", dest.display());
+                                ensure_default_files(
+                                    &target.join(config_path),
+                                    &target.join(template_path),
+                                    &target.join(pdf_path),
+                                )?;
                                 env::set_current_dir(&target)?;
                                 #[cfg(unix)]
                                 {
@@ -416,13 +433,21 @@ pub fn ensure_config_and_template_files(
         current_dir.join(pdf_path)
     };
 
+    ensure_default_files(&config_abs, &template_abs, &pdf_abs)
+}
+
+fn ensure_default_files(
+    config_abs: &Path,
+    template_abs: &Path,
+    pdf_abs: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     // Always keep config_template.toml in sync with the embedded defaults so
     // that users can see newly added options after upgrading. This file is
     // purely a reference; it is never user-edited.
     if !template_abs.exists()
-        || std::fs::read_to_string(&template_abs).ok().as_deref() != Some(EMBEDDED_CONFIG_TEMPLATE)
+        || std::fs::read_to_string(template_abs).ok().as_deref() != Some(EMBEDDED_CONFIG_TEMPLATE)
     {
-        fs::write(&template_abs, EMBEDDED_CONFIG_TEMPLATE)?;
+        fs::write(template_abs, EMBEDDED_CONFIG_TEMPLATE)?;
         log::info!(
             "Updated config template from embedded defaults at {}",
             template_abs.display()
@@ -431,13 +456,13 @@ pub fn ensure_config_and_template_files(
 
     if !config_abs.exists() {
         if template_abs.exists() {
-            fs::copy(&template_abs, &config_abs)?;
+            fs::copy(template_abs, config_abs)?;
             log::info!(
                 "Created missing config file from template at {}",
                 config_abs.display()
             );
         } else {
-            fs::write(&config_abs, EMBEDDED_CONFIG_TEMPLATE)?;
+            fs::write(config_abs, EMBEDDED_CONFIG_TEMPLATE)?;
             log::info!(
                 "Created missing config file from embedded template at {}",
                 config_abs.display()
@@ -447,8 +472,8 @@ pub fn ensure_config_and_template_files(
 
     // Keep the installed manual synchronized with the version embedded in the
     // executable so missing or outdated manuals are restored on startup.
-    if fs::read(&pdf_abs).ok().as_deref() != Some(EMBEDDED_PDF_HELP) {
-        fs::write(&pdf_abs, EMBEDDED_PDF_HELP)?;
+    if fs::read(pdf_abs).ok().as_deref() != Some(EMBEDDED_PDF_HELP) {
+        fs::write(pdf_abs, EMBEDDED_PDF_HELP)?;
         log::info!(
             "Updated manual PDF from embedded version at {}",
             pdf_abs.display()
@@ -2568,6 +2593,27 @@ pub fn load_effective_config(path: &str) -> Config {
 #[cfg(test)]
 mod tests {
     use super::{detect_duplicate_keys, Config};
+
+    #[test]
+    fn installation_defaults_preserve_existing_config() {
+        let td = tempfile::tempdir().unwrap();
+        let config = td.path().join("config.toml");
+        let template = td.path().join("config_template.toml");
+        let pdf = td.path().join("manual.pdf");
+        std::fs::write(&config, "# user settings\n").unwrap();
+
+        super::ensure_default_files(&config, &template, &pdf).unwrap();
+
+        assert_eq!(
+            std::fs::read_to_string(config).unwrap(),
+            "# user settings\n"
+        );
+        assert_eq!(
+            std::fs::read_to_string(template).unwrap(),
+            super::embedded_config_template()
+        );
+        assert_eq!(std::fs::read(pdf).unwrap(), super::embedded_pdf_help());
+    }
 
     #[test]
     fn colnect_fields_boolean_toggles_are_parsed() {
