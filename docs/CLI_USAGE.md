@@ -7,6 +7,8 @@ Options:
           Source type: stampworld, touchstamps, extractfile, colnectexport, us1847 [default: stampworld]
       --site-name <SITE_NAME>
           Site name for scraping (e.g. 'Great-Britain', 'Canada')
+      --stampworld-country-url <STAMPWORLD_COUNTRY_URL>
+          Override only the StampWorld source URL; country and album names are unchanged
       --album-name <ALBUM_NAME>
           Album name to generate
       --db-path <DB_PATH>
@@ -14,13 +16,13 @@ Options:
       --base-url <BASE_URL>
           Optional base URL to use when scraping StampWorld (overrides default construction)
       --start-year <START_YEAR>
-          [default: 1840]
+          Start year for scraping (default 1840). Use --start-year 0 to scrape all years [default: 1840]
       --end-year <END_YEAR>
           [default: 2026]
       --overwrite-album
-          
+          When true, overwrite existing album and image files. Default: false
       --overwrite-images
-          
+          When true, overwrite existing image files. Default: false
       --max-pages <MAX_PAGES>
           Maximum number of pages to fetch when scraping StampWorld (0 = no explicit cap) [default: 0]
       --stop-after-no-hits <STOP_AFTER_NO_HITS>
@@ -64,3 +66,6 @@ Options:
   -V, --version
           Print version
 
+Note: the `--end-year` value printed in this copied help text reflects the
+current year when it was generated. The executable resolves the default from
+the current year at runtime.
