@@ -21,6 +21,9 @@ samples/views_split_plan.md
 .gitlab-ci.yml
 verify_setup.sh
 version_docs.sh
+stampalbumgenerator2-site/**
+.gitlab-ci.yml
+AGENTS.md
 
 
 refactor-plans
