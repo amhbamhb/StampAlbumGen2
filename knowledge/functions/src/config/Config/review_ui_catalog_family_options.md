@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_catalog_family_options
-resource: src/config.rs#L1527-L1532
+resource: src/config.rs#L1552-L1557
 generated:
   by: okf-rs/0.4.0
 relationships:

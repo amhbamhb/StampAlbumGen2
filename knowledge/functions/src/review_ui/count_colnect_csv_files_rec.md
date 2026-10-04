@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: count_colnect_csv_files_rec
-resource: src/review_ui.rs#L1822-L1840
+resource: src/review_ui.rs#L1824-L1842
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_keys
-resource: src/config.rs#L1626-L1631
+resource: src/config.rs#L1651-L1656
 visibility: private
 generated:
   by: okf-rs/0.4.0

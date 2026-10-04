@@ -30,9 +30,6 @@ relationships:
   - target: functions/src/review_ui/set_bootstrap_albums_root_override
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/pick_bootstrap_albums_root_via_dialog
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/review_ui/stampworld_job_state
     resolved_by: tree-sitter
     confidence: exact
@@ -49,9 +46,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/save_runtime_albumeasy_cli_path
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/review_ui/pick_albumeasy_cli_path_via_dialog
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/config_editor/build_config_editor_data
@@ -113,14 +107,12 @@ relationships:
 - [current_bootstrap_albums_root](../../../../functions/src/review_ui/current_bootstrap_albums_root.md)
 - [create_bootstrap_country_or_theme](../../../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
 - [set_bootstrap_albums_root_override](../../../../functions/src/review_ui/set_bootstrap_albums_root_override.md)
-- [pick_bootstrap_albums_root_via_dialog](../../../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md)
 - [stampworld_job_state](../../../../functions/src/review_ui/stampworld_job_state.md)
 - [tail_current_log](../../../../functions/src/review_ui/tail_current_log.md)
 - [log_runtime_event](../../../../functions/src/review_ui/log_runtime_event.md)
 - [start_bootstrap_stampworld_job](../../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
 - [effective_albumeasy_cli_path](../../../../functions/src/config/Config/effective_albumeasy_cli_path.md)
 - [save_runtime_albumeasy_cli_path](../../../../functions/src/review_ui/save_runtime_albumeasy_cli_path.md)
-- [pick_albumeasy_cli_path_via_dialog](../../../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog.md)
 - [build_config_editor_data](../../../../functions/src/review_ui/config_editor/build_config_editor_data.md)
 - [save_full_config_values](../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
 - [try_acquire](../../../../functions/src/review_ui/PdfGenerationGuard/try_acquire.md)

@@ -116,6 +116,7 @@
 - [ReviewPdfFilters](../classes/src/review_ui/views/pdf_filters/ReviewPdfFilters.md) — JavaScript Class
 - [ReconnectBannerParams](../classes/src/review_ui/views/shared/ReconnectBannerParams.md) — Rust Struct
 - [RuntimeLogPanelParams](../classes/src/review_ui/views/shared/RuntimeLogPanelParams.md) — Rust Struct
+- [PickerKind](../classes/src/review_ui/windows_picker/PickerKind.md) — Rust Enum
 - [LinuxDesktopIntegrationReport](../classes/src/setup/LinuxDesktopIntegrationReport.md) — Rust Struct
 - [SetupError](../classes/src/setup/SetupError.md) — Rust Enum
 - [WindowsDesktopIntegrationReport](../classes/src/setup/WindowsDesktopIntegrationReport.md) — Rust Struct

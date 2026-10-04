@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_stamp_heading_label
-resource: src/config.rs#L1559-L1573
+resource: src/config.rs#L1584-L1598
 generated:
   by: okf-rs/0.4.0
 relationships:

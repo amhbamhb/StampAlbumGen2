@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: with_album_config_override
-resource: src/config.rs#L2565-L2572
+resource: src/config.rs#L2590-L2597
 generated:
   by: okf-rs/0.4.0
 relationships:

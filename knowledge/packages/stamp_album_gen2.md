@@ -89,6 +89,7 @@ generated:
 - [pdf_filters](../modules/src/review_ui/views/pdf_filters.md)
 - [shared](../modules/src/review_ui/views/shared.md)
 - [tests](../modules/src/review_ui/views/tests.md)
+- [windows_picker](../modules/src/review_ui/windows_picker.md)
 - [runtime_defaults](../modules/src/runtime_defaults.md)
 - [sample_images](../modules/src/sample_images.md)
 - [setup](../modules/src/setup.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: bind_review_server
-resource: src/review_ui.rs#L1604-L1685
+resource: src/review_ui.rs#L1606-L1687
 visibility: private
 generated:
   by: okf-rs/0.4.0

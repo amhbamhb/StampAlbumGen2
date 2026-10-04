@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_image_abs
-resource: src/review_ui.rs#L2379-L2415
+resource: src/review_ui.rs#L2409-L2445
 visibility: private
 generated:
   by: okf-rs/0.4.0

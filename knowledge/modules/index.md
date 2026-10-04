@@ -83,6 +83,7 @@
 - [pdf_filters](../modules/src/review_ui/views/pdf_filters.md) — JavaScript Module
 - [shared](../modules/src/review_ui/views/shared.md) — Rust Module
 - [tests](../modules/src/review_ui/views/tests.md) — Rust Module
+- [windows_picker](../modules/src/review_ui/windows_picker.md) — Rust Module
 - [runtime_defaults](../modules/src/runtime_defaults.md) — Rust Module
 - [sample_images](../modules/src/sample_images.md) — Rust Module
 - [setup](../modules/src/setup.md) — Rust Module

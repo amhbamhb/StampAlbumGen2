@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_effective_config
-resource: src/config.rs#L2591-L2597
+resource: src/config.rs#L2616-L2622
 generated:
   by: okf-rs/0.4.0
 relationships:

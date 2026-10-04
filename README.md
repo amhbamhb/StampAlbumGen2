@@ -1,15 +1,59 @@
+[![Release (combined)](https://github.com/amhbamhb/StampAlbumGen2/actions/workflows/release-combined.yml/badge.svg)](https://github.com/amhbamhb/StampAlbumGen2/actions/workflows/release-combined.yml)
+
+
 # Stamp Album Generator
 
-Rust CLI that generates AlbumEasy pages from stamp data sources and SQLite databases.
+![Stamp Album Generator 2 Logo](assets/icons/stamp_album_gen2.png)
+
+This application generates AlbumEasy source pages (*.txt files) from stamp data sources and SQLite databases.
 
 Latest release: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
 
+The application is designed to simplify the process of generating stamp album pages from various data sources, ensuring that users can efficiently manage and update their collections.
+
+Our web site: [Stamp Album Generator 2](https://stampalbumgenerator2.com/)
+
+Our app will always be free to individual collectors, including source code.  Any corporate or commercial, educational use is subject to licensing fees, including any source code usage and any derivative works.  So no, you can not fork, make changes and call it your own for commercial, corporate, educational purposes.
+
 ## Start Here
 
-Build release binary and run it:
+Most people will just launch the binary and automatically start the application. To download the program, visit the [releases page](https://github.com/amhbamhb/StampAlbumGen2/releases/latest). The Web UI is default when starting the program directly.
+
+All files that are needed for the application are created automatically upon the first launch.  Include the config.toml file, which contains the necessary configuration settings for the application.  A help file is also generated to assist users in understanding and using the application effectively.  If the file have been updated a new version will be created automatically.  This also applies to the config.toml.  The web UI will notify the user that there are new config items now active.
+
+This works in both Linux and Windows environments.
+
+![Stamp Album Generator 2 Screenshot Linux](docs/images/application-linux.png)
+![Stamp Album Generator 2 Windows](docs/images/application-windows.png)
+
+There is a help pdf file that is created in the runtime working folder when the application is first launched. The help file is named `StampAlbumGenerator2HelpManual.pdf`. This contains detailed usage instructions and guidance for interacting with the application from a web UI.  
+
+Most people will use the web UI.
+
+For safety, always back up your existing album data before using advanced features or directly manipulating the database.
+
+The Application, on every PDF generation, will always create a backup of the txt file (if one previously existed).
+
+![Example file backups showing the backup of txt files](docs/images/album-backup-example.png)
+
+
+There are also command-line usage instructions available within the PDF.  Some instructions below are provided as examples.
+
+## Advanced Usage
+
+Below are the option that a few brave souls will use to build and run the release binary directly. :)
+
+There are several ways to interact with the application directly from the command line.
+
+You can also build your own version from the source code.  This application is in Rust and uses Cargo as its build system.
+
+To build the release binary and run it, below are installation and usage instructions.  You of course need to download the source code first:
+
+**Note:** The rust system installation is beyond the scope of this document.  Please visit [the official Rust website](https://www.rust-lang.org/) for installation instructions.
 
 ```bash
 cargo build --release
+
 ./target/release/stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
 ```
 
@@ -41,11 +85,7 @@ Incorrect:
 
 ## Repository Scope
 
-This repository is the Stamp Gen 2 application repository.
-
-The website project is maintained in a separate repository. For path ownership,
-split details, and optional linkage approaches (sibling checkout or submodule),
-see `docs/PROJECT_PATH_MAP.md`.
+This repository is in the Stamp Gen 2 application repository.  Please visit [the GitHub repository](https://github.com/amhbamhb/StampAlbumGen2). for more information.
 
 ## Common Usage Examples
 
@@ -55,7 +95,9 @@ Generate album output from an existing database:
 ./stamp_album_gen2 --db-path Albums/Canada/Canada.db --album-name Canada
 ```
 
-Scrape StampWorld for a country/year range:
+You can also use other sources like StampWorld for a country/year range.  You must have a StampWorld account before using this.  The configuration requires specifying the source, site name, album name, and the year range.  The values are in the config.toml file, including the StampWorld account setup: 
+
+To register for stampworld, visit [StampWorld's registration page](https://www.stampworld.com/en/register) and create an account.
 
 ```bash
 ./stamp_album_gen2 \
@@ -68,10 +110,16 @@ Scrape StampWorld for a country/year range:
 
 ### Remember a StampWorld country URL
 
+For single word country names, the program usually converts them correctly to the URL format automatically.
+
 Multiword country names already convert spaces to hyphens automatically:
 `South Korea` becomes `South-Korea`, `British Canada` becomes `British-Canada`,
 and `North Korean Occ. South Korea` becomes `North-Korean-Occ.-South-Korea`.
+
+The program tries to automatically convert multiword country names to the correct URL format,  but is not always correct, for stampworld check the url manually to see the proper format.
 Quote multiword country names when entering CLI commands.
+
+In the web UI, the resolved country URL is displayed in the **StampWorld Pull** panel.
 
 Both the startup and Review **StampWorld Pull** panels show the resolved country
 URL. If automatic naming does not match the site, paste the country page URL
@@ -107,13 +155,15 @@ the URL shape; it does not check whether StampWorld currently serves that page.
 
 ### Scrape US1847
 
+This section is a work in progress.  Use it with care and double-check the results. YMMV (Your Mileage May Vary).
+
 ```bash
 ./stamp_album_gen2 \
  --source us1847 \
  --site-name United-States \
  --album-name "United States" \
  --start-year 1847 \
- --end-year 2026
+ --end-year 1860
 ```
 
 ### Enter your own stamp data
@@ -122,8 +172,9 @@ Normal launches create a blank `UserImport/manual_import_template.csv` and a
 local usage guide at `UserImport/README.md` in the runtime working folder.
 Missing files are recreated on later launches; existing files are never
 overwritten. Copy the template, fill it in, and import the completed CSV using
-the existing Colnect import and Review UI workflow. Imports stage candidates;
-they do not automatically update your album stamps.
+the existing Colnect import and Review UI workflow. It can be placed inside the colnect import folder structure for the country. They do not automatically update your album stamps.  You have to import these files the same as any new Colnect CSV files.  From the web UI, navigate to the Colnect import section to upload and review your CSV files.
+
+![Colnect import panel](docs/images/colnect-import-panel.png)
 
 See [User-defined CSV import](docs/guides/USER_DEFINED_CSV_IMPORT.md) for field
 definitions, examples, Linux/Windows commands, stable manual IDs, and important
@@ -320,6 +371,15 @@ USE_RFD=1 Archive/build-musl.sh
 ```
 
 If your CI runner lacks GUI libraries (GTK on Linux), keep `USE_RFD` disabled. The code is written to fall back to console prompts only when a TTY is available.
+
+Review UI Browse buttons use Windows-native folder/file dialogs through the
+built-in Windows PowerShell (`powershell.exe`), including in builds without
+`rfd`. Windows does not require `zenity` or `kdialog`. On Linux, these Browse
+buttons require either `zenity` or `kdialog`.
+
+If an older Windows release reports "No supported folder picker found (install
+zenity or kdialog)" during first-run setup, expand **Albums Root**, enter the
+folder path directly, and click **Apply** instead of **Pick Albums Root...**.
 
 ### Review UI
 

@@ -30,6 +30,8 @@ use matcher_service::{
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
 mod http_handlers;
+#[cfg(any(windows, test))]
+mod windows_picker;
 
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 const RUNTIME_LOG_CAP: usize = 800;
@@ -1974,6 +1976,17 @@ fn current_bootstrap_albums_root() -> Option<String> {
     resolve_bootstrap_albums_root().map(|p| p.to_string_lossy().to_string())
 }
 
+#[cfg(windows)]
+fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
+    let current = current_bootstrap_albums_root().unwrap_or_else(|| ".".to_string());
+    windows_picker::pick(
+        windows_picker::PickerKind::Folder,
+        "Select Albums Root (Albums folder or its parent)",
+        &current,
+    )
+}
+
+#[cfg(not(windows))]
 fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
     let title = "Select Albums Root (Albums folder or its parent)";
     let current = current_bootstrap_albums_root().unwrap_or_else(|| ".".to_string());
@@ -2061,6 +2074,20 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
     pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
 }
 
+#[cfg(windows)]
+fn pick_albumeasy_cli_path_via_dialog(current_path: Option<&str>) -> Result<Option<String>, String> {
+    let start = current_path
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+        .unwrap_or(".");
+    windows_picker::pick(
+        windows_picker::PickerKind::Executable,
+        "Select AlbumEasy CLI executable",
+        start,
+    )
+}
+
+#[cfg(not(windows))]
 fn pick_albumeasy_cli_path_via_dialog(
     current_path: Option<&str>,
 ) -> Result<Option<String>, String> {
@@ -2164,9 +2191,12 @@ where
             return fail(format!("Could not create colnect dir: {}", e));
         }
     }
-    let starting = format!("{}/", colnect_dir_str.trim_end_matches('/'));
+    #[cfg(windows)]
+    let pick_result = windows_picker::pick(windows_picker::PickerKind::Csv, title, colnect_dir_str);
 
+    #[cfg(not(windows))]
     let pick_result: Result<Option<String>, String> = (|| {
+        let starting = format!("{}/", colnect_dir_str.trim_end_matches('/'));
         if which::which("zenity").is_ok() {
             let output = Command::new("zenity")
                 .arg("--file-selection")

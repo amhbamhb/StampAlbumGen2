@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: colnect_details_enabled
-resource: src/config.rs#L1180-L1185
+resource: src/config.rs#L1205-L1210
 generated:
   by: okf-rs/0.4.0
 relationships:

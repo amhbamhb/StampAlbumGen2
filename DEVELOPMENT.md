@@ -32,7 +32,10 @@ cargo build --features full-flag-db
 Default builds omit native dialogs and their Wayland dependencies. First-run
 installation uses a terminal prompt when stdin is interactive; otherwise it
 continues in the current directory without prompting. The browser Review UI is
-unchanged.
+available. Its Browse buttons use built-in Windows PowerShell/Windows Forms on
+Windows (independent of the `rfd` feature), and `zenity` or `kdialog` on Linux.
+Cancellation leaves the current selection unchanged; launch/dialog failures are
+returned to the browser as errors.
 
 To retain native folder/confirmation dialogs on Windows or Linux, build with
 `cargo build --release --features rfd`. For development checks, use

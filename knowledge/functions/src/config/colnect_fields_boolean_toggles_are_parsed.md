@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_fields_boolean_toggles_are_parsed
-resource: src/config.rs#L2895-L2920
+resource: src/config.rs#L2920-L2945
 visibility: private
 generated:
   by: okf-rs/0.4.0

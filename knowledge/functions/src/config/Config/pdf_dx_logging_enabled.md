@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: pdf_dx_logging_enabled
-resource: src/config.rs#L1612-L1614
+resource: src/config.rs#L1637-L1639
 generated:
   by: okf-rs/0.4.0
 ---

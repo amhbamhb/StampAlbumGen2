@@ -302,6 +302,7 @@
 - [embedded_config_template](../functions/src/config/embedded_config_template.md) — Rust Function
 - [embedded_pdf_help](../functions/src/config/embedded_pdf_help.md) — Rust Function
 - [ensure_config_and_template_files](../functions/src/config/ensure_config_and_template_files.md) — Rust Function
+- [ensure_default_files](../functions/src/config/ensure_default_files.md) — Rust Function
 - [extract_keys](../functions/src/config/extract_keys.md) — Rust Function
 - [load_config](../functions/src/config/load_config.md) — Rust Function
 - [load_config_with_override](../functions/src/config/load_config_with_override.md) — Rust Function
@@ -591,10 +592,12 @@
 - [parse_query_param](../functions/src/review_ui/parse_query_param.md) — Rust Function
 - [path_to_file_url](../functions/src/review_ui/path_to_file_url.md) — Rust Function
 - [pick_albumeasy_cli_path_via_dialog](../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog.md) — Rust Function
+- [pick_albumeasy_cli_path_via_dialog](../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog-2.md) — Rust Function
 - [pick_and_copy_colnect_file_for_db](../functions/src/review_ui/pick_and_copy_colnect_file_for_db.md) — Rust Function
 - [pick_and_copy_colnect_file_to_dir](../functions/src/review_ui/pick_and_copy_colnect_file_to_dir.md) — Rust Function
 - [pick_and_copy_colnect_file_via_dialog](../functions/src/review_ui/pick_and_copy_colnect_file_via_dialog.md) — Rust Function
 - [pick_bootstrap_albums_root_via_dialog](../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md) — Rust Function
+- [pick_bootstrap_albums_root_via_dialog](../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog-2.md) — Rust Function
 - [preset_flags](../functions/src/review_ui/preset_flags.md) — Rust Function
 - [probe_port](../functions/src/review_ui/probe_port.md) — Rust Function
 - [quote_for_log](../functions/src/review_ui/quote_for_log.md) — Rust Function
@@ -906,6 +909,13 @@
 - [compare_html_embeds_payload_and_core_shell](../functions/src/review_ui/views/tests/compare_html_embeds_payload_and_core_shell.md) — Rust Function
 - [compare_html_has_country_scoped_pdf_filters_only_on_review_screen](../functions/src/review_ui/views/tests/compare_html_has_country_scoped_pdf_filters_only_on_review_screen.md) — Rust Function
 - [minimal_payload](../functions/src/review_ui/views/tests/minimal_payload.md) — Rust Function
+- [decode_selection](../functions/src/review_ui/windows_picker/decode_selection.md) — Rust Function
+- [pick](../functions/src/review_ui/windows_picker/pick.md) — Rust Function
+- [picker_command](../functions/src/review_ui/windows_picker/picker_command.md) — Rust Function
+- [windows_picker_distinguishes_cancellation_from_failure](../functions/src/review_ui/windows_picker/windows_picker_distinguishes_cancellation_from_failure.md) — Rust Function
+- [windows_picker_preserves_unicode_spaces_and_unc_paths](../functions/src/review_ui/windows_picker/windows_picker_preserves_unicode_spaces_and_unc_paths.md) — Rust Function
+- [windows_picker_rejects_invalid_success_output](../functions/src/review_ui/windows_picker/windows_picker_rejects_invalid_success_output.md) — Rust Function
+- [windows_picker_uses_sta_and_passes_inputs_as_literal_environment_values](../functions/src/review_ui/windows_picker/windows_picker_uses_sta_and_passes_inputs_as_literal_environment_values.md) — Rust Function
 - [default_end_year](../functions/src/runtime_defaults/default_end_year.md) — Rust Function
 - [get_scaling_for_series](../functions/src/sample_images/get_scaling_for_series.md) — Rust Function
 - [from](../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md) — Rust Method
@@ -1073,6 +1083,7 @@
 - [spain_colnect_layout_packs_rich_rows_without_losing_stamps](../functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps.md) — Rust Function
 - [test_create_config_from_template_creates_when_missing](../functions/tests/config_init_tests/test_create_config_from_template_creates_when_missing.md) — Rust Function
 - [test_create_config_from_template_force_backups_and_overwrites](../functions/tests/config_init_tests/test_create_config_from_template_force_backups_and_overwrites.md) — Rust Function
+- [test_first_run_without_terminal_creates_defaults](../functions/tests/config_init_tests/test_first_run_without_terminal_creates_defaults.md) — Rust Function
 - [test_template_defaults_use_fit_box_sizing](../functions/tests/config_init_tests/test_template_defaults_use_fit_box_sizing.md) — Rust Function
 - [load_config_from_tempdir](../functions/tests/config_parameter_validation/load_config_from_tempdir.md) — Rust Function
 - [make_minimal_test_db](../functions/tests/config_parameter_validation/make_minimal_test_db.md) — Rust Function

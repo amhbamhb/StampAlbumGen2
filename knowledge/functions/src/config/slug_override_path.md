@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: slug_override_path
-resource: src/config.rs#L2781-L2823
+resource: src/config.rs#L2806-L2848
 generated:
   by: okf-rs/0.4.0
 relationships:

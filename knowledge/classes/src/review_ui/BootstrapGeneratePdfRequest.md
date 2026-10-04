@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapGeneratePdfRequest
-resource: src/review_ui.rs#L365-L371
+resource: src/review_ui.rs#L367-L373
 visibility: private
 generated:
   by: okf-rs/0.4.0

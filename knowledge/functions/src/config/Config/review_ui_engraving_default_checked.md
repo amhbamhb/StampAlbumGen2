@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_engraving_default_checked
-resource: src/config.rs#L1471-L1476
+resource: src/config.rs#L1496-L1501
 generated:
   by: okf-rs/0.4.0
 relationships:

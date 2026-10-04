@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ReviewUiSelected
-resource: src/review_ui.rs#L1449-L1454
+resource: src/review_ui.rs#L1451-L1456
 generated:
   by: okf-rs/0.4.0
 ---

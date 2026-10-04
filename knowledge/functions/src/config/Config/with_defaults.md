@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: with_defaults
-resource: src/config.rs#L986-L1176
+resource: src/config.rs#L1011-L1201
 generated:
   by: okf-rs/0.4.0
 relationships:
