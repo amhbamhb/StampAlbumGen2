@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: assignCurrent
-resource: src/review_ui/views/compare.js#L2396-L2404
+resource: src/review_ui/views/compare.js#L2397-L2405
 generated:
   by: okf-rs/0.4.0
 relationships:

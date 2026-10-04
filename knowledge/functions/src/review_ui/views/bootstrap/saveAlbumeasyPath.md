@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: saveAlbumeasyPath
-resource: src/review_ui/views/bootstrap.js#L897-L904
+resource: src/review_ui/views/bootstrap.js#L898-L905
 generated:
   by: okf-rs/0.4.0
 relationships:

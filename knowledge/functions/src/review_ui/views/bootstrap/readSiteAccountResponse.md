@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: readSiteAccountResponse
-resource: src/review_ui/views/bootstrap.js#L1184-L1199
+resource: src/review_ui/views/bootstrap.js#L1185-L1200
 generated:
   by: okf-rs/0.4.0
 ---

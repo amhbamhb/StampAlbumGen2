@@ -1,7 +1,7 @@
 ---
 type: JavaScript Module
 title: compare
-resource: src/review_ui/views/compare.js#L1-L3918
+resource: src/review_ui/views/compare.js#L1-L3919
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: browseAlbumeasyPathFromDialog
-resource: src/review_ui/views/bootstrap.js#L810-L832
+resource: src/review_ui/views/bootstrap.js#L811-L833
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -82,6 +82,7 @@
 - [country_url](../modules/src/review_ui/views/country_url.md) — JavaScript Module
 - [pdf_filters](../modules/src/review_ui/views/pdf_filters.md) — JavaScript Module
 - [shared](../modules/src/review_ui/views/shared.md) — Rust Module
+- [stampworld_start_error](../modules/src/review_ui/views/stampworld_start_error.md) — JavaScript Module
 - [tests](../modules/src/review_ui/views/tests.md) — Rust Module
 - [windows_picker](../modules/src/review_ui/windows_picker.md) — Rust Module
 - [runtime_defaults](../modules/src/runtime_defaults.md) — Rust Module
@@ -161,6 +162,7 @@
 - [placeholder_image_size](../modules/tests/placeholder_image_size.md) — Rust Module
 - [placeholder_regeneration](../modules/tests/placeholder_regeneration.md) — Rust Module
 - [review_pdf_filters_ui](../modules/tests/review_pdf_filters_ui.md) — JavaScript Module
+- [test](../modules/tests/review_ui_stampworld_credentials/test.md) — JavaScript Module
 - [save_overwrite](../modules/tests/save_overwrite.md) — Rust Module
 - [series_issue_date_order_tests](../modules/tests/series_issue_date_order_tests.md) — Rust Module
 - [series_ordering](../modules/tests/series_ordering.md) — Rust Module

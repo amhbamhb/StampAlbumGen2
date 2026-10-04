@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: changePdfSortMode
-resource: src/review_ui/views/compare.js#L1844-L1848
+resource: src/review_ui/views/compare.js#L1845-L1849
 generated:
   by: okf-rs/0.4.0
 relationships:

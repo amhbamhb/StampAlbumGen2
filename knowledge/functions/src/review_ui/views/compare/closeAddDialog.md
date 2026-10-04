@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: closeAddDialog
-resource: src/review_ui/views/compare.js#L2581-L2584
+resource: src/review_ui/views/compare.js#L2582-L2585
 generated:
   by: okf-rs/0.4.0
 relationships:

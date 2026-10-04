@@ -75,6 +75,9 @@ Recommended flow:
 ## Testing Notes
 
 - Unit/integration tests live in `tests/` and code-level test modules.
+- StampWorld credential-recovery UI behavior can be checked without a browser
+  or external services using `node --test tests/review_ui_stampworld_credentials.test.cjs`
+  (Node.js 18+). Rendering and handler checks use `cargo test --lib review_ui::`.
 - Historical/manual test outputs are stored in `docs/testing/`.
 - Keep root clean by placing new test run reports under `docs/testing/`.
 

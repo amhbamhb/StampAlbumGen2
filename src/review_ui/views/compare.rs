@@ -298,9 +298,10 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                     </div>";
 
     let compare_script_html = format!(
-        "{}\n{}\n{}",
+        "{}\n{}\n{}\n{}",
         include_str!("country_url.js"),
         include_str!("pdf_filters.js"),
+        include_str!("stampworld_start_error.js"),
         include_str!("compare.js")
     )
     .replace("{json}", &json)

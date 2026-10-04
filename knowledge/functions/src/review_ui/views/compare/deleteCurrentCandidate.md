@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: deleteCurrentCandidate
-resource: src/review_ui/views/compare.js#L3176-L3209
+resource: src/review_ui/views/compare.js#L3177-L3210
 generated:
   by: okf-rs/0.4.0
 relationships:

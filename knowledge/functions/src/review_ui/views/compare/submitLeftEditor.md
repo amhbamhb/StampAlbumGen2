@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: submitLeftEditor
-resource: src/review_ui/views/compare.js#L2905-L3011
+resource: src/review_ui/views/compare.js#L2906-L3012
 generated:
   by: okf-rs/0.4.0
 relationships:

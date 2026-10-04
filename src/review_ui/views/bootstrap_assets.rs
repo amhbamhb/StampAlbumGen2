@@ -2,8 +2,9 @@ use super::{BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS};
 
 pub(super) fn render_bootstrap_script_html() -> String {
     let script_template = format!(
-        "{}\n{}",
+        "{}\n{}\n{}",
         include_str!("country_url.js"),
+        include_str!("stampworld_start_error.js"),
         include_str!("bootstrap.js")
     );
     let script_content = script_template

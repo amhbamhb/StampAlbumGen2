@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: submitSiteAccounts
-resource: src/review_ui/views/bootstrap.js#L1260-L1304
+resource: src/review_ui/views/bootstrap.js#L1264-L1308
 generated:
   by: okf-rs/0.4.0
 ---

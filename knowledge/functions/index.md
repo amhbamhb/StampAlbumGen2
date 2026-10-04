@@ -899,11 +899,13 @@
 - [render_footer_year_script](../functions/src/review_ui/views/shared/render_footer_year_script.md) — Rust Function
 - [render_reconnect_banner_html](../functions/src/review_ui/views/shared/render_reconnect_banner_html.md) — Rust Function
 - [render_runtime_log_panel_html](../functions/src/review_ui/views/shared/render_runtime_log_panel_html.md) — Rust Function
+- [showStampWorldStartError](../functions/src/review_ui/views/stampworld_start_error/showStampWorldStartError.md) — JavaScript Function
 - [bootstrap_html_contains_health_and_runtime_log_hooks](../functions/src/review_ui/views/tests/bootstrap_html_contains_health_and_runtime_log_hooks.md) — Rust Function
 - [bootstrap_html_exposes_edit_config_action](../functions/src/review_ui/views/tests/bootstrap_html_exposes_edit_config_action.md) — Rust Function
 - [bootstrap_html_uses_custom_inbox_hint_when_present](../functions/src/review_ui/views/tests/bootstrap_html_uses_custom_inbox_hint_when_present.md) — Rust Function
 - [bootstrap_html_uses_default_inbox_hint_when_missing](../functions/src/review_ui/views/tests/bootstrap_html_uses_default_inbox_hint_when_missing.md) — Rust Function
 - [both_pull_screens_embed_saved_country_url_controls](../functions/src/review_ui/views/tests/both_pull_screens_embed_saved_country_url_controls.md) — Rust Function
+- [both_pull_screens_explain_start_failures_and_offer_site_accounts](../functions/src/review_ui/views/tests/both_pull_screens_explain_start_failures_and_offer_site_accounts.md) — Rust Function
 - [compare_html_contains_backend_recovery_banner](../functions/src/review_ui/views/tests/compare_html_contains_backend_recovery_banner.md) — Rust Function
 - [compare_html_contains_runtime_log_hooks](../functions/src/review_ui/views/tests/compare_html_contains_runtime_log_hooks.md) — Rust Function
 - [compare_html_embeds_payload_and_core_shell](../functions/src/review_ui/views/tests/compare_html_embeds_payload_and_core_shell.md) — Rust Function
@@ -1190,6 +1192,9 @@
 - [placeholder_regeneration_forced](../functions/tests/placeholder_regeneration/placeholder_regeneration_forced.md) — Rust Function
 - [element](../functions/tests/review_pdf_filters_ui/element.md) — JavaScript Function
 - [fixture](../functions/tests/review_pdf_filters_ui/fixture.md) — JavaScript Function
+- [element](../functions/tests/review_ui_stampworld_credentials/test/element.md) — JavaScript Function
+- [functionSource](../functions/tests/review_ui_stampworld_credentials/test/functionSource.md) — JavaScript Function
+- [harness](../functions/tests/review_ui_stampworld_credentials/test/harness.md) — JavaScript Function
 - [default_creates_timestamped_copy](../functions/tests/save_overwrite/default_creates_timestamped_copy.md) — Rust Function
 - [overwrite_replaces_in_place](../functions/tests/save_overwrite/overwrite_replaces_in_place.md) — Rust Function
 - [drop](../functions/tests/series_issue_date_order_tests/CwdRestore/drop/drop.md) — Rust Method
