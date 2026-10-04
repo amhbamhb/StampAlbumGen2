@@ -974,7 +974,7 @@ function renderCountryPanel() {
         if (copyStatus) {
             copyStatus.className = 'colnectCopyStatus';
             copyStatus.style.display = '';
-            copyStatus.textContent = 'Select a country to import Colnect CSV files.';
+            copyStatus.textContent = 'Select a country to import Colnect - User Created CSV files.';
         }
         if (swLead) swLead.innerText = 'Run StampWorld pull to create a country database.';
         if (swHint) swHint.innerText = 'Type any country name below and run StampWorld pull. This field is editable and not limited to existing countries.';

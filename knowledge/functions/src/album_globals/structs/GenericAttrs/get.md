@@ -336,6 +336,9 @@ relationships:
   - target: functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db
     resolved_by: tree-sitter
     confidence: exact
@@ -463,6 +466,7 @@ relationships:
 - [test_insert_stamp_placeholder_allows_distinct_sg_numbers](../../../../../functions/tests/db_utils/test_insert_stamp_placeholder_allows_distinct_sg_numbers.md)
 - [test_migrate_fix_block_metadata_basic](../../../../../functions/tests/db_utils/test_migrate_fix_block_metadata_basic.md)
 - [e2e_collect_stampworld_inserts_placeholders_to_db](../../../../../functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db.md)
+- [manual_rows_parse_and_replace_only_the_same_staged_identity](../../../../../functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity.md)
 - [test_ensure_placeholder_for_stamp_and_update_db](../../../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.md)
 - [fixture](../../../../../functions/tests/review_pdf_filters_ui/fixture.md)
 - [wikipedia_ingest_inserts_up_to_max_entries_from_cache](../../../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.md)

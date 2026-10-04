@@ -116,6 +116,19 @@ the URL shape; it does not check whether StampWorld currently serves that page.
  --end-year 2026
 ```
 
+### Enter your own stamp data
+
+Normal launches create a blank `UserImport/manual_import_template.csv` and a
+local usage guide at `UserImport/README.md` in the runtime working folder.
+Missing files are recreated on later launches; existing files are never
+overwritten. Copy the template, fill it in, and import the completed CSV using
+the existing Colnect import and Review UI workflow. Imports stage candidates;
+they do not automatically update your album stamps.
+
+See [User-defined CSV import](docs/guides/USER_DEFINED_CSV_IMPORT.md) for field
+definitions, examples, Linux/Windows commands, stable manual IDs, and important
+re-import/update limits.
+
 Ingest one Colnect CSV (source must be `colnectexport`):
 
 ```bash

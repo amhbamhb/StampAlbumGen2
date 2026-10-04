@@ -38,6 +38,7 @@
 - [image_fetcher](../modules/src/colnect/image_fetcher.md) — Rust Module
 - [ingest](../modules/src/colnect/ingest.md) — Rust Module
 - [parser](../modules/src/colnect/parser.md) — Rust Module
+- [template](../modules/src/colnect/template.md) — Rust Module
 - [commands_file_generator](../modules/src/commands_file_generator.md) — Rust Module
 - [album_creation](../modules/src/commands_file_generator/album_creation.md) — Rust Module
 - [data_collection](../modules/src/commands_file_generator/data_collection.md) — Rust Module
@@ -144,6 +145,7 @@
 - [header_date](../modules/tests/header_date.md) — Rust Module
 - [ingest_switzerland](../modules/tests/ingest_switzerland.md) — Rust Module
 - [load_example_config](../modules/tests/load_example_config.md) — Rust Module
+- [manual_import_template](../modules/tests/manual_import_template.md) — Rust Module
 - [page_break_overflow](../modules/tests/page_break_overflow.md) — Rust Module
 - [page_callback](../modules/tests/page_callback.md) — Rust Module
 - [page_fit_regression](../modules/tests/page_fit_regression.md) — Rust Module

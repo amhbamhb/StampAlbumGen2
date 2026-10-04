@@ -181,6 +181,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    match stamp_album_gen2::colnect::template::ensure_manual_import_files(std::path::Path::new("."))
+    {
+        Ok(created) => {
+            for path in created {
+                log::info!("Created manual CSV import file: {}", path.display());
+            }
+        }
+        Err(error) => {
+            log::warn!("Failed to ensure manual CSV import files: {}", error);
+            eprintln!(
+                "Warning: Failed to ensure manual CSV import files: {}",
+                error
+            );
+            write_startup_probe("manual_import.setup.error", &error.to_string());
+        }
+    }
+
     if launched_without_args && (interactive_terminal || gui_session) && !force_first_run {
         cli.review_ui = true;
         write_startup_probe(

@@ -218,6 +218,7 @@
 - [clean_name](../functions/src/colnect/parser/clean_name.md) — Rust Function
 - [clean_perforation](../functions/src/colnect/parser/clean_perforation.md) — Rust Function
 - [parse_csv](../functions/src/colnect/parser/parse_csv.md) — Rust Function
+- [ensure_manual_import_files](../functions/src/colnect/template/ensure_manual_import_files.md) — Rust Function
 - [create_album](../functions/src/commands_file_generator/album_creation/create_album.md) — Rust Function
 - [get_series_info_stub](../functions/src/commands_file_generator/album_creation/get_series_info_stub.md) — Rust Function
 - [save_stamp_data](../functions/src/commands_file_generator/album_creation/save_stamp_data.md) — Rust Function
@@ -1156,6 +1157,10 @@
 - [test_series_header_includes_date](../functions/tests/header_date/test_series_header_includes_date.md) — Rust Function
 - [ingest_switzerland_1972](../functions/tests/ingest_switzerland/ingest_switzerland_1972.md) — Rust Function
 - [test_load_example_config_roundtrip](../functions/tests/load_example_config/test_load_example_config_roundtrip.md) — Rust Function
+- [creates_missing_files_and_preserves_existing_copies](../functions/tests/manual_import_template/creates_missing_files_and_preserves_existing_copies.md) — Rust Function
+- [documented_example_is_accepted_by_the_existing_parser](../functions/tests/manual_import_template/documented_example_is_accepted_by_the_existing_parser.md) — Rust Function
+- [manual_rows_parse_and_replace_only_the_same_staged_identity](../functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity.md) — Rust Function
+- [reports_conflicting_template_path_without_overwriting_it](../functions/tests/manual_import_template/reports_conflicting_template_path_without_overwriting_it.md) — Rust Function
 - [overflowing_row_moves_to_next_page_and_emits_row_start](../functions/tests/page_break_overflow/overflowing_row_moves_to_next_page_and_emits_row_start.md) — Rust Function
 - [test_page_callback_invoked_per_series](../functions/tests/page_callback/test_page_callback_invoked_per_series.md) — Rust Function
 - [page_fit_regression_for_conservative_buffer](../functions/tests/page_fit_regression/page_fit_regression_for_conservative_buffer.md) — Rust Function

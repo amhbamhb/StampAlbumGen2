@@ -71,11 +71,11 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                         <button onclick='saveCatalogDefaultToConfig()'>Update Local Config Default</button>
                     </div>";
     let import_colnect_files =
-        " <div class='sessionSectionTitle'>Import Colnect</div>
+        " <div class='sessionSectionTitle'>Import Colnect - User Created Files</div>
         <div class='sessionRow'>
             <button id='importColnectPickBtn' onclick='pickAndCopyColnectFileReview()'>Browse &amp; Copy Colnect
                 File&#8230;</button>
-            <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect</button>
+            <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect - User Created Files</button>
             <button id='refreshColnectBtn' onclick='refreshColnectCandidatesReview()'>Refresh Colnect</button>
             <span id='reviewColnectCopyCountBadge' class='badge'>Files: 0</span>
         </div>";

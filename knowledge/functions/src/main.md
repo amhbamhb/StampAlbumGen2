@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: src/main.rs#L39-L617
+resource: src/main.rs#L39-L634
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -29,6 +29,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/align_process_working_dir_to_runtime_layout
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/colnect/template/ensure_manual_import_files
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/Config/with_defaults
@@ -161,6 +164,7 @@ relationships:
 - [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
 - [align_process_working_dir_to_runtime_layout](../../functions/src/setup/align_process_working_dir_to_runtime_layout.md)
+- [ensure_manual_import_files](../../functions/src/colnect/template/ensure_manual_import_files.md)
 - [with_defaults](../../functions/src/config/Config/with_defaults.md)
 - [check_config_staleness](../../functions/src/config/check_config_staleness.md)
 - [ensure_linux_desktop_integration](../../functions/src/setup/ensure_linux_desktop_integration.md)

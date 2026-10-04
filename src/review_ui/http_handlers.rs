@@ -1312,11 +1312,11 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                     if requested_country.is_empty() {
                         serde_json::to_string(&ColnectImportResponse {
                             ok: false,
-                            message: "Select a country first, then use Import Colnect.".to_string(),
+                            message: "Select a country first, then use Import Colnect - user defined files.".to_string(),
                             files_processed: 0,
                             stamps_imported: 0,
                             stamps_skipped: 0,
-                            errors: vec!["No country selected for bootstrap Colnect import".to_string()],
+                            errors: vec!["No country selected for bootstrap Colnect - user defined files import".to_string()],
                         })
                         .unwrap_or_else(|_| {
                             "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"

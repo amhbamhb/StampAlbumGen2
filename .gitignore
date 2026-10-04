@@ -3,6 +3,7 @@
 **/*.rs.bk
 Cargo.lock
 Albums/**
+/UserImport/
 Alblums/
 Albums/**/config.toml
 samples

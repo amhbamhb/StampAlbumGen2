@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: colnect
-resource: src/colnect/mod.rs#L1-L4
+resource: src/colnect/mod.rs#L1-L5
 generated:
   by: okf-rs/0.4.0
 relationships:
