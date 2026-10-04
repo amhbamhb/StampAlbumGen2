@@ -21,10 +21,9 @@ opt-level = 3
 # Default to minimal in-code country->flag mapping.
 # Enable `full-flag-db` to embed and use `flags/flag_codes.json` at compile time.
 default = []
-# rfd = ["dep:rfd"]
 # full-flag-db = []
 # Optional GUI folder picker (enables optional `rfd` dependency)
-# rfd = ["dep:rfd"]
+rfd = ["dep:rfd"]
 
 [dependencies]
 csv = "1.2"
@@ -60,15 +59,8 @@ tiny_http = "0.12"
 webbrowser = "1.0"
 urlencoding = "2.1"
 base64 = "0.23"
-wayland-client = "0.30"
-
-# `rfd` provides native file/folder dialogs but pulls GTK on Linux.
-# Make it optional behind the `use-rfd` feature so builds remain portable.
-
-
-# rfd = {  }
-
-rfd = { version = "0.17", default-features = true }
+# Native dialogs are opt-in so standard Linux builds need no Wayland libraries.
+rfd = { version = "0.17", optional = true, default-features = true }
 
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 

@@ -26,13 +26,13 @@ echo "� Checking current formatting status..."
 
 # Determine optional features for cargo commands (enable with USE_RFD=1)
 if [ "${USE_RFD:-0}" = "1" ]; then
-    CARGO_FEATURES=""
+    CARGO_FEATURES="--features rfd"
 else
     CARGO_FEATURES=""
 fi
 
 # First check if formatting is needed
-if cargo fmt ${CARGO_FEATURES} --all -- --check > /dev/null 2>&1; then
+if cargo fmt --all -- --check > /dev/null 2>&1; then
     echo "✅ Code is already properly formatted!"
 else
     echo "🔧 Formatting Rust code..."
@@ -43,13 +43,13 @@ else
     echo ""
     
     # Actually format the code
-    cargo fmt ${CARGO_FEATURES} --all
+    cargo fmt --all
     echo "✅ Code has been formatted"
 fi
 
 echo ""
 echo "🔍 Verifying formatting is now correct..."
-if ! cargo fmt ${CARGO_FEATURES} --all -- --check; then
+if ! cargo fmt --all -- --check; then
     echo "❌ Formatting verification failed!"
     echo "There may be syntax errors preventing proper formatting."
     exit 1
