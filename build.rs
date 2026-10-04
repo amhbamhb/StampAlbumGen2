@@ -18,9 +18,9 @@ fn main() {
         let year = chrono::Utc::now().year();
 
         res.set_language(0x0409); // English - United States
-        res.set("FileDescription", "Stamp Album Generator");
+        res.set("FileDescription", "Stamp Album Generator 2");
         res.set("CompanyName", "Laser Spider LLC");
-        res.set("ProductName", "Stamp Album Gen2");
+        res.set("ProductName", "Stamp Album Generator 2");
         res.set(
             "LegalCopyright",
             &format!("Copyright {} Laser Spider LLC", year),
