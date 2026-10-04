@@ -126,15 +126,19 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Install Wayland development package (Linux)
+      - name: Install Linux build prerequisites
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install --yes libwayland-dev
+          sudo apt-get install -y pkg-config libwayland-dev
 
-      - name: Build release
-        run: |
-          cargo build --release 
+      - name: Build portable Linux release
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo build --release --no-default-features
+
+      - name: Build Windows release with native dialogs
+        if: matrix.os == 'windows-latest'
+        run: cargo build --release --features rfd
 
       - name: Package artifact
         shell: bash
