@@ -41,8 +41,8 @@ Example CI: produce artifact + create signing request
 Payload example (JSON):
 {
   "repo": "owner/repo",
-  "artifact_url": "<https://my-storage-host/artifacts/..../stamp_album_gen2-windows.exe?X-Amz-Signature=>...",
-  "artifact_name": "stamp_album_gen2-windows.exe",
+  "artifact_url": "<https://my-storage-host/artifacts/..../stamp_album_gen2.exe?X-Amz-Signature=>...",
+  "artifact_name": "stamp_album_gen2.exe",
   "artifact_sha256": "...",
   "release_tag": "v1.2.3",
   "callback": "<https://api.github.com/repos/owner/repo/releases/123/assets>",

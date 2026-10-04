@@ -144,7 +144,7 @@ jobs:
         shell: bash
         run: |
           case "${{ matrix.os }}" in
-            "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2-windows.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
+            "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
             "ubuntu-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2-linux; else echo 'Linux artifact not found' && exit 1; fi ;;
           esac
 
@@ -153,7 +153,7 @@ jobs:
         with:
           name: stamp_artifact-${{ matrix.os }}
           path: |
-            stamp_album_gen2-windows.exe
+            stamp_album_gen2.exe
             stamp_album_gen2-linux
 
   windows-sign:
@@ -220,14 +220,14 @@ jobs:
         run: |
           try {
             if (-not (Test-Path cert.pfx)) { Write-Host 'cert.pfx missing'; exit 1 }
-            if (-not (Test-Path 'stamp_album_gen2-windows.exe')) { Write-Host 'stamp_album_gen2-windows.exe not found'; exit 1 }
+            if (-not (Test-Path 'stamp_album_gen2.exe')) { Write-Host 'stamp_album_gen2.exe not found'; exit 1 }
             $signtool = (Get-Command signtool -ErrorAction SilentlyContinue)?.Source
             if (-not $signtool) {
               $found = Get-ChildItem -Path 'C:\Program Files (x86)\Windows Kits' -Filter 'signtool.exe' -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
               if ($found) { $signtool = $found.FullName }
             }
             if (-not $signtool) { Write-Host 'signtool not found; aborting'; exit 1 }
-            & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p "$env:SIGNING_PFX_PASSWORD" "stamp_album_gen2-windows.exe"
+            & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p "$env:SIGNING_PFX_PASSWORD" "stamp_album_gen2.exe"
           } catch { Write-Host "SignTool invocation failed: $($_.Exception.Message)"; exit 1 }
 
       - name: Upload signed windows exe
@@ -235,7 +235,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: signed-windows-exe
-          path: stamp_album_gen2-windows.exe
+          path: stamp_album_gen2.exe
 
   finalize-release:
     name: Create checksums, signatures and GitHub release
@@ -270,9 +270,6 @@ jobs:
       - name: Normalize filenames
         run: |
           # Only rename when an alternate source filename exists and the normalized target is missing.
-          if [ -f stamp_album_gen2.exe ] && [ ! -f stamp_album_gen2-windows.exe ]; then
-            mv stamp_album_gen2.exe stamp_album_gen2-windows.exe
-          fi
           if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-linux ]; then
             mv stamp_album_gen2 stamp_album_gen2-linux
           fi
@@ -280,14 +277,21 @@ jobs:
 
       - name: Compute SHA256 for each artifact
         run: |
-          for f in stamp_album_gen2-*; do sha256sum "$f" > "$f.sha256"; done
+          for f in stamp_album_gen2.exe stamp_album_gen2-linux; do
+            if [ -f "$f" ]; then sha256sum "$f" > "$f.sha256"; fi
+          done
       - name: Package all binaries into a single archive
         run: |
           TAG="v${{ needs.prepare-version.outputs.new_version }}"
           ARCHIVE_NAME="stamp_album_gen2-${TAG}.tar.gz"
           # include binaries and their sha256 files
-          tar -czf "$ARCHIVE_NAME" stamp_album_gen2-* || true
-          ls -lh "$ARCHIVE_NAME" || true
+          artifacts=(stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2-linux stamp_album_gen2-linux.sha256)
+          files=()
+          for f in "${artifacts[@]}"; do
+            if [ -f "$f" ]; then files+=("$f"); fi
+          done
+          tar -czf "$ARCHIVE_NAME" "${files[@]}"
+          ls -lh "$ARCHIVE_NAME"
       - name: Fetch tags
         run: git fetch --tags --prune
 
@@ -298,8 +302,8 @@ jobs:
           draft: true
           fail_on_unmatched_files: false
           files: |
-            stamp_album_gen2-windows.exe
-            stamp_album_gen2-windows.exe.sha256
+            stamp_album_gen2.exe
+            stamp_album_gen2.exe.sha256
             stamp_album_gen2-linux
             stamp_album_gen2-linux.sha256
             stamp_album_gen2-*.tar.gz
