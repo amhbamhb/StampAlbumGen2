@@ -34,6 +34,17 @@ jobs:
             echo "No non-merge PR commit found to lint"
             exit 1
           fi
-          npx commitlint --from="${commit_sha}^" --to="$commit_sha" --config ./.commitlintrc.json
+          commit_message=$(git show -s --format=%B "$commit_sha")
+          if [ "$(git show -s --format=%s "$commit_sha")" = "SIMPLE:" ]; then
+            simple_message=$(printf '%s\n' "$commit_message" | awk '
+              /^SIMPLE:$/ { in_simple = 1; next }
+              in_simple && /^DETAILED:$/ { exit }
+              in_simple && NF { print; exit }
+            ')
+            if [ -n "$simple_message" ]; then
+              commit_message=$simple_message
+            fi
+          fi
+          printf '%s\n' "$commit_message" | npx commitlint --config ./.commitlintrc.json
         env:
           CI: true
