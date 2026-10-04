@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_database_mode
-resource: src/modes.rs#L1220-L1427
+resource: src/modes.rs#L1231-L1447
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -42,6 +42,9 @@ relationships:
   - target: functions/src/config/with_album_config_override_async
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/album_globals/generate_album_output_conn_with_pdf_override
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/progress/ProgressIndicator/finish_with_message
     resolved_by: tree-sitter
     confidence: exact
@@ -69,6 +72,7 @@ relationships:
 - [effective_default_catalog_code](../../../functions/src/config/Config/effective_default_catalog_code.md)
 - [ingest_colnect_data_with_default_catalog](../../../functions/src/colnect/ingest/ingest_colnect_data_with_default_catalog.md)
 - [with_album_config_override_async](../../../functions/src/config/with_album_config_override_async.md)
+- [generate_album_output_conn_with_pdf_override](../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 - [finish_with_message](../../../functions/src/progress/ProgressIndicator/finish_with_message.md)
 
 # Called by

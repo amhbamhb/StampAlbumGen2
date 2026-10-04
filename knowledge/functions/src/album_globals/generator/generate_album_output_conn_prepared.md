@@ -15,7 +15,7 @@ relationships:
   - target: functions/src/image_utils/calc_mm_per_pixel_embedded
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
+  - target: functions/src/file_utils/resolve_album_dir
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/layout/write_stamp_page_header
@@ -150,7 +150,7 @@ relationships:
 - [load_effective_config](../../../../functions/src/config/load_effective_config.md)
 - [with_defaults](../../../../functions/src/config/Config/with_defaults.md)
 - [calc_mm_per_pixel_embedded](../../../../functions/src/image_utils/calc_mm_per_pixel_embedded.md)
-- [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [resolve_album_dir](../../../../functions/src/file_utils/resolve_album_dir.md)
 - [write_stamp_page_header](../../../../functions/src/album_globals/generator_new/layout/write_stamp_page_header.md)
 - [compute_usable_height](../../../../functions/src/album_globals/globals/compute_usable_height.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)

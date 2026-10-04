@@ -7,13 +7,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/album_globals/generator_new/commemorative_layout/build_stamp_description
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/album_globals/generator_new/generate_album_output_conn
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/maybe_generate_album_pdf_with_settings
@@ -150,9 +144,7 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn_prepared](../../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [build_stamp_description](../../../../../functions/src/album_globals/generator_new/commemorative_layout/build_stamp_description.md)
-- [generate_album_output_conn](../../../../../functions/src/album_globals/generator_new/generate_album_output_conn.md)
 - [maybe_generate_album_pdf_with_settings](../../../../../functions/src/album_globals/maybe_generate_album_pdf_with_settings.md)
 - [generated_artifacts_from_path](../../../../../functions/src/album_globals/generated_artifacts_from_path.md)
 - [main](../../../../../functions/src/bin/backfill_image_dims/main.md)

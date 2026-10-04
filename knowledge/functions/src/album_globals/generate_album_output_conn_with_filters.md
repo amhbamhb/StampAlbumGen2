@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_album_output_conn_with_filters
-resource: src/album_globals/mod.rs#L335-L365
+resource: src/album_globals/mod.rs#L354-L384
 generated:
   by: okf-rs/0.4.0
 relationships:

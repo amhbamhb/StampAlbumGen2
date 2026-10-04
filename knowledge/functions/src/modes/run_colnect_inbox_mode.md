@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_colnect_inbox_mode
-resource: src/modes.rs#L305-L556
+resource: src/modes.rs#L305-L567
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -58,6 +58,9 @@ relationships:
   - target: functions/src/config/with_album_config_override_async
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/album_globals/generate_album_output_conn_with_pdf_override
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/progress/ProgressIndicator/finish_with_message
     resolved_by: tree-sitter
     confidence: exact
@@ -90,6 +93,7 @@ relationships:
 - [ingest_colnect_data_with_mode](../../../functions/src/colnect/ingest/ingest_colnect_data_with_mode.md)
 - [record_import_history](../../../functions/src/modes/record_import_history.md)
 - [with_album_config_override_async](../../../functions/src/config/with_album_config_override_async.md)
+- [generate_album_output_conn_with_pdf_override](../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 - [finish_with_message](../../../functions/src/progress/ProgressIndicator/finish_with_message.md)
 
 # Called by

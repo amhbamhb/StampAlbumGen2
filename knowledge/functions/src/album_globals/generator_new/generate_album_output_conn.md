@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
+  - target: functions/src/file_utils/resolve_album_dir
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -17,4 +17,4 @@ relationships:
 
 # Calls
 
-- [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [resolve_album_dir](../../../../functions/src/file_utils/resolve_album_dir.md)

@@ -3,6 +3,32 @@ use log::info;
 use std::io::Write;
 use std::path::Path;
 
+fn cover_image_reference(path: &Path) -> Option<String> {
+    if !path.is_file() {
+        log::warn!("Cover image omitted because it is not a file: {}", path.display());
+        return None;
+    }
+    path.file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| format!("images/{}", name))
+}
+
+#[cfg(test)]
+mod cover_image_tests {
+    #[test]
+    fn cover_references_require_existing_files_and_keep_relative_paths() {
+        let dir = tempfile::tempdir().expect("cover test directory");
+        let path = dir.path().join("coat_of_arms.png");
+        assert_eq!(super::cover_image_reference(&path), None);
+        assert_eq!(super::cover_image_reference(dir.path()), None);
+        std::fs::write(&path, b"image fixture").expect("cover fixture");
+        assert_eq!(
+            super::cover_image_reference(&path),
+            Some("images/coat_of_arms.png".to_string()),
+        );
+    }
+}
+
 /// Writes global AlbumEasy header information to the output stream
 pub async fn write_globals<W: Write>(
     writer: &mut W,
@@ -445,27 +471,13 @@ pub async fn write_globals<W: Write>(
         let mut coat_path_opt: Option<String> = None;
         match crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320").await {
             Ok(p) => {
-                if let Some(fname) = std::path::Path::new(&p)
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                {
-                    flag_path_opt = Some(format!("images/{}", fname));
-                } else {
-                    flag_path_opt = Some(p);
-                }
+                flag_path_opt = cover_image_reference(Path::new(&p));
             }
             Err(error) => log::warn!("Cover flag unavailable for {album_name:?}: {error}"),
         }
         match crate::flagdb::copy_coa_for_album(album_name, &album_images_dir).await {
             Ok(p) => {
-                if let Some(fname) = std::path::Path::new(&p)
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                {
-                    coat_path_opt = Some(format!("images/{}", fname));
-                } else {
-                    coat_path_opt = Some(p);
-                }
+                coat_path_opt = cover_image_reference(Path::new(&p));
             }
             Err(error) => log::warn!("Cover coat of arms unavailable for {album_name:?}: {error}"),
         }
@@ -476,18 +488,10 @@ pub async fn write_globals<W: Write>(
         if coat_path_opt.is_none() {
             let png_candidate = Path::new(&album_images_dir).join("coat_of_arms.png");
             let svg_candidate = Path::new(&album_images_dir).join("coat_of_arms.svg");
-            if png_candidate.exists() {
-                if let Some(fname) = png_candidate.file_name().and_then(|s| s.to_str()) {
-                    coat_path_opt = Some(format!("images/{}", fname));
-                } else {
-                    coat_path_opt = Some(png_candidate.to_string_lossy().to_string());
-                }
-            } else if svg_candidate.exists() {
-                if let Some(fname) = svg_candidate.file_name().and_then(|s| s.to_str()) {
-                    coat_path_opt = Some(format!("images/{}", fname));
-                } else {
-                    coat_path_opt = Some(svg_candidate.to_string_lossy().to_string());
-                }
+            if png_candidate.is_file() {
+                coat_path_opt = cover_image_reference(&png_candidate);
+            } else if svg_candidate.is_file() {
+                coat_path_opt = cover_image_reference(&svg_candidate);
             }
         }
 

@@ -6,9 +6,6 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/maybe_generate_album_pdf_with_settings
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_text
     resolved_by: tree-sitter
     confidence: exact
@@ -71,7 +68,6 @@ relationships:
 
 # Called by
 
-- [maybe_generate_album_pdf_with_settings](../../../../../../functions/src/album_globals/maybe_generate_album_pdf_with_settings.md)
 - [fetch_text](../../../../../../functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_text.md)
 - [fetch_bytes](../../../../../../functions/src/colnect/image_fetcher/ReqwestFetcher/fetcher/fetch_bytes.md)
 - [fetch_text](../../../../../../functions/src/colnect/image_fetcher/fetch_text.md)

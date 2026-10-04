@@ -400,6 +400,17 @@ in an existing country review session.
 
 ### Diagnostics
 
+Album text and cover images use the same configured albums root. Missing
+optional cover assets are omitted and logged rather than referenced in the
+generated text. Regenerate existing text after correcting the albums-root
+setting; already-generated files are not automatically rewritten.
+
+AlbumEasy stdout/stderr is captured and logged. Reported rendering errors
+(including `Error in line ...`) are returned to the Review UI even if AlbumEasy
+exits successfully. Database and scraping CLI generation report PDF failures and exit
+with an error instead of claiming the entire operation succeeded. Check the
+reported album line and image path; stamp-image failures are not silently removed.
+
 Automatic PDF generation waits up to 300 seconds for a fresh PDF after the
 AlbumEasy launcher exits. For large albums or slow external drives, increase
 the positive `albumeasy_pdf_timeout_secs` value in the global configuration

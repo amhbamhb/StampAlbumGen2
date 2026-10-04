@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_album_output_conn_with_prepared_pdf
-resource: src/album_globals/mod.rs#L367-L385
+resource: src/album_globals/mod.rs#L386-L404
 generated:
   by: okf-rs/0.4.0
 relationships:

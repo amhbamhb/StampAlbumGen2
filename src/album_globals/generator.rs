@@ -1038,7 +1038,7 @@ where
     let fit_box = config.sizing_mode.as_deref().unwrap_or("real_world") != "real_world";
 
     // Canonical output filename: Albums/{Album-Name}/{Album-Name}.txt
-    let album_dir = std::path::PathBuf::from(format!("Albums/{}", album_name.replace(' ', "-")));
+    let album_dir = crate::file_utils::resolve_album_dir(album_name);
     if let Err(e) = std::fs::create_dir_all(&album_dir) {
         warn!(
             "Failed to create album directory {}: {}",

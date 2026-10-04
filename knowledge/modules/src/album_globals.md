@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: album_globals
-resource: src/album_globals/mod.rs#L1-L511
+resource: src/album_globals/mod.rs#L1-L597
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -61,6 +61,8 @@ relationships:
 - [wait_for_generated_pdf_with_timing](../../functions/src/album_globals/wait_for_generated_pdf_with_timing.md)
 - [wait_for_generated_pdf](../../functions/src/album_globals/wait_for_generated_pdf.md)
 - [GeneratedAlbumArtifacts](../../classes/src/album_globals/GeneratedAlbumArtifacts.md)
+- [albumeasy_diagnostics](../../functions/src/album_globals/albumeasy_diagnostics.md)
+- [albumeasy_reported_error](../../functions/src/album_globals/albumeasy_reported_error.md)
 - [maybe_generate_album_pdf_with_settings](../../functions/src/album_globals/maybe_generate_album_pdf_with_settings.md)
 - [generated_artifacts_from_path](../../functions/src/album_globals/generated_artifacts_from_path.md)
 - [generate_album_output_conn](../../functions/src/album_globals/generate_album_output_conn.md)
@@ -68,6 +70,9 @@ relationships:
 - [generate_album_output_conn_with_filters](../../functions/src/album_globals/generate_album_output_conn_with_filters.md)
 - [generate_album_output_conn_with_prepared_pdf](../../functions/src/album_globals/generate_album_output_conn_with_prepared_pdf.md)
 - [generate_album_output](../../functions/src/album_globals/generate_album_output.md)
+- [albumeasy_errors_are_detected_in_both_output_streams](../../functions/src/album_globals/albumeasy_errors_are_detected_in_both_output_streams.md)
+- [albumeasy_success_exit_with_render_error_fails_without_pdf_timeout](../../functions/src/album_globals/albumeasy_success_exit_with_render_error_fails_without_pdf_timeout.md)
+- [albumeasy_captured_output_preserves_successful_pdf_generation](../../functions/src/album_globals/albumeasy_captured_output_preserves_successful_pdf_generation.md)
 - [wait_for_generated_pdf_rejects_missing_empty_and_stale_files](../../functions/src/album_globals/wait_for_generated_pdf_rejects_missing_empty_and_stale_files.md)
 - [albumeasy_pdf_timeout_failure_reports_actual_wait](../../functions/src/album_globals/albumeasy_pdf_timeout_failure_reports_actual_wait.md)
 - [wait_for_generated_pdf_detects_delayed_new_write](../../functions/src/album_globals/wait_for_generated_pdf_detects_delayed_new_write.md)

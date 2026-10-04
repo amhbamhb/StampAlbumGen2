@@ -131,6 +131,7 @@
 - [ValidationError](../classes/src/validation/ValidationError.md) — Rust Enum
 - [ContentSource](../classes/src/wikipedia/models/ContentSource.md) — Rust Enum
 - [RestoreWorkingDirectory](../classes/tests/album_colnect_pdf_filters/RestoreWorkingDirectory.md) — Rust Struct
+- [RestoreRuntime](../classes/tests/album_cover_output_root/RestoreRuntime.md) — Rust Struct
 - [FixtureStamp](../classes/tests/album_year_filter/FixtureStamp.md) — Rust Struct
 - [RestoreCwd](../classes/tests/colnect_layout_spain/RestoreCwd.md) — Rust Struct
 - [TemplateKey](../classes/tests/config_template_key_usage_audit/TemplateKey.md) — Rust Struct

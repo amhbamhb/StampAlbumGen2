@@ -115,6 +115,7 @@ generated:
 - [parsers](../modules/src/wikipedia/parsers.md)
 - [utils](../modules/src/wikipedia/utils.md)
 - [album_colnect_pdf_filters](../modules/tests/album_colnect_pdf_filters.md)
+- [album_cover_output_root](../modules/tests/album_cover_output_root.md)
 - [album_globals](../modules/tests/album_globals.md)
 - [album_stamp_img_integration_test](../modules/tests/album_stamp_img_integration_test.md)
 - [album_stamp_img_new_setting_usage](../modules/tests/album_stamp_img_new_setting_usage.md)

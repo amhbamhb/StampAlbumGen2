@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: globals
-resource: src/album_utils/globals.rs#L1-L1371
+resource: src/album_utils/globals.rs#L1-L1375
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -35,6 +35,8 @@ relationships:
 
 # Contains
 
+- [cover_image_reference](../../../functions/src/album_utils/globals/cover_image_reference.md)
+- [cover_references_require_existing_files_and_keep_relative_paths](../../../functions/src/album_utils/globals/cover_references_require_existing_files_and_keep_relative_paths.md)
 - [write_globals](../../../functions/src/album_utils/globals/write_globals.md)
 - [add_wikipedia_section](../../../functions/src/album_utils/globals/add_wikipedia_section.md)
 - [ContentSection](../../../classes/src/album_utils/globals/ContentSection.md)
