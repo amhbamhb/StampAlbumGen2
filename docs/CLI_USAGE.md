@@ -65,7 +65,3 @@ Options:
           Print help
   -V, --version
           Print version
-
-Note: the `--end-year` value printed in this copied help text reflects the
-current year when it was generated. The executable resolves the default from
-the current year at runtime.
