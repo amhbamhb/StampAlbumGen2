@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: copy_coa_for_album
-resource: src/flagdb.rs#L672-L721
+resource: src/flagdb.rs#L549-L598
 generated:
   by: okf-rs/0.4.0
 relationships:

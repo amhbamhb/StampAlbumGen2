@@ -35,6 +35,7 @@
 - [StampInsert](../classes/src/db_utils/operations/StampInsert.md) — Rust Struct
 - [SeriesStub](../classes/src/db_utils/structs/SeriesStub.md) — Rust Struct
 - [StampStub](../classes/src/db_utils/structs/StampStub.md) — Rust Struct
+- [FakeFetcher](../classes/src/flagdb/assets/FakeFetcher.md) — Rust Struct
 - [PlaceholderImageOptions](../classes/src/placeholder_image/PlaceholderImageOptions.md) — Rust Struct
 - [PlaceholderOptions](../classes/src/placeholder_image/PlaceholderOptions.md) — Rust Struct
 - [ProgressIndicator](../classes/src/progress/ProgressIndicator.md) — Rust Struct
@@ -136,5 +137,7 @@
 - [FakeFetcher](../classes/tests/e2e_collect_stampworld_db/FakeFetcher.md) — Rust Struct
 - [FakeFetcher](../classes/tests/e2e_fake_fetcher_wikipedia/FakeFetcher.md) — Rust Struct
 - [FakeFetcher](../classes/tests/fetcher_injection/FakeFetcher.md) — Rust Struct
+- [FakeFetcher](../classes/tests/flag_pipeline/FakeFetcher.md) — Rust Struct
+- [RestoreEnvironment](../classes/tests/flag_pipeline/RestoreEnvironment.md) — Rust Struct
 - [CwdGuard](../classes/tests/placeholder_helper_test/CwdGuard.md) — Rust Struct
 - [CwdRestore](../classes/tests/series_issue_date_order_tests/CwdRestore.md) — Rust Struct

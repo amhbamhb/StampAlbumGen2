@@ -8,71 +8,40 @@ use image::GenericImageView;
 use rusqlite::Connection;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Small local flag DB: map lowercase country name -> ISO alpha-2 code
-/// We'll initialize it with a compact set and allow loading from a JSON file
-/// under `flags/flag_codes.json` to allow updates.
-///
+mod assets;
+mod countries;
+
+/// Bundled ISO country names/codes plus the application's established aliases.
 pub async fn default_flag_map() -> HashMap<String, String> {
-    // Minimal initial set; we'll try to be forgiving with lookups
-    let mut m = HashMap::new();
-    m.insert("united states".to_string(), "us".to_string());
-    m.insert("usa".to_string(), "us".to_string());
-    m.insert("canada".to_string(), "ca".to_string());
-    m.insert("great britain".to_string(), "gb".to_string());
-    m.insert("united kingdom".to_string(), "gb".to_string());
-    m.insert("israel".to_string(), "il".to_string());
-    m.insert("australia".to_string(), "au".to_string());
-    m.insert("germany".to_string(), "de".to_string());
-    m.insert("france".to_string(), "fr".to_string());
-    m
+    static MAP: once_cell::sync::Lazy<Result<HashMap<String, String>, String>> =
+        once_cell::sync::Lazy::new(countries::bundled_map);
+    match &*MAP {
+        Ok(map) => map.clone(),
+        Err(error) => {
+            log::error!("Cannot load bundled ISO country codes: {error}");
+            HashMap::new()
+        }
+    }
 }
 
-/// Attempt to load an override JSON file at flags/flag_codes.json. The file should be a JSON map
-/// of "country name" -> "alpha2 code". If not present, fall back to default_flag_map.
+/// Merge the first valid local name-to-code override file over bundled ISO data.
 pub async fn load_flag_map_from_fs() -> HashMap<String, String> {
-    // Try a few candidate locations for flags/flag_codes.json to be tolerant
-    // when the binary is run from a different working directory. Prefer the
-    // current working directory's `flags/` first, then the executable's
-    // parent directory (useful when running from a dist directory that sits
-    // beside the repo). If none found, fall back to the built-in map.
-    let mut candidates: Vec<PathBuf> = Vec::new();
-    // Environment override (highest priority)
-    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
-        candidates.push(PathBuf::from(p).join("flag_codes.json"));
-    }
-    // Current working directory
-    candidates.push(PathBuf::from("flags/flag_codes.json"));
-    // Executable parent directory
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            candidates.push(parent.join("flags/flag_codes.json"));
+    let mut map = default_flag_map().await;
+    for dir in assets::flag_directories() {
+        let path = dir.join("flag_codes.json");
+        let result = match fs::read_to_string(&path) {
+            Ok(contents) => serde_json::from_str::<HashMap<String, String>>(&contents)
+                .map_err(|error| error.to_string())
+                .and_then(|overrides| countries::merge_overrides(&mut map, overrides)),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => Err(error.to_string()),
+        };
+        match result {
+            Ok(()) => return map,
+            Err(error) => log::warn!("Cannot load flag overrides {}: {error}", path.display()),
         }
     }
-    // Parent of current working dir (common when running from a dist dir)
-    if let Ok(cwd) = std::env::current_dir() {
-        if let Some(parent) = cwd.parent() {
-            candidates.push(parent.join("flags/flag_codes.json"));
-        }
-    }
-    // At build time, embed the manifest dir so distributed binaries can still
-    // look up the repo's flags/ directory if the source tree is present.
-    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags/flag_codes.json"));
-
-    for p in candidates.iter() {
-        if p.exists() {
-            if let Ok(contents) = fs::read_to_string(p) {
-                if let Ok(j) = serde_json::from_str::<HashMap<String, String>>(&contents) {
-                    return j
-                        .into_iter()
-                        .map(|(k, v)| (k.to_lowercase(), v.to_lowercase()))
-                        .collect();
-                }
-            }
-        }
-    }
-
-    // Default fallback map
-    default_flag_map().await
+    map
 }
 
 // #[cfg(feature = "full-flag-db")]
@@ -125,13 +94,8 @@ pub async fn load_flag_map_from_fs() -> HashMap<String, String> {
 /// Given a country name, attempt to return an alpha-2 code (lowercase) using simple normalization.
 pub async fn country_to_code(country: &str) -> Option<String> {
     let map = load_flag_map_from_fs().await;
-    let key = country.trim().to_lowercase();
+    let key = countries::normalize(country);
     if let Some(code) = map.get(&key) {
-        return Some(code.clone());
-    }
-    // Try simplified remappings (strip punctuation, common words)
-    let key2 = key.replace('\'', "").replace('-', " ").replace(',', "");
-    if let Some(code) = map.get(&key2) {
         return Some(code.clone());
     }
 
@@ -156,11 +120,7 @@ pub async fn country_to_code(country: &str) -> Option<String> {
     region_map.insert("california".to_string(), "us".to_string());
     region_map.insert("new york".to_string(), "us".to_string());
 
-    // Try lookup in region_map using key and key2
     if let Some(code) = region_map.get(&key) {
-        return Some(code.clone());
-    }
-    if let Some(code) = region_map.get(&key2) {
         return Some(code.clone());
     }
 
@@ -171,11 +131,7 @@ pub async fn country_to_code(country: &str) -> Option<String> {
 /// Replaces common separators with spaces and lowercases so callers can
 /// accept values like "United-States" or "United_States".
 pub async fn normalize_country_input(country: &str) -> String {
-    country
-        .trim()
-        .to_lowercase()
-        .replace(['-', '_'], " ")
-        .replace(',', "")
+    countries::normalize(country)
 }
 
 /// Ensure flag image exists for the given alpha2 code in flags/, download from FlagCDN if missing.
@@ -196,119 +152,40 @@ pub async fn ensure_flag_image_with_fetcher(
     size: &str,
     fetcher: &dyn Fetcher,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    let alpha = alpha2.to_lowercase();
-    let filename = format!("{}-{}.png", alpha, size);
-
-    // Candidate directories to look for an existing flags image. Check the
-    // current working directory first, then the executable parent, then the
-    // parent of the cwd (useful in some layouts).
-    let mut candidates: Vec<PathBuf> = Vec::new();
-    // Environment override
-    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
-        candidates.push(PathBuf::from(p));
-    }
-    // Current working directory 'flags'
-    candidates.push(PathBuf::from("flags"));
-    // Executable parent 'flags'
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            candidates.push(parent.join("flags"));
-        }
-    }
-    // Parent of cwd 'flags'
-    if let Ok(cwd) = std::env::current_dir() {
-        if let Some(parent) = cwd.parent() {
-            candidates.push(parent.join("flags"));
-        }
-    }
-    // Build-time manifest 'flags' (source tree)
-    candidates.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"));
-
-    // If we already have the image in any candidate dir, return its path.
-    for dir in candidates.iter() {
-        let filepath = dir.join(&filename);
-        if filepath.exists() {
-            // If a rasterized PNG already exists next to the SVG, prefer it.
-            let png_candidate = filepath.with_extension("png");
-            if png_candidate.exists() {
-                return Ok(png_candidate.to_string_lossy().to_string());
-            }
-
-            // Attempt to rasterize the existing SVG in-place; if successful,
-            // return the PNG path so callers (renderer) get a supported format.
-            if try_rasterize_svg_to_png(&filepath, &png_candidate).unwrap_or(false) {
-                return Ok(png_candidate.to_string_lossy().to_string());
-            }
-
-            return Ok(filepath.to_string_lossy().to_string());
-        }
-    }
-
-    // Not found locally: pick a writeable target directory to store downloaded flags.
-    // Preference order: STAMP_FLAGS_DIR env, cwd 'flags', exe parent 'flags', build manifest 'flags'.
-    let mut target_dir = PathBuf::from("flags");
-    if let Ok(p) = std::env::var("STAMP_FLAGS_DIR") {
-        let cand = PathBuf::from(p);
-        if fs::create_dir_all(&cand).is_ok() {
-            target_dir = cand;
-        }
-    }
-    if !target_dir.exists() && fs::create_dir_all(&target_dir).is_err() {
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(parent) = exe.parent() {
-                let alt = parent.join("flags");
-                if fs::create_dir_all(&alt).is_ok() {
-                    target_dir = alt;
-                }
-            }
-        }
-    }
-
-    let filepath = target_dir.join(&filename);
-
-    // If not found locally, try neXperts countries API first (provides flags/coa endpoints)
-    // Respect config override: if user set flag_cover_overwrite_flag=true then allow re-download
     let cfg = crate::config::load_effective_config("config.toml");
-    let overwrite_flag = cfg.flag_cover_overwrite_flag.unwrap_or(false);
-    if overwrite_flag || !filepath.exists() {
-        // try neXperts endpoints for flag (prefer PNG then SVG)
-        if let Ok(p) = try_fetch_nexperts_resource(fetcher, alpha2, "flags", size).await {
-            return Ok(p);
-        }
-    }
-
-    // Build URL: https://flagcdn.com/[size]/[code].png where size is like w40 (width px)
-    let url = format!("https://flagcdn.com/{}/{}.png", size, alpha);
-
-    // Use the injected fetcher to retrieve the bytes. The Fetcher implementation
-    // is responsible for user-agent, timeouts and retry policy.
-    let (_status, _headers, content_bytes) = fetcher.fetch_bytes(&url).await?;
-    let mut out = fs::File::create(&filepath)?;
-    // Write the downloaded bytes directly to the file
-    out.write_all(&content_bytes)?;
-    Ok(filepath.to_string_lossy().to_string())
+    assets::ensure_flag(
+        alpha2,
+        size,
+        fetcher,
+        &assets::flag_directories(),
+        cfg.flag_cover_overwrite_flag.unwrap_or(false),
+    )
+    .await
 }
 
-// NOTE: The function copy_flag_for_album is now defined as async and uses .await.
-// Ensure all helper functions (normalize_country_input, country_to_code, ensure_flag_image)
-// are also correctly implemented or accessible in this scope.
+/// Copy a validated flag to the album, retaining a valid local flag on lookup/download failure.
 pub async fn copy_flag_for_album(
     country: &str,
     album_images_dir: &str,
     size: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
-    // Normalize country input to be forgiving of separators & case
-    let norm = normalize_country_input(country).await;
-    match country_to_code(&norm).await {
-        Some(code) => {
-            // Await the asynchronous result from ensure_flag_image
-            let downloaded = ensure_flag_image(&code, size).await?;
-            let dest = Path::new(album_images_dir).join("flag_placeholder.png");
-            fs::create_dir_all(album_images_dir)?;
-            fs::copy(&downloaded, &dest)?;
-            Ok(dest.to_string_lossy().to_string())
+    let result = match country_to_code(country).await {
+        Some(code) => ensure_flag_image(&code, size).await.and_then(|downloaded| {
+            assets::copy_to_album(Path::new(&downloaded), Path::new(album_images_dir))
+        }),
+        None => Err(format!("No country code match for {country:?}").into()),
+    };
+    match result {
+        Ok(path) => Ok(path),
+        Err(error) => {
+            log::warn!("Flag lookup/copy failed for {country:?}: {error}");
+            if let Some(local) = assets::local_album_flag(Path::new(album_images_dir)) {
+                log::warn!("Using existing album-local flag {}", local.display());
+                Ok(local.to_string_lossy().to_string())
+            } else {
+                Err(error)
+            }
         }
-        None => Err("No country code match".into()),
     }
 }
 
@@ -965,42 +842,6 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
 }
 
 // --- neXperts helpers -----------------------------------------------------
-
-async fn try_fetch_nexperts_resource(
-    fetcher: &dyn Fetcher,
-    alpha: &str,
-    resource: &str,
-    size: &str,
-) -> Result<String, Box<dyn std::error::Error>> {
-    // resource: "flags" or "coa"
-    // Build direct resource URL: https://countries.nexperts.nl/{resource}/{alpha}.png (or .svg)
-    let png_url = format!("https://countries.nexperts.nl/{}/{}.png", resource, alpha);
-    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&png_url).await {
-        let target_dir = Path::new("flags");
-        let _ = std::fs::create_dir_all(target_dir);
-        let out_path = target_dir.join(format!("{}-{}.png", alpha, size));
-        let mut f = std::fs::File::create(&out_path)?;
-        f.write_all(&bytes)?;
-        return Ok(out_path.to_string_lossy().to_string());
-    }
-    // Try svg
-    let svg_url = format!("https://countries.nexperts.nl/{}/{}.svg", resource, alpha);
-    if let Ok((_s, _h, bytes)) = fetcher.fetch_bytes(&svg_url).await {
-        let target_dir = Path::new("flags");
-        let _ = std::fs::create_dir_all(target_dir);
-        let out_path = target_dir.join(format!("{}.svg", alpha));
-        let mut f = std::fs::File::create(&out_path)?;
-        f.write_all(&bytes)?;
-        // try rasterize
-        let png_out = out_path.with_extension("png");
-        if try_rasterize_svg_to_png(&out_path, &png_out)? {
-            return Ok(png_out.to_string_lossy().to_string());
-        }
-        return Ok(out_path.to_string_lossy().to_string());
-    }
-
-    Err("nexperts resource not available".into())
-}
 
 fn cache_country_info(alpha: &str, html: &str) -> Result<(), Box<dyn std::error::Error>> {
     let db_dir = Path::new("flags");

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_country_name_from_nexperts_html
-resource: src/flagdb.rs#L1064-L1082
+resource: src/flagdb.rs#L905-L923
 visibility: private
 generated:
   by: okf-rs/0.4.0

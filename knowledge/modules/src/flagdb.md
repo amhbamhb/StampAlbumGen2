@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: flagdb
-resource: src/flagdb.rs#L1-L1149
+resource: src/flagdb.rs#L1-L990
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -59,7 +59,6 @@ relationships:
 - [extract_from_obj](../../functions/src/flagdb/extract_from_obj.md)
 - [copy_coa_for_album](../../functions/src/flagdb/copy_coa_for_album.md)
 - [try_rasterize_svg_to_png](../../functions/src/flagdb/try_rasterize_svg_to_png.md)
-- [try_fetch_nexperts_resource](../../functions/src/flagdb/try_fetch_nexperts_resource.md)
 - [cache_country_info](../../functions/src/flagdb/cache_country_info.md)
 - [extract_flag_from_nexperts_html](../../functions/src/flagdb/extract_flag_from_nexperts_html.md)
 - [extract_country_name_from_nexperts_html](../../functions/src/flagdb/extract_country_name_from_nexperts_html.md)

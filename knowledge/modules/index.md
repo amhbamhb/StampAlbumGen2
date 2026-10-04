@@ -58,6 +58,8 @@
 - [updates](../modules/src/db_utils/updates.md) — Rust Module
 - [file_utils](../modules/src/file_utils.md) — Rust Module
 - [flagdb](../modules/src/flagdb.md) — Rust Module
+- [assets](../modules/src/flagdb/assets.md) — Rust Module
+- [countries](../modules/src/flagdb/countries.md) — Rust Module
 - [image_downloader](../modules/src/image_downloader.md) — Rust Module
 - [image_utils](../modules/src/image_utils.md) — Rust Module
 - [modes](../modules/src/modes.md) — Rust Module
@@ -135,6 +137,7 @@
 - [fetch_and_filter_stamps](../modules/tests/fetch_and_filter_stamps.md) — Rust Module
 - [fetcher_injection](../modules/tests/fetcher_injection.md) — Rust Module
 - [filename_year_inference_fixed](../modules/tests/filename_year_inference_fixed.md) — Rust Module
+- [flag_pipeline](../modules/tests/flag_pipeline.md) — Rust Module
 - [flagdb](../modules/tests/flagdb.md) — Rust Module
 - [for_each_series](../modules/tests/for_each_series.md) — Rust Module
 - [generate_conn_in_memory](../modules/tests/generate_conn_in_memory.md) — Rust Module

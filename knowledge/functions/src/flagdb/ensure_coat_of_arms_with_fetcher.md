@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_coat_of_arms_with_fetcher
-resource: src/flagdb.rs#L322-L669
+resource: src/flagdb.rs#L199-L546
 generated:
   by: okf-rs/0.4.0
 relationships:

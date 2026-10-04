@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_coa_from_nexperts_html
-resource: src/flagdb.rs#L1084-L1112
+resource: src/flagdb.rs#L925-L953
 visibility: private
 generated:
   by: okf-rs/0.4.0

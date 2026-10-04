@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_coat_of_arms
-resource: src/flagdb.rs#L317-L320
+resource: src/flagdb.rs#L194-L197
 generated:
   by: okf-rs/0.4.0
 relationships:

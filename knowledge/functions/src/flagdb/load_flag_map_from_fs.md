@@ -1,15 +1,18 @@
 ---
 type: Rust Function
 title: load_flag_map_from_fs
-resource: src/flagdb.rs#L32-L76
+resource: src/flagdb.rs#L28-L45
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
+  - target: functions/src/flagdb/default_flag_map
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/flagdb/default_flag_map
+  - target: functions/src/flagdb/assets/flag_directories
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/countries/merge_overrides
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -27,8 +30,9 @@ relationships:
 
 # Calls
 
-- [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [default_flag_map](../../../functions/src/flagdb/default_flag_map.md)
+- [flag_directories](../../../functions/src/flagdb/assets/flag_directories.md)
+- [merge_overrides](../../../functions/src/flagdb/countries/merge_overrides.md)
 
 # Called by
 
