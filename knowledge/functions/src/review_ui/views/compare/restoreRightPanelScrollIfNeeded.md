@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: restoreRightPanelScrollIfNeeded
-resource: src/review_ui/views/compare.js#L2044-L2049
+resource: src/review_ui/views/compare.js#L2045-L2050
 generated:
   by: okf-rs/0.4.0
 relationships:

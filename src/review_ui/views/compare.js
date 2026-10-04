@@ -1458,9 +1458,7 @@ async function runReviewStampWorldPull() {
             updateReviewStampWorldStatus(backendMessage || 'Failed to start', false);
             logRuntimeCompare('run endpoint returned failure: ' + backendMessage);
             emitReviewClientLog('run response payload not ok: ' + backendMessage);
-            if (backendMessage.includes('credentials') || backendMessage.includes('Site Accounts') || backendMessage.includes('register')) {
-                openSiteAccountsDialog();
-            }
+            showStampWorldStartError(backendMessage);
             return;
         }
 
@@ -1527,9 +1525,12 @@ async function loadAccountAuthStatus() {
     return null;
 }
 
-function openSiteAccountsDialog() {
+function openSiteAccountsDialog(reason = '') {
     const dialog = document.getElementById('siteAccountsDialog');
     if (!dialog) return;
+    const reasonEl = document.getElementById('siteAccountsReason');
+    reasonEl.textContent = reason ? reason + '\nSave your credentials, then run the StampWorld pull again.' : '';
+    reasonEl.hidden = !reason;
     const statusEl = document.getElementById('siteAccountsStatus');
     if (statusEl) {
         statusEl.innerText = '';

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: ensureAlbumeasyPathDialog
-resource: src/review_ui/views/bootstrap.js#L782-L808
+resource: src/review_ui/views/bootstrap.js#L783-L809
 generated:
   by: okf-rs/0.4.0
 relationships:

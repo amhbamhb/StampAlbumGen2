@@ -109,3 +109,18 @@ fn both_pull_screens_embed_saved_country_url_controls() {
         assert!(!html.contains("{country_url_controls}"));
     }
 }
+
+#[test]
+fn both_pull_screens_explain_start_failures_and_offer_site_accounts() {
+    for html in [render_bootstrap_html(None), render_html(&minimal_payload())] {
+        assert!(html.contains("function showStampWorldStartError(message)"));
+        assert!(html.contains("StampWorld pull could not start"));
+        assert!(html.contains("Enter Credentials"));
+        assert!(html.contains("'Not Now'"));
+        assert!(html.contains("openSiteAccountsDialog(accountReason)"));
+        assert!(html.contains("id='siteAccountsReason' hidden"));
+        assert!(html.contains("Save your credentials, then run the StampWorld pull again."));
+    }
+    assert!(render_bootstrap_html(None).contains("showStampWorldStartError(j.message)"));
+    assert!(render_html(&minimal_payload()).contains("showStampWorldStartError(backendMessage)"));
+}

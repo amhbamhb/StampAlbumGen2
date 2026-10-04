@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: selectedCatalogTypeForCurrent
-resource: src/review_ui/views/compare.js#L1922-L1936
+resource: src/review_ui/views/compare.js#L1923-L1937
 generated:
   by: okf-rs/0.4.0
 relationships:

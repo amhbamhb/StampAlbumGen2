@@ -345,6 +345,9 @@ relationships:
   - target: functions/tests/review_pdf_filters_ui/fixture
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/review_ui_stampworld_credentials/test/harness
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache
     resolved_by: tree-sitter
     confidence: exact
@@ -469,4 +472,5 @@ relationships:
 - [manual_rows_parse_and_replace_only_the_same_staged_identity](../../../../../functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity.md)
 - [test_ensure_placeholder_for_stamp_and_update_db](../../../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.md)
 - [fixture](../../../../../functions/tests/review_pdf_filters_ui/fixture.md)
+- [harness](../../../../../functions/tests/review_ui_stampworld_credentials/test/harness.md)
 - [wikipedia_ingest_inserts_up_to_max_entries_from_cache](../../../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.md)

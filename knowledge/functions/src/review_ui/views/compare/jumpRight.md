@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: jumpRight
-resource: src/review_ui/views/compare.js#L1805-L1814
+resource: src/review_ui/views/compare.js#L1806-L1815
 generated:
   by: okf-rs/0.4.0
 relationships:

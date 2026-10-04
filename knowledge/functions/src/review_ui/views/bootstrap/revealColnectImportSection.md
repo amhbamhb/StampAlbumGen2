@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: revealColnectImportSection
-resource: src/review_ui/views/bootstrap.js#L1063-L1075
+resource: src/review_ui/views/bootstrap.js#L1064-L1076
 generated:
   by: okf-rs/0.4.0
 relationships:

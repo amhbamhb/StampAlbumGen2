@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: populateRightCatalogSearchSuggestions
-resource: src/review_ui/views/compare.js#L1950-L1957
+resource: src/review_ui/views/compare.js#L1951-L1958
 generated:
   by: okf-rs/0.4.0
 relationships:

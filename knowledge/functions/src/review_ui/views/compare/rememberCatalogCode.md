@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: rememberCatalogCode
-resource: src/review_ui/views/compare.js#L2352-L2366
+resource: src/review_ui/views/compare.js#L2353-L2367
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: nextRight
-resource: src/review_ui/views/compare.js#L2387-L2395
+resource: src/review_ui/views/compare.js#L2388-L2396
 generated:
   by: okf-rs/0.4.0
 relationships:

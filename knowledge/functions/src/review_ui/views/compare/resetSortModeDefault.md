@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: resetSortModeDefault
-resource: src/review_ui/views/compare.js#L1870-L1886
+resource: src/review_ui/views/compare.js#L1871-L1887
 generated:
   by: okf-rs/0.4.0
 relationships:

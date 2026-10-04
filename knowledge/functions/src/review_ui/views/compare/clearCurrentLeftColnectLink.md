@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: clearCurrentLeftColnectLink
-resource: src/review_ui/views/compare.js#L3079-L3110
+resource: src/review_ui/views/compare.js#L3080-L3111
 generated:
   by: okf-rs/0.4.0
 relationships:

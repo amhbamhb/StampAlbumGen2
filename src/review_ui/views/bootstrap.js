@@ -752,6 +752,7 @@ async function runStampWorldPull() {
             setBusy(false, '');
             updateStampWorldRunStatus(j.message || 'Failed to start', false, false);
             if (status) status.innerText = j.message || 'Failed to start StampWorld pull.';
+            showStampWorldStartError(j.message);
             return;
         }
 
@@ -1229,9 +1230,12 @@ async function loadAccountAuthStatus() {
     return null;
 }
 
-function openSiteAccountsDialog() {
+function openSiteAccountsDialog(reason = '') {
     const dialog = document.getElementById('siteAccountsDialog');
     if (!dialog) return;
+    const reasonEl = document.getElementById('siteAccountsReason');
+    reasonEl.textContent = reason ? reason + '\nSave your credentials, then run the StampWorld pull again.' : '';
+    reasonEl.hidden = !reason;
     const statusEl = document.getElementById('siteAccountsStatus');
     if (statusEl) {
         statusEl.innerText = '';

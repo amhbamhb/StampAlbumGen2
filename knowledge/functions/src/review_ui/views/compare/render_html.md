@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_html
-resource: src/review_ui/views/compare.rs#L16-L362
+resource: src/review_ui/views/compare.rs#L16-L363
 generated:
   by: okf-rs/0.4.0
 relationships:

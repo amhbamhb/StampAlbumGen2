@@ -383,6 +383,13 @@ folder path directly, and click **Apply** instead of **Pick Albums Root...**.
 
 ### Review UI
 
+If a StampWorld pull cannot start, a dialog explains the reason. Missing-account
+errors offer **Enter Credentials**, which opens **Site Accounts** with the
+registration links and username/password fields, or **Not Now** to dismiss.
+After saving credentials, click the StampWorld pull button again; saving does
+not automatically start a pull. This applies on first-run country selection and
+in an existing country review session.
+
 - `--review-ui`
   Launch the local web-based review UI and exit all other processing. Requires
   either `--album-name` (resolves to `Albums/<name>/<name>.db`) or

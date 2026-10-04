@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: rightCatalogFamiliesForCandidate
-resource: src/review_ui/views/compare.js#L1938-L1948
+resource: src/review_ui/views/compare.js#L1939-L1949
 generated:
   by: okf-rs/0.4.0
 relationships:

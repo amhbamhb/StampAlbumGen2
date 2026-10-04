@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshState
-resource: src/review_ui/views/bootstrap.js#L1077-L1112
+resource: src/review_ui/views/bootstrap.js#L1078-L1113
 generated:
   by: okf-rs/0.4.0
 relationships:
