@@ -80,3 +80,57 @@ fn test_template_defaults_use_fit_box_sizing() {
         "Freshly initialized configs should default to fit_box sizing"
     );
 }
+
+#[cfg(not(feature = "rfd"))]
+#[test]
+fn test_first_run_without_terminal_creates_defaults() {
+    const CHILD: &str = "STAMP_ALBUM_TEST_FIRST_RUN_CHILD";
+    if std::env::var_os(CHILD).is_some() {
+        stamp_album_gen2::config::ensure_config_and_template_files(
+            "config.toml",
+            "config_template.toml",
+            "manual.pdf",
+        )
+        .unwrap();
+        return;
+    }
+
+    let td = tempdir().unwrap();
+    let executable = std::env::current_exe().unwrap();
+    let child_executable = td.path().join(executable.file_name().unwrap());
+    fs::copy(&executable, &child_executable).unwrap();
+    let mut command = std::process::Command::new(&child_executable);
+    command
+        .current_dir(td.path())
+        .env(CHILD, "1")
+        .env_remove("DISPLAY")
+        .env_remove("WAYLAND_DISPLAY")
+        .env_remove("STAMP_ALBUM_FORCE_FIRST_RUN")
+        .stdin(std::process::Stdio::null())
+        .args([
+            "--exact",
+            "test_first_run_without_terminal_creates_defaults",
+            "--nocapture",
+        ]);
+    assert_cmd::Command::from_std(command)
+        .timeout(std::time::Duration::from_secs(30))
+        .assert()
+        .success()
+        .stdout(predicates::str::contains(
+            "No terminal available; skipping console prompt",
+        ));
+
+    let template = fs::read_to_string(td.path().join("config_template.toml")).unwrap();
+    assert_eq!(
+        template,
+        stamp_album_gen2::config::embedded_config_template()
+    );
+    assert_eq!(
+        fs::read_to_string(td.path().join("config.toml")).unwrap(),
+        template
+    );
+    assert_eq!(
+        fs::read(td.path().join("manual.pdf")).unwrap(),
+        stamp_album_gen2::config::embedded_pdf_help()
+    );
+}
