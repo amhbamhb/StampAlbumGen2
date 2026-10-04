@@ -1,7 +1,7 @@
 [![Release (combined)](https://github.com/amhbamhb/StampAlbumGen2/actions/workflows/release-combined.yml/badge.svg)](https://github.com/amhbamhb/StampAlbumGen2/actions/workflows/release-combined.yml)
 
 
-# Stamp Album Generator
+# Stamp Album Generator 2
 
 ![Stamp Album Generator 2 Logo](assets/icons/stamp_album_gen2.png)
 
@@ -14,6 +14,14 @@ The application is designed to simplify the process of generating stamp album pa
 Our web site: [Stamp Album Generator 2](https://stampalbumgenerator2.com/)
 
 Our app will always be free to individual collectors, including source code.  Any corporate or commercial, educational use is subject to licensing fees, including any source code usage and any derivative works.  So no, you can not fork, make changes and call it your own for commercial, corporate, educational purposes.
+
+Forking, modifying, renaming, or redistributing this program does not grant
+permission to change its license. Forks, copies, and derivative works must retain
+the Laser Spider Stamp Collector License (LSSCL) in full and preserve the copyright
+and attribution notices. Corporate, commercial, and educational use of those
+versions remains subject to a separate written paid agreement with Laser Spider
+LLC. A different license requires prior written approval from Laser Spider LLC;
+creating a fork or making changes is not such approval. See [LICENSE.md](LICENSE.md).
 
 ## Start Here
 
