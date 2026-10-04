@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_flag_image
-resource: src/flagdb.rs#L183-L190
+resource: src/flagdb.rs#L139-L146
 generated:
   by: okf-rs/0.4.0
 relationships:

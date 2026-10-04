@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: add_wikipedia_section
-resource: src/album_utils/globals.rs#L691-L1121
+resource: src/album_utils/globals.rs#L699-L1129
 visibility: private
 generated:
   by: okf-rs/0.4.0

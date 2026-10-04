@@ -49,13 +49,13 @@ relationships:
   - target: functions/src/file_utils/find_config_path
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/flagdb/load_flag_map_from_fs
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/flagdb/ensure_flag_image_with_fetcher
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/flagdb/ensure_coat_of_arms_with_fetcher
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/assets/flag_directories
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/countries/partial_overrides_keep_iso_coverage_and_invalid_overrides_do_not_apply
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/modes/resolve_runtime_albums_root
@@ -164,9 +164,9 @@ relationships:
 - [init_db](../../../../../functions/src/db_utils/init/init_db.md)
 - [resolve_runtime_albums_root](../../../../../functions/src/file_utils/resolve_runtime_albums_root.md)
 - [find_config_path](../../../../../functions/src/file_utils/find_config_path.md)
-- [load_flag_map_from_fs](../../../../../functions/src/flagdb/load_flag_map_from_fs.md)
-- [ensure_flag_image_with_fetcher](../../../../../functions/src/flagdb/ensure_flag_image_with_fetcher.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
+- [flag_directories](../../../../../functions/src/flagdb/assets/flag_directories.md)
+- [partial_overrides_keep_iso_coverage_and_invalid_overrides_do_not_apply](../../../../../functions/src/flagdb/countries/partial_overrides_keep_iso_coverage_and_invalid_overrides_do_not_apply.md)
 - [resolve_runtime_albums_root](../../../../../functions/src/modes/resolve_runtime_albums_root.md)
 - [run_colnect_inbox_mode](../../../../../functions/src/modes/run_colnect_inbox_mode.md)
 - [run_database_mode](../../../../../functions/src/modes/run_database_mode.md)

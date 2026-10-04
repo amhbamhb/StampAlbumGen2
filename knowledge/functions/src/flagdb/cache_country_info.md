@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: cache_country_info
-resource: src/flagdb.rs#L1005-L1031
+resource: src/flagdb.rs#L846-L872
 visibility: private
 generated:
   by: okf-rs/0.4.0

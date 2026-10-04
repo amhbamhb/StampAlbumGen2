@@ -258,6 +258,41 @@ Force overwrite existing config (creates backup first):
 - `--colnect-force-reimport`
  Reimport even if checksum already exists in import history.
 
+## Country flags and ISO codes
+
+Country lookup includes the supplied `ISOCountryCodes.csv`, embedded into the
+executable at build time. Despite its filename, the file is **tab-delimited**,
+with no header: alpha-2 code, then country name. Its 246 entries include South
+Korea (`KR`), North Korea (`KP`) and historical entries such as Netherlands
+Antilles (`AN`). Names and codes are case-insensitive; spaces, hyphens and
+underscores are normalized. The same lookup is used for flags and coats of arms.
+Changing this bundled file requires rebuilding the executable.
+
+Existing aliases (such as UK, USA and Great Britain) remain available. A local
+`flags/flag_codes.json` merges additional name-to-code overrides over the bundled
+data instead of replacing the ISO map. `STAMP_FLAGS_DIR` can identify the flags
+folder itself or its parent containing `flags/`. Lookup also checks the working
+folder, executable folder, working-folder parent and source-tree flags folder.
+For historical albums or occupations, add an explicit mapping or provide an
+album-local image; the application does not guess which modern flag applies.
+Some historical codes in the supplied file may not be served by flag providers.
+The file is used as supplied, not represented as a current exhaustive ISO list;
+countries added after this dataset was produced may need explicit aliases.
+
+Flags use a validated local cache, then neXperts PNG, neXperts SVG and FlagCDN.
+Failed HTTP responses, empty responses and invalid image bodies are rejected
+before caching, so an error page cannot block the next source. SVG flags are
+rasterized to real PNGs. `flag_cover_overwrite_flag = true` now refreshes existing
+cache entries; unsuccessful refreshes leave the prior file intact.
+
+If lookup or download fails, a valid existing album-local
+`images/flag_placeholder.png` or `images/flag_placeholder.svg` is reused, with
+the correct file extension. Failures and fallback use are logged; generation
+can still produce a textual cover. `print_flag_cover` and `flag_cover_elements`
+continue to control whether the cover and its flag element are emitted.
+Cover assets use the configured albums root (including `STAMP_ALBUMS_ROOT`),
+rather than assuming a working-folder `Albums/` directory.
+
 ## GUI build note
 
 The project includes optional GUI folder-picker dialogs via the `rfd` crate. To build and test the GUI-enabled binary locally or in CI, enable the `rfd` feature:

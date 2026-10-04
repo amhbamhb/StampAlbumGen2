@@ -1,14 +1,11 @@
 ---
 type: Rust Function
 title: normalize_country_input
-resource: src/flagdb.rs#L173-L179
+resource: src/flagdb.rs#L133-L135
 generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/flagdb/copy_flag_for_album
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/flagdb/copy_coa_for_album
     resolved_by: tree-sitter
     confidence: exact
@@ -20,5 +17,4 @@ relationships:
 
 # Called by
 
-- [copy_flag_for_album](../../../functions/src/flagdb/copy_flag_for_album.md)
 - [copy_coa_for_album](../../../functions/src/flagdb/copy_coa_for_album.md)

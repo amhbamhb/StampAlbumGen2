@@ -177,6 +177,18 @@ relationships:
   - target: functions/src/flagdb/ensure_coat_of_arms_with_fetcher
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/flagdb/assets/ensure_flag
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/assets/FakeFetcher/fetcher/fetch_bytes
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/countries/parse_iso_codes
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/flagdb/countries/merge_overrides
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/image_downloader/download_image
     resolved_by: tree-sitter
     confidence: exact
@@ -398,6 +410,10 @@ relationships:
 - [country_to_code](../../../../../functions/src/flagdb/country_to_code.md)
 - [extract_from_obj](../../../../../functions/src/flagdb/extract_from_obj.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
+- [ensure_flag](../../../../../functions/src/flagdb/assets/ensure_flag.md)
+- [fetch_bytes](../../../../../functions/src/flagdb/assets/FakeFetcher/fetcher/fetch_bytes.md)
+- [parse_iso_codes](../../../../../functions/src/flagdb/countries/parse_iso_codes.md)
+- [merge_overrides](../../../../../functions/src/flagdb/countries/merge_overrides.md)
 - [download_image](../../../../../functions/src/image_downloader/download_image.md)
 - [extract_year](../../../../../functions/src/modes/extract_year.md)
 - [count_colnect_candidates_in_db](../../../../../functions/src/review_ui/count_colnect_candidates_in_db.md)
