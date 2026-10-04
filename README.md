@@ -550,6 +550,8 @@ by these migrations.
 
 ### Top-Level Docs
 
+- User manual source: [StampAlbumGenerator2HelpManual.sla](StampAlbumGenerator2HelpManual.sla)
+  (open in Scribus; replace the screenshot placeholders before exporting the PDF)
 - [docs/CLI_USAGE.md](docs/CLI_USAGE.md)
 - [docs/ALBUM_STAMP_IMG_NEW_SETTING_PARAMETERS.md](docs/ALBUM_STAMP_IMG_NEW_SETTING_PARAMETERS.md)
 - [docs/AUTOMATION_SETUP.md](docs/AUTOMATION_SETUP.md)

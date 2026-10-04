@@ -1,141 +1,79 @@
-# CLI Options Inventory
+# Command-Line Options
 
-## Complete CLI Options from main.rs
+This reference reflects the options defined in `src/cli.rs`. To see the options
+supported by the installed executable, run:
 
-### Core Options
+```text
+stamp_album_gen2 --help
+```
 
-| Option | Type | Default | Required | Description |
-|--------|------|---------|----------|-------------|
-| `--source` | String | "stampworld" | No | Source type: stampworld, touchstamps, extractfile, colnectexport |
-| `--site-name` | String | None | No | Site name for scraping (e.g. 'Great-Britain', 'Canada') |
-| `--album-name` | String | None | No | Album name to generate |
-| `--db-path` | String | None | No | Database path (for output-only mode) |
-| `--base-url` | String | None | No | Optional base URL to use when scraping StampWorld |
+The configured end year defaults to the current year at runtime. The year shown
+by `--help` is therefore expected to change over time.
 
-### Year Range Options
+## Source and album selection
 
-| Option | Type | Default | Required | Description |
-|--------|------|---------|----------|-------------|
-| `--start-year` | i32 | 1840 | No | Starting year for scraping |
-| `--end-year` | i32 | BUILD_YEAR | No | Ending year for scraping (set at compile time) |
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `--source <SOURCE>` | `stampworld` | Select a source: `stampworld`, `touchstamps`, `extractfile`, `colnectexport`, or `us1847`. |
+| `--site-name <NAME>` | — | Country or site name used by scraping sources. |
+| `--stampworld-country-url <URL>` | — | Override the StampWorld country page URL for this run without changing the country or album name. |
+| `--album-name <NAME>` | — | Name used for the generated album. |
+| `--db-path <PATH>` | — | Database path for generation from an existing database or for a Colnect import target. |
+| `--base-url <URL>` | — | Override the constructed StampWorld base URL. |
+| `--source-file <PATH>` | — | Parse a local source HTML file; compatibility shortcut for `--source extractfile`. |
 
-### Behavior Control Options
+## Year range and scraping
 
-| Option | Type | Default | Required | Description |
-|--------|------|---------|----------|-------------|
-| `--overwrite-album` | bool | false | No | Overwrite existing album files |
-| `--overwrite-images` | bool | false | No | Overwrite existing image files |
-| `--max-pages` | i32 | 0 | No | Maximum pages to fetch when scraping (0 = no limit) |
-| `--stop-after-no-hits` | i32 | 3 | No | Stop after N consecutive pages with zero stamps |
-| `--yes` / `-y` | bool | false | No | Accept top suggestions automatically (for scripts) |
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `--start-year <YEAR>` | `1840` | First year to scrape. Use `0` to include all years. |
+| `--end-year <YEAR>` | Current year | Last year to scrape. |
+| `--max-pages <COUNT>` | `0` | Maximum StampWorld pages to fetch; `0` means no explicit limit. |
+| `--stop-after-no-hits <COUNT>` | `3` | Stop after this many consecutive pages with no matching stamps. |
 
-## CLI Option Testing Matrix
+## Output and confirmation
 
-### Basic Functionality Tests
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `--overwrite-album` | Off | Allow existing album and image files to be overwritten. |
+| `--overwrite-images` | Off | Allow existing image files to be overwritten. |
+| `--yes`, `-y` | Off | Accept the top source-name correction automatically, useful in scripts. |
 
-- [ ] `--help` - Shows complete help text
-- [ ] `--version` - Shows version information  
-- [ ] No arguments - Shows guidance message and help
-- [ ] Invalid arguments - Shows appropriate error messages
+## Configuration
 
-### Source Option Tests
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `--init-config` | Off | Create `config.toml` from the bundled template or defaults, then exit. |
+| `--force-init-config` | Off | Use with `--init-config` to replace an existing file after saving a timestamped backup. |
 
-| Test Case | Expected Result | Status |
-|-----------|----------------|---------|
-| `--source stampworld` | ✓ Valid | ⏳ |
-| `--source touchstamps` | ✓ Valid | ⏳ |
-| `--source extractfile` | ✓ Valid | ⏳ |
-| `--source colnectexport` | ✓ Valid | ⏳ |
-| `--source invalid` | Error + suggestions | ⏳ |
-| `--source stamworld` (typo) | Suggest "stampworld" | ⏳ |
+## Colnect import
 
-### Database Path Tests
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `--colnect-csv <PATH>` | — | Import one Colnect CSV file. |
+| `--colnect-inbox <DIR>` | — | Recursively discover and process Colnect CSV exports by country. If omitted, `colnectexport` mode can use `colnect_inbox_path` from `config.toml`. |
+| `--colnect-generate-after-import` | Off | Generate album output for countries with at least one successful import in this run. |
+| `--colnect-auto-route` | Off | Move discovered files into `<inbox>/<country>/` before processing. |
+| `--colnect-country <COUNTRY>` | — | Process only the named country; matching is case-insensitive. |
+| `--colnect-create-country-db` | Off | Allow inbox processing to create a missing country database. |
+| `--colnect-skip-duplicates` | On | Skip files previously imported successfully, using the file's SHA-256 checksum. |
+| `--colnect-force-reimport` | Off | Import a file again even if its checksum is already in the import history. |
 
-| Test Case | Expected Result | Status |
-|-----------|----------------|---------|
-| `--db-path valid.db` | Load database | ⏳ |
-| `--db-path nonexistent.db` | Create if parent exists | ⏳ |
-| `--db-path /invalid/path/db` | Error message | ⏳ |
-| No `--db-path` with scraping | Use default path | ⏳ |
+Inbox processing imports data only by default. Add
+`--colnect-generate-after-import` when the same run should also generate pages.
+Because `--colnect-auto-route` moves source files, enable it only when that
+behavior is intended.
 
-### Year Range Tests
+## Review UI, diagnostics, and desktop launcher
 
-| Test Case | Expected Result | Status |
-|-----------|----------------|---------|
-| `--start-year 1900 --end-year 2000` | Valid range | ⏳ |
-| `--start-year 2000 --end-year 1900` | Error: invalid range | ⏳ |
-| `--start-year -1` | Validate behavior | ⏳ |
-| `--end-year 9999` | Validate behavior | ⏳ |
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `--review-ui` | Off | Launch the local Review UI for comparing existing and candidate records and applying selected database updates. |
+| `--review-ui-bind <ADDRESS>` | `127.0.0.1:7878` | Set the local Review UI server bind address. |
+| `--pdf-dx-logging` | Off | Write additional PDF-generation diagnostics to the `Logs/` directory. |
+| `--install-desktop-launcher` | Off | Install or re-enable the Linux desktop launcher and icon. |
+| `--uninstall-desktop-launcher` | Off | Remove the Linux desktop launcher and icon created by the application. |
+| `--help`, `-h` | — | Display command-line help. |
+| `--version`, `-V` | — | Display the application version. |
 
-### Boolean Flag Tests
-
-| Test Case | Expected Result | Status |
-|-----------|----------------|---------|
-| `--overwrite-album` | Sets flag to true | ⏳ |
-| `--overwrite-images` | Sets flag to true | ⏳ |
-| `--yes` | Auto-accept suggestions | ⏳ |
-| `-y` (short form) | Same as --yes | ⏳ |
-
-### Combination Tests
-
-| Test Case | Expected Result | Status |
-|-----------|----------------|---------|
-| DB mode: `--db-path X --album-name Y` | Output-only mode | ⏳ |
-| Scrape mode: `--source stampworld --site-name X` | Scraping mode | ⏳ |
-| Invalid combo: `--db-path X --source touchstamps` | Error or override | ⏳ |
-| Missing required: `--source stampworld` (no site-name) | Error message | ⏳ |
-
-## Error Handling Tests
-
-### User Experience Tests
-
-- [ ] Friendly error messages for common mistakes
-- [ ] Helpful suggestions when options are misspelled
-- [ ] Clear guidance when required options are missing
-- [ ] Proper validation of file paths and permissions
-
-### Edge Cases
-
-- [ ] Very long command lines
-- [ ] Special characters in paths/names
-- [ ] Unicode characters in album names
-- [ ] Network timeouts during scraping
-- [ ] Disk space issues during file creation
-
-## Documentation Checks
-
-### Help Text Validation
-
-- [ ] All options documented in `--help`
-- [ ] Examples provided for common use cases
-- [ ] Default values clearly indicated
-- [ ] Required vs optional parameters marked
-
-### README.md Updates Needed
-
-- [ ] Complete CLI reference section
-- [ ] Example commands for all use cases
-- [ ] Troubleshooting guide for common errors
-- [ ] Migration guide for config changes
-
-## Missing Features Analysis
-
-### Potentially Missing CLI Options
-
-- [ ] `--config PATH` - Custom config file path
-- [ ] `--verbose` / `--quiet` - Logging control
-- [ ] `--dry-run` - Preview without changes
-- [ ] `--output PATH` - Custom output file path
-- [ ] `--format` - Output format selection
-- [ ] `--list-sites` - Show available sites for scraping
-
-### Implementation Priority
-
-1. **High**: Add missing critical options (config path, output path)
-2. **Medium**: Improve user experience (verbose, dry-run)
-3. **Low**: Convenience features (list-sites, format options)
-
----
-**Status**: CLI audit in progress - main options documented
-**Next**: Complete config parameter audit
-**Last Updated**: 2025-11-01
+For complete workflows and examples, see [CLI_USAGE.md](../CLI_USAGE.md).
