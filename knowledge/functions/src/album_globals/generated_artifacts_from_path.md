@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generated_artifacts_from_path
-resource: src/album_globals/mod.rs#L248-L268
+resource: src/album_globals/mod.rs#L267-L287
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -109,6 +109,7 @@
 - [parsers](../modules/src/wikipedia/parsers.md) — Rust Module
 - [utils](../modules/src/wikipedia/utils.md) — Rust Module
 - [album_colnect_pdf_filters](../modules/tests/album_colnect_pdf_filters.md) — Rust Module
+- [album_cover_output_root](../modules/tests/album_cover_output_root.md) — Rust Module
 - [album_globals](../modules/tests/album_globals.md) — Rust Module
 - [album_stamp_img_integration_test](../modules/tests/album_stamp_img_integration_test.md) — Rust Module
 - [album_stamp_img_new_setting_usage](../modules/tests/album_stamp_img_new_setting_usage.md) — Rust Module

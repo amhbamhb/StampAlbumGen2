@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: wait_for_generated_pdf_detects_delayed_new_write
-resource: src/album_globals/mod.rs#L481-L510
+resource: src/album_globals/mod.rs#L567-L596
 visibility: private
 generated:
   by: okf-rs/0.4.0

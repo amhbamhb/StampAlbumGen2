@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_globals
-resource: src/album_utils/globals.rs#L7-L695
+resource: src/album_utils/globals.rs#L33-L699
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -19,6 +19,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/copy_flag_for_album
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_utils/globals/cover_image_reference
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/copy_coa_for_album
@@ -49,6 +52,7 @@ relationships:
 - [write_page_start](../../../../functions/src/album_globals/generator_new/layout/write_page_start.md)
 - [resolve_album_dir](../../../../functions/src/file_utils/resolve_album_dir.md)
 - [copy_flag_for_album](../../../../functions/src/flagdb/copy_flag_for_album.md)
+- [cover_image_reference](../../../../functions/src/album_utils/globals/cover_image_reference.md)
 - [copy_coa_for_album](../../../../functions/src/flagdb/copy_coa_for_album.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [write_page_vspace](../../../../functions/src/album_globals/generator_new/layout/write_page_vspace.md)

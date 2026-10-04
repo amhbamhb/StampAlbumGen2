@@ -45,7 +45,7 @@ where
     // pieces of the implementation into smaller files inside generator_new.
 
     // Reuse the init_db path as a compatibility fallback
-    let album_dir = std::path::PathBuf::from(format!("Albums/{}", _album_name.replace(' ', "-")));
+    let album_dir = crate::file_utils::resolve_album_dir(_album_name);
     if let Err(e) = std::fs::create_dir_all(&album_dir) {
         warn!("Failed to create album dir {}: {}", album_dir.display(), e);
     }

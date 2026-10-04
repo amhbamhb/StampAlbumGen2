@@ -30,6 +30,9 @@ relationships:
   - target: functions/tests/album_colnect_pdf_filters/verify_filtered_output
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/album_cover_output_root/database_cli_reports_renderer_error_and_returns_failure
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/test_wikipedia_vspace/paragraph_vspace_uses_configured_value
     resolved_by: tree-sitter
     confidence: exact
@@ -49,4 +52,5 @@ relationships:
 - [albumeasy_pdf_timeout_album_runtime_override_wins](../../../../functions/src/config/albumeasy_pdf_timeout_album_runtime_override_wins.md)
 - [main](../../../../functions/src/main.md)
 - [verify_filtered_output](../../../../functions/tests/album_colnect_pdf_filters/verify_filtered_output.md)
+- [database_cli_reports_renderer_error_and_returns_failure](../../../../functions/tests/album_cover_output_root/database_cli_reports_renderer_error_and_returns_failure.md)
 - [paragraph_vspace_uses_configured_value](../../../../functions/tests/test_wikipedia_vspace/paragraph_vspace_uses_configured_value.md)

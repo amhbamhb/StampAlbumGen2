@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_scraping_mode
-resource: src/modes.rs#L1430-L1893
+resource: src/modes.rs#L1450-L1922
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -75,6 +75,9 @@ relationships:
   - target: functions/src/config/with_album_config_override_async
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/album_globals/generate_album_output_conn_with_pdf_override
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/progress/ProgressIndicator/finish_with_message
     resolved_by: tree-sitter
     confidence: exact
@@ -113,6 +116,7 @@ relationships:
 - [ingest_colnect_data_with_default_catalog](../../../functions/src/colnect/ingest/ingest_colnect_data_with_default_catalog.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [with_album_config_override_async](../../../functions/src/config/with_album_config_override_async.md)
+- [generate_album_output_conn_with_pdf_override](../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 - [finish_with_message](../../../functions/src/progress/ProgressIndicator/finish_with_message.md)
 
 # Called by

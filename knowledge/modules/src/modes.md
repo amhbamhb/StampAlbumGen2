@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: modes
-resource: src/modes.rs#L1-L1893
+resource: src/modes.rs#L1-L1922
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -510,22 +510,33 @@ async fn run_colnect_inbox_mode(
                         .parent()
                         .map(std::path::Path::to_path_buf)
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    let output_path =
+                    let artifacts =
                         crate::config::with_album_config_override_async(&album_dir, || {
-                            crate::album_globals::generate_album_output_conn(
+                            crate::album_globals::generate_album_output_conn_with_pdf_override(
                                 &conn,
                                 album_country,
                                 None::<fn(usize)>,
                                 Some(cli.start_year),
                                 Some(cli.end_year),
+                                None,
                             )
                         })
                         .await;
+                    if let Some(reason) = artifacts.pdf_failure_reason {
+                        generate_failed += 1;
+                        error!(
+                            "Album text generated for {} at {} but PDF generation failed: {}",
+                            album_country,
+                            artifacts.output_txt_path.display(),
+                            reason,
+                        );
+                        continue;
+                    }
                     generated += 1;
                     info!(
                         "Generated album for {}: {}",
                         album_country,
-                        output_path.display()
+                        artifacts.output_txt_path.display()
                     );
                 }
                 Err(e) => {
@@ -1406,21 +1417,30 @@ pub async fn run_database_mode(
         .parent()
         .map(std::path::Path::to_path_buf)
         .unwrap_or_else(|| std::path::PathBuf::from("."));
-    let output_path = crate::config::with_album_config_override_async(&album_dir, || {
-        crate::album_globals::generate_album_output_conn(
+    let artifacts = crate::config::with_album_config_override_async(&album_dir, || {
+        crate::album_globals::generate_album_output_conn_with_pdf_override(
             &conn,
             &album_name,
             None::<fn(usize)>,
             Some(cli.start_year),
             Some(cli.end_year),
+            None,
         )
     })
     .await;
 
+    if let Some(reason) = artifacts.pdf_failure_reason {
+        progress.finish_with_error(&format!(
+            "Album text generated: {}. PDF generation failed: {}",
+            artifacts.output_txt_path.display(),
+            reason,
+        ));
+        return Err(reason.into());
+    }
     progress.finish_with_message(&format!(
         "Album '{}' generated successfully! 📄 File: {}",
         album_name,
-        output_path.display()
+        artifacts.output_txt_path.display()
     ));
 
     Ok(())
@@ -1844,18 +1864,27 @@ pub async fn run_scraping_mode(
                         .parent()
                         .map(std::path::Path::to_path_buf)
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    let output_path =
+                    let artifacts =
                         crate::config::with_album_config_override_async(&album_dir, || {
-                            crate::album_globals::generate_album_output_conn(
+                            crate::album_globals::generate_album_output_conn_with_pdf_override(
                                 &conn,
                                 &canonical_storage_dir,
                                 None::<fn(usize)>,
                                 Some(cli.start_year),
                                 Some(cli.end_year),
+                                None,
                             )
                         })
                         .await;
 
+                    if let Some(reason) = artifacts.pdf_failure_reason {
+                        progress.finish_with_error(&format!(
+                            "Album text generated: {}. PDF generation failed: {}",
+                            artifacts.output_txt_path.display(),
+                            reason,
+                        ));
+                        return Err(reason.into());
+                    }
                     // Use the same final success wording as database mode so
                     // parity tests see identical output. When running with a
                     // local `--source-file` the `ProgressIndicator` is
@@ -1864,7 +1893,7 @@ pub async fn run_scraping_mode(
                     let final_msg = format!(
                         "Album '{}' generated successfully! 📄 File: {}",
                         canonical_storage_dir,
-                        output_path.display()
+                        artifacts.output_txt_path.display()
                     );
                     if using_extract_file {
                         println!("✅ {}", final_msg);

@@ -86,6 +86,22 @@ pub struct GeneratedAlbumArtifacts {
     pub pdf_failure_reason: Option<String>,
 }
 
+fn albumeasy_diagnostics(stdout: &[u8], stderr: &[u8]) -> String {
+    [stdout, stderr]
+        .into_iter()
+        .map(|bytes| String::from_utf8_lossy(bytes).trim().to_string())
+        .filter(|text| !text.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn albumeasy_reported_error(diagnostics: &str) -> bool {
+    diagnostics.lines().any(|line| {
+        let lower = line.trim().to_ascii_lowercase();
+        lower.starts_with("error:") || lower.starts_with("error in line ")
+    })
+}
+
 fn maybe_generate_album_pdf_with_settings(
     output_txt_path: &Path,
     generate_pdf: bool,
@@ -146,9 +162,32 @@ fn maybe_generate_album_pdf_with_settings(
         );
     }
 
-    let status = cmd.arg(&txt_arg).status();
-    match status {
-        Ok(s) if s.success() => {
+    let result = cmd.arg(&txt_arg).output();
+    match result {
+        Ok(output) => {
+            let s = output.status;
+            let diagnostics = albumeasy_diagnostics(&output.stdout, &output.stderr);
+            if !diagnostics.is_empty() {
+                log::info!(
+                    "AlbumEasy output for {}:\n{}",
+                    output_txt_path.display(),
+                    diagnostics
+                );
+            }
+            if !s.success() || albumeasy_reported_error(&diagnostics) {
+                let reason = format!(
+                    "AlbumEasy rendering failed (status {}) for '{}': {}",
+                    s,
+                    output_txt_path.display(),
+                    if diagnostics.is_empty() {
+                        "No diagnostic output was returned."
+                    } else {
+                        &diagnostics
+                    },
+                );
+                log::warn!("{}", reason);
+                return (None, Some(reason));
+            }
             if pdf_dx_logging_enabled() {
                 log::info!(
                     "[pdf-dx] AlbumEasy CLI succeeded in {} ms for '{}'",
@@ -186,37 +225,17 @@ fn maybe_generate_album_pdf_with_settings(
                     output_txt_path.display(),
                     expected_pdf_path.display()
                 );
-                (
-                    None,
-                    Some(format!(
-                        "AlbumEasy ran but no PDF appeared at '{}' within {} seconds",
-                        expected_pdf_path.display(),
-                        pdf_timeout.as_secs()
-                    )),
-                )
-            }
-        }
-        Ok(s) => {
-            if pdf_dx_logging_enabled() {
-                log::warn!(
-                    "[pdf-dx] AlbumEasy CLI failed status='{}' elapsed_ms={} output_txt='{}'",
-                    s,
-                    started.elapsed().as_millis(),
-                    output_txt_path.display()
+                let mut reason = format!(
+                    "AlbumEasy ran but no PDF appeared at '{}' within {} seconds",
+                    expected_pdf_path.display(),
+                    pdf_timeout.as_secs()
                 );
+                if !diagnostics.is_empty() {
+                    reason.push_str("\nAlbumEasy output:\n");
+                    reason.push_str(&diagnostics);
+                }
+                (None, Some(reason))
             }
-            log::warn!(
-                "AlbumEasy CLI exited with status {} for {}",
-                s,
-                output_txt_path.display()
-            );
-            (
-                None,
-                Some(format!(
-                    "AlbumEasy CLI '{}' exited with status {}",
-                    cli_path, s
-                )),
-            )
         }
         Err(e) => {
             if pdf_dx_logging_enabled() {
@@ -416,6 +435,73 @@ mod tests {
     use super::wait_for_generated_pdf_with_timing;
     use std::fs;
     use std::time::{Duration, SystemTime};
+
+    #[test]
+    fn albumeasy_errors_are_detected_in_both_output_streams() {
+        let output = super::albumeasy_diagnostics(
+            b"Generating the Album ...\n",
+            b"Error in line 74: images/coat_of_arms.png was not found.\n",
+        );
+        assert!(output.contains("Generating the Album"));
+        assert!(super::albumeasy_reported_error(&output));
+        assert!(super::albumeasy_reported_error(" ERROR: Invalid album"));
+        assert!(!super::albumeasy_reported_error("Generated successfully"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn albumeasy_success_exit_with_render_error_fails_without_pdf_timeout() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().expect("renderer test directory");
+        let launcher = dir.path().join("AlbumEasy test.sh");
+        fs::write(
+            &launcher,
+            include_str!("../../tests/fixtures/albumeasy_render_error.sh"),
+        )
+        .expect("write test launcher");
+        fs::set_permissions(&launcher, fs::Permissions::from_mode(0o755))
+            .expect("launcher permissions");
+        let txt = dir.path().join("album.txt");
+        fs::write(&txt, b"").expect("test album");
+        let started = std::time::Instant::now();
+        let (pdf, failure) = super::maybe_generate_album_pdf_with_settings(
+            &txt,
+            true,
+            launcher.to_str(),
+            Duration::from_secs(30),
+        );
+        assert!(pdf.is_none());
+        let reason = failure.expect("render error");
+        assert!(reason.contains("Error in line 74"));
+        assert!(reason.contains("images/coat_of_arms.png"));
+        assert!(started.elapsed() < Duration::from_secs(5));
+        assert!(!reason.contains("within 30 seconds"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn albumeasy_captured_output_preserves_successful_pdf_generation() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = tempfile::tempdir().expect("renderer test directory");
+        let launcher = dir.path().join("AlbumEasy success.sh");
+        fs::write(
+            &launcher,
+            include_str!("../../tests/fixtures/albumeasy_render_success.sh"),
+        )
+        .expect("write test launcher");
+        fs::set_permissions(&launcher, fs::Permissions::from_mode(0o755))
+            .expect("launcher permissions");
+        let txt = dir.path().join("album with spaces.txt");
+        fs::write(&txt, b"").expect("test album");
+        let (pdf, failure) = super::maybe_generate_album_pdf_with_settings(
+            &txt,
+            true,
+            launcher.to_str(),
+            Duration::from_secs(1),
+        );
+        assert_eq!(pdf, Some(txt.with_extension("pdf")));
+        assert_eq!(failure, None);
+    }
 
     #[test]
     fn wait_for_generated_pdf_rejects_missing_empty_and_stale_files() {

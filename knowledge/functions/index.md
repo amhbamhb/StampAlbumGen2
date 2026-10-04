@@ -24,7 +24,12 @@
 - [test_insert_stamp_and_backfill](../functions/crates/stamp_album_db/tests/unit_tests/test_insert_stamp_and_backfill.md) — Rust Function
 - [test_migrate_fix_block_metadata_local](../functions/crates/stamp_album_db/tests/unit_tests/test_migrate_fix_block_metadata_local.md) — Rust Function
 - [test_sort_stampstubs_inplace_basic](../functions/crates/stamp_album_db/tests/unit_tests/test_sort_stampstubs_inplace_basic.md) — Rust Function
+- [albumeasy_captured_output_preserves_successful_pdf_generation](../functions/src/album_globals/albumeasy_captured_output_preserves_successful_pdf_generation.md) — Rust Function
+- [albumeasy_diagnostics](../functions/src/album_globals/albumeasy_diagnostics.md) — Rust Function
+- [albumeasy_errors_are_detected_in_both_output_streams](../functions/src/album_globals/albumeasy_errors_are_detected_in_both_output_streams.md) — Rust Function
 - [albumeasy_pdf_timeout_failure_reports_actual_wait](../functions/src/album_globals/albumeasy_pdf_timeout_failure_reports_actual_wait.md) — Rust Function
+- [albumeasy_reported_error](../functions/src/album_globals/albumeasy_reported_error.md) — Rust Function
+- [albumeasy_success_exit_with_render_error_fails_without_pdf_timeout](../functions/src/album_globals/albumeasy_success_exit_with_render_error_fails_without_pdf_timeout.md) — Rust Function
 - [clean_text](../functions/src/album_globals/commemorative_generator/clean_text.md) — Rust Function
 - [emit_commemorative_pages](../functions/src/album_globals/commemorative_generator/emit_commemorative_pages.md) — Rust Function
 - [emit_header_pages](../functions/src/album_globals/commemorative_generator/emit_header_pages.md) — Rust Function
@@ -159,6 +164,8 @@
 - [load_calibration_map](../functions/src/album_utils/dimensions/load_calibration_map.md) — Rust Function
 - [add_wikipedia_section](../functions/src/album_utils/globals/add_wikipedia_section.md) — Rust Function
 - [balance_pages](../functions/src/album_utils/globals/balance_pages.md) — Rust Function
+- [cover_image_reference](../functions/src/album_utils/globals/cover_image_reference.md) — Rust Function
+- [cover_references_require_existing_files_and_keep_relative_paths](../functions/src/album_utils/globals/cover_references_require_existing_files_and_keep_relative_paths.md) — Rust Function
 - [create_balanced_pages](../functions/src/album_utils/globals/create_balanced_pages.md) — Rust Function
 - [create_greedy_pages](../functions/src/album_utils/globals/create_greedy_pages.md) — Rust Function
 - [parse_content_into_sections](../functions/src/album_utils/globals/parse_content_into_sections.md) — Rust Function
@@ -1034,6 +1041,9 @@
 - [filtered_output_contains_only_selected_stamps_and_empty_selection_preserves_output](../functions/tests/album_colnect_pdf_filters/filtered_output_contains_only_selected_stamps_and_empty_selection_preserves_output.md) — Rust Function
 - [filtered_output_generates_a_real_pdf](../functions/tests/album_colnect_pdf_filters/filtered_output_generates_a_real_pdf.md) — Rust Function
 - [verify_filtered_output](../functions/tests/album_colnect_pdf_filters/verify_filtered_output.md) — Rust Function
+- [drop](../functions/tests/album_cover_output_root/RestoreRuntime/drop/drop.md) — Rust Method
+- [database_cli_reports_renderer_error_and_returns_failure](../functions/tests/album_cover_output_root/database_cli_reports_renderer_error_and_returns_failure.md) — Rust Function
+- [generated_text_and_local_coat_use_the_same_configured_root](../functions/tests/album_cover_output_root/generated_text_and_local_coat_use_the_same_configured_root.md) — Rust Function
 - [compute_usable_height_basic](../functions/tests/album_globals/compute_usable_height_basic.md) — Rust Function
 - [filename_generation_with_year_range](../functions/tests/album_globals/filename_generation_with_year_range.md) — Rust Function
 - [test_album_stamp_img_new_setting_affects_output](../functions/tests/album_stamp_img_integration_test/test_album_stamp_img_new_setting_affects_output.md) — Rust Function
