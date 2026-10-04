@@ -101409,7 +101409,11 @@
       }
     },
     "src/review_ui/http_handlers.rs": {
+<<<<<<< HEAD
       "content_hash": 18253510832108162440,
+=======
+      "content_hash": 4967644607469142224,
+>>>>>>> origin/feature/manual-csv-template
       "extraction": {
         "concepts": [
           {
@@ -106648,7 +106652,11 @@
             "callee_name": "to_string",
             "call_site": {
               "line": 1314,
+<<<<<<< HEAD
               "character": 109
+=======
+              "character": 88
+>>>>>>> origin/feature/manual-csv-template
             }
           },
           {
@@ -116078,7 +116086,11 @@
       }
     },
     "src/review_ui/views/bootstrap.js": {
+<<<<<<< HEAD
       "content_hash": 7645433692276165799,
+=======
+      "content_hash": 10135678161425624274,
+>>>>>>> origin/feature/manual-csv-template
       "extraction": {
         "concepts": [
           {
@@ -138162,7 +138174,11 @@
       }
     },
     "src/review_ui/views/compare.rs": {
+<<<<<<< HEAD
       "content_hash": 15224743448548928845,
+=======
+      "content_hash": 17845321891457203897,
+>>>>>>> origin/feature/manual-csv-template
       "extraction": {
         "concepts": [
           {
