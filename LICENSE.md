@@ -56,6 +56,7 @@ This grant does **not** permit any Commercial Use.
 2. Forks and copies must include a clear notice that the Software is licensed under this License and remains copyrighted by Laser Spider LLC.
 3. No Fork, copy, or Derivative Work may remove, weaken, or bypass the restrictions in Section 5.
 4. Alternative licensing of this Software, in whole or in part, is prohibited unless specifically approved in prior written documentation signed by an authorized representative of Laser Spider LLC.
+5. Forking, modifying, renaming, or redistributing the Software does not grant permission to change its license or claim that the Software or a Derivative Work is exempt from this License. Corporate, Commercial Use, and educational or institutional use of any Fork, copy, or Derivative Work remain subject to the separate written paid agreement required by Section 5.
 
 ## 8. No Change of License Status Without Written Approval
 
