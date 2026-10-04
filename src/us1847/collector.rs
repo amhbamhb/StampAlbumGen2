@@ -31,16 +31,23 @@ struct StampInfo {
     design_size: String,
 }
 
+/// Run-wide options passed to [`process_1847us_page`] and its helpers.
+pub struct Us1847PageOptions<'a> {
+    pub site_name: &'a str,
+    pub start_year: i32,
+    pub end_year: i32,
+    pub image_path: &'a str,
+    pub overwrite_images: bool,
+}
+
 pub fn process_1847us_page(
     client: &Client,
     conn: &Connection,
     url: &str,
-    _site_name: &str,
-    _start_year: i32,
-    _end_year: i32,
-    image_path: &str,
-    overwrite_images: bool,
+    opts: &Us1847PageOptions<'_>,
 ) -> Result<usize, Box<dyn Error>> {
+    let image_path = opts.image_path;
+    let overwrite_images = opts.overwrite_images;
     info!("Processing 1847us page: {}", url);
 
     let resp = client.get(url).send()?;
@@ -231,18 +238,7 @@ pub fn process_1847us_page(
         stamps_found += parse_liberty_issue_stamp(&document, series_id, &series_title, conn, url)?;
     } else {
         eprintln!("DEBUG: Using generic parser for URL: {}", url);
-        stamps_found += parse_html_tables(
-            client,
-            conn,
-            &document,
-            series_id,
-            &series_title,
-            _site_name,
-            _start_year,
-            _end_year,
-            image_path,
-            overwrite_images,
-        )?;
+        stamps_found += parse_html_tables(client, conn, &document, series_id, &series_title, opts)?;
         stamps_found += parse_stamp_lists(conn, &document, series_id, &series_title)?;
     }
 
@@ -265,11 +261,7 @@ fn parse_html_tables(
     document: &Html,
     series_id: i64,
     series_title: &str,
-    site_name: &str,
-    start_year: i32,
-    end_year: i32,
-    image_path: &str,
-    overwrite_images: bool,
+    opts: &Us1847PageOptions<'_>,
 ) -> Result<usize, Box<dyn Error>> {
     let mut stamps_found = 0;
 
@@ -428,16 +420,8 @@ fn parse_html_tables(
                                     info!("Found Ordinary issue URL: {}", full_url);
 
                                     // Recursively process this page for ordinary stamps
-                                    let ordinary_stamps = process_1847us_page(
-                                        client,
-                                        conn,
-                                        &full_url,
-                                        site_name,
-                                        start_year,
-                                        end_year,
-                                        image_path,
-                                        overwrite_images,
-                                    );
+                                    let ordinary_stamps =
+                                        process_1847us_page(client, conn, &full_url, opts);
                                     match ordinary_stamps {
                                         Ok(count) => {
                                             info!(
@@ -1644,20 +1628,5 @@ pub fn sync_us1847_to_stamps(
         }
     }
 
-    Ok(())
-}
-
-pub fn collect_us1847_data(
-    _sequencer: &mut i32,
-    _separator: &str,
-    _site_name: &str,
-    _images_directory: &str,
-    _month_number: &dyn Fn(&str) -> String,
-    _get_image: &dyn Fn(&str, bool) -> crate::types::ImageStatus,
-    _base_url: &str,
-    _start_year: i32,
-    _end_year: i32,
-    _overwrite_images: bool,
-) -> Result<(), Box<dyn Error>> {
     Ok(())
 }

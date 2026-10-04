@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: remap_colnect_sg_to_existing_stamps
-resource: src/modes.rs#L615-L733
+resource: src/modes.rs#L617-L735
 visibility: private
 generated:
   by: okf-rs/0.4.0

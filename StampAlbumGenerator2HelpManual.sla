@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <SCRIBUSUTF8NEW Version="1.7.1">
-    <Document PageCount="7" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" MarginPreset="0" BleedTop="0" BleedLeft="0" BleedRight="0" BleedBottom="0" PageOrientation="0" PageSize="US_Letter" FirstPageNumber="1" PagePositioning="0" AutomaticTextFrameColumnCount="1" AutomaticTextFrameColumnGap="11" UnitIndex="2" FontFace="Arial Regular" FontSize="12" TextColumnCount="1" TextColumnGap="0" TabFillCharacter="" TabWidth="36" TextDistanceLeft="0" TextDistanceRight="0" TextDistanceBottom="0" TextDistanceTop="0" FirstLineOffset="1" DocumentInfoAuthor="" DocumentInfoComments="" DocumentInfoKeywords="" DocumentInfoPublisher="" DocumentInfoDate="" DocumentInfoType="" DocumentInfoFormat="" DocumentInfoIdentifier="" DocumentInfoSource="" DocumentInfoLanguage="" DocumentInfoRelation="" DocumentInfoCoverage="" DocumentInfoRights="" DocumentInfoContributors="" DocumentInfoTitle="" DocumentInfoSubject="" SuperScriptDisplacement="33" SuperScriptScaling="66" SubScriptDisplacement="33" SubScriptScaling="66" SmallCapsScaling="75" BaselineGridSpacing="14.4" BaselineGridOffset="0" AutoLineSpacingPct="100" UnderlinePosition="-1" UnderlineWidth="-1" StrikeThruPosition="-1" StrikeThruWidth="-1" GroupCounter="3" DocumentHasCMS="0" SoftProofOn="0" SoftProofFullOn="0" ColorManagementActive="0" GamutCheck="0" BlackPoint="1" DefaultPrinterProfile="ISO Coated v2 300% (basICColor)" DefaultImageRGBProfile="sRGB display profile (ICC v2.2)" DefaultImageCMYKProfile="ISO Coated v2 300% (basICColor)" DefaultSolidColorRGBProfile="sRGB display profile (ICC v2.2)" DefaultSolidColorCMYKProfile="ISO Coated v2 300% (basICColor)" DefaultIntentColors="1" DefaultIntentImages="0" ActiveLayer="0" Language="en_US" AutomaticHyphenation="1" AutomaticHyphenationCheck="0" GuideLock="0" SnapToGuides="0" SnapToGrid="0" SnapToItems="0" MinorGridSpacing="20" MajorGridSpacing="100" ShowGrid="0" ShowGuides="1" ShowColumnBorders="1" ShowFrames="1" ShowControls="0" ShowLayerMarkers="0" ShowMargins="1" ShowBaselineGrid="0" ShowImages="1" ShowLinks="0" RulerMode="1" ShowRulers="1" ShowBleed="1" RulerXOffset="0" RulerYOffset="0" GuideRadius="10" GrabRadius="4" PolygonCorners="4" PolygonFactor="0.5" PolygonRotation="0" PolygonInnerRotation="0" PolygonCurvature="0" PolygonOuterCurvature="0" PolygonUseFactor="0" ArcStartAngle="30" ArcSweepAngle="300" SpiralStartAngle="0" SpiralEndAngle="1080" SpiralFactor="1.2" AutoSave="1" AutoSaveTime="600000" AutoSaveCount="1" AutoSaveKeep="0" AutoSaveInDocumentDirectory="1" AutoSaveDirectory="" ScratchBottom="20" ScratchLeft="100" ScratchRight="100" ScratchTop="20" GapHorizontal="0" GapVertical="40" LineStartArrow="0" LineEndArrow="0" ShapeLineColor="Black" ShapeFillColor="None" LineColor="Black" TextColor="Black" TextStrokeColor="Black" TextBackgroundColor="None" TextLineColor="None" TextBackgroundColorShade="100" TextLineColorShade="100" TextColorShade="100" TextStrokeColorShade="100" ShapeLineStyle="1" LineStyle="1" ShapeLineWidth="1" LineWidth="1" ShapeLineColorShade="100" LineColorShade="100" ShapeFillColorShade="100" ImageFillColor="None" ImageFillColorShade="100" ImageStrokeColor="None" ImageStrokeColorShade="100" ImageScaleX="1" ImageScaleY="1" ImageScaleType="1" ImageAspectRatio="1" ImageUseEmbeddedPath="0" ImageLowResType="1" DisplayOffsetX="10" DisplayOffsetY="10" RotationConstrainAngle="15" MinorGridColor="#00ff00" MajorGridColor="#00ff00" GuidesColor="#000080" BaselineGridColor="#c0c0c0" RenderStack="2 0 4 1 3" GridType="0" PageColor="#ffffff" MarginColor="#0000ff" ShowMarginsFilled="0" CurrentProfile="PDF 1.4" CalligraphicPenFillColor="Black" CalligraphicPenLineColor="Black" CalligraphicPenFillColorShade="100" CalligraphicPenLineColorShade="100" CalligraphicPenLineWidth="1" CalligraphicPenAngle="0" CalligraphicPenWidth="10" CalligraphicPenStyle="1">
+    <Document PageCount="7" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" MarginPreset="0" BleedTop="0" BleedLeft="0" BleedRight="0" BleedBottom="0" PageOrientation="0" PageSize="US_Letter" FirstPageNumber="1" PagePositioning="0" AutomaticTextFrameColumnCount="1" AutomaticTextFrameColumnGap="11" UnitIndex="2" FontFace="Arial Regular" FontSize="12" TextColumnCount="1" TextColumnGap="0" TabFillCharacter="" TabWidth="36" TextDistanceLeft="0" TextDistanceRight="0" TextDistanceBottom="0" TextDistanceTop="0" FirstLineOffset="1" DocumentInfoAuthor="" DocumentInfoComments="" DocumentInfoKeywords="" DocumentInfoPublisher="" DocumentInfoDate="" DocumentInfoType="" DocumentInfoFormat="" DocumentInfoIdentifier="" DocumentInfoSource="" DocumentInfoLanguage="" DocumentInfoRelation="" DocumentInfoCoverage="" DocumentInfoRights="" DocumentInfoContributors="" DocumentInfoTitle="" DocumentInfoSubject="" SuperScriptDisplacement="33" SuperScriptScaling="66" SubScriptDisplacement="33" SubScriptScaling="66" SmallCapsScaling="75" BaselineGridSpacing="14.4" BaselineGridOffset="0" AutoLineSpacingPct="100" UnderlinePosition="-1" UnderlineWidth="-1" StrikeThruPosition="-1" StrikeThruWidth="-1" GroupCounter="1" DocumentHasCMS="0" SoftProofOn="0" SoftProofFullOn="0" ColorManagementActive="0" GamutCheck="0" BlackPoint="1" DefaultPrinterProfile="ISO Coated v2 300% (basICColor)" DefaultImageRGBProfile="sRGB display profile (ICC v2.2)" DefaultImageCMYKProfile="ISO Coated v2 300% (basICColor)" DefaultSolidColorRGBProfile="sRGB display profile (ICC v2.2)" DefaultSolidColorCMYKProfile="ISO Coated v2 300% (basICColor)" DefaultIntentColors="1" DefaultIntentImages="0" ActiveLayer="0" Language="en_US" AutomaticHyphenation="1" AutomaticHyphenationCheck="0" GuideLock="0" SnapToGuides="0" SnapToGrid="0" SnapToItems="0" MinorGridSpacing="20" MajorGridSpacing="100" ShowGrid="0" ShowGuides="1" ShowColumnBorders="1" ShowFrames="1" ShowControls="0" ShowLayerMarkers="0" ShowMargins="1" ShowBaselineGrid="0" ShowImages="1" ShowLinks="0" RulerMode="1" ShowRulers="1" ShowBleed="1" RulerXOffset="0" RulerYOffset="0" GuideRadius="10" GrabRadius="4" PolygonCorners="4" PolygonFactor="0.5" PolygonRotation="0" PolygonInnerRotation="0" PolygonCurvature="0" PolygonOuterCurvature="0" PolygonUseFactor="0" ArcStartAngle="30" ArcSweepAngle="300" SpiralStartAngle="0" SpiralEndAngle="1080" SpiralFactor="1.2" AutoSave="1" AutoSaveTime="600000" AutoSaveCount="1" AutoSaveKeep="0" AutoSaveInDocumentDirectory="1" AutoSaveDirectory="" ScratchBottom="20" ScratchLeft="100" ScratchRight="100" ScratchTop="20" GapHorizontal="0" GapVertical="40" LineStartArrow="0" LineEndArrow="0" ShapeLineColor="Black" ShapeFillColor="None" LineColor="Black" TextColor="Black" TextStrokeColor="Black" TextBackgroundColor="None" TextLineColor="None" TextBackgroundColorShade="100" TextLineColorShade="100" TextColorShade="100" TextStrokeColorShade="100" ShapeLineStyle="1" LineStyle="1" ShapeLineWidth="1" LineWidth="1" ShapeLineColorShade="100" LineColorShade="100" ShapeFillColorShade="100" ImageFillColor="None" ImageFillColorShade="100" ImageStrokeColor="None" ImageStrokeColorShade="100" ImageScaleX="1" ImageScaleY="1" ImageScaleType="1" ImageAspectRatio="1" ImageUseEmbeddedPath="0" ImageLowResType="1" DisplayOffsetX="10" DisplayOffsetY="10" RotationConstrainAngle="15" MinorGridColor="#00ff00" MajorGridColor="#00ff00" GuidesColor="#000080" BaselineGridColor="#c0c0c0" RenderStack="2 0 4 1 3" GridType="0" PageColor="#ffffff" MarginColor="#0000ff" ShowMarginsFilled="0" CurrentProfile="PDF 1.4" CalligraphicPenFillColor="Black" CalligraphicPenLineColor="Black" CalligraphicPenFillColorShade="100" CalligraphicPenLineColorShade="100" CalligraphicPenLineWidth="1" CalligraphicPenAngle="0" CalligraphicPenWidth="10" CalligraphicPenStyle="1">
         <CheckProfile Name="PDF 1.3" IgnoreErrors="0" AutoCheck="1" CheckGlyphs="1" CheckOrphans="1" CheckOverflow="1" CheckPictures="1" CheckPartFilledImageFrames="0" CheckResolution="1" CheckTransparency="1" MinimumResolution="144" MaximumResolution="2400" CheckAnnotations="0" CheckRasterPDF="1" CheckForGIF="1" IgnoreOffLayers="0" CheckNotCMYKOrSpot="0" CheckDeviceColorsAndOutputIntent="0" CheckFontNotEmbedded="1" CheckFontIsOpenType="1" CheckAppliedMasterDifferentSide="1" CheckEmptyTextFrames="1" CheckImageHasProgressiveEncoding="1"/>
         <CheckProfile Name="PDF 1.4" IgnoreErrors="0" AutoCheck="1" CheckGlyphs="1" CheckOrphans="1" CheckOverflow="1" CheckPictures="1" CheckPartFilledImageFrames="0" CheckResolution="1" CheckTransparency="0" MinimumResolution="144" MaximumResolution="2400" CheckAnnotations="0" CheckRasterPDF="1" CheckForGIF="1" IgnoreOffLayers="0" CheckNotCMYKOrSpot="0" CheckDeviceColorsAndOutputIntent="0" CheckFontNotEmbedded="1" CheckFontIsOpenType="1" CheckAppliedMasterDifferentSide="1" CheckEmptyTextFrames="1" CheckImageHasProgressiveEncoding="1"/>
         <CheckProfile Name="PDF 1.5" IgnoreErrors="0" AutoCheck="1" CheckGlyphs="1" CheckOrphans="1" CheckOverflow="1" CheckPictures="1" CheckPartFilledImageFrames="0" CheckResolution="1" CheckTransparency="0" MinimumResolution="144" MaximumResolution="2400" CheckAnnotations="0" CheckRasterPDF="1" CheckForGIF="1" IgnoreOffLayers="0" CheckNotCMYKOrSpot="0" CheckDeviceColorsAndOutputIntent="0" CheckFontNotEmbedded="1" CheckFontIsOpenType="1" CheckAppliedMasterDifferentSide="1" CheckEmptyTextFrames="1" CheckImageHasProgressiveEncoding="1"/>
@@ -23,10 +23,8 @@
         <Color Name="Yellow" Space="CMYK" C="0" M="0" Y="100" K="0"/>
         <Hyphenator/>
         <CharacterStyle Name="Default Character Style" DefaultStyle="1" Font="Arial Regular" FontSize="12" FontFeatures="" Features="inherit" FontColor="Black" FillShade="100" HyphenWordMinimum="3" StrokeColor="Black" BackgroundColor="None" BackgroundShade="100" StrokeShade="100" TextShadowXOffset="5" TextShadowYOffset="-5" TextOutlineWidth="1" TextUnderlineOffset="-0.1" TextUnderlineWidth="-0.1" TextStrikeThroughOffset="-0.1" TextStrikeThroughWidth="-0.1" ScaleHorizontal="100" ScaleVertical="100" BaselineOffset="0" Kerning="0" Language="en_US"/>
-        <CharacterStyle Name="Page number Text" CParent="Default Character Style" FontSize="8" WordTrack="1.1"/>
         <ParagraphStyle Name="Default Paragraph Style" DefaultStyle="1" Alignment="0" Direction="0" LineSpacingMode="0" LineSpacing="15" LeftMargin="0" RightMargin="0" FirstIndent="0" GapBefore="0" GapAfter="0" ParagraphEffectOffset="0" HasDropCap="0" DropCapLines="2" Bullet="0" Numeration="0" HyphenConsecutiveLines="2" ParagraphBackgroundColor="None" ParagraphBackgroundColorShade="100"/>
         <ParagraphStyle Name="Heading Bold" Parent="Default Paragraph Style" Alignment="1" GapBefore="3" GapAfter="3" Font="Arial Bold" FontSize="20" FontFeatures="-clig"/>
-        <ParagraphStyle Name="Page Numbers" Parent="Default Paragraph Style" Alignment="1" FontSize="8" WordTrack="1.1"/>
         <TableStyle Name="Default Table Style" DefaultStyle="1" FillColor="None" FillShade="100">
             <TableBorderLeft>
                 <TableBorderLine Width="1" PenStyle="1" Color="Black" Shade="100"/>
@@ -41,23 +39,7 @@
                 <TableBorderLine Width="1" PenStyle="1" Color="Black" Shade="100"/>
             </TableBorderBottom>
         </TableStyle>
-        <CellStyle Name="Default Cell Style" DefaultStyle="1" FillColor="None" FillShade="100" LeftPadding="1" RightPadding="1" TopPadding="1" BottomPadding="1">
-            <TableBorderLeft>
-                <TableBorderLine Width="1" PenStyle="1" Color="Black" Shade="100"/>
-            </TableBorderLeft>
-            <TableBorderRight>
-                <TableBorderLine Width="1" PenStyle="1" Color="Black" Shade="100"/>
-            </TableBorderRight>
-            <TableBorderTop>
-                <TableBorderLine Width="1" PenStyle="1" Color="Black" Shade="100"/>
-            </TableBorderTop>
-            <TableBorderBottom>
-                <TableBorderLine Width="1" PenStyle="1" Color="Black" Shade="100"/>
-            </TableBorderBottom>
-        </CellStyle>
-        <MultiLine Name="New Style">
-            <SubLine Color="White" Shade="100" Dash="10" LineEnd="0" LineJoin="0" Width="1" Shortcut=""/>
-        </MultiLine>
+        <CellStyle Name="Default Cell Style" DefaultStyle="1" FillColor="None" FillShade="100" LeftPadding="1" RightPadding="1" TopPadding="1" BottomPadding="1"/>
         <Layers Number="0" Level="0" Name="Background" IsViewable="1" IsPrintable="1" IsEditable="1" IsSelectable="0" FlowControl="1" Transparency="1" BlendMode="0" OutlineMode="0" LayerColor="#000000"/>
         <Printer firstUse="1" toFile="0" useAltPrintCommand="0" outputSeparations="0" useSpotColors="1" useColor="1" mirrorH="0" mirrorV="0" useICC="0" doGCR="0" doClip="0" setDevParam="0" useDocBleeds="1" cropMarks="0" bleedMarks="0" registrationMarks="0" colorMarks="0" includePDFMarks="1" PSLevel="3" PrintEngine="3" markLength="20" markOffset="0" BleedTop="0" BleedLeft="0" BleedRight="0" BleedBottom="0" printer="" filename="" separationName="All" printerCommand=""/>
         <PDF firstUse="0" Thumbnails="0" Articles="0" Bookmarks="0" Compress="1" CMethod="0" Quality="0" EmbedPDF="0" MirrorH="0" MirrorV="0" Clip="0" rangeSel="0" rangeTxt="" RotateDeg="0" PresentMode="0" RecalcPic="0" FontEmbedding="0" Grayscale="0" RGBMode="1" UseProfiles="0" UseProfiles2="0" Binding="0" PicRes="300" Resolution="300" Version="14" Intent="1" Intent2="0" SolidP="sRGB display profile (ICC v2.2)" ImageP="sRGB display profile (ICC v2.2)" PrintP="ISO Coated v2 300% (basICColor)" InfoString="" BTop="0" BLeft="0" BRight="0" BBottom="0" useDocBleeds="1" cropMarks="0" bleedMarks="0" registrationMarks="0" colorMarks="0" docInfoMarks="0" markLength="20.0016" markOffset="0" ImagePr="0" PassOwner="" PassUser="" Permissions="-4" Encrypt="0" UseLayers="0" UseLpi="0" UseSpotColors="1" doMultiFile="0" displayBookmarks="0" displayFullscreen="0" displayLayers="0" displayThumbs="0" hideMenuBar="0" hideToolBar="0" fitWindow="0" openAfterExport="0" PageLayout="0" openAction="">
@@ -110,7 +92,6 @@
             <Section Number="0" Name="Section 1" From="0" To="6" Type="Type_1_2_3" Start="1" Reversed="0" Active="1" FillChar="0" FieldWidth="0"/>
         </Sections>
         <MasterPage PageXPosition="100" PageYPosition="20" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="0" PageName="Normal" MasterPageName="" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
-        <MasterPage PageXPosition="100" PageYPosition="20" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="1" PageName="MainMaster" MasterPageName="" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
         <Page PageXPosition="100" PageYPosition="20" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="0" PageName="" MasterPageName="Normal" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
         <Page PageXPosition="100" PageYPosition="852" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="1" PageName="" MasterPageName="Normal" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
         <Page PageXPosition="100" PageYPosition="1684" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="2" PageName="" MasterPageName="Normal" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
@@ -118,7 +99,99 @@
         <Page PageXPosition="100" PageYPosition="3348" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="4" PageName="" MasterPageName="Normal" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
         <Page PageXPosition="100" PageYPosition="4180" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="5" PageName="" MasterPageName="Normal" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
         <Page PageXPosition="100" PageYPosition="5012" PageWidth="612" PageHeight="792" BorderLeft="40" BorderRight="40" BorderTop="40" BorderBottom="40" PageNumber="6" PageName="" MasterPageName="Normal" Size="US_Letter" Orientation="0" LeftPage="0" Preset="0" VerticalGuides="" HorizontalGuides="" AutoGuideHorizontalGap="0" AutoGuideVerticalGap="0" AutoGuideHorizontalCount="0" AutoGuideVerticalCount="0" AutoGuideHorizontalReference="0" AutoGuideVerticalReference="0" AutoGuideSelection="0 0 0 0" PageEffectDuration="1" PageViewDuration="1" PageEffectType="0" PageEffectLineDirection="0" PageEffectInsideOutside="0" PageEffectDirection="0"/>
-        <MasterObject XPosition="329.463414634146" YPosition="776.731707317073" OwnPage="1" ItemID="2145811004" ItemType="4" Width="151.90243902439" Height="20.1951219512196" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" AutoName="Text9" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L151.902 0 L151.902 20.1951 L0 20.1951 L0 0 Z" ContourLinePath="M0 0 L151.902 0 L151.902 20.1951 L0 20.1951 L0 0 Z" OnMasterPage="MainMaster" gXpos="342.634146341463" gYpos="769.609756097561" gWidth="0" gHeight="0" Alignment="1" Layer="0" NextItem="-1" BackItem="-1">
+        <PageObject XPosition="141.365853658537" YPosition="80.780487804878" OwnPage="0" ItemID="985357681" ItemType="4" Width="526.829268292683" Height="31.609756097561" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L526.829 0 L526.829 31.6098 L0 31.6098 L0 0 Z" ContourLinePath="M0 0 L526.829 0 L526.829 31.6098 L0 31.6098 L0 0 Z" gXpos="141.365853658537" gYpos="80.780487804878" gWidth="0" gHeight="0" Alignment="1" Layer="0" NextItem="-1" BackItem="-1">
+            <StoryText>
+                <DefaultStyle Alignment="1" FontSize="23"/>
+                <Content FontSize="23" Chars="Welcome to Stamp Album Generator 2"/>
+                <trail Alignment="1"/>
+            </StoryText>
+        </PageObject>
+        <PageObject XPosition="172.146341463415" YPosition="372.296" OwnPage="0" ItemID="1448437969" ItemType="4" Width="470.634146341463" Height="374.926829268293" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="2" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L470.634 0 L470.634 374.927 L0 374.927 L0 0 Z" ContourLinePath="M0 0 L470.634 0 L470.634 374.927 L0 374.927 L0 0 Z" gXpos="172.146341463415" gYpos="372.296" gWidth="0" gHeight="0" Layer="0" NextItem="1768031735" BackItem="-1">
+            <StoryText>
+                <DefaultStyle/>
+                <Content Font="Arial Bold" FontSize="18" Chars="A practical guide to collecting, reviewing, and generating stamp albums"/>
+                <para Alignment="1" LineSpacing="24"/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="11" Chars="Stamp Album Generator 2"/>
+                <Content FontSize="11" Chars=" gathers stamp data in a country or theme database, lets you review records, and creates album instructions for AlbumEasy. This guide explains setup, data collection, review, and output."/>
+                <para/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="11" Chars="AlbumEasy"/>
+                <Content FontSize="11" Chars=" is a separate application by Bundu Technology Ltd. Install it to lay out pages and create PPDF s s. When configured, Stamp Album Generator 2 can launch it. Review the generated text and add commands you need."/>
+                <para/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="1. First-time setup"/>
+                <para/>
+                <para/>
+                <Content Chars="This program is a self contained application.  All support files needed are installed after the first run of the application. including the desktop icons in both Linux and Windows "/>
+                <para/>
+                <para/>
+                <Content FontSize="11" Chars="1. Start the Review UI with stamp_album_gen2 --review-ui (on Windows, use stamp_album_gen2.exe). "/>
+                <para/>
+                <para/>
+                <Content FontSize="11" Chars="2. On the startup page, choose and apply the Albums Root folder. You can change it later."/>
+                <para/>
+                <para/>
+                <Content FontSize="11" Chars="3. Select a collection and choose Open Review. To start one, choose Create New Country or Theme, enter a name, and select Create &amp; Initialize. "/>
+                <para/>
+                <para/>
+                <Content FontSize="11" Chars="4. If needed, save your StampWorld or Colnect login in Site Accounts. Credentials are kept in local config.toml; keep this file private."/>
+                <para/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="2. Collect data"/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="12" Chars="StampWorld"/>
+                <para/>
+                <Content FontSize="11" Chars="Use StampWorld Pull on the startup or Review page. Choose the year range and start the pull. If the suggested country URL is wrong, enter and save the correct StampWorld country-page URL. This changes the source page, not the collection name."/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="12" Chars="Colnect"/>
+                <para/>
+                <Content FontSize="11" Chars="Import a Colnect CSV from the startup page or Review UI, using Colnect's Export for AlbumEasy format. Inbox imports skip successful files by SHA-256 checksum and do not generate pages unless requested. Auto-route moves files into country sub folders; leave it off to keep them in place."/>
+                <para/>
+                <Content FontSize="11" Chars="Other sources include US1847 and saved HTML (extractfile; --source-file is a shortcut). Check --help for requirements for other source values."/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="3. Review and update records"/>
+                <para/>
+                <Content FontSize="11" Chars="Compare existing records with candidates. Inspect proposed matches, select the changes you want, and apply them. Check edits before saving; back up the database before making large batches of changes."/>
+                <para/>
+                <Content FontSize="10" Chars="SCREENSHOT PLACEHOLDER - Replace this note with a screenshot of the startup page, showing the country selector and Albums Root controls."/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="4. Generate album pages and PDF "/>
+                <Content Chars="s"/>
+                <para/>
+                <Content FontSize="11" Chars="Use the startup page or Review UI generation controls after importing or reviewing data. Output uses the selected database and settings. Inspect the AlbumEasy text before printing. PDF creation needs AlbumEasy; set albumeasy_cli_path for automatic launch, or open the text in AlbumEasy yourself."/>
+                <para/>
+                <Content FontSize="11" Chars="Existing output is not overwritten by default. Before allowing an overwrite, back up any edited text, images, or PDF s."/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="5. Useful command-line examples"/>
+                <para/>
+                <Content FontSize="10" Chars="Generate from an existing database:  stamp_album_gen2 --db-path &quot;Albums/Canada/Canada.db&quot; --album-name &quot;Canada&quot;"/>
+                <para/>
+                <Content FontSize="10" Chars="Pull StampWorld data:  stamp_album_gen2 --source stampworld --site-name &quot;South Korea&quot; --album-name &quot;South Korea&quot; --start-year 1970 --end-year 1980"/>
+                <para/>
+                <Content FontSize="10" Chars="Process an inbox and generate after successful imports:  stamp_album_gen2 --source colnectexport --colnect-inbox &quot;colnect_inbox&quot; --colnect-generate-after-import"/>
+                <para/>
+                <Content FontSize="11" Chars="Inbox mode only imports unless you add --colnect-generate-after-import. Run stamp_album_gen2 --help for all options. Quote names and paths that contain spaces."/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="6. Configuration and file safety"/>
+                <para/>
+                <Content FontSize="11" Chars="Local config.toml stores settings such as the Albums Root, Colnect inbox, AlbumEasy command path, PDF options, and credentials. Create it from config_template.toml or run stamp_album_gen2 --init-config; --force-init-config backs up an existing file. Keep credentials private and back up databases and edited output before changing data."/>
+                <para/>
+                <Content Font="Arial Bold" FontSize="14" Chars="7. Troubleshooting"/>
+                <para/>
+                <Content FontSize="11" Chars="No collection? Check Albums Root and select Refresh. Pull or import failure? Check the country, year range, account access, file path, and CSV format; read the status message and log. No PDF? Check AlbumEasy and albumeasy_cli_path. Consult README.md, docs/CLI_USAGE.md, and docs/guides/CONFIG_PARAMETERS_INVENTORY.md for more help."/>
+                <para/>
+                <Content FontSize="10" Chars="SCREENSHOT PLACEHOLDER - Replace this note with a screenshot of the Review page, including the StampWorld pull and album generation controls."/>
+                <para/>
+                <Content FontSize="10" Chars="SCREENSHOT PLACEHOLDER - Replace this note with a screenshot of the Colnect import workflow. Remove all placeholder notes before exporting the final PDF."/>
+                <para/>
+                <Content FontSize="11" Chars="Acknowledgement: Stamp Album Generator 2 builds on AlbumEasy by Bundu Technology Ltd. Learn more at https://www.thestampweb.com/albumeasy."/>
+                <trail/>
+            </StoryText>
+        </PageObject>
+        <PageObject XPosition="172" YPosition="106.904" OwnPage="0" ItemID="268649115" ItemType="2" Width="468" Height="261" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" TextFlowMode="2" ImageScaleX="0.350625" ImageScaleY="0.350625" ImageOffsetX="30.1244919786096" ImageOffsetY="43.9033155080214" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" ImagePageNumber="0" ImageFileName="assets/icons/github-social-preview.png" ImageColorimetricIntent="0" UseEmbeddedProfile="0" Path="M0 0 L468 0 L468 261 L0 261 L0 0 Z" ContourLinePath="M0 0 L468 0 L468 261 L0 261 L0 0 Z" gXpos="172" gYpos="106.904" gWidth="0" gHeight="0" Layer="0" NextItem="-1" BackItem="-1"/>
+        <PageObject XPosition="172" YPosition="934.243902439024" OwnPage="1" ItemID="1768031735" ItemType="4" Width="480.390243902439" Height="561.073170731707" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L480.39 0 L480.39 561.073 L0 561.073 L0 0 Z" ContourLinePath="M0 0 L480.39 0 L480.39 561.073 L0 561.073 L0 0 Z" gXpos="172" gYpos="934.243902439024" gWidth="0" gHeight="0" Layer="0" NextItem="2047894832" BackItem="1448437969"/>
+        <PageObject XPosition="326.634146341463" YPosition="779.609756097561" OwnPage="0" ItemID="885062323" ItemType="4" Width="151.90243902439" Height="20.1951219512196" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L151.902 0 L151.902 20.1951 L0 20.1951 L0 0 Z" ContourLinePath="M0 0 L151.902 0 L151.902 20.1951 L0 20.1951 L0 0 Z" gXpos="326.634146341463" gYpos="779.609756097561" gWidth="0" gHeight="0" Alignment="1" Layer="0" NextItem="-1" BackItem="-1">
             <StoryText>
                 <DefaultStyle Alignment="1"/>
                 <Content Chars="Page "/>
@@ -127,63 +200,7 @@
                 <var name="pgco"/>
                 <trail Alignment="1"/>
             </StoryText>
-        </MasterObject>
-        <MasterObject XPosition="325.463414634146" YPosition="782" OwnPage="0" ItemID="216421383" ItemType="4" Width="151.90243902439" Height="20.9268292682926" FrameType="0" ClipEdited="0" LineWidth="0" LinePenStyle="13" AutoName="Copy of Text9" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="1" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" LineTransparency="1" FillBlendMode="1" Path="M0 0 L151.902 0 L151.902 20.9268 L0 20.9268 L0 0 Z" ContourLinePath="M0 0 L151.902 0 L151.902 20.9268 L0 20.9268 L0 0 Z" OnMasterPage="Normal" gXpos="338.634146341463" gYpos="2866182.87804878" gWidth="0" gHeight="0" ParagraphStyle="Page Numbers" Alignment="1" Layer="0" NextItem="-1" BackItem="-1">
-            <StoryText>
-                <DefaultStyle Parent="Page Numbers" Alignment="1"/>
-                <Content Chars="Page "/>
-                <var name="pgno"/>
-                <Content Chars=" of "/>
-                <var name="pgco"/>
-                <trail Parent="Page Numbers" Alignment="1"/>
-            </StoryText>
-        </MasterObject>
-        <PageObject XPosition="141.365853658537" YPosition="80.780487804878" OwnPage="0" ItemID="1724763157" ItemType="4" Width="526.829268292683" Height="31.609756097561" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L526.829 0 L526.829 31.6098 L0 31.6098 L0 0 Z" ContourLinePath="M0 0 L526.829 0 L526.829 31.6098 L0 31.6098 L0 0 Z" gXpos="141.365853658537" gYpos="80.780487804878" gWidth="0" gHeight="0" Alignment="1" Layer="0" NextItem="-1" BackItem="-1">
-            <StoryText>
-                <DefaultStyle Alignment="1" FontSize="23"/>
-                <Content FontSize="23" Chars="Welcome to Stamp Album Generator 2"/>
-                <trail Alignment="1"/>
-            </StoryText>
         </PageObject>
-        <PageObject XPosition="172.146341463415" YPosition="372.292682926829" OwnPage="0" ItemID="1627639742" ItemType="4" Width="470.634146341463" Height="374.926829268293" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" AutoName="Text2" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="2" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L470.634 0 L470.634 374.927 L0 374.927 L0 0 Z" ContourLinePath="M0 0 L470.634 0 L470.634 374.927 L0 374.927 L0 0 Z" gXpos="172.146341463415" gYpos="372.292682926829" gWidth="0" gHeight="0" Layer="0" NextItem="1618759283" BackItem="-1">
-            <StoryText>
-                <DefaultStyle/>
-                <Content Chars="This is multi faceted stamp album page generator.  "/>
-                <para Alignment="1"/>
-                <para Alignment="1"/>
-                <Content Chars="Stamp Album Generator 2 helps collectors automatically transform stamp data into album pages with practical layouts and collector-friendly control."/>
-                <para Alignment="1"/>
-                <para Alignment="1"/>
-                <para Alignment="1"/>
-                <para Alignment="1"/>
-                <para Alignment="1"/>
-                <para/>
-                <Content FontSize="11" Chars="There is a history of development, that if interested, can be seen in an appendix at the end of the docment."/>
-                <para Alignment="1"/>
-                <para/>
-                <Content Font="Arial Bold" FontSize="20" Chars="AlbumEasy Foundation"/>
-                <para Alignment="1"/>
-                <para Alignment="1"/>
-                <Content Chars="AlbumEasy is core to this project"/>
-                <para/>
-                <Content Chars="Stamp Album Generation startup: Pick a country to open its review UI."/>
-                <para/>
-                <Content Chars="This program could not be completed without the incredible AlbumEasy by Bundu Technology Ltd. It is a foundational part of how this workflow is designed, and it deserves significant credit."/>
-                <para/>
-                <Content Chars="Learn more about AlbumEasy and download it here: Bundu Technology Ltd. AlbumEasy."/>
-                <para/>
-                <Content Chars="We have implemented about 70-80% of AlbumEasy commands. You can edit the final output and add any additional commands that are not auto-generated."/>
-                <para/>
-                <Content Unicode="55357"/>
-                <Content Unicode="56513"/>
-                <Content Chars=" If you have not yet set up your Albums Root folder, you can do so now or let it auto-detect on launch. The Albums Root is where generated albums and related data are stored, and you can change it later in the config editor."/>
-                <para/>
-                <para/>
-                <Content Chars="If you have a Colnect inbox export and want to use it for review, you can import it now or later from the config editor. The default expected format is Colnect's &quot;Export&quot; option."/>
-                <trail/>
-            </StoryText>
-        </PageObject>
-        <PageObject XPosition="172" YPosition="106.904" OwnPage="0" ItemID="1071985743" ItemType="2" Width="468" Height="261" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" TextFlowMode="2" ImageScaleX="0.350625" ImageScaleY="0.350625" ImageOffsetX="30.1244919786096" ImageOffsetY="43.9033155080214" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" ImagePageNumber="0" ImageFileName="../../../../320G-2020-06-Program/Rust/StampAlbumGen2/assets/icons/github-social-preview.png" ImageColorimetricIntent="0" UseEmbeddedProfile="0" Path="M0 0 L468 0 L468 261 L0 261 L0 0 Z" ContourLinePath="M0 0 L468 0 L468 261 L0 261 L0 0 Z" gXpos="172" gYpos="106.904" gWidth="0" gHeight="0" Layer="0" NextItem="-1" BackItem="-1"/>
-        <PageObject XPosition="172" YPosition="934.243902439024" OwnPage="1" ItemID="1618759283" ItemType="4" Width="480.390243902439" Height="561.073170731707" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L480.39 0 L480.39 561.073 L0 561.073 L0 0 Z" ContourLinePath="M0 0 L480.39 0 L480.39 561.073 L0 561.073 L0 0 Z" gXpos="172" gYpos="934.243902439024" gWidth="0" gHeight="0" Layer="0" NextItem="-1" BackItem="1627639742"/>
+        <PageObject XPosition="140.487804878049" YPosition="1750.82926829268" OwnPage="2" ItemID="2047894832" ItemType="4" Width="530.341463414634" Height="684" FrameType="0" ClipEdited="0" LineWidth="1" LinePenStyle="1" ImageScaleX="1" ImageScaleY="1" ImageOffsetX="0" ImageOffsetY="0" ImageRotation="0" ImageVisible="1" ImageScaleType="1" ImageRatio="1" Columns="1" ColumnGap="0" AutomaticTextFrame="0" TextToFrameDistanceLeft="0" TextToFrameDistanceTop="0" TextToFrameDistanceBottom="0" TextToFrameDistanceRight="0" VerticalAlignment="0" FirstLineOffset="1" PathTextShowPath="0" PathTextDistanceFromPath="0" TextPathType="0" TextPathFlipped="0" Path="M0 0 L530.341 0 L530.341 684 L0 684 L0 0 Z" ContourLinePath="M0 0 L530.341 0 L530.341 684 L0 684 L0 0 Z" gXpos="140.487804878049" gYpos="1750.82926829268" gWidth="0" gHeight="0" Layer="0" NextItem="-1" BackItem="1768031735"/>
     </Document>
 </SCRIBUSUTF8NEW>

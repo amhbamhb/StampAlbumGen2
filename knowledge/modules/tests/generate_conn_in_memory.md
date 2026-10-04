@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: generate_conn_in_memory
-resource: tests/generate_conn_in_memory.rs#L1-L71
+resource: tests/generate_conn_in_memory.rs#L1-L72
 generated:
   by: okf-rs/0.4.0
 relationships:

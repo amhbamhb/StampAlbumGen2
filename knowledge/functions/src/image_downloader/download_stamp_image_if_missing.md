@@ -20,7 +20,7 @@ relationships:
 
 # Signature
 
-`pub fn download_stamp_image_if_missing( image_path: &str, remote_url: &str, album_name: &str, sg: &str, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn download_stamp_image_if_missing( image_path: &str, remote_url: &str, album_name: &str, sg: &str, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

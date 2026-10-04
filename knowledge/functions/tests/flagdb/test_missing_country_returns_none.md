@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_missing_country_returns_none
-resource: tests/flagdb.rs#L19-L21
+resource: tests/flagdb.rs#L22-L24
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -9,4 +9,4 @@ generated:
 
 # Signature
 
-`fn test_missing_country_returns_none()`
+`async fn test_missing_country_returns_none()`

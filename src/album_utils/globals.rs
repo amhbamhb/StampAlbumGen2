@@ -4,7 +4,7 @@ use std::io::Write;
 use std::path::Path;
 
 /// Writes global AlbumEasy header information to the output stream
-pub fn write_globals<W: Write>(
+pub async fn write_globals<W: Write>(
     writer: &mut W,
     album_name: &str,
     conn_opt: Option<&rusqlite::Connection>,
@@ -436,29 +436,38 @@ pub fn write_globals<W: Write>(
         let _ = layout::write_page_start(writer);
         // Write a simple cover block after the standard globals so it appears
         // below the STAMP_BOXES_SIZE_ADJUST section as requested.
-        let album_images_dir = format!("Albums/{}/images", album_name.replace(' ', "-"));
-        // Try to fetch/copy a flag image (size w320) and coat of arms. If these fail we ignore the error.
+        let album_images_dir = crate::file_utils::resolve_album_dir(album_name)
+            .join("images")
+            .to_string_lossy()
+            .to_string();
+        // Asset failures must not prevent the textual cover from being emitted.
         let mut flag_path_opt: Option<String> = None;
         let mut coat_path_opt: Option<String> = None;
-        if let Ok(p) = crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320") {
-            if let Some(fname) = std::path::Path::new(&p)
-                .file_name()
-                .and_then(|s| s.to_str())
-            {
-                flag_path_opt = Some(format!("images/{}", fname));
-            } else {
-                flag_path_opt = Some(p);
+        match crate::flagdb::copy_flag_for_album(album_name, &album_images_dir, "w320").await {
+            Ok(p) => {
+                if let Some(fname) = std::path::Path::new(&p)
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                {
+                    flag_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    flag_path_opt = Some(p);
+                }
             }
+            Err(error) => log::warn!("Cover flag unavailable for {album_name:?}: {error}"),
         }
-        if let Ok(p) = crate::flagdb::copy_coa_for_album(album_name, &album_images_dir) {
-            if let Some(fname) = std::path::Path::new(&p)
-                .file_name()
-                .and_then(|s| s.to_str())
-            {
-                coat_path_opt = Some(format!("images/{}", fname));
-            } else {
-                coat_path_opt = Some(p);
+        match crate::flagdb::copy_coa_for_album(album_name, &album_images_dir).await {
+            Ok(p) => {
+                if let Some(fname) = std::path::Path::new(&p)
+                    .file_name()
+                    .and_then(|s| s.to_str())
+                {
+                    coat_path_opt = Some(format!("images/{}", fname));
+                } else {
+                    coat_path_opt = Some(p);
+                }
             }
+            Err(error) => log::warn!("Cover coat of arms unavailable for {album_name:?}: {error}"),
         }
 
         // If the copy call failed (no coat_path_opt), check if a local

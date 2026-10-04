@@ -13,7 +13,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -29,4 +29,4 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)

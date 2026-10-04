@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: filename_uses_db_min_and_passed_end_when_start_missing_fixed
-resource: tests/filename_year_inference_fixed.rs#L97-L127
+resource: tests/filename_year_inference_fixed.rs#L98-L129
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn filename_uses_db_min_and_passed_end_when_start_missing_fixed()`
+`async fn filename_uses_db_min_and_passed_end_when_start_missing_fixed()`
 
 # Calls
 

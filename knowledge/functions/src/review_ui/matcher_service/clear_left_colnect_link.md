@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: clear_left_colnect_link
-resource: src/review_ui/matcher_service.rs#L1571-L1672
+resource: src/review_ui/matcher_service.rs#L1592-L1693
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick_bootstrap_albums_root_via_dialog
-resource: src/review_ui.rs#L1691-L1754
+resource: src/review_ui.rs#L1977-L2040
 visibility: private
 generated:
   by: okf-rs/0.4.0

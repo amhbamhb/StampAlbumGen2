@@ -34,8 +34,8 @@ fn read_stamp_heading_label(output_txt: &std::path::Path) -> Option<String> {
     None
 }
 
-#[test]
-fn test_stamp_heading_label_changes_output() {
+#[tokio::test]
+async fn test_stamp_heading_label_changes_output() {
     // Create tempdir and switch cwd so load_config picks up our config.toml
     let td = tempdir().expect("tempdir");
     let orig = env::current_dir().expect("cwd");
@@ -59,7 +59,8 @@ fn test_stamp_heading_label_changes_output() {
         Option::<fn(usize)>::None,
         Some(1970),
         Some(1970),
-    );
+    )
+    .await;
     let out1 = td
         .path()
         .join("Albums")
@@ -78,7 +79,8 @@ fn test_stamp_heading_label_changes_output() {
         Option::<fn(usize)>::None,
         Some(1970),
         Some(1970),
-    );
+    )
+    .await;
     let out2 = td
         .path()
         .join("Albums")

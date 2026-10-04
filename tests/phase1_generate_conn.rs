@@ -6,8 +6,8 @@ use tempfile::tempdir;
 /// Integration test for Phase 1: verify `generate_album_output_conn` works with
 /// a live `rusqlite::Connection` by creating an in-memory DB and checking that
 /// an AlbumEasy output file is produced in a temporary `Albums/...` directory.
-#[test]
-fn phase1_generate_with_in_memory_conn() {
+#[tokio::test]
+async fn phase1_generate_with_in_memory_conn() {
     // Prepare temporary workspace and switch current directory so relative
     // paths like `Albums/...` resolve into the temp directory.
     let tmp = tempdir().expect("tempdir");
@@ -66,7 +66,8 @@ fn phase1_generate_with_in_memory_conn() {
         None::<fn(usize)>,
         Some(1900),
         Some(2000),
-    );
+    )
+    .await;
     assert!(
         output_path.exists(),
         "expected output file at {}",

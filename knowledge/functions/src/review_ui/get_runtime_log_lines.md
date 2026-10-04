@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_runtime_log_lines
-resource: src/review_ui.rs#L62-L67
+resource: src/review_ui.rs#L78-L83
 generated:
   by: okf-rs/0.4.0
 relationships:

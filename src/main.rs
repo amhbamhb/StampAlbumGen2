@@ -20,8 +20,8 @@ use stamp_album_gen2::{
     config,
     modes::{run_database_mode, run_scraping_mode},
     review_ui::{
-        log_runtime_event, run_review_ui, run_review_ui_bootstrap, ReviewUiBootstrapOutcome,
-        ReviewUiRunOutcome, ReviewUiSelected,
+        log_runtime_event, run_review_ui, run_review_ui_bootstrap, MatcherPayloadOptions,
+        ReviewUiBootstrapOutcome, ReviewUiRunOutcome, ReviewUiSelected,
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
@@ -35,7 +35,8 @@ use stamp_album_gen2::{
 };
 use std::io::IsTerminal;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     std::panic::set_hook(Box::new(|panic_info| {
         let location = panic_info
             .location()
@@ -103,7 +104,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => {
             write_startup_probe("logging.setup.error", &e.to_string());
-            return Err(Box::new(e));
+            return Err(Box::new(e) as Box<dyn std::error::Error>);
         }
     }
     // If a local source file was provided, expose it to StampWorld code paths
@@ -176,9 +177,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Err(e) => {
             write_startup_probe("runtime.align.error", &e.to_string());
-            return Err(Box::new(e));
+            return Err(Box::new(e) as Box<dyn std::error::Error>);
         }
     };
+
+    match stamp_album_gen2::colnect::template::ensure_manual_import_files(std::path::Path::new("."))
+    {
+        Ok(created) => {
+            for path in created {
+                log::info!("Created manual CSV import file: {}", path.display());
+            }
+        }
+        Err(error) => {
+            log::warn!("Failed to ensure manual CSV import files: {}", error);
+            eprintln!(
+                "Warning: Failed to ensure manual CSV import files: {}",
+                error
+            );
+            write_startup_probe("manual_import.setup.error", &error.to_string());
+        }
+    }
 
     if launched_without_args && (interactive_terminal || gui_session) && !force_first_run {
         cli.review_ui = true;
@@ -294,7 +312,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 db_path: String,
                 album_name: Option<String>,
                 open_browser: bool,
-                prebound: Option<(tiny_http::Server, String)>,
+                prebound: Option<Box<(tiny_http::Server, String)>>,
             },
         }
 
@@ -380,7 +398,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                                 db_path,
                                 album_name: Some(country),
                                 open_browser: false,
-                                prebound: Some((server, bind)),
+                                prebound: Some(Box::new((server, bind))),
                             };
                         }
                     }
@@ -407,30 +425,44 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     let run_outcome = match run_review_ui(
                         &db_path,
                         album_name.as_deref(),
-                        prebound,
+                        prebound.map(|pb| *pb),
                         cli.review_ui_bind.as_deref(),
                         open_browser,
-                        &album_cfg.effective_default_catalog_code(),
-                        &album_cfg.review_ui_default_sort_mode(),
-                        album_cfg.review_ui_odd_row_color(),
-                        album_cfg.review_ui_even_row_color(),
-                        album_cfg.review_ui_first_column_color(),
-                        album_cfg.review_ui_second_column_color(),
-                        album_cfg.review_ui_series_default_checked(),
-                        album_cfg.review_ui_description_default_checked(),
-                        album_cfg.review_ui_watermark_default_checked(),
-                        album_cfg.review_ui_design_default_checked(),
-                        album_cfg.review_ui_engraving_default_checked(),
-                        album_cfg.review_ui_perforation_default_checked(),
-                        album_cfg.review_ui_context_default_checked(),
-                        album_cfg.review_ui_colnect_links_default_checked(),
-                        album_cfg.review_ui_colnect_image_url_default_checked(),
-                        album_cfg.review_ui_colnect_metadata_default_checked(),
-                        album_cfg.review_ui_replace_sg_number_default_checked(),
-                        album_cfg.review_ui_right_unmatched_only_default_checked(),
-                        album_cfg.albumeasy_auto_pdf_enabled(),
-                        album_cfg.effective_albumeasy_cli_path().is_some(),
-                        &album_cfg.review_ui_catalog_family_options(),
+                        &MatcherPayloadOptions {
+                            default_catalog_code: &album_cfg.effective_default_catalog_code(),
+                            default_sort_mode: &album_cfg.review_ui_default_sort_mode(),
+                            odd_row_color: album_cfg.review_ui_odd_row_color(),
+                            even_row_color: album_cfg.review_ui_even_row_color(),
+                            first_column_color: album_cfg.review_ui_first_column_color(),
+                            second_column_color: album_cfg.review_ui_second_column_color(),
+                            series_default_checked: album_cfg.review_ui_series_default_checked(),
+                            description_default_checked: album_cfg
+                                .review_ui_description_default_checked(),
+                            watermark_default_checked: album_cfg
+                                .review_ui_watermark_default_checked(),
+                            design_default_checked: album_cfg.review_ui_design_default_checked(),
+                            engraving_default_checked: album_cfg
+                                .review_ui_engraving_default_checked(),
+                            perforation_default_checked: album_cfg
+                                .review_ui_perforation_default_checked(),
+                            context_default_checked: album_cfg.review_ui_context_default_checked(),
+                            colnect_links_default_checked: album_cfg
+                                .review_ui_colnect_links_default_checked(),
+                            colnect_image_url_default_checked: album_cfg
+                                .review_ui_colnect_image_url_default_checked(),
+                            colnect_metadata_default_checked: album_cfg
+                                .review_ui_colnect_metadata_default_checked(),
+                            replace_sg_number_default_checked: album_cfg
+                                .review_ui_replace_sg_number_default_checked(),
+                            right_unmatched_only_default_checked: album_cfg
+                                .review_ui_right_unmatched_only_default_checked(),
+                            albumeasy_auto_generate_pdf_default: album_cfg
+                                .albumeasy_auto_pdf_enabled(),
+                            albumeasy_cli_configured: album_cfg
+                                .effective_albumeasy_cli_path()
+                                .is_some(),
+                            catalog_family_options: &album_cfg.review_ui_catalog_family_options(),
+                        },
                     ) {
                         Ok(outcome) => outcome,
                         Err(e) => {
@@ -550,7 +582,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             && (cli.colnect_csv.is_some() || cli.colnect_inbox.is_some()))
     {
         // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
-        run_database_mode(&cli, show_progress)?;
+        run_database_mode(&cli, show_progress).await?;
     } else if effective_source == "stampworld" || effective_source == "us1847" {
         // Scraping mode
         // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
@@ -582,7 +614,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             );
         } else {
-            run_scraping_mode(&cli, show_progress, &effective_source)?;
+            run_scraping_mode(&cli, show_progress, &effective_source).await?;
         }
     } else {
         // No db_path and not stampworld: require db_path

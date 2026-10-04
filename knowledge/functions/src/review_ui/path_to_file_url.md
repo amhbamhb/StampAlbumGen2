@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: path_to_file_url
-resource: src/review_ui.rs#L1252-L1285
+resource: src/review_ui.rs#L1469-L1502
 visibility: private
 generated:
   by: okf-rs/0.4.0

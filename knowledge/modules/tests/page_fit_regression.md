@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: page_fit_regression
-resource: tests/page_fit_regression.rs#L1-L148
+resource: tests/page_fit_regression.rs#L1-L149
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -15,10 +15,10 @@ relationships:
   - target: external/std-io-read
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/std-sync-mutex
+  - target: external/tempfile-tempdir
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/tempfile-tempdir
+  - target: external/tokio-sync-mutex
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -36,8 +36,8 @@ relationships:
 - `lazy_static::lazy_static`
 - `std::fs`
 - `std::io::Read`
-- `std::sync::Mutex`
 - `tempfile::tempdir`
+- `tokio::sync::Mutex`
 
 # Member of
 

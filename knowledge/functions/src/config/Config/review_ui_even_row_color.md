@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_even_row_color
-resource: src/config.rs#L1315-L1322
+resource: src/config.rs#L1391-L1398
 generated:
   by: okf-rs/0.4.0
 relationships:

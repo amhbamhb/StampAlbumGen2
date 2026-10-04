@@ -40,6 +40,15 @@ extra_height_mm = 0.0
 album_stamp_img_new_setting_preserve_aspect = true
 image_spacing_mm = 2.0
 text_line_height_mm = 3.0
+# Page-fit text heights use the exact emitted line count. This value is a
+# minimum line-height allowance, never smaller than the selected row font.
+# Legacy flags retained for compatibility; headings and spacers are always measured.
+stamp_heading_in_row_height = false
+pages_vspace_in_row_height = false
+# Additional gap between rows of the same series, included in pagination.
+series_row_gap_mm = 0.0
+# Maximum additional top-centering space; zero disables automatic centering.
+max_page_vspace_mm = 10.0
 
 # --- Header formatting toggles ---
 include_design = true
@@ -199,6 +208,9 @@ bootstrap_albums_root_path = ""
 
 # When true, run: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = false
+
+# Positive seconds to wait for a fresh PDF after the AlbumEasy launcher exits.
+albumeasy_pdf_timeout_secs = 300
 
 # DX/support switch for additional PDF generation diagnostics in Logs/
 pdf_dx_logging = false

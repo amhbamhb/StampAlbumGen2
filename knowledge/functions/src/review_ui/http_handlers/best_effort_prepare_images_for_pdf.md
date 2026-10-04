@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: best_effort_prepare_images_for_pdf
-resource: src/review_ui/http_handlers.rs#L27-L125
+resource: src/review_ui/http_handlers.rs#L43-L141
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -24,7 +24,7 @@ relationships:
 
 # Signature
 
-`fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize)`
+`async fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize)`
 
 # Calls
 

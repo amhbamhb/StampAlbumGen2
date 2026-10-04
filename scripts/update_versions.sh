@@ -3,6 +3,11 @@
 # Canonical version synchronization script.
 # Keeps semantic version values aligned across Cargo.toml and docs.
 
+# Explicit `sh script` invocations bypass the Bash shebang.
+if [ -z "${BASH_VERSION:-}" ]; then
+    exec bash "$0" "$@"
+fi
+
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

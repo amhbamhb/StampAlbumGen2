@@ -19,11 +19,7 @@ fn resolve_dimensions(images_dir: &Path, image_path: &str) -> Option<(u32, u32)>
         return Some(d);
     }
     // Try relative to album images dir
-    let rest = if image_path.starts_with("images/") {
-        &image_path["images/".len()..]
-    } else {
-        image_path
-    };
+    let rest = image_path.strip_prefix("images/").unwrap_or(image_path);
     let alt = images_dir.join(rest);
     stamp_album_gen2::image_utils::get_image_dimensions(alt)
 }
@@ -144,25 +140,24 @@ fn main() {
 
     for entry in std::fs::read_dir(&albums_dir)
         .unwrap_or_else(|_| panic!("Failed to read Albums dir {}", albums_dir.display()))
+        .flatten()
     {
-        if let Ok(ent) = entry {
-            let path = ent.path();
-            if path.is_dir() {
-                // Expect DB at Albums/<name>/<name>.db
-                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                    let db_path = path.join(format!("{}.db", name));
-                    if db_path.exists() {
-                        match process_db(&db_path, apply) {
-                            Ok(n) => total_updated += n,
-                            Err(e) => error!("Error processing {}: {}", db_path.display(), e),
-                        }
-                    } else {
-                        debug!(
-                            "No DB found for album {} at expected path {}",
-                            name,
-                            db_path.display()
-                        );
+        let path = entry.path();
+        if path.is_dir() {
+            // Expect DB at Albums/<name>/<name>.db
+            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                let db_path = path.join(format!("{}.db", name));
+                if db_path.exists() {
+                    match process_db(&db_path, apply) {
+                        Ok(n) => total_updated += n,
+                        Err(e) => error!("Error processing {}: {}", db_path.display(), e),
                     }
+                } else {
+                    debug!(
+                        "No DB found for album {} at expected path {}",
+                        name,
+                        db_path.display()
+                    );
                 }
             }
         }

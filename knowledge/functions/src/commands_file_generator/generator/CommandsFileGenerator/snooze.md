@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: snooze
-resource: src/commands_file_generator/generator.rs#L280-L282
+resource: src/commands_file_generator/generator.rs#L224-L226
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_stamp_from_title_and_description
-resource: src/us1847/collector.rs#L700-L877
+resource: src/us1847/collector.rs#L684-L861
 visibility: private
 generated:
   by: okf-rs/0.4.0

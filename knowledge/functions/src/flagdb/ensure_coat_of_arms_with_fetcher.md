@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_coat_of_arms_with_fetcher
-resource: src/flagdb.rs#L322-L669
+resource: src/flagdb.rs#L199-L546
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -38,7 +38,7 @@ relationships:
 
 # Signature
 
-`pub fn ensure_coat_of_arms_with_fetcher( alpha2: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn ensure_coat_of_arms_with_fetcher( alpha2: &str, fetcher: &dyn Fetcher, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

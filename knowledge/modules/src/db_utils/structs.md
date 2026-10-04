@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: structs
-resource: src/db_utils/structs.rs#L1-L54
+resource: src/db_utils/structs.rs#L1-L56
 generated:
   by: okf-rs/0.4.0
 relationships:

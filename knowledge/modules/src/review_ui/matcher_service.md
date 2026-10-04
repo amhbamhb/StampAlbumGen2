@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: matcher_service
-resource: src/review_ui/matcher_service.rs#L1-L1755
+resource: src/review_ui/matcher_service.rs#L1-L1776
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -32,7 +32,10 @@ relationships:
 - [load_right_candidate_by_colnect_id](../../../functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id.md)
 - [add_colnect_stamp_to_stamps](../../../functions/src/review_ui/matcher_service/add_colnect_stamp_to_stamps.md)
 - [restore_colnect_candidate_to_queue](../../../functions/src/review_ui/matcher_service/restore_colnect_candidate_to_queue.md)
+- [for_save](../../../functions/src/review_ui/matcher_service/LeftEditorImageInput/for_save.md)
+- [for_add](../../../functions/src/review_ui/matcher_service/LeftEditorImageInput/for_add.md)
 - [query_stamp_image_path](../../../functions/src/review_ui/matcher_service/query_stamp_image_path.md)
+- [LeftEditorImageInput](../../../classes/src/review_ui/matcher_service/LeftEditorImageInput.md)
 - [resolve_left_editor_image_path](../../../functions/src/review_ui/matcher_service/resolve_left_editor_image_path.md)
 - [save_left_stamp](../../../functions/src/review_ui/matcher_service/save_left_stamp.md)
 - [add_left_stamp](../../../functions/src/review_ui/matcher_service/add_left_stamp.md)

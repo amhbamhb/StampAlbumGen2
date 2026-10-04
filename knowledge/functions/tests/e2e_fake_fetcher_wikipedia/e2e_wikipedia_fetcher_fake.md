@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: e2e_wikipedia_fetcher_fake
-resource: tests/e2e_fake_fetcher_wikipedia.rs#L30-L39
+resource: tests/e2e_fake_fetcher_wikipedia.rs#L35-L45
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn e2e_wikipedia_fetcher_fake()`
+`async fn e2e_wikipedia_fetcher_fake()`
 
 # Calls
 

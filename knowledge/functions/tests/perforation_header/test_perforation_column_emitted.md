@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_perforation_column_emitted
-resource: tests/perforation_header.rs#L9-L78
+resource: tests/perforation_header.rs#L9-L79
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_perforation_column_emitted()`
+`async fn test_perforation_column_emitted()`
 
 # Calls
 

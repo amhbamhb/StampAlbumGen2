@@ -1,15 +1,15 @@
 ---
 type: Rust Method
 title: colnect_details_enabled
-resource: src/config.rs#L1104-L1109
+resource: src/config.rs#L1180-L1185
 generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/estimate_colnect_centre_text
+  - target: functions/src/album_globals/generator/build_stamp_text
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -20,5 +20,5 @@ relationships:
 
 # Called by
 
-- [estimate_colnect_centre_text](../../../../functions/src/album_globals/generator/estimate_colnect_centre_text.md)
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [build_stamp_text](../../../../functions/src/album_globals/generator/build_stamp_text.md)
+- [generate_album_output_conn_prepared](../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)

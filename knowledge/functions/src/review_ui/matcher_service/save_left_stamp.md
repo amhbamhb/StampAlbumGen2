@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_left_stamp
-resource: src/review_ui/matcher_service.rs#L1177-L1355
+resource: src/review_ui/matcher_service.rs#L1206-L1380
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/resolve_left_editor_image_path
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/matcher_service/LeftEditorImageInput/for_save
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
@@ -32,6 +35,7 @@ relationships:
 
 - [query_stamp_image_path](../../../../functions/src/review_ui/matcher_service/query_stamp_image_path.md)
 - [resolve_left_editor_image_path](../../../../functions/src/review_ui/matcher_service/resolve_left_editor_image_path.md)
+- [for_save](../../../../functions/src/review_ui/matcher_service/LeftEditorImageInput/for_save.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [load_left_stamp_by_rowid](../../../../functions/src/review_ui/matcher_service/load_left_stamp_by_rowid.md)
 

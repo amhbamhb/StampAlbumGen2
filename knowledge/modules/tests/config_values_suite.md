@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config_values_suite
-resource: tests/config_values_suite.rs#L1-L260
+resource: tests/config_values_suite.rs#L1-L263
 generated:
   by: okf-rs/0.4.0
 relationships:

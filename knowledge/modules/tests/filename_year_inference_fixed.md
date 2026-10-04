@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: filename_year_inference_fixed
-resource: tests/filename_year_inference_fixed.rs#L1-L127
+resource: tests/filename_year_inference_fixed.rs#L1-L129
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,10 +9,7 @@ relationships:
   - target: external/lazy-static-lazy-static
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/std-sync-mutex
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/tempfile
+  - target: external/tokio-sync-mutex
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -31,8 +28,7 @@ relationships:
 # Imports
 
 - `lazy_static::lazy_static`
-- `std::sync::Mutex`
-- `tempfile`
+- `tokio::sync::Mutex`
 
 # Member of
 

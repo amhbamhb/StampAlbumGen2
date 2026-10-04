@@ -49,7 +49,7 @@ fn test_ensure_placeholder_for_stamp_and_update_db() {
     let mm_per_px_h = 0.5_f32; // -> 50 px
 
     let opts = stamp_album_gen2::album_globals::generator_new::helpers::PlaceholderCallOptions {
-        album_name: album_name,
+        album_name,
         series_name: Some(series_name),
         catalog_number: sg_number,
         year: "1900",

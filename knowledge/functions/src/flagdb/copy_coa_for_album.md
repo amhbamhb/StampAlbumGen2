@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: copy_coa_for_album
-resource: src/flagdb.rs#L672-L721
+resource: src/flagdb.rs#L549-L598
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -26,7 +26,7 @@ relationships:
 
 # Signature
 
-`pub fn copy_coa_for_album( country: &str, album_images_dir: &str, ) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn copy_coa_for_album( country: &str, album_images_dir: &str, ) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 

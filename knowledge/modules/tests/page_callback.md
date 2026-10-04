@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: page_callback
-resource: tests/page_callback.rs#L1-L47
+resource: tests/page_callback.rs#L1-L48
 generated:
   by: okf-rs/0.4.0
 relationships:

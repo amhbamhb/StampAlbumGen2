@@ -1,21 +1,18 @@
 ---
 type: Rust Module
 title: fetch
-resource: src/stampworld/fetch.rs#L1-L168
+resource: src/stampworld/fetch.rs#L1-L169
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
-  - target: external/reqwest-blocking-client
+  - target: external/async-trait-async-trait
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/reqwest-header-headermap
+  - target: external/reqwest-client-statuscode
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/reqwest-statuscode
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/super
+  - target: external/std-time-duration
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -39,15 +36,12 @@ relationships:
 - [build_image_client](../../../functions/src/stampworld/fetch/build_image_client.md)
 - [fetch_text](../../../functions/src/stampworld/fetch/fetch_text.md)
 - [fetch_bytes](../../../functions/src/stampworld/fetch/fetch_bytes.md)
-- [test_fetch_text_invalid_url_err](../../../functions/src/stampworld/fetch/test_fetch_text_invalid_url_err.md)
-- [test_fetch_bytes_invalid_url_err](../../../functions/src/stampworld/fetch/test_fetch_bytes_invalid_url_err.md)
 
 # Imports
 
-- `reqwest::blocking::Client`
-- `reqwest::header::HeaderMap`
-- `reqwest::StatusCode`
-- `super::*`
+- `async_trait::async_trait`
+- `reqwest::{Client, StatusCode}`
+- `std::time::Duration`
 
 # Member of
 

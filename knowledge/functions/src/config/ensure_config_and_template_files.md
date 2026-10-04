@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_config_and_template_files
-resource: src/config.rs#L51-L458
+resource: src/config.rs#L51-L459
 generated:
   by: okf-rs/0.4.0
 relationships:

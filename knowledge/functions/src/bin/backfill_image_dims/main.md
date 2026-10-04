@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: src/bin/backfill_image_dims.rs#L87-L172
+resource: src/bin/backfill_image_dims.rs#L83-L167
 visibility: private
 generated:
   by: okf-rs/0.4.0

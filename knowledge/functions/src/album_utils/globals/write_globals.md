@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_globals
-resource: src/album_utils/globals.rs#L7-L686
+resource: src/album_utils/globals.rs#L7-L695
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -13,6 +13,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/layout/write_page_start
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/file_utils/resolve_album_dir
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/flagdb/copy_flag_for_album
@@ -37,13 +40,14 @@ relationships:
 
 # Signature
 
-`pub fn write_globals<W: Write>( writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>, ) -> usize`
+`pub async fn write_globals<W: Write>( writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>, ) -> usize`
 
 # Calls
 
 - [formatted_now](../../../../functions/src/time_utils/formatted_now.md)
 - [load_effective_config](../../../../functions/src/config/load_effective_config.md)
 - [write_page_start](../../../../functions/src/album_globals/generator_new/layout/write_page_start.md)
+- [resolve_album_dir](../../../../functions/src/file_utils/resolve_album_dir.md)
 - [copy_flag_for_album](../../../../functions/src/flagdb/copy_flag_for_album.md)
 - [copy_coa_for_album](../../../../functions/src/flagdb/copy_coa_for_album.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)

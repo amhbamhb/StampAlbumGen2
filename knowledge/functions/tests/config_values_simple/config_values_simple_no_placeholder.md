@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: config_values_simple_no_placeholder
-resource: tests/config_values_simple.rs#L77-L159
+resource: tests/config_values_simple.rs#L77-L161
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`fn config_values_simple_no_placeholder()`
+`async fn config_values_simple_no_placeholder()`
 
 # Calls
 

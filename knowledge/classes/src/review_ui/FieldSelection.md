@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: FieldSelection
-resource: src/review_ui.rs#L917-L929
+resource: src/review_ui.rs#L1134-L1146
 visibility: private
 generated:
   by: okf-rs/0.4.0

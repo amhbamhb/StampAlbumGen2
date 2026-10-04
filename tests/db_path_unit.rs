@@ -1,15 +1,17 @@
+use async_trait::async_trait;
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
 use tempfile::tempdir;
 
 struct FakeFetcherEmpty;
 
+#[async_trait]
 impl Fetcher for FakeFetcherEmpty {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         Ok((StatusCode::OK, "<html><body></body></html>".to_string()))
     }
 
-    fn fetch_bytes(
+    async fn fetch_bytes(
         &self,
         _url: &str,
     ) -> Result<(StatusCode, reqwest::header::HeaderMap, Vec<u8>), reqwest::Error> {
@@ -21,8 +23,8 @@ impl Fetcher for FakeFetcherEmpty {
     }
 }
 
-#[test]
-fn collector_creates_db_at_expected_path() {
+#[tokio::test]
+async fn collector_creates_db_at_expected_path() {
     // Create a temp dir and an images/ child to simulate album layout
     let td = tempdir().expect("tempdir");
     let images_dir = td.path().join("images");
@@ -46,20 +48,23 @@ fn collector_creates_db_at_expected_path() {
     // Run collector; it will initialize the DB at the expected path
     let _ = stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
         &fetcher,
-        &mut sequencer,
-        separator,
-        site_name,
-        &images_dir_str,
-        &month_number,
-        &get_stampworld_image,
-        base_url,
-        2000,
-        2001,
-        false,
-        None,
-        1,
-        1,
-    );
+        stamp_album_gen2::stampworld::data_collector::CollectStampworldParams {
+            sequencer: &mut sequencer,
+            separator,
+            site_name,
+            images_directory: &images_dir_str,
+            month_number_fn: &month_number,
+            downloader: &get_stampworld_image,
+            base_url,
+            start_year: 2000,
+            end_year: 2001,
+            overwrite_images: false,
+            page_callback: None,
+            max_pages: 1,
+            stop_after_no_hits: 1,
+        },
+    )
+    .await;
 
     // Compute expected DB path the same way the collector does
     let db_parent = images_dir_str.replace("/images", "");

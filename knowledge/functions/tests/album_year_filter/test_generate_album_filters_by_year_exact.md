@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_generate_album_filters_by_year_exact
-resource: tests/album_year_filter.rs#L93-L110
+resource: tests/album_year_filter.rs#L112-L130
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_generate_album_filters_by_year_exact()`
+`async fn test_generate_album_filters_by_year_exact()`
 
 # Calls
 

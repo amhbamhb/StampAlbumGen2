@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: stampworld
-resource: src/stampworld/mod.rs#L1-L27
+resource: src/stampworld/mod.rs#L1-L28
 generated:
   by: okf-rs/0.4.0
 relationships:

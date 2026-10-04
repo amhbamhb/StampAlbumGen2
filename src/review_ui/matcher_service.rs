@@ -1164,8 +1164,8 @@ fn resolve_left_editor_image_path(
     db_path: &str,
     album_name: &str,
     input: LeftEditorImageInput<'_>,
-)  -> Result<String, String> {
-     let mode = input
+) -> Result<String, String> {
+    let mode = input
         .image_mode
         .unwrap_or(if input.current_image_path.is_some() {
             "keep"
@@ -1235,13 +1235,13 @@ pub(super) fn save_left_stamp(
         }
     };
 
-// save_left_stamp
-let image_path = match resolve_left_editor_image_path(
-    conn,
-    db_path,
-    album_name,
-    LeftEditorImageInput::for_save(&req, existing_image_path.as_str()),
-)   {
+    // save_left_stamp
+    let image_path = match resolve_left_editor_image_path(
+        conn,
+        db_path,
+        album_name,
+        LeftEditorImageInput::for_save(&req, existing_image_path.as_str()),
+    ) {
         Ok(value) => value,
         Err(message) => {
             return SaveLeftStampResponse {
@@ -1406,13 +1406,13 @@ pub(super) fn add_left_stamp(
         .filter(|value| !value.trim().is_empty())
         .unwrap_or_else(|| album_name.to_string());
 
-// add_left_stamp
-let image_path = match resolve_left_editor_image_path(
-    conn,
-    db_path,
-    album_name,
-    LeftEditorImageInput::for_add(&req),
-)  {
+    // add_left_stamp
+    let image_path = match resolve_left_editor_image_path(
+        conn,
+        db_path,
+        album_name,
+        LeftEditorImageInput::for_add(&req),
+    ) {
         Ok(value) => value,
         Err(message) => {
             return AddLeftStampResponse {

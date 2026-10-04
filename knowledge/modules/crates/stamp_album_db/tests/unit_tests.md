@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: unit_tests
-resource: crates/stamp_album_db/tests/unit_tests.rs#L1-L220
+resource: crates/stamp_album_db/tests/unit_tests.rs#L1-L231
 generated:
   by: okf-rs/0.4.0
 relationships:

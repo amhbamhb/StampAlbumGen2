@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: album_globals
-resource: src/album_globals/mod.rs#L1-L375
+resource: src/album_globals/mod.rs#L1-L511
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -45,6 +45,9 @@ relationships:
   - target: external/std-time-duration-systemtime
     resolved_by: tree-sitter
     confidence: exact
+  - target: external/std-os-unix-fs-permissionsext
+    resolved_by: tree-sitter
+    confidence: exact
   member_of:
   - target: packages/stamp_album_gen2
     resolved_by: tree-sitter
@@ -62,7 +65,11 @@ relationships:
 - [generated_artifacts_from_path](../../functions/src/album_globals/generated_artifacts_from_path.md)
 - [generate_album_output_conn](../../functions/src/album_globals/generate_album_output_conn.md)
 - [generate_album_output_conn_with_pdf_override](../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
+- [generate_album_output_conn_with_filters](../../functions/src/album_globals/generate_album_output_conn_with_filters.md)
+- [generate_album_output_conn_with_prepared_pdf](../../functions/src/album_globals/generate_album_output_conn_with_prepared_pdf.md)
 - [generate_album_output](../../functions/src/album_globals/generate_album_output.md)
+- [wait_for_generated_pdf_rejects_missing_empty_and_stale_files](../../functions/src/album_globals/wait_for_generated_pdf_rejects_missing_empty_and_stale_files.md)
+- [albumeasy_pdf_timeout_failure_reports_actual_wait](../../functions/src/album_globals/albumeasy_pdf_timeout_failure_reports_actual_wait.md)
 - [wait_for_generated_pdf_detects_delayed_new_write](../../functions/src/album_globals/wait_for_generated_pdf_detects_delayed_new_write.md)
 
 # Imports
@@ -80,6 +87,7 @@ relationships:
 - `super::wait_for_generated_pdf_with_timing`
 - `std::fs`
 - `std::time::{Duration, SystemTime}`
+- `std::os::unix::fs::PermissionsExt`
 
 # Member of
 

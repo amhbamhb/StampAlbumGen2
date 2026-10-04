@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config_parameter_validation
-resource: tests/config_parameter_validation.rs#L1-L508
+resource: tests/config_parameter_validation.rs#L1-L510
 generated:
   by: okf-rs/0.4.0
 relationships:

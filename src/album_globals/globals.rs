@@ -2,7 +2,7 @@ use crate::config::Config;
 
 // Use shared ImageStatus and OSType from `types.rs`
 
-pub fn write_globals<W: std::io::Write>(
+pub async fn write_globals<W: std::io::Write>(
     writer: &mut W,
     album_name: &str,
     conn_opt: Option<&rusqlite::Connection>,
@@ -11,7 +11,7 @@ pub fn write_globals<W: std::io::Write>(
 ) -> usize {
     // Use the canonical globals writer from `album_utils` so all callers get the
     // same header block. The user-supplied album header is implemented there.
-    crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year)
+    crate::album_utils::write_globals(writer, album_name, conn_opt, start_year, end_year).await
 }
 
 /// Compute usable height (mm) given a Config. This mirrors the logic used

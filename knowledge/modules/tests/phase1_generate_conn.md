@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: phase1_generate_conn
-resource: tests/phase1_generate_conn.rs#L1-L78
+resource: tests/phase1_generate_conn.rs#L1-L79
 generated:
   by: okf-rs/0.4.0
 relationships:

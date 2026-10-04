@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: SaveConfigEditorResponse
-resource: src/review_ui.rs#L1225-L1229
+resource: src/review_ui.rs#L1442-L1446
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -10,7 +10,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/stamp_content_height
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -25,4 +25,4 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [stamp_content_height](../../../../../functions/src/album_globals/generator/stamp_content_height.md)

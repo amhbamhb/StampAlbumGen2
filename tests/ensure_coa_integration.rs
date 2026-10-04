@@ -5,8 +5,8 @@ use tempfile::tempdir;
 // Integration test: place a small SVG in a temporary STAMP_FLAGS_DIR and call the
 // public `ensure_coat_of_arms` function which should find the SVG and attempt
 // to rasterize it to PNG, returning the PNG path.
-#[test]
-fn ensure_coa_from_local_svg_creates_png() {
+#[tokio::test]
+async fn ensure_coa_from_local_svg_creates_png() {
     // Create a tempdir and populate flags/coats_of_arms/ca.svg
     let dir = tempdir().expect("tempdir");
     let flags_dir = dir.path().join("flags");
@@ -26,7 +26,7 @@ fn ensure_coa_from_local_svg_creates_png() {
     std::env::set_var("STAMP_FLAGS_DIR", dir.path());
 
     // Call the public API which should locate the svg and attempt to rasterize
-    let res = stamp_album_gen2::flagdb::ensure_coat_of_arms("ca");
+    let res = stamp_album_gen2::flagdb::ensure_coat_of_arms("ca").await;
     assert!(
         res.is_ok(),
         "ensure_coat_of_arms returned an error: {:?}",

@@ -1,6 +1,5 @@
 use lazy_static::lazy_static;
-use std::sync::Mutex;
-use tempfile;
+use tokio::sync::Mutex;
 
 lazy_static! {
     static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
@@ -23,9 +22,9 @@ fn insert_minimal_stamp(conn: &rusqlite::Connection, year: i32, sg_number: &str)
     .expect("insert minimal stamp");
 }
 
-#[test]
-fn filename_infers_db_min_max_when_none_fixed() {
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+#[tokio::test]
+async fn filename_infers_db_min_max_when_none_fixed() {
+    let _lock = TEST_CWD_MUTEX.lock().await;
     let tmp = tempfile::tempdir().unwrap();
     let cwd = tmp.path();
     let orig_dir = std::env::current_dir().unwrap();
@@ -47,7 +46,8 @@ fn filename_infers_db_min_max_when_none_fixed() {
         None::<fn(usize)>,
         None,
         None,
-    );
+    )
+    .await;
     assert_eq!(
         output_path.file_name().and_then(|s| s.to_str()),
         Some("TestAlbum-1901-1955.txt")
@@ -60,9 +60,9 @@ fn filename_infers_db_min_max_when_none_fixed() {
     std::env::set_current_dir(orig_dir).unwrap();
 }
 
-#[test]
-fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+#[tokio::test]
+async fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
+    let _lock = TEST_CWD_MUTEX.lock().await;
     let tmp = tempfile::tempdir().unwrap();
     let cwd = tmp.path();
     let orig_dir = std::env::current_dir().unwrap();
@@ -80,7 +80,8 @@ fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
         None::<fn(usize)>,
         Some(1920),
         None,
-    );
+    )
+    .await;
     assert_eq!(
         output_path.file_name().and_then(|s| s.to_str()),
         Some("TestAlbum2-1920-1940.txt")
@@ -93,9 +94,9 @@ fn filename_uses_passed_start_and_db_max_when_end_missing_fixed() {
     std::env::set_current_dir(orig_dir).unwrap();
 }
 
-#[test]
-fn filename_uses_db_min_and_passed_end_when_start_missing_fixed() {
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+#[tokio::test]
+async fn filename_uses_db_min_and_passed_end_when_start_missing_fixed() {
+    let _lock = TEST_CWD_MUTEX.lock().await;
     let tmp = tempfile::tempdir().unwrap();
     let cwd = tmp.path();
     let orig_dir = std::env::current_dir().unwrap();
@@ -113,7 +114,8 @@ fn filename_uses_db_min_and_passed_end_when_start_missing_fixed() {
         None::<fn(usize)>,
         None,
         Some(1900),
-    );
+    )
+    .await;
     assert_eq!(
         output_path.file_name().and_then(|s| s.to_str()),
         Some("TestAlbum3-1888-1900.txt")

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: config_values_suite_iterates_and_changes_output
-resource: tests/config_values_suite.rs#L62-L260
+resource: tests/config_values_suite.rs#L62-L263
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`fn config_values_suite_iterates_and_changes_output()`
+`async fn config_values_suite_iterates_and_changes_output()`
 
 # Calls
 

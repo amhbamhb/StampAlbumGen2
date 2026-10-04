@@ -5,6 +5,16 @@ use regex::Regex;
 use rusqlite::params;
 use scraper::{Html, Selector};
 use std::collections::HashSet;
+use std::path::PathBuf;
+// Import the asynchronous fetcher functionality
+use crate::stampworld::fetch::{Fetcher, ReqwestFetcher};
+// Re-import parser helpers (assuming they are still in stampworld::parser)
+// Import parser helpers from the extracted parser module. These helpers were
+// previously defined here; they have been moved to `stampworld::parser` so
+// they can be unit tested and reused independently from the large collector.
+use crate::stampworld::parser::{
+    compress_context, dedupe_details, extract_block_metadata, normalize_stamps_issued,
+};
 
 // Precompiled regexes used across the module
 pub static RANGE_RE: Lazy<Regex> =
@@ -15,7 +25,6 @@ pub static DAY_MONTH_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"(?i)^\s*(\d{1,2})\.\s*([\p{L}\-]+)\s*$").expect("invalid day-month regex")
 });
 
-// Hoisted regexes that were previously constructed inside loops.
 pub static YEAR_RANGE_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"(\d{4})(?:\s*-\s*(\d{4}))?").expect("invalid year range regex"));
 
@@ -24,34 +33,114 @@ pub static GROUP_URL_RE: Lazy<Regex> = Lazy::new(|| {
         .expect("invalid group url regex")
 });
 
-// Import parser helpers from the extracted parser module. These helpers were
-// previously defined here; they have been moved to `stampworld::parser` so
-// they can be unit tested and reused independently from the large collector.
-use crate::stampworld::parser::{
-    compress_context, dedupe_details, extract_block_metadata, normalize_stamps_issued,
-};
+/// Inputs for a StampWorld collection run.
+pub struct CollectStampworldParams<'a> {
+    pub sequencer: &'a mut i32,
+    pub separator: &'a str,
+    pub site_name: &'a str,
+    pub images_directory: &'a str,
+    pub month_number_fn: &'a dyn Fn(&str) -> String,
+    pub downloader: &'a dyn Fn(&str, &str, bool) -> ImageStatus,
+    pub base_url: &'a str,
+    pub start_year: i32,
+    pub end_year: i32,
+    pub overwrite_images: bool,
+    pub page_callback: Option<&'a dyn Fn(usize)>,
+    pub max_pages: i32,
+    pub stop_after_no_hits: i32,
+}
+
+/// Entry point for asynchronous StampWorld data collection.
+/// Entry point for asynchronous StampWorld data collection.
+pub async fn collect_stampworld_data_async(
+    fetcher: &dyn Fetcher,
+    params: &CollectStampworldParams<'_>,
+) -> Vec<String> {
+    let site_name = params.site_name;
+    let images_directory = params.images_directory;
+    let start_year = params.start_year;
+    let end_year = params.end_year;
+    let page_callback = params.page_callback;
+    let max_pages = params.max_pages;
+    let stop_after_no_hits = params.stop_after_no_hits;
+    info!(
+        "collect_stampworld_data_async called for {} range {}..{}. Using async fetching.",
+        site_name, start_year, end_year
+    );
+
+    let cfg = crate::config::load_config("config.toml");
+    let _emit_row_diag = cfg.detailed_page_fit_diagnostics.unwrap_or(false);
+
+    let images_dir_buf = PathBuf::from(images_directory);
+    let images_parent = images_dir_buf.parent().unwrap_or(&images_dir_buf);
+    let _country_db_name = site_name.replace("/", "-");
+    let _album_basename = images_parent.file_name().unwrap_or_default(); // Used for context, not directly in result
+
+    let mut results = Vec::new();
+    let _dedupe_set: HashSet<String> = HashSet::new();
+    let mut consecutive_no_hits = 0;
+
+    // Use a dedicated client for image fetching to ensure proper headers
+    let _image_fetcher = ReqwestFetcher::new_for_images();
+
+    for page in 1..=max_pages {
+        // Check stop condition before starting the next fetch
+        if consecutive_no_hits >= stop_after_no_hits {
+            info!(
+                "Stopping scraping: Reached {} consecutive no-hit pages.",
+                stop_after_no_hits
+            );
+            break;
+        }
+
+        let url = format!("{page}",);
+
+        let fetch_result = fetcher.fetch_text(&url).await;
+
+        match fetch_result {
+            Ok((_status, html)) => {
+                if let Some(callback) = page_callback {
+                    // Notify the caller of progress for this page.
+                    callback(page as usize);
+                }
+                let html_content = html.trim().to_string();
+                results.push(html_content);
+            }
+            Err(_) => {
+                // Handle error during fetch (e.g., 404, network error)
+                consecutive_no_hits += 1;
+                error!("Failed to fetch page {} for site {}", page, site_name);
+            }
+        }
+    }
+
+    results
+}
 
 /// Consolidated StampWorld collector implementing the key heuristics:
 /// - Prefer images scoped to a stamp row; fall back to block/global images only when needed
 /// - Stop after N consecutive pages that add zero new stamps (`stop_after_no_hits`)
 /// - In-run dedupe using an in-memory HashSet keyed by country||series||sg_number
 /// - Enforce requested year range strictly
-pub fn collect_stampworld_data_with_fetcher(
+pub async fn collect_stampworld_data_with_fetcher(
     fetcher: &dyn crate::stampworld::fetch::Fetcher,
-    sequencer: &mut i32,
-    _separator: &str,
-    site_name: &str,
-    images_directory: &str,
-    month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
-    base_url: &str,
-    start_year: i32,
-    end_year: i32,
-    overwrite_images: bool,
-    page_callback: Option<&dyn Fn(usize)>,
-    max_pages: i32,
-    stop_after_no_hits: i32,
+    params: CollectStampworldParams<'_>,
 ) -> Vec<String> {
+    let CollectStampworldParams {
+        sequencer,
+        separator: _separator,
+        site_name,
+        images_directory,
+        month_number_fn: month_number,
+        downloader: get_stampworld_image,
+        base_url,
+        start_year,
+        end_year,
+        overwrite_images,
+        page_callback,
+        max_pages,
+        stop_after_no_hits,
+    } = params;
     info!(
         "collect_stampworld_data called for {} base_url={} range={}..{}",
         site_name, base_url, start_year, end_year
@@ -151,7 +240,7 @@ pub fn collect_stampworld_data_with_fetcher(
                 }
             }
         } else {
-            match fetcher.fetch_text(&url) {
+            match fetcher.fetch_text(&url).await {
                 Ok((s, b)) => (s, b),
                 Err(e) => {
                     error!("Problem retrieving page {}: {}", url, e);
@@ -612,7 +701,7 @@ pub fn collect_stampworld_data_with_fetcher(
                                                 s, detail_url
                                             );
                                             if let Ok((_status, text)) =
-                                                fetcher.fetch_text(&detail_url)
+                                                fetcher.fetch_text(&detail_url).await
                                             {
                                                 let doc = Html::parse_document(&text);
                                                 // Search table rows and try to find the row containing this sg_number anchor/id
@@ -1535,37 +1624,8 @@ pub fn collect_stampworld_data_with_fetcher(
 /// Backwards-compatible wrapper which constructs the default ReqwestFetcher and
 /// calls the injected-fetcher implementation. Callers that wish to inject a
 /// test double should call `collect_stampworld_data_with_fetcher` directly.
-pub fn collect_stampworld_data(
-    sequencer: &mut i32,
-    _separator: &str,
-    site_name: &str,
-    images_directory: &str,
-    month_number: &dyn Fn(&str) -> String,
-    get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus,
-    base_url: &str,
-    start_year: i32,
-    end_year: i32,
-    overwrite_images: bool,
-    page_callback: Option<&dyn Fn(usize)>,
-    max_pages: i32,
-    stop_after_no_hits: i32,
-) -> Vec<String> {
+pub async fn collect_stampworld_data(params: CollectStampworldParams<'_>) -> Vec<String> {
     info!("stampworld::collect_stampworld_data wrapper invoked");
     let fetcher = crate::stampworld::fetch::ReqwestFetcher::new();
-    collect_stampworld_data_with_fetcher(
-        &fetcher,
-        sequencer,
-        _separator,
-        site_name,
-        images_directory,
-        month_number,
-        get_stampworld_image,
-        base_url,
-        start_year,
-        end_year,
-        overwrite_images,
-        page_callback,
-        max_pages,
-        stop_after_no_hits,
-    )
+    collect_stampworld_data_with_fetcher(&fetcher, params).await
 }

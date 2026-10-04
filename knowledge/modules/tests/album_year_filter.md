@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: album_year_filter
-resource: tests/album_year_filter.rs#L1-L122
+resource: tests/album_year_filter.rs#L1-L142
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -23,6 +23,7 @@ relationships:
 
 # Contains
 
+- [FixtureStamp](../../classes/tests/album_year_filter/FixtureStamp.md)
 - [insert_fixture_stamp](../../functions/tests/album_year_filter/insert_fixture_stamp.md)
 - [populate_test_db](../../functions/tests/album_year_filter/populate_test_db.md)
 - [test_generate_album_filters_by_year_exact](../../functions/tests/album_year_filter/test_generate_album_filters_by_year_exact.md)

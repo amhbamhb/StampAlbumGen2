@@ -22,6 +22,9 @@ relationships:
   - target: functions/src/review_ui/colnect_import_data
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -38,3 +41,4 @@ relationships:
 - [ingest_colnect_data_with_default_catalog](../../../../functions/src/colnect/ingest/ingest_colnect_data_with_default_catalog.md)
 - [run_colnect_inbox_mode](../../../../functions/src/modes/run_colnect_inbox_mode.md)
 - [colnect_import_data](../../../../functions/src/review_ui/colnect_import_data.md)
+- [manual_rows_parse_and_replace_only_the_same_staged_identity](../../../../functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity.md)

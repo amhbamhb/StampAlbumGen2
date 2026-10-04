@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: db_path_unit
-resource: tests/db_path_unit.rs#L1-L81
+resource: tests/db_path_unit.rs#L1-L86
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/async-trait-async-trait
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/reqwest-statuscode
     resolved_by: tree-sitter
     confidence: exact
@@ -30,6 +33,7 @@ relationships:
 
 # Imports
 
+- `async_trait::async_trait`
 - `reqwest::StatusCode`
 - `stamp_album_gen2::stampworld::fetch::Fetcher`
 - `tempfile::tempdir`

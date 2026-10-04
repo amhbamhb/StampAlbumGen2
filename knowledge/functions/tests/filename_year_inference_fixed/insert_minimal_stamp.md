@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_minimal_stamp
-resource: tests/filename_year_inference_fixed.rs#L9-L24
+resource: tests/filename_year_inference_fixed.rs#L8-L23
 visibility: private
 generated:
   by: okf-rs/0.4.0

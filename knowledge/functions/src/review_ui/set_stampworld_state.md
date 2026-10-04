@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_stampworld_state
-resource: src/review_ui.rs#L528-L532
+resource: src/review_ui.rs#L591-L595
 visibility: private
 generated:
   by: okf-rs/0.4.0

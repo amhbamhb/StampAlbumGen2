@@ -1,18 +1,18 @@
 ---
 type: Rust Method
 title: effective_default_catalog_code
-resource: src/config.rs#L1458-L1465
+resource: src/config.rs#L1534-L1541
 generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/Config/effective_stamp_heading_label
@@ -50,9 +50,9 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [resolve_stamp_heading_label](../../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md)
-- [fetch_and_filter_stamps](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)
 - [effective_stamp_heading_label](../../../../functions/src/config/Config/effective_stamp_heading_label.md)
 - [main](../../../../functions/src/main.md)
 - [run_colnect_inbox_mode](../../../../functions/src/modes/run_colnect_inbox_mode.md)

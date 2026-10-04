@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: local_image_file_exists
-resource: src/review_ui/http_handlers.rs#L23-L25
+resource: src/review_ui/http_handlers.rs#L39-L41
 visibility: private
 generated:
   by: okf-rs/0.4.0

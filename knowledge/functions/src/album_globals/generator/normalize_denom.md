@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_denom
-resource: src/album_globals/generator.rs#L27-L31
+resource: src/album_globals/generator.rs#L30-L34
 visibility: private
 generated:
   by: okf-rs/0.4.0

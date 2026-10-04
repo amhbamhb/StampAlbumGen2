@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: new
-resource: src/stampworld/fetch.rs#L29-L53
+resource: src/stampworld/fetch.rs#L36-L59
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,18 +1,18 @@
 use lazy_static::lazy_static;
 use std::fs;
 use std::io::Read;
-use std::sync::Mutex;
 use tempfile::tempdir;
+use tokio::sync::Mutex;
 
 // Regression test: ensure a header+row that would otherwise overlap the footer
 // is moved to the next page. This mirrors the integration test used earlier but
 // provides a lightweight guard to prevent regressions to the `page_fit` logic.
-#[test]
-fn page_fit_regression_for_conservative_buffer() {
+#[tokio::test]
+async fn page_fit_regression_for_conservative_buffer() {
     lazy_static! {
         static ref TEST_CWD_MUTEX: Mutex<()> = Mutex::new(());
     }
-    let _lock = TEST_CWD_MUTEX.lock().unwrap();
+    let _lock = TEST_CWD_MUTEX.lock().await;
     // Create tempdir and small config to make usable height small
     let td = tempdir().expect("tempdir");
     let td_path = td.path();
@@ -104,14 +104,15 @@ page_fit_conservative_buffer_mm = 11.0
 
     // Run generation from tempdir so load_config picks our config
     let orig = std::env::current_dir().expect("cwd");
-    std::env::set_current_dir(&td_path).expect("chdir");
+    std::env::set_current_dir(td_path).expect("chdir");
     stamp_album_gen2::album_globals::generate_album_output(
         &db_path_str,
         "RegTestAlbum",
         None::<fn(usize)>,
         None,
         None,
-    );
+    )
+    .await;
     std::env::set_current_dir(orig).expect("restore cwd");
 
     // Verify output contains forced page 2 sequence. The generator may include inferred years in the filename,

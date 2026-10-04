@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: collect_text
-resource: src/us1847/collector.rs#L292-L300
+resource: src/us1847/collector.rs#L284-L292
 visibility: private
 generated:
   by: okf-rs/0.4.0

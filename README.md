@@ -66,7 +66,46 @@ Scrape StampWorld for a country/year range:
  --end-year 1950
 ```
 
-Scrape US1847 mode:
+### Remember a StampWorld country URL
+
+Multiword country names already convert spaces to hyphens automatically:
+`South Korea` becomes `South-Korea`, `British Canada` becomes `British-Canada`,
+and `North Korean Occ. South Korea` becomes `North-Korean-Occ.-South-Korea`.
+Quote multiword country names when entering CLI commands.
+
+Both the startup and Review **StampWorld Pull** panels show the resolved country
+URL. If automatic naming does not match the site, paste the country page URL
+into **StampWorld country URL (optional)** and click **Save country URL**.
+Unsaved edits are also validated and saved before a pull starts; invalid URLs
+or save failures block that pull. Clear the field and save to restore automatic
+naming. Switching countries loads that country's saved setting and discards
+unsaved edits from the previous country.
+
+Settings persist across restarts in the existing `slug_overrides.toml` file:
+the application searches the working-folder ancestors first, then executable
+ancestors, and creates the file in the working folder if none exists. No database
+table is needed. Saving preserves other mappings/settings but may reformat the
+TOML and remove comments. Malformed or unreadable mapping files produce an
+explicit error rather than silently using a different URL.
+
+Mappings are keyed by the exact country name. They affect only the source URL,
+not country display names, album names, folders or databases. Each UI pull passes
+its resolved URL to the subprocess, so a different pull working folder cannot
+cause a different mapping to be used. Existing plain CLI pulls use the saved
+mapping; an optional `--stampworld-country-url` argument supplies a one-run
+override without saving it:
+
+```bash
+./stamp_album_gen2 --source stampworld --site-name "South Korea" \
+ --album-name "South Korea" --start-year 1970 --end-year 1980 \
+ --stampworld-country-url https://www.stampworld.com/en/stamps/South-Korea/
+```
+
+Use a full HTTPS URL under `www.stampworld.com/en/stamps/<country>/`, without
+year-range paths, query parameters, credentials or fragments. Validation checks
+the URL shape; it does not check whether StampWorld currently serves that page.
+
+### Scrape US1847
 
 ```bash
 ./stamp_album_gen2 \
@@ -76,6 +115,19 @@ Scrape US1847 mode:
  --start-year 1847 \
  --end-year 2026
 ```
+
+### Enter your own stamp data
+
+Normal launches create a blank `UserImport/manual_import_template.csv` and a
+local usage guide at `UserImport/README.md` in the runtime working folder.
+Missing files are recreated on later launches; existing files are never
+overwritten. Copy the template, fill it in, and import the completed CSV using
+the existing Colnect import and Review UI workflow. Imports stage candidates;
+they do not automatically update your album stamps.
+
+See [User-defined CSV import](docs/guides/USER_DEFINED_CSV_IMPORT.md) for field
+definitions, examples, Linux/Windows commands, stable manual IDs, and important
+re-import/update limits.
 
 Ingest one Colnect CSV (source must be `colnectexport`):
 
@@ -200,8 +252,8 @@ Force overwrite existing config (creates backup first):
  When used with `--db-path`, this run also proceeds to album generation.
 - `--colnect-inbox <DIR>`
  Recursively discover and process Colnect CSV files country-by-country.
-	If omitted in `colnectexport` mode, falls back to `colnect_inbox_path` in
-	`config.toml`.
+ If omitted in `colnectexport` mode, falls back to `colnect_inbox_path` in
+ `config.toml`.
  By default this mode is ingestion-only; run a follow-up
  `--db-path ... --album-name ...` command to generate pages, or use
  `--colnect-generate-after-import` to auto-generate in the same run.
@@ -218,6 +270,41 @@ Force overwrite existing config (creates backup first):
  Skip files already imported by SHA256 checksum (default behavior).
 - `--colnect-force-reimport`
  Reimport even if checksum already exists in import history.
+
+## Country flags and ISO codes
+
+Country lookup includes the supplied `ISOCountryCodes.csv`, embedded into the
+executable at build time. Despite its filename, the file is **tab-delimited**,
+with no header: alpha-2 code, then country name. Its 246 entries include South
+Korea (`KR`), North Korea (`KP`) and historical entries such as Netherlands
+Antilles (`AN`). Names and codes are case-insensitive; spaces, hyphens and
+underscores are normalized. The same lookup is used for flags and coats of arms.
+Changing this bundled file requires rebuilding the executable.
+
+Existing aliases (such as UK, USA and Great Britain) remain available. A local
+`flags/flag_codes.json` merges additional name-to-code overrides over the bundled
+data instead of replacing the ISO map. `STAMP_FLAGS_DIR` can identify the flags
+folder itself or its parent containing `flags/`. Lookup also checks the working
+folder, executable folder, working-folder parent and source-tree flags folder.
+For historical albums or occupations, add an explicit mapping or provide an
+album-local image; the application does not guess which modern flag applies.
+Some historical codes in the supplied file may not be served by flag providers.
+The file is used as supplied, not represented as a current exhaustive ISO list;
+countries added after this dataset was produced may need explicit aliases.
+
+Flags use a validated local cache, then neXperts PNG, neXperts SVG and FlagCDN.
+Failed HTTP responses, empty responses and invalid image bodies are rejected
+before caching, so an error page cannot block the next source. SVG flags are
+rasterized to real PNGs. `flag_cover_overwrite_flag = true` now refreshes existing
+cache entries; unsuccessful refreshes leave the prior file intact.
+
+If lookup or download fails, a valid existing album-local
+`images/flag_placeholder.png` or `images/flag_placeholder.svg` is reused, with
+the correct file extension. Failures and fallback use are logged; generation
+can still produce a textual cover. `print_flag_cover` and `flag_cover_elements`
+continue to control whether the cover and its flag element are emitted.
+Cover assets use the configured albums root (including `STAMP_ALBUMS_ROOT`),
+rather than assuming a working-folder `Albums/` directory.
 
 ## GUI build note
 
@@ -245,6 +332,19 @@ If your CI runner lacks GUI libraries (GTK on Linux), keep `USE_RFD` disabled. T
   Default: `127.0.0.1:7878`.
 
 ### Diagnostics
+
+Automatic PDF generation waits up to 300 seconds for a fresh PDF after the
+AlbumEasy launcher exits. For large albums or slow external drives, increase
+the positive `albumeasy_pdf_timeout_secs` value in the global configuration
+or the album's configuration:
+
+```toml
+[runtime]
+albumeasy_pdf_timeout_secs = 600
+```
+
+This wait does not limit AlbumEasy's process runtime. Timeout messages report
+the configured value; an existing, unchanged PDF is not treated as new output.
 
 - `--pdf-dx-logging`
   Enable additional PDF generation diagnostics for support/debugging.
@@ -313,7 +413,7 @@ Navigate left stamps with **Prev / Next** and right candidates with
 Only checked fields are written when **Apply Matches To DB** is clicked:
 
 | Checkbox | What it writes |
-|----------|---------------|
+| ---------- | --------------- |
 | **series** | Colnect series name → `series` column |
 | **description** *(default on)* | Colnect item name → `description` column |
 | **watermark** | Colnect watermark |
@@ -354,6 +454,36 @@ Fields in the dialog:
 
 After confirming, all available Colnect metadata fields are written to the new
 stamp row alongside the fields entered in the dialog.
+
+### Review PDF Emission and Format Filters
+
+The Review screen's **PDF** section provides **Emission** and **Format**
+checkbox dropdowns before **Generate PDF Now**. Both default to **All**.
+Select one or several values, or choose **All** to clear that field's selection.
+For example, select **Official** and **Definitive**, then select **Stamp** under
+Format.
+
+- Choices are looked up dynamically from the current country's album records,
+  including stored Colnect metadata and reference-data fallback. There is no
+  fixed list of categories. Unmatched right-panel candidates are not themselves
+  album records.
+- Multiple choices in one field use **OR**; Emission, Format, and the year range
+  combine using **AND**.
+- **All** includes records without metadata. With an active filter, missing
+  metadata is included only if **Unknown / not recorded** is selected.
+- Choices are remembered separately for each country in this browser. The
+  browser must allow local storage, and the same local server address/port must
+  be used to restore them. Storage failures are shown beside the controls.
+- **Refresh filter choices** updates the dropdowns after imports or edits;
+  generation also refreshes them. Unavailable remembered choices remain visible
+  and selected rather than silently changing the selection to All.
+- Filters affect the generated AlbumEasy text and PDF, not database records or
+  left/right panel visibility. A filtered selection with no matching stamps
+  reports an error and leaves the previous output unchanged.
+- These filters apply only to **Generate PDF Now** on the Review screen.
+  Country-selection-screen generation and **Generate & Close** remain
+  unfiltered by Emission/Format. Existing output naming is unchanged, so a
+  successful filtered run replaces the output for the same album/year range.
 
 ### Delete Colnect Candidate
 
@@ -433,6 +563,8 @@ by these migrations.
 
 ### Top-Level Docs
 
+- User manual source: [StampAlbumGenerator2HelpManual.sla](StampAlbumGenerator2HelpManual.sla)
+  (open in Scribus; replace the screenshot placeholders before exporting the PDF)
 - [docs/CLI_USAGE.md](docs/CLI_USAGE.md)
 - [docs/ALBUM_STAMP_IMG_NEW_SETTING_PARAMETERS.md](docs/ALBUM_STAMP_IMG_NEW_SETTING_PARAMETERS.md)
 - [docs/AUTOMATION_SETUP.md](docs/AUTOMATION_SETUP.md)

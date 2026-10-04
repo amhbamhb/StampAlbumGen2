@@ -1,15 +1,15 @@
 ---
 type: Rust Function
 title: collect_stampworld_data_with_fetcher
-resource: src/stampworld/data_collector.rs#L39-L1533
+resource: src/stampworld/data_collector.rs#L125-L1622
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/config/load_config
+  - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
+  - target: functions/src/review_ui/views/compare/html
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/stampworld/parser/dedupe_details
@@ -19,6 +19,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/db_utils/operations/insert_stamp_placeholder
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_utils/text_utils/sanitize_filename
@@ -62,15 +65,16 @@ relationships:
 
 # Signature
 
-`pub fn collect_stampworld_data_with_fetcher( fetcher: &dyn crate::stampworld::fetch::Fetcher, sequencer: &mut i32, _separator: &str, site_name: &str, images_directory: &str, month_number: &dyn Fn(&str) -> String, get_stampworld_image: &dyn Fn(&str, &str, bool) -> ImageStatus, base_url: &str, start_year: i32, end_year: i32, overwrite_images: bool, page_callback: Option<&dyn Fn(usize)>, max_pages: i32, stop_after_no_hits: i32, ) -> Vec<String>`
+`pub async fn collect_stampworld_data_with_fetcher( fetcher: &dyn crate::stampworld::fetch::Fetcher, params: CollectStampworldParams<'_>, ) -> Vec<String>`
 
 # Calls
 
-- [load_config](../../../../functions/src/config/load_config.md)
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [html](../../../../functions/src/review_ui/views/compare/html.md)
 - [dedupe_details](../../../../functions/src/stampworld/parser/dedupe_details.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
+- [insert_stamp_placeholder](../../../../functions/src/db_utils/operations/insert_stamp_placeholder.md)
 - [sanitize_filename](../../../../functions/src/album_utils/text_utils/sanitize_filename.md)
 - [extract_block_metadata](../../../../functions/src/stampworld/parser/extract_block_metadata.md)
 - [compress_context](../../../../functions/src/stampworld/parser/compress_context.md)

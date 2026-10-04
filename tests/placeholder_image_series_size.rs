@@ -28,8 +28,8 @@ fn placeholder_series_size_matches_hint() {
     let (exp_w, exp_h) =
         stamp_album_gen2::placeholder_image::compute_placeholder_size_for_series(series);
     // Allow a ±1 pixel tolerance because mm->px conversions may round differently across platforms.
-    let dw = if w > exp_w { w - exp_w } else { exp_w - w };
-    let dh = if h > exp_h { h - exp_h } else { exp_h - h };
+    let dw = w.abs_diff(exp_w);
+    let dh = h.abs_diff(exp_h);
     assert!(
         dw <= 1,
         "width differs by {} pixels (expected {}, got {})",

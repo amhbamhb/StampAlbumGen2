@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ReqwestFetcher
-resource: src/stampworld/fetch.rs#L17-L19
+resource: src/stampworld/fetch.rs#L24-L26
 generated:
   by: okf-rs/0.4.0
 ---

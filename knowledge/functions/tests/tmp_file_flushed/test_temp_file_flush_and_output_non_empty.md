@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_temp_file_flush_and_output_non_empty
-resource: tests/tmp_file_flushed.rs#L20-L66
+resource: tests/tmp_file_flushed.rs#L20-L67
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_temp_file_flush_and_output_non_empty()`
+`async fn test_temp_file_flush_and_output_non_empty()`
 
 # Calls
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: duplicate_detection_finds_duplicates_in_same_section
-resource: src/config.rs#L2617-L2626
+resource: src/config.rs#L3012-L3021
 visibility: private
 generated:
   by: okf-rs/0.4.0

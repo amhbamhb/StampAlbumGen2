@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_colnect_image_url
-resource: crates/stamp_album_db/src/lib.rs#L587-L589
+resource: crates/stamp_album_db/src/lib.rs#L638-L640
 visibility: private
 generated:
   by: okf-rs/0.4.0

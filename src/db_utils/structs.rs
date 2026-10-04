@@ -50,5 +50,7 @@ pub struct StampStub {
     pub perforation: String,
     pub series: String,
     pub context: String,
+    pub issue_location: String,
+    pub quantity_printed: String,
     pub multi_perf: bool,
 }

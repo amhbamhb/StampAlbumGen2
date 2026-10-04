@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: wait_for_generated_pdf
-resource: src/album_globals/mod.rs#L64-L71
+resource: src/album_globals/mod.rs#L68-L79
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -18,7 +18,7 @@ relationships:
 
 # Signature
 
-`fn wait_for_generated_pdf(expected_pdf_path: &Path, previous_modified: Option<SystemTime>) -> bool`
+`fn wait_for_generated_pdf( expected_pdf_path: &Path, previous_modified: Option<SystemTime>, timeout: Duration, ) -> bool`
 
 # Calls
 

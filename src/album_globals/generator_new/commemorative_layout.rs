@@ -171,10 +171,57 @@ pub fn emit_description_boxes<W: Write>(
 fn build_stamp_description(stamp: &Stamp) -> String {
     let mut parts = Vec::new();
 
-    // Title line
-    if let Some(desc) = stamp.attrs.get("description") {
-        parts.push(clean_for_output(desc));
+    // title (description)
+    match stamp.attrs.get("description") {
+        Some(desc) => {
+            parts.push(clean_for_output(desc));
+        }
+        None => {
+            // If description is missing, we still need to account for it if the user expects a field.
+
+            // Since the error suggests issues with .id access, we focus on correctly handling the description itself.
+
+            // We will add an empty string or placeholder if no description is found, ensuring the output structure remains consistent.
+
+            parts.push(String::from("No Description")); // Added fallback for missing description
+        }
     }
+
+    // Issued date
+
+    if let Some(issued) = stamp.attrs.get("issue_date") {
+        if !issued.is_empty() {
+            parts.push(format!("Issued: {}", issued));
+        }
+    }
+
+    // Color
+
+    if let Some(color) = stamp.attrs.get("color") {
+        if !color.is_empty() {
+            parts.push(format!("Color: {}", color));
+        }
+    }
+
+    // Quantity
+
+    if let Some(qty) = stamp.attrs.get("stamps_issued") {
+        if !qty.is_empty() {
+            parts.push(format!("Quantity: {}", qty));
+        }
+    }
+
+    // Notes (if available)
+
+    if let Some(notes) = stamp.attrs.get("notes") {
+        if !notes.is_empty() {
+            parts.push(notes.to_string());
+        }
+    }
+
+    // Join with newlines, escape for output
+
+    parts.join("\\\n");
 
     // Issued date
     if let Some(issued) = stamp.attrs.get("issue_date") {

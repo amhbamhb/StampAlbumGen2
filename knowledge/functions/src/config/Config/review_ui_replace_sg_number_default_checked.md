@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_replace_sg_number_default_checked
-resource: src/config.rs#L1437-L1442
+resource: src/config.rs#L1513-L1518
 generated:
   by: okf-rs/0.4.0
 relationships:

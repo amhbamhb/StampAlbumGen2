@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_stamp_description
-resource: src/album_globals/generator_new/commemorative_layout.rs#L171-L209
+resource: src/album_globals/generator_new/commemorative_layout.rs#L171-L256
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,6 +11,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/commemorative_layout/clean_for_output
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -27,6 +30,7 @@ relationships:
 
 - [get](../../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [clean_for_output](../../../../../functions/src/album_globals/generator_new/commemorative_layout/clean_for_output.md)
+- [from](../../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 
 # Called by
 

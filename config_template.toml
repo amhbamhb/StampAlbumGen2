@@ -178,11 +178,9 @@ album_stamp_img_aspect_ratio = true
 global_scale = 1.0
 
 # Row-height accounting
-# When true, the estimated stamp heading height is included in row height
-# calculations (prevents headings from overlapping subsequent rows).
+# Legacy compatibility setting: visible headings are always measured.
 stamp_heading_in_row_height = false
-# When true, the page vertical spacer (PAGE_VSPACE) height is included in
-# row height calculations.
+# Legacy compatibility setting: explicit vertical spacing is always measured.
 pages_vspace_in_row_height = false
 
 # Stamp heading style
@@ -221,10 +219,8 @@ header_font_spacing = 2.0
 # Conservative page-fit padding before forcing a new page
 page_fit_conservative_buffer_mm = 2.0
 
-# Custom PAGE_VSPACE marker string written into album output.
-# When set, the generator emits this token instead of a numeric PAGE_VSPACE
-# value; a post-processor can then replace the token with concrete numbers.
-# Leave empty to emit standard numeric PAGE_VSPACE values.
+# Legacy marker setting. Header spacing now always uses configured numeric
+# header_vspace_before_mm / header_vspace_after_mm values.
 page_vspace_marker = ""
 
 # ROW_START_ES behavior
@@ -758,6 +754,10 @@ bootstrap_albums_root_path = ""
 # Requires albumeasy_cli_path to be set to a valid executable.
 # Equivalent to running: <albumeasy_cli_path> -c <generated_txt>
 albumeasy_auto_generate_pdf = false
+
+# Maximum wait for a fresh PDF after the AlbumEasy launcher exits.
+# Positive seconds; increase for large albums or slower storage.
+albumeasy_pdf_timeout_secs = 300
 
 # Enable additional PDF generation diagnostics written to the Logs/ directory.
 #

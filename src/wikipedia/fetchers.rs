@@ -1,7 +1,7 @@
 use crate::stampworld::fetch::Fetcher;
 
 /// Fetch content from Grokipedia
-pub fn fetch_grokipedia_content(
+pub async fn fetch_grokipedia_content(
     topic: &str,
     fetcher: &dyn Fetcher,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -20,7 +20,7 @@ pub fn fetch_grokipedia_content(
         url
     );
 
-    let (status, body) = fetcher.fetch_text(&url)?;
+    let (status, body) = fetcher.fetch_text(&url).await?;
 
     if !status.is_success() {
         return Err(format!("Grokipedia returned {} for {}", status, topic).into());
@@ -36,7 +36,7 @@ pub fn fetch_grokipedia_content(
 }
 
 /// Fetch content from Wikipedia (full page with sections)
-pub fn fetch_wikipedia_content(
+pub async fn fetch_wikipedia_content(
     topic: &str,
     fetcher: &dyn Fetcher,
 ) -> Result<String, Box<dyn std::error::Error>> {
@@ -56,7 +56,7 @@ pub fn fetch_wikipedia_content(
     );
 
     log::debug!("Making HTTP request to Wikipedia API...");
-    let (status, body) = fetcher.fetch_text(&url)?;
+    let (status, body) = fetcher.fetch_text(&url).await?;
     log::debug!("Wikipedia HTTP response received: {} bytes", body.len());
 
     if !status.is_success() {

@@ -62,62 +62,6 @@ pub struct CommandsFileGenerator {
 }
 
 impl CommandsFileGenerator {
-    /// Create a new CommandsFileGenerator instance
-    pub fn new(
-        album_name: String,
-        country: Country,
-        year: String,
-        month: String,
-        day: String,
-        series: String,
-        catalog_name: String,
-        formats: Vec<String>,
-        emissions: Vec<String>,
-        separator: String,
-        fix_sizes: bool,
-        overwrite_album: bool,
-        data_source: String,
-        stampworld_url: String,
-        colnect_url: String,
-        touchstamps_url: String,
-        image_path: String,
-        album_path: String,
-        extract_path: String,
-        config: Config,
-    ) -> Self {
-        Self {
-            album_name,
-            country,
-            year,
-            month,
-            day,
-            series,
-            catalog_name,
-            formats,
-            emissions,
-            separator,
-            fix_sizes,
-            overwrite_album,
-            data_source,
-            stampworld_url,
-            colnect_url,
-            touchstamps_url,
-            image_path,
-            album_path,
-            extract_path,
-            config,
-            stamps: Vec::new(),
-            stamp_data: Vec::new(),
-            series_info: HashMap::new(),
-            image_urls: HashMap::new(),
-            image_paths: HashMap::new(),
-            catalog_nums: HashMap::new(),
-            stampworld_data: Vec::new(),
-            colnect_data: Vec::new(),
-            touchstamps_data: Vec::new(),
-        }
-    }
-
     // /// Get stampworld image for a stamp
     // pub fn get_stampworld_image(&mut self, _stamp: &Stamp) -> Option<String> {
     //     // TODO: Implement proper image fetching
@@ -137,7 +81,7 @@ impl CommandsFileGenerator {
     // }
 
     /// Collect stampworld data
-    pub fn collect_stampworld_data<'a>(
+    pub async fn collect_stampworld_data<'a>(
         &mut self,
         params: CollectStampworldCallParams<'a>,
     ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
@@ -198,7 +142,7 @@ impl CommandsFileGenerator {
                 max_pages: params.max_pages,
                 stop_after_no_hits: params.stop_after_no_hits,
             };
-        let stamp_data = collect_stampworld_data(&mut dparams);
+        let stamp_data = collect_stampworld_data(&mut dparams).await;
 
         info!(
             "Returned from collect_stampworld_data; received {} stamp data lines",
@@ -215,7 +159,7 @@ impl CommandsFileGenerator {
     }
 
     /// Create album file
-    pub fn create_album(&self) -> usize {
+    pub async fn create_album(&self) -> usize {
         let params = crate::commands_file_generator::album_creation::CreateAlbumParams {
             file_path: std::path::Path::new(&self.album_path),
             data: &self.stamp_data,
@@ -226,7 +170,7 @@ impl CommandsFileGenerator {
             emissions: &self.emissions,
             catalog_name: &self.catalog_name,
         };
-        crate::commands_file_generator::album_creation::create_album(params)
+        crate::commands_file_generator::album_creation::create_album(params).await
     }
 
     /// Save stamp data to file
@@ -284,27 +228,36 @@ impl CommandsFileGenerator {
 
 impl Default for CommandsFileGenerator {
     fn default() -> Self {
-        Self::new(
-            String::new(),
-            Country::default(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            Vec::new(),
-            Vec::new(),
-            ",".to_string(),
-            false,
-            false,
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            String::new(),
-            Config::default(),
-        )
+        Self {
+            album_name: String::new(),
+            country: Country::default(),
+            year: String::new(),
+            month: String::new(),
+            day: String::new(),
+            series: String::new(),
+            catalog_name: String::new(),
+            formats: Vec::new(),
+            emissions: Vec::new(),
+            separator: ",".to_string(),
+            fix_sizes: false,
+            overwrite_album: false,
+            data_source: String::new(),
+            stampworld_url: String::new(),
+            colnect_url: String::new(),
+            touchstamps_url: String::new(),
+            image_path: String::new(),
+            album_path: String::new(),
+            extract_path: String::new(),
+            config: Config::default(),
+            stamps: Vec::new(),
+            stamp_data: Vec::new(),
+            series_info: HashMap::new(),
+            image_urls: HashMap::new(),
+            image_paths: HashMap::new(),
+            catalog_nums: HashMap::new(),
+            stampworld_data: Vec::new(),
+            colnect_data: Vec::new(),
+            touchstamps_data: Vec::new(),
+        }
     }
 }

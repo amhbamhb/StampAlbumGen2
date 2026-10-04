@@ -19,7 +19,10 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/stamp_content_height
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/emit/emit_stamp_lines
@@ -40,5 +43,6 @@ relationships:
 
 # Called by
 
-- [generate_album_output_conn](../../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [stamp_content_height](../../../../../functions/src/album_globals/generator/stamp_content_height.md)
+- [generate_album_output_conn_prepared](../../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [emit_stamp_lines](../../../../../functions/src/album_globals/generator_new/emit/emit_stamp_lines.md)

@@ -5,8 +5,8 @@ use tempfile::tempdir;
 
 /// Test that the generator emits a 'Perforation:' header line when the
 /// `perforation` column is populated in the DB and include_perforation is enabled.
-#[test]
-fn test_perforation_column_emitted() {
+#[tokio::test]
+async fn test_perforation_column_emitted() {
     let tmp = tempdir().expect("tempdir");
     let orig_cwd = env::current_dir().expect("cwd");
     env::set_current_dir(tmp.path()).expect("chdir to tmp");
@@ -57,7 +57,8 @@ fn test_perforation_column_emitted() {
         None::<fn(usize)>,
         Some(1974),
         Some(1974),
-    );
+    )
+    .await;
 
     let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1974-1974.txt");
     assert!(

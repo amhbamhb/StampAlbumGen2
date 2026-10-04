@@ -1,4 +1,6 @@
 let countries = [];
+const stampworldCountryUrl = new StampWorldCountryUrl(() =>
+    getEffectiveStampworldCountry(document.getElementById('countrySel')?.value));
 let loadingDotsTimer = null;
 let loadingPhaseTimer = null;
 let bootstrapPdfRequestInFlight = false;
@@ -600,6 +602,7 @@ function getEffectiveStampworldCountry(country) {
 
 function suggestedStampworldCommand(country) {
     const c = getEffectiveStampworldCountry(country);
+    stampworldCountryUrl.load(c);
     const currentYear = new Date().getFullYear();
     const defaultStartYear = Math.max(stampworldMinYear, currentYear - 2);
     const y1 = document.getElementById('swStartYear')?.value || String(defaultStartYear);
@@ -737,6 +740,7 @@ async function runStampWorldPull() {
     stampworldRunRequested = true;
 
     try {
+        await stampworldCountryUrl.ensureSaved(country);
         const r = await fetch('/api/stampworld-run', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -970,7 +974,7 @@ function renderCountryPanel() {
         if (copyStatus) {
             copyStatus.className = 'colnectCopyStatus';
             copyStatus.style.display = '';
-            copyStatus.textContent = 'Select a country to import Colnect CSV files.';
+            copyStatus.textContent = 'Select a country to import Colnect - User Created CSV files.';
         }
         if (swLead) swLead.innerText = 'Run StampWorld pull to create a country database.';
         if (swHint) swHint.innerText = 'Type any country name below and run StampWorld pull. This field is editable and not limited to existing countries.';
@@ -1177,35 +1181,65 @@ async function submitCreateCountryOrTheme() {
     }
 }
 
+async function readSiteAccountResponse(res) {
+    const text = await res.text();
+    if (!text.trim()) {
+        throw new Error(`Site Accounts returned an empty response (HTTP ${res.status}). Restart the application with the updated binary and reload this page.`);
+    }
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (_) {
+        throw new Error(`Site Accounts returned invalid JSON (HTTP ${res.status}).`);
+    }
+    if (!res.ok || !data || !data.ok) {
+        throw new Error(data?.message || `Site Accounts request failed (HTTP ${res.status}).`);
+    }
+    return data;
+}
+
 async function loadAccountAuthStatus() {
     try {
-        const res = await fetch('/api/account-auth-status');
-        if (!res.ok) return null;
-        const data = await res.json();
+        const res = await fetch('/api/account-auth-status', { cache: 'no-store' });
+        const data = await readSiteAccountResponse(res);
         if (data && data.ok) {
             if (data.stampworld) {
                 const swInput = document.getElementById('swUsernameInput');
                 if (swInput && !swInput.value) swInput.value = data.stampworld.username || '';
+                const password = document.getElementById('swPasswordInput');
+                if (password) password.placeholder = data.stampworld.has_password
+                    ? 'Password already saved; leave blank to keep it' : 'StampWorld password';
             }
             if (data.colnect) {
                 const colInput = document.getElementById('colUsernameInput');
                 if (colInput && !colInput.value) colInput.value = data.colnect.username || '';
+                const password = document.getElementById('colPasswordInput');
+                if (password) password.placeholder = data.colnect.has_password
+                    ? 'Password already saved; leave blank to keep it' : 'Colnect password';
             }
             return data;
         }
-    } catch (_) {}
+    } catch (err) {
+        const statusEl = document.getElementById('siteAccountsStatus');
+        if (statusEl) {
+            statusEl.style.color = 'red';
+            statusEl.innerText = 'Unable to load site accounts: ' + err.message;
+        }
+    }
     return null;
 }
 
 function openSiteAccountsDialog() {
     const dialog = document.getElementById('siteAccountsDialog');
     if (!dialog) return;
-    loadAccountAuthStatus();
     const statusEl = document.getElementById('siteAccountsStatus');
     if (statusEl) {
         statusEl.innerText = '';
         statusEl.style.color = '';
     }
+    document.getElementById('swPasswordInput').value = '';
+    document.getElementById('colPasswordInput').value = '';
+    loadAccountAuthStatus();
     if (typeof dialog.showModal === 'function') {
         dialog.showModal();
     } else {
@@ -1241,12 +1275,12 @@ async function submitSiteAccounts() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 stampworld_username: swUser,
-                stampworld_password: swPass,
+                stampworld_password: swPass || null,
                 colnect_username: colUser,
-                colnect_password: colPass
+                colnect_password: colPass || null
             })
         });
-        const data = await res.json();
+        const data = await readSiteAccountResponse(res);
         if (data && data.ok) {
             if (statusEl) {
                 statusEl.style.color = 'green';

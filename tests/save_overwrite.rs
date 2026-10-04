@@ -7,18 +7,20 @@ fn default_creates_timestamped_copy() {
     let dir = tmp.path();
     let target = dir.join("album.txt");
 
-    let mut cfg = stamp_album_gen2::commands_file_generator::CommandsFileGenerator::default();
-    cfg.data_source = "test".to_string();
+    let cfg = stamp_album_gen2::commands_file_generator::CommandsFileGenerator {
+        data_source: "test".to_string(),
+        ..Default::default()
+    };
 
     // First write creates the primary file
-    cfg.save_stamp_data(&target, &vec!["first".to_string()], "test", false);
+    cfg.save_stamp_data(&target, &["first".to_string()], "test", false);
     assert!(
         target.exists(),
         "primary file should exist after first write"
     );
 
     // Second write with overwrite=false should create a timestamped sibling
-    cfg.save_stamp_data(&target, &vec!["second".to_string()], "test", false);
+    cfg.save_stamp_data(&target, &["second".to_string()], "test", false);
 
     let entries: Vec<String> = fs::read_dir(dir)
         .unwrap()
@@ -46,17 +48,19 @@ fn overwrite_replaces_in_place() {
     let dir = tmp.path();
     let target = dir.join("album2.txt");
 
-    let mut cfg = stamp_album_gen2::commands_file_generator::CommandsFileGenerator::default();
-    cfg.data_source = "test".to_string();
+    let cfg = stamp_album_gen2::commands_file_generator::CommandsFileGenerator {
+        data_source: "test".to_string(),
+        ..Default::default()
+    };
 
     // Create initial file (default behavior)
-    cfg.save_stamp_data(&target, &vec!["orig".to_string()], "test", false);
+    cfg.save_stamp_data(&target, &["orig".to_string()], "test", false);
     assert!(target.exists());
     let orig = fs::read_to_string(&target).unwrap();
     assert!(orig.contains("orig"));
 
     // Now overwrite in-place
-    cfg.save_stamp_data(&target, &vec!["updated".to_string()], "test", true);
+    cfg.save_stamp_data(&target, &["updated".to_string()], "test", true);
 
     // Ensure only one file (no .created-*) and that content was updated
     let entries: Vec<String> = fs::read_dir(dir)

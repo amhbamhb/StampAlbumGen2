@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_engraving_column_emitted
-resource: tests/engraving_column.rs#L9-L78
+resource: tests/engraving_column.rs#L9-L79
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_engraving_column_emitted()`
+`async fn test_engraving_column_emitted()`
 
 # Calls
 

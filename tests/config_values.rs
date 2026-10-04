@@ -42,8 +42,8 @@ fn read_stamp_heading_size(output_txt: &std::path::Path) -> Option<i32> {
     None
 }
 
-#[test]
-fn test_stamp_heading_size_changes_output() {
+#[tokio::test]
+async fn test_stamp_heading_size_changes_output() {
     // Create tempdir and switch cwd so load_config picks up our config.toml
     let td = tempdir().expect("tempdir");
     let orig = env::current_dir().expect("cwd");
@@ -70,7 +70,8 @@ stamp_heading_size = 10
         Option::<fn(usize)>::None,
         Some(1970),
         Some(1970),
-    );
+    )
+    .await;
     let out1 = td
         .path()
         .join("Albums")
@@ -92,7 +93,8 @@ stamp_heading_size = 20
         Option::<fn(usize)>::None,
         Some(1970),
         Some(1970),
-    );
+    )
+    .await;
     let out2 = td
         .path()
         .join("Albums")

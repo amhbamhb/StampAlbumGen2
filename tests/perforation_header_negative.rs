@@ -5,8 +5,8 @@ use tempfile::tempdir;
 
 /// Negative test: if the `perforation` column is empty the generator should
 /// NOT emit a 'Perforation:' header line.
-#[test]
-fn test_perforation_column_absent() {
+#[tokio::test]
+async fn test_perforation_column_absent() {
     let tmp = tempdir().expect("tempdir");
     let orig_cwd = env::current_dir().expect("cwd");
     env::set_current_dir(tmp.path()).expect("chdir to tmp");
@@ -57,7 +57,8 @@ fn test_perforation_column_absent() {
         None::<fn(usize)>,
         Some(1974),
         Some(1974),
-    );
+    )
+    .await;
 
     let output_file = tmp.path().join("Albums/TestAlbum/TestAlbum-1974-1974.txt");
     assert!(

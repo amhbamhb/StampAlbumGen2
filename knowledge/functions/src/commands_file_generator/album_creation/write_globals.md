@@ -4,17 +4,8 @@ title: write_globals
 resource: src/commands_file_generator/album_creation.rs#L196-L200
 generated:
   by: okf-rs/0.4.0
-relationships:
-  calls:
-  - target: functions/src/config/load_config
-    resolved_by: tree-sitter
-    confidence: exact
 ---
 
 # Signature
 
-`pub fn write_globals<W: Write>(writer: &mut W, album_name: &str) -> usize`
-
-# Calls
-
-- [load_config](../../../../functions/src/config/load_config.md)
+`pub async fn write_globals<W: Write>(writer: &mut W, album_name: &str) -> usize`

@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn ensure_coa_nl_local()`
+`async fn ensure_coa_nl_local()`
 
 # Calls
 

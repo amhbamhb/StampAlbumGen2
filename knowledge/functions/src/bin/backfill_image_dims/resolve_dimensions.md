@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_dimensions
-resource: src/bin/backfill_image_dims.rs#L13-L29
+resource: src/bin/backfill_image_dims.rs#L13-L25
 visibility: private
 generated:
   by: okf-rs/0.4.0

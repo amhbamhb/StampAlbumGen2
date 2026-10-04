@@ -788,52 +788,6 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{
-        align_process_working_dir_to_runtime_layout, find_runtime_root_from,
-        looks_like_runtime_root,
-    };
-    use tempfile::tempdir;
-
-    #[test]
-    fn runtime_root_detects_expected_markers() {
-        let t = tempdir().expect("temp dir");
-        let root = t.path().join("runtime-root");
-        std::fs::create_dir_all(&root).expect("create runtime root");
-        std::fs::write(root.join("config.toml"), b"# test config\n").expect("write config");
-
-        let non_root = t.path().join("plain-dir");
-        std::fs::create_dir_all(&non_root).expect("create plain dir");
-
-        assert!(looks_like_runtime_root(&root));
-        assert!(!looks_like_runtime_root(&non_root));
-    }
-
-    #[test]
-    fn runtime_root_search_prefers_exe_directory_markers() {
-        let t = tempdir().expect("temp dir");
-        let current = t.path().join("cwd");
-        std::fs::create_dir_all(&current).expect("create cwd");
-
-        let exe_dir = t.path().join("portable");
-        std::fs::create_dir_all(&exe_dir).expect("create exe dir");
-        std::fs::write(exe_dir.join("config.toml"), b"# test config\n").expect("write config");
-
-        let exe_path = exe_dir.join("stamp_album_gen2");
-        let found = find_runtime_root_from(&current, &exe_path);
-        assert!(found.is_some());
-        assert_eq!(found.expect("runtime root"), exe_dir);
-    }
-
-    #[test]
-    fn align_runtime_dir_noops_when_already_root() {
-        // This test runs from the workspace root in normal cargo flows.
-        let result = align_process_working_dir_to_runtime_layout().expect("align cwd");
-        let _ = result;
-    }
-}
-
 pub fn uninstall_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegrationReport> {
     if !std::env::consts::OS.eq_ignore_ascii_case("linux") {
         return Ok(LinuxDesktopIntegrationReport {
@@ -913,4 +867,50 @@ pub fn install_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegr
     let home = user_home_dir()?;
     set_desktop_launcher_auto_install_disabled(&home, false)?;
     ensure_linux_desktop_integration()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        align_process_working_dir_to_runtime_layout, find_runtime_root_from,
+        looks_like_runtime_root,
+    };
+    use tempfile::tempdir;
+
+    #[test]
+    fn runtime_root_detects_expected_markers() {
+        let t = tempdir().expect("temp dir");
+        let root = t.path().join("runtime-root");
+        std::fs::create_dir_all(&root).expect("create runtime root");
+        std::fs::write(root.join("config.toml"), b"# test config\n").expect("write config");
+
+        let non_root = t.path().join("plain-dir");
+        std::fs::create_dir_all(&non_root).expect("create plain dir");
+
+        assert!(looks_like_runtime_root(&root));
+        assert!(!looks_like_runtime_root(&non_root));
+    }
+
+    #[test]
+    fn runtime_root_search_prefers_exe_directory_markers() {
+        let t = tempdir().expect("temp dir");
+        let current = t.path().join("cwd");
+        std::fs::create_dir_all(&current).expect("create cwd");
+
+        let exe_dir = t.path().join("portable");
+        std::fs::create_dir_all(&exe_dir).expect("create exe dir");
+        std::fs::write(exe_dir.join("config.toml"), b"# test config\n").expect("write config");
+
+        let exe_path = exe_dir.join("stamp_album_gen2");
+        let found = find_runtime_root_from(&current, &exe_path);
+        assert!(found.is_some());
+        assert_eq!(found.expect("runtime root"), exe_dir);
+    }
+
+    #[test]
+    fn align_runtime_dir_noops_when_already_root() {
+        // This test runs from the workspace root in normal cargo flows.
+        let result = align_process_working_dir_to_runtime_layout().expect("align cwd");
+        let _ = result;
+    }
 }

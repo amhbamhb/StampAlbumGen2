@@ -96,9 +96,9 @@ fn find_generated_album_txt(root: &std::path::Path, album_name: &str) -> std::pa
     panic!("no generated .txt found in {}", album_dir.display());
 }
 
-#[test]
+#[tokio::test]
 #[serial]
-fn test_series_sort_uses_calendar_month_then_day() {
+async fn test_series_sort_uses_calendar_month_then_day() {
     let _cwd_restore = CwdRestore::new();
     let td = tempdir().expect("tempdir");
     env::set_current_dir(td.path()).expect("chdir");
@@ -118,7 +118,8 @@ fn test_series_sort_uses_calendar_month_then_day() {
         Option::<fn(usize)>::None,
         Some(1937),
         Some(1937),
-    );
+    )
+    .await;
 
     let output_txt = find_generated_album_txt(td.path(), "Denmark");
     let order = read_stamp_diag_order(&output_txt);

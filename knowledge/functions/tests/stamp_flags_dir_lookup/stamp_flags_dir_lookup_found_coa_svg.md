@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn stamp_flags_dir_lookup_found_coa_svg()`
+`async fn stamp_flags_dir_lookup_found_coa_svg()`
 
 # Calls
 

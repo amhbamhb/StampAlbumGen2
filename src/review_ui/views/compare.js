@@ -7,6 +7,8 @@ const showImagelessLeftRowsDefault = payload.show_imageless_left_rows === true;
 const configDefaultCatalogCode = String(payload.default_catalog_code || '').toLowerCase();
 const configDefaultSortMode = String(payload.default_sort_mode || 'year_series_date_catalog').toLowerCase();
 const reviewCountryName = String(payload.album_name || '').trim();
+const stampworldCountryUrl = new StampWorldCountryUrl(() => reviewCountryName);
+const reviewPdfFilters = new ReviewPdfFilters(reviewCountryName || 'default');
 const countryCatalogStorageKey = 'reviewui.defaultCatalog.' + String(payload.album_name || 'default');
 const stampWorldYearsStorageKey = 'reviewui.stampWorldYears.' + String(payload.album_name || 'default');
 const pdfYearsStorageKey = 'reviewui.pdfYears.' + String(payload.album_name || 'default');
@@ -544,6 +546,7 @@ async function reloadLeftRowsFromServer(preferredRowid = null) {
             sortLeftRows(currentRowid);
             render();
             logRuntimeCompare(`Reloaded ${left.length} left rows from server`);
+            await reviewPdfFilters.refresh();
             return true;
         }
     } catch (e) {
@@ -567,6 +570,7 @@ async function refreshRightCandidatesRealtime(restoredColnectId = null) {
             setMatchStatus('Updated, but restored candidate is filtered out or unavailable right now.');
         }
         render();
+        await reviewPdfFilters.refresh();
         return true;
     } catch (_) {
         return false;
@@ -1425,6 +1429,7 @@ async function runReviewStampWorldPull() {
 
     try {
         const payload = { country: country, start_year: startYear, end_year: endYear, preset: preset, extra_flags: extraFlags };
+        await stampworldCountryUrl.ensureSaved(country);
         emitReviewClientLog('run request sending POST /api/stampworld-run');
         const r = await fetch('/api/stampworld-run', {
             method: 'POST',
@@ -1474,35 +1479,65 @@ async function runReviewStampWorldPull() {
     }
 }
 
+async function readSiteAccountResponse(res) {
+    const text = await res.text();
+    if (!text.trim()) {
+        throw new Error(`Site Accounts returned an empty response (HTTP ${res.status}). Restart the application with the updated binary and reload this page.`);
+    }
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch (_) {
+        throw new Error(`Site Accounts returned invalid JSON (HTTP ${res.status}).`);
+    }
+    if (!res.ok || !data || !data.ok) {
+        throw new Error(data?.message || `Site Accounts request failed (HTTP ${res.status}).`);
+    }
+    return data;
+}
+
 async function loadAccountAuthStatus() {
     try {
-        const res = await fetch('/api/account-auth-status');
-        if (!res.ok) return null;
-        const data = await res.json();
+        const res = await fetch('/api/account-auth-status', { cache: 'no-store' });
+        const data = await readSiteAccountResponse(res);
         if (data && data.ok) {
             if (data.stampworld) {
                 const swInput = document.getElementById('swUsernameInput');
                 if (swInput && !swInput.value) swInput.value = data.stampworld.username || '';
+                const password = document.getElementById('swPasswordInput');
+                if (password) password.placeholder = data.stampworld.has_password
+                    ? 'Password already saved; leave blank to keep it' : 'StampWorld password';
             }
             if (data.colnect) {
                 const colInput = document.getElementById('colUsernameInput');
                 if (colInput && !colInput.value) colInput.value = data.colnect.username || '';
+                const password = document.getElementById('colPasswordInput');
+                if (password) password.placeholder = data.colnect.has_password
+                    ? 'Password already saved; leave blank to keep it' : 'Colnect password';
             }
             return data;
         }
-    } catch (_) {}
+    } catch (err) {
+        const statusEl = document.getElementById('siteAccountsStatus');
+        if (statusEl) {
+            statusEl.style.color = 'red';
+            statusEl.innerText = 'Unable to load site accounts: ' + err.message;
+        }
+    }
     return null;
 }
 
 function openSiteAccountsDialog() {
     const dialog = document.getElementById('siteAccountsDialog');
     if (!dialog) return;
-    loadAccountAuthStatus();
     const statusEl = document.getElementById('siteAccountsStatus');
     if (statusEl) {
         statusEl.innerText = '';
         statusEl.style.color = '';
     }
+    document.getElementById('swPasswordInput').value = '';
+    document.getElementById('colPasswordInput').value = '';
+    loadAccountAuthStatus();
     if (typeof dialog.showModal === 'function') {
         dialog.showModal();
     } else {
@@ -1538,12 +1573,12 @@ async function submitSiteAccounts() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 stampworld_username: swUser,
-                stampworld_password: swPass,
+                stampworld_password: swPass || null,
                 colnect_username: colUser,
-                colnect_password: colPass
+                colnect_password: colPass || null
             })
         });
-        const data = await res.json();
+        const data = await readSiteAccountResponse(res);
         if (data && data.ok) {
             if (statusEl) {
                 statusEl.style.color = 'green';
@@ -2972,6 +3007,7 @@ async function submitLeftEditor() {
     closeLeftEditor();
     document.getElementById('status').innerText = payload.message || 'Left-side item saved';
     render();
+    await reviewPdfFilters.refresh();
 }
 
 function confirmDestructiveActionCompare(message) {
@@ -3432,11 +3468,24 @@ async function generatePdfNowReview() {
         if (alwaysOpenPdfEl) alwaysOpenPdfEl.disabled = active;
         if (startYearInput) startYearInput.disabled = active;
         if (endYearInput) endYearInput.disabled = active;
+        reviewPdfFilters.setDisabled(active);
     };
 
     if (window.__reviewPdfRequestInFlight === true) {
         if (statusEl) statusEl.innerText = 'PDF generation already in progress. Please wait.';
         if (statusWrap) statusWrap.style.display = 'inline-flex';
+        return;
+    }
+
+    window.__reviewPdfRequestInFlight = true;
+    setPdfUiState(true, 'Refreshing country PDF filters...');
+    try {
+        await reviewPdfFilters.refresh();
+        reviewPdfFilters.assertReady();
+    } catch (error) {
+        window.__reviewPdfRequestInFlight = false;
+        if (statusEl) statusEl.classList.add('pdfStatusFail');
+        setPdfUiState(false, error.message);
         return;
     }
 
@@ -3468,7 +3517,8 @@ async function generatePdfNowReview() {
             body: JSON.stringify({
                 start_year: startYear,
                 end_year: endYear,
-                open_pdf: !!alwaysOpenPdfEl?.checked
+                open_pdf: !!alwaysOpenPdfEl?.checked,
+                filters: reviewPdfFilters.getSelection()
             })
         });
         const j = await res.json();
@@ -3838,7 +3888,9 @@ if (reviewPdfAlwaysShowEl) {
 updatePdfPreviewControls();
 restorePdfUiState();
 initReviewStampWorldPanel();
+stampworldCountryUrl.load(reviewCountryName);
 initReviewPdfYearInputs();
+reviewPdfFilters.init();
 
 const sortModeSelect = document.getElementById('sortMode');
 if (sortModeSelect) sortModeSelect.value = sortMode;

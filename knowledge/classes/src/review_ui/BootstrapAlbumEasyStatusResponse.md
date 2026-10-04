@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapAlbumEasyStatusResponse
-resource: src/review_ui.rs#L382-L389
+resource: src/review_ui.rs#L443-L450
 visibility: private
 generated:
   by: okf-rs/0.4.0

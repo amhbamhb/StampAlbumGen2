@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_real_image_path
-resource: src/review_ui/http_handlers.rs#L18-L21
+resource: src/review_ui/http_handlers.rs#L34-L37
 visibility: private
 generated:
   by: okf-rs/0.4.0

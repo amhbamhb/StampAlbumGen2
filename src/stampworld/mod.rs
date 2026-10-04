@@ -12,6 +12,7 @@
 //! Note: Album generation functionality has been consolidated into album_globals.rs
 //! for unified processing across all data sources.
 
+pub mod country_url;
 pub mod data_collector;
 pub mod fetch;
 pub mod parser;

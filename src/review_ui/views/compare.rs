@@ -71,11 +71,11 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                         <button onclick='saveCatalogDefaultToConfig()'>Update Local Config Default</button>
                     </div>";
     let import_colnect_files =
-        " <div class='sessionSectionTitle'>Import Colnect</div>
+        " <div class='sessionSectionTitle'>Import Colnect - User Created Files</div>
         <div class='sessionRow'>
             <button id='importColnectPickBtn' onclick='pickAndCopyColnectFileReview()'>Browse &amp; Copy Colnect
                 File&#8230;</button>
-            <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect</button>
+            <button id='importColnectBtn' onclick='importColnectFilesReview()'>Import Colnect - User Created Files</button>
             <button id='refreshColnectBtn' onclick='refreshColnectCandidatesReview()'>Refresh Colnect</button>
             <span id='reviewColnectCopyCountBadge' class='badge'>Files: 0</span>
         </div>";
@@ -173,6 +173,20 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
             <label for='reviewPdfEndYear' class='reviewPdfYearLabel'>End Year</label>
             <input id='reviewPdfEndYear' type='number' placeholder='End Year' min='1840' max='2100'
                 class='reviewPdfYearInput' />
+        </div>
+
+        <div class='reviewPdfMetadataFilters'>
+            <details class='reviewPdfFilter'>
+                <summary id='reviewPdfemissionSummary'>Emission: All</summary>
+                <div id='reviewPdfemissionChoices' class='reviewPdfFilterChoices' role='group' aria-label='PDF emission choices'></div>
+            </details>
+            <details class='reviewPdfFilter'>
+                <summary id='reviewPdfformatSummary'>Format: All</summary>
+                <div id='reviewPdfformatChoices' class='reviewPdfFilterChoices' role='group' aria-label='PDF format choices'></div>
+            </details>
+            <button id='reviewPdfRefreshFilters' type='button'>Refresh filter choices</button>
+            <span id='reviewPdfFilterStatus' role='status' aria-live='polite'>Loading country filter choices...</span>
+            <small>Emission/Format apply to Generate PDF Now only. Generate &amp; Close uses the year range, without these filters.</small>
         </div>
 
         <label for='reviewPdfAlwaysShow' class='reviewPdfAlwaysShowLabel'>
@@ -283,14 +297,20 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
                         <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
                     </div>";
 
-    let compare_script_html = include_str!("compare.js")
-        .replace("{json}", &json)
-        .replace(
-            "{backend_not_responding_message}",
-            BACKEND_NOT_RESPONDING_MESSAGE,
-        )
-        .replace("{footer_year_update_js}", FOOTER_YEAR_UPDATE_JS);
+    let compare_script_html = format!(
+        "{}\n{}\n{}",
+        include_str!("country_url.js"),
+        include_str!("pdf_filters.js"),
+        include_str!("compare.js")
+    )
+    .replace("{json}", &json)
+    .replace(
+        "{backend_not_responding_message}",
+        BACKEND_NOT_RESPONDING_MESSAGE,
+    )
+    .replace("{footer_year_update_js}", FOOTER_YEAR_UPDATE_JS);
     include_str!("compare.html")
+        .replace("{country_url_controls}", include_str!("country_url.html"))
         .replace("{{", "{")
         .replace("}}", "}")
         .replace("{compare_css}", &compare_css)

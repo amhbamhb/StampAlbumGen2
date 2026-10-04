@@ -1,7 +1,7 @@
 use stamp_album_gen2::album_globals::generate_album_output_conn;
 
-#[test]
-fn test_page_callback_invoked_per_series() {
+#[tokio::test]
+async fn test_page_callback_invoked_per_series() {
     let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("open");
 
     // Insert two stamps in different series so generator will iterate two series
@@ -32,7 +32,8 @@ fn test_page_callback_invoked_per_series() {
         }),
         None,
         None,
-    );
+    )
+    .await;
 
     // Ensure function returned without panic and examine captured calls
     let recorded = seen.lock().unwrap();

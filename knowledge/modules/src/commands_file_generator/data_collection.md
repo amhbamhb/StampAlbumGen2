@@ -1,15 +1,15 @@
 ---
 type: Rust Module
 title: data_collection
-resource: src/commands_file_generator/data_collection.rs#L1-L43
+resource: src/commands_file_generator/data_collection.rs#L1-L18
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
-  - target: external/crate-types-imagestatus
+  - target: external/log-info
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/log-info
+  - target: external/pub-use-crate-stampworld-data-collector-collectstampworldparams
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -20,13 +20,12 @@ relationships:
 
 # Contains
 
-- [CollectStampworldParams](../../../classes/src/commands_file_generator/data_collection/CollectStampworldParams.md)
 - [collect_stampworld_data](../../../functions/src/commands_file_generator/data_collection/collect_stampworld_data.md)
 
 # Imports
 
-- `crate::types::ImageStatus`
 - `log::info`
+- `pub use crate::stampworld::data_collector::CollectStampworldParams`
 
 # Member of
 

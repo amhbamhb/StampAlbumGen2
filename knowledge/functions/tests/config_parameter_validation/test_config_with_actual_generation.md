@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_config_with_actual_generation
-resource: tests/config_parameter_validation.rs#L433-L508
+resource: tests/config_parameter_validation.rs#L433-L510
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,7 +17,7 @@ relationships:
 
 # Signature
 
-`fn test_config_with_actual_generation()`
+`async fn test_config_with_actual_generation()`
 
 # Calls
 

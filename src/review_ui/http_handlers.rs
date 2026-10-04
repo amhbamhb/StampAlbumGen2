@@ -1,11 +1,5 @@
 use super::*;
 
-
-
-
-
-
-
 fn bundled_favicon_png() -> &'static [u8] {
     include_bytes!("../../assets/icons/favicon.png")
 }
@@ -21,6 +15,22 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
+fn review_pdf_error(message: &str, status: u16) -> Response<std::io::Cursor<Vec<u8>>> {
+    log_runtime_event(&format!("Review PDF: {message}"));
+    let body = serde_json::json!({
+        "ok": false,
+        "message": message,
+        "generated_output_path": null,
+        "generated_pdf_path": null
+    })
+    .to_string();
+    let mut response = Response::from_string(body).with_status_code(StatusCode(status));
+    if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+        response = response.with_header(header);
+    }
+    response
+}
+
 fn is_real_image_path(image_path: &str) -> bool {
     let p = image_path.trim();
     !p.is_empty() && !p.to_ascii_lowercase().starts_with("images/no_image")
@@ -30,7 +40,7 @@ fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
     crate::file_utils::resolve_album_image_path(album_name, image_path).exists()
 }
 
-fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
+async fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
     let mut stmt = match conn.prepare(
         "SELECT
             COALESCE(sg_number, ''),
@@ -96,7 +106,7 @@ fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (u
             used: String::new(),
             letter_fdc: String::new(),
             currency: String::new(),
-            image_path,
+            image_path: String::new(),
             remote_image_url: remote_url,
             original_image_url: String::new(),
             image_width_px: None,
@@ -113,7 +123,7 @@ fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (u
         });
     }
 
-    let _ = crate::image_downloader::download_missing_stamp_images(&stubs, album_name);
+    let _ = crate::image_downloader::download_missing_stamp_images(&stubs, album_name).await;
 
     let mut existing_real_files_after = 0usize;
     if let Ok(mut verify_stmt) = conn.prepare("SELECT COALESCE(image_path, '') FROM stamps") {
@@ -141,12 +151,339 @@ pub(super) struct ReviewHandlersState {
     pub return_to_start_requested: bool,
 }
 
+fn handle_site_account_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let url = request.url();
+    let (body, status) = if method == Method::Get && url == "/api/account-auth-status" {
+        (
+            serde_json::json!(get_account_auth_status()),
+            StatusCode(200),
+        )
+    } else if method == Method::Post && url == "/api/save-site-credentials" {
+        let mut body = String::new();
+        let result = match request.as_reader().read_to_string(&mut body) {
+            Ok(_) => match serde_json::from_str::<SaveSiteCredentialsRequest>(&body) {
+                Ok(req) => save_site_credentials(
+                    req.stampworld_username.as_deref(),
+                    req.stampworld_password.as_deref(),
+                    req.colnect_username.as_deref(),
+                    req.colnect_password.as_deref(),
+                )
+                .map_err(|error| (error, StatusCode(500))),
+                Err(_) => Err((
+                    "Invalid credentials request JSON".to_string(),
+                    StatusCode(400),
+                )),
+            },
+            Err(_) => Err((
+                "Failed to read credentials request".to_string(),
+                StatusCode(400),
+            )),
+        };
+        let (response, status) = match result {
+            Ok(()) => (
+                SaveSiteCredentialsResponse {
+                    ok: true,
+                    message: "Site account credentials saved successfully to config.toml"
+                        .to_string(),
+                },
+                StatusCode(200),
+            ),
+            Err((message, status)) => {
+                log_runtime_event(&format!("Site Accounts: {}", message));
+                (SaveSiteCredentialsResponse { ok: false, message }, status)
+            }
+        };
+        (serde_json::json!(response), status)
+    } else {
+        return Some(request);
+    };
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!(
+            "Site Accounts: failed to send response: {}",
+            error
+        ));
+    }
+    None
+}
+
+fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let path = request.url().split('?').next().unwrap_or("");
+    if path != "/api/stampworld-country-url"
+        || !matches!(request.method(), Method::Get | Method::Post)
+    {
+        return Some(request);
+    }
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct SaveRequest {
+        country: String,
+        url: String,
+    }
+    let result = if request.method() == &Method::Get {
+        let country = parse_query_param(request.url(), "country").unwrap_or_default();
+        crate::stampworld::country_url::load_country_url(&country)
+    } else {
+        let mut body = String::new();
+        request
+            .as_reader()
+            .read_to_string(&mut body)
+            .map_err(|error| format!("Cannot read country URL request: {error}"))
+            .and_then(|_| {
+                serde_json::from_str::<SaveRequest>(&body)
+                    .map_err(|error| format!("Invalid country URL request: {error}"))
+            })
+            .and_then(|input| {
+                crate::stampworld::country_url::save_country_url(&input.country, &input.url)
+            })
+    };
+    let (body, status) = match result {
+        Ok((url, custom)) => (
+            serde_json::json!({"ok":true, "url":url, "custom":custom}),
+            StatusCode(200),
+        ),
+        Err(error) => {
+            log_runtime_event(&format!("StampWorld country URL: {error}"));
+            (
+                serde_json::json!({"ok":false, "message":error}),
+                StatusCode(400),
+            )
+        }
+    };
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!("StampWorld country URL response failed: {error}"));
+    }
+    None
+}
+
+#[cfg(test)]
+mod site_account_tests {
+    use super::*;
+
+    fn review_input() -> ReviewHandlersStateRequests {
+        ReviewHandlersStateRequests {
+            conn: Connection::open_in_memory().expect("test database"),
+            db_path: String::new(),
+            album_name: String::new(),
+            html: String::new(),
+            right_map: HashMap::new(),
+            default_catalog_code: String::new(),
+            default_sort_mode: String::new(),
+            odd_row_color: String::new(),
+            even_row_color: String::new(),
+            first_column_color: String::new(),
+            second_column_color: String::new(),
+            series_default_checked: false,
+            description_default_checked: false,
+            watermark_default_checked: false,
+            design_default_checked: false,
+            engraving_default_checked: false,
+            perforation_default_checked: false,
+            context_default_checked: false,
+            colnect_links_default_checked: false,
+            colnect_image_url_default_checked: false,
+            colnect_metadata_default_checked: false,
+            replace_sg_number_default_checked: false,
+            right_unmatched_only_default_checked: false,
+            albumeasy_auto_generate_pdf_default: false,
+            albumeasy_cli_configured: false,
+            catalog_family_options: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn review_pdf_filters_routes_validate_requests_and_report_empty_selection() {
+        let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+        let addr = server.server_addr().to_ip().expect("TCP address");
+        let worker_server = server.clone();
+        let worker = std::thread::spawn(move || {
+            let mut input = review_input();
+            input.conn = crate::db_utils::init_db(":memory:").expect("country DB");
+            input
+                .conn
+                .execute(
+                    "INSERT INTO stamps (country, series, year, sg_number, type,
+                 colnect_emission, colnect_format, uniq_key)
+                 VALUES ('Testland', 'Test Series', 1976, '1001', 'Postage',
+                 'Official', 'Stamp', 'one')",
+                    [],
+                )
+                .expect("fixture");
+            serve_review_requests(&worker_server, input);
+        });
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .expect("test client");
+        let options: serde_json::Value = client
+            .get(format!("http://{addr}/api/review-pdf-options"))
+            .send()
+            .expect("options response")
+            .json()
+            .expect("options");
+        assert_eq!(
+            options["options"]["emission"],
+            serde_json::json!(["Official"])
+        );
+        assert_eq!(options["options"]["format"], serde_json::json!(["Stamp"]));
+        for body in [
+            "{",
+            r#"{"filters":{"emission":"Official"}}"#,
+            r#"{"filters":{"paper":["Coated"]}}"#,
+            r#"{"start_year":1977,"end_year":1976}"#,
+            r#"{"start_year":999999999999}"#,
+        ] {
+            let response = client
+                .post(format!("http://{addr}/generate-pdf-now"))
+                .body(body)
+                .send()
+                .expect("invalid request response");
+            assert_eq!(response.status().as_u16(), 400);
+            assert_eq!(response.headers()["content-type"], "application/json");
+            let error: serde_json::Value = response.json().expect("error JSON");
+            assert_eq!(error["ok"], false);
+        }
+        let response = client
+            .post(format!("http://{addr}/generate-pdf-now"))
+            .json(&serde_json::json!({"filters":{"emission":["Not present"]}}))
+            .send()
+            .expect("empty selection response");
+        assert_eq!(response.status().as_u16(), 422);
+        let error: serde_json::Value = response.json().expect("empty JSON");
+        assert!(error["message"]
+            .as_str()
+            .expect("message")
+            .contains("No stamps match"));
+        client
+            .post(format!("http://{addr}/shutdown"))
+            .json(&serde_json::json!({"generate_album":false}))
+            .send()
+            .expect("shutdown");
+        worker.join().expect("server worker");
+    }
+
+    #[test]
+    fn country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("test client");
+            for body in [
+                "{",
+                r#"{"country":"","url":""}"#,
+                r#"{"country":"South Korea","url":"https://example.invalid/"}"#,
+                r#"{"country":"South Korea","url":42}"#,
+            ] {
+                let response = client
+                    .post(format!("http://{addr}/api/stampworld-country-url"))
+                    .body(body)
+                    .send()
+                    .expect("country URL response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let data: serde_json::Value = response.json().expect("JSON error response");
+                assert_eq!(data["ok"], false);
+                assert!(data["message"]
+                    .as_str()
+                    .is_some_and(|message| !message.is_empty()));
+            }
+            let response = client
+                .get(format!("http://{addr}/api/stampworld-country-url"))
+                .send()
+                .expect("missing country response");
+            assert_eq!(response.status().as_u16(), 400);
+            server.unblock();
+            worker.join().expect("server worker");
+        }
+    }
+
+    #[test]
+    fn site_accounts_routes_return_json_in_bootstrap_and_review_modes() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("test client");
+            // Invalid bodies exercise save routing without touching the user's config.
+            for body in ["", "{", r#"{"stampworld_password":42}"#] {
+                let response = client
+                    .post(format!("http://{addr}/api/save-site-credentials"))
+                    .body(body)
+                    .send()
+                    .expect("credentials response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let data: serde_json::Value = response.json().expect("JSON error response");
+                assert_eq!(data["ok"], false);
+                assert_eq!(data["message"], "Invalid credentials request JSON");
+            }
+            let response = client
+                .get(format!("http://{addr}/api/account-auth-status"))
+                .send()
+                .expect("account status response");
+            assert_eq!(response.status().as_u16(), 200);
+            let data: serde_json::Value = response.json().expect("JSON account status");
+            assert_eq!(data["ok"], true);
+            for site in ["stampworld", "colnect"] {
+                assert!(data[site]["username"].is_string());
+                assert!(data[site]["has_password"].is_boolean());
+                assert!(data[site].get("password").is_none());
+            }
+            server.unblock();
+            worker.join().expect("server worker");
+        }
+    }
+}
+
 pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
     let reload_requested = false;
 
-    for mut request in server.incoming_requests() {
+    for request in server.incoming_requests() {
+        let Some(request) = handle_site_account_request(request) else {
+            continue;
+        };
+        let Some(mut request) = handle_country_url_request(request) else {
+            continue;
+        };
         let method = request.method().clone();
         let req_url = request.url().to_string();
 
@@ -527,60 +864,6 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
-        if method == Method::Get && req_url == "/api/account-auth-status" {
-            let response = get_account_auth_status();
-            let mut resp = Response::from_string(
-                serde_json::to_string(&response).unwrap_or_else(|_| "{\"ok\":false}".to_string()),
-            );
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
-        if method == Method::Post && req_url == "/api/save-site-credentials" {
-            let mut body = String::new();
-            if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
-                continue;
-            }
-
-            let parsed: Result<SaveSiteCredentialsRequest, _> = serde_json::from_str(&body);
-            let response = match parsed {
-                Ok(req) => match save_site_credentials(
-                    req.stampworld_username.as_deref(),
-                    req.stampworld_password.as_deref(),
-                    req.colnect_username.as_deref(),
-                    req.colnect_password.as_deref(),
-                ) {
-                    Ok(_) => SaveSiteCredentialsResponse {
-                        ok: true,
-                        message: "Site account credentials saved successfully to config.toml"
-                            .to_string(),
-                    },
-                    Err(error) => SaveSiteCredentialsResponse {
-                        ok: false,
-                        message: error,
-                    },
-                },
-                Err(error) => SaveSiteCredentialsResponse {
-                    ok: false,
-                    message: format!("invalid request: {}", error),
-                },
-            };
-
-            let mut resp =
-                Response::from_string(serde_json::to_string(&response).unwrap_or_else(|_| {
-                    "{\"ok\":false,\"message\":\"serialization failed\"}".to_string()
-                }));
-            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
-                resp = resp.with_header(h);
-            }
-            let _ = request.respond(resp);
-            continue;
-        }
-
         if method == Method::Get && req_url == "/api/albumeasy-status" {
             let cfg = crate::config::load_config("config.toml");
             let cli_path = cfg.effective_albumeasy_cli_path().map(str::to_owned);
@@ -919,23 +1202,33 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                             match crate::db_utils::init_db(&c.db_path) {
                                 Ok(conn) => {
                                     let (real_image_rows, local_real_files) =
-                                        best_effort_prepare_images_for_pdf(&conn, &c.country);
+                                        tokio::task::block_in_place(|| {
+                                            tokio::runtime::Handle::current().block_on(
+                                                best_effort_prepare_images_for_pdf(
+                                                    &conn, &c.country,
+                                                ),
+                                            )
+                                        });
                                     // Normalize images (strip ICC / rewrite) before PDF generation
                                     let _ = crate::image_downloader::normalize_album_images_for_pdf(&c.country);
                                     let album_dir = album_dir_for_ui(&c.db_path, &c.country);
-                                    let artifacts = crate::config::with_album_config_override(
-                                        &album_dir,
-                                        || {
-                                            crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                                &conn,
-                                                &c.country,
-                                                None::<fn(usize)>,
-                                                req.start_year,
-                                                req.end_year,
-                                                Some(true),
-                                            )
-                                        },
-                                    );
+                                    let artifacts = tokio::task::block_in_place(|| {
+                                        tokio::runtime::Handle::current().block_on(
+                                            crate::config::with_album_config_override_async(
+                                                &album_dir,
+                                                || {
+                                                    crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                                        &conn,
+                                                        &c.country,
+                                                        None::<fn(usize)>,
+                                                        req.start_year,
+                                                        req.end_year,
+                                                        Some(true),
+                                                    )
+                                                },
+                                            ),
+                                        )
+                                    });
                                     if let Some(pdf_path) = artifacts.generated_pdf_path.as_ref() {
                                         let _ = open_local_path(pdf_path);
                                     }
@@ -1019,11 +1312,11 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
                     if requested_country.is_empty() {
                         serde_json::to_string(&ColnectImportResponse {
                             ok: false,
-                            message: "Select a country first, then use Import Colnect.".to_string(),
+                            message: "Select a country first, then use Import Colnect - user defined files.".to_string(),
                             files_processed: 0,
                             stamps_imported: 0,
                             stamps_skipped: 0,
-                            errors: vec!["No country selected for bootstrap Colnect import".to_string()],
+                            errors: vec!["No country selected for bootstrap Colnect - user defined files import".to_string()],
                         })
                         .unwrap_or_else(|_| {
                             "{\"ok\":false,\"message\":\"serialization failed\",\"files_processed\":0,\"stamps_imported\":0,\"stamps_skipped\":0,\"errors\":[]}"
@@ -1189,12 +1482,18 @@ pub(super) struct ReviewHandlersStateRequests {
 // }
 pub(super) fn serve_review_requests(
     server: &Server,
-input: ReviewHandlersStateRequests
+    input: ReviewHandlersStateRequests,
 ) -> ReviewHandlersState {
     let reload_requested = false;
     let mut return_to_start_requested = false;
 
-    for mut request in server.incoming_requests() {
+    for request in server.incoming_requests() {
+        let Some(request) = handle_site_account_request(request) else {
+            continue;
+        };
+        let Some(mut request) = handle_country_url_request(request) else {
+            continue;
+        };
         let method = request.method().clone();
         let req_url = request.url().to_string();
 
@@ -1484,27 +1783,31 @@ input: ReviewHandlersStateRequests
                     &input.conn,
                     &input.db_path,
                     &input.album_name,
-                    &input.default_catalog_code,
-                    &input.default_sort_mode,
-                    &input.odd_row_color,
-                    &input.even_row_color,
-                    &input.first_column_color,
-                    &input.second_column_color,
-                    input.series_default_checked,
-                    input.description_default_checked,
-                    input.watermark_default_checked,
-                    input.design_default_checked,
-                    input.engraving_default_checked,
-                    input.perforation_default_checked,
-                    input.context_default_checked,
-                    input.colnect_links_default_checked,
-                    input.colnect_image_url_default_checked,
-                    input.colnect_metadata_default_checked,
-                    input.replace_sg_number_default_checked,
-                    input.right_unmatched_only_default_checked,
-                    input.albumeasy_auto_generate_pdf_default,
-                    input.albumeasy_cli_configured,
-                    &input.catalog_family_options,
+                    &MatcherPayloadOptions {
+                        default_catalog_code: &input.default_catalog_code,
+                        default_sort_mode: &input.default_sort_mode,
+                        odd_row_color: &input.odd_row_color,
+                        even_row_color: &input.even_row_color,
+                        first_column_color: &input.first_column_color,
+                        second_column_color: &input.second_column_color,
+                        series_default_checked: input.series_default_checked,
+                        description_default_checked: input.description_default_checked,
+                        watermark_default_checked: input.watermark_default_checked,
+                        design_default_checked: input.design_default_checked,
+                        engraving_default_checked: input.engraving_default_checked,
+                        perforation_default_checked: input.perforation_default_checked,
+                        context_default_checked: input.context_default_checked,
+                        colnect_links_default_checked: input.colnect_links_default_checked,
+                        colnect_image_url_default_checked: input.colnect_image_url_default_checked,
+                        colnect_metadata_default_checked: input.colnect_metadata_default_checked,
+                        replace_sg_number_default_checked: input.replace_sg_number_default_checked,
+                        right_unmatched_only_default_checked: input
+                            .right_unmatched_only_default_checked,
+                        albumeasy_auto_generate_pdf_default: input
+                            .albumeasy_auto_generate_pdf_default,
+                        albumeasy_cli_configured: input.albumeasy_cli_configured,
+                        catalog_family_options: &input.catalog_family_options,
+                    },
                     show_imageless_left_rows,
                 ) {
                     Ok(payload) => render_html(&payload),
@@ -1642,11 +1945,16 @@ input: ReviewHandlersStateRequests
 
             let parsed: Result<SaveLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&save_left_stamp(&input.conn, &input.db_path, &input.album_name, req))
-                    .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
-                            .to_string()
-                    }),
+                Ok(req) => serde_json::to_string(&save_left_stamp(
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
+                    req,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"updated_left\":null}"
+                        .to_string()
+                }),
                 Err(e) => serde_json::to_string(&SaveLeftStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1675,11 +1983,16 @@ input: ReviewHandlersStateRequests
 
             let parsed: Result<AddLeftStampRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => serde_json::to_string(&add_left_stamp(&input.conn, &input.db_path, &input.album_name, req))
-                    .unwrap_or_else(|_| {
-                        "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
-                            .to_string()
-                    }),
+                Ok(req) => serde_json::to_string(&add_left_stamp(
+                    &input.conn,
+                    &input.db_path,
+                    &input.album_name,
+                    req,
+                ))
+                .unwrap_or_else(|_| {
+                    "{\"ok\":false,\"message\":\"serialization failed\",\"added_left\":null}"
+                        .to_string()
+                }),
                 Err(e) => serde_json::to_string(&AddLeftStampResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1846,12 +2159,11 @@ input: ReviewHandlersStateRequests
 
             let parsed: Result<UndoColnectDeleteRequest, _> = serde_json::from_str(&body);
             let resp_json = match parsed {
-                Ok(req) => {
-                    serde_json::to_string(&undo_colnect_delete(&input.conn,  req)).unwrap_or_else(|_| {
+                Ok(req) => serde_json::to_string(&undo_colnect_delete(&input.conn, req))
+                    .unwrap_or_else(|_| {
                         "{\"ok\":false,\"message\":\"serialization failed\",\"restored_rows\":0}"
                             .to_string()
-                    })
-                }
+                    }),
                 Err(e) => serde_json::to_string(&UndoColnectDeleteResponse {
                     ok: false,
                     message: format!("invalid request: {}", e),
@@ -1911,16 +2223,39 @@ input: ReviewHandlersStateRequests
             continue;
         }
 
-        if method == Method::Get && req_url == "/api/fresh-candidates" {
-            let resp_json = match load_right_candidates(&input.conn, &input.db_path, &input.album_name) {
-                Ok(candidates) => {
-                    serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
+        if method == Method::Get && req_url == "/api/review-pdf-options" {
+            let response = match crate::album_globals::selection::colnect_pdf_options(&input.conn) {
+                Ok(options) => {
+                    let mut response = Response::from_string(
+                        serde_json::json!({"ok": true, "options": options}).to_string(),
+                    );
+                    if let Ok(header) =
+                        Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..])
+                    {
+                        response = response.with_header(header);
+                    }
+                    response
                 }
-                Err(e) => {
-                    log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
-                    "[]".to_string()
-                }
+                Err(error) => review_pdf_error(
+                    &format!("Failed to load country PDF filter choices: {error}"),
+                    500,
+                ),
             };
+            let _ = request.respond(response);
+            continue;
+        }
+
+        if method == Method::Get && req_url == "/api/fresh-candidates" {
+            let resp_json =
+                match load_right_candidates(&input.conn, &input.db_path, &input.album_name) {
+                    Ok(candidates) => {
+                        serde_json::to_string(&candidates).unwrap_or_else(|_| "[]".to_string())
+                    }
+                    Err(e) => {
+                        log_runtime_event(&format!("fresh-candidates: load failed: {}", e));
+                        "[]".to_string()
+                    }
+                };
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -1933,16 +2268,18 @@ input: ReviewHandlersStateRequests
             && (req_url == "/api/fresh-left" || req_url.starts_with("/api/fresh-left?"))
         {
             let show_imageless_left_rows = parse_query_flag(&req_url, "show_no_image");
-            let resp_json =
-                match load_left_stamps(&input.conn, &input.db_path, &input.album_name, show_imageless_left_rows) {
-                    Ok(stamps) => {
-                        serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string())
-                    }
-                    Err(e) => {
-                        log_runtime_event(&format!("fresh-left: load failed: {}", e));
-                        "[]".to_string()
-                    }
-                };
+            let resp_json = match load_left_stamps(
+                &input.conn,
+                &input.db_path,
+                &input.album_name,
+                show_imageless_left_rows,
+            ) {
+                Ok(stamps) => serde_json::to_string(&stamps).unwrap_or_else(|_| "[]".to_string()),
+                Err(e) => {
+                    log_runtime_event(&format!("fresh-left: load failed: {}", e));
+                    "[]".to_string()
+                }
+            };
             let mut resp = Response::from_string(resp_json);
             if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
                 resp = resp.with_header(h);
@@ -2038,7 +2375,7 @@ input: ReviewHandlersStateRequests
                             "Album override saved ({} changed field{}) for {}. New generation actions will use it immediately.",
                             n,
                             if n == 1 { "" } else { "s" },
-                            &input.album_name
+                            input.album_name
                         ),
                         reload_required: false,
                     },
@@ -2078,7 +2415,7 @@ input: ReviewHandlersStateRequests
                         ok: true,
                         message: format!(
                             "Album config override for {} deleted. Refresh the page if you want to reload the current view.",
-                            &input.album_name
+                            input.album_name
                         ),
                         reload_required: false,
                     },
@@ -2091,7 +2428,7 @@ input: ReviewHandlersStateRequests
             } else {
                 SaveConfigEditorResponse {
                     ok: false,
-                    message: format!("No album config override found for {}.", &input.album_name),
+                    message: format!("No album config override found for {}.", input.album_name),
                     reload_required: false,
                 }
             };
@@ -2197,7 +2534,10 @@ input: ReviewHandlersStateRequests
         if method == Method::Post && req_url == "/generate-pdf-now" {
             let mut body = String::new();
             if request.as_reader().read_to_string(&mut body).is_err() {
-                let _ = request.respond(Response::empty(StatusCode(400)));
+                let _ = request.respond(review_pdf_error(
+                    "Failed to read PDF generation request.",
+                    400,
+                ));
                 continue;
             }
 
@@ -2223,41 +2563,75 @@ input: ReviewHandlersStateRequests
                 continue;
             };
 
-            let parsed_body: Result<serde_json::Value, _> = serde_json::from_str(&body);
+            let req = match serde_json::from_str::<ReviewGeneratePdfRequest>(&body) {
+                Ok(req) => req,
+                Err(error) => {
+                    let _ = request.respond(review_pdf_error(
+                        &format!("Invalid PDF request: {error}"),
+                        400,
+                    ));
+                    continue;
+                }
+            };
+            if let Err(error) = req.validate() {
+                let _ = request.respond(review_pdf_error(&error, 400));
+                continue;
+            }
+            let req_start_year = req.start_year;
+            let req_end_year = req.end_year;
+            let req_open_pdf = req.open_pdf;
+            let prepared = if req.filters.is_all() {
+                None
+            } else {
+                match crate::album_globals::selection::prepare_pdf_stamps(
+                    &input.conn,
+                    &req.filters,
+                    req_start_year,
+                    req_end_year,
+                ) {
+                    Ok(stamps) => Some(stamps),
+                    Err(error) => {
+                        let _ = request.respond(review_pdf_error(&error, 422));
+                        continue;
+                    }
+                }
+            };
 
-            let (req_start_year, req_end_year) = parsed_body
-                .as_ref()
-                .ok()
-                .map(|v| {
-                    let sy = v
-                        .get("start_year")
-                        .and_then(|x| x.as_i64())
-                        .map(|x| x as i32);
-                    let ey = v.get("end_year").and_then(|x| x.as_i64()).map(|x| x as i32);
-                    (sy, ey)
-                })
-                .unwrap_or((None, None));
-            let req_open_pdf = parsed_body
-                .as_ref()
-                .ok()
-                .and_then(|v| v.get("open_pdf"))
-                .and_then(|x| x.as_bool())
-                .unwrap_or(false);
-
-            let (real_image_rows, local_real_files) =
-                best_effort_prepare_images_for_pdf(&input.conn, &input.album_name);
+            let (real_image_rows, local_real_files) = tokio::task::block_in_place(|| {
+                tokio::runtime::Handle::current().block_on(best_effort_prepare_images_for_pdf(
+                    &input.conn,
+                    &input.album_name,
+                ))
+            });
             let mut generated_output_path = None;
             let mut generated_pdf_path = None;
             let message = match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
-                crate::config::with_album_config_override(&album_dir, || {
-                    crate::album_globals::generate_album_output_conn_with_pdf_override(
-                        &input.conn,
-                        &input.album_name,
-                        None::<fn(usize)>,
-                        req_start_year,
-                        req_end_year,
-                        Some(true),
+                tokio::task::block_in_place(|| {
+                    tokio::runtime::Handle::current().block_on(
+                        crate::config::with_album_config_override_async(&album_dir, || async {
+                            if let Some(stamps) = prepared {
+                                crate::album_globals::generate_album_output_conn_with_prepared_pdf(
+                                    &input.conn,
+                                    &input.album_name,
+                                    req_start_year,
+                                    req_end_year,
+                                    Some(true),
+                                    stamps,
+                                )
+                                .await
+                            } else {
+                                crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                    &input.conn,
+                                    &input.album_name,
+                                    None::<fn(usize)>,
+                                    req_start_year,
+                                    req_end_year,
+                                    Some(true),
+                                )
+                                .await
+                            }
+                        }),
                     )
                 })
             })) {
@@ -2414,18 +2788,29 @@ input: ReviewHandlersStateRequests
                 Ok(req) => {
                     if req.generate_album {
                         let (real_image_rows, local_real_files) =
-                            best_effort_prepare_images_for_pdf(&input.conn, &input.album_name);
+                            tokio::task::block_in_place(|| {
+                                tokio::runtime::Handle::current().block_on(
+                                    best_effort_prepare_images_for_pdf(
+                                        &input.conn,
+                                        &input.album_name,
+                                    ),
+                                )
+                            });
                         let album_dir = album_dir_for_ui(&input.db_path, &input.album_name);
                         let generated = std::panic::catch_unwind(std::panic::AssertUnwindSafe(
                             || {
-                                crate::config::with_album_config_override(&album_dir, || {
-                                    crate::album_globals::generate_album_output_conn_with_pdf_override(
-                                        &input.conn,
-                                        &input.album_name,
-                                        None::<fn(usize)>,
-                                        req.start_year,
-                                        req.end_year,
-                                        Some(req.generate_pdf),
+                                tokio::task::block_in_place(|| {
+                                    tokio::runtime::Handle::current().block_on(
+                                        crate::config::with_album_config_override_async(&album_dir, || {
+                                            crate::album_globals::generate_album_output_conn_with_pdf_override(
+                                                &input.conn,
+                                                &input.album_name,
+                                                None::<fn(usize)>,
+                                                req.start_year,
+                                                req.end_year,
+                                                Some(req.generate_pdf),
+                                            )
+                                        }),
                                     )
                                 })
                             },
@@ -2500,4 +2885,3 @@ input: ReviewHandlersStateRequests
         return_to_start_requested,
     }
 }
-

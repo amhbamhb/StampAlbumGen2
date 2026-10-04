@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: header_date
-resource: tests/header_date.rs#L1-L84
+resource: tests/header_date.rs#L1-L85
 generated:
   by: okf-rs/0.4.0
 relationships:

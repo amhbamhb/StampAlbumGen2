@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compare_head_css
-resource: src/review_ui/views/compare_assets.rs#L164-L170
+resource: src/review_ui/views/compare_assets.rs#L176-L183
 generated:
   by: okf-rs/0.4.0
 relationships:

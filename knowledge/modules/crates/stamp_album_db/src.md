@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: src
-resource: crates/stamp_album_db/src/lib.rs#L1-L1222
+resource: crates/stamp_album_db/src/lib.rs#L1-L1273
 generated:
   by: okf-rs/0.4.0
 relationships:

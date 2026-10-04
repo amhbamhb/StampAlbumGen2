@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: center_tmp_pages
-resource: src/album_globals/generator_new/postprocess.rs#L9-L296
+resource: src/album_globals/generator_new/postprocess.rs#L8-L26
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/album_globals/generator_new/layout/format_page_vspace_mm
+  - target: functions/src/album_globals/generator_new/postprocess/center_page
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/progress/ProgressIndicator/clear
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -17,4 +20,5 @@ relationships:
 
 # Calls
 
-- [format_page_vspace_mm](../../../../../functions/src/album_globals/generator_new/layout/format_page_vspace_mm.md)
+- [center_page](../../../../../functions/src/album_globals/generator_new/postprocess/center_page.md)
+- [clear](../../../../../functions/src/progress/ProgressIndicator/clear.md)

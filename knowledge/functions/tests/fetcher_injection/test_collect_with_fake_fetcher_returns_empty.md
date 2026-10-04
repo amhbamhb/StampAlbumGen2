@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_collect_with_fake_fetcher_returns_empty
-resource: tests/fetcher_injection.rs#L26-L60
+resource: tests/fetcher_injection.rs#L28-L66
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_collect_with_fake_fetcher_returns_empty()`
+`async fn test_collect_with_fake_fetcher_returns_empty()`
 
 # Calls
 

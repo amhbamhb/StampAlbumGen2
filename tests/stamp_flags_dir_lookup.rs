@@ -1,7 +1,7 @@
 use std::io::Write;
 
-#[test]
-fn stamp_flags_dir_lookup_found_coa_svg() {
+#[tokio::test]
+async fn stamp_flags_dir_lookup_found_coa_svg() {
     // Create a temp dir and put coats_of_arms/ca.svg inside it
     let dir = tempfile::tempdir().expect("tempdir");
     let base = dir.path();
@@ -19,7 +19,7 @@ fn stamp_flags_dir_lookup_found_coa_svg() {
 
     // Point STAMP_FLAGS_DIR at the temp dir and call ensure_coat_of_arms
     std::env::set_var("STAMP_FLAGS_DIR", base);
-    let res = stamp_album_gen2::flagdb::ensure_coat_of_arms("ca");
+    let res = stamp_album_gen2::flagdb::ensure_coat_of_arms("ca").await;
     // Cleanup env var
     std::env::remove_var("STAMP_FLAGS_DIR");
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: stampworld_debug
-resource: src/bin/stampworld_debug.rs#L1-L134
+resource: src/bin/stampworld_debug.rs#L1-L139
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: RightCandidate
-resource: src/review_ui.rs#L223-L268
+resource: src/review_ui.rs#L239-L284
 visibility: private
 generated:
   by: okf-rs/0.4.0

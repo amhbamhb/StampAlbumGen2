@@ -37,7 +37,7 @@ album_stamp_img_new_setting_preserve_aspect = false
     // Test loading config1
     println!("Testing config loading for config1...");
     let output1 = Command::new("cargo")
-        .args(&["run", "--", "--help"])
+        .args(["run", "--", "--help"])
         .current_dir(".")
         .env("CONFIG_PATH", &config1_path)
         .output()
@@ -51,7 +51,7 @@ album_stamp_img_new_setting_preserve_aspect = false
     // Test loading config2
     println!("Testing config loading for config2...");
     let output2 = Command::new("cargo")
-        .args(&["run", "--", "--help"])
+        .args(["run", "--", "--help"])
         .current_dir(".")
         .env("CONFIG_PATH", &config2_path)
         .output()

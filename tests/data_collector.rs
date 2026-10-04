@@ -62,7 +62,7 @@ fn test_day_month_regex_unicode() {
     for s in samples {
         let caps = DAY_MONTH_RE
             .captures(s)
-            .expect(&format!("DAY_MONTH_RE failed to match '{}'", s));
+            .unwrap_or_else(|| panic!("DAY_MONTH_RE failed to match '{}'", s));
         let day = caps.get(1).map_or("", |m| m.as_str()).to_string();
         let month = caps.get(2).map_or("", |m| m.as_str()).to_string();
         assert!(!day.is_empty(), "day empty for '{}'", s);

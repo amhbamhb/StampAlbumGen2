@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_colnect_inbox_mode
-resource: src/modes.rs#L305-L554
+resource: src/modes.rs#L305-L556
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -46,9 +46,6 @@ relationships:
   - target: functions/src/modes/has_import_checksum
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_config
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/config/Config/effective_default_catalog_code
     resolved_by: tree-sitter
     confidence: exact
@@ -58,7 +55,7 @@ relationships:
   - target: functions/src/modes/record_import_history
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/with_album_config_override
+  - target: functions/src/config/with_album_config_override_async
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/progress/ProgressIndicator/finish_with_message
@@ -72,7 +69,7 @@ relationships:
 
 # Signature
 
-`fn run_colnect_inbox_mode( cli: &crate::cli::Cli, show_progress: bool, ) -> Result<(), Box<dyn std::error::Error>>`
+`async fn run_colnect_inbox_mode( cli: &crate::cli::Cli, show_progress: bool, ) -> Result<(), Box<dyn std::error::Error>>`
 
 # Calls
 
@@ -89,11 +86,10 @@ relationships:
 - [ensure_colnect_import_history_table](../../../functions/src/modes/ensure_colnect_import_history_table.md)
 - [file_sha256](../../../functions/src/modes/file_sha256.md)
 - [has_import_checksum](../../../functions/src/modes/has_import_checksum.md)
-- [load_config](../../../functions/src/config/load_config.md)
 - [effective_default_catalog_code](../../../functions/src/config/Config/effective_default_catalog_code.md)
 - [ingest_colnect_data_with_mode](../../../functions/src/colnect/ingest/ingest_colnect_data_with_mode.md)
 - [record_import_history](../../../functions/src/modes/record_import_history.md)
-- [with_album_config_override](../../../functions/src/config/with_album_config_override.md)
+- [with_album_config_override_async](../../../functions/src/config/with_album_config_override_async.md)
 - [finish_with_message](../../../functions/src/progress/ProgressIndicator/finish_with_message.md)
 
 # Called by

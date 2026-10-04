@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: globals
-resource: src/album_utils/globals.rs#L1-L1362
+resource: src/album_utils/globals.rs#L1-L1371
 generated:
   by: okf-rs/0.4.0
 relationships:

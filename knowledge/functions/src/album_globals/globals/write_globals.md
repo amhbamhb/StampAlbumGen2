@@ -8,4 +8,4 @@ generated:
 
 # Signature
 
-`pub fn write_globals<W: std::io::Write>( writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>, ) -> usize`
+`pub async fn write_globals<W: std::io::Write>( writer: &mut W, album_name: &str, conn_opt: Option<&rusqlite::Connection>, start_year: Option<i32>, end_year: Option<i32>, ) -> usize`

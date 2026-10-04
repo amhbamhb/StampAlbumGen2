@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config_values
-resource: tests/config_values.rs#L1-L113
+resource: tests/config_values.rs#L1-L115
 generated:
   by: okf-rs/0.4.0
 relationships:

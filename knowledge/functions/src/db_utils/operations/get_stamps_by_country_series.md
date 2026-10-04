@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_stamps_by_country_series
-resource: src/db_utils/operations.rs#L183-L227
+resource: src/db_utils/operations.rs#L200-L229
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -13,7 +13,7 @@ relationships:
 
 # Signature
 
-`pub fn get_stamps_by_country_series( conn: &Connection, country: &str, series: &str, ) -> Result< Vec<( i32, String, String, i32, String, i32, String, String, String, String, String, String, )>, >`
+`pub fn get_stamps_by_country_series( conn: &Connection, country: &str, series: &str, ) -> Result<Vec<CountrySeriesStampRow>>`
 
 # Calls
 

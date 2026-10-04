@@ -302,7 +302,7 @@ fn move_to_country_inbox(
     }
 }
 
-fn run_colnect_inbox_mode(
+async fn run_colnect_inbox_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -510,15 +510,17 @@ fn run_colnect_inbox_mode(
                         .parent()
                         .map(std::path::Path::to_path_buf)
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    let output_path = crate::config::with_album_config_override(&album_dir, || {
-                        crate::album_globals::generate_album_output_conn(
-                            &conn,
-                            album_country,
-                            None::<fn(usize)>,
-                            Some(cli.start_year),
-                            Some(cli.end_year),
-                        )
-                    });
+                    let output_path =
+                        crate::config::with_album_config_override_async(&album_dir, || {
+                            crate::album_globals::generate_album_output_conn(
+                                &conn,
+                                album_country,
+                                None::<fn(usize)>,
+                                Some(cli.start_year),
+                                Some(cli.end_year),
+                            )
+                        })
+                        .await;
                     generated += 1;
                     info!(
                         "Generated album for {}: {}",
@@ -1215,14 +1217,14 @@ fn sync_missing_stamps_from_colnect(
 }
 
 /// Run the database-only mode (generate album from existing database)
-pub fn run_database_mode(
+pub async fn run_database_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use log::{error, info, warn};
 
     if cli.source == "colnectexport" && cli.colnect_inbox.is_some() {
-        return run_colnect_inbox_mode(cli, show_progress);
+        return run_colnect_inbox_mode(cli, show_progress).await;
     }
 
     // Output-only mode: use the provided db_path and album_name
@@ -1404,7 +1406,7 @@ pub fn run_database_mode(
         .parent()
         .map(std::path::Path::to_path_buf)
         .unwrap_or_else(|| std::path::PathBuf::from("."));
-    let output_path = crate::config::with_album_config_override(&album_dir, || {
+    let output_path = crate::config::with_album_config_override_async(&album_dir, || {
         crate::album_globals::generate_album_output_conn(
             &conn,
             &album_name,
@@ -1412,7 +1414,8 @@ pub fn run_database_mode(
             Some(cli.start_year),
             Some(cli.end_year),
         )
-    });
+    })
+    .await;
 
     progress.finish_with_message(&format!(
         "Album '{}' generated successfully! 📄 File: {}",
@@ -1424,7 +1427,7 @@ pub fn run_database_mode(
 }
 
 /// Run the scraping mode (scrape StampWorld and generate album)
-pub fn run_scraping_mode(
+pub async fn run_scraping_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
     source: &str,
@@ -1569,45 +1572,20 @@ pub fn run_scraping_mode(
         // This file (looked up like `config.toml`) may contain a table
         // `[slug_overrides]` mapping the provided site_name to a canonical
         // StampWorld slug (which may contain '!' or other punctuation).
-        let overrides = crate::config::load_slug_overrides("slug_overrides.toml");
-        // Helper to percent-encode a slug for a path component
-        // Prefer hyphen-separated slugs for multi-word site/album names
-        let encode = |s: &str| s.replace(' ', "-").replace('!', "%21").replace('/', "%2F");
-
-        // If the caller requested the full open range (0..9999) treat this
-        // as an intent to fetch the album/main slug page rather than the
-        // 'Postage stamps' year-range listing. In that case construct URLs
-        // like: https://www.stampworld.com/en/stamps/<slug>/?page=
-        let use_main_slug = cli.start_year == 0 && cli.end_year == 9999;
-
-        if let Some(canon) = overrides.get(&site_name) {
-            // If there's an explicit override, use it verbatim (but still
-            // percent-encode reserved characters for the URL path).
-            let encoded = encode(canon);
-            // Avoid printing slug override details in normal runs.
-            if use_main_slug {
-                format!("https://www.stampworld.com/en/stamps/{}/?page=", encoded)
-            } else {
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                    encoded, cli.start_year, cli.end_year
-                )
-            }
+        if let Some(url) = &cli.stampworld_country_url {
+            crate::stampworld::country_url::listing_url_from_country_url(
+                url,
+                cli.start_year,
+                cli.end_year,
+            )?
         } else {
-            // Minimal percent-encoding for common problematic characters
-            // that appear in StampWorld site names (space, '!' and '/').
-            let encoded_site = encode(&site_name);
-            if use_main_slug {
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/?page=",
-                    encoded_site
-                )
-            } else {
-                format!(
-                    "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
-                    encoded_site, cli.start_year, cli.end_year
-                )
-            }
+            let overrides = crate::config::try_load_slug_overrides("slug_overrides.toml")?;
+            crate::stampworld::country_url::listing_url(
+                &site_name,
+                cli.start_year,
+                cli.end_year,
+                &overrides,
+            )
         }
     };
     // Load full config (so flag/wiki toggles are available)
@@ -1664,11 +1642,6 @@ pub fn run_scraping_mode(
     progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
     let pages = if source == "us1847" {
         // For 1847us.com, we process a single URL directly
-        let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(60))
-            .build()
-            .expect("Failed to build reqwest client");
-
         // Initialize DB
         let conn = match crate::db_utils::init_db(&db_path) {
             Ok(c) => c,
@@ -1678,16 +1651,36 @@ pub fn run_scraping_mode(
             }
         };
 
-        match crate::us1847::collector::process_1847us_page(
-            &client,
-            &conn,
-            &base_url,
-            &site_name,
-            cli.start_year,
-            cli.end_year,
-            &cfg.image_path,
-            cli.overwrite_images,
-        ) {
+        // reqwest::blocking owns an internal Tokio runtime and panics if it is
+        // created or dropped inside an async task, so run the whole blocking
+        // scrape on a dedicated OS thread.
+        let opts = crate::us1847::collector::Us1847PageOptions {
+            site_name: &site_name,
+            start_year: cli.start_year,
+            end_year: cli.end_year,
+            image_path: &cfg.image_path,
+            overwrite_images: cli.overwrite_images,
+        };
+        let base_url_ref = base_url.as_str();
+        let scrape_result: Result<usize, String> = std::thread::scope(|scope| {
+            scope
+                .spawn(move || {
+                    let client = reqwest::blocking::Client::builder()
+                        .timeout(std::time::Duration::from_secs(60))
+                        .build()
+                        .map_err(|e| format!("Failed to build reqwest client: {}", e))?;
+                    crate::us1847::collector::process_1847us_page(
+                        &client,
+                        &conn,
+                        base_url_ref,
+                        &opts,
+                    )
+                    .map_err(|e| e.to_string())
+                })
+                .join()
+                .unwrap_or_else(|_| Err("1847us scrape thread panicked".to_string()))
+        });
+        match scrape_result.map_err(Box::<dyn std::error::Error>::from) {
             Ok(stamp_count) => {
                 progress.set_message(&format!(
                     "✅ 1847US scraping complete! Found {} stamps.",
@@ -1716,6 +1709,7 @@ pub fn run_scraping_mode(
                 end_year: cli.end_year,
             },
         )
+        .await
     };
     match pages {
         Ok(pages) => {
@@ -1778,6 +1772,7 @@ pub fn run_scraping_mode(
                         progress.set_message("🏳️ Downloading country flag...");
                         let album_images = cfg.image_path.clone();
                         match crate::flagdb::copy_flag_for_album(&site_name, &album_images, "w320")
+                            .await
                         {
                             Ok(p) => info!("Copied flag into album images: {}", p),
                             Err(e) => info!(
@@ -1801,7 +1796,9 @@ pub fn run_scraping_mode(
                             &site_name,
                             cache_db_path,
                             &fetcher,
-                        ) {
+                        )
+                        .await
+                        {
                             Ok(_) => info!(
                                 "✅ Successfully cached Wikipedia content for '{}'",
                                 site_name
@@ -1847,15 +1844,17 @@ pub fn run_scraping_mode(
                         .parent()
                         .map(std::path::Path::to_path_buf)
                         .unwrap_or_else(|| std::path::PathBuf::from("."));
-                    let output_path = crate::config::with_album_config_override(&album_dir, || {
-                        crate::album_globals::generate_album_output_conn(
-                            &conn,
-                            &canonical_storage_dir,
-                            None::<fn(usize)>,
-                            Some(cli.start_year),
-                            Some(cli.end_year),
-                        )
-                    });
+                    let output_path =
+                        crate::config::with_album_config_override_async(&album_dir, || {
+                            crate::album_globals::generate_album_output_conn(
+                                &conn,
+                                &canonical_storage_dir,
+                                None::<fn(usize)>,
+                                Some(cli.start_year),
+                                Some(cli.end_year),
+                            )
+                        })
+                        .await;
 
                     // Use the same final success wording as database mode so
                     // parity tests see identical output. When running with a

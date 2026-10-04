@@ -1,7 +1,8 @@
 ---
 type: Rust Function
 title: resolve_left_editor_image_path
-resource: src/review_ui/matcher_service.rs#L1129-L1175
+resource: src/review_ui/matcher_service.rs#L1162-L1204
+visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -26,7 +27,7 @@ relationships:
 
 # Signature
 
-`pub(super) fn resolve_left_editor_image_path( conn: &Connection, db_path: &str, album_name: &str, image_mode: Option<&str>, source_rowid: Option<i64>, current_image_path: Option<&str>, upload_data_url: Option<&str>, upload_filename: Option<&str>, file_token: &str, ) -> Result<String, String>`
+`fn resolve_left_editor_image_path( conn: &Connection, db_path: &str, album_name: &str, input: LeftEditorImageInput<'_>, ) -> Result<String, String>`
 
 # Calls
 

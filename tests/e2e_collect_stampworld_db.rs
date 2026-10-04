@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use reqwest::header::HeaderMap;
 use reqwest::StatusCode;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
@@ -16,18 +17,22 @@ impl FakeFetcher {
     }
 }
 
+#[async_trait]
 impl Fetcher for FakeFetcher {
-    fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
+    async fn fetch_text(&self, _url: &str) -> Result<(StatusCode, String), reqwest::Error> {
         Ok((StatusCode::OK, self.html_fixture.clone()))
     }
 
-    fn fetch_bytes(&self, _url: &str) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
+    async fn fetch_bytes(
+        &self,
+        _url: &str,
+    ) -> Result<(StatusCode, HeaderMap, Vec<u8>), reqwest::Error> {
         Ok((StatusCode::NOT_FOUND, HeaderMap::new(), Vec::new()))
     }
 }
 
-#[test]
-fn e2e_collect_stampworld_inserts_placeholders_to_db() {
+#[tokio::test]
+async fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     // Prepare a temporary images directory so the collector creates a DB file we can inspect
     let td = tempdir().expect("tempdir");
     // Create a minimal config.toml in the temp dir so load_config finds expand_grouped_ranges
@@ -103,20 +108,23 @@ fn e2e_collect_stampworld_inserts_placeholders_to_db() {
     let results =
         stamp_album_gen2::stampworld::data_collector::collect_stampworld_data_with_fetcher(
             &fetcher,
-            &mut sequencer,
-            separator,
-            site_name,
-            &images_dir_str,
-            &month_number,
-            &get_stampworld_image,
-            base_url,
-            1970,
-            1970,
-            false,
-            None,
-            1,
-            1,
-        );
+            stamp_album_gen2::stampworld::data_collector::CollectStampworldParams {
+                sequencer: &mut sequencer,
+                separator,
+                site_name,
+                images_directory: &images_dir_str,
+                month_number_fn: &month_number,
+                downloader: &get_stampworld_image,
+                base_url,
+                start_year: 1970,
+                end_year: 1970,
+                overwrite_images: false,
+                page_callback: None,
+                max_pages: 1,
+                stop_after_no_hits: 1,
+            },
+        )
+        .await;
 
     // Collector returns a compact STAMP line vector; we only assert placeholders exist.
 

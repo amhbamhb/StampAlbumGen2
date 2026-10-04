@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn embedded_flags_writeback_and_load()`
+`async fn embedded_flags_writeback_and_load()`
 
 # Calls
 

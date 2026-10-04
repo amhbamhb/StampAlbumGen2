@@ -5,12 +5,12 @@ use std::fs;
 use std::path::Path;
 
 /// Legacy function for backwards compatibility
-pub fn fetch_and_cache_wikipedia_content(
+pub async fn fetch_and_cache_wikipedia_content(
     topic: &str,
     cache_db_path: &str,
     fetcher: &dyn Fetcher,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    database::fetch_and_cache_content(topic, cache_db_path, fetcher)
+    database::fetch_and_cache_content(topic, cache_db_path, fetcher).await
 }
 
 /// Legacy function for backwards compatibility
@@ -29,17 +29,17 @@ pub fn get_cached_wikipedia_content(
 /// to the album directory as wiki_summary.txt. Returns Ok(path) on success.
 /// Backwards-compatible wrapper: constructs a ReqwestFetcher and calls
 /// `fetch_and_save_summary_with_fetcher`.
-pub fn fetch_and_save_summary(
+pub async fn fetch_and_save_summary(
     topic: &str,
     album_dir: &str,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let fetcher = ReqwestFetcher::new_for_api();
-    fetch_and_save_summary_with_fetcher(topic, album_dir, &fetcher)
+    fetch_and_save_summary_with_fetcher(topic, album_dir, &fetcher).await
 }
 
 /// Fetch a short extract for a given topic using the provided `Fetcher` and save it
 /// to the album directory as `wiki_summary.txt`. Returns Ok(path) on success.
-pub fn fetch_and_save_summary_with_fetcher(
+pub async fn fetch_and_save_summary_with_fetcher(
     topic: &str,
     album_dir: &str,
     fetcher: &dyn Fetcher,
@@ -54,7 +54,7 @@ pub fn fetch_and_save_summary_with_fetcher(
     );
     log::info!("Fetching Wikipedia summary for '{}' -> {}", topic, url);
 
-    let (status, body) = fetcher.fetch_text(&url)?;
+    let (status, body) = fetcher.fetch_text(&url).await?;
     if !status.is_success() {
         return Err(format!("Wikipedia returned {} for {}", status, topic).into());
     }

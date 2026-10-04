@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: generator
-resource: src/album_globals/generator.rs#L1-L3828
+resource: src/album_globals/generator.rs#L1-L2953
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -27,7 +27,7 @@ relationships:
   - target: external/crate-config-load-effective-config
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/crate-db-utils-get-all-series-get-stamps-by-series-init-db
+  - target: external/crate-db-utils-get-all-series-init-db
     resolved_by: tree-sitter
     confidence: exact
   - target: external/crate-image-utils-calc-mm-per-pixel-embedded-estimate-real-dimensions
@@ -54,6 +54,12 @@ relationships:
   - target: external/std-fs
     resolved_by: tree-sitter
     confidence: exact
+  - target: external/super
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/crate-album-globals-structs-genericattrs
+    resolved_by: tree-sitter
+    confidence: exact
   member_of:
   - target: packages/stamp_album_gen2
     resolved_by: tree-sitter
@@ -74,17 +80,19 @@ relationships:
 - [is_real_image_path](../../../functions/src/album_globals/generator/is_real_image_path.md)
 - [format_number_with_commas](../../../functions/src/album_globals/generator/format_number_with_commas.md)
 - [count_albumeasy_text_lines](../../../functions/src/album_globals/generator/count_albumeasy_text_lines.md)
-- [estimate_chars_per_line_for_stamp](../../../functions/src/album_globals/generator/estimate_chars_per_line_for_stamp.md)
-- [wrap_description_for_estimate](../../../functions/src/album_globals/generator/wrap_description_for_estimate.md)
-- [wrap_left_for_estimate](../../../functions/src/album_globals/generator/wrap_left_for_estimate.md)
 - [count_nonempty_albumeasy_text_lines](../../../functions/src/album_globals/generator/count_nonempty_albumeasy_text_lines.md)
 - [pad_centre_body_for_side_columns](../../../functions/src/album_globals/generator/pad_centre_body_for_side_columns.md)
-- [estimate_colnect_centre_text](../../../functions/src/album_globals/generator/estimate_colnect_centre_text.md)
-- [estimate_stamp_body_line_count](../../../functions/src/album_globals/generator/estimate_stamp_body_line_count.md)
+- [StampText](../../../classes/src/album_globals/generator/StampText.md)
+- [build_stamp_text](../../../functions/src/album_globals/generator/build_stamp_text.md)
+- [stamp_content_height](../../../functions/src/album_globals/generator/stamp_content_height.md)
 - [generate_album_output_conn](../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [generate_album_output](../../../functions/src/album_globals/generator/generate_album_output.md)
 - [center_tmp_pages](../../../functions/src/album_globals/generator/center_tmp_pages.md)
-- [compute_page_used_height](../../../functions/src/album_globals/generator/compute_page_used_height.md)
+- [rich_stamp](../../../functions/src/album_globals/generator/rich_stamp.md)
+- [rich_config](../../../functions/src/album_globals/generator/rich_config.md)
+- [colnect_height_uses_the_exact_emitted_text_for_every_layout](../../../functions/src/album_globals/generator/colnect_height_uses_the_exact_emitted_text_for_every_layout.md)
+- [colnect_measurement_respects_hidden_fields_fonts_and_legacy_flags](../../../functions/src/album_globals/generator/colnect_measurement_respects_hidden_fields_fonts_and_legacy_flags.md)
 
 # Imports
 
@@ -99,7 +107,7 @@ relationships:
 - `crate::album_globals::generator_new::layout`
 - `crate::album_utils::clean_text`
 - `crate::config::load_effective_config`
-- `crate::db_utils::{get_all_series, get_stamps_by_series, init_db}`
+- `crate::db_utils::{get_all_series, init_db}`
 - `crate::image_utils::{calc_mm_per_pixel_embedded, estimate_real_dimensions}`
 - `log::{error, info, warn}`
 - `rusqlite::Connection`
@@ -108,6 +116,8 @@ relationships:
 - `std::path::Path`
 - `chrono::Datelike`
 - `std::fs`
+- `super::*`
+- `crate::album_globals::structs::GenericAttrs`
 
 # Member of
 

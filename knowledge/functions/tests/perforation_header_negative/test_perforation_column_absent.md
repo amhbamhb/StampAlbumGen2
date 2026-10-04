@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_perforation_column_absent
-resource: tests/perforation_header_negative.rs#L9-L78
+resource: tests/perforation_header_negative.rs#L9-L79
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
 
 # Signature
 
-`fn test_perforation_column_absent()`
+`async fn test_perforation_column_absent()`
 
 # Calls
 

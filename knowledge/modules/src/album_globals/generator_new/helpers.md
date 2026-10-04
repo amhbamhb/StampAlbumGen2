@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: helpers
-resource: src/album_globals/generator_new/helpers.rs#L1-L951
+resource: src/album_globals/generator_new/helpers.rs#L1-L992
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -48,6 +48,7 @@ relationships:
 - [PlaceholderCallOptions](../../../../classes/src/album_globals/generator_new/helpers/PlaceholderCallOptions.md)
 - [emit_row_start_es](../../../../functions/src/album_globals/generator_new/helpers/emit_row_start_es.md)
 - [emit_stamp_diag](../../../../functions/src/album_globals/generator_new/helpers/emit_stamp_diag.md)
+- [StampDiag](../../../../classes/src/album_globals/generator_new/helpers/StampDiag.md)
 - [build_page_text_template](../../../../functions/src/album_globals/generator_new/helpers/build_page_text_template.md)
 - [build_series_page_text_centre_template](../../../../functions/src/album_globals/generator_new/helpers/build_series_page_text_centre_template.md)
 - [build_scoped_page_text_centre_template](../../../../functions/src/album_globals/generator_new/helpers/build_scoped_page_text_centre_template.md)
@@ -60,6 +61,8 @@ relationships:
 - [set_attr_if_missing](../../../../functions/src/album_globals/generator_new/helpers/set_attr_if_missing.md)
 - [leading_year_from_series](../../../../functions/src/album_globals/generator_new/helpers/leading_year_from_series.md)
 - [fetch_and_filter_stamps](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_for_selection](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_for_selection.md)
+- [fetch_and_filter_stamps_impl](../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)
 - [estimate_and_ensure_placeholders](../../../../functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders.md)
 - [ensure_placeholder_for_stamp_and_update_db](../../../../functions/src/album_globals/generator_new/helpers/ensure_placeholder_for_stamp_and_update_db.md)
 

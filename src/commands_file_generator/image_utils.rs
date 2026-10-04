@@ -74,8 +74,31 @@ pub fn get_colnect_image(images_directory: &str, url: &str, name: &str) -> Image
     get_image(url, name, &file_path)
 }
 
-/// Stub for get_image, to be implemented
-pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
+/// Download `url` to `file_path`, returning the resulting image status.
+///
+/// Safe to call from both sync and async contexts: `reqwest::blocking` owns an
+/// internal Tokio runtime and panics if created or dropped inside an async task,
+/// so when a runtime is active the download runs on a dedicated OS thread.
+pub fn get_image(url: &str, name: &str, file_path: &str) -> ImageStatus {
+    if tokio::runtime::Handle::try_current().is_err() {
+        return get_image_blocking(url, name, file_path);
+    }
+    let (u, n, f) = (url.to_string(), name.to_string(), file_path.to_string());
+    std::thread::spawn(move || get_image_blocking(&u, &n, &f))
+        .join()
+        .unwrap_or_else(|_| {
+            error!("Image download thread panicked for URL: {}", url);
+            ImageStatus {
+                link: url.to_string(),
+                exists: false,
+                width: 0,
+                height: 0,
+                filename: name.to_string(),
+            }
+        })
+}
+
+fn get_image_blocking(_url: &str, _name: &str, _file_path: &str) -> ImageStatus {
     // Debug: Show the process of accessing the external website and getting the image
     debug!("Attempting to fetch image from URL: {}", _url);
     debug!("Image will be saved as: {}", _file_path);

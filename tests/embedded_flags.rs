@@ -2,8 +2,8 @@ use std::fs;
 use std::path::Path;
 use tempfile::tempdir;
 
-#[test]
-fn embedded_flags_writeback_and_load() {
+#[tokio::test]
+async fn embedded_flags_writeback_and_load() {
     // Create a temporary directory and make it the current working dir
     let td = tempdir().expect("tempdir");
     let td_path = td.path().to_path_buf();
@@ -17,7 +17,7 @@ fn embedded_flags_writeback_and_load() {
     }
 
     // Call the API that should fall back to embedded JSON and attempt to write
-    let m = stamp_album_gen2::flagdb::load_flag_map_from_fs();
+    let m = stamp_album_gen2::flagdb::load_flag_map_from_fs().await;
 
     // Basic sanity: mapping must include 'switzerland' -> 'ch'
     assert!(

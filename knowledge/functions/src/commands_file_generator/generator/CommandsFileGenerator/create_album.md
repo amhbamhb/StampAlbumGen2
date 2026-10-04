@@ -1,11 +1,11 @@
 ---
 type: Rust Method
 title: create_album
-resource: src/commands_file_generator/generator.rs#L218-L230
+resource: src/commands_file_generator/generator.rs#L162-L174
 generated:
   by: okf-rs/0.4.0
 ---
 
 # Signature
 
-`pub fn create_album(&self) -> usize`
+`pub async fn create_album(&self) -> usize`

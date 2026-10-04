@@ -1,12 +1,12 @@
 ---
 type: Rust Function
 title: get_image
-resource: src/commands_file_generator/image_utils.rs#L78-L145
+resource: src/commands_file_generator/image_utils.rs#L82-L99
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/album_globals/structs/GenericAttrs/get
+  - target: functions/src/commands_file_generator/image_utils/get_image_blocking
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -23,11 +23,11 @@ relationships:
 
 # Signature
 
-`pub fn get_image(_url: &str, _name: &str, _file_path: &str) -> ImageStatus`
+`pub fn get_image(url: &str, name: &str, file_path: &str) -> ImageStatus`
 
 # Calls
 
-- [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [get_image_blocking](../../../../functions/src/commands_file_generator/image_utils/get_image_blocking.md)
 
 # Called by
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: backfill_image_dims
-resource: src/bin/backfill_image_dims.rs#L1-L172
+resource: src/bin/backfill_image_dims.rs#L1-L167
 generated:
   by: okf-rs/0.4.0
 relationships:

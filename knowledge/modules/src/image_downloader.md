@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: image_downloader
-resource: src/image_downloader.rs#L1-L271
+resource: src/image_downloader.rs#L1-L273
 generated:
   by: okf-rs/0.4.0
 relationships:

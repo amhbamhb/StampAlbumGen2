@@ -1,4 +1,5 @@
 use base64::Engine;
+use http_handlers::{serve_bootstrap_requests, serve_review_requests, ReviewHandlersStateRequests};
 use log::debug;
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,6 @@ use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::Duration;
 use tiny_http::{Header, Method, Response, Server, StatusCode};
-use http_handlers::{serve_bootstrap_requests, serve_review_requests, ReviewHandlersStateRequests};
 
 mod views;
 use views::{render_bootstrap_html, render_html};
@@ -30,7 +30,6 @@ use matcher_service::{
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
 mod http_handlers;
-
 
 static PDF_GENERATION_IN_PROGRESS: AtomicBool = AtomicBool::new(false);
 const RUNTIME_LOG_CAP: usize = 800;
@@ -290,7 +289,7 @@ struct CatalogCodePair {
     code: String,
 }
 
-#[derive(Debug,serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct MatcherPayload {
     left: Vec<LeftStamp>,
     right: Vec<RightCandidate>,
@@ -369,6 +368,38 @@ struct BootstrapGeneratePdfRequest {
     start_year: Option<i32>,
     #[serde(default)]
     end_year: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReviewGeneratePdfRequest {
+    #[serde(default)]
+    start_year: Option<i32>,
+    #[serde(default)]
+    end_year: Option<i32>,
+    #[serde(default)]
+    open_pdf: bool,
+    #[serde(default)]
+    filters: crate::album_globals::selection::ColnectPdfFilters,
+}
+
+impl ReviewGeneratePdfRequest {
+    fn validate(&self) -> Result<(), String> {
+        self.filters.validate()?;
+        if self
+            .start_year
+            .is_some_and(|year| !(1840..=2100).contains(&year))
+            || self
+                .end_year
+                .is_some_and(|year| !(1840..=2100).contains(&year))
+        {
+            return Err("PDF years must be between 1840 and 2100, or blank.".into());
+        }
+        if matches!((self.start_year, self.end_year), (Some(start), Some(end)) if start > end) {
+            return Err("PDF start year must not be after the end year.".into());
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -528,7 +559,7 @@ fn preset_flags(preset: &Option<String>) -> Vec<String> {
     }
 }
 
-fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String> {
+fn build_stampworld_args(req: &BootstrapStampWorldRunRequest, country_url: &str) -> Vec<String> {
     let country = req.country.trim().to_string();
     let mut args = vec![
         "--source".to_string(),
@@ -541,6 +572,8 @@ fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String> {
         req.start_year.to_string(),
         "--end-year".to_string(),
         req.end_year.to_string(),
+        "--stampworld-country-url".to_string(),
+        country_url.to_string(),
     ];
     args.extend(preset_flags(&req.preset));
     args.extend(parse_extra_flags(&req.extra_flags));
@@ -712,6 +745,10 @@ pub struct SaveSiteCredentialsResponse {
 
 pub fn get_account_auth_status() -> AccountAuthStatusResponse {
     let cfg = crate::config::load_config("config.toml");
+    account_auth_status_from_config(&cfg)
+}
+
+fn account_auth_status_from_config(cfg: &crate::config::Config) -> AccountAuthStatusResponse {
     let sw_user = cfg.effective_stampworld_username().unwrap_or_default();
     let sw_pass = cfg.effective_stampworld_password().unwrap_or_default();
     let col_user = cfg.effective_colnect_username().unwrap_or_default();
@@ -743,7 +780,23 @@ pub fn save_site_credentials(
     ensure_runtime_startup_files()?;
     let config_path =
         find_global_config_path().ok_or_else(|| "could not locate config.toml".to_string())?;
-    let content = fs::read_to_string(&config_path)
+    save_site_credentials_to_path(
+        &config_path,
+        stampworld_user,
+        stampworld_pass,
+        colnect_user,
+        colnect_pass,
+    )
+}
+
+fn save_site_credentials_to_path(
+    config_path: &Path,
+    stampworld_user: Option<&str>,
+    stampworld_pass: Option<&str>,
+    colnect_user: Option<&str>,
+    colnect_pass: Option<&str>,
+) -> Result<(), String> {
+    let content = fs::read_to_string(config_path)
         .map_err(|e| format!("failed to read {}: {}", config_path.display(), e))?;
     let mut root_table = toml::from_str::<toml::Table>(&content)
         .map_err(|e| format!("invalid TOML in {}: {}", config_path.display(), e))?;
@@ -759,7 +812,7 @@ pub fn save_site_credentials(
             toml::Value::String(user.trim().to_string()),
         );
     }
-    if let Some(pass) = stampworld_pass {
+    if let Some(pass) = stampworld_pass.filter(|pass| !pass.is_empty()) {
         let sw_tbl = root_table
             .entry("stampworld")
             .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
@@ -782,7 +835,7 @@ pub fn save_site_credentials(
             toml::Value::String(user.trim().to_string()),
         );
     }
-    if let Some(pass) = colnect_pass {
+    if let Some(pass) = colnect_pass.filter(|pass| !pass.is_empty()) {
         let col_tbl = root_table
             .entry("colnect")
             .or_insert_with(|| toml::Value::Table(toml::map::Map::new()))
@@ -796,7 +849,7 @@ pub fn save_site_credentials(
 
     let rendered = toml::to_string_pretty(&root_table)
         .map_err(|e| format!("failed to render updated config TOML: {}", e))?;
-    fs::write(&config_path, rendered)
+    fs::write(config_path, rendered)
         .map_err(|e| format!("failed to write {}: {}", config_path.display(), e))?;
     Ok(())
 }
@@ -822,6 +875,7 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
     if req.start_year > req.end_year {
         return Err("Start year must be less than or equal to end year".to_string());
     }
+    let (country_url, _) = crate::stampworld::country_url::load_country_url(&country)?;
 
     let cfg = crate::config::load_config("config.toml");
     let sw_user = cfg.effective_stampworld_username().unwrap_or_default();
@@ -860,7 +914,7 @@ fn start_bootstrap_stampworld_job(req: BootstrapStampWorldRunRequest) -> Result<
 
     let exe =
         std::env::current_exe().map_err(|e| format!("failed to resolve executable: {}", e))?;
-    let args = build_stampworld_args(&req);
+    let args = build_stampworld_args(&req, &country_url);
     let display_cmd = format!(
         "{} {}",
         exe.display(),
@@ -2428,35 +2482,64 @@ fn parse_query_flag(url: &str, key: &str) -> bool {
     }
 }
 
+/// Review UI display defaults (sort, colours, checkbox defaults, AlbumEasy flags).
+pub struct MatcherPayloadOptions<'a> {
+    pub default_catalog_code: &'a str,
+    pub default_sort_mode: &'a str,
+    pub odd_row_color: &'a str,
+    pub even_row_color: &'a str,
+    pub first_column_color: &'a str,
+    pub second_column_color: &'a str,
+    pub series_default_checked: bool,
+    pub description_default_checked: bool,
+    pub watermark_default_checked: bool,
+    pub design_default_checked: bool,
+    pub engraving_default_checked: bool,
+    pub perforation_default_checked: bool,
+    pub context_default_checked: bool,
+    pub colnect_links_default_checked: bool,
+    pub colnect_image_url_default_checked: bool,
+    pub colnect_metadata_default_checked: bool,
+    pub replace_sg_number_default_checked: bool,
+    pub right_unmatched_only_default_checked: bool,
+    pub albumeasy_auto_generate_pdf_default: bool,
+    pub albumeasy_cli_configured: bool,
+    pub catalog_family_options: &'a [String],
+}
+
 fn build_matcher_payload(
     conn: &Connection,
     db_path: &str,
     album_name: &str,
-    default_catalog_code: &str,
-    default_sort_mode: &str,
-    odd_row_color: &str,
-    even_row_color: &str,
-    first_column_color: &str,
-    second_column_color: &str,
-    series_default_checked: bool,
-    description_default_checked: bool,
-    watermark_default_checked: bool,
-    design_default_checked: bool,
-    engraving_default_checked: bool,
-    perforation_default_checked: bool,
-    context_default_checked: bool,
-    colnect_links_default_checked: bool,
-    colnect_image_url_default_checked: bool,
-    colnect_metadata_default_checked: bool,
-    replace_sg_number_default_checked: bool,
-    right_unmatched_only_default_checked: bool,
-    albumeasy_auto_generate_pdf_default: bool,
-    albumeasy_cli_configured: bool,
-    catalog_family_options: &[String],
+    opts: &MatcherPayloadOptions<'_>,
     show_imageless_left_rows: bool,
 ) -> Result<MatcherPayload, Box<dyn std::error::Error>> {
     let left = load_left_stamps(conn, db_path, album_name, show_imageless_left_rows)?;
     let right = load_right_candidates(conn, db_path, album_name)?;
+
+    let MatcherPayloadOptions {
+        default_catalog_code,
+        default_sort_mode,
+        odd_row_color,
+        even_row_color,
+        first_column_color,
+        second_column_color,
+        series_default_checked,
+        description_default_checked,
+        watermark_default_checked,
+        design_default_checked,
+        engraving_default_checked,
+        perforation_default_checked,
+        context_default_checked,
+        colnect_links_default_checked,
+        colnect_image_url_default_checked,
+        colnect_metadata_default_checked,
+        replace_sg_number_default_checked,
+        right_unmatched_only_default_checked,
+        albumeasy_auto_generate_pdf_default,
+        albumeasy_cli_configured,
+        catalog_family_options,
+    } = *opts;
 
     Ok(MatcherPayload {
         left,
@@ -2924,28 +3007,32 @@ pub fn run_review_ui(
     prebound_server: Option<(Server, String)>,
     bind_addr_opt: Option<&str>,
     open_browser: bool,
-    default_catalog_code: &str,
-    default_sort_mode: &str,
-    odd_row_color: &str,
-    even_row_color: &str,
-    first_column_color: &str,
-    second_column_color: &str,
-    series_default_checked: bool,
-    description_default_checked: bool,
-    watermark_default_checked: bool,
-    design_default_checked: bool,
-    engraving_default_checked: bool,
-    perforation_default_checked: bool,
-    context_default_checked: bool,
-    colnect_links_default_checked: bool,
-    colnect_image_url_default_checked: bool,
-    colnect_metadata_default_checked: bool,
-    replace_sg_number_default_checked: bool,
-    right_unmatched_only_default_checked: bool,
-    albumeasy_auto_generate_pdf_default: bool,
-    albumeasy_cli_configured: bool,
-    catalog_family_options: &[String],
+    opts: &MatcherPayloadOptions<'_>,
 ) -> Result<ReviewUiRunOutcome, Box<dyn std::error::Error>> {
+    let MatcherPayloadOptions {
+        default_catalog_code,
+        default_sort_mode,
+        odd_row_color,
+        even_row_color,
+        first_column_color,
+        second_column_color,
+        series_default_checked,
+        description_default_checked,
+        watermark_default_checked,
+        design_default_checked,
+        engraving_default_checked,
+        perforation_default_checked,
+        context_default_checked,
+        colnect_links_default_checked,
+        colnect_image_url_default_checked,
+        colnect_metadata_default_checked,
+        replace_sg_number_default_checked,
+        right_unmatched_only_default_checked,
+        albumeasy_auto_generate_pdf_default,
+        albumeasy_cli_configured,
+        catalog_family_options,
+    } = *opts;
+
     if let Some(albums_root) = Path::new(db_path)
         .parent()
         .and_then(|album_dir| album_dir.parent())
@@ -3004,27 +3091,7 @@ pub fn run_review_ui(
         &conn,
         db_path,
         &album_name,
-        default_catalog_code,
-        default_sort_mode,
-        odd_row_color,
-        even_row_color,
-        first_column_color,
-        second_column_color,
-        series_default_checked,
-        description_default_checked,
-        watermark_default_checked,
-        design_default_checked,
-        engraving_default_checked,
-        perforation_default_checked,
-        context_default_checked,
-        colnect_links_default_checked,
-        colnect_image_url_default_checked,
-        colnect_metadata_default_checked,
-        replace_sg_number_default_checked,
-        right_unmatched_only_default_checked,
-        albumeasy_auto_generate_pdf_default,
-        albumeasy_cli_configured,
-        catalog_family_options,
+        opts,
         initial_show_imageless_left_rows,
     )
     .map_err(|e| {
@@ -3126,38 +3193,37 @@ pub fn run_review_ui(
     //     catalog_family_options: Vec<String>,
     // }
     // When calling serve_review_requests:
-let review_state = serve_review_requests(
-    &server,
-    ReviewHandlersStateRequests {
-        
-        conn,
-        db_path: db_path.to_string(),
-        album_name: album_name.to_string(),
-        html,
-        right_map,
-        default_catalog_code: default_catalog_code.to_string(),
-        default_sort_mode: default_sort_mode.to_string(),
-        odd_row_color: odd_row_color.to_string(),
-        even_row_color: even_row_color.to_string()  ,
-        first_column_color: first_column_color.to_string(),
-        second_column_color: second_column_color.to_string(),
-        series_default_checked,
-        description_default_checked,
-        watermark_default_checked,
-        design_default_checked,
-        engraving_default_checked,
-        perforation_default_checked,
-        context_default_checked,
-        colnect_links_default_checked,
-        colnect_image_url_default_checked,
-        colnect_metadata_default_checked,
-        replace_sg_number_default_checked,
-        right_unmatched_only_default_checked,
-        albumeasy_auto_generate_pdf_default,
-        albumeasy_cli_configured,
-        catalog_family_options: catalog_family_options.to_vec(),
-    },
-);
+    let review_state = serve_review_requests(
+        &server,
+        ReviewHandlersStateRequests {
+            conn,
+            db_path: db_path.to_string(),
+            album_name: album_name.to_string(),
+            html,
+            right_map,
+            default_catalog_code: default_catalog_code.to_string(),
+            default_sort_mode: default_sort_mode.to_string(),
+            odd_row_color: odd_row_color.to_string(),
+            even_row_color: even_row_color.to_string(),
+            first_column_color: first_column_color.to_string(),
+            second_column_color: second_column_color.to_string(),
+            series_default_checked,
+            description_default_checked,
+            watermark_default_checked,
+            design_default_checked,
+            engraving_default_checked,
+            perforation_default_checked,
+            context_default_checked,
+            colnect_links_default_checked,
+            colnect_image_url_default_checked,
+            colnect_metadata_default_checked,
+            replace_sg_number_default_checked,
+            right_unmatched_only_default_checked,
+            albumeasy_auto_generate_pdf_default,
+            albumeasy_cli_configured,
+            catalog_family_options: catalog_family_options.to_vec(),
+        },
+    );
 
     let reload_requested = review_state.reload_requested;
     let return_to_start_requested = review_state.return_to_start_requested;
@@ -3179,6 +3245,116 @@ mod tests {
         mark_colnect_candidate_processed, sync_processed_colnect_candidates,
     };
     use rusqlite::Connection;
+
+    #[test]
+    fn stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url() {
+        use clap::Parser;
+        for (country, slug) in [
+            ("South Korea", "South-Korea"),
+            (
+                "North Korean Occ. South Korea",
+                "North-Korean-Occ.-South-Korea",
+            ),
+            ("British Canada", "British-Canada"),
+        ] {
+            let url = format!("https://www.stampworld.com/en/stamps/{slug}/");
+            let req = super::BootstrapStampWorldRunRequest {
+                country: country.into(),
+                start_year: 1970,
+                end_year: 1980,
+                preset: None,
+                extra_flags: None,
+            };
+            let args = super::build_stampworld_args(&req, &url);
+            let cli = crate::cli::Cli::try_parse_from(
+                std::iter::once("stamp_album_gen2".to_string()).chain(args),
+            )
+            .expect("valid pull arguments");
+            assert_eq!(cli.site_name.as_deref(), Some(country));
+            assert_eq!(cli.album_name.as_deref(), Some(country));
+            assert_eq!(cli.stampworld_country_url.as_deref(), Some(url.as_str()));
+            assert_eq!(
+                crate::stampworld::country_url::listing_url_from_country_url(
+                    cli.stampworld_country_url.as_deref().expect("snapshot URL"),
+                    cli.start_year,
+                    cli.end_year,
+                )
+                .expect("listing"),
+                format!("{url}Postage%20stamps/1970-1980?page="),
+            );
+        }
+    }
+
+    #[test]
+    fn site_accounts_preserve_saved_passwords_and_unrelated_config() {
+        let dir = tempfile::tempdir().expect("temp config directory");
+        let path = dir.path().join("config.toml");
+        std::fs::write(
+            &path,
+            "[stampworld]\nusername = 'sw-test'\npassword = 'sw-test-secret'\n\
+             [colnect]\nusername = 'col-test'\npassword = 'col-test-secret'\n\
+             [runtime]\nbootstrap_albums_root_path = 'Albums'\n",
+        )
+        .expect("write test config");
+        super::save_site_credentials_to_path(&path, Some(" updated "), Some(""), None, None)
+            .expect("save without replacing passwords");
+        let content = std::fs::read_to_string(&path).expect("read config");
+        let table: toml::Table = toml::from_str(&content).expect("parse saved config");
+        assert_eq!(table["stampworld"]["username"].as_str(), Some("updated"));
+        assert_eq!(
+            table["stampworld"]["password"].as_str(),
+            Some("sw-test-secret")
+        );
+        assert_eq!(
+            table["colnect"]["password"].as_str(),
+            Some("col-test-secret")
+        );
+        assert_eq!(
+            table["runtime"]["bootstrap_albums_root_path"].as_str(),
+            Some("Albums")
+        );
+        super::save_site_credentials_to_path(&path, None, Some("new-secret"), None, Some(""))
+            .expect("replace StampWorld password only");
+        let cfg: crate::config::Config =
+            toml::from_str(&std::fs::read_to_string(&path).expect("read updated config"))
+                .expect("parse config");
+        assert_eq!(
+            cfg.stampworld
+                .as_ref()
+                .expect("stampworld section")
+                .password
+                .as_deref(),
+            Some("new-secret")
+        );
+        let status = super::account_auth_status_from_config(&cfg);
+        assert!(status.stampworld.configured);
+        assert!(status.colnect.configured);
+        assert_eq!(
+            status.stampworld.username,
+            cfg.effective_stampworld_username()
+                .expect("effective username")
+        );
+        let json = serde_json::to_string(&status).expect("serialize account status");
+        assert!(!json.contains("new-secret"));
+        assert!(!json.contains("col-test-secret"));
+    }
+
+    #[test]
+    fn site_accounts_reject_invalid_config_without_overwriting_it() {
+        let dir = tempfile::tempdir().expect("temp config directory");
+        let path = dir.path().join("config.toml");
+        for content in ["[stampworld", "stampworld = 'not a table'"] {
+            std::fs::write(&path, content).expect("write invalid config");
+            assert!(
+                super::save_site_credentials_to_path(&path, Some("test"), None, None, None)
+                    .is_err()
+            );
+            assert_eq!(
+                std::fs::read_to_string(&path).expect("read config"),
+                content
+            );
+        }
+    }
 
     #[test]
     fn sync_processed_colnect_candidates_marks_existing_stamp_links() {

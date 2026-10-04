@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_for_text_dedupe
-resource: src/album_globals/generator.rs#L129-L147
+resource: src/album_globals/generator.rs#L132-L150
 visibility: private
 generated:
   by: okf-rs/0.4.0

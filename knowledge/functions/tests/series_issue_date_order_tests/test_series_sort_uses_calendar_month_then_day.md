@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_series_sort_uses_calendar_month_then_day
-resource: tests/series_issue_date_order_tests.rs#L101-L131
+resource: tests/series_issue_date_order_tests.rs#L101-L132
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -20,7 +20,7 @@ relationships:
 
 # Signature
 
-`fn test_series_sort_uses_calendar_month_then_day()`
+`async fn test_series_sort_uses_calendar_month_then_day()`
 
 # Calls
 

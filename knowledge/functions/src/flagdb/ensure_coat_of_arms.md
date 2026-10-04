@@ -1,14 +1,11 @@
 ---
 type: Rust Function
 title: ensure_coat_of_arms
-resource: src/flagdb.rs#L317-L320
+resource: src/flagdb.rs#L194-L197
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/stampworld/fetch/ReqwestFetcher/new_for_api
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/flagdb/ensure_coat_of_arms_with_fetcher
     resolved_by: tree-sitter
     confidence: exact
@@ -29,11 +26,10 @@ relationships:
 
 # Signature
 
-`pub fn ensure_coat_of_arms(alpha2: &str) -> Result<String, Box<dyn std::error::Error>>`
+`pub async fn ensure_coat_of_arms(alpha2: &str) -> Result<String, Box<dyn std::error::Error>>`
 
 # Calls
 
-- [new_for_api](../../../functions/src/stampworld/fetch/ReqwestFetcher/new_for_api.md)
 - [ensure_coat_of_arms_with_fetcher](../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 
 # Called by

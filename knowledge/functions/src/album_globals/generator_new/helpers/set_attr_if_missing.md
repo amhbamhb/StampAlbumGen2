@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_attr_if_missing
-resource: src/album_globals/generator_new/helpers.rs#L351-L360
+resource: src/album_globals/generator_new/helpers.rs#L353-L362
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,7 +14,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -30,4 +30,4 @@ relationships:
 
 # Called by
 
-- [fetch_and_filter_stamps](../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)

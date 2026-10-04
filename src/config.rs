@@ -249,7 +249,7 @@ pub fn ensure_config_and_template_files(
                         // First ask whether to Move; if No, ask whether to Copy.
                         let do_move = MessageDialog::new()
                             .set_title("Move binary to target?")
-                            .set_description(&format!(
+                            .set_description(format!(
                                 "Move the running binary to {}?\n\nChoose Yes to move, No to consider copying, Cancel to skip.",
                                 target.display()
                             ))
@@ -298,7 +298,7 @@ pub fn ensure_config_and_template_files(
                             // copying. If they decline again, treat as Skip.
                             let do_copy = MessageDialog::new()
                                 .set_title("Copy binary to target?")
-                                .set_description(&format!(
+                                .set_description(format!(
                                     "Copy the running binary to {}?\n\nChoose Yes to copy, No/Cancel to skip.",
                                     target.display()
                                 ))
@@ -681,9 +681,9 @@ pub struct Config {
     // Backwards-compatible alias for detailed_page_fit_diagnostics
     pub detailed_page_fit: Option<bool>,
 
-    // When true, include the stamp heading height in the row height calculation
+    // Legacy compatibility flag. Visible headings are always measured for safe pagination.
     pub stamp_heading_in_row_height: Option<bool>,
-    // When true, include pages vertical vspace in row height calculations
+    // Legacy compatibility flag. Explicit vertical spacing is always measured.
     pub pages_vspace_in_row_height: Option<bool>,
 
     // Packing safety margins (mm) - used to add small horizontal/vertical
@@ -820,6 +820,8 @@ pub struct Config {
     // When true, run AlbumEasy in console mode (-c) after generating the
     // album text file so the PDF is produced automatically.
     pub albumeasy_auto_generate_pdf: Option<bool>,
+    // Seconds to wait for a fresh PDF after the AlbumEasy launcher exits.
+    pub albumeasy_pdf_timeout_secs: Option<std::num::NonZeroU32>,
     // When true, emit additional PDF generation diagnostics to logs.
     // This is intended as a support/DX switch for shipped binaries.
     pub pdf_dx_logging: Option<bool>,
@@ -1171,6 +1173,7 @@ impl Config {
             albumeasy_cli_path: None,
             bootstrap_albums_root_path: None,
             albumeasy_auto_generate_pdf: Some(false),
+            albumeasy_pdf_timeout_secs: std::num::NonZeroU32::new(300),
             pdf_dx_logging: Some(false),
             wikipedia_cache_db_path: Some("wikipedia_cache.db".to_string()),
             content_wiki_font: Some("HN".to_string()),
@@ -1622,6 +1625,12 @@ impl Config {
     /// to produce PDF output automatically.
     pub fn albumeasy_auto_pdf_enabled(&self) -> bool {
         self.albumeasy_auto_generate_pdf.unwrap_or(false)
+    }
+
+    /// Maximum PDF discovery wait after the AlbumEasy launcher exits.
+    pub fn albumeasy_pdf_timeout_secs(&self) -> u32 {
+        self.albumeasy_pdf_timeout_secs
+            .map_or(300, |value| value.get())
     }
 
     /// True when additional PDF generation diagnostics should be emitted.
@@ -2354,6 +2363,11 @@ pub fn load_config(path: &str) -> Config {
                                         defaults.albumeasy_auto_generate_pdf;
                                     has_missing = true;
                                 }
+                                if cfg.albumeasy_pdf_timeout_secs.is_none() {
+                                    cfg.albumeasy_pdf_timeout_secs =
+                                        defaults.albumeasy_pdf_timeout_secs;
+                                    has_missing = true;
+                                }
                                 if cfg.pdf_dx_logging.is_none() {
                                     cfg.pdf_dx_logging = defaults.pdf_dx_logging;
                                     has_missing = true;
@@ -2582,6 +2596,23 @@ pub fn with_album_config_override<R>(album_dir: &Path, f: impl FnOnce() -> R) ->
     })
 }
 
+/// Async sibling of [`with_album_config_override`]. Unlike the sync version, this
+/// actually awaits the future produced by `f` while the thread-local override is
+/// set, so the override stays in effect for the whole async operation instead of
+/// being reset before the future's body actually runs.
+pub async fn with_album_config_override_async<R, Fut>(
+    album_dir: &Path,
+    f: impl FnOnce() -> Fut,
+) -> R
+where
+    Fut: std::future::Future<Output = R>,
+{
+    let previous = SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(Some(album_dir.to_path_buf())));
+    let result = f().await;
+    SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.replace(previous));
+    result
+}
+
 pub fn load_effective_config(path: &str) -> Config {
     let album_dir = SCOPED_ALBUM_CONFIG_DIR.with(|slot| slot.borrow().clone());
     match album_dir {
@@ -2590,29 +2621,299 @@ pub fn load_effective_config(path: &str) -> Config {
     }
 }
 
+use std::collections::HashMap;
+
+// use crate::album_globals::pdf_dx_logging_enabled;
+
+/// Recursively merge two `toml::Value` trees.  When both sides are tables the
+/// overlay's keys win (scalars/arrays are replaced; inner tables are merged
+/// recurively).  For any non-table type the overlay always wins.
+fn deep_merge_toml_values(base: toml::Value, overlay: toml::Value) -> toml::Value {
+    match (base, overlay) {
+        (toml::Value::Table(mut base_table), toml::Value::Table(overlay_table)) => {
+            for (key, overlay_val) in overlay_table {
+                if let Some(base_val) = base_table.get(&key).cloned() {
+                    base_table.insert(key, deep_merge_toml_values(base_val, overlay_val));
+                } else {
+                    base_table.insert(key, overlay_val);
+                }
+            }
+            toml::Value::Table(base_table)
+        }
+        // For non-table types the overlay wins unconditionally.
+        (_, overlay) => overlay,
+    }
+}
+
+/// Load the global `config.toml` and, if a `config.toml` also exists inside
+/// `album_dir`, deep-merge it on top so that per-album settings override the
+/// global defaults.
+///
+/// The album-local file does **not** need to be a complete config.  Any key
+/// present in the album file overrides the corresponding global value; missing
+/// keys simply keep their global value.  The file supports the same section
+/// groupings as the global config (`[stamps]`, `[runtime]`, `[colnect]`, …).
+///
+/// Examples – create `Albums/Great-Britain/config.toml` containing only:
+/// ```toml
+/// default_catalog_code = "sg"
+/// stamp_heading_label = "Stanley Gibbons"
+/// ```
+/// and run generation for Great Britain.  All other settings still come from
+/// the global `config.toml`.
+pub fn load_config_with_override(global_path: &str, album_dir: &std::path::Path) -> Config {
+    // Always load the global config first (handles search-up-path, defaults, etc.)
+    let base = load_config(global_path);
+
+    // Look for an album-local override file.
+    let override_path = album_dir.join("config.toml");
+    if !override_path.exists() {
+        return base;
+    }
+
+    let override_content = match fs::read_to_string(&override_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!(
+                "WARNING: Cannot read album config override '{}': {}. Using global config.",
+                override_path.display(),
+                e
+            );
+            return base;
+        }
+    };
+
+    let mut override_val: toml::Value = match toml::from_str(&override_content) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!(
+                "WARNING: Album config override '{}' has invalid TOML: {}. Using global config.",
+                override_path.display(),
+                e
+            );
+            return base;
+        }
+    };
+
+    // Apply the same section-promotion logic as load_config so the album
+    // override can use convenience groupings like [stamps] or [runtime].
+    let promotable_sections = [
+        "page",
+        "stamps",
+        "layout",
+        "header",
+        "footer",
+        "colors",
+        "flag_cover",
+        "data_sources",
+        "wikipedia",
+        "images",
+        "text_templates",
+        "runtime",
+    ];
+    if let Some(hf_table) = override_val
+        .get("header_formatting")
+        .and_then(|v| v.as_table())
+        .cloned()
+    {
+        if let Some(tbl) = override_val.as_table_mut() {
+            for (k, v) in hf_table.iter() {
+                if tbl.get(k).is_none() {
+                    tbl.insert(k.clone(), v.clone());
+                }
+            }
+        }
+    }
+    for section in promotable_sections.iter() {
+        if let Some(sec_table) = override_val
+            .get(*section)
+            .and_then(|v| v.as_table())
+            .cloned()
+        {
+            if let Some(tbl) = override_val.as_table_mut() {
+                for (k, v) in sec_table.iter() {
+                    // In album overrides, sectioned keys should override root keys
+                    // to avoid old preserved values masking current UI edits.
+                    tbl.insert(k.clone(), v.clone());
+                }
+            }
+        }
+    }
+
+    // Serialize the (already-defaulted) base Config to toml::Value so we can
+    // deep-merge the override on top of it.
+    let base_str = match toml::to_string(&base) {
+        Ok(s) => s,
+        Err(e) => {
+            log::warn!(
+                "Failed to serialize base config for album override merge: {}. Using global config.",
+                e
+            );
+            return base;
+        }
+    };
+    let mut base_val: toml::Value = match toml::from_str(&base_str) {
+        Ok(v) => v,
+        Err(e) => {
+            log::warn!(
+                "Failed to re-parse base config as toml::Value for merge: {}. Using global config.",
+                e
+            );
+            return base;
+        }
+    };
+
+    // Overlay: album keys win over global keys.
+    base_val = deep_merge_toml_values(base_val, override_val);
+
+    // Deserialize the merged value into a final Config.
+    match toml::to_string(&base_val)
+        .map_err(|e| e.to_string())
+        .and_then(|s| toml::from_str::<Config>(&s).map_err(|e| e.to_string()))
+    {
+        Ok(merged) => {
+            info!(
+                "Applied album config override from '{}'",
+                override_path.display()
+            );
+            merged
+        }
+        Err(e) => {
+            eprintln!(
+                "WARNING: Failed to apply album config override '{}': {}. Using global config.",
+                override_path.display(),
+                e
+            );
+            base
+        }
+    }
+}
+
+/// Load a simple mapping file that allows users to override site_name -> canonical_slug
+/// Example TOML:
+/// [slug_overrides]
+/// "British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
+pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
+    match try_load_slug_overrides(path) {
+        Ok(overrides) => overrides,
+        Err(error) => {
+            log::error!("Failed to load StampWorld country mappings: {error}");
+            HashMap::new()
+        }
+    }
+}
+
+pub(crate) fn slug_override_path(path: &str) -> Result<std::path::PathBuf, String> {
+    let try_paths = {
+        let mut paths = Vec::new();
+
+        // First, try paths relative to current working directory
+        if let Ok(mut dir) = std::env::current_dir() {
+            for _ in 0..8 {
+                paths.push(dir.join(path));
+                if !dir.pop() {
+                    break;
+                }
+            }
+        }
+
+        // Also try paths relative to the executable's location
+        if let Ok(exe_path) = std::env::current_exe() {
+            if let Some(mut exe_dir) = exe_path.parent() {
+                for _ in 0..8 {
+                    paths.push(exe_dir.join(path));
+                    if let Some(parent) = exe_dir.parent() {
+                        exe_dir = parent;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        paths.push(std::path::PathBuf::from(path));
+        paths
+    };
+
+    for candidate in try_paths {
+        match fs::metadata(&candidate) {
+            Ok(_) => return Ok(candidate),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(format!("Cannot access {}: {error}", candidate.display())),
+        }
+    }
+    std::env::current_dir()
+        .map(|dir| dir.join(path))
+        .map_err(|error| format!("Cannot resolve country mapping location: {error}"))
+}
+
+pub(crate) fn try_load_slug_overrides(path: &str) -> Result<HashMap<String, String>, String> {
+    let candidate = slug_override_path(path)?;
+    let content = match fs::read_to_string(&candidate) {
+        Ok(content) => content,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(HashMap::new()),
+        Err(error) => return Err(format!("Cannot read {}: {error}", candidate.display())),
+    };
+    let value: toml::Value = toml::from_str(&content)
+        .map_err(|error| format!("Invalid {}: {error}", candidate.display()))?;
+    let Some(table) = value.get("slug_overrides") else {
+        return Ok(HashMap::new());
+    };
+    let table = table
+        .as_table()
+        .ok_or_else(|| "slug_overrides must be a TOML table".to_string())?;
+    table
+        .iter()
+        .map(|(country, slug)| {
+            slug.as_str()
+                .map(|slug| (country.clone(), slug.to_string()))
+                .ok_or_else(|| format!("StampWorld mapping for {country} must be text"))
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::{detect_duplicate_keys, Config};
 
     #[test]
-    fn installation_defaults_preserve_existing_config() {
-        let td = tempfile::tempdir().unwrap();
-        let config = td.path().join("config.toml");
-        let template = td.path().join("config_template.toml");
-        let pdf = td.path().join("manual.pdf");
-        std::fs::write(&config, "# user settings\n").unwrap();
+    fn albumeasy_pdf_timeout_defaults_and_positive_overrides() {
+        assert_eq!(Config::with_defaults().albumeasy_pdf_timeout_secs(), 300);
+        let legacy: Config = toml::from_str("").expect("legacy config");
+        assert_eq!(legacy.albumeasy_pdf_timeout_secs(), 300);
+        let custom: Config =
+            toml::from_str("albumeasy_pdf_timeout_secs = 600").expect("custom PDF timeout");
+        assert_eq!(custom.albumeasy_pdf_timeout_secs(), 600);
+        let roundtrip: Config =
+            toml::from_str(&toml::to_string(&custom).expect("serialize timeout"))
+                .expect("deserialize timeout");
+        assert_eq!(roundtrip.albumeasy_pdf_timeout_secs(), 600);
+        for invalid in ["0", "-1", "1.5", "\"600\""] {
+            assert!(
+                toml::from_str::<Config>(&format!("albumeasy_pdf_timeout_secs = {invalid}"))
+                    .is_err(),
+                "invalid timeout accepted: {invalid}"
+            );
+        }
+    }
 
-        super::ensure_default_files(&config, &template, &pdf).unwrap();
-
-        assert_eq!(
-            std::fs::read_to_string(config).unwrap(),
-            "# user settings\n"
-        );
-        assert_eq!(
-            std::fs::read_to_string(template).unwrap(),
-            super::embedded_config_template()
-        );
-        assert_eq!(std::fs::read(pdf).unwrap(), super::embedded_pdf_help());
+    #[test]
+    fn albumeasy_pdf_timeout_album_runtime_override_wins() {
+        let dir = tempfile::tempdir().expect("album config directory");
+        std::fs::write(
+            dir.path().join("config.toml"),
+            "[runtime]\nalbumeasy_pdf_timeout_secs = 600\n",
+        )
+        .expect("write album config");
+        let global = dir.path().join("global.toml");
+        std::fs::write(
+            &global,
+            toml::to_string(&Config::with_defaults()).expect("serialize global config"),
+        )
+        .expect("write global config");
+        let merged =
+            super::load_config_with_override(global.to_str().expect("global path"), dir.path());
+        assert_eq!(merged.albumeasy_pdf_timeout_secs(), 600);
     }
 
     #[test]
@@ -2846,234 +3147,4 @@ include_used = false
         assert_eq!(cfg.include_mint_unused, Some(false));
         assert_eq!(cfg.include_used, Some(false));
     }
-}
-
-use std::collections::HashMap;
-
-// use crate::album_globals::pdf_dx_logging_enabled;
-
-/// Recursively merge two `toml::Value` trees.  When both sides are tables the
-/// overlay's keys win (scalars/arrays are replaced; inner tables are merged
-/// recurively).  For any non-table type the overlay always wins.
-fn deep_merge_toml_values(base: toml::Value, overlay: toml::Value) -> toml::Value {
-    match (base, overlay) {
-        (toml::Value::Table(mut base_table), toml::Value::Table(overlay_table)) => {
-            for (key, overlay_val) in overlay_table {
-                if let Some(base_val) = base_table.get(&key).cloned() {
-                    base_table.insert(key, deep_merge_toml_values(base_val, overlay_val));
-                } else {
-                    base_table.insert(key, overlay_val);
-                }
-            }
-            toml::Value::Table(base_table)
-        }
-        // For non-table types the overlay wins unconditionally.
-        (_, overlay) => overlay,
-    }
-}
-
-/// Load the global `config.toml` and, if a `config.toml` also exists inside
-/// `album_dir`, deep-merge it on top so that per-album settings override the
-/// global defaults.
-///
-/// The album-local file does **not** need to be a complete config.  Any key
-/// present in the album file overrides the corresponding global value; missing
-/// keys simply keep their global value.  The file supports the same section
-/// groupings as the global config (`[stamps]`, `[runtime]`, `[colnect]`, …).
-///
-/// Examples – create `Albums/Great-Britain/config.toml` containing only:
-/// ```toml
-/// default_catalog_code = "sg"
-/// stamp_heading_label = "Stanley Gibbons"
-/// ```
-/// and run generation for Great Britain.  All other settings still come from
-/// the global `config.toml`.
-pub fn load_config_with_override(global_path: &str, album_dir: &std::path::Path) -> Config {
-    // Always load the global config first (handles search-up-path, defaults, etc.)
-    let base = load_config(global_path);
-
-    // Look for an album-local override file.
-    let override_path = album_dir.join("config.toml");
-    if !override_path.exists() {
-        return base;
-    }
-
-    let override_content = match fs::read_to_string(&override_path) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!(
-                "WARNING: Cannot read album config override '{}': {}. Using global config.",
-                override_path.display(),
-                e
-            );
-            return base;
-        }
-    };
-
-    let mut override_val: toml::Value = match toml::from_str(&override_content) {
-        Ok(v) => v,
-        Err(e) => {
-            eprintln!(
-                "WARNING: Album config override '{}' has invalid TOML: {}. Using global config.",
-                override_path.display(),
-                e
-            );
-            return base;
-        }
-    };
-
-    // Apply the same section-promotion logic as load_config so the album
-    // override can use convenience groupings like [stamps] or [runtime].
-    let promotable_sections = [
-        "page",
-        "stamps",
-        "layout",
-        "header",
-        "footer",
-        "colors",
-        "flag_cover",
-        "data_sources",
-        "wikipedia",
-        "images",
-        "text_templates",
-        "runtime",
-    ];
-    if let Some(hf_table) = override_val
-        .get("header_formatting")
-        .and_then(|v| v.as_table())
-        .cloned()
-    {
-        if let Some(tbl) = override_val.as_table_mut() {
-            for (k, v) in hf_table.iter() {
-                if tbl.get(k).is_none() {
-                    tbl.insert(k.clone(), v.clone());
-                }
-            }
-        }
-    }
-    for section in promotable_sections.iter() {
-        if let Some(sec_table) = override_val
-            .get(*section)
-            .and_then(|v| v.as_table())
-            .cloned()
-        {
-            if let Some(tbl) = override_val.as_table_mut() {
-                for (k, v) in sec_table.iter() {
-                    // In album overrides, sectioned keys should override root keys
-                    // to avoid old preserved values masking current UI edits.
-                    tbl.insert(k.clone(), v.clone());
-                }
-            }
-        }
-    }
-
-    // Serialize the (already-defaulted) base Config to toml::Value so we can
-    // deep-merge the override on top of it.
-    let base_str = match toml::to_string(&base) {
-        Ok(s) => s,
-        Err(e) => {
-            log::warn!(
-                "Failed to serialize base config for album override merge: {}. Using global config.",
-                e
-            );
-            return base;
-        }
-    };
-    let mut base_val: toml::Value = match toml::from_str(&base_str) {
-        Ok(v) => v,
-        Err(e) => {
-            log::warn!(
-                "Failed to re-parse base config as toml::Value for merge: {}. Using global config.",
-                e
-            );
-            return base;
-        }
-    };
-
-    // Overlay: album keys win over global keys.
-    base_val = deep_merge_toml_values(base_val, override_val);
-
-    // Deserialize the merged value into a final Config.
-    match toml::to_string(&base_val)
-        .map_err(|e| e.to_string())
-        .and_then(|s| toml::from_str::<Config>(&s).map_err(|e| e.to_string()))
-    {
-        Ok(merged) => {
-            info!(
-                "Applied album config override from '{}'",
-                override_path.display()
-            );
-            merged
-        }
-        Err(e) => {
-            eprintln!(
-                "WARNING: Failed to apply album config override '{}': {}. Using global config.",
-                override_path.display(),
-                e
-            );
-            base
-        }
-    }
-}
-
-/// Load a simple mapping file that allows users to override site_name -> canonical_slug
-/// Example TOML:
-/// [slug_overrides]
-/// "British-ColumbiaIsland" = "British-Columbia!Vancouver-Island"
-pub fn load_slug_overrides(path: &str) -> HashMap<String, String> {
-    // Search upward from cwd like load_config
-    let try_paths = {
-        let mut paths = Vec::new();
-
-        // First, try paths relative to current working directory
-        if let Ok(mut dir) = std::env::current_dir() {
-            for _ in 0..8 {
-                paths.push(dir.join(path));
-                if !dir.pop() {
-                    break;
-                }
-            }
-        }
-
-        // Also try paths relative to the executable's location
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(mut exe_dir) = exe_path.parent() {
-                for _ in 0..8 {
-                    paths.push(exe_dir.join(path));
-                    if let Some(parent) = exe_dir.parent() {
-                        exe_dir = parent;
-                    } else {
-                        break;
-                    }
-                }
-            }
-        }
-
-        paths.push(std::path::PathBuf::from(path));
-        paths
-    };
-
-    for candidate in try_paths.iter() {
-        if let Ok(content) = fs::read_to_string(candidate) {
-            if let Ok(value) = toml::from_str::<toml::Value>(&content) {
-                if let Some(table) = value.get("slug_overrides") {
-                    if let Some(tbl) = table.as_table() {
-                        let mut out = HashMap::new();
-                        for (k, v) in tbl.iter() {
-                            if let Some(s) = v.as_str() {
-                                out.insert(k.clone(), s.to_string());
-                            }
-                        }
-                        log::info!(
-                            "Loaded slug_overrides from {} ({} entries)",
-                            candidate.display(),
-                            out.len()
-                        );
-                        return out;
-                    }
-                }
-            }
-        }
-    }
-    HashMap::new()
 }

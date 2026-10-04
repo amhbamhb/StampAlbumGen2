@@ -11,7 +11,7 @@ use stamp_album_db;
 pub mod commemorative_layout;
 pub mod emit;
 pub mod layout;
-mod postprocess;
+pub(super) mod postprocess;
 
 /// Main entry point for AlbumEasy output generation.
 pub fn generate_album_output_conn<F>(

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_from_obj
-resource: src/flagdb.rs#L539-L553
+resource: src/flagdb.rs#L416-L430
 visibility: private
 generated:
   by: okf-rs/0.4.0

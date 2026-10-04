@@ -1,23 +1,10 @@
 ---
-type: Rust Module
+type: JavaScript Module
 title: compare
-resource: src/review_ui/views/compare.rs#L1-L4041
+resource: src/review_ui/views/compare.js#L1-L3918
 generated:
   by: okf-rs/0.4.0
 relationships:
-  imports:
-  - target: external/super-render-app-footer-html-render-config-editor-assets-render-footer-year-script-render-reconnect-banner-html-render-runtime-log-panel-html-matcherpayload-backend-not-responding-message-footer-year-update-js
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/super-compare-assets-compare-head-css-render-add-modal-html-render-compare-action-rows-html-render-compare-filters-html-render-compare-navigation-html-render-compare-panels-html-render-compare-top-html-render-op-busy-modal-html
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/crate-review-ui-views-shared-reconnectbannerparams
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/crate-review-ui-views-shared-runtimelogpanelparams
-    resolved_by: tree-sitter
-    confidence: exact
   member_of:
   - target: packages/stamp_album_gen2
     resolved_by: tree-sitter
@@ -26,22 +13,173 @@ relationships:
 
 # Contains
 
-- [render_html](../../../../functions/src/review_ui/views/compare/render_html.md)
-
-# Imports
-
-- `super::{
-    render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html, MatcherPayload,
-    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS,
-}`
-- `super::compare_assets::{
-    compare_head_css, render_add_modal_html, render_compare_action_rows_html,
-    render_compare_filters_html, render_compare_navigation_html, render_compare_panels_html,
-    render_compare_top_html, render_op_busy_modal_html,
-}`
-- `crate::review_ui::views::shared::ReconnectBannerParams`
-- `crate::review_ui::views::shared::RuntimeLogPanelParams`
+- [hasPendingAssignments](../../../../functions/src/review_ui/views/compare/hasPendingAssignments.md)
+- [fetchJsonNoStoreWithTimeout](../../../../functions/src/review_ui/views/compare/fetchJsonNoStoreWithTimeout.md)
+- [persistPdfUiState](../../../../functions/src/review_ui/views/compare/persistPdfUiState.md)
+- [restorePdfUiState](../../../../functions/src/review_ui/views/compare/restorePdfUiState.md)
+- [updatePdfPreviewControls](../../../../functions/src/review_ui/views/compare/updatePdfPreviewControls.md)
+- [togglePdfAlwaysOpenPreference](../../../../functions/src/review_ui/views/compare/togglePdfAlwaysOpenPreference.md)
+- [previewLastPdfReview](../../../../functions/src/review_ui/views/compare/previewLastPdfReview.md)
+- [setMainStatus](../../../../functions/src/review_ui/views/compare/setMainStatus.md)
+- [logRuntimeCompare](../../../../functions/src/review_ui/views/compare/logRuntimeCompare.md)
+- [emitReviewClientLog](../../../../functions/src/review_ui/views/compare/emitReviewClientLog.md)
+- [setMatchStatus](../../../../functions/src/review_ui/views/compare/setMatchStatus.md)
+- [setConfigStatus](../../../../functions/src/review_ui/views/compare/setConfigStatus.md)
+- [reloadCurrentPageCompare](../../../../functions/src/review_ui/views/compare/reloadCurrentPageCompare.md)
+- [setReconnectBannerCompare](../../../../functions/src/review_ui/views/compare/setReconnectBannerCompare.md)
+- [fetchBackendHealthCompare](../../../../functions/src/review_ui/views/compare/fetchBackendHealthCompare.md)
+- [checkBackendHealthCompare](../../../../functions/src/review_ui/views/compare/checkBackendHealthCompare.md)
+- [startBackendHealthPollingCompare](../../../../functions/src/review_ui/views/compare/startBackendHealthPollingCompare.md)
+- [retryBackendHealthCheckCompare](../../../../functions/src/review_ui/views/compare/retryBackendHealthCheckCompare.md)
+- [isRuntimeLogVisibleCompare](../../../../functions/src/review_ui/views/compare/isRuntimeLogVisibleCompare.md)
+- [applyRuntimeLogVisibilityCompare](../../../../functions/src/review_ui/views/compare/applyRuntimeLogVisibilityCompare.md)
+- [toggleRuntimeLogVisibilityCompare](../../../../functions/src/review_ui/views/compare/toggleRuntimeLogVisibilityCompare.md)
+- [copyTextToClipboardCompare](../../../../functions/src/review_ui/views/compare/copyTextToClipboardCompare.md)
+- [ensureCopyableAlertDialogCompare](../../../../functions/src/review_ui/views/compare/ensureCopyableAlertDialogCompare.md)
+- [showCopyableAlertCompare](../../../../functions/src/review_ui/views/compare/showCopyableAlertCompare.md)
+- [refreshRuntimeLogCompare](../../../../functions/src/review_ui/views/compare/refreshRuntimeLogCompare.md)
+- [startRuntimeLogPollingCompare](../../../../functions/src/review_ui/views/compare/startRuntimeLogPollingCompare.md)
+- [copyRuntimeLogCompare](../../../../functions/src/review_ui/views/compare/copyRuntimeLogCompare.md)
+- [setOperationBusy](../../../../functions/src/review_ui/views/compare/setOperationBusy.md)
+- [setBusy](../../../../functions/src/review_ui/views/compare/setBusy.md)
+- [navigateWithFade](../../../../functions/src/review_ui/views/compare/navigateWithFade.md)
+- [waitForBootstrapReady](../../../../functions/src/review_ui/views/compare/waitForBootstrapReady.md)
+- [removeCandidateFromUi](../../../../functions/src/review_ui/views/compare/removeCandidateFromUi.md)
+- [pruneAssignmentsToExistingCandidates](../../../../functions/src/review_ui/views/compare/pruneAssignmentsToExistingCandidates.md)
+- [reloadLeftRowsFromServer](../../../../functions/src/review_ui/views/compare/reloadLeftRowsFromServer.md)
+- [refreshRightCandidatesRealtime](../../../../functions/src/review_ui/views/compare/refreshRightCandidatesRealtime.md)
+- [b](../../../../functions/src/review_ui/views/compare/b.md)
+- [fmt](../../../../functions/src/review_ui/views/compare/fmt.md)
+- [html](../../../../functions/src/review_ui/views/compare/html.md)
+- [row](../../../../functions/src/review_ui/views/compare/row.md)
+- [allDbRows](../../../../functions/src/review_ui/views/compare/allDbRows.md)
+- [toggleImagelessLeftRows](../../../../functions/src/review_ui/views/compare/toggleImagelessLeftRows.md)
+- [parseConfiguredCatalogFamilyOptions](../../../../functions/src/review_ui/views/compare/parseConfiguredCatalogFamilyOptions.md)
+- [defaultCatalogFamilyOptions](../../../../functions/src/review_ui/views/compare/defaultCatalogFamilyOptions.md)
+- [catalogDisplayName](../../../../functions/src/review_ui/views/compare/catalogDisplayName.md)
+- [normalizeCatalogCodeForUi](../../../../functions/src/review_ui/views/compare/normalizeCatalogCodeForUi.md)
+- [inferInitialCatalogCodeFromLeftRows](../../../../functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows.md)
+- [getEffectiveDefaultCatalogCode](../../../../functions/src/review_ui/views/compare/getEffectiveDefaultCatalogCode.md)
+- [changeCountryDefaultCatalog](../../../../functions/src/review_ui/views/compare/changeCountryDefaultCatalog.md)
+- [saveCatalogDefaultToConfig](../../../../functions/src/review_ui/views/compare/saveCatalogDefaultToConfig.md)
+- [normalizeCatalogNumber](../../../../functions/src/review_ui/views/compare/normalizeCatalogNumber.md)
+- [parseCatalogCodePairs](../../../../functions/src/review_ui/views/compare/parseCatalogCodePairs.md)
+- [inferCatalogTypeForNumber](../../../../functions/src/review_ui/views/compare/inferCatalogTypeForNumber.md)
+- [effectiveCatalogCodeForItem](../../../../functions/src/review_ui/views/compare/effectiveCatalogCodeForItem.md)
+- [imageBox](../../../../functions/src/review_ui/views/compare/imageBox.md)
+- [leftSortKey](../../../../functions/src/review_ui/views/compare/leftSortKey.md)
+- [sgSortText](../../../../functions/src/review_ui/views/compare/sgSortText.md)
+- [normalizeSortMode](../../../../functions/src/review_ui/views/compare/normalizeSortMode.md)
+- [updateSortDefaultButtons](../../../../functions/src/review_ui/views/compare/updateSortDefaultButtons.md)
+- [parseIssueDayValue](../../../../functions/src/review_ui/views/compare/parseIssueDayValue.md)
+- [compareIssueDateParts](../../../../functions/src/review_ui/views/compare/compareIssueDateParts.md)
+- [compareBySortMode](../../../../functions/src/review_ui/views/compare/compareBySortMode.md)
+- [sortLeftRows](../../../../functions/src/review_ui/views/compare/sortLeftRows.md)
+- [upsertLeftRow](../../../../functions/src/review_ui/views/compare/upsertLeftRow.md)
+- [removeLeftRow](../../../../functions/src/review_ui/views/compare/removeLeftRow.md)
+- [setLeftSearchStatus](../../../../functions/src/review_ui/views/compare/setLeftSearchStatus.md)
+- [leftSearchText](../../../../functions/src/review_ui/views/compare/leftSearchText.md)
+- [rightSearchText](../../../../functions/src/review_ui/views/compare/rightSearchText.md)
+- [setRightSearchStatus](../../../../functions/src/review_ui/views/compare/setRightSearchStatus.md)
+- [updateRightSearchStatus](../../../../functions/src/review_ui/views/compare/updateRightSearchStatus.md)
+- [onRightSearchInput](../../../../functions/src/review_ui/views/compare/onRightSearchInput.md)
+- [updateLeftSearchMatches](../../../../functions/src/review_ui/views/compare/updateLeftSearchMatches.md)
+- [onLeftSearchInput](../../../../functions/src/review_ui/views/compare/onLeftSearchInput.md)
+- [captureSearchFocusState](../../../../functions/src/review_ui/views/compare/captureSearchFocusState.md)
+- [restoreSearchFocusState](../../../../functions/src/review_ui/views/compare/restoreSearchFocusState.md)
+- [stepLeftSearch](../../../../functions/src/review_ui/views/compare/stepLeftSearch.md)
+- [ensureRightImageUrl](../../../../functions/src/review_ui/views/compare/ensureRightImageUrl.md)
+- [dismissStartGuide](../../../../functions/src/review_ui/views/compare/dismissStartGuide.md)
+- [scrollToFilters](../../../../functions/src/review_ui/views/compare/scrollToFilters.md)
+- [scrollToPanels](../../../../functions/src/review_ui/views/compare/scrollToPanels.md)
+- [openCountryFolder](../../../../functions/src/review_ui/views/compare/openCountryFolder.md)
+- [reviewStampworldPresetFlags](../../../../functions/src/review_ui/views/compare/reviewStampworldPresetFlags.md)
+- [reviewSuggestedStampworldCommand](../../../../functions/src/review_ui/views/compare/reviewSuggestedStampworldCommand.md)
+- [updateReviewStampWorldCommand](../../../../functions/src/review_ui/views/compare/updateReviewStampWorldCommand.md)
+- [updateReviewStampWorldStatus](../../../../functions/src/review_ui/views/compare/updateReviewStampWorldStatus.md)
+- [pollReviewStampWorldStatus](../../../../functions/src/review_ui/views/compare/pollReviewStampWorldStatus.md)
+- [runReviewStampWorldPull](../../../../functions/src/review_ui/views/compare/runReviewStampWorldPull.md)
+- [readSiteAccountResponse](../../../../functions/src/review_ui/views/compare/readSiteAccountResponse.md)
+- [loadAccountAuthStatus](../../../../functions/src/review_ui/views/compare/loadAccountAuthStatus.md)
+- [openSiteAccountsDialog](../../../../functions/src/review_ui/views/compare/openSiteAccountsDialog.md)
+- [closeSiteAccountsDialog](../../../../functions/src/review_ui/views/compare/closeSiteAccountsDialog.md)
+- [submitSiteAccounts](../../../../functions/src/review_ui/views/compare/submitSiteAccounts.md)
+- [copyReviewStampWorldCommand](../../../../functions/src/review_ui/views/compare/copyReviewStampWorldCommand.md)
+- [updateGuide](../../../../functions/src/review_ui/views/compare/updateGuide.md)
+- [initReviewStampWorldPanel](../../../../functions/src/review_ui/views/compare/initReviewStampWorldPanel.md)
+- [initReviewPdfYearInputs](../../../../functions/src/review_ui/views/compare/initReviewPdfYearInputs.md)
+- [usedColnectIds](../../../../functions/src/review_ui/views/compare/usedColnectIds.md)
+- [availableCandidatesForCurrentLeft](../../../../functions/src/review_ui/views/compare/availableCandidatesForCurrentLeft.md)
+- [normalizeIndex](../../../../functions/src/review_ui/views/compare/normalizeIndex.md)
+- [jumpLeft](../../../../functions/src/review_ui/views/compare/jumpLeft.md)
+- [firstLeft](../../../../functions/src/review_ui/views/compare/firstLeft.md)
+- [lastLeft](../../../../functions/src/review_ui/views/compare/lastLeft.md)
+- [jumpRight](../../../../functions/src/review_ui/views/compare/jumpRight.md)
+- [firstRight](../../../../functions/src/review_ui/views/compare/firstRight.md)
+- [lastRight](../../../../functions/src/review_ui/views/compare/lastRight.md)
+- [changeSortMode](../../../../functions/src/review_ui/views/compare/changeSortMode.md)
+- [changePdfSortMode](../../../../functions/src/review_ui/views/compare/changePdfSortMode.md)
+- [makeSortModeDefault](../../../../functions/src/review_ui/views/compare/makeSortModeDefault.md)
+- [makePdfSortModeDefault](../../../../functions/src/review_ui/views/compare/makePdfSortModeDefault.md)
+- [resetSortModeDefault](../../../../functions/src/review_ui/views/compare/resetSortModeDefault.md)
+- [resetPdfSortModeDefault](../../../../functions/src/review_ui/views/compare/resetPdfSortModeDefault.md)
+- [currentRightCandidate](../../../../functions/src/review_ui/views/compare/currentRightCandidate.md)
+- [selectedCatalogCodeForCurrent](../../../../functions/src/review_ui/views/compare/selectedCatalogCodeForCurrent.md)
+- [selectedCatalogTypeForCurrent](../../../../functions/src/review_ui/views/compare/selectedCatalogTypeForCurrent.md)
+- [rightCatalogFamiliesForCandidate](../../../../functions/src/review_ui/views/compare/rightCatalogFamiliesForCandidate.md)
+- [populateRightCatalogSearchSuggestions](../../../../functions/src/review_ui/views/compare/populateRightCatalogSearchSuggestions.md)
+- [applyRightCatalogSearchChoice](../../../../functions/src/review_ui/views/compare/applyRightCatalogSearchChoice.md)
+- [tryApplyRightCatalogSearchChoice](../../../../functions/src/review_ui/views/compare/tryApplyRightCatalogSearchChoice.md)
+- [buildRightCatalogSelectOptions](../../../../functions/src/review_ui/views/compare/buildRightCatalogSelectOptions.md)
+- [ordinalValueForCatalog](../../../../functions/src/review_ui/views/compare/ordinalValueForCatalog.md)
+- [render](../../../../functions/src/review_ui/views/compare/render.md)
+- [restoreRightPanelScrollIfNeeded](../../../../functions/src/review_ui/views/compare/restoreRightPanelScrollIfNeeded.md)
+- [rememberCatalogCode](../../../../functions/src/review_ui/views/compare/rememberCatalogCode.md)
+- [prevLeft](../../../../functions/src/review_ui/views/compare/prevLeft.md)
+- [nextLeft](../../../../functions/src/review_ui/views/compare/nextLeft.md)
+- [prevRight](../../../../functions/src/review_ui/views/compare/prevRight.md)
+- [nextRight](../../../../functions/src/review_ui/views/compare/nextRight.md)
+- [assignCurrent](../../../../functions/src/review_ui/views/compare/assignCurrent.md)
+- [clearAssignment](../../../../functions/src/review_ui/views/compare/clearAssignment.md)
+- [applySuccessfulMatchToLocalLeft](../../../../functions/src/review_ui/views/compare/applySuccessfulMatchToLocalLeft.md)
+- [applyMatches](../../../../functions/src/review_ui/views/compare/applyMatches.md)
+- [getSelectedAddImageMode](../../../../functions/src/review_ui/views/compare/getSelectedAddImageMode.md)
+- [toggleAddImageOptions](../../../../functions/src/review_ui/views/compare/toggleAddImageOptions.md)
+- [openAddDialog](../../../../functions/src/review_ui/views/compare/openAddDialog.md)
+- [closeAddDialog](../../../../functions/src/review_ui/views/compare/closeAddDialog.md)
+- [fileToDataUrl](../../../../functions/src/review_ui/views/compare/fileToDataUrl.md)
+- [getSelectedLeftImageMode](../../../../functions/src/review_ui/views/compare/getSelectedLeftImageMode.md)
+- [toggleLeftEditorImageOptions](../../../../functions/src/review_ui/views/compare/toggleLeftEditorImageOptions.md)
+- [toggleLeftEditorCatalogCodeCustom](../../../../functions/src/review_ui/views/compare/toggleLeftEditorCatalogCodeCustom.md)
+- [parseCatalogTypesFromRaw](../../../../functions/src/review_ui/views/compare/parseCatalogTypesFromRaw.md)
+- [leftEditorSuggestedCatalogCodes](../../../../functions/src/review_ui/views/compare/leftEditorSuggestedCatalogCodes.md)
+- [catalogFamilyOptionText](../../../../functions/src/review_ui/views/compare/catalogFamilyOptionText.md)
+- [catalogFamilySearchText](../../../../functions/src/review_ui/views/compare/catalogFamilySearchText.md)
+- [parseCatalogCodeFromSearchValue](../../../../functions/src/review_ui/views/compare/parseCatalogCodeFromSearchValue.md)
+- [populateLeftEditorCatalogSearchSuggestions](../../../../functions/src/review_ui/views/compare/populateLeftEditorCatalogSearchSuggestions.md)
+- [applyLeftEditorCatalogSearchChoice](../../../../functions/src/review_ui/views/compare/applyLeftEditorCatalogSearchChoice.md)
+- [tryApplyLeftEditorCatalogSearchChoice](../../../../functions/src/review_ui/views/compare/tryApplyLeftEditorCatalogSearchChoice.md)
+- [rebuildLeftEditorCatalogTypeOptions](../../../../functions/src/review_ui/views/compare/rebuildLeftEditorCatalogTypeOptions.md)
+- [filterLeftEditorCatalogTypeOptions](../../../../functions/src/review_ui/views/compare/filterLeftEditorCatalogTypeOptions.md)
+- [setLeftEditorCatalogCodeValue](../../../../functions/src/review_ui/views/compare/setLeftEditorCatalogCodeValue.md)
+- [getLeftEditorCatalogCodeValue](../../../../functions/src/review_ui/views/compare/getLeftEditorCatalogCodeValue.md)
+- [openLeftEditor](../../../../functions/src/review_ui/views/compare/openLeftEditor.md)
+- [closeLeftEditor](../../../../functions/src/review_ui/views/compare/closeLeftEditor.md)
+- [submitLeftEditor](../../../../functions/src/review_ui/views/compare/submitLeftEditor.md)
+- [confirmDestructiveActionCompare](../../../../functions/src/review_ui/views/compare/confirmDestructiveActionCompare.md)
+- [deleteCurrentLeft](../../../../functions/src/review_ui/views/compare/deleteCurrentLeft.md)
+- [clearCurrentLeftColnectLink](../../../../functions/src/review_ui/views/compare/clearCurrentLeftColnectLink.md)
+- [addCurrentColnectAsStamp](../../../../functions/src/review_ui/views/compare/addCurrentColnectAsStamp.md)
+- [deleteCurrentCandidate](../../../../functions/src/review_ui/views/compare/deleteCurrentCandidate.md)
+- [undoLastDelete](../../../../functions/src/review_ui/views/compare/undoLastDelete.md)
+- [closeReviewUi](../../../../functions/src/review_ui/views/compare/closeReviewUi.md)
+- [returnToStartReviewPage](../../../../functions/src/review_ui/views/compare/returnToStartReviewPage.md)
+- [generatePdfNowReview](../../../../functions/src/review_ui/views/compare/generatePdfNowReview.md)
+- [importColnectFilesReview](../../../../functions/src/review_ui/views/compare/importColnectFilesReview.md)
+- [appendLogLine](../../../../functions/src/review_ui/views/compare/appendLogLine.md)
+- [pollImportLog](../../../../functions/src/review_ui/views/compare/pollImportLog.md)
+- [pickAndCopyColnectFileReview](../../../../functions/src/review_ui/views/compare/pickAndCopyColnectFileReview.md)
+- [refreshColnectCandidatesReview](../../../../functions/src/review_ui/views/compare/refreshColnectCandidatesReview.md)
 
 # Member of
 

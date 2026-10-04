@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_flag_from_nexperts_html
-resource: src/flagdb.rs#L1033-L1062
+resource: src/flagdb.rs#L874-L903
 visibility: private
 generated:
   by: okf-rs/0.4.0

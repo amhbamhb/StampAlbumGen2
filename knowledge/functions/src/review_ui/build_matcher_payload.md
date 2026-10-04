@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_matcher_payload
-resource: src/review_ui.rs#L2199-L2263
+resource: src/review_ui.rs#L2510-L2578
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -30,7 +30,7 @@ relationships:
 
 # Signature
 
-`fn build_matcher_payload( conn: &Connection, db_path: &str, album_name: &str, default_catalog_code: &str, default_sort_mode: &str, odd_row_color: &str, even_row_color: &str, first_column_color: &str, second_column_color: &str, series_default_checked: bool, description_default_checked: bool, watermark_default_checked: bool, design_default_checked: bool, engraving_default_checked: bool, perforation_default_checked: bool, context_default_checked: bool, colnect_links_default_checked: bool, colnect_image_url_default_checked: bool, colnect_metadata_default_checked: bool, replace_sg_number_default_checked: bool, right_unmatched_only_default_checked: bool, albumeasy_auto_generate_pdf_default: bool, albumeasy_cli_configured: bool, catalog_family_options: &[String], show_imageless_left_rows: bool, ) -> Result<MatcherPayload, Box<dyn std::error::Error>>`
+`fn build_matcher_payload( conn: &Connection, db_path: &str, album_name: &str, opts: &MatcherPayloadOptions<'_>, show_imageless_left_rows: bool, ) -> Result<MatcherPayload, Box<dyn std::error::Error>>`
 
 # Calls
 

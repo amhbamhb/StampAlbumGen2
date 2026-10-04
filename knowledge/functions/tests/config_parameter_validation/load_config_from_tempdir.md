@@ -6,10 +6,6 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
-  calls:
-  - target: functions/src/config/load_config
-    resolved_by: tree-sitter
-    confidence: exact
   called_by:
   - target: functions/tests/config_parameter_validation/test_config_f32_parameter_validation
     resolved_by: tree-sitter
@@ -43,10 +39,6 @@ relationships:
 # Signature
 
 `fn load_config_from_tempdir(dir: &std::path::Path) -> Config`
-
-# Calls
-
-- [load_config](../../../functions/src/config/load_config.md)
 
 # Called by
 

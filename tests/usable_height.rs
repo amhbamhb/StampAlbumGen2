@@ -13,15 +13,17 @@ fn default_usable_height() {
 
 #[test]
 fn custom_padding_and_margins() {
-    let mut cfg = Config::default();
-    cfg.album_page_height_mm = Some(300.0);
-    cfg.page_top_margin_mm = Some(15.0);
-    cfg.page_bottom_margin_mm = Some(20.0);
-    cfg.page_border_outer = Some(1.0);
-    cfg.page_border_inner1 = Some(0.5);
-    cfg.page_border_spacing = Some(4.0);
-    cfg.usable_height_padding_mm = Some(10.0);
-    cfg.album_pages_spacing_v = Some(5.0);
+    let cfg = Config {
+        album_page_height_mm: Some(300.0),
+        page_top_margin_mm: Some(15.0),
+        page_bottom_margin_mm: Some(20.0),
+        page_border_outer: Some(1.0),
+        page_border_inner1: Some(0.5),
+        page_border_spacing: Some(4.0),
+        usable_height_padding_mm: Some(10.0),
+        album_pages_spacing_v: Some(5.0),
+        ..Default::default()
+    };
     let h = compute_usable_height(&cfg);
     // expected = 300 -15 -20 - (1+0.5+0.0+4) -10 -5 = 300 -35 -5.5 -10 -5 = 244.5
     let expected = 244.5_f64;

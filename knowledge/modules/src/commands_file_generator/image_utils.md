@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: image_utils
-resource: src/commands_file_generator/image_utils.rs#L1-L145
+resource: src/commands_file_generator/image_utils.rs#L1-L168
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -36,6 +36,7 @@ relationships:
 - [download_to_path](../../../functions/src/commands_file_generator/image_utils/download_to_path.md)
 - [get_colnect_image](../../../functions/src/commands_file_generator/image_utils/get_colnect_image.md)
 - [get_image](../../../functions/src/commands_file_generator/image_utils/get_image.md)
+- [get_image_blocking](../../../functions/src/commands_file_generator/image_utils/get_image_blocking.md)
 
 # Imports
 

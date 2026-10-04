@@ -13,7 +13,7 @@ relationships:
 
 # Signature
 
-`pub fn fetch_and_cache_wikipedia_content( topic: &str, cache_db_path: &str, fetcher: &dyn Fetcher, ) -> Result<(), Box<dyn std::error::Error>>`
+`pub async fn fetch_and_cache_wikipedia_content( topic: &str, cache_db_path: &str, fetcher: &dyn Fetcher, ) -> Result<(), Box<dyn std::error::Error>>`
 
 # Calls
 

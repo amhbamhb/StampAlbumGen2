@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_stampworld_args
-resource: src/review_ui.rs#L501-L518
+resource: src/review_ui.rs#L562-L581
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -17,11 +17,14 @@ relationships:
   - target: functions/src/review_ui/start_bootstrap_stampworld_job
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
 
-`fn build_stampworld_args(req: &BootstrapStampWorldRunRequest) -> Vec<String>`
+`fn build_stampworld_args(req: &BootstrapStampWorldRunRequest, country_url: &str) -> Vec<String>`
 
 # Calls
 
@@ -31,3 +34,4 @@ relationships:
 # Called by
 
 - [start_bootstrap_stampworld_job](../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
+- [stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url](../../../functions/src/review_ui/stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url.md)

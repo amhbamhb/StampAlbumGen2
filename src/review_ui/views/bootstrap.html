@@ -20,7 +20,7 @@
         <button class='btn-accounts' onclick='openSiteAccountsDialog()'>Site Accounts</button>
         <button class='btn-config' onclick='openConfigEditor()'>Edit Config</button>
         <button class='btn-pdf' onclick='generateAlbumPdfNow()'>Generate PDF Now</button>
-        <button class='btn-import' onclick='importColnectFiles()'>Import Colnect</button>
+        <button class='btn-import' onclick='importColnectFiles()'>Import Colnect - User Created Files</button>
         <button class='danger' onclick='logoutApp()'>Logout</button>
     </div>
     <div class='row'>
@@ -33,6 +33,7 @@
             <p style='margin:0;font-size:13px;color:var(--muted-text,#555);line-height:1.4;'>
                 StampWorld and Colnect require registered accounts to access stamp data.
                 Save your login credentials below. They are saved in <code>config.toml</code> (which is strictly excluded from Git version control).
+                Saved passwords are not displayed. Leave a password blank to keep its saved value.
             </p>
 
             <div style='background:#f7f9fa;border:1px solid #e1e8ed;border-radius:6px;padding:12px;'>
@@ -126,6 +127,7 @@
                     <option value='accept_typo'>Auto Accept Source Typos</option>
                 </select>
             </div>
+            {country_url_controls}
             <div class='row'>
                 <label>Extra Flags</label>
                 <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:420px;' />
@@ -141,7 +143,7 @@
         </div>
     </details>
     <details id='colnectCopyPanel' class='colnectCopyPanel collapsibleSection' open>
-        <summary><span class='introArrow'>&#9660;</span> Import Colnect Files <span class='introDimTag'>click to expand / collapse</span></summary>
+        <summary><span class='introArrow'>&#9660;</span> Import Colnect - User Created Files <span class='introDimTag'>click to expand / collapse</span></summary>
         <div class='collapsibleSectionBody'>
             <div class='row' style='margin-top:8px;'>
                 <button id='colnectPickBtn' class='accent' onclick='pickAndCopyColnectFile()'>Browse &amp; Copy Colnect File&#8230;</button>

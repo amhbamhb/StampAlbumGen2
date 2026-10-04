@@ -24,7 +24,7 @@ relationships:
   - target: functions/src/album_globals/generator/stamp_dedupe_fingerprints
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/generator/generate_album_output_conn
+  - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/commemorative_layout/emit_stamp_grid_row
@@ -34,6 +34,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/album_globals/selection/colnect_pdf_options
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_utils/globals/write_globals
@@ -51,9 +54,6 @@ relationships:
   - target: functions/src/catalog/catalog_display_name
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/colnect/image_fetcher/extract_colnect_image_url
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/colnect/ingest/link_colnect_data
     resolved_by: tree-sitter
     confidence: exact
@@ -63,7 +63,7 @@ relationships:
   - target: functions/src/config/Config/review_ui_default_sort_mode
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/config/load_slug_overrides
+  - target: functions/src/config/try_load_slug_overrides
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/data_sources/stampworld/collect_stampworld_data
@@ -82,6 +82,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/modes/numeric_tokens
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/modes/run_scraping_mode
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/mime_from_path
@@ -149,26 +152,27 @@ relationships:
 - [emit_commemorative_pages](../../../../../functions/src/album_globals/commemorative_generator/emit_commemorative_pages.md)
 - [emit_special_stamps_page](../../../../../functions/src/album_globals/commemorative_generator/emit_special_stamps_page.md)
 - [stamp_dedupe_fingerprints](../../../../../functions/src/album_globals/generator/stamp_dedupe_fingerprints.md)
-- [generate_album_output_conn](../../../../../functions/src/album_globals/generator/generate_album_output_conn.md)
+- [generate_album_output_conn_prepared](../../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [emit_stamp_grid_row](../../../../../functions/src/album_globals/generator_new/commemorative_layout/emit_stamp_grid_row.md)
 - [resolve_stamp_heading_label](../../../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md)
 - [estimate_and_ensure_placeholders](../../../../../functions/src/album_globals/generator_new/helpers/estimate_and_ensure_placeholders.md)
+- [colnect_pdf_options](../../../../../functions/src/album_globals/selection/colnect_pdf_options.md)
 - [write_globals](../../../../../functions/src/album_utils/globals/write_globals.md)
 - [main](../../../../../functions/src/bin/backfill_image_dims/main.md)
 - [month_number](../../../../../functions/src/bin/stampworld_debug/month_number.md)
 - [normalize_catalog_type](../../../../../functions/src/catalog/normalize_catalog_type.md)
 - [catalog_display_name](../../../../../functions/src/catalog/catalog_display_name.md)
-- [extract_colnect_image_url](../../../../../functions/src/colnect/image_fetcher/extract_colnect_image_url.md)
 - [link_colnect_data](../../../../../functions/src/colnect/ingest/link_colnect_data.md)
 - [month_number](../../../../../functions/src/commands_file_generator/utils/month_number.md)
 - [review_ui_default_sort_mode](../../../../../functions/src/config/Config/review_ui_default_sort_mode.md)
-- [load_slug_overrides](../../../../../functions/src/config/load_slug_overrides.md)
+- [try_load_slug_overrides](../../../../../functions/src/config/try_load_slug_overrides.md)
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [migrate_stamps_table](../../../../../functions/src/db_utils/migrations/migrate_stamps_table.md)
 - [migrate_fix_block_metadata](../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.md)
 - [extract_from_obj](../../../../../functions/src/flagdb/extract_from_obj.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [numeric_tokens](../../../../../functions/src/modes/numeric_tokens.md)
+- [run_scraping_mode](../../../../../functions/src/modes/run_scraping_mode.md)
 - [mime_from_path](../../../../../functions/src/review_ui/mime_from_path.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [apply_matches](../../../../../functions/src/review_ui/matcher_service/apply_matches.md)

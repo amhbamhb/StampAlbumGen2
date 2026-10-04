@@ -496,7 +496,7 @@ fn test_ensure_binary_built() {
     // Build the binary if it doesn't exist
     if !std::path::Path::new("target/debug/stamp_album_gen2").exists() {
         let output = Command::new("cargo")
-            .args(&["build", "--bin", "stamp_album_gen2"])
+            .args(["build", "--bin", "stamp_album_gen2"])
             .output()
             .expect("Failed to build binary");
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: fetch_text
-resource: src/stampworld/fetch.rs#L133-L138
+resource: src/stampworld/fetch.rs#L149-L157
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,12 +9,16 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
 
-`pub fn fetch_text(client: &Client, url: &str) -> Result<(StatusCode, String), reqwest::Error>`
+`pub async fn fetch_text( client: &Client, url: &str, ) -> Result<(StatusCode, String), reqwest::Error>`
 
 # Calls
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [status](../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status.md)

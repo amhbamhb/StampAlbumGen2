@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: generator
-resource: src/commands_file_generator/generator.rs#L1-L310
+resource: src/commands_file_generator/generator.rs#L1-L263
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -43,7 +43,6 @@ relationships:
 
 - [CollectStampworldCallParams](../../../classes/src/commands_file_generator/generator/CollectStampworldCallParams.md)
 - [CommandsFileGenerator](../../../classes/src/commands_file_generator/generator/CommandsFileGenerator.md)
-- [new](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/new.md)
 - [collect_stampworld_data](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/collect_stampworld_data.md)
 - [get_touchstamps_stamps](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/get_touchstamps_stamps.md)
 - [create_album](../../../functions/src/commands_file_generator/generator/CommandsFileGenerator/create_album.md)

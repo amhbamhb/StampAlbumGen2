@@ -16,7 +16,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps
+  - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/modes/infer_and_fix_catalog_codes_for_colnect_rows
@@ -42,7 +42,7 @@ relationships:
 
 # Called by
 
-- [fetch_and_filter_stamps](../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps.md)
+- [fetch_and_filter_stamps_impl](../../../functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl.md)
 - [infer_and_fix_catalog_codes_for_colnect_rows](../../../functions/src/modes/infer_and_fix_catalog_codes_for_colnect_rows.md)
 - [apply_matches](../../../functions/src/review_ui/matcher_service/apply_matches.md)
 - [add_colnect_stamp_to_stamps](../../../functions/src/review_ui/matcher_service/add_colnect_stamp_to_stamps.md)

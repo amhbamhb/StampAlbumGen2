@@ -46,11 +46,7 @@ fn backfill_image_dimensions_persists_to_db() -> Result<(), Box<dyn std::error::
     let p = "images/test_img.png";
     let mut dims = stamp_album_gen2::image_utils::get_image_dimensions(p);
     if dims.is_none() {
-        let rest = if p.starts_with("images/") {
-            &p["images/".len()..]
-        } else {
-            p
-        };
+        let rest = p.strip_prefix("images/").unwrap_or(p);
         let alt = format!(
             "{}/{}",
             images_dir.to_str().unwrap().trim_end_matches('/'),
