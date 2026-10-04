@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config
-resource: src/config.rs#L1-L3125
+resource: src/config.rs#L1-L3150
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -61,6 +61,7 @@ relationships:
 - [load_pdf_content_with_fallback](../../functions/src/config/load_pdf_content_with_fallback.md)
 - [load_template_content_with_fallback](../../functions/src/config/load_template_content_with_fallback.md)
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
+- [ensure_default_files](../../functions/src/config/ensure_default_files.md)
 - [HeaderFormatting](../../classes/src/config/HeaderFormatting.md)
 - [Config](../../classes/src/config/Config.md)
 - [StampworldConfig](../../classes/src/config/StampworldConfig.md)

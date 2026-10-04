@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: with_album_config_override_async
-resource: src/config.rs#L2578-L2589
+resource: src/config.rs#L2603-L2614
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -372,6 +372,15 @@ USE_RFD=1 Archive/build-musl.sh
 
 If your CI runner lacks GUI libraries (GTK on Linux), keep `USE_RFD` disabled. The code is written to fall back to console prompts only when a TTY is available.
 
+Review UI Browse buttons use Windows-native folder/file dialogs through the
+built-in Windows PowerShell (`powershell.exe`), including in builds without
+`rfd`. Windows does not require `zenity` or `kdialog`. On Linux, these Browse
+buttons require either `zenity` or `kdialog`.
+
+If an older Windows release reports "No supported folder picker found (install
+zenity or kdialog)" during first-run setup, expand **Albums Root**, enter the
+folder path directly, and click **Apply** instead of **Pick Albums Root...**.
+
 ### Review UI
 
 - `--review-ui`

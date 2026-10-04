@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_review_ui
-resource: src/review_ui.rs#L3004-L3240
+resource: src/review_ui.rs#L3034-L3270
 generated:
   by: okf-rs/0.4.0
 relationships:

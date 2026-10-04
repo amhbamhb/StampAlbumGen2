@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: review_ui
-resource: src/review_ui.rs#L1-L3425
+resource: src/review_ui.rs#L1-L3455
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -198,8 +198,10 @@ relationships:
 - [create_bootstrap_country_or_theme](../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
 - [current_bootstrap_albums_root](../../functions/src/review_ui/current_bootstrap_albums_root.md)
 - [pick_bootstrap_albums_root_via_dialog](../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md)
+- [pick_bootstrap_albums_root_via_dialog](../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog-2.md)
 - [pick_and_copy_colnect_file_via_dialog](../../functions/src/review_ui/pick_and_copy_colnect_file_via_dialog.md)
 - [pick_albumeasy_cli_path_via_dialog](../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog.md)
+- [pick_albumeasy_cli_path_via_dialog](../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog-2.md)
 - [pick_and_copy_colnect_file_for_db](../../functions/src/review_ui/pick_and_copy_colnect_file_for_db.md)
 - [pick_and_copy_colnect_file_to_dir](../../functions/src/review_ui/pick_and_copy_colnect_file_to_dir.md)
 - [set_bootstrap_albums_root_override](../../functions/src/review_ui/set_bootstrap_albums_root_override.md)

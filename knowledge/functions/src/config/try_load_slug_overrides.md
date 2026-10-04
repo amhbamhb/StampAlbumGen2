@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: try_load_slug_overrides
-resource: src/config.rs#L2825-L2848
+resource: src/config.rs#L2850-L2873
 generated:
   by: okf-rs/0.4.0
 relationships:

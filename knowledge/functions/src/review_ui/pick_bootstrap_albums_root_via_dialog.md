@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick_bootstrap_albums_root_via_dialog
-resource: src/review_ui.rs#L1977-L2040
+resource: src/review_ui.rs#L1980-L1987
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -10,8 +10,7 @@ relationships:
   - target: functions/src/review_ui/current_bootstrap_albums_root
     resolved_by: tree-sitter
     confidence: exact
-  called_by:
-  - target: functions/src/review_ui/http_handlers/serve_bootstrap_requests
+  - target: functions/src/review_ui/windows_picker/pick
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -23,7 +22,4 @@ relationships:
 # Calls
 
 - [current_bootstrap_albums_root](../../../functions/src/review_ui/current_bootstrap_albums_root.md)
-
-# Called by
-
-- [serve_bootstrap_requests](../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
+- [pick](../../../functions/src/review_ui/windows_picker/pick.md)

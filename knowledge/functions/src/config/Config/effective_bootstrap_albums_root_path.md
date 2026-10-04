@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_bootstrap_albums_root_path
-resource: src/config.rs#L1592-L1597
+resource: src/config.rs#L1617-L1622
 generated:
   by: okf-rs/0.4.0
 relationships:

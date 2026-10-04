@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: CatalogCodePair
-resource: src/review_ui.rs#L287-L290
+resource: src/review_ui.rs#L289-L292
 visibility: private
 generated:
   by: okf-rs/0.4.0

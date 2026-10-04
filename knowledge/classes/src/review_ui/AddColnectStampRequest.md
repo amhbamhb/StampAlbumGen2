@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: AddColnectStampRequest
-resource: src/review_ui.rs#L1164-L1174
+resource: src/review_ui.rs#L1166-L1176
 visibility: private
 generated:
   by: okf-rs/0.4.0

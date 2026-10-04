@@ -1,21 +1,21 @@
 ---
 type: Rust Function
 title: pick_albumeasy_cli_path_via_dialog
-resource: src/review_ui.rs#L2064-L2132
+resource: src/review_ui.rs#L2078-L2088
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
-  called_by:
-  - target: functions/src/review_ui/http_handlers/serve_bootstrap_requests
+  calls:
+  - target: functions/src/review_ui/windows_picker/pick
     resolved_by: tree-sitter
     confidence: exact
 ---
 
 # Signature
 
-`fn pick_albumeasy_cli_path_via_dialog( current_path: Option<&str>, ) -> Result<Option<String>, String>`
+`fn pick_albumeasy_cli_path_via_dialog(current_path: Option<&str>) -> Result<Option<String>, String>`
 
-# Called by
+# Calls
 
-- [serve_bootstrap_requests](../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
+- [pick](../../../functions/src/review_ui/windows_picker/pick.md)

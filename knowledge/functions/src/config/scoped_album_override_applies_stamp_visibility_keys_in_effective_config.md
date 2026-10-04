@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: scoped_album_override_applies_stamp_visibility_keys_in_effective_config
-resource: src/config.rs#L3067-L3124
+resource: src/config.rs#L3092-L3149
 visibility: private
 generated:
   by: okf-rs/0.4.0

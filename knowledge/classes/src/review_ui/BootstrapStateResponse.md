@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapStateResponse
-resource: src/review_ui.rs#L333-L336
+resource: src/review_ui.rs#L335-L338
 visibility: private
 generated:
   by: okf-rs/0.4.0

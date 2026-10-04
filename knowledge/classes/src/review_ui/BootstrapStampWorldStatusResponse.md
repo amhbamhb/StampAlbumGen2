@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapStampWorldStatusResponse
-resource: src/review_ui.rs#L432-L440
+resource: src/review_ui.rs#L434-L442
 visibility: private
 generated:
   by: okf-rs/0.4.0
