@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/config_editor/configEditorSearchInput
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/add
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/config_editor/renderConfigEditorSections
     resolved_by: tree-sitter
@@ -25,6 +28,7 @@ relationships:
 # Calls
 
 - [configEditorSearchInput](../../../../functions/src/review_ui/config_editor/configEditorSearchInput.md)
+- [add](../../../../functions/src/review_ui/views/external_album/add.md)
 
 # Called by
 

@@ -1,13 +1,19 @@
 ---
 type: Rust Function
 title: scan_bootstrap_countries
-resource: src/review_ui.rs#L1867-L1904
+resource: src/review_ui.rs#L1868-L1916
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/resolve_bootstrap_albums_root
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/is_imported
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/log_runtime_event
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/count_colnect_csv_files_rec
@@ -32,6 +38,8 @@ relationships:
 # Calls
 
 - [resolve_bootstrap_albums_root](../../../functions/src/review_ui/resolve_bootstrap_albums_root.md)
+- [is_imported](../../../functions/src/external_album/is_imported.md)
+- [log_runtime_event](../../../functions/src/review_ui/log_runtime_event.md)
 - [count_colnect_csv_files_rec](../../../functions/src/review_ui/count_colnect_csv_files_rec.md)
 - [count_colnect_candidates_in_db](../../../functions/src/review_ui/count_colnect_candidates_in_db.md)
 

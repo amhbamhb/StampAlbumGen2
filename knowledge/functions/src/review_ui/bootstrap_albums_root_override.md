@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: bootstrap_albums_root_override
-resource: src/review_ui.rs#L50-L52
+resource: src/review_ui.rs#L51-L53
 visibility: private
 generated:
   by: okf-rs/0.4.0

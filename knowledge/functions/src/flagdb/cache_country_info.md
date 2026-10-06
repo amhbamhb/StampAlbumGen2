@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/extract_country_name_from_nexperts_html
     resolved_by: tree-sitter
     confidence: exact
@@ -28,6 +31,7 @@ relationships:
 
 # Calls
 
+- [open](../../../functions/src/external_album/open.md)
 - [extract_country_name_from_nexperts_html](../../../functions/src/flagdb/extract_country_name_from_nexperts_html.md)
 - [extract_flag_from_nexperts_html](../../../functions/src/flagdb/extract_flag_from_nexperts_html.md)
 - [extract_coa_from_nexperts_html](../../../functions/src/flagdb/extract_coa_from_nexperts_html.md)

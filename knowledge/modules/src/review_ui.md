@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: review_ui
-resource: src/review_ui.rs#L1-L3455
+resource: src/review_ui.rs#L1-L3471
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -198,7 +198,8 @@ relationships:
 - [create_bootstrap_country_or_theme](../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
 - [current_bootstrap_albums_root](../../functions/src/review_ui/current_bootstrap_albums_root.md)
 - [pick_bootstrap_albums_root_via_dialog](../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md)
-- [pick_bootstrap_albums_root_via_dialog](../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog-2.md)
+- [pick_folder_via_dialog](../../functions/src/review_ui/pick_folder_via_dialog.md)
+- [pick_folder_via_dialog](../../functions/src/review_ui/pick_folder_via_dialog-2.md)
 - [pick_and_copy_colnect_file_via_dialog](../../functions/src/review_ui/pick_and_copy_colnect_file_via_dialog.md)
 - [pick_albumeasy_cli_path_via_dialog](../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog.md)
 - [pick_albumeasy_cli_path_via_dialog](../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog-2.md)

@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/config_editor/configEditorLoadState
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/add
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/config_editor/openConfigEditor
     resolved_by: tree-sitter
@@ -22,6 +25,7 @@ relationships:
 # Calls
 
 - [configEditorLoadState](../../../../functions/src/review_ui/config_editor/configEditorLoadState.md)
+- [add](../../../../functions/src/review_ui/views/external_album/add.md)
 
 # Called by
 

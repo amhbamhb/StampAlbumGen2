@@ -25,6 +25,12 @@ relationships:
   - target: functions/src/db_utils/formatting/format_stamps_issued
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/render
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/reflow/reflow
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/modes/score_candidate
     resolved_by: tree-sitter
     confidence: exact
@@ -46,6 +52,12 @@ relationships:
   - target: functions/tests/config_template_key_usage_audit/count_occurrences
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/external_album_backend/invalid_edits_roll_back_and_render_failure_saves_retryable_draft
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/database_write_failure_rolls_back_layout_and_render_artifacts
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -60,6 +72,8 @@ relationships:
 - [page_text_height](../../../../functions/src/album_globals/generator_new/layout/page_text_height.md)
 - [center_page](../../../../functions/src/album_globals/generator_new/postprocess/center_page.md)
 - [format_stamps_issued](../../../../functions/src/db_utils/formatting/format_stamps_issued.md)
+- [render](../../../../functions/src/external_album/render.md)
+- [reflow](../../../../functions/src/external_album/reflow/reflow.md)
 - [score_candidate](../../../../functions/src/modes/score_candidate.md)
 - [estimate_text_height](../../../../functions/src/wikipedia/utils/estimate_text_height.md)
 - [test_parameter_usage_consistency](../../../../functions/tests/album_stamp_img_integration_test/test_parameter_usage_consistency.md)
@@ -67,3 +81,5 @@ relationships:
 - [test_album_stamp_img_new_setting_parameter_usage](../../../../functions/tests/album_stamp_img_new_setting_usage/test_album_stamp_img_new_setting_parameter_usage.md)
 - [spain_colnect_layout_packs_rich_rows_without_losing_stamps](../../../../functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps.md)
 - [count_occurrences](../../../../functions/tests/config_template_key_usage_audit/count_occurrences.md)
+- [invalid_edits_roll_back_and_render_failure_saves_retryable_draft](../../../../functions/tests/external_album_backend/invalid_edits_roll_back_and_render_failure_saves_retryable_draft.md)
+- [database_write_failure_rolls_back_layout_and_render_artifacts](../../../../functions/tests/external_album_backend/database_write_failure_rolls_back_layout_and_render_artifacts.md)

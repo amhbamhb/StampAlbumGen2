@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/flagdb/try_rasterize_svg_to_png
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -19,3 +22,4 @@ relationships:
 # Calls
 
 - [try_rasterize_svg_to_png](../../../functions/src/flagdb/try_rasterize_svg_to_png.md)
+- [open](../../../functions/src/external_album/open.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: start_bootstrap_stampworld_job
-resource: src/review_ui.rs#L872-L1123
+resource: src/review_ui.rs#L873-L1124
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,11 +1,14 @@
 ---
 type: Rust Function
 title: generate_album_output_conn_with_pdf_override
-resource: src/album_globals/mod.rs#L315-L350
+resource: src/album_globals/mod.rs#L334-L372
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/album_globals/imported_artifacts
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/generated_artifacts_from_path
     resolved_by: tree-sitter
     confidence: exact
@@ -34,6 +37,9 @@ relationships:
   - target: functions/tests/album_colnect_pdf_filters/verify_filtered_output
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/external_album_backend/generator_dispatch_uses_saved_layout_and_draft_never_falls_back
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -42,6 +48,7 @@ relationships:
 
 # Calls
 
+- [imported_artifacts](../../../functions/src/album_globals/imported_artifacts.md)
 - [generated_artifacts_from_path](../../../functions/src/album_globals/generated_artifacts_from_path.md)
 
 # Called by
@@ -54,3 +61,4 @@ relationships:
 - [serve_bootstrap_requests](../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
 - [serve_review_requests](../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [verify_filtered_output](../../../functions/tests/album_colnect_pdf_filters/verify_filtered_output.md)
+- [generator_dispatch_uses_saved_layout_and_draft_never_falls_back](../../../functions/tests/external_album_backend/generator_dispatch_uses_saved_layout_and_draft_never_falls_back.md)

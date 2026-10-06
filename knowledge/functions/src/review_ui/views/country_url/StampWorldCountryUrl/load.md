@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/country_url/StampWorldCountryUrl/message
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_globals/pdf_dx_logging_enabled
     resolved_by: tree-sitter
@@ -28,6 +31,7 @@ relationships:
 # Calls
 
 - [message](../../../../../../functions/src/review_ui/views/country_url/StampWorldCountryUrl/message.md)
+- [json](../../../../../../functions/src/external_album/json.md)
 
 # Called by
 

@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/isRuntimeLogVisibleCompare
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/pollReviewStampWorldStatus
     resolved_by: tree-sitter
     confidence: exact
@@ -25,6 +28,7 @@ relationships:
 # Calls
 
 - [isRuntimeLogVisibleCompare](../../../../../functions/src/review_ui/views/compare/isRuntimeLogVisibleCompare.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [pollReviewStampWorldStatus](../../../../../functions/src/review_ui/views/compare/pollReviewStampWorldStatus.md)
 
 # Called by

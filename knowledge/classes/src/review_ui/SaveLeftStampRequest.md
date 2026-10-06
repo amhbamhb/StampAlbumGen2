@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: SaveLeftStampRequest
-resource: src/review_ui.rs#L1188-L1237
+resource: src/review_ui.rs#L1189-L1238
 visibility: private
 generated:
   by: okf-rs/0.4.0

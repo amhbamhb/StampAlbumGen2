@@ -5,8 +5,17 @@ resource: tests/album_cover_output_root.rs#L20-L80
 visibility: private
 generated:
   by: okf-rs/0.4.0
+relationships:
+  calls:
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
 
 `async fn generated_text_and_local_coat_use_the_same_configured_root()`
+
+# Calls
+
+- [save](../../../functions/src/review_ui/views/external_album/save.md)

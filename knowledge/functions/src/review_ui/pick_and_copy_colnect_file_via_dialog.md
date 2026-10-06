@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick_and_copy_colnect_file_via_dialog
-resource: src/review_ui.rs#L2055-L2075
+resource: src/review_ui.rs#L2064-L2084
 visibility: private
 generated:
   by: okf-rs/0.4.0

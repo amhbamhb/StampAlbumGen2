@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/placeholder_image/ensure_placeholder_image_for_stamp_with_hint
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -19,3 +22,4 @@ relationships:
 # Calls
 
 - [ensure_placeholder_image_for_stamp_with_hint](../../../functions/src/placeholder_image/ensure_placeholder_image_for_stamp_with_hint.md)
+- [open](../../../functions/src/external_album/open.md)

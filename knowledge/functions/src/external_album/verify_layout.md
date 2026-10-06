@@ -1,0 +1,45 @@
+---
+type: Rust Function
+title: verify_layout
+resource: src/external_album.rs#L1163-L1178
+visibility: private
+generated:
+  by: okf-rs/0.4.0
+relationships:
+  calls:
+  - target: functions/src/album_globals/structs/GenericAttrs/get
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/err
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/layout_hash
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/parser/serialize
+    resolved_by: tree-sitter
+    confidence: exact
+  called_by:
+  - target: functions/src/external_album/approve_album
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/export_layout
+    resolved_by: tree-sitter
+    confidence: exact
+---
+
+# Signature
+
+`fn verify_layout(conn: &Connection, current: &AlbumDetails) -> Result<()>`
+
+# Calls
+
+- [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [err](../../../functions/src/external_album/err.md)
+- [layout_hash](../../../functions/src/external_album/layout_hash.md)
+- [serialize](../../../functions/src/external_album/parser/serialize.md)
+
+# Called by
+
+- [approve_album](../../../functions/src/external_album/approve_album.md)
+- [export_layout](../../../functions/src/external_album/export_layout.md)

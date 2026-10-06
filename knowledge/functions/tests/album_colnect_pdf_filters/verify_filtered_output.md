@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/config/Config/with_defaults
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/generate_album_output_conn_with_filters
     resolved_by: tree-sitter
     confidence: exact
@@ -40,6 +43,7 @@ relationships:
 - [load_effective_config](../../../functions/src/config/load_effective_config.md)
 - [effective_albumeasy_cli_path](../../../functions/src/config/Config/effective_albumeasy_cli_path.md)
 - [with_defaults](../../../functions/src/config/Config/with_defaults.md)
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 - [generate_album_output_conn_with_filters](../../../functions/src/album_globals/generate_album_output_conn_with_filters.md)
 - [generate_album_output_conn_with_pdf_override](../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: albumeasy_captured_output_preserves_successful_pdf_generation
-resource: src/album_globals/mod.rs#L483-L504
+resource: src/album_globals/mod.rs#L521-L542
 visibility: private
 generated:
   by: okf-rs/0.4.0

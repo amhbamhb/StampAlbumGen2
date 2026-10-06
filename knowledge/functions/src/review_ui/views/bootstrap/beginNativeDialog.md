@@ -19,6 +19,9 @@ relationships:
   - target: functions/src/review_ui/views/bootstrap/browseAlbumeasyPathFromDialog
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/pick
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -34,3 +37,4 @@ relationships:
 
 - [browseAlbumsRootPath](../../../../../functions/src/review_ui/views/bootstrap/browseAlbumsRootPath.md)
 - [browseAlbumeasyPathFromDialog](../../../../../functions/src/review_ui/views/bootstrap/browseAlbumeasyPathFromDialog.md)
+- [pick](../../../../../functions/src/review_ui/views/external_album/pick.md)

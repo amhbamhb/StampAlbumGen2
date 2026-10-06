@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapStartResponse
-resource: src/review_ui.rs#L346-L351
+resource: src/review_ui.rs#L347-L352
 visibility: private
 generated:
   by: okf-rs/0.4.0

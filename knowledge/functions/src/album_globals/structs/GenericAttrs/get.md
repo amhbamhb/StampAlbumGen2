@@ -168,6 +168,54 @@ relationships:
   - target: functions/src/db_utils/operations/get_stamps_by_country_series
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/sql_usize
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/asset_errors
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/inspect
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/schema
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/is_imported
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/details
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/persist_pages
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/render_pair
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/verify_layout
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/verify_uploaded
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/approve_album
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/edit_page
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/read_entry
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/export_layout
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/parser/numeric
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/parser/Lexer/peek
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/country_to_code
     resolved_by: tree-sitter
     confidence: exact
@@ -336,6 +384,33 @@ relationships:
   - target: functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/external_album_backend/import_roundtrip_full_copy_and_fidelity_approval_gate
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/page_edits_add_delete_reflow_only_affected_page_and_preserve_ready_state
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/database_write_failure_rolls_back_layout_and_render_artifacts
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/brazil_database_roundtrip_and_repeated_placements
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/placement_identities
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/legacy_zero_based_database_exposes_one_based_pages_and_migrates_without_identity_changes
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/report_brazil_db_counts
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/uploads_work_for_nested_entries_and_old_metadata_migrates_additively
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity
     resolved_by: tree-sitter
     confidence: exact
@@ -343,6 +418,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/review_pdf_filters_ui/fixture
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/review_ui_external_album/test/harness
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/review_ui_stampworld_credentials/test/harness
@@ -413,6 +491,22 @@ relationships:
 - [run_pending_schema_migrations_adds_missing_columns_and_records_versions](../../../../../functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions.md)
 - [insert_stamp_placeholder](../../../../../functions/src/db_utils/operations/insert_stamp_placeholder.md)
 - [get_stamps_by_country_series](../../../../../functions/src/db_utils/operations/get_stamps_by_country_series.md)
+- [sql_usize](../../../../../functions/src/external_album/sql_usize.md)
+- [asset_errors](../../../../../functions/src/external_album/asset_errors.md)
+- [inspect](../../../../../functions/src/external_album/inspect.md)
+- [schema](../../../../../functions/src/external_album/schema.md)
+- [is_imported](../../../../../functions/src/external_album/is_imported.md)
+- [details](../../../../../functions/src/external_album/details.md)
+- [persist_pages](../../../../../functions/src/external_album/persist_pages.md)
+- [render_pair](../../../../../functions/src/external_album/render_pair.md)
+- [verify_layout](../../../../../functions/src/external_album/verify_layout.md)
+- [verify_uploaded](../../../../../functions/src/external_album/verify_uploaded.md)
+- [approve_album](../../../../../functions/src/external_album/approve_album.md)
+- [edit_page](../../../../../functions/src/external_album/edit_page.md)
+- [read_entry](../../../../../functions/src/external_album/read_entry.md)
+- [export_layout](../../../../../functions/src/external_album/export_layout.md)
+- [numeric](../../../../../functions/src/external_album/parser/numeric.md)
+- [peek](../../../../../functions/src/external_album/parser/Lexer/peek.md)
 - [country_to_code](../../../../../functions/src/flagdb/country_to_code.md)
 - [extract_from_obj](../../../../../functions/src/flagdb/extract_from_obj.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
@@ -469,8 +563,18 @@ relationships:
 - [test_insert_stamp_placeholder_allows_distinct_sg_numbers](../../../../../functions/tests/db_utils/test_insert_stamp_placeholder_allows_distinct_sg_numbers.md)
 - [test_migrate_fix_block_metadata_basic](../../../../../functions/tests/db_utils/test_migrate_fix_block_metadata_basic.md)
 - [e2e_collect_stampworld_inserts_placeholders_to_db](../../../../../functions/tests/e2e_collect_stampworld_db/e2e_collect_stampworld_inserts_placeholders_to_db.md)
+- [import_roundtrip_full_copy_and_fidelity_approval_gate](../../../../../functions/tests/external_album_backend/import_roundtrip_full_copy_and_fidelity_approval_gate.md)
+- [page_edits_add_delete_reflow_only_affected_page_and_preserve_ready_state](../../../../../functions/tests/external_album_backend/page_edits_add_delete_reflow_only_affected_page_and_preserve_ready_state.md)
+- [database_write_failure_rolls_back_layout_and_render_artifacts](../../../../../functions/tests/external_album_backend/database_write_failure_rolls_back_layout_and_render_artifacts.md)
+- [brazil_database_roundtrip_and_repeated_placements](../../../../../functions/tests/external_album_backend/brazil_database_roundtrip_and_repeated_placements.md)
+- [placement_identities](../../../../../functions/tests/external_album_backend/placement_identities.md)
+- [brazil_real_albumeasy_import_approval_and_page_edit](../../../../../functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit.md)
+- [legacy_zero_based_database_exposes_one_based_pages_and_migrates_without_identity_changes](../../../../../functions/tests/external_album_backend/legacy_zero_based_database_exposes_one_based_pages_and_migrates_without_identity_changes.md)
+- [report_brazil_db_counts](../../../../../functions/tests/external_album_backend/report_brazil_db_counts.md)
+- [uploads_work_for_nested_entries_and_old_metadata_migrates_additively](../../../../../functions/tests/external_album_backend/uploads_work_for_nested_entries_and_old_metadata_migrates_additively.md)
 - [manual_rows_parse_and_replace_only_the_same_staged_identity](../../../../../functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity.md)
 - [test_ensure_placeholder_for_stamp_and_update_db](../../../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.md)
 - [fixture](../../../../../functions/tests/review_pdf_filters_ui/fixture.md)
+- [harness](../../../../../functions/tests/review_ui_external_album/test/harness.md)
 - [harness](../../../../../functions/tests/review_ui_stampworld_credentials/test/harness.md)
 - [wikipedia_ingest_inserts_up_to_max_entries_from_cache](../../../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.md)

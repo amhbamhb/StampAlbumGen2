@@ -447,6 +447,18 @@ The Review UI is a local browser-based tool for manually linking Colnect stamp
 candidates to existing StampWorld entries in a database. It starts an HTTP
 server and opens at `http://127.0.0.1:7878/` by default.
 
+### Import existing AlbumEasy pages
+
+Launch `--review-ui` without an album selection to open the main screen.
+Its separate **Import & edit external AlbumEasy albums** section includes an
+import wizard and detailed help. Supported source commands become editable
+database layouts, with copied local assets, fresh PDF validation, explicit
+fidelity approval and affected-page-only reflow after editing. Unsupported
+commands block conversion instead of being silently discarded.
+
+See [External AlbumEasy import and editing](docs/guides/ALBUMEASY_EXTERNAL_IMPORT.md)
+for coverage, draft recovery, compatibility reports and editing limitations.
+
 ### Launch Examples
 
 Open the review UI for an existing album by name:

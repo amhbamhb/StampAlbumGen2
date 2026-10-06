@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: tail_current_log
-resource: src/review_ui.rs#L89-L158
+resource: src/review_ui.rs#L90-L159
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/get_runtime_log_lines
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/open
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -25,6 +28,7 @@ relationships:
 # Calls
 
 - [get_runtime_log_lines](../../../functions/src/review_ui/get_runtime_log_lines.md)
+- [open](../../../functions/src/external_album/open.md)
 
 # Called by
 

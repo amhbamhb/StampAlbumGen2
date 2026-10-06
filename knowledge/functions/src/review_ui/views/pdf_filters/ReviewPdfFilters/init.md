@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/refresh
+  - target: functions/src/external_album/parser/parse
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -21,7 +21,7 @@ relationships:
 
 # Calls
 
-- [refresh](../../../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/refresh.md)
+- [parse](../../../../../../functions/src/external_album/parser/parse.md)
 
 # Called by
 

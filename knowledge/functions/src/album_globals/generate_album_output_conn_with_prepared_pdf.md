@@ -1,11 +1,14 @@
 ---
 type: Rust Function
 title: generate_album_output_conn_with_prepared_pdf
-resource: src/album_globals/mod.rs#L386-L404
+resource: src/album_globals/mod.rs#L414-L435
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/album_globals/imported_artifacts
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
@@ -27,6 +30,7 @@ relationships:
 
 # Calls
 
+- [imported_artifacts](../../../functions/src/album_globals/imported_artifacts.md)
 - [generate_album_output_conn_prepared](../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
 - [generated_artifacts_from_path](../../../functions/src/album_globals/generated_artifacts_from_path.md)
 

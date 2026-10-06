@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: UpdateDefaultCatalogRequest
-resource: src/review_ui.rs#L1392-L1394
+resource: src/review_ui.rs#L1393-L1395
 visibility: private
 generated:
   by: okf-rs/0.4.0

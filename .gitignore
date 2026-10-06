@@ -24,7 +24,8 @@ version_docs.sh
 stampalbumgenerator2-site/**
 .gitlab-ci.yml
 AGENTS.md
-
+Brazil/**
+Brazil
 
 refactor-plans
 drawio-diagrams

@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/wikipedia/ingest/ingest_wikipedia_to_db
     resolved_by: tree-sitter
     confidence: exact
@@ -21,5 +24,6 @@ relationships:
 
 # Calls
 
+- [open](../../../functions/src/external_album/open.md)
 - [ingest_wikipedia_to_db](../../../functions/src/wikipedia/ingest/ingest_wikipedia_to_db.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)

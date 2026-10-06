@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/modes/run_colnect_inbox_mode
     resolved_by: tree-sitter
@@ -15,6 +19,10 @@ relationships:
 # Signature
 
 `fn file_sha256(path: &std::path::Path) -> Result<String, Box<dyn std::error::Error>>`
+
+# Calls
+
+- [open](../../../functions/src/external_album/open.md)
 
 # Called by
 

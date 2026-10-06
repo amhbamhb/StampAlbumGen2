@@ -18,6 +18,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/fileToDataUrl
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/removeCandidateFromUi
     resolved_by: tree-sitter
     confidence: exact
@@ -39,6 +42,7 @@ relationships:
 - [setMatchStatus](../../../../../functions/src/review_ui/views/compare/setMatchStatus.md)
 - [getSelectedAddImageMode](../../../../../functions/src/review_ui/views/compare/getSelectedAddImageMode.md)
 - [fileToDataUrl](../../../../../functions/src/review_ui/views/compare/fileToDataUrl.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [removeCandidateFromUi](../../../../../functions/src/review_ui/views/compare/removeCandidateFromUi.md)
 - [refreshRightCandidatesRealtime](../../../../../functions/src/review_ui/views/compare/refreshRightCandidatesRealtime.md)
 - [closeAddDialog](../../../../../functions/src/review_ui/views/compare/closeAddDialog.md)

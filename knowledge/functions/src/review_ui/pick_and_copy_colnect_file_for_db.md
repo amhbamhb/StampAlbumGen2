@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick_and_copy_colnect_file_for_db
-resource: src/review_ui.rs#L2161-L2178
+resource: src/review_ui.rs#L2172-L2189
 visibility: private
 generated:
   by: okf-rs/0.4.0

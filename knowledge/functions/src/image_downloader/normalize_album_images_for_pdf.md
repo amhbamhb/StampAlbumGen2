@@ -9,6 +9,12 @@ relationships:
   - target: functions/src/file_utils/resolve_album_dir
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/http_handlers/serve_bootstrap_requests
     resolved_by: tree-sitter
@@ -22,6 +28,8 @@ relationships:
 # Calls
 
 - [resolve_album_dir](../../../functions/src/file_utils/resolve_album_dir.md)
+- [open](../../../functions/src/external_album/open.md)
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 
 # Called by
 

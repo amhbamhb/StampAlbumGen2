@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/progress/ProgressIndicator/clear
     resolved_by: tree-sitter
     confidence: exact
@@ -48,6 +51,7 @@ relationships:
 
 # Calls
 
+- [open](../../../../functions/src/external_album/open.md)
 - [clear](../../../../functions/src/progress/ProgressIndicator/clear.md)
 - [clean_name](../../../../functions/src/colnect/parser/clean_name.md)
 - [clean_perforation](../../../../functions/src/colnect/parser/clean_perforation.md)

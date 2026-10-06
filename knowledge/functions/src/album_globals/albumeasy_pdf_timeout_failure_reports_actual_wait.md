@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: albumeasy_pdf_timeout_failure_reports_actual_wait
-resource: src/album_globals/mod.rs#L537-L564
+resource: src/album_globals/mod.rs#L575-L602
 visibility: private
 generated:
   by: okf-rs/0.4.0

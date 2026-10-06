@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stampworld_pull_arguments_preserve_multiword_identity_and_snapshot_the_url
-resource: src/review_ui.rs#L3280-L3316
+resource: src/review_ui.rs#L3296-L3332
 visibility: private
 generated:
   by: okf-rs/0.4.0

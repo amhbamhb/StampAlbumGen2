@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: try_open_url_once
-resource: src/review_ui.rs#L1543-L1568
+resource: src/review_ui.rs#L1544-L1569
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/try_spawn_browser_command_any
     resolved_by: tree-sitter
     confidence: exact
@@ -22,6 +25,7 @@ relationships:
 
 # Calls
 
+- [open](../../../functions/src/external_album/open.md)
 - [try_spawn_browser_command_any](../../../functions/src/review_ui/try_spawn_browser_command_any.md)
 
 # Called by

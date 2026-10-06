@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/placeholder_image/generate_placeholder_for_stamp_with_bg
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/placeholder_image/compute_placeholder_size_for_series
     resolved_by: tree-sitter
     confidence: exact
@@ -22,4 +25,5 @@ relationships:
 # Calls
 
 - [generate_placeholder_for_stamp_with_bg](../../../functions/src/placeholder_image/generate_placeholder_for_stamp_with_bg.md)
+- [open](../../../functions/src/external_album/open.md)
 - [compute_placeholder_size_for_series](../../../functions/src/placeholder_image/compute_placeholder_size_for_series.md)

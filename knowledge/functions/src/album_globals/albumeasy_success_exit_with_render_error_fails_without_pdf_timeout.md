@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: albumeasy_success_exit_with_render_error_fails_without_pdf_timeout
-resource: src/album_globals/mod.rs#L453-L479
+resource: src/album_globals/mod.rs#L491-L517
 visibility: private
 generated:
   by: okf-rs/0.4.0

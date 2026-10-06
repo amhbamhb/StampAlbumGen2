@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/bootstrap/beginNativeDialog
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/bootstrap/applyAlbumsRootResponse
     resolved_by: tree-sitter
     confidence: exact
@@ -27,6 +30,7 @@ relationships:
 # Calls
 
 - [beginNativeDialog](../../../../../functions/src/review_ui/views/bootstrap/beginNativeDialog.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [applyAlbumsRootResponse](../../../../../functions/src/review_ui/views/bootstrap/applyAlbumsRootResponse.md)
 - [setAlbumsRootStatus](../../../../../functions/src/review_ui/views/bootstrap/setAlbumsRootStatus.md)
 - [endNativeDialog](../../../../../functions/src/review_ui/views/bootstrap/endNativeDialog.md)

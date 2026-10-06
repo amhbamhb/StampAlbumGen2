@@ -9,10 +9,10 @@ relationships:
   - target: functions/src/review_ui/views/compare/logRuntimeCompare
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/views/compare/sortLeftRows
+  - target: functions/src/external_album/json
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/refresh
+  - target: functions/src/review_ui/views/compare/sortLeftRows
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -28,8 +28,8 @@ relationships:
 # Calls
 
 - [logRuntimeCompare](../../../../../functions/src/review_ui/views/compare/logRuntimeCompare.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [sortLeftRows](../../../../../functions/src/review_ui/views/compare/sortLeftRows.md)
-- [refresh](../../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/refresh.md)
 
 # Called by
 

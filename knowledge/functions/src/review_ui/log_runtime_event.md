@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: log_runtime_event
-resource: src/review_ui.rs#L69-L78
+resource: src/review_ui.rs#L70-L79
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -25,6 +25,9 @@ relationships:
   - target: functions/src/review_ui/log_startup
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/scan_bootstrap_countries
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/create_bootstrap_country_or_theme
     resolved_by: tree-sitter
     confidence: exact
@@ -35,6 +38,18 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/run_review_ui
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/start_job
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/store_image
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/handle
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/respond
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/review_pdf_error
@@ -69,10 +84,15 @@ relationships:
 - [start_bootstrap_stampworld_job](../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
 - [open_review_ui_url](../../../functions/src/review_ui/open_review_ui_url.md)
 - [log_startup](../../../functions/src/review_ui/log_startup.md)
+- [scan_bootstrap_countries](../../../functions/src/review_ui/scan_bootstrap_countries.md)
 - [create_bootstrap_country_or_theme](../../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
 - [colnect_import_data](../../../functions/src/review_ui/colnect_import_data.md)
 - [run_review_ui_bootstrap](../../../functions/src/review_ui/run_review_ui_bootstrap.md)
 - [run_review_ui](../../../functions/src/review_ui/run_review_ui.md)
+- [start_job](../../../functions/src/review_ui/external_album_api/start_job.md)
+- [store_image](../../../functions/src/review_ui/external_album_api/store_image.md)
+- [handle](../../../functions/src/review_ui/external_album_api/handle.md)
+- [respond](../../../functions/src/review_ui/external_album_api/respond.md)
 - [review_pdf_error](../../../functions/src/review_ui/http_handlers/review_pdf_error.md)
 - [handle_site_account_request](../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
 - [handle_country_url_request](../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)

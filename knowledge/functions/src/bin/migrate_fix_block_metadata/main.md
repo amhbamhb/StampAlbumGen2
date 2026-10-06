@@ -13,6 +13,9 @@ relationships:
   - target: functions/src/time_utils/formatted_now
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -23,3 +26,4 @@ relationships:
 
 - [init](../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/init.md)
 - [formatted_now](../../../../functions/src/time_utils/formatted_now.md)
+- [open](../../../../functions/src/external_album/open.md)

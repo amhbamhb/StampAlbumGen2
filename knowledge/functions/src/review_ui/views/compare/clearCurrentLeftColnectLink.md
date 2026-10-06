@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/upsertLeftRow
     resolved_by: tree-sitter
     confidence: exact
@@ -23,6 +26,7 @@ relationships:
 
 # Calls
 
+- [json](../../../../../functions/src/external_album/json.md)
 - [upsertLeftRow](../../../../../functions/src/review_ui/views/compare/upsertLeftRow.md)
 - [refreshRightCandidatesRealtime](../../../../../functions/src/review_ui/views/compare/refreshRightCandidatesRealtime.md)
 - [setMatchStatus](../../../../../functions/src/review_ui/views/compare/setMatchStatus.md)

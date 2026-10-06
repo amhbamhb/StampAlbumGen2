@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_bootstrap_body_html
-resource: src/review_ui/views/bootstrap_assets.rs#L27-L38
+resource: src/review_ui/views/bootstrap_assets.rs#L29-L44
 generated:
   by: okf-rs/0.4.0
 relationships:

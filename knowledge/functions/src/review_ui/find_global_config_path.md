@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: find_global_config_path
-resource: src/review_ui.rs#L640-L663
+resource: src/review_ui.rs#L641-L664
 visibility: private
 generated:
   by: okf-rs/0.4.0

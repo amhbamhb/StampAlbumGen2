@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: run_review_ui
-resource: src/review_ui.rs#L3034-L3270
+resource: src/review_ui.rs#L3045-L3286
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/log_runtime_event
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/is_imported
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/sync_processed_colnect_candidates
@@ -40,6 +43,7 @@ relationships:
 # Calls
 
 - [log_runtime_event](../../../functions/src/review_ui/log_runtime_event.md)
+- [is_imported](../../../functions/src/external_album/is_imported.md)
 - [sync_processed_colnect_candidates](../../../functions/src/review_ui/matcher_service/sync_processed_colnect_candidates.md)
 - [build_matcher_payload](../../../functions/src/review_ui/build_matcher_payload.md)
 - [bind_review_server](../../../functions/src/review_ui/bind_review_server.md)

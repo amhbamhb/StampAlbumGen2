@@ -33,6 +33,9 @@ relationships:
   - target: functions/tests/review_pdf_filters_ui/fixture
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/review_ui_external_album/test/harness
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/review_ui_stampworld_credentials/test/element
     resolved_by: tree-sitter
     confidence: exact
@@ -56,5 +59,6 @@ relationships:
 - [toggleImagelessLeftRows](../../../../../functions/src/review_ui/views/compare/toggleImagelessLeftRows.md)
 - [inferInitialCatalogCodeFromLeftRows](../../../../../functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows.md)
 - [fixture](../../../../../functions/tests/review_pdf_filters_ui/fixture.md)
+- [harness](../../../../../functions/tests/review_ui_external_album/test/harness.md)
 - [element](../../../../../functions/tests/review_ui_stampworld_credentials/test/element.md)
 - [harness](../../../../../functions/tests/review_ui_stampworld_credentials/test/harness.md)

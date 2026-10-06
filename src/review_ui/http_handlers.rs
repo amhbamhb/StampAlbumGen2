@@ -481,6 +481,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
         let Some(request) = handle_site_account_request(request) else {
             continue;
         };
+        let Some(request) = external_album_api::handle(request) else {
+            continue;
+        };
         let Some(mut request) = handle_country_url_request(request) else {
             continue;
         };

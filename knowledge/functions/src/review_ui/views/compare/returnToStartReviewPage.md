@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/setOperationBusy
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/waitForBootstrapReady
     resolved_by: tree-sitter
     confidence: exact
@@ -28,5 +31,6 @@ relationships:
 
 - [logRuntimeCompare](../../../../../functions/src/review_ui/views/compare/logRuntimeCompare.md)
 - [setOperationBusy](../../../../../functions/src/review_ui/views/compare/setOperationBusy.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [waitForBootstrapReady](../../../../../functions/src/review_ui/views/compare/waitForBootstrapReady.md)
 - [navigateWithFade](../../../../../functions/src/review_ui/views/compare/navigateWithFade.md)
