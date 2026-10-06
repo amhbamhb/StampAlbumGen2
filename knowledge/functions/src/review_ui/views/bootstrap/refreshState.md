@@ -1,11 +1,14 @@
 ---
 type: JavaScript Function
 title: refreshState
-resource: src/review_ui/views/bootstrap.js#L1078-L1113
+resource: src/review_ui/views/bootstrap.js#L1078-L1114
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/bootstrap/updateAlbumsRootHint
     resolved_by: tree-sitter
     confidence: exact
@@ -34,6 +37,9 @@ relationships:
   - target: functions/src/review_ui/views/bootstrap/importColnectFiles
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/pick
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -42,6 +48,7 @@ relationships:
 
 # Calls
 
+- [json](../../../../../functions/src/external_album/json.md)
 - [updateAlbumsRootHint](../../../../../functions/src/review_ui/views/bootstrap/updateAlbumsRootHint.md)
 - [setAlbumsRootStatus](../../../../../functions/src/review_ui/views/bootstrap/setAlbumsRootStatus.md)
 - [renderCountryPanel](../../../../../functions/src/review_ui/views/bootstrap/renderCountryPanel.md)
@@ -54,3 +61,4 @@ relationships:
 - [pickAndCopyColnectFile](../../../../../functions/src/review_ui/views/bootstrap/pickAndCopyColnectFile.md)
 - [submitCreateCountryOrTheme](../../../../../functions/src/review_ui/views/bootstrap/submitCreateCountryOrTheme.md)
 - [importColnectFiles](../../../../../functions/src/review_ui/views/bootstrap/importColnectFiles.md)
+- [pick](../../../../../functions/src/review_ui/views/external_album/pick.md)

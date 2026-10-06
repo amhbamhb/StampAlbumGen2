@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/setup/startup_probe_path
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/main
     resolved_by: tree-sitter
@@ -29,6 +32,7 @@ relationships:
 
 - [formatted_now](../../../functions/src/time_utils/formatted_now.md)
 - [startup_probe_path](../../../functions/src/setup/startup_probe_path.md)
+- [open](../../../functions/src/external_album/open.md)
 
 # Called by
 

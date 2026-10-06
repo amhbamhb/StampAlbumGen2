@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/album_globals/generated_artifacts_from_path
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/generate_artifacts
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/main
     resolved_by: tree-sitter
     confidence: exact
@@ -21,4 +24,5 @@ relationships:
 # Called by
 
 - [generated_artifacts_from_path](../../../../functions/src/album_globals/generated_artifacts_from_path.md)
+- [generate_artifacts](../../../../functions/src/external_album/generate_artifacts.md)
 - [main](../../../../functions/src/main.md)

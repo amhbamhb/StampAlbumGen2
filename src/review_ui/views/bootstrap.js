@@ -1083,6 +1083,7 @@ async function refreshState() {
         const r = await fetch('/bootstrap-state');
         const j = await r.json();
         countries = j.countries || [];
+        if (typeof externalAlbums !== 'undefined') externalAlbums.refresh();
         const albumsRoot = String(j.albums_root || '').trim();
         updateAlbumsRootHint(albumsRoot);
         const rootInput = document.getElementById('albumsRootPath');

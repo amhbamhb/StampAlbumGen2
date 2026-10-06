@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/external_album/parser/parse
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/stampworld/country_url/listing_url_from_country_url
     resolved_by: tree-sitter
@@ -18,6 +22,10 @@ relationships:
 # Signature
 
 `fn slug_from_url(value: &str) -> Result<String, String>`
+
+# Calls
+
+- [parse](../../../../functions/src/external_album/parser/parse.md)
 
 # Called by
 

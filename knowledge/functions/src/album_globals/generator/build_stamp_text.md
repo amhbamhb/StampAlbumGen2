@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/album_globals/generator/format_number_with_commas
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/Lexer/skip
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/config/Config/colnect_details_enabled
     resolved_by: tree-sitter
     confidence: exact
@@ -55,6 +58,7 @@ relationships:
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [clear](../../../../functions/src/progress/ProgressIndicator/clear.md)
 - [format_number_with_commas](../../../../functions/src/album_globals/generator/format_number_with_commas.md)
+- [skip](../../../../functions/src/external_album/parser/Lexer/skip.md)
 - [colnect_details_enabled](../../../../functions/src/config/Config/colnect_details_enabled.md)
 - [effective_colnect_detail_field_set](../../../../functions/src/config/Config/effective_colnect_detail_field_set.md)
 - [strip_bracket_tags](../../../../functions/src/album_globals/generator/strip_bracket_tags.md)

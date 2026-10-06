@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: mime_from_path
-resource: src/review_ui.rs#L1591-L1604
+resource: src/review_ui.rs#L1592-L1605
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -27,6 +30,7 @@ relationships:
 
 # Calls
 
+- [open](../../../../functions/src/external_album/open.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 
 # Called by

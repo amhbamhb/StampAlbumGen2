@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/country_url/StampWorldCountryUrl/load
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/country_url/StampWorldCountryUrl/message
     resolved_by: tree-sitter
     confidence: exact
@@ -31,6 +34,7 @@ relationships:
 # Calls
 
 - [load](../../../../../../functions/src/review_ui/views/country_url/StampWorldCountryUrl/load.md)
+- [json](../../../../../../functions/src/external_album/json.md)
 - [message](../../../../../../functions/src/review_ui/views/country_url/StampWorldCountryUrl/message.md)
 
 # Called by

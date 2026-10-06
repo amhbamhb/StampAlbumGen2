@@ -5,6 +5,10 @@ resource: src/review_ui/views/bootstrap.js#L269-L276
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/review_ui/views/external_album/add
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/views/bootstrap/beginNativeDialog
     resolved_by: tree-sitter
@@ -29,6 +33,10 @@ relationships:
 # Signature
 
 `function setAlbumsRootStatus(text, tone)`
+
+# Calls
+
+- [add](../../../../../functions/src/review_ui/views/external_album/add.md)
 
 # Called by
 

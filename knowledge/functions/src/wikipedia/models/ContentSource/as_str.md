@@ -75,6 +75,12 @@ relationships:
   - target: functions/src/db_utils/migrations/migrate_fix_block_metadata
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/validate
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/parser/validate_page
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/extract_from_obj
     resolved_by: tree-sitter
     confidence: exact
@@ -88,6 +94,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/mime_from_path
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/same_origin
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/serve_review_requests
@@ -169,11 +178,14 @@ relationships:
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [migrate_stamps_table](../../../../../functions/src/db_utils/migrations/migrate_stamps_table.md)
 - [migrate_fix_block_metadata](../../../../../functions/src/db_utils/migrations/migrate_fix_block_metadata.md)
+- [validate](../../../../../functions/src/external_album/parser/validate.md)
+- [validate_page](../../../../../functions/src/external_album/parser/validate_page.md)
 - [extract_from_obj](../../../../../functions/src/flagdb/extract_from_obj.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [numeric_tokens](../../../../../functions/src/modes/numeric_tokens.md)
 - [run_scraping_mode](../../../../../functions/src/modes/run_scraping_mode.md)
 - [mime_from_path](../../../../../functions/src/review_ui/mime_from_path.md)
+- [same_origin](../../../../../functions/src/review_ui/external_album_api/same_origin.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [apply_matches](../../../../../functions/src/review_ui/matcher_service/apply_matches.md)
 - [resolve_left_editor_image_path](../../../../../functions/src/review_ui/matcher_service/resolve_left_editor_image_path.md)

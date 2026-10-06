@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/flagdb/assets/ensure_flag
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/assets/copy_to_album
     resolved_by: tree-sitter
     confidence: exact
@@ -22,4 +25,5 @@ relationships:
 # Calls
 
 - [ensure_flag](../../../../functions/src/flagdb/assets/ensure_flag.md)
+- [open](../../../../functions/src/external_album/open.md)
 - [copy_to_album](../../../../functions/src/flagdb/assets/copy_to_album.md)

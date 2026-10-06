@@ -18,6 +18,9 @@ relationships:
   - target: functions/src/placeholder_image/draw_text
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/tests/placeholder_image_inversion_spec/spec_placeholder_inverts_for_dark_stamp_background
     resolved_by: tree-sitter
@@ -37,6 +40,7 @@ relationships:
 - [contrasting_color](../../../functions/src/placeholder_image/contrasting_color.md)
 - [is_color_dark](../../../functions/src/placeholder_image/is_color_dark.md)
 - [draw_text](../../../functions/src/placeholder_image/draw_text.md)
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 
 # Called by
 

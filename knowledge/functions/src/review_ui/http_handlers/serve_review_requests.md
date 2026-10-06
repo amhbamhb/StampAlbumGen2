@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: serve_review_requests
-resource: src/review_ui/http_handlers.rs#L1483-L2887
+resource: src/review_ui/http_handlers.rs#L1486-L2890
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -13,6 +13,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/bundled_favicon_png
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/respond
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/ping_response_json
@@ -52,6 +55,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/open
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/mime_from_path
@@ -162,6 +168,7 @@ relationships:
 - [handle_site_account_request](../../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
 - [handle_country_url_request](../../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [bundled_favicon_png](../../../../functions/src/review_ui/http_handlers/bundled_favicon_png.md)
+- [respond](../../../../functions/src/review_ui/external_album_api/respond.md)
 - [ping_response_json](../../../../functions/src/review_ui/http_handlers/ping_response_json.md)
 - [stampworld_job_state](../../../../functions/src/review_ui/stampworld_job_state.md)
 - [tail_current_log](../../../../functions/src/review_ui/tail_current_log.md)
@@ -175,6 +182,7 @@ relationships:
 - [build_matcher_payload](../../../../functions/src/review_ui/build_matcher_payload.md)
 - [parse_query_param](../../../../functions/src/review_ui/parse_query_param.md)
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [open](../../../../functions/src/external_album/open.md)
 - [mime_from_path](../../../../functions/src/review_ui/mime_from_path.md)
 - [resolve_colnect_image_url](../../../../functions/src/colnect/image_fetcher/resolve_colnect_image_url.md)
 - [apply_matches](../../../../functions/src/review_ui/matcher_service/apply_matches.md)

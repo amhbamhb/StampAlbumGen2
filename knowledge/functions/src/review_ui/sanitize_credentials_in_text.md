@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sanitize_credentials_in_text
-resource: src/review_ui.rs#L54-L67
+resource: src/review_ui.rs#L55-L68
 generated:
   by: okf-rs/0.4.0
 relationships:

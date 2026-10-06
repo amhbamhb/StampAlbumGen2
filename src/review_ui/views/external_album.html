@@ -1,0 +1,87 @@
+<details id="externalAlbumPanel" class="panel collapsibleSection" open>
+  <summary>Import &amp; edit external AlbumEasy albums</summary>
+  <div class="collapsibleSectionBody">
+    <p>Bring an existing AlbumEasy album into an editable database. Its original folder is never changed.</p>
+    <div class="row">
+      <button class="primary" type="button" onclick="externalAlbums.openImport()">Import AlbumEasy Album...</button>
+      <button type="button" onclick="externalAlbums.refresh()">Refresh imported albums</button>
+    </div>
+    <details>
+      <summary>Import help, fidelity checks &amp; editing limitations</summary>
+      <p>Select the folder containing your AlbumEasy text file and images. Enter the text filename relative to that folder.
+        The entire folder is copied into a <strong>new</strong> album under Albums Root, including unused images and supporting files.
+        Existing destinations are never merged or overwritten. Do not select a large parent folder.</p>
+      <p>The importer reconstructs supported commands as database layout records: page and row order, headings,
+        stamp boxes, captions, margins, fonts and image settings. It does not infer catalogue numbers from filenames
+        or physical stamp sizes from box dimensions. Repeated image placements are retained.</p>
+      <p>Unsupported commands, missing images, unsafe paths and incompatible files block conversion.
+        A compatibility report records source lines and legacy commands for future support. Commands are not silently discarded.
+        Initial command coverage is the Brazil example; this is not yet a complete AlbumEasy editor.</p>
+      <p>Configure AlbumEasy using the existing setup controls before importing. The app renders both the original command
+        document and the database reconstruction in the copied folder. Compare the two fresh PDFs and approve fidelity
+        before the album becomes ready. Successful rendering alone does not prove visual equivalence.</p>
+      <p>After approval, edit or insert stamps and text on a selected page. Saving reflows only that page;
+        other pages keep their saved layout. If content does not fit, reduce it or adjust that page rather than
+        allowing silent spillover. Global settings intentionally affect the whole album.
+        Imported albums use this layout editor, not the StampWorld/Colnect matching screen.</p>
+    </details>
+    <div id="externalAlbumList" class="row"></div>
+    <p id="externalAlbumStatus" role="status" aria-live="polite"></p>
+  </div>
+</details>
+<dialog id="externalImportDialog" class="externalAlbumDialog">
+  <h2>Import AlbumEasy Album</h2>
+  <p><strong>Step 1:</strong> Select source and new album name. <strong>Step 2:</strong> Inspect.
+    <strong>Step 3:</strong> Copy and render. <strong>Step 4:</strong> Compare and approve.</p>
+  <fieldset id="externalImportInputs">
+    <label>External album folder <input id="externalSource" type="text" placeholder="Full path to the album folder"></label>
+    <button type="button" onclick="externalAlbums.pick()">Browse folder...</button>
+    <label>Entry text filename <input id="externalEntry" type="text" list="externalEntryChoices" placeholder="Brazil.txt"></label>
+    <datalist id="externalEntryChoices"></datalist>
+    <label>New album name <input id="externalName" type="text" placeholder="Brazil Imported"></label>
+    <button type="button" class="primary" onclick="externalAlbums.inspect()">Inspect source</button>
+  </fieldset>
+  <pre id="externalInspection" class="externalAlbumReport" aria-live="polite"></pre>
+  <button type="button" onclick="externalAlbums.downloadReport()">Save inspection / compatibility report</button>
+  <label><input id="externalCopyConsent" type="checkbox"> Copy the entire displayed folder into a new album; leave originals untouched.</label>
+  <p id="externalImportStatus" role="status" aria-live="polite"></p>
+  <div class="row">
+    <button id="externalImportRun" type="button" class="primary" disabled onclick="externalAlbums.importAlbum()">Copy, import &amp; validate PDFs</button>
+    <button id="externalImportClose" type="button" onclick="externalAlbums.closeImport()">Close</button>
+  </div>
+</dialog>
+<dialog id="externalEditorDialog" class="externalAlbumDialog">
+  <h2 id="externalEditorTitle">Imported album</h2>
+  <p id="externalEditorStatus" role="status" aria-live="polite"></p>
+  <pre id="externalCompatibility" class="externalAlbumReport"></pre>
+  <button type="button" onclick="externalAlbums.downloadAlbumReport()">Save album compatibility report</button>
+  <div class="row">
+    <a id="externalReferencePdf" target="_blank" rel="noopener">Open freshly rendered original PDF</a>
+    <a id="externalGeneratedPdf" target="_blank" rel="noopener">Open database-generated PDF</a>
+  </div>
+  <div id="externalApproval">
+    <p>Compare page count, stamp positions, headings, captions and image spacing. The original PDF is a reference;
+      only the database-generated PDF reflects later edits.</p>
+    <label><input id="externalFidelityConsent" type="checkbox"> I compared the fresh PDFs and approve the reconstruction.</label>
+    <button id="externalApprove" class="primary" type="button" onclick="externalAlbums.approve()">Approve import</button>
+  </div>
+  <button id="externalRetry" type="button" onclick="externalAlbums.retry()">Retry PDF validation</button>
+  <fieldset id="externalEditorInputs">
+    <label>Page / album settings <select id="externalPage" onchange="externalAlbums.selectPage()"></select></label>
+    <p>Parameters are in AlbumEasy order; hover a field for its meaning. Dimensions and spacing are millimetres.
+      Edit a page, then save it. Other pages remain unchanged. Unsaved edits are discarded when switching pages.</p>
+    <div id="externalCommands"></div>
+    <label>Add a local PNG/JPEG image (maximum 5 MB)
+      <input id="externalImageUpload" type="file" accept="image/png,image/jpeg">
+    </label>
+    <button type="button" onclick="externalAlbums.upload()">Copy image into this album</button>
+    <p id="externalUploadedPath" aria-live="polite">Use the returned relative image path in a stamp placement. Uploading alone does not add a placement.</p>
+    <div class="row">
+      <button type="button" onclick="externalAlbums.add('STAMP_ADD_IMG')">Add stamp placement</button>
+      <button type="button" onclick="externalAlbums.add('PAGE_TEXT_CENTRE')">Add heading / text</button>
+      <button type="button" onclick="externalAlbums.add('ROW_START_FS')">Add row settings</button>
+      <button type="button" class="primary" onclick="externalAlbums.save()">Save page &amp; regenerate PDF</button>
+    </div>
+  </fieldset>
+  <button id="externalEditorClose" type="button" onclick="externalAlbums.closeEditor()">Close</button>
+</dialog>

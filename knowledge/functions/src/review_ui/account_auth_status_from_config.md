@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: account_auth_status_from_config
-resource: src/review_ui.rs#L753-L774
+resource: src/review_ui.rs#L754-L775
 visibility: private
 generated:
   by: okf-rs/0.4.0

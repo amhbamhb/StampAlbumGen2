@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: serve_bootstrap_requests
-resource: src/review_ui/http_handlers.rs#L475-L1423
+resource: src/review_ui/http_handlers.rs#L475-L1426
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,10 +9,16 @@ relationships:
   - target: functions/src/review_ui/http_handlers/handle_site_account_request
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/external_album_api/handle
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/handle_country_url_request
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/bundled_favicon_png
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/external_album_api/respond
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/ping_response_json
@@ -28,6 +34,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/set_bootstrap_albums_root_override
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pick_bootstrap_albums_root_via_dialog
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/stampworld_job_state
@@ -100,13 +109,16 @@ relationships:
 # Calls
 
 - [handle_site_account_request](../../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
+- [handle](../../../../functions/src/review_ui/external_album_api/handle.md)
 - [handle_country_url_request](../../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [bundled_favicon_png](../../../../functions/src/review_ui/http_handlers/bundled_favicon_png.md)
+- [respond](../../../../functions/src/review_ui/external_album_api/respond.md)
 - [ping_response_json](../../../../functions/src/review_ui/http_handlers/ping_response_json.md)
 - [scan_bootstrap_countries](../../../../functions/src/review_ui/scan_bootstrap_countries.md)
 - [current_bootstrap_albums_root](../../../../functions/src/review_ui/current_bootstrap_albums_root.md)
 - [create_bootstrap_country_or_theme](../../../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
 - [set_bootstrap_albums_root_override](../../../../functions/src/review_ui/set_bootstrap_albums_root_override.md)
+- [pick_bootstrap_albums_root_via_dialog](../../../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md)
 - [stampworld_job_state](../../../../functions/src/review_ui/stampworld_job_state.md)
 - [tail_current_log](../../../../functions/src/review_ui/tail_current_log.md)
 - [log_runtime_event](../../../../functions/src/review_ui/log_runtime_event.md)

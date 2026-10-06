@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/b
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/currentRightCandidate
     resolved_by: tree-sitter
     confidence: exact
@@ -25,6 +28,7 @@ relationships:
 # Calls
 
 - [b](../../../../../functions/src/review_ui/views/compare/b.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [currentRightCandidate](../../../../../functions/src/review_ui/views/compare/currentRightCandidate.md)
 
 # Called by

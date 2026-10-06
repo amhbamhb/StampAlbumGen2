@@ -9,10 +9,16 @@ relationships:
   - target: functions/src/placeholder_image/compute_placeholder_size_for_series
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/placeholder_image/is_color_dark
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/placeholder_image/draw_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/external_album/save
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/placeholder_image/generate_placeholder_image_with_options
@@ -37,8 +43,10 @@ relationships:
 # Calls
 
 - [compute_placeholder_size_for_series](../../../functions/src/placeholder_image/compute_placeholder_size_for_series.md)
+- [open](../../../functions/src/external_album/open.md)
 - [is_color_dark](../../../functions/src/placeholder_image/is_color_dark.md)
 - [draw_text](../../../functions/src/placeholder_image/draw_text.md)
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 - [generate_placeholder_image_with_options](../../../functions/src/placeholder_image/generate_placeholder_image_with_options.md)
 
 # Called by

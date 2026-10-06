@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: count_colnect_candidates_in_db
-resource: src/review_ui.rs#L1844-L1865
+resource: src/review_ui.rs#L1845-L1866
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -22,6 +25,7 @@ relationships:
 
 # Calls
 
+- [open](../../../functions/src/external_album/open.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 
 # Called by

@@ -2,6 +2,7 @@ pub mod catalog;
 pub mod cli;
 pub mod colnect;
 pub mod config;
+pub mod external_album;
 pub mod flagdb;
 pub mod modes;
 pub mod progress;

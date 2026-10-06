@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_runtime_albumeasy_cli_path
-resource: src/review_ui.rs#L859-L866
+resource: src/review_ui.rs#L860-L867
 visibility: private
 generated:
   by: okf-rs/0.4.0

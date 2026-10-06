@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -24,6 +27,7 @@ relationships:
 
 # Calls
 
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [get_image_dimensions](../../../functions/src/image_utils/get_image_dimensions.md)
 - [update_image_dimensions](../../../functions/src/db_utils/updates/update_image_dimensions.md)

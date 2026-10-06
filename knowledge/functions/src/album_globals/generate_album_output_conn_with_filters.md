@@ -1,12 +1,18 @@
 ---
 type: Rust Function
 title: generate_album_output_conn_with_filters
-resource: src/album_globals/mod.rs#L354-L384
+resource: src/album_globals/mod.rs#L376-L412
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/is_imported
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/selection/ColnectPdfFilters/is_all
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/generate_artifacts
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/generate_album_output_conn_with_pdf_override
@@ -30,7 +36,9 @@ relationships:
 
 # Calls
 
+- [is_imported](../../../functions/src/external_album/is_imported.md)
 - [is_all](../../../functions/src/album_globals/selection/ColnectPdfFilters/is_all.md)
+- [generate_artifacts](../../../functions/src/external_album/generate_artifacts.md)
 - [generate_album_output_conn_with_pdf_override](../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 - [prepare_pdf_stamps](../../../functions/src/album_globals/selection/prepare_pdf_stamps.md)
 - [generate_album_output_conn_with_prepared_pdf](../../../functions/src/album_globals/generate_album_output_conn_with_prepared_pdf.md)

@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/setOperationBusy
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/html
     resolved_by: tree-sitter
     confidence: exact
@@ -21,4 +24,5 @@ relationships:
 # Calls
 
 - [setOperationBusy](../../../../../functions/src/review_ui/views/compare/setOperationBusy.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [html](../../../../../functions/src/review_ui/views/compare/html.md)

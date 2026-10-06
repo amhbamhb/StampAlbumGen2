@@ -6,13 +6,13 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/pruneAssignmentsToExistingCandidates
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/setMatchStatus
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/refresh
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -42,9 +42,9 @@ relationships:
 
 # Calls
 
+- [json](../../../../../functions/src/external_album/json.md)
 - [pruneAssignmentsToExistingCandidates](../../../../../functions/src/review_ui/views/compare/pruneAssignmentsToExistingCandidates.md)
 - [setMatchStatus](../../../../../functions/src/review_ui/views/compare/setMatchStatus.md)
-- [refresh](../../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/refresh.md)
 
 # Called by
 

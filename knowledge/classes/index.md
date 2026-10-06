@@ -35,6 +35,15 @@
 - [StampInsert](../classes/src/db_utils/operations/StampInsert.md) — Rust Struct
 - [SeriesStub](../classes/src/db_utils/structs/SeriesStub.md) — Rust Struct
 - [StampStub](../classes/src/db_utils/structs/StampStub.md) — Rust Struct
+- [AlbumDetails](../classes/src/external_album/AlbumDetails.md) — Rust Struct
+- [AlbumSummary](../classes/src/external_album/AlbumSummary.md) — Rust Struct
+- [Argument](../classes/src/external_album/Argument.md) — Rust Struct
+- [Inspection](../classes/src/external_album/Inspection.md) — Rust Struct
+- [Inventory](../classes/src/external_album/Inventory.md) — Rust Struct
+- [LayoutCommand](../classes/src/external_album/LayoutCommand.md) — Rust Struct
+- [LayoutPage](../classes/src/external_album/LayoutPage.md) — Rust Struct
+- [Rendered](../classes/src/external_album/Rendered.md) — Rust Struct
+- [Lexer](../classes/src/external_album/parser/Lexer.md) — Rust Struct
 - [FakeFetcher](../classes/src/flagdb/assets/FakeFetcher.md) — Rust Struct
 - [PlaceholderImageOptions](../classes/src/placeholder_image/PlaceholderImageOptions.md) — Rust Struct
 - [PlaceholderOptions](../classes/src/placeholder_image/PlaceholderOptions.md) — Rust Struct
@@ -107,6 +116,12 @@
 - [UndoColnectDeleteResponse](../classes/src/review_ui/UndoColnectDeleteResponse.md) — Rust Struct
 - [UpdateDefaultCatalogRequest](../classes/src/review_ui/UpdateDefaultCatalogRequest.md) — Rust Struct
 - [UpdateDefaultCatalogResponse](../classes/src/review_ui/UpdateDefaultCatalogResponse.md) — Rust Struct
+- [AlbumRequest](../classes/src/review_ui/external_album_api/AlbumRequest.md) — Rust Struct
+- [EditRequest](../classes/src/review_ui/external_album_api/EditRequest.md) — Rust Struct
+- [ImageRequest](../classes/src/review_ui/external_album_api/ImageRequest.md) — Rust Struct
+- [ImportJob](../classes/src/review_ui/external_album_api/ImportJob.md) — Rust Struct
+- [ImportRequest](../classes/src/review_ui/external_album_api/ImportRequest.md) — Rust Struct
+- [SourceRequest](../classes/src/review_ui/external_album_api/SourceRequest.md) — Rust Struct
 - [BootstrapHandlersState](../classes/src/review_ui/http_handlers/BootstrapHandlersState.md) — Rust Struct
 - [ReviewHandlersState](../classes/src/review_ui/http_handlers/ReviewHandlersState.md) — Rust Struct
 - [ReviewHandlersStateRequests](../classes/src/review_ui/http_handlers/ReviewHandlersStateRequests.md) — Rust Struct
@@ -138,6 +153,7 @@
 - [FakeFetcherEmpty](../classes/tests/db_path_unit/FakeFetcherEmpty.md) — Rust Struct
 - [FakeFetcher](../classes/tests/e2e_collect_stampworld_db/FakeFetcher.md) — Rust Struct
 - [FakeFetcher](../classes/tests/e2e_fake_fetcher_wikipedia/FakeFetcher.md) — Rust Struct
+- [Fixture](../classes/tests/external_album_backend/Fixture.md) — Rust Struct
 - [FakeFetcher](../classes/tests/fetcher_injection/FakeFetcher.md) — Rust Struct
 - [FakeFetcher](../classes/tests/flag_pipeline/FakeFetcher.md) — Rust Struct
 - [RestoreEnvironment](../classes/tests/flag_pipeline/RestoreEnvironment.md) — Rust Struct

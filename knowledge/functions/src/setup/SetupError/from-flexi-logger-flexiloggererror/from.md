@@ -37,6 +37,12 @@ relationships:
   - target: functions/src/db_utils/init/init_db
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/render
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/generate_artifacts
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/file_utils/resolve_runtime_albums_root
     resolved_by: tree-sitter
     confidence: exact
@@ -136,6 +142,15 @@ relationships:
   - target: functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/external_album_backend/brazil_exact_acceptance_counts
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/brazil_database_roundtrip_and_repeated_placements
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -154,6 +169,8 @@ relationships:
 - [slug_override_path](../../../../../functions/src/config/slug_override_path.md)
 - [collect_stampworld_data](../../../../../functions/src/data_sources/stampworld/collect_stampworld_data.md)
 - [init_db](../../../../../functions/src/db_utils/init/init_db.md)
+- [render](../../../../../functions/src/external_album/render.md)
+- [generate_artifacts](../../../../../functions/src/external_album/generate_artifacts.md)
 - [resolve_runtime_albums_root](../../../../../functions/src/file_utils/resolve_runtime_albums_root.md)
 - [find_config_path](../../../../../functions/src/file_utils/find_config_path.md)
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
@@ -187,3 +204,6 @@ relationships:
 - [collect_stampworld_data_async](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_async.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
 - [spain_colnect_layout_packs_rich_rows_without_losing_stamps](../../../../../functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps.md)
+- [brazil_exact_acceptance_counts](../../../../../functions/tests/external_album_backend/brazil_exact_acceptance_counts.md)
+- [brazil_database_roundtrip_and_repeated_placements](../../../../../functions/tests/external_album_backend/brazil_database_roundtrip_and_repeated_placements.md)
+- [brazil_real_albumeasy_import_approval_and_page_edit](../../../../../functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit.md)

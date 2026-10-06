@@ -19,6 +19,9 @@ relationships:
   - target: functions/src/review_ui/log_runtime_event
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/external_album_api/respond
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/http_handlers/serve_bootstrap_requests
     resolved_by: tree-sitter
@@ -38,6 +41,7 @@ relationships:
 - [load_country_url](../../../../functions/src/stampworld/country_url/load_country_url.md)
 - [save_country_url](../../../../functions/src/stampworld/country_url/save_country_url.md)
 - [log_runtime_event](../../../../functions/src/review_ui/log_runtime_event.md)
+- [respond](../../../../functions/src/review_ui/external_album_api/respond.md)
 
 # Called by
 

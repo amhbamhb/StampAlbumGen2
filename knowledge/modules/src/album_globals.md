@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: album_globals
-resource: src/album_globals/mod.rs#L1-L597
+resource: src/album_globals/mod.rs#L1-L635
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -65,6 +65,7 @@ relationships:
 - [albumeasy_reported_error](../../functions/src/album_globals/albumeasy_reported_error.md)
 - [maybe_generate_album_pdf_with_settings](../../functions/src/album_globals/maybe_generate_album_pdf_with_settings.md)
 - [generated_artifacts_from_path](../../functions/src/album_globals/generated_artifacts_from_path.md)
+- [imported_artifacts](../../functions/src/album_globals/imported_artifacts.md)
 - [generate_album_output_conn](../../functions/src/album_globals/generate_album_output_conn.md)
 - [generate_album_output_conn_with_pdf_override](../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
 - [generate_album_output_conn_with_filters](../../functions/src/album_globals/generate_album_output_conn_with_filters.md)

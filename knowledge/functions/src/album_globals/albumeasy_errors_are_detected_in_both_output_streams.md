@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: albumeasy_errors_are_detected_in_both_output_streams
-resource: src/album_globals/mod.rs#L440-L449
+resource: src/album_globals/mod.rs#L478-L487
 visibility: private
 generated:
   by: okf-rs/0.4.0

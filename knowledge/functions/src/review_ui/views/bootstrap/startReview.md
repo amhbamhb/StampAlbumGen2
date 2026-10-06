@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: startReview
-resource: src/review_ui/views/bootstrap.js#L1310-L1380
+resource: src/review_ui/views/bootstrap.js#L1311-L1381
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/waitForCompareAndRedirect
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/json
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/stopLoadingPhases
@@ -29,6 +32,7 @@ relationships:
 
 - [startLoadingPhases](../../../../../functions/src/review_ui/views/bootstrap/startLoadingPhases.md)
 - [waitForCompareAndRedirect](../../../../../functions/src/review_ui/views/bootstrap/waitForCompareAndRedirect.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [stopLoadingPhases](../../../../../functions/src/review_ui/views/bootstrap/stopLoadingPhases.md)
 
 # Called by

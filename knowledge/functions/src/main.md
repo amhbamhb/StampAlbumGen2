@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/setup/write_startup_probe_snapshot
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/parse
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/setup/setup_logging
     resolved_by: tree-sitter
     confidence: exact
@@ -133,6 +136,9 @@ relationships:
   - target: functions/src/validation/validate_user_input
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/Lexer/command
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/validation/validate_year_range
     resolved_by: tree-sitter
     confidence: exact
@@ -159,6 +165,7 @@ relationships:
 - [write_startup_probe](../../functions/src/setup/write_startup_probe.md)
 - [log_runtime_event](../../functions/src/review_ui/log_runtime_event.md)
 - [write_startup_probe_snapshot](../../functions/src/setup/write_startup_probe_snapshot.md)
+- [parse](../../functions/src/external_album/parser/parse.md)
 - [setup_logging](../../functions/src/setup/setup_logging.md)
 - [uninstall_linux_desktop_integration](../../functions/src/setup/uninstall_linux_desktop_integration.md)
 - [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
@@ -198,6 +205,7 @@ relationships:
 - [review_ui_catalog_family_options](../../functions/src/config/Config/review_ui_catalog_family_options.md)
 - [create_config_from_template](../../functions/src/config/create_config_from_template.md)
 - [validate_user_input](../../functions/src/validation/validate_user_input.md)
+- [command](../../functions/src/external_album/parser/Lexer/command.md)
 - [validate_year_range](../../functions/src/validation/validate_year_range.md)
 - [print_validation_error](../../functions/src/validation/print_validation_error.md)
 - [validate_source](../../functions/src/validation/validate_source.md)

@@ -29,6 +29,7 @@ use matcher_service::{
     delete_colnect_candidate, delete_left_stamp, load_left_stamps, load_right_candidates,
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
+mod external_album_api;
 mod http_handlers;
 #[cfg(any(windows, test))]
 mod windows_picker;
@@ -1885,6 +1886,17 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
         if !db_path.exists() {
             continue;
         }
+        match Connection::open_with_flags(&db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|e| e.to_string())
+            .and_then(|conn| crate::external_album::is_imported(&conn))
+        {
+            Ok(true) => continue,
+            Ok(false) => {}
+            Err(error) => {
+                log_runtime_event(&format!("Album discovery: {}: {error}", db_path.display()));
+                continue;
+            }
+        }
 
         let country = slug.replace('-', " ");
         let colnect_dir = dir.join("colnect");
@@ -1976,21 +1988,18 @@ fn current_bootstrap_albums_root() -> Option<String> {
     resolve_bootstrap_albums_root().map(|p| p.to_string_lossy().to_string())
 }
 
-#[cfg(windows)]
 fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
     let current = current_bootstrap_albums_root().unwrap_or_else(|| ".".to_string());
-    windows_picker::pick(
-        windows_picker::PickerKind::Folder,
-        "Select Albums Root (Albums folder or its parent)",
-        &current,
-    )
+    pick_folder_via_dialog("Select Albums Root (Albums folder or its parent)", &current)
+}
+
+#[cfg(windows)]
+fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, String> {
+    windows_picker::pick(windows_picker::PickerKind::Folder, title, current)
 }
 
 #[cfg(not(windows))]
-fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
-    let title = "Select Albums Root (Albums folder or its parent)";
-    let current = current_bootstrap_albums_root().unwrap_or_else(|| ".".to_string());
-
+fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, String> {
     if which::which("zenity").is_ok() {
         let output = Command::new("zenity")
             .arg("--file-selection")
@@ -2024,7 +2033,7 @@ fn pick_bootstrap_albums_root_via_dialog() -> Result<Option<String>, String> {
     if which::which("kdialog").is_ok() {
         let output = Command::new("kdialog")
             .arg("--getexistingdirectory")
-            .arg(&current)
+            .arg(current)
             .arg("--title")
             .arg(title)
             .output()
@@ -2075,7 +2084,9 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
 }
 
 #[cfg(windows)]
-fn pick_albumeasy_cli_path_via_dialog(current_path: Option<&str>) -> Result<Option<String>, String> {
+fn pick_albumeasy_cli_path_via_dialog(
+    current_path: Option<&str>,
+) -> Result<Option<String>, String> {
     let start = current_path
         .map(str::trim)
         .filter(|v| !v.is_empty())
@@ -3083,6 +3094,11 @@ pub fn run_review_ui(
         ));
         std::io::Error::other(format!("failed to open review database {}: {}", db_path, e))
     })?;
+    if crate::external_album::is_imported(&conn).map_err(std::io::Error::other)? {
+        let message = "This is an imported AlbumEasy layout. Launch --review-ui without an album selection and open it in the Import & edit external AlbumEasy albums section; the StampWorld/Colnect matcher cannot edit saved layouts.";
+        log_runtime_event(message);
+        return Err(std::io::Error::other(message).into());
+    }
     let _ = conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_stamps_review_sg_year ON stamps (sg_number, year)",
         [],

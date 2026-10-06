@@ -57,6 +57,9 @@
 - [sort](../modules/src/db_utils/sort.md) — Rust Module
 - [structs](../modules/src/db_utils/structs.md) — Rust Module
 - [updates](../modules/src/db_utils/updates.md) — Rust Module
+- [external_album](../modules/src/external_album.md) — Rust Module
+- [parser](../modules/src/external_album/parser.md) — Rust Module
+- [reflow](../modules/src/external_album/reflow.md) — Rust Module
 - [file_utils](../modules/src/file_utils.md) — Rust Module
 - [flagdb](../modules/src/flagdb.md) — Rust Module
 - [assets](../modules/src/flagdb/assets.md) — Rust Module
@@ -69,6 +72,7 @@
 - [review_ui](../modules/src/review_ui.md) — Rust Module
 - [config_editor](../modules/src/review_ui/config_editor.md) — JavaScript Module
 - [config_editor](../modules/src/review_ui/config_editor-2.md) — Rust Module
+- [external_album_api](../modules/src/review_ui/external_album_api.md) — Rust Module
 - [html_templates](../modules/src/review_ui/html_templates.md) — Rust Module
 - [http_handlers](../modules/src/review_ui/http_handlers.md) — Rust Module
 - [matcher_service](../modules/src/review_ui/matcher_service.md) — Rust Module
@@ -80,6 +84,7 @@
 - [compare](../modules/src/review_ui/views/compare-2.md) — Rust Module
 - [compare_assets](../modules/src/review_ui/views/compare_assets.md) — Rust Module
 - [country_url](../modules/src/review_ui/views/country_url.md) — JavaScript Module
+- [external_album](../modules/src/review_ui/views/external_album.md) — JavaScript Module
 - [pdf_filters](../modules/src/review_ui/views/pdf_filters.md) — JavaScript Module
 - [shared](../modules/src/review_ui/views/shared.md) — Rust Module
 - [stampworld_start_error](../modules/src/review_ui/views/stampworld_start_error.md) — JavaScript Module
@@ -138,6 +143,7 @@
 - [engraving_column](../modules/tests/engraving_column.md) — Rust Module
 - [ensure_coa_integration](../modules/tests/ensure_coa_integration.md) — Rust Module
 - [ensure_coa_local](../modules/tests/ensure_coa_local.md) — Rust Module
+- [external_album_backend](../modules/tests/external_album_backend.md) — Rust Module
 - [fetch_and_filter_stamps](../modules/tests/fetch_and_filter_stamps.md) — Rust Module
 - [fetcher_injection](../modules/tests/fetcher_injection.md) — Rust Module
 - [filename_year_inference_fixed](../modules/tests/filename_year_inference_fixed.md) — Rust Module
@@ -163,6 +169,7 @@
 - [placeholder_image_size](../modules/tests/placeholder_image_size.md) — Rust Module
 - [placeholder_regeneration](../modules/tests/placeholder_regeneration.md) — Rust Module
 - [review_pdf_filters_ui](../modules/tests/review_pdf_filters_ui.md) — JavaScript Module
+- [test](../modules/tests/review_ui_external_album/test.md) — JavaScript Module
 - [test](../modules/tests/review_ui_stampworld_credentials/test.md) — JavaScript Module
 - [save_overwrite](../modules/tests/save_overwrite.md) — Rust Module
 - [series_issue_date_order_tests](../modules/tests/series_issue_date_order_tests.md) — Rust Module

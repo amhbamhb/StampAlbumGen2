@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/placeholder_image/draw_text
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/placeholder_image/generate_placeholder_image
     resolved_by: tree-sitter
@@ -31,6 +34,7 @@ relationships:
 # Calls
 
 - [draw_text](../../../functions/src/placeholder_image/draw_text.md)
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 
 # Called by
 

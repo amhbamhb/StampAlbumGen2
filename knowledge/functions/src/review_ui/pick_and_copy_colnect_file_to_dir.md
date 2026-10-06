@@ -1,15 +1,12 @@
 ---
 type: Rust Function
 title: pick_and_copy_colnect_file_to_dir
-resource: src/review_ui.rs#L2180-L2289
+resource: src/review_ui.rs#L2191-L2300
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/review_ui/windows_picker/pick
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
@@ -28,7 +25,6 @@ relationships:
 
 # Calls
 
-- [pick](../../../functions/src/review_ui/windows_picker/pick.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 
 # Called by

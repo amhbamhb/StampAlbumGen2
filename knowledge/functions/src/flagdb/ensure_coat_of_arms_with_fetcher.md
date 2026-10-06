@@ -27,6 +27,9 @@ relationships:
   - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/external_album/save
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/extract_from_obj
     resolved_by: tree-sitter
     confidence: exact
@@ -49,6 +52,7 @@ relationships:
 - [extract_coa_from_nexperts_html](../../../functions/src/flagdb/extract_coa_from_nexperts_html.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../functions/src/wikipedia/models/ContentSource/as_str.md)
+- [save](../../../functions/src/review_ui/views/external_album/save.md)
 - [extract_from_obj](../../../functions/src/flagdb/extract_from_obj.md)
 
 # Called by

@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/setConfigStatus
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -22,3 +25,4 @@ relationships:
 
 - [normalizeCatalogCodeForUi](../../../../../functions/src/review_ui/views/compare/normalizeCatalogCodeForUi.md)
 - [setConfigStatus](../../../../../functions/src/review_ui/views/compare/setConfigStatus.md)
+- [json](../../../../../functions/src/external_album/json.md)

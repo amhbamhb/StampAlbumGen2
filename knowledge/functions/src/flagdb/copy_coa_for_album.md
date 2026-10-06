@@ -15,6 +15,9 @@ relationships:
   - target: functions/src/flagdb/ensure_coat_of_arms
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/try_rasterize_svg_to_png
     resolved_by: tree-sitter
     confidence: exact
@@ -33,6 +36,7 @@ relationships:
 - [normalize_country_input](../../../functions/src/flagdb/normalize_country_input.md)
 - [country_to_code](../../../functions/src/flagdb/country_to_code.md)
 - [ensure_coat_of_arms](../../../functions/src/flagdb/ensure_coat_of_arms.md)
+- [open](../../../functions/src/external_album/open.md)
 - [try_rasterize_svg_to_png](../../../functions/src/flagdb/try_rasterize_svg_to_png.md)
 
 # Called by

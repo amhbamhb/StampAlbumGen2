@@ -290,6 +290,25 @@ fn generated_artifacts_from_path(
 // but fall back to the original `generator` implementation if the
 // refactored function produced no usable output (this keeps tests and
 // callers working while `generator_new` is incrementally completed).
+fn imported_artifacts(
+    conn: &Connection,
+    generate_pdf_override: Option<bool>,
+) -> Option<GeneratedAlbumArtifacts> {
+    let result = match crate::external_album::is_imported(conn) {
+        Ok(false) => return None,
+        Ok(true) => crate::external_album::generate_artifacts(conn, generate_pdf_override),
+        Err(error) => Err(error),
+    };
+    Some(result.unwrap_or_else(|error| {
+        log::error!("Saved AlbumEasy layout generation failed: {error}");
+        GeneratedAlbumArtifacts {
+            output_txt_path: PathBuf::new(),
+            generated_pdf_path: None,
+            pdf_failure_reason: Some(error),
+        }
+    }))
+}
+
 pub async fn generate_album_output_conn<F>(
     conn: &Connection,
     album_name: &str,
@@ -323,6 +342,9 @@ pub async fn generate_album_output_conn_with_pdf_override<F>(
 where
     F: FnMut(usize),
 {
+    if let Some(artifacts) = imported_artifacts(conn, generate_pdf_override) {
+        return artifacts;
+    }
     // The refactored implementation is still a stub; preserve the callback
     // for the original implementation until the refactor can generate output.
     let path = generator_new::generate_album_output_conn::<F>(
@@ -360,6 +382,12 @@ pub async fn generate_album_output_conn_with_filters(
     filters: &selection::ColnectPdfFilters,
 ) -> Result<GeneratedAlbumArtifacts, String> {
     filters.validate()?;
+    if crate::external_album::is_imported(conn)? {
+        if !filters.is_all() {
+            return Err("Catalogue filters cannot be applied to saved AlbumEasy layouts".into());
+        }
+        return crate::external_album::generate_artifacts(conn, generate_pdf_override);
+    }
     if filters.is_all() {
         return Ok(generate_album_output_conn_with_pdf_override(
             conn,
@@ -391,6 +419,9 @@ pub(crate) async fn generate_album_output_conn_with_prepared_pdf(
     generate_pdf_override: Option<bool>,
     prepared: selection::PreparedPdfStamps,
 ) -> GeneratedAlbumArtifacts {
+    if let Some(artifacts) = imported_artifacts(conn, generate_pdf_override) {
+        return artifacts;
+    }
     let path = generator::generate_album_output_conn_prepared(
         conn,
         album_name,
@@ -413,6 +444,13 @@ pub async fn generate_album_output<F>(
 where
     F: FnMut(usize),
 {
+    if let Ok(conn) =
+        Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+    {
+        if let Some(artifacts) = imported_artifacts(&conn, None) {
+            return artifacts.output_txt_path;
+        }
+    }
     // The refactored implementation is still a stub; preserve the callback
     // for the original implementation until the refactor can generate output.
     let path =

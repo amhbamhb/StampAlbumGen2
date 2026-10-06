@@ -1,13 +1,16 @@
 ---
 type: Rust Function
 title: open_local_path
-resource: src/review_ui.rs#L1506-L1522
+resource: src/review_ui.rs#L1507-L1523
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/path_to_file_url
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/external_album/open
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -26,6 +29,7 @@ relationships:
 # Calls
 
 - [path_to_file_url](../../../functions/src/review_ui/path_to_file_url.md)
+- [open](../../../functions/src/external_album/open.md)
 
 # Called by
 

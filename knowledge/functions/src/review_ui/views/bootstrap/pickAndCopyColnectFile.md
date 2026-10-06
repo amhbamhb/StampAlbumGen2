@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/review_ui/views/bootstrap/appendColnectCopyLog
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/bootstrap/refreshState
     resolved_by: tree-sitter
     confidence: exact
@@ -21,4 +24,5 @@ relationships:
 # Calls
 
 - [appendColnectCopyLog](../../../../../functions/src/review_ui/views/bootstrap/appendColnectCopyLog.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [refreshState](../../../../../functions/src/review_ui/views/bootstrap/refreshState.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Enum
 title: ReviewUiBootstrapOutcome
-resource: src/review_ui.rs#L1458-L1463
+resource: src/review_ui.rs#L1459-L1464
 generated:
   by: okf-rs/0.4.0
 ---

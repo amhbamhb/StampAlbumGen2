@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/external_album/parser/parse
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/us1847/collector/collect_text
     resolved_by: tree-sitter
     confidence: exact
@@ -43,6 +46,7 @@ relationships:
 
 # Calls
 
+- [parse](../../../../functions/src/external_album/parser/parse.md)
 - [collect_text](../../../../functions/src/us1847/collector/collect_text.md)
 - [parse_table_stamps](../../../../functions/src/us1847/collector/parse_table_stamps.md)
 - [parse_single_image_stamp](../../../../functions/src/us1847/collector/parse_single_image_stamp.md)

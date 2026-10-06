@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: src
-resource: src/lib.rs#L1-L57
+resource: src/lib.rs#L1-L58
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/Lexer/skip
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/config/ensure_default_files
     resolved_by: tree-sitter
     confidence: exact
@@ -43,6 +46,7 @@ relationships:
 # Calls
 
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [skip](../../../functions/src/external_album/parser/Lexer/skip.md)
 - [ensure_default_files](../../../functions/src/config/ensure_default_files.md)
 
 # Called by

@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/parse
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/html
     resolved_by: tree-sitter
     confidence: exact
@@ -27,6 +30,7 @@ relationships:
 # Calls
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [parse](../../../../functions/src/external_album/parser/parse.md)
 - [html](../../../../functions/src/review_ui/views/compare/html.md)
 - [get_touchstamps_image](../../../../functions/src/commands_file_generator/touchstamps/get_touchstamps_image.md)
 - [get_image](../../../../functions/src/commands_file_generator/image_utils/get_image.md)

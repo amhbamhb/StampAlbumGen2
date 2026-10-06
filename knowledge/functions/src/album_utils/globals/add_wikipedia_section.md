@@ -34,6 +34,9 @@ relationships:
   - target: functions/src/album_globals/generator_new/layout/write_page_vspace
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_utils/globals/write_globals
     resolved_by: tree-sitter
@@ -55,6 +58,7 @@ relationships:
 - [create_greedy_pages](../../../../functions/src/album_utils/globals/create_greedy_pages.md)
 - [create_balanced_pages](../../../../functions/src/album_utils/globals/create_balanced_pages.md)
 - [write_page_vspace](../../../../functions/src/album_globals/generator_new/layout/write_page_vspace.md)
+- [open](../../../../functions/src/external_album/open.md)
 
 # Called by
 

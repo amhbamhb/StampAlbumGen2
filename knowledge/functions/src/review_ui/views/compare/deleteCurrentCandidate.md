@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/setMatchStatus
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/json
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/removeCandidateFromUi
     resolved_by: tree-sitter
     confidence: exact
@@ -25,4 +28,5 @@ relationships:
 
 - [currentRightCandidate](../../../../../functions/src/review_ui/views/compare/currentRightCandidate.md)
 - [setMatchStatus](../../../../../functions/src/review_ui/views/compare/setMatchStatus.md)
+- [json](../../../../../functions/src/external_album/json.md)
 - [removeCandidateFromUi](../../../../../functions/src/review_ui/views/compare/removeCandidateFromUi.md)

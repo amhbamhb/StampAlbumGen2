@@ -15,6 +15,9 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/external_album/parser/Lexer/bump
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/views/compare/getEffectiveDefaultCatalogCode
     resolved_by: tree-sitter
@@ -30,6 +33,7 @@ relationships:
 - [normalizeCatalogCodeForUi](../../../../../functions/src/review_ui/views/compare/normalizeCatalogCodeForUi.md)
 - [set](../../../../../functions/src/album_globals/structs/GenericAttrs/set.md)
 - [get](../../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [bump](../../../../../functions/src/external_album/parser/Lexer/bump.md)
 
 # Called by
 

@@ -5,6 +5,10 @@ resource: src/image_utils.rs#L116-L124
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/external_album/open
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_utils/dimensions/calculate_stamp_dimensions
     resolved_by: tree-sitter
@@ -29,6 +33,10 @@ relationships:
 # Signature
 
 `pub fn get_image_dimensions<P: AsRef<Path>>(path: P) -> Option<(u32, u32)>`
+
+# Calls
+
+- [open](../../../functions/src/external_album/open.md)
 
 # Called by
 
