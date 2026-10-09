@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: selectPage
-resource: src/review_ui/views/external_album.js#L212-L216
+resource: src/review_ui/views/external_album.js#L214-L218
 generated:
   by: okf-rs/0.4.0
 relationships:

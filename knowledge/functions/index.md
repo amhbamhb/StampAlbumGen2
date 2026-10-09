@@ -86,6 +86,7 @@
 - [format_stamp_heading](../functions/src/album_globals/generator_new/emit/format_stamp_heading.md) — Rust Function
 - [heading_max_chars_per_line](../functions/src/album_globals/generator_new/emit/heading_max_chars_per_line.md) — Rust Function
 - [resolve_stamp_heading_label](../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md) — Rust Function
+- [unequal_headings_use_shared_vertical_alignment_without_padding](../functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding.md) — Rust Function
 - [wrap_preserving_breaks](../functions/src/album_globals/generator_new/emit/wrap_preserving_breaks.md) — Rust Function
 - [wrap_preserving_breaks_keep_empty](../functions/src/album_globals/generator_new/emit/wrap_preserving_breaks_keep_empty.md) — Rust Function
 - [wrap_segment_words](../functions/src/album_globals/generator_new/emit/wrap_segment_words.md) — Rust Function

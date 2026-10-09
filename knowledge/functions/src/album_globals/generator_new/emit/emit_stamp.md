@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -30,3 +33,4 @@ relationships:
 # Called by
 
 - [generate_album_output_conn_prepared](../../../../../functions/src/album_globals/generator/generate_album_output_conn_prepared.md)
+- [unequal_headings_use_shared_vertical_alignment_without_padding](../../../../../functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding.md)

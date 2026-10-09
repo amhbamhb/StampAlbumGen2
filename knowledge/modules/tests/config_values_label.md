@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config_values_label
-resource: tests/config_values_label.rs#L1-L97
+resource: tests/config_values_label.rs#L1-L99
 generated:
   by: okf-rs/0.4.0
 relationships:

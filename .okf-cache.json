@@ -5508,7 +5508,7 @@
       }
     },
     "src/album_globals/commemorative_generator.rs": {
-      "content_hash": 155388867409722501,
+      "content_hash": 88961014827996017,
       "extraction": {
         "concepts": [
           {
@@ -17310,7 +17310,7 @@
       }
     },
     "src/album_globals/generator_new/commemorative_layout.rs": {
-      "content_hash": 15545540840661165890,
+      "content_hash": 17230767144372315031,
       "extraction": {
         "concepts": [
           {
@@ -18232,7 +18232,7 @@
       }
     },
     "src/album_globals/generator_new/emit.rs": {
-      "content_hash": 5675556667136126704,
+      "content_hash": 11569962211852517720,
       "extraction": {
         "concepts": [
           {
@@ -18245,7 +18245,7 @@
             "location": {
               "file": "src/album_globals/generator_new/emit.rs",
               "start_line": 1,
-              "end_line": 389
+              "end_line": 435
             },
             "signature": null,
             "tags": [],
@@ -18263,6 +18263,13 @@
                 "kind": "Imports",
                 "target": "external/std-io-self-write",
                 "target_display": "std::io::{self, Write}",
+                "resolved_by": "tree-sitter",
+                "confidence": "exact"
+              },
+              {
+                "kind": "Imports",
+                "target": "external/super",
+                "target_display": "super::*",
                 "resolved_by": "tree-sitter",
                 "confidence": "exact"
               }
@@ -18499,6 +18506,24 @@
             "signature": "pub fn emit_image_only<W: Write>( out: &mut W, ctx: &EmitContext, options: Option<&str>, ) -> std::io::Result<()>",
             "tags": [],
             "is_public": true,
+            "generated_at": null,
+            "relationships": []
+          },
+          {
+            "id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "kind": "Function",
+            "language": "Rust",
+            "name": "unequal_headings_use_shared_vertical_alignment_without_padding",
+            "qualified_name": "src.album_globals.generator_new.emit.unequal_headings_use_shared_vertical_alignment_without_padding",
+            "description": null,
+            "location": {
+              "file": "src/album_globals/generator_new/emit.rs",
+              "start_line": 396,
+              "end_line": 434
+            },
+            "signature": "fn unequal_headings_use_shared_vertical_alignment_without_padding()",
+            "tags": [],
+            "is_public": false,
             "generated_at": null,
             "relationships": []
           }
@@ -19494,6 +19519,54 @@
             "call_site": {
               "line": 387,
               "character": 4
+            }
+          },
+          {
+            "caller_id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "callee_name": "new",
+            "call_site": {
+              "line": 397,
+              "character": 34
+            }
+          },
+          {
+            "caller_id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 413,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "callee_name": "emit_stamp",
+            "call_site": {
+              "line": 417,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "callee_name": "expect",
+            "call_site": {
+              "line": 417,
+              "character": 57
+            }
+          },
+          {
+            "caller_id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "callee_name": "from_utf8",
+            "call_site": {
+              "line": 419,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding",
+            "callee_name": "expect",
+            "call_site": {
+              "line": 419,
+              "character": 51
             }
           }
         ]
@@ -30149,7 +30222,7 @@
       }
     },
     "src/album_utils/globals.rs": {
-      "content_hash": 14250751047019160296,
+      "content_hash": 8721402994894784093,
       "extraction": {
         "concepts": [
           {
@@ -31740,7 +31813,7 @@
             "callee_name": "to_string",
             "call_site": {
               "line": 398,
-              "character": 34
+              "character": 31
             }
           },
           {
@@ -153877,7 +153950,7 @@
       }
     },
     "src/review_ui/views/compare.rs": {
-      "content_hash": 6771926182811692279,
+      "content_hash": 4816996960788131889,
       "extraction": {
         "concepts": [
           {
@@ -153890,7 +153963,7 @@
             "location": {
               "file": "src/review_ui/views/compare.rs",
               "start_line": 1,
-              "end_line": 363
+              "end_line": 318
             },
             "signature": null,
             "tags": [],
@@ -153937,7 +154010,7 @@
             "location": {
               "file": "src/review_ui/views/compare.rs",
               "start_line": 16,
-              "end_line": 363
+              "end_line": 318
             },
             "signature": "pub(super) fn render_html(payload: &MatcherPayload) -> String",
             "tags": [],
@@ -154055,8 +154128,184 @@
             "caller_id": "functions/src/review_ui/views/compare/render_html",
             "callee_name": "replace",
             "call_site": {
-              "line": 306,
+              "line": 262,
+              "character": 1
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 263,
+              "character": 1
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 267,
               "character": 5
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 269,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 270,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 271,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 272,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 273,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 274,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 275,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 276,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 277,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 281,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 282,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 283,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 287,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 291,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 295,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 299,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 303,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 304,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 305,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 306,
+              "character": 9
             }
           },
           {
@@ -154064,15 +154313,39 @@
             "callee_name": "replace",
             "call_site": {
               "line": 307,
-              "character": 5
+              "character": 9
             }
           },
           {
             "caller_id": "functions/src/review_ui/views/compare/render_html",
             "callee_name": "replace",
             "call_site": {
-              "line": 311,
-              "character": 5
+              "line": 308,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 309,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 310,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "replace",
+            "call_site": {
+              "line": 312,
+              "character": 9
             }
           },
           {
@@ -154093,10 +154366,26 @@
           },
           {
             "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "render_app_footer_html",
+            "call_site": {
+              "line": 314,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
             "callee_name": "replace",
             "call_site": {
               "line": 315,
               "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/compare/render_html",
+            "callee_name": "render_footer_year_script",
+            "call_site": {
+              "line": 315,
+              "character": 42
             }
           },
           {
@@ -154109,233 +154398,9 @@
           },
           {
             "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 317,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 318,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 319,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 320,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 321,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 325,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 326,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 327,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 331,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 335,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 339,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 343,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 347,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 348,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 349,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 350,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 351,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 352,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 353,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 354,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 356,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 357,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 358,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 359,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "render_app_footer_html",
-            "call_site": {
-              "line": 359,
-              "character": 35
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 360,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "render_footer_year_script",
-            "call_site": {
-              "line": 360,
-              "character": 42
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
-            "callee_name": "replace",
-            "call_site": {
-              "line": 361,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/compare/render_html",
             "callee_name": "render_config_editor_assets",
             "call_site": {
-              "line": 361,
+              "line": 316,
               "character": 44
             }
           }
@@ -154951,7 +155016,7 @@
       }
     },
     "src/review_ui/views/external_album.js": {
-      "content_hash": 1904235846715344506,
+      "content_hash": 15892262459013125702,
       "extraction": {
         "concepts": [
           {
@@ -154964,7 +155029,7 @@
             "location": {
               "file": "src/review_ui/views/external_album.js",
               "start_line": 1,
-              "end_line": 392
+              "end_line": 394
             },
             "signature": null,
             "tags": [],
@@ -155162,7 +155227,7 @@
             "location": {
               "file": "src/review_ui/views/external_album.js",
               "start_line": 179,
-              "end_line": 210
+              "end_line": 212
             },
             "signature": "function renderAlbum()",
             "tags": [],
@@ -155179,8 +155244,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 212,
-              "end_line": 216
+              "start_line": 214,
+              "end_line": 218
             },
             "signature": "function selectPage()",
             "tags": [],
@@ -155197,8 +155262,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 218,
-              "end_line": 263
+              "start_line": 220,
+              "end_line": 265
             },
             "signature": "function renderCommands()",
             "tags": [],
@@ -155215,8 +155280,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 265,
-              "end_line": 280
+              "start_line": 267,
+              "end_line": 282
             },
             "signature": "function add(name)",
             "tags": [],
@@ -155233,8 +155298,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 282,
-              "end_line": 295
+              "start_line": 284,
+              "end_line": 297
             },
             "signature": "async function save()",
             "tags": [],
@@ -155251,8 +155316,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 297,
-              "end_line": 306
+              "start_line": 299,
+              "end_line": 308
             },
             "signature": "async function retry()",
             "tags": [],
@@ -155269,8 +155334,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 308,
-              "end_line": 321
+              "start_line": 310,
+              "end_line": 323
             },
             "signature": "async function approve()",
             "tags": [],
@@ -155287,8 +155352,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 323,
-              "end_line": 346
+              "start_line": 325,
+              "end_line": 348
             },
             "signature": "async function upload()",
             "tags": [],
@@ -155305,8 +155370,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 348,
-              "end_line": 357
+              "start_line": 350,
+              "end_line": 359
             },
             "signature": "function download(value, filename)",
             "tags": [],
@@ -155323,8 +155388,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 359,
-              "end_line": 365
+              "start_line": 361,
+              "end_line": 367
             },
             "signature": "function downloadReport()",
             "tags": [],
@@ -155341,8 +155406,8 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
-              "start_line": 367,
-              "end_line": 374
+              "start_line": 369,
+              "end_line": 376
             },
             "signature": "function downloadAlbumReport()",
             "tags": [],
@@ -156186,9 +156251,17 @@
           },
           {
             "caller_id": "functions/src/review_ui/views/external_album/renderAlbum",
+            "callee_name": "addEventListener",
+            "call_site": {
+              "line": 208,
+              "character": 7
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/renderAlbum",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 207,
+              "line": 209,
               "character": 8
             }
           },
@@ -156196,7 +156269,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderAlbum",
             "callee_name": "element",
             "call_site": {
-              "line": 208,
+              "line": 210,
               "character": 13
             }
           },
@@ -156204,7 +156277,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderAlbum",
             "callee_name": "element",
             "call_site": {
-              "line": 208,
+              "line": 210,
               "character": 51
             }
           },
@@ -156212,7 +156285,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderAlbum",
             "callee_name": "showModal",
             "call_site": {
-              "line": 208,
+              "line": 210,
               "character": 83
             }
           },
@@ -156220,7 +156293,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/selectPage",
             "callee_name": "Number",
             "call_site": {
-              "line": 212,
+              "line": 214,
               "character": 21
             }
           },
@@ -156228,7 +156301,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/selectPage",
             "callee_name": "element",
             "call_site": {
-              "line": 212,
+              "line": 214,
               "character": 28
             }
           },
@@ -156236,7 +156309,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/selectPage",
             "callee_name": "clone",
             "call_site": {
-              "line": 213,
+              "line": 215,
               "character": 19
             }
           },
@@ -156244,7 +156317,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/selectPage",
             "callee_name": "find",
             "call_site": {
-              "line": 213,
+              "line": 215,
               "character": 66
             }
           },
@@ -156252,7 +156325,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/selectPage",
             "callee_name": "renderCommands",
             "call_site": {
-              "line": 214,
+              "line": 216,
               "character": 8
             }
           },
@@ -156260,7 +156333,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "element",
             "call_site": {
-              "line": 218,
+              "line": 220,
               "character": 26
             }
           },
@@ -156268,7 +156341,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "replaceChildren",
             "call_site": {
-              "line": 219,
+              "line": 221,
               "character": 18
             }
           },
@@ -156276,7 +156349,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "forEach",
             "call_site": {
-              "line": 220,
+              "line": 222,
               "character": 17
             }
           },
@@ -156284,7 +156357,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 221,
+              "line": 223,
               "character": 33
             }
           },
@@ -156292,7 +156365,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 223,
+              "line": 225,
               "character": 35
             }
           },
@@ -156300,7 +156373,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "appendChild",
             "call_site": {
-              "line": 225,
+              "line": 227,
               "character": 16
             }
           },
@@ -156308,7 +156381,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 226,
+              "line": 228,
               "character": 34
             }
           },
@@ -156316,7 +156389,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "forEach",
             "call_site": {
-              "line": 228,
+              "line": 230,
               "character": 25
             }
           },
@@ -156324,7 +156397,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 229,
+              "line": 231,
               "character": 39
             }
           },
@@ -156332,7 +156405,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 232,
+              "line": 234,
               "character": 39
             }
           },
@@ -156340,24 +156413,16 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "addEventListener",
             "call_site": {
-              "line": 236,
-              "character": 22
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
-            "callee_name": "appendChild",
-            "call_site": {
-              "line": 237,
-              "character": 22
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
-            "callee_name": "appendChild",
-            "call_site": {
               "line": 238,
-              "character": 21
+              "character": 22
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
+            "callee_name": "appendChild",
+            "call_site": {
+              "line": 239,
+              "character": 22
             }
           },
           {
@@ -156365,6 +156430,14 @@
             "callee_name": "appendChild",
             "call_site": {
               "line": 240,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
+            "callee_name": "appendChild",
+            "call_site": {
+              "line": 242,
               "character": 16
             }
           },
@@ -156372,7 +156445,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 242,
+              "line": 244,
               "character": 40
             }
           },
@@ -156380,7 +156453,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "addEventListener",
             "call_site": {
-              "line": 245,
+              "line": 247,
               "character": 23
             }
           },
@@ -156388,7 +156461,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "splice",
             "call_site": {
-              "line": 245,
+              "line": 247,
               "character": 66
             }
           },
@@ -156396,7 +156469,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "renderCommands",
             "call_site": {
-              "line": 245,
+              "line": 247,
               "character": 84
             }
           },
@@ -156404,7 +156477,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "appendChild",
             "call_site": {
-              "line": 246,
+              "line": 248,
               "character": 20
             }
           },
@@ -156412,7 +156485,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "forEach",
             "call_site": {
-              "line": 248,
+              "line": 250,
               "character": 37
             }
           },
@@ -156420,7 +156493,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "createElement",
             "call_site": {
-              "line": 249,
+              "line": 251,
               "character": 40
             }
           },
@@ -156428,21 +156501,13 @@
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "addEventListener",
             "call_site": {
-              "line": 254,
+              "line": 256,
               "character": 23
             }
           },
           {
             "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
             "callee_name": "renderCommands",
-            "call_site": {
-              "line": 256,
-              "character": 20
-            }
-          },
-          {
-            "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
-            "callee_name": "appendChild",
             "call_site": {
               "line": 258,
               "character": 20
@@ -156453,6 +156518,14 @@
             "callee_name": "appendChild",
             "call_site": {
               "line": 260,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/renderCommands",
+            "callee_name": "appendChild",
+            "call_site": {
+              "line": 262,
               "character": 22
             }
           },
@@ -156460,7 +156533,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "Number",
             "call_site": {
-              "line": 266,
+              "line": 268,
               "character": 12
             }
           },
@@ -156468,7 +156541,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "element",
             "call_site": {
-              "line": 266,
+              "line": 268,
               "character": 19
             }
           },
@@ -156476,7 +156549,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "text",
             "call_site": {
-              "line": 267,
+              "line": 269,
               "character": 12
             }
           },
@@ -156484,7 +156557,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 272,
+              "line": 274,
               "character": 28
             }
           },
@@ -156492,7 +156565,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 272,
+              "line": 274,
               "character": 44
             }
           },
@@ -156500,7 +156573,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 272,
+              "line": 274,
               "character": 60
             }
           },
@@ -156508,7 +156581,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 273,
+              "line": 275,
               "character": 16
             }
           },
@@ -156516,7 +156589,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 273,
+              "line": 275,
               "character": 36
             }
           },
@@ -156524,7 +156597,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 273,
+              "line": 275,
               "character": 56
             }
           },
@@ -156532,7 +156605,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 274,
+              "line": 276,
               "character": 31
             }
           },
@@ -156540,7 +156613,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 274,
+              "line": 276,
               "character": 47
             }
           },
@@ -156548,7 +156621,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 274,
+              "line": 276,
               "character": 63
             }
           },
@@ -156556,7 +156629,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 275,
+              "line": 277,
               "character": 27
             }
           },
@@ -156564,7 +156637,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 275,
+              "line": 277,
               "character": 43
             }
           },
@@ -156572,7 +156645,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 275,
+              "line": 277,
               "character": 58
             }
           },
@@ -156580,7 +156653,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "argument",
             "call_site": {
-              "line": 275,
+              "line": 277,
               "character": 75
             }
           },
@@ -156588,7 +156661,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "push",
             "call_site": {
-              "line": 277,
+              "line": 279,
               "character": 17
             }
           },
@@ -156596,7 +156669,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/add",
             "callee_name": "renderCommands",
             "call_site": {
-              "line": 278,
+              "line": 280,
               "character": 8
             }
           },
@@ -156604,7 +156677,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 283,
+              "line": 285,
               "character": 8
             }
           },
@@ -156612,7 +156685,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "text",
             "call_site": {
-              "line": 284,
+              "line": 286,
               "character": 8
             }
           },
@@ -156620,7 +156693,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "api",
             "call_site": {
-              "line": 286,
+              "line": 288,
               "character": 33
             }
           },
@@ -156628,7 +156701,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "Number",
             "call_site": {
-              "line": 287,
+              "line": 289,
               "character": 40
             }
           },
@@ -156636,7 +156709,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "element",
             "call_site": {
-              "line": 287,
+              "line": 289,
               "character": 47
             }
           },
@@ -156644,7 +156717,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "awaitJob",
             "call_site": {
-              "line": 290,
+              "line": 292,
               "character": 26
             }
           },
@@ -156652,7 +156725,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "renderAlbum",
             "call_site": {
-              "line": 291,
+              "line": 293,
               "character": 12
             }
           },
@@ -156660,7 +156733,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "text",
             "call_site": {
-              "line": 292,
+              "line": 294,
               "character": 26
             }
           },
@@ -156668,7 +156741,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 293,
+              "line": 295,
               "character": 18
             }
           },
@@ -156676,7 +156749,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 298,
+              "line": 300,
               "character": 8
             }
           },
@@ -156684,7 +156757,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "awaitJob",
             "call_site": {
-              "line": 300,
+              "line": 302,
               "character": 26
             }
           },
@@ -156692,7 +156765,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "api",
             "call_site": {
-              "line": 300,
+              "line": 302,
               "character": 41
             }
           },
@@ -156700,7 +156773,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "renderAlbum",
             "call_site": {
-              "line": 301,
+              "line": 303,
               "character": 12
             }
           },
@@ -156708,7 +156781,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "refresh",
             "call_site": {
-              "line": 302,
+              "line": 304,
               "character": 18
             }
           },
@@ -156716,7 +156789,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "text",
             "call_site": {
-              "line": 303,
+              "line": 305,
               "character": 26
             }
           },
@@ -156724,7 +156797,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/retry",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 304,
+              "line": 306,
               "character": 18
             }
           },
@@ -156732,7 +156805,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "element",
             "call_site": {
-              "line": 309,
+              "line": 311,
               "character": 13
             }
           },
@@ -156740,7 +156813,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "text",
             "call_site": {
-              "line": 310,
+              "line": 312,
               "character": 12
             }
           },
@@ -156748,7 +156821,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 313,
+              "line": 315,
               "character": 8
             }
           },
@@ -156756,7 +156829,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "api",
             "call_site": {
-              "line": 315,
+              "line": 317,
               "character": 27
             }
           },
@@ -156764,7 +156837,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "renderAlbum",
             "call_site": {
-              "line": 316,
+              "line": 318,
               "character": 12
             }
           },
@@ -156772,7 +156845,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "refresh",
             "call_site": {
-              "line": 317,
+              "line": 319,
               "character": 18
             }
           },
@@ -156780,7 +156853,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "text",
             "call_site": {
-              "line": 318,
+              "line": 320,
               "character": 26
             }
           },
@@ -156788,7 +156861,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/approve",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 319,
+              "line": 321,
               "character": 18
             }
           },
@@ -156796,7 +156869,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "element",
             "call_site": {
-              "line": 324,
+              "line": 326,
               "character": 21
             }
           },
@@ -156804,7 +156877,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "includes",
             "call_site": {
-              "line": 325,
+              "line": 327,
               "character": 50
             }
           },
@@ -156812,7 +156885,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "text",
             "call_site": {
-              "line": 326,
+              "line": 328,
               "character": 12
             }
           },
@@ -156820,7 +156893,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "text",
             "call_site": {
-              "line": 330,
+              "line": 332,
               "character": 12
             }
           },
@@ -156828,7 +156901,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 333,
+              "line": 335,
               "character": 8
             }
           },
@@ -156836,7 +156909,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "resolve",
             "call_site": {
-              "line": 337,
+              "line": 339,
               "character": 38
             }
           },
@@ -156844,7 +156917,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "reject",
             "call_site": {
-              "line": 338,
+              "line": 340,
               "character": 39
             }
           },
@@ -156852,7 +156925,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "readAsDataURL",
             "call_site": {
-              "line": 339,
+              "line": 341,
               "character": 23
             }
           },
@@ -156860,7 +156933,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "api",
             "call_site": {
-              "line": 341,
+              "line": 343,
               "character": 33
             }
           },
@@ -156868,7 +156941,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "text",
             "call_site": {
-              "line": 342,
+              "line": 344,
               "character": 12
             }
           },
@@ -156876,7 +156949,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "text",
             "call_site": {
-              "line": 343,
+              "line": 345,
               "character": 26
             }
           },
@@ -156884,7 +156957,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/upload",
             "callee_name": "setBusy",
             "call_site": {
-              "line": 344,
+              "line": 346,
               "character": 18
             }
           },
@@ -156892,7 +156965,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "createObjectURL",
             "call_site": {
-              "line": 348,
+              "line": 350,
               "character": 24
             }
           },
@@ -156900,7 +156973,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "stringify",
             "call_site": {
-              "line": 348,
+              "line": 350,
               "character": 55
             }
           },
@@ -156908,7 +156981,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "createElement",
             "call_site": {
-              "line": 349,
+              "line": 351,
               "character": 30
             }
           },
@@ -156916,7 +156989,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "appendChild",
             "call_site": {
-              "line": 352,
+              "line": 354,
               "character": 22
             }
           },
@@ -156924,7 +156997,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "click",
             "call_site": {
-              "line": 353,
+              "line": 355,
               "character": 13
             }
           },
@@ -156932,7 +157005,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "remove",
             "call_site": {
-              "line": 354,
+              "line": 356,
               "character": 13
             }
           },
@@ -156940,7 +157013,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "setTimeout",
             "call_site": {
-              "line": 355,
+              "line": 357,
               "character": 8
             }
           },
@@ -156948,7 +157021,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/download",
             "callee_name": "revokeObjectURL",
             "call_site": {
-              "line": 355,
+              "line": 357,
               "character": 29
             }
           },
@@ -156956,7 +157029,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/downloadReport",
             "callee_name": "text",
             "call_site": {
-              "line": 360,
+              "line": 362,
               "character": 12
             }
           },
@@ -156964,7 +157037,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/downloadReport",
             "callee_name": "download",
             "call_site": {
-              "line": 363,
+              "line": 365,
               "character": 8
             }
           },
@@ -156972,7 +157045,7 @@
             "caller_id": "functions/src/review_ui/views/external_album/downloadAlbumReport",
             "callee_name": "download",
             "call_site": {
-              "line": 368,
+              "line": 370,
               "character": 8
             }
           }
@@ -193421,7 +193494,7 @@
       }
     },
     "tests/config_values.rs": {
-      "content_hash": 8616951684719868582,
+      "content_hash": 1614311671737000978,
       "extraction": {
         "concepts": [
           {
@@ -194012,7 +194085,7 @@
       }
     },
     "tests/config_values_label.rs": {
-      "content_hash": 10654789014935495271,
+      "content_hash": 12068001265140030081,
       "extraction": {
         "concepts": [
           {
@@ -194025,7 +194098,7 @@
             "location": {
               "file": "tests/config_values_label.rs",
               "start_line": 1,
-              "end_line": 97
+              "end_line": 99
             },
             "signature": null,
             "tags": [],
@@ -194122,7 +194195,7 @@
             "location": {
               "file": "tests/config_values_label.rs",
               "start_line": 19,
-              "end_line": 35
+              "end_line": 37
             },
             "signature": "fn read_stamp_heading_label(output_txt: &std::path::Path) -> Option<String>",
             "tags": [],
@@ -194139,8 +194212,8 @@
             "description": null,
             "location": {
               "file": "tests/config_values_label.rs",
-              "start_line": 38,
-              "end_line": 97
+              "start_line": 40,
+              "end_line": 99
             },
             "signature": "async fn test_stamp_heading_label_changes_output()",
             "tags": [],
@@ -194234,7 +194307,7 @@
             "caller_id": "functions/tests/config_values_label/read_stamp_heading_label",
             "callee_name": "lines",
             "call_site": {
-              "line": 23,
+              "line": 25,
               "character": 18
             }
           },
@@ -194242,7 +194315,7 @@
             "caller_id": "functions/tests/config_values_label/read_stamp_heading_label",
             "callee_name": "starts_with",
             "call_site": {
-              "line": 24,
+              "line": 26,
               "character": 16
             }
           },
@@ -194250,7 +194323,7 @@
             "caller_id": "functions/tests/config_values_label/read_stamp_heading_label",
             "callee_name": "find",
             "call_site": {
-              "line": 26,
+              "line": 28,
               "character": 38
             }
           },
@@ -194258,7 +194331,7 @@
             "caller_id": "functions/tests/config_values_label/read_stamp_heading_label",
             "callee_name": "find",
             "call_site": {
-              "line": 27,
+              "line": 29,
               "character": 53
             }
           },
@@ -194266,7 +194339,7 @@
             "caller_id": "functions/tests/config_values_label/read_stamp_heading_label",
             "callee_name": "Some",
             "call_site": {
-              "line": 28,
+              "line": 30,
               "character": 27
             }
           },
@@ -194274,7 +194347,7 @@
             "caller_id": "functions/tests/config_values_label/read_stamp_heading_label",
             "callee_name": "to_string",
             "call_site": {
-              "line": 28,
+              "line": 30,
               "character": 65
             }
           },
@@ -194282,7 +194355,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "tempdir",
             "call_site": {
-              "line": 39,
+              "line": 41,
               "character": 13
             }
           },
@@ -194290,7 +194363,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 39,
+              "line": 41,
               "character": 23
             }
           },
@@ -194298,7 +194371,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "current_dir",
             "call_site": {
-              "line": 40,
+              "line": 42,
               "character": 20
             }
           },
@@ -194306,7 +194379,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 40,
+              "line": 42,
               "character": 34
             }
           },
@@ -194314,7 +194387,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "set_current_dir",
             "call_site": {
-              "line": 41,
+              "line": 43,
               "character": 9
             }
           },
@@ -194322,7 +194395,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "path",
             "call_site": {
-              "line": 41,
+              "line": 43,
               "character": 28
             }
           },
@@ -194330,7 +194403,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 41,
+              "line": 43,
               "character": 36
             }
           },
@@ -194338,7 +194411,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "path",
             "call_site": {
-              "line": 44,
+              "line": 46,
               "character": 21
             }
           },
@@ -194346,7 +194419,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "join",
             "call_site": {
-              "line": 44,
+              "line": 46,
               "character": 28
             }
           },
@@ -194354,7 +194427,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "to_string_lossy",
             "call_site": {
-              "line": 45,
+              "line": 47,
               "character": 25
             }
           },
@@ -194362,7 +194435,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "to_string",
             "call_site": {
-              "line": 45,
+              "line": 47,
               "character": 43
             }
           },
@@ -194370,7 +194443,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "make_test_db",
             "call_site": {
-              "line": 46,
+              "line": 48,
               "character": 4
             }
           },
@@ -194378,7 +194451,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "set_overwrite_album_from_cli",
             "call_site": {
-              "line": 48,
+              "line": 50,
               "character": 16
             }
           },
@@ -194386,7 +194459,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "write_config",
             "call_site": {
-              "line": 52,
+              "line": 54,
               "character": 4
             }
           },
@@ -194394,7 +194467,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "path",
             "call_site": {
-              "line": 52,
+              "line": 54,
               "character": 20
             }
           },
@@ -194402,7 +194475,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "init_db",
             "call_site": {
-              "line": 54,
+              "line": 56,
               "character": 25
             }
           },
@@ -194410,7 +194483,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 54,
+              "line": 56,
               "character": 42
             }
           },
@@ -194418,7 +194491,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "generate_album_output_conn",
             "call_site": {
-              "line": 55,
+              "line": 57,
               "character": 4
             }
           },
@@ -194426,7 +194499,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "Some",
             "call_site": {
-              "line": 59,
+              "line": 61,
               "character": 8
             }
           },
@@ -194434,29 +194507,13 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "Some",
             "call_site": {
-              "line": 60,
+              "line": 62,
               "character": 8
             }
           },
           {
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "path",
-            "call_site": {
-              "line": 64,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
-            "callee_name": "join",
-            "call_site": {
-              "line": 65,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
-            "callee_name": "join",
             "call_site": {
               "line": 66,
               "character": 9
@@ -194472,9 +194529,25 @@
           },
           {
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
-            "callee_name": "read_stamp_heading_label",
+            "callee_name": "join",
             "call_site": {
               "line": 68,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
+            "callee_name": "join",
+            "call_site": {
+              "line": 69,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
+            "callee_name": "read_stamp_heading_label",
+            "call_site": {
+              "line": 70,
               "character": 15
             }
           },
@@ -194482,7 +194555,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 68,
+              "line": 70,
               "character": 47
             }
           },
@@ -194490,7 +194563,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "write_config",
             "call_site": {
-              "line": 72,
+              "line": 74,
               "character": 4
             }
           },
@@ -194498,7 +194571,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "path",
             "call_site": {
-              "line": 72,
+              "line": 74,
               "character": 20
             }
           },
@@ -194506,7 +194579,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "init_db",
             "call_site": {
-              "line": 74,
+              "line": 76,
               "character": 26
             }
           },
@@ -194514,7 +194587,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 74,
+              "line": 76,
               "character": 43
             }
           },
@@ -194522,7 +194595,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "generate_album_output_conn",
             "call_site": {
-              "line": 75,
+              "line": 77,
               "character": 4
             }
           },
@@ -194530,7 +194603,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "Some",
             "call_site": {
-              "line": 79,
+              "line": 81,
               "character": 8
             }
           },
@@ -194538,29 +194611,13 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "Some",
             "call_site": {
-              "line": 80,
+              "line": 82,
               "character": 8
             }
           },
           {
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "path",
-            "call_site": {
-              "line": 84,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
-            "callee_name": "join",
-            "call_site": {
-              "line": 85,
-              "character": 9
-            }
-          },
-          {
-            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
-            "callee_name": "join",
             "call_site": {
               "line": 86,
               "character": 9
@@ -194576,9 +194633,25 @@
           },
           {
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
-            "callee_name": "read_stamp_heading_label",
+            "callee_name": "join",
             "call_site": {
               "line": 88,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
+            "callee_name": "join",
+            "call_site": {
+              "line": 89,
+              "character": 9
+            }
+          },
+          {
+            "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
+            "callee_name": "read_stamp_heading_label",
+            "call_site": {
+              "line": 90,
               "character": 15
             }
           },
@@ -194586,7 +194659,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 88,
+              "line": 90,
               "character": 47
             }
           },
@@ -194594,7 +194667,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "set_current_dir",
             "call_site": {
-              "line": 95,
+              "line": 97,
               "character": 9
             }
           },
@@ -194602,7 +194675,7 @@
             "caller_id": "functions/tests/config_values_label/test_stamp_heading_label_changes_output",
             "callee_name": "expect",
             "call_site": {
-              "line": 95,
+              "line": 97,
               "character": 31
             }
           }

@@ -92,7 +92,7 @@ pub fn emit_stamp_grid_row<W: Write>(
             "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"Perf 10½ x 11\" \"Horizontal\")",
             w, h, stamp1.image_path, denomination
         )?;
-        writeln!(out, "STAMP_HEADING (HB 9 \"{}\")", title1)?;
+        writeln!(out, "STAMP_HEADING_VA (HB 9 \"{}\")", title1)?;
     }
 
     // Second stamp (if provided)
@@ -123,7 +123,7 @@ pub fn emit_stamp_grid_row<W: Write>(
                 "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"Perf 10½ x 11\" \"Horizontal\")",
                 w, h, s2.image_path, denomination
             )?;
-            writeln!(out, "STAMP_HEADING (HB 9 \"{}\")", title2)?;
+            writeln!(out, "STAMP_HEADING_VA (HB 9 \"{}\")", title2)?;
         }
     }
 

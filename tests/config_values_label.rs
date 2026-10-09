@@ -21,8 +21,10 @@ fn read_stamp_heading_label(output_txt: &std::path::Path) -> Option<String> {
         return None;
     }
     let s = fs::read_to_string(output_txt).ok()?;
+    assert!(s.lines().any(|line| line == "ROW_ALIGN_TOP"));
+    assert!(!s.lines().any(|line| line == "ROW_ALIGN_MIDDLE"));
     for line in s.lines() {
-        if line.starts_with("STAMP_HEADING(") {
+        if line.starts_with("STAMP_HEADING_VA(") {
             // Look for the quoted label inside the parentheses
             if let Some(start) = line.find('"') {
                 if let Some(end) = line[start + 1..].find('"') {

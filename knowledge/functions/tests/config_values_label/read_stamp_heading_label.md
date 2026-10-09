@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: read_stamp_heading_label
-resource: tests/config_values_label.rs#L19-L35
+resource: tests/config_values_label.rs#L19-L37
 visibility: private
 generated:
   by: okf-rs/0.4.0
