@@ -27,6 +27,29 @@ body.pageLeaving {
 body.pageEnter {
   animation: reviewPageIn 170ms ease-out;
 }
+.LeftEditorColnectMeta .leftEditorGrid {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.LeftEditorColnectMeta .leftEditorGrid > label {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.LeftEditorColnectMeta .leftEditorGrid > label > input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .LeftEditorColnectMeta .leftEditorGrid,
+  .LeftEditorColnectMeta .leftEditorGrid > label {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 @keyframes reviewPageIn {
   from {
     opacity: 0.45;
@@ -866,6 +889,40 @@ body.pageEnter {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 8px;
 }
+.leftEditorBaseGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 10px;
+}
+.leftEditorBaseGrid > label {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.leftEditorBaseGrid > label > input,
+.leftEditorBaseGrid > label > select,
+.leftEditorBaseGrid > label > textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.leftEditorBaseGrid textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+@media (max-width: 800px) {
+  .leftEditorBaseGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 480px) {
+  .leftEditorBaseGrid > label {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .leftEditorDimsGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(180px, 1fr));
@@ -967,6 +1024,20 @@ body.pageEnter {
 .panelHead {
   padding: 10px 12px;
   border-bottom: 1px solid #e1e8ef;
+/* Add flex layout to grid labels so label text and input display horizontally */
+.leftEditorGrid label {
+  display: flex;
+  gap: 4px;
+}
+
+/* Ensure inputs don't overflow their cell width */
+.leftEditorGrid input[type="text"],
+.leftEditorGrid select,
+.leftEditorGrid textarea {
+  flex: 1;
+}
+
+/* Compare page controls */
   background: #f7fbff;
 }
 .panelBody {

@@ -109,27 +109,24 @@
 
 <div id='leftEditorBackdrop' class='modal-backdrop'>
     <div class='modal leftEditorDialog leftEditorCompact'>
-        {left_edit_base_stamp_page}
+        
         <div class='leftEditorBody'>
             <section >
-                <h5>Base Stamp Details</h5>
+                <h2>Base Stamp Details</h2>
                 <div class='leftEditorSectionBase'>
-                    <div class='leftEditorGrid'>
-
-                        {edit_based_page_top_values}
-
-                        {edit_based_page_stampworld}
-
+                    <div class='leftEditorBaseGrid'>
+                        {edit_based_page_fields}
+                    </div>
                 </div>
             </section>
             <section class='LeftEditorDimensions'>
-                <h5 >Dimensions</h5>
+                <h2>Dimensions</h2>
                 
                 {edit_based_page_dimensions}
 
             </section>
             <section class='LeftEditorColnectMeta'>
-                <h5>Colnect Metadata</h5>
+                <h2>Colnect - User Created Files Metadata</h2>
                 <div class='leftEditorSectionBody'>
                     <div class='leftEditorGrid'>
                         <label>Colnect ID <input id='leftEditorColnectId' type='text' /></label>
@@ -168,7 +165,7 @@
                 </div>
             </section>
             <section class='leftEditorSection'>
-                <h5>Image Handling</h5>
+                <h2>Image Handling</h2>
                 <div class='leftEditorSectionBody'>
                     <div class='leftEditorHint'>Items without an image will not stay visible in the left review list.</div>
                     <div class='leftEditorModes'>

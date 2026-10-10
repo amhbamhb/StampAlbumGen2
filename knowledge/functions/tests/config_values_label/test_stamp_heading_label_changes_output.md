@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_stamp_heading_label_changes_output
-resource: tests/config_values_label.rs#L38-L97
+resource: tests/config_values_label.rs#L40-L99
 visibility: private
 generated:
   by: okf-rs/0.4.0

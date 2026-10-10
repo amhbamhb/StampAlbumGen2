@@ -173,7 +173,7 @@ pub fn emit_commemorative_pages<W: Write>(out: &mut W, stamps: &[Stamp]) -> std:
                     "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"Perf 10½ x 11\" \"Horizontal\")",
                     w, h, stamp.image_path, denom
                 )?;
-                writeln!(out, "STAMP_HEADING (HB 9 \"{}\")", title)?;
+                writeln!(out, "STAMP_HEADING_VA (HB 9 \"{}\")", title)?;
             }
             i += 1;
         }
@@ -287,7 +287,7 @@ pub fn emit_special_stamps_page<W: Write>(out: &mut W, stamps: &[Stamp]) -> std:
                 "STAMP_ADD_IMG ({:.1} {:.1} \"{}\" \"{}\" \"Perf 10½ x 11\" \"Horizontal\")",
                 w, h, stamp.image_path, denom
             )?;
-            writeln!(out, "STAMP_HEADING (HB 9 \"{}\")", title)?;
+            writeln!(out, "STAMP_HEADING_VA (HB 9 \"{}\")", title)?;
         }
     }
 

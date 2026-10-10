@@ -270,208 +270,6 @@ fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_ht
     None
 }
 
-#[cfg(test)]
-mod site_account_tests {
-    use super::*;
-
-    fn review_input() -> ReviewHandlersStateRequests {
-        ReviewHandlersStateRequests {
-            conn: Connection::open_in_memory().expect("test database"),
-            db_path: String::new(),
-            album_name: String::new(),
-            html: String::new(),
-            right_map: HashMap::new(),
-            default_catalog_code: String::new(),
-            default_sort_mode: String::new(),
-            odd_row_color: String::new(),
-            even_row_color: String::new(),
-            first_column_color: String::new(),
-            second_column_color: String::new(),
-            series_default_checked: false,
-            description_default_checked: false,
-            watermark_default_checked: false,
-            design_default_checked: false,
-            engraving_default_checked: false,
-            perforation_default_checked: false,
-            context_default_checked: false,
-            colnect_links_default_checked: false,
-            colnect_image_url_default_checked: false,
-            colnect_metadata_default_checked: false,
-            replace_sg_number_default_checked: false,
-            right_unmatched_only_default_checked: false,
-            albumeasy_auto_generate_pdf_default: false,
-            albumeasy_cli_configured: false,
-            catalog_family_options: Vec::new(),
-        }
-    }
-
-    #[test]
-    fn review_pdf_filters_routes_validate_requests_and_report_empty_selection() {
-        let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
-        let addr = server.server_addr().to_ip().expect("TCP address");
-        let worker_server = server.clone();
-        let worker = std::thread::spawn(move || {
-            let mut input = review_input();
-            input.conn = crate::db_utils::init_db(":memory:").expect("country DB");
-            input
-                .conn
-                .execute(
-                    "INSERT INTO stamps (country, series, year, sg_number, type,
-                 colnect_emission, colnect_format, uniq_key)
-                 VALUES ('Testland', 'Test Series', 1976, '1001', 'Postage',
-                 'Official', 'Stamp', 'one')",
-                    [],
-                )
-                .expect("fixture");
-            serve_review_requests(&worker_server, input);
-        });
-        let client = reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .expect("test client");
-        let options: serde_json::Value = client
-            .get(format!("http://{addr}/api/review-pdf-options"))
-            .send()
-            .expect("options response")
-            .json()
-            .expect("options");
-        assert_eq!(
-            options["options"]["emission"],
-            serde_json::json!(["Official"])
-        );
-        assert_eq!(options["options"]["format"], serde_json::json!(["Stamp"]));
-        for body in [
-            "{",
-            r#"{"filters":{"emission":"Official"}}"#,
-            r#"{"filters":{"paper":["Coated"]}}"#,
-            r#"{"start_year":1977,"end_year":1976}"#,
-            r#"{"start_year":999999999999}"#,
-        ] {
-            let response = client
-                .post(format!("http://{addr}/generate-pdf-now"))
-                .body(body)
-                .send()
-                .expect("invalid request response");
-            assert_eq!(response.status().as_u16(), 400);
-            assert_eq!(response.headers()["content-type"], "application/json");
-            let error: serde_json::Value = response.json().expect("error JSON");
-            assert_eq!(error["ok"], false);
-        }
-        let response = client
-            .post(format!("http://{addr}/generate-pdf-now"))
-            .json(&serde_json::json!({"filters":{"emission":["Not present"]}}))
-            .send()
-            .expect("empty selection response");
-        assert_eq!(response.status().as_u16(), 422);
-        let error: serde_json::Value = response.json().expect("empty JSON");
-        assert!(error["message"]
-            .as_str()
-            .expect("message")
-            .contains("No stamps match"));
-        client
-            .post(format!("http://{addr}/shutdown"))
-            .json(&serde_json::json!({"generate_album":false}))
-            .send()
-            .expect("shutdown");
-        worker.join().expect("server worker");
-    }
-
-    #[test]
-    fn country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings() {
-        for review in [false, true] {
-            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
-            let addr = server.server_addr().to_ip().expect("TCP address");
-            let worker_server = server.clone();
-            let worker = std::thread::spawn(move || {
-                if review {
-                    serve_review_requests(&worker_server, review_input());
-                } else {
-                    serve_bootstrap_requests(&worker_server, "");
-                }
-            });
-            let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(10))
-                .build()
-                .expect("test client");
-            for body in [
-                "{",
-                r#"{"country":"","url":""}"#,
-                r#"{"country":"South Korea","url":"https://example.invalid/"}"#,
-                r#"{"country":"South Korea","url":42}"#,
-            ] {
-                let response = client
-                    .post(format!("http://{addr}/api/stampworld-country-url"))
-                    .body(body)
-                    .send()
-                    .expect("country URL response");
-                assert_eq!(response.status().as_u16(), 400);
-                assert_eq!(response.headers()["content-type"], "application/json");
-                assert_eq!(response.headers()["cache-control"], "no-store");
-                let data: serde_json::Value = response.json().expect("JSON error response");
-                assert_eq!(data["ok"], false);
-                assert!(data["message"]
-                    .as_str()
-                    .is_some_and(|message| !message.is_empty()));
-            }
-            let response = client
-                .get(format!("http://{addr}/api/stampworld-country-url"))
-                .send()
-                .expect("missing country response");
-            assert_eq!(response.status().as_u16(), 400);
-            server.unblock();
-            worker.join().expect("server worker");
-        }
-    }
-
-    #[test]
-    fn site_accounts_routes_return_json_in_bootstrap_and_review_modes() {
-        for review in [false, true] {
-            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
-            let addr = server.server_addr().to_ip().expect("TCP address");
-            let worker_server = server.clone();
-            let worker = std::thread::spawn(move || {
-                if review {
-                    serve_review_requests(&worker_server, review_input());
-                } else {
-                    serve_bootstrap_requests(&worker_server, "");
-                }
-            });
-            let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(10))
-                .build()
-                .expect("test client");
-            // Invalid bodies exercise save routing without touching the user's config.
-            for body in ["", "{", r#"{"stampworld_password":42}"#] {
-                let response = client
-                    .post(format!("http://{addr}/api/save-site-credentials"))
-                    .body(body)
-                    .send()
-                    .expect("credentials response");
-                assert_eq!(response.status().as_u16(), 400);
-                assert_eq!(response.headers()["content-type"], "application/json");
-                assert_eq!(response.headers()["cache-control"], "no-store");
-                let data: serde_json::Value = response.json().expect("JSON error response");
-                assert_eq!(data["ok"], false);
-                assert_eq!(data["message"], "Invalid credentials request JSON");
-            }
-            let response = client
-                .get(format!("http://{addr}/api/account-auth-status"))
-                .send()
-                .expect("account status response");
-            assert_eq!(response.status().as_u16(), 200);
-            let data: serde_json::Value = response.json().expect("JSON account status");
-            assert_eq!(data["ok"], true);
-            for site in ["stampworld", "colnect"] {
-                assert!(data[site]["username"].is_string());
-                assert!(data[site]["has_password"].is_boolean());
-                assert!(data[site].get("password").is_none());
-            }
-            server.unblock();
-            worker.join().expect("server worker");
-        }
-    }
-}
-
 pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;
@@ -2886,5 +2684,206 @@ pub(super) fn serve_review_requests(
     ReviewHandlersState {
         reload_requested,
         return_to_start_requested,
+    }
+}
+#[cfg(test)]
+mod site_account_tests {
+    use super::*;
+
+    fn review_input() -> ReviewHandlersStateRequests {
+        ReviewHandlersStateRequests {
+            conn: Connection::open_in_memory().expect("test database"),
+            db_path: String::new(),
+            album_name: String::new(),
+            html: String::new(),
+            right_map: HashMap::new(),
+            default_catalog_code: String::new(),
+            default_sort_mode: String::new(),
+            odd_row_color: String::new(),
+            even_row_color: String::new(),
+            first_column_color: String::new(),
+            second_column_color: String::new(),
+            series_default_checked: false,
+            description_default_checked: false,
+            watermark_default_checked: false,
+            design_default_checked: false,
+            engraving_default_checked: false,
+            perforation_default_checked: false,
+            context_default_checked: false,
+            colnect_links_default_checked: false,
+            colnect_image_url_default_checked: false,
+            colnect_metadata_default_checked: false,
+            replace_sg_number_default_checked: false,
+            right_unmatched_only_default_checked: false,
+            albumeasy_auto_generate_pdf_default: false,
+            albumeasy_cli_configured: false,
+            catalog_family_options: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn review_pdf_filters_routes_validate_requests_and_report_empty_selection() {
+        let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+        let addr = server.server_addr().to_ip().expect("TCP address");
+        let worker_server = server.clone();
+        let worker = std::thread::spawn(move || {
+            let mut input = review_input();
+            input.conn = crate::db_utils::init_db(":memory:").expect("country DB");
+            input
+                .conn
+                .execute(
+                    "INSERT INTO stamps (country, series, year, sg_number, type,
+                 colnect_emission, colnect_format, uniq_key)
+                 VALUES ('Testland', 'Test Series', 1976, '1001', 'Postage',
+                 'Official', 'Stamp', 'one')",
+                    [],
+                )
+                .expect("fixture");
+            serve_review_requests(&worker_server, input);
+        });
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(10))
+            .build()
+            .expect("test client");
+        let options: serde_json::Value = client
+            .get(format!("http://{addr}/api/review-pdf-options"))
+            .send()
+            .expect("options response")
+            .json()
+            .expect("options");
+        assert_eq!(
+            options["options"]["emission"],
+            serde_json::json!(["Official"])
+        );
+        assert_eq!(options["options"]["format"], serde_json::json!(["Stamp"]));
+        for body in [
+            "{",
+            r#"{"filters":{"emission":"Official"}}"#,
+            r#"{"filters":{"paper":["Coated"]}}"#,
+            r#"{"start_year":1977,"end_year":1976}"#,
+            r#"{"start_year":999999999999}"#,
+        ] {
+            let response = client
+                .post(format!("http://{addr}/generate-pdf-now"))
+                .body(body)
+                .send()
+                .expect("invalid request response");
+            assert_eq!(response.status().as_u16(), 400);
+            assert_eq!(response.headers()["content-type"], "application/json");
+            let error: serde_json::Value = response.json().expect("error JSON");
+            assert_eq!(error["ok"], false);
+        }
+        let response = client
+            .post(format!("http://{addr}/generate-pdf-now"))
+            .json(&serde_json::json!({"filters":{"emission":["Not present"]}}))
+            .send()
+            .expect("empty selection response");
+        assert_eq!(response.status().as_u16(), 422);
+        let error: serde_json::Value = response.json().expect("empty JSON");
+        assert!(error["message"]
+            .as_str()
+            .expect("message")
+            .contains("No stamps match"));
+        client
+            .post(format!("http://{addr}/shutdown"))
+            .json(&serde_json::json!({"generate_album":false}))
+            .send()
+            .expect("shutdown");
+        worker.join().expect("server worker");
+    }
+
+    #[test]
+    fn country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("test client");
+            for body in [
+                "{",
+                r#"{"country":"","url":""}"#,
+                r#"{"country":"South Korea","url":"https://example.invalid/"}"#,
+                r#"{"country":"South Korea","url":42}"#,
+            ] {
+                let response = client
+                    .post(format!("http://{addr}/api/stampworld-country-url"))
+                    .body(body)
+                    .send()
+                    .expect("country URL response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let data: serde_json::Value = response.json().expect("JSON error response");
+                assert_eq!(data["ok"], false);
+                assert!(data["message"]
+                    .as_str()
+                    .is_some_and(|message| !message.is_empty()));
+            }
+            let response = client
+                .get(format!("http://{addr}/api/stampworld-country-url"))
+                .send()
+                .expect("missing country response");
+            assert_eq!(response.status().as_u16(), 400);
+            server.unblock();
+            worker.join().expect("server worker");
+        }
+    }
+
+    #[test]
+    fn site_accounts_routes_return_json_in_bootstrap_and_review_modes() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("test client");
+            // Invalid bodies exercise save routing without touching the user's config.
+            for body in ["", "{", r#"{"stampworld_password":42}"#] {
+                let response = client
+                    .post(format!("http://{addr}/api/save-site-credentials"))
+                    .body(body)
+                    .send()
+                    .expect("credentials response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                assert_eq!(response.headers()["cache-control"], "no-store");
+                let data: serde_json::Value = response.json().expect("JSON error response");
+                assert_eq!(data["ok"], false);
+                assert_eq!(data["message"], "Invalid credentials request JSON");
+            }
+            let response = client
+                .get(format!("http://{addr}/api/account-auth-status"))
+                .send()
+                .expect("account status response");
+            assert_eq!(response.status().as_u16(), 200);
+            let data: serde_json::Value = response.json().expect("JSON account status");
+            assert_eq!(data["ok"], true);
+            for site in ["stampworld", "colnect"] {
+                assert!(data[site]["username"].is_string());
+                assert!(data[site]["has_password"].is_boolean());
+                assert!(data[site].get("password").is_none());
+            }
+            server.unblock();
+            worker.join().expect("server worker");
+        }
     }
 }

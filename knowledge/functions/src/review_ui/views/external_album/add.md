@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: add
-resource: src/review_ui/views/external_album.js#L265-L280
+resource: src/review_ui/views/external_album.js#L267-L282
 generated:
   by: okf-rs/0.4.0
 relationships:

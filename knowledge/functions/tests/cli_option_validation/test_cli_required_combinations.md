@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_cli_required_combinations
-resource: tests/cli_option_validation.rs#L305-L330
+resource: tests/cli_option_validation.rs#L306-L331
 visibility: private
 generated:
   by: okf-rs/0.4.0

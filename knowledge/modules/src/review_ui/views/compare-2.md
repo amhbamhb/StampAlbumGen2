@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: compare
-resource: src/review_ui/views/compare.rs#L1-L363
+resource: src/review_ui/views/compare.rs#L1-L318
 generated:
   by: okf-rs/0.4.0
 relationships:

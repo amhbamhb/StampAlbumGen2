@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: album_stamp_img_integration_test
-resource: tests/album_stamp_img_integration_test.rs#L1-L215
+resource: tests/album_stamp_img_integration_test.rs#L1-L212
 generated:
   by: okf-rs/0.4.0
 relationships:

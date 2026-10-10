@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: cli_option_validation
-resource: tests/cli_option_validation.rs#L1-L512
+resource: tests/cli_option_validation.rs#L1-L513
 generated:
   by: okf-rs/0.4.0
 relationships:

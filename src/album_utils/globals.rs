@@ -5,7 +5,10 @@ use std::path::Path;
 
 fn cover_image_reference(path: &Path) -> Option<String> {
     if !path.is_file() {
-        log::warn!("Cover image omitted because it is not a file: {}", path.display());
+        log::warn!(
+            "Cover image omitted because it is not a file: {}",
+            path.display()
+        );
         return None;
     }
     path.file_name()
@@ -396,7 +399,7 @@ pub async fn write_globals<W: Write>(
         img_new_w, img_new_h, img_preserve
     ));
     lines.push("".to_string());
-    lines.push("ROW_ALIGN_MIDDLE".to_string());
+    lines.push("ROW_ALIGN_TOP".to_string());
     lines.push("".to_string());
     lines.push("# The stamp boxes in this album are sized approximately".to_string());
     lines.push("# 4mm larger than the actual stamps giving a 2mm border".to_string());

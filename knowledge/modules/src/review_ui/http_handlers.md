@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: http_handlers
-resource: src/review_ui/http_handlers.rs#L1-L2890
+resource: src/review_ui/http_handlers.rs#L1-L2889
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -28,13 +28,13 @@ relationships:
 - [handle_site_account_request](../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
 - [handle_country_url_request](../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [SaveRequest](../../../classes/src/review_ui/http_handlers/SaveRequest.md)
+- [serve_bootstrap_requests](../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
+- [ReviewHandlersStateRequests](../../../classes/src/review_ui/http_handlers/ReviewHandlersStateRequests.md)
+- [serve_review_requests](../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [review_input](../../../functions/src/review_ui/http_handlers/review_input.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
-- [serve_bootstrap_requests](../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
-- [ReviewHandlersStateRequests](../../../classes/src/review_ui/http_handlers/ReviewHandlersStateRequests.md)
-- [serve_review_requests](../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 
 # Imports
 

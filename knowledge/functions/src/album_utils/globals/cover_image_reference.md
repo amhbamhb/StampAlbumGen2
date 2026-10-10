@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: cover_image_reference
-resource: src/album_utils/globals.rs#L6-L14
+resource: src/album_utils/globals.rs#L6-L17
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -270,6 +270,9 @@ relationships:
   - target: functions/src/review_ui/config_editor/save_album_config_diff
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/serve_review_requests
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
     resolved_by: tree-sitter
     confidence: exact
@@ -277,9 +280,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/review_ui/http_handlers/serve_review_requests
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/load_left_stamps
@@ -525,10 +525,10 @@ relationships:
 - [save_full_config_values](../../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
 - [build_config_editor_data_for_album](../../../../../functions/src/review_ui/config_editor/build_config_editor_data_for_album.md)
 - [save_album_config_diff](../../../../../functions/src/review_ui/config_editor/save_album_config_diff.md)
+- [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
-- [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [load_left_stamps](../../../../../functions/src/review_ui/matcher_service/load_left_stamps.md)
 - [load_right_candidates](../../../../../functions/src/review_ui/matcher_service/load_right_candidates.md)
 - [apply_matches](../../../../../functions/src/review_ui/matcher_service/apply_matches.md)

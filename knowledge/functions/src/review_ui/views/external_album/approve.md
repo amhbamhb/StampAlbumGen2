@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: approve
-resource: src/review_ui/views/external_album.js#L308-L321
+resource: src/review_ui/views/external_album.js#L310-L323
 generated:
   by: okf-rs/0.4.0
 relationships:

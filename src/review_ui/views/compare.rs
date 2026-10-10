@@ -201,102 +201,58 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     //         <h4 id='leftEditorTitle' class='leftEditorTitle'>123 Edit Base Stamp for <span id='currentReviewSessionCountry'>Unknown</span></h4>
     //         <p id='leftEditorHint' class='leftEditorHint'>Use this for StampWorld corrections, watermark/reference images, or fixing a bad Colnect placement.</p>
     //     </div>";
-    let edit_based_page_top_values = "<label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /><label style='display: block; '>
-            Catalog Type Search
-            <input
-                id='leftEditorCatalogCodeSearch'
-                type='text'
-                list='leftEditorCatalogCodeSearchList'
-                placeholder='Type to filter catalogs...'
-                oninput='filterLeftEditorCatalogTypeOptions()'
-                onchange='applyLeftEditorCatalogSearchChoice()'
-                onblur='tryApplyLeftEditorCatalogSearchChoice()'
-                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
-            />
-            </label>
-
-            <label style='display: block; margin-bottom: 0.75em;'>
-            Catalog Type
-            <select
-                id='leftEditorCatalogCodeSelect'
-                onchange='toggleLeftEditorCatalogCodeCustom()'
-                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
-            >
-                <option value='sg'>Stanley Gibbons (SG)</option>
-                <option value='sw'>StampWorld (SW)</option>
-                <option value='sn'>Scott Number (SN)</option>
-                <option value='mi'>Michel (MI)</option>
-                <option value='yt'>Yvert (YT)</option>
-                <option value='afa'>AFA</option>
-                <option value='nvp'>NVP</option>
-                <option value='un'>Unificato (UN)</option>
-                <option value='col'>Colnect (COL)</option>
-                <option value='custom'>Custom...</option>
-            </select>
-            </label>
-
-            <label id='leftEditorCatalogCodeCustomWrap' style='display: none; margin-bottom: 0.75em;'>
-            Custom Catalog Type Code
-            <input
-                id='leftEditorCatalogCodeCustom'
-                type='text'
-                placeholder='e.g. zz'
-                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
-            />
-            </label>
-
-            <label style='display: block; margin-bottom: 0.75em;'>
-            Year
-            <input
-                id='leftEditorYear'
-                type='number'
-                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
-            />
-            </label>
-
-            <label style='display: block; margin-bottom: 0.75em;'>
-            Series
-            <input
-                id='leftEditorSeries'
-                type='text'
-                style='display: block; width: 100%; max-width: 280px; margin-top: 0.25em;'
-            />
-            </label>
-                    </div>";
+    let edit_based_page_fields = "<label>Catalog # / Ref Code <input id='leftEditorSg' type='text' /></label>
+<label>Catalog Type Search <input id='leftEditorCatalogCodeSearch' type='text' list='leftEditorCatalogCodeSearchList'
+        placeholder='Type to filter catalogs...' oninput='filterLeftEditorCatalogTypeOptions()'
+        onchange='applyLeftEditorCatalogSearchChoice()' onblur='tryApplyLeftEditorCatalogSearchChoice()' /></label>
+<label>Catalog Type <select id='leftEditorCatalogCodeSelect' onchange='toggleLeftEditorCatalogCodeCustom()'>
+        <option value='sg'>Stanley Gibbons (SG)</option>
+        <option value='sw'>StampWorld (SW)</option>
+        <option value='sn'>Scott Number (SN)</option>
+        <option value='mi'>Michel (MI)</option>
+        <option value='yt'>Yvert (YT)</option>
+        <option value='afa'>AFA</option>
+        <option value='nvp'>NVP</option>
+        <option value='un'>Unificato (UN)</option>
+        <option value='col'>Colnect (COL)</option>
+        <option value='custom'>Custom...</option>
+    </select></label>
+<label id='leftEditorCatalogCodeCustomWrap' style='display: none;'>Custom Catalog Type Code <input
+        id='leftEditorCatalogCodeCustom' type='text' placeholder='e.g. zz' /></label>
+<label>Year <input id='leftEditorYear' type='number' /></label>
+<label>Series <input id='leftEditorSeries' type='text' /></label>
+<label>Description <textarea id='leftEditorDescription'></textarea></label>
+<label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
+<label>Design <textarea id='leftEditorDesign'></textarea></label>
+<label>Engraving <textarea id='leftEditorEngraving'></textarea></label>
+<label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
+<label>Context / Notes <textarea id='leftEditorContext'></textarea></label>";
 
     let edit_based_page_dimensions =" <div class='leftEditorSectionDimensions'>
-        <div class='leftEditorDimsGrid' style='color: black;'>
-            <label style='display: block;'>
+    <div class='leftEditorDimsGrid' style='color: black;'>
+        <label style='display: block;'>
             Width
-            <input id='leftEditorWidth' type='text' placeholder='e.g. 25' style='display: block; width: 75%; margin-top: 0.25em;' />
-            </label>
+            <input id='leftEditorWidth' type='text' placeholder='e.g. 25'
+                style='display: block; width: 75%; margin-top: 0.25em;' />
+        </label>
 
-            <label style='display: block;'>
+        <label style='display: block;'>
             Height
-            <input id='leftEditorHeight' type='text' placeholder='e.g. 30' style='display: block; width: 75%; margin-top: 0.25em;' />
-            </label>
+            <input id='leftEditorHeight' type='text' placeholder='e.g. 30'
+                style='display: block; width: 75%; margin-top: 0.25em;' />
+        </label>
 
-            <label style='display: block;'>
+        <label style='display: block;'>
             Colnect Width
             <input id='leftEditorColnectWidth' type='text' style='display: block; width: 75%; margin-top: 0.25em;' />
-            </label>
+        </label>
 
-            <label style='display: block;'>
+        <label style='display: block;'>
             Colnect Height
             <input id='leftEditorColnectHeight' type='text' style='display: block; width: 75%; margin-top: 0.25em;' />
-            </label>
-        </div>
-        </div>";
-    let edit_based_page_stampworld = "
-                        <div class='leftEditorStack'>
-                        <label>Description <textarea id='leftEditorDescription'></textarea></label>
-                        <label>Watermark <textarea id='leftEditorWatermark'></textarea></label>
-                        <label>Design <textarea id='leftEditorDesign'></textarea></label>
-                        <label>Engraving <textarea id='leftEditorEngraving'></textarea></label>
-                        <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
-                        <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>
-                    </div>";
-
+        </label>
+    </div>
+</div>";
     let compare_script_html = format!(
         "{}\n{}\n{}\n{}",
         include_str!("country_url.js"),
@@ -354,8 +310,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
         .replace("{compare_add_modal_html}", &compare_add_modal_html)
         .replace("{compare_op_busy_modal_html}", &compare_op_busy_modal_html)
         // .replace("{left_edit_base_stamp_page}", &left_edit_base_stamp_page)
-        .replace("{edit_based_page_top_values}", edit_based_page_top_values)
-        .replace("{edit_based_page_stampworld}", edit_based_page_stampworld)
+        .replace("{edit_based_page_fields}", edit_based_page_fields)
         .replace("{edit_based_page_dimensions}", edit_based_page_dimensions)
         .replace("{footer_html}", &render_app_footer_html())
         .replace("{footer_year_script}", &render_footer_year_script())

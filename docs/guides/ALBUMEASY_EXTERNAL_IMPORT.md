@@ -4,6 +4,11 @@ The startup screen has a separate **Import & edit external AlbumEasy albums**
 section. This converts an AlbumEasy document into a database-backed layout.
 It is not a StampWorld scrape or a Colnect catalogue import.
 
+![  Error in dir listing](image.png)
+
+A correct layout of the post-import album is shown below.
+![A correct layout of the post-import album](image-1.png)
+
 ## Import wizard
 
 1. Set **Albums Root** and configure the AlbumEasy executable using the existing

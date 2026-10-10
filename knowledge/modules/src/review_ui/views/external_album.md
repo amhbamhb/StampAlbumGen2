@@ -1,7 +1,7 @@
 ---
 type: JavaScript Module
 title: external_album
-resource: src/review_ui/views/external_album.js#L1-L392
+resource: src/review_ui/views/external_album.js#L1-L394
 generated:
   by: okf-rs/0.4.0
 relationships:
