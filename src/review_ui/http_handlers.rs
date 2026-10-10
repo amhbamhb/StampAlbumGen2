@@ -270,8 +270,6 @@ fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_ht
     None
 }
 
-
-
 pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> BootstrapHandlersState {
     let mut selected: Option<(String, String)> = None;
     let mut logout_requested = false;

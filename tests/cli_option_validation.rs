@@ -224,8 +224,9 @@ fn test_cli_database_path_handling() {
 
     let temp_dir = tempdir().expect("Failed to create temp directory");
 
-    // Valid database path
-    let db_path = temp_dir.path().join("test.db");
+    // Valid database path. The DB file stem selects the shared Albums/<stem> output
+    // directory, so keep it unique to avoid races with parallel tests.
+    let db_path = temp_dir.path().join("cli_db_path_handling.db");
     create_test_db(&db_path.to_string_lossy());
 
     let (exit_code, _stdout, _stderr) = run_cli_with_args(&[
@@ -238,7 +239,7 @@ fn test_cli_database_path_handling() {
     println!("  ✓ Valid database path handled correctly");
 
     // Non-existent database file (should be created)
-    let new_db_path = temp_dir.path().join("new.db");
+    let new_db_path = temp_dir.path().join("cli_db_path_new.db");
     let (_exit_code, _stdout, stderr) = run_cli_with_args(&[
         "--db-path",
         &new_db_path.to_string_lossy(),
@@ -316,7 +317,7 @@ fn test_cli_required_combinations() {
 
     // Test db-path mode works without site-name
     let temp_dir = tempdir().expect("Failed to create temp directory");
-    let db_path = temp_dir.path().join("test.db");
+    let db_path = temp_dir.path().join("cli_required_combinations.db");
     create_test_db(&db_path.to_string_lossy());
 
     let (exit_code, _stdout, _stderr) = run_cli_with_args(&[

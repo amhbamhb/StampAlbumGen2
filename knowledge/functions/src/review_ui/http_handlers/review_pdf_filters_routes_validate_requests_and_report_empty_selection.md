@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: review_pdf_filters_routes_validate_requests_and_report_empty_selection
-resource: src/review_ui/http_handlers.rs#L309-L377
+resource: src/review_ui/http_handlers.rs#L2725-L2793
 visibility: private
 generated:
   by: okf-rs/0.4.0

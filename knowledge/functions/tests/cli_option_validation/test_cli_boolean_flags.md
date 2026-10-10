@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_cli_boolean_flags
-resource: tests/cli_option_validation.rs#L269-L302
+resource: tests/cli_option_validation.rs#L270-L303
 visibility: private
 generated:
   by: okf-rs/0.4.0

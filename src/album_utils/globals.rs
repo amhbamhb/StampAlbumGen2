@@ -5,7 +5,10 @@ use std::path::Path;
 
 fn cover_image_reference(path: &Path) -> Option<String> {
     if !path.is_file() {
-        log::warn!("Cover image omitted because it is not a file: {}", path.display());
+        log::warn!(
+            "Cover image omitted because it is not a file: {}",
+            path.display()
+        );
         return None;
     }
     path.file_name()

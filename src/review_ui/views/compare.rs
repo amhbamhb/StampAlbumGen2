@@ -228,7 +228,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
 <label>Perforation <textarea id='leftEditorPerforation'></textarea></label>
 <label>Context / Notes <textarea id='leftEditorContext'></textarea></label>";
 
-let edit_based_page_dimensions =" <div class='leftEditorSectionDimensions'>
+    let edit_based_page_dimensions =" <div class='leftEditorSectionDimensions'>
     <div class='leftEditorDimsGrid' style='color: black;'>
         <label style='display: block;'>
             Width
@@ -253,15 +253,15 @@ let edit_based_page_dimensions =" <div class='leftEditorSectionDimensions'>
         </label>
     </div>
 </div>";
-let compare_script_html = format!(
-"{}\n{}\n{}\n{}",
-include_str!("country_url.js"),
-include_str!("pdf_filters.js"),
-include_str!("stampworld_start_error.js"),
-include_str!("compare.js")
-)
-.replace("{json}", &json)
-.replace(
+    let compare_script_html = format!(
+        "{}\n{}\n{}\n{}",
+        include_str!("country_url.js"),
+        include_str!("pdf_filters.js"),
+        include_str!("stampworld_start_error.js"),
+        include_str!("compare.js")
+    )
+    .replace("{json}", &json)
+    .replace(
         "{backend_not_responding_message}",
         BACKEND_NOT_RESPONDING_MESSAGE,
     )

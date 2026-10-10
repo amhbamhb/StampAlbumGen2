@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_cli_database_path_handling
-resource: tests/cli_option_validation.rs#L222-L266
+resource: tests/cli_option_validation.rs#L222-L267
 visibility: private
 generated:
   by: okf-rs/0.4.0

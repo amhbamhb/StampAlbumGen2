@@ -2,7 +2,7 @@
 okf_version: "0.2"
 generator_name: "okf-rs"
 generator_version: "0.4.0"
-source_revision: "4cb518cb6edc2595a761e74c1bd6522652387a93"
+source_revision: "ec8e858ed650cfa393017a5dfe721caaca4e584b"
 ---
 
 # Knowledge Base
