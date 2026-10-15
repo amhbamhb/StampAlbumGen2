@@ -25,7 +25,13 @@ stampalbumgenerator2-site/**
 .gitlab-ci.yml
 AGENTS.md
 Brazil/**
-Brazil
+Brazil/
+node_modules/
+node_modules/**
+package-lock.json
+package.json
+
+
 
 refactor-plans
 drawio-diagrams
