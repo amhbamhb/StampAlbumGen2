@@ -1013,10 +1013,11 @@ pub(super) fn add_colnect_stamp_to_stamps(
             sg_number.clone(),
             catalog_code,
             format!(
-                "{}|{}|{}",
+                "{}|{}|{}|{}",
                 candidate.country.trim().to_ascii_lowercase(),
                 series,
-                sg_number
+                sg_number,
+                uuid::Uuid::new_v4()
             ),
             candidate.description,
             image_path,
@@ -1433,11 +1434,13 @@ pub(super) fn add_left_stamp(
     };
     let series = req.series.trim().to_string();
     let sg_number = req.sg_number.trim().to_string();
+    let random_id = uuid::Uuid::new_v4().to_string();
     let uniq_key = format!(
-        "{}|{}|{}",
+        "{}|{}|{}|{}",
         country.trim().to_ascii_lowercase(),
         series,
-        sg_number
+        sg_number,
+        random_id
     );
 
     let resolved_colnect_width = if req.colnect_width.trim().is_empty() {
@@ -1452,7 +1455,7 @@ pub(super) fn add_left_stamp(
     };
 
     let insert_res = conn.execute(
-        "INSERT OR REPLACE INTO stamps (
+        "INSERT INTO stamps (
             country, series, year, sg_number, catalog_code, uniq_key,
             description, image_path, watermark, design, engraving, perforation, context,
             colnect_page_url, colnect_image_url, colnect_id, colnect_name,
