@@ -1452,7 +1452,7 @@ pub(super) fn add_left_stamp(
     };
 
     let insert_res = conn.execute(
-        "INSERT INTO stamps (
+        "INSERT OR REPLACE INTO stamps (
             country, series, year, sg_number, catalog_code, uniq_key,
             description, image_path, watermark, design, engraving, perforation, context,
             colnect_page_url, colnect_image_url, colnect_id, colnect_name,
