@@ -102,46 +102,18 @@
     </details>
     {external_album_controls}
     <div id='countryPanel' class='panel'></div>
-    <details id='stampworldPanel' class='panel warn collapsibleSection' style='display:none;' open>
-        <summary><span class='introArrow'>&#9660;</span> Run StampWorld pull for this country (including additional pull). <span class='introDimTag'>click to expand / collapse</span></summary>
+    <details id='stampworldPanel' class='colnectCopyPanel collapsibleSection' open>
+        <summary><span class='introArrow'>&#9660;</span> Import StampWorld - PDF / HTML Files <span class='introDimTag'>click to expand / collapse</span></summary>
         <div class='collapsibleSectionBody'>
-            <strong id='swPanelLead'>StampWorld pull is available for this country.</strong>
-            <p id='swPanelHint' style='margin-top:6px;'>Use this to pull additional StampWorld data for existing countries or create a new country.</p>
-            <div class='row' id='swCountryRow'>
-                <label>StampWorld Country</label>
-                <input id='swCountry' type='text' />
+            <div class='row' style='margin-top:8px;'>
+                <button id='stampworldPickBtn' class='accent' onclick='pickAndCopyStampworldPdfFile()'>Browse &amp; Copy StampWorld PDF/HTML File&#8230;</button>
+                <span id='stampworldCopyCountBadge' class='badge'>Files: 0</span>
             </div>
-            <div class='row' id='swCountryFixedRow' style='display:none;'>
-                <label for='swCountryFixed'>StampWorld Country</label>
-                <input id='swCountryFixed' type='text' />
-                <label for='swStartYear'>Start Year</label>
-                <select id='swStartYear'></select>
-                <label for='swEndYear'>End Year</label>
-                <select id='swEndYear'></select>
+            <div style='margin-top:6px;font-size:12px;color:var(--muted-text);'>
+                Destination: <code id='stampworldDirPath'>(select a country)</code>
             </div>
-            <div class='row'>
-                <label>Command Preset</label>
-                <select id='swPreset'>
-                    <option value='basic'>Basic Pull</option>
-                    <option value='overwrite_album'>Overwrite Album Output</option>
-                    <option value='overwrite_all'>Overwrite Album + Images</option>
-                    <option value='bounded_pages'>Limit Pages (fast test)</option>
-                    <option value='accept_typo'>Auto Accept Source Typos</option>
-                </select>
-            </div>
-            {country_url_controls}
-            <div class='row'>
-                <label>Extra Flags</label>
-                <input id='swExtraFlags' type='text' placeholder='--max-pages 20 --stop-after-no-hits 5' style='min-width:420px;' />
-            </div>
-            <div class='row'>
-                <button class='accent' onclick='runStampWorldPull()'>Run StampWorld Pull</button>
-            </div>
-            <div class='row'>
-                <strong>Suggested command:</strong>
-                <code id='swCmd'></code>
-            </div>
-            <div id='swStatus' class='status'></div>
+            <div id='stampworldCopyStatus' class='colnectCopyStatus'>Ready</div>
+            <div id='stampworldCopyLog' class='colnectCopyLog'></div>
         </div>
     </details>
     <details id='colnectCopyPanel' class='colnectCopyPanel collapsibleSection' open>

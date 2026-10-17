@@ -1391,6 +1391,31 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
+        if method == Method::Post && req_url == "/api/bootstrap-pick-stampworld-file" {
+            let mut body = String::new();
+            let _ = request.as_reader().read_to_string(&mut body);
+            let resp_json = match serde_json::from_str::<BootstrapPickColnectFileRequest>(&body) {
+                Ok(req) => {
+                    let result = pick_and_copy_stampworld_file_via_dialog(&req.country);
+                    serde_json::to_string(&result).unwrap_or_else(|_| {
+                        "{\"ok\":false,\"picked\":false,\"message\":\"serialization error\"}"
+                            .to_string()
+                    })
+                }
+                Err(e) => format!(
+                    "{{\"ok\":false,\"picked\":false,\"message\":\"invalid request: {}\"}}",
+                    e
+                ),
+            };
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
+
         if method == Method::Post && req_url == "/api/bootstrap-pick-colnect-file" {
             let mut body = String::new();
             let _ = request.as_reader().read_to_string(&mut body);

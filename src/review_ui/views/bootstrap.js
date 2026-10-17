@@ -1014,6 +1014,11 @@ function renderCountryPanel() {
     const countBadge = document.getElementById('colnectCopyCountBadge');
     if (dirPathEl) dirPathEl.innerText = c.colnect_dir || '(unknown)';
     if (countBadge) countBadge.innerText = 'Files: ' + (c.colnect_file_count || 0);
+
+    const swDirPathEl = document.getElementById('stampworldDirPath');
+    const swCountBadge = document.getElementById('stampworldCopyCountBadge');
+    if (swDirPathEl) swDirPathEl.innerText = c.stampworld_dir || '(unknown)';
+    if (swCountBadge) swCountBadge.innerText = 'Files: ' + (c.stampworld_file_count || 0);
 }
 
 async function pickAndCopyColnectFile() {
@@ -1060,6 +1065,52 @@ function appendColnectCopyLog(text) {
     while (logEl.children.length > 120) logEl.removeChild(logEl.firstChild);
     logEl.scrollTop = logEl.scrollHeight;
 }
+
+async function pickAndCopyStampworldPdfFile() {
+    const country = document.getElementById('countrySel').value;
+    if (!country) { appendStampworldCopyLog('Select a country first.'); return; }
+    const btn = document.getElementById('stampworldPickBtn');
+    const statusEl = document.getElementById('stampworldCopyStatus');
+    const logEl = document.getElementById('stampworldCopyLog');
+    if (btn) btn.disabled = true;
+    if (statusEl) { statusEl.className = 'colnectCopyStatus'; statusEl.style.display = ''; statusEl.textContent = 'Opening file picker\u2026'; }
+    if (logEl) logEl.style.display = '';
+    try {
+        const r = await fetch('/api/bootstrap-pick-stampworld-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country })
+        });
+        const j = await r.json();
+        if (j.ok && j.picked) {
+            if (statusEl) { statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 Copied: ' + (j.file_name || ''); }
+            appendStampworldCopyLog('\u2714 ' + (j.message || 'File copied'));
+            await refreshState();
+        } else if (j.ok && !j.picked) {
+            if (statusEl) statusEl.textContent = 'Cancelled';
+        } else {
+            if (statusEl) { statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 ' + (j.message || 'Failed'); }
+            appendStampworldCopyLog('\u2718 ' + (j.message || 'Failed'));
+        }
+    } catch (e) {
+        if (statusEl) { statusEl.className = 'colnectCopyStatus fail'; statusEl.textContent = '\u2718 Error: ' + e; }
+        appendStampworldCopyLog('Error: ' + e);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function appendStampworldCopyLog(text) {
+    const logEl = document.getElementById('stampworldCopyLog');
+    if (!logEl) return;
+    const el = document.createElement('div');
+    el.className = 'line';
+    el.textContent = new Date().toLocaleTimeString() + ' ' + text;
+    logEl.appendChild(el);
+    while (logEl.children.length > 120) logEl.removeChild(logEl.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
 
 function revealColnectImportSection() {
     const panel = document.getElementById('colnectCopyPanel');

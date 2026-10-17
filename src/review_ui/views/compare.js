@@ -613,7 +613,14 @@ function html(v) { return String(v)
   .replaceAll('<','&lt;')
   .replaceAll('>','&gt;')
   .replaceAll('"','&quot;'); }
-function row(k, v) { return `<tr><td class='k'>${html(k)}</td><td class='v'>${html(fmt(v))}</td></tr>`; }
+function row(k, v) {
+    const val = fmt(v);
+    const strVal = String(val).trim();
+    if (strVal.startsWith('http://') || strVal.startsWith('https://')) {
+        return `<tr><td class='k'>${html(k)}</td><td class='v'><a href="${html(strVal)}" target="_blank" rel="noopener noreferrer">${html(strVal)}</a></td></tr>`;
+    }
+    return `<tr><td class='k'>${html(k)}</td><td class='v'>${html(val)}</td></tr>`;
+}
 function allDbRows(fields) {
     if (!Array.isArray(fields) || !fields.length) return row('DB Fields', '(no fields)');
     return fields.map(f => row(`DB:${f.key || ''}`, f.value || '')).join('');

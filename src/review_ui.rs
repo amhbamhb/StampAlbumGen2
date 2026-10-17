@@ -330,6 +330,8 @@ struct BootstrapCountryInfo {
     colnect_file_count: usize,
     colnect_candidate_count: usize,
     colnect_dir: String,
+    stampworld_file_count: usize,
+    stampworld_dir: String,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -1900,7 +1902,9 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
 
         let country = slug.replace('-', " ");
         let colnect_dir = dir.join("colnect");
+        let stampworld_dir = dir.join("stampworld");
         let colnect_file_count = count_colnect_csv_files_rec(&colnect_dir);
+        let stampworld_file_count = count_colnect_csv_files_rec(&stampworld_dir);
         let colnect_candidate_count = count_colnect_candidates_in_db(&db_path);
         out.push(BootstrapCountryInfo {
             country,
@@ -1908,6 +1912,8 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
             colnect_file_count,
             colnect_candidate_count,
             colnect_dir: colnect_dir.to_string_lossy().to_string(),
+            stampworld_file_count,
+            stampworld_dir: stampworld_dir.to_string_lossy().to_string(),
         });
     }
 
@@ -2060,6 +2066,29 @@ fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, 
 
     Err("No supported folder picker found (install zenity or kdialog)".to_string())
 }
+
+fn pick_and_copy_stampworld_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
+    let fail = |msg: String| BootstrapPickColnectFileResponse {
+        ok: false,
+        picked: false,
+        message: msg,
+        file_name: None,
+        dest_path: None,
+        colnect_dir: None,
+    };
+
+    let countries = scan_bootstrap_countries();
+    let info = match countries.iter().find(|c| c.country == country) {
+        Some(i) => i.clone(),
+        None => return fail(format!("Country '{}' not found", country)),
+    };
+
+    let sw_dir = PathBuf::from(&info.stampworld_dir);
+    let sw_dir_str = sw_dir.to_string_lossy().to_string();
+    let title = format!("Select StampWorld PDF/HTML for {}", country);
+    pick_and_copy_colnect_file_to_dir(&sw_dir, &title, &sw_dir_str, fail)
+}
+
 
 fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
     let fail = |msg: String| BootstrapPickColnectFileResponse {
