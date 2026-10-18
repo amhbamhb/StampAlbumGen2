@@ -1602,12 +1602,12 @@ async function generateAlbumPdfNow() {
     }
 }
 
-document.getElementById('swStartYear').addEventListener('change', () => {
+document.getElementById('swStartYear')?.addEventListener('change', () => {
     persistStampWorldYearRange();
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 });
-document.getElementById('swEndYear').addEventListener('change', () => {
+document.getElementById('swEndYear')?.addEventListener('change', () => {
     persistStampWorldYearRange();
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
@@ -1620,11 +1620,11 @@ document.getElementById('swCountryFixed')?.addEventListener('input', () => {
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 });
-document.getElementById('swPreset').addEventListener('change', () => {
+document.getElementById('swPreset')?.addEventListener('change', () => {
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 });
-document.getElementById('swExtraFlags').addEventListener('input', () => {
+document.getElementById('swExtraFlags')?.addEventListener('input', () => {
     const country = document.getElementById('countrySel').value;
     document.getElementById('swCmd').innerText = suggestedStampworldCommand(country);
 });

@@ -26,6 +26,8 @@ stampalbumgenerator2-site/**
 AGENTS.md
 Brazil/**
 Brazil
+node_modules/**
+node_modules/
 
 refactor-plans
 drawio-diagrams
