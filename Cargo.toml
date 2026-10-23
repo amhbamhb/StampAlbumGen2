@@ -25,6 +25,7 @@ default = []
 rfd = ["dep:rfd"]
 
 [dependencies]
+pdf-extract = "0.7"
 csv = "1.2"
 # win_dialog = "1.0.1"
 image = { version = "0.25.10", features = ["png"] }
@@ -89,3 +90,9 @@ default-run = "stamp_album_gen2"
 [build-dependencies]
 chrono = "0.4"
 winres = "0.1"
+[[bin]]
+name = "manual_import"
+path = "scripts/manual_import.rs"
+[[bin]]
+name = "debug_db"
+path = "scripts/debug_db.rs"

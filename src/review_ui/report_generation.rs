@@ -1,4 +1,5 @@
 /// Represents a group of stamps.
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct StampGroup {
     pub name: String,
@@ -8,7 +9,6 @@ pub struct StampGroup {
 use crate::db_utils::StampStub;
 use std::fs::File;
 use std::io::{self, Write};
-use std::collections::HashMap;
 
 /// Creates a simple text-based PDF-like document from stamp data.
 pub fn generate_pdf_report(stubs: &[StampStub], output_path: &str) -> io::Result<()> {

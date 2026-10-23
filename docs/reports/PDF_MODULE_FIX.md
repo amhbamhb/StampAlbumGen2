@@ -53,6 +53,22 @@ The `is_real_image_path` function incorrectly used `starts_with("images/no_image
 | 1 | Test Fix | `tests/album_stamp_img_integration_test.rs` | Updated hardcoded file paths and pattern matching |
 | 2 | Verification | `cargo test` | Integration test passed |
 
+
+---
+
+## 🛠 Parsing Logic Enhancement
+
+| Step | Task | Location | Outcome |
+| :--- | :--- | :--- | :--- |
+| 1 | Updated Data Model | `src/review_ui/pdf_parser/types.rs` | Added stamps_issued, price fields |
+| 2 | Parser Logic | `src/review_ui/pdf_parser/extraction.rs` | *In progress* |
+
+---
+
+### Technical Details
+- Expanded `PdfStampRecord` to include fields required for full mapping: `stamps_issued`, `mint_price`, `unused_price`, `used_price`, and `fdc_price`.
+- These fields are initialized as `String` to handle the varied price formats (e.g., "-", "0.28") observed in the StampWorld PDF exports.
+
 ---
 
 ### Technical Details

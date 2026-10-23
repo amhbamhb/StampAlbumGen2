@@ -32,7 +32,7 @@ use matcher_service::{
 mod external_album_api;
 mod http_handlers;
 mod http_utils;
-mod db_query;
+pub mod db_query;
 mod ui_state;
 mod report_generation;
 mod pdf_generation;
@@ -3506,3 +3506,4 @@ mod tests {
         assert_eq!(processed, 1);
     }
 }
+pub mod pdf_parser;

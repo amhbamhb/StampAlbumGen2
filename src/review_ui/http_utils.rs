@@ -14,6 +14,7 @@ pub fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
     resolve_album_image_path(album_name, image_path).exists()
 }
 
+#[allow(dead_code)]
 /// Validates that a file is a PDF by checking extension (case-insensitive)
 pub fn is_pdf<P: AsRef<Path>>(path: P) -> bool {
     path.as_ref()
@@ -24,6 +25,7 @@ pub fn is_pdf<P: AsRef<Path>>(path: P) -> bool {
 }
 
 /// Opens a local file with the default viewer/browser (platform-specific)
+#[allow(dead_code)]
 pub fn open_local_path<P: AsRef<Path>>(path: P) -> bool {
     let path = path.as_ref();
     // Platform-specific implementation for opening files
@@ -48,6 +50,7 @@ pub fn open_local_path<P: AsRef<Path>>(path: P) -> bool {
 
 /// Opens a folder in the file manager (platform-specific)
 pub fn open_folder_in_file_manager<P: AsRef<Path>>(folder_path: P) -> bool {
+#[allow(dead_code)]
     let path = folder_path.as_ref();
     if path.is_dir() {
         #[cfg(target_family = "unix")]

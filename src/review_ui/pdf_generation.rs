@@ -2,6 +2,7 @@
 use tiny_http::{Header, Response, StatusCode};
 use crate::review_ui::log_runtime_event;
 
+#[allow(dead_code)]
 #[derive(Debug, serde::Serialize)]
 pub struct BootstrapGeneratePdfResponse {
     pub ok: bool,
