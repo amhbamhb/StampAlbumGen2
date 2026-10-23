@@ -1750,8 +1750,8 @@ function initReviewPdfYearInputs() {
             // Local storage may be unavailable in restricted browser modes.
         }
     };
-    startYearInput.addEventListener('input', persistPdfYears);
-    endYearInput.addEventListener('input', persistPdfYears);
+    startYearInput?.addEventListener('input', persistPdfYears);
+    endYearInput?.addEventListener('input', persistPdfYears);
 }
 
 function usedColnectIds(exceptLeftRowId) {
@@ -3832,7 +3832,7 @@ async function refreshColnectCandidatesReview() {
 const seriesToggle = document.getElementById('f_series');
 if (seriesToggle) {
   seriesToggle.checked = checkboxDefaults.f_series;
-  seriesToggle.addEventListener('change', () => {
+  seriesToggle?.addEventListener('change', () => {
     seriesToggle.dataset.userTouched = '1';
   });
 }
@@ -3842,7 +3842,7 @@ for (const [checkboxId, checked] of Object.entries(checkboxDefaults)) {
   const el = document.getElementById(checkboxId);
   if (el) {
     el.checked = checked;
-    el.addEventListener('change', () => {
+    el?.addEventListener('change', () => {
       el.dataset.userTouched = '1';
     });
   }

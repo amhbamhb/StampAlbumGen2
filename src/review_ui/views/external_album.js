@@ -374,15 +374,15 @@ const externalAlbums = (() => {
     }
 
     ['externalSource', 'externalEntry'].forEach(id => {
-        element(id).addEventListener('input', () => {
+        element(id)?.addEventListener('input', () => {
             inspectionKey = '';
             inspectionReport = null;
             updateImportButton();
         });
     });
-    element('externalCopyConsent').addEventListener('change', updateImportButton);
+    element('externalCopyConsent')?.addEventListener('change', updateImportButton);
     ['externalImportDialog', 'externalEditorDialog'].forEach(id => {
-        element(id).addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+        element(id)?.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
     });
     const closeImport = () => { if (!busy) element('externalImportDialog').close(); };
     const closeEditor = () => { if (!busy) element('externalEditorDialog').close(); };

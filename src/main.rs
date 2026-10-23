@@ -583,7 +583,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
         run_database_mode(&cli, show_progress).await?;
-    } else if effective_source == "stampworld" || effective_source == "us1847" {
+    } else if effective_source == "stampworld" || effective_source == "us1847" || effective_source == "pdf" {
         // Scraping mode
         // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
         // network operations, but we must still validate required CLI

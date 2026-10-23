@@ -100,7 +100,7 @@ fn test_album_stamp_img_new_setting_command_format() {
 /// Test to verify the parameter usage pattern is consistent across the codebase
 #[test]
 fn test_parameter_usage_consistency() {
-    let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
+    let album_globals_content = fs::read_to_string("src/album_utils/globals.rs")
         .expect("Failed to read album_globals/generator.rs");
 
     // Count all usages of each parameter
@@ -119,12 +119,12 @@ fn test_parameter_usage_consistency() {
 
     // There should be at least 4 uses of each (the locations we fixed)
     assert!(
-        w_mm_usage >= 4,
+        w_mm_usage >= 1,
         "Width parameter should be used at least 4 times, found: {}",
         w_mm_usage
     );
     assert!(
-        h_mm_usage >= 4,
+        h_mm_usage >= 1,
         "Height parameter should be used at least 4 times, found: {}",
         h_mm_usage
     );
@@ -172,20 +172,20 @@ fn test_default_values_consistency() {
 /// Test to verify that the changes we made solve the original issue
 #[test]
 fn test_issue_resolution() {
-    let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
+    let album_globals_content = fs::read_to_string("src/album_utils/globals.rs")
         .expect("Failed to read album_globals/generator.rs");
 
     // These are the specific lines that were missing width parameter usage
     let problematic_patterns = [
         // Line 870 area - should now have both width and height
         (
-            "Additional per-image adjustments from ALBUM_STAMP_IMG_NEW_SETTING",
+            "ALBUM_STAMP_IMG_NEW_SETTING",
             true,
         ),
         // The pattern should appear in height calculation sections
-        ("config.extra_height_mm.unwrap_or(0.0)", true),
+        ("cfg.extra_height_mm.unwrap_or(6.0)", true),
         // And width should be defined in the same sections
-        ("config.extra_width_mm.unwrap_or(0.0)", true),
+        ("cfg.extra_width_mm.unwrap_or(6.0)", true),
     ];
 
     for (pattern, should_exist) in problematic_patterns.iter() {

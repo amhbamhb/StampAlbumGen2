@@ -31,6 +31,14 @@ use matcher_service::{
 };
 mod external_album_api;
 mod http_handlers;
+mod http_utils;
+mod db_query;
+mod ui_state;
+mod report_generation;
+mod pdf_generation;
+
+
+
 #[cfg(any(windows, test))]
 mod windows_picker;
 
@@ -2245,7 +2253,7 @@ where
                 .arg("--filename")
                 .arg(&starting)
                 .arg("--file-filter")
-                .arg("Colnect CSV | *.csv")
+                .arg("Import Files | *.csv *.pdf *.html")
                 .output()
                 .map_err(|e| format!("failed to launch zenity: {}", e))?;
 
@@ -2270,7 +2278,7 @@ where
             let output = Command::new("kdialog")
                 .arg("--getopenfilename")
                 .arg(&starting)
-                .arg("*.csv")
+                .arg("Import Files | *.csv *.pdf *.html")
                 .arg("--title")
                 .arg(title)
                 .output()
@@ -2317,7 +2325,7 @@ where
                 Ok(_) => BootstrapPickColnectFileResponse {
                     ok: true,
                     picked: true,
-                    message: format!("Copied '{}' to colnect dir", file_name),
+                    message: format!("Copied '{}' to user folder(s) dir.", file_name),
                     file_name: Some(file_name),
                     dest_path: Some(dest.to_string_lossy().to_string()),
                     colnect_dir: Some(colnect_dir_str.to_string()),

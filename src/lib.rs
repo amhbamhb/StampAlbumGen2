@@ -1,3 +1,4 @@
+pub mod data_sources;
 pub mod catalog;
 pub mod cli;
 pub mod colnect;

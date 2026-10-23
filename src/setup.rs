@@ -451,11 +451,11 @@ fn set_desktop_launcher_auto_install_disabled(
 }
 
 fn bundled_icon_png() -> &'static [u8] {
-    include_bytes!("../assets/icons/stamp_album_gen2.png")
+    include_bytes!("../assets/icons/generated/MainIcon.ico")
 }
 
 fn bundled_windows_icon_ico() -> &'static [u8] {
-    include_bytes!("../assets/icons/generated/stamp-monogram.ico")
+    include_bytes!("../assets/icons/generated/MainIcon.ico")
 }
 
 fn escape_powershell_single_quoted(text: &str) -> String {

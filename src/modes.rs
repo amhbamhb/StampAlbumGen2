@@ -1660,7 +1660,25 @@ pub async fn run_scraping_mode(
     progress.set_message(&format!("Stamp Database path set to {}", db_path));
 
     progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
-    let pages = if source == "us1847" {
+    let pages = if source == "pdf" {
+        use crate::data_sources::pdf::collect_pdf_data;
+        // Use an absolute path if available, otherwise resolve from the current directory
+        let path_str = cli.source_file.clone().unwrap_or_default();
+        let full_pdf_path = std::path::PathBuf::from(path_str);
+        let final_path = if full_pdf_path.is_absolute() {
+            full_pdf_path
+        } else {
+            std::env::current_dir().unwrap().join(full_pdf_path)
+        };
+
+        Ok(collect_pdf_data(
+            &mut 0,
+            ",",
+            &site_name,
+            &cfg.image_path,
+            &final_path.to_string_lossy(),
+        ))
+    } else if source == "us1847" {
         // For 1847us.com, we process a single URL directly
         // Initialize DB
         let conn = match crate::db_utils::init_db(&db_path) {

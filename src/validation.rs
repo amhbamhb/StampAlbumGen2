@@ -94,6 +94,7 @@ pub fn validate_source(cli: &crate::cli::Cli) -> Result<String, ValidationError>
         "extractfile",
         "colnectexport",
         "us1847",
+        "pdf",
     ];
     let mut effective_source = cli.source.to_lowercase();
 
@@ -197,7 +198,7 @@ pub fn print_validation_error(error: &ValidationError) {
                     "(Suggestions computed using Jaro–Winkler similarity; higher is better.)"
                 );
             } else {
-                eprintln!("Valid sources are: stampworld, touchstamps, extractfile, colnectexport, us1847");
+                eprintln!("Valid sources are: stampworld, touchstamps, extractfile, colnectexport, us1847, pdf");
             }
             eprintln!("\nHere are quick examples you can copy-paste:");
             eprintln!("  # Generate from an existing DB (db-only):");
