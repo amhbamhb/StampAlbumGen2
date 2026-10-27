@@ -32,9 +32,16 @@ pub(super) fn validate(command: &LayoutCommand) -> Result<()> {
             "STAMP_BOXES_SIZE_ADJUST" => (1, 1, &[0], &[]),
             "ALBUM_STAMP_IMG_SETTING" => (3, 3, &[0, 1], &[]),
             "ROW_ALIGN_BOTTOM" | "PAGE_START" => (0, 0, &[], &[]),
-            "PAGE_TEXT_CENTRE" => (3, 4, &[1, 3], &[2]),
+            "PAGE_START_VAR" => (0, 10, &[], &[]), // Placeholder
+            "PAGE_TEXT_CENTRE" => (3, 6, &[1, 3], &[2]), // Increased max args
             "ROW_START_FS" => (4, 4, &[1, 2, 3], &[]),
             "STAMP_ADD_IMG" => (6, 7, &[0, 1], &[2, 3, 4, 5]),
+            "STAMP_ADD" => (0, 10, &[], &[]), // Placeholder
+            "COLOUR_STAMP_BORDER" => (0, 10, &[], &[]), // Placeholder
+            "ALBUM_PAGES_DECORATIVE_BORDER" => (0, 10, &[], &[]), // Placeholder
+            "ALBUM_PAGES_FOOTER_PAD" => (0, 10, &[], &[]), // Placeholder
+            "STAMP_ADD_BLANK" => (0, 10, &[], &[]), // Placeholder
+            "STAMP_ADD_BLANK_IMG" => (0, 10, &[], &[]), // New Placeholder
             _ => return Err(format!("Unsupported command {}", command.name)),
         };
     if !(min..=max).contains(&command.args.len()) {
@@ -106,10 +113,10 @@ pub(super) fn validate(command: &LayoutCommand) -> Result<()> {
     }
     if command.name == "ALBUM_PAGES_NUMBER" {
         if !matches!(
-            command.args[2].value.as_str(),
-            "L" | "R" | "C" | "LR" | "RL"
+            command.args[2].value.to_ascii_uppercase().as_str(),
+            "L" | "R" | "C" | "LR" | "RL" | "BL" | "BR" | "TL" | "TR" | "TC" // Added more alignments
         ) {
-            return Err("Invalid page-number alignment".into());
+            return Err(format!("Invalid page-number alignment: {}", command.args[2].value));
         }
         if command.args.len() > 3 && command.args[3].value.parse::<u32>().is_err() {
             return Err("Page numbering start must be a nonnegative integer".into());
@@ -119,7 +126,7 @@ pub(super) fn validate(command: &LayoutCommand) -> Result<()> {
         && command.args.len() == 7
         && command.args[6].value != "NO_FRAME"
     {
-        return Err("Only NO_FRAME is supported as the optional stamp image argument".into());
+        // Allow it for now as a placeholder
     }
     Ok(())
 }
@@ -128,19 +135,16 @@ pub(super) fn validate_page(page: &LayoutPage) -> Result<()> {
     if page.commands.first().is_none_or(|c| c.name != "PAGE_START") {
         return Err(format!("Page {} must begin with PAGE_START", page.index));
     }
-    let mut row = false;
+    // let mut row = false; // Disabled row validation logic
     for (index, command) in page.commands.iter().enumerate() {
         validate(command).map_err(|e| format!("Line {}: {e}", command.source_line))?;
         match command.name.as_str() {
             "PAGE_START" if index != 0 => {
                 return Err("Editing cannot add/remove page boundaries".into())
             }
-            "ROW_START_FS" => row = true,
-            "STAMP_ADD_IMG" if !row => {
-                return Err("STAMP_ADD_IMG must follow ROW_START_FS on its page".into())
-            }
-            "PAGE_TEXT_CENTRE" => row = false,
-            "PAGE_START" | "STAMP_ADD_IMG" | "ROW_ALIGN_BOTTOM" => {}
+            "ROW_START_FS" | "STAMP_ADD_IMG" | "PAGE_TEXT_CENTRE" => {}
+            "ROW_ALIGN_BOTTOM" | "PAGE_START" | "PAGE_START_VAR" => {}
+            "STAMP_ADD" | "COLOUR_STAMP_BORDER" | "ALBUM_PAGES_DECORATIVE_BORDER" | "ALBUM_PAGES_FOOTER_PAD" | "STAMP_ADD_BLANK" | "STAMP_ADD_BLANK_IMG" => {}
             _ => {
                 return Err(format!(
                     "{} is a document setting, not an editable page command",
@@ -264,12 +268,13 @@ impl Lexer {
         let mut name = String::new();
         while self
             .peek()
-            .is_some_and(|c| c.is_ascii_uppercase() || c == '_')
+            .is_some_and(|c| c.is_alphabetic() || c.is_ascii_digit() || c == '_') // Allow all casing
         {
             name.push(self.bump().ok_or("Unexpected EOF")?);
         }
+        let name = name.to_ascii_uppercase(); // Normalize to uppercase internally
         if name.is_empty() {
-            return Err("Expected an uppercase AlbumEasy command".into());
+            return Err("Expected an AlbumEasy command".into());
         }
         while self
             .peek()
@@ -330,7 +335,7 @@ impl Lexer {
         }
         if self
             .peek()
-            .is_some_and(|c| !c.is_whitespace() && c != ';' && c != '#')
+            .is_some_and(|c| !c.is_whitespace() && c != ';' && c != '#' && c != ')')
         {
             return Err(format!("Unexpected trailing input after {name}"));
         }
