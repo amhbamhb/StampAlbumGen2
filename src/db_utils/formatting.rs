@@ -27,8 +27,8 @@ pub fn format_stamps_issued(s: &str) -> String {
     let dot_count = v.matches('.').count();
     let comma_count = v.matches(',').count();
     let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
-        let last_dot = v.rfind('.').unwrap();
-        let last_comma = v.rfind(',').unwrap();
+        let last_dot = v.rfind('.').unwrap_or(0);
+        let last_comma = v.rfind(',').unwrap_or(0);
         if last_dot > last_comma {
             (
                 v[..last_dot].to_string(),
@@ -44,7 +44,7 @@ pub fn format_stamps_issued(s: &str) -> String {
         if dot_count > 1 {
             (v.replace('.', ""), None)
         } else {
-            let idx = v.rfind('.').unwrap();
+            let idx = v.rfind('.').unwrap_or(v.len());
             let right_len = v.len() - idx - 1;
             if right_len == 3 {
                 (v.replace('.', ""), None)
@@ -56,7 +56,7 @@ pub fn format_stamps_issued(s: &str) -> String {
         if comma_count > 1 {
             (v.replace(',', ""), None)
         } else {
-            let idx = v.rfind(',').unwrap();
+            let idx = v.rfind(',').unwrap_or(v.len());
             let right_len = v.len() - idx - 1;
             if right_len == 3 {
                 (v.replace(',', ""), None)
