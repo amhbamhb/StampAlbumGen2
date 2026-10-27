@@ -30,7 +30,10 @@
   </div>
 </details>
 <dialog id="externalImportDialog" class="externalAlbumDialog">
-  <h2>Import AlbumEasy Album</h2>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>Import AlbumEasy Album</h2>
+    <button type="button" onclick="externalAlbums.closeImport()">Close</button>
+  </div>
   <p><strong>Step 1:</strong> Select source and new album name. <strong>Step 2:</strong> Inspect.
     <strong>Step 3:</strong> Copy and render. <strong>Step 4:</strong> Compare and approve.</p>
   <fieldset id="externalImportInputs">
@@ -51,7 +54,10 @@
   </div>
 </dialog>
 <dialog id="externalEditorDialog" class="externalAlbumDialog">
-  <h2 id="externalEditorTitle">Imported album</h2>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 id="externalEditorTitle">Imported album</h2>
+    <button type="button" onclick="externalAlbums.closeEditor()">Close</button>
+  </div>
   <p id="externalEditorStatus" role="status" aria-live="polite"></p>
   <pre id="externalCompatibility" class="externalAlbumReport"></pre>
   <button type="button" onclick="externalAlbums.downloadAlbumReport()">Save album compatibility report</button>

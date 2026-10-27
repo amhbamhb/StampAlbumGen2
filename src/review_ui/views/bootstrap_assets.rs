@@ -34,7 +34,7 @@ pub(super) fn render_bootstrap_body_html(
     let html_template = include_str!("bootstrap.html");
     html_template
         .replace(
-            "{external_album_controls}",
+            "{external_album_html}",
             include_str!("external_album.html"),
         )
         .replace("{country_url_controls}", include_str!("country_url.html"))
