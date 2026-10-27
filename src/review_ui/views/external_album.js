@@ -20,7 +20,7 @@ const externalAlbums = (() => {
         PAGE_TEXT_CENTRE: ['Font', 'Size (points)', 'Text', 'Optional spacing']
     };
     const element = id => document.getElementById(id);
-    const text = (id, value) => { const el = element(id); if (el) el.innerHTML = `<span class="spinner"></span> Working: ${job.message || "copying / validating / rendering."} Keep this window open; the main UI remains responsive.`;
+    const text = (id, value) => { const el = element(id); if (el) el.textContent = value; };
     const clone = value => JSON.parse(JSON.stringify(value));
     const source = () => ({
         source: element('externalSource').value.trim(),
@@ -47,7 +47,7 @@ const externalAlbums = (() => {
         });
         element('externalFidelityConsent').disabled = value;
         element('externalCopyConsent').disabled = value;
-        const spinner = document.getElementById("externalSpinner");
+        const spinner = element('externalSpinner');
         if (spinner) spinner.hidden = !value;
         updateImportButton();
     }
@@ -147,13 +147,13 @@ const externalAlbums = (() => {
             if (job.running) {
                 const el = element(statusId);
                 if (el) {
-                    const spinner = document.getElementById("externalSpinner");
+                    const spinner = element('externalSpinner');
                     if (spinner) spinner.hidden = false;
-                    el.innerHTML = `<span class="spinner"></span> Working: ${job.message || "copying / validating / rendering."} Keep this window open; the main UI remains responsive.`;
+                    el.textContent = 'Working: copying / validating / rendering. Keep this window open; the main UI remains responsive.';
                 }
                 continue;
             }
-            const spinner = document.getElementById("externalSpinner");
+            const spinner = element('externalSpinner');
             if (spinner) spinner.hidden = true;
             if (job.error) throw new Error(job.error);
             if (!job.result) throw new Error('Job completed without an album result. Refresh the imported-album list.');
@@ -239,7 +239,7 @@ const externalAlbums = (() => {
             command.args.forEach((argument, argIndex) => {
                 const label = document.createElement('label');
                 const description = labels[command.name]?.[argIndex] || `Parameter ${argIndex + 1}`;
-                label.innerHTML = `<span class="spinner"></span> Working: ${job.message || "copying / validating / rendering."} Keep this window open; the main UI remains responsive.`;
+                label.textContent = description;
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.value = argument.value;
