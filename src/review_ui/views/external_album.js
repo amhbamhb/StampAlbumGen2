@@ -20,7 +20,7 @@ const externalAlbums = (() => {
         PAGE_TEXT_CENTRE: ['Font', 'Size (points)', 'Text', 'Optional spacing']
     };
     const element = id => document.getElementById(id);
-    const text = (id, value) => { element(id).textContent = value; };
+    const text = (id, value) => { const el = element(id); if (el) el.textContent = value; };
     const clone = value => JSON.parse(JSON.stringify(value));
     const source = () => ({
         source: element('externalSource').value.trim(),
