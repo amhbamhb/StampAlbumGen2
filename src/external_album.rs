@@ -657,6 +657,7 @@ pub fn list_albums(root: &Path) -> Result<Vec<AlbumSummary>> {
     let root = root
         .canonicalize()
         .map_err(|e| err("Resolve selected album root", e))?;
+    log::info!("Scanning album root: {:?}", root);
     let mut result = Vec::new();
     for entry in fs::read_dir(&root).map_err(|e| err("List album root", e))? {
         let entry = entry.map_err(|e| err("Read album listing", e))?;
@@ -665,16 +666,18 @@ pub fn list_albums(root: &Path) -> Result<Vec<AlbumSummary>> {
             .to_str()
             .ok_or("Non-UTF-8 album folder")?
             .to_owned();
-        if validate_slug(&name).is_err()
-            || !entry
-                .file_type()
-                .map_err(|e| err("Inspect album folder", e))?
-                .is_dir()
-        {
+        
+        let is_dir = entry.file_type().map_err(|e| err("Inspect album folder", e))?.is_dir();
+        let slug_valid = validate_slug(&name).is_ok();
+        
+        log::debug!("Checking entry: {} (is_dir={}, slug_valid={})", name, is_dir, slug_valid);
+
+        if !slug_valid || !is_dir {
             continue;
         }
         let db = entry.path().join(format!("{name}.db"));
         if !db.exists() {
+            log::debug!("Skipping album {}: database not found at {:?}", name, db);
             continue;
         }
         no_links(&db)?;
