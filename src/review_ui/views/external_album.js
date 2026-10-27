@@ -42,10 +42,13 @@ const externalAlbums = (() => {
         element('externalImportInputs').disabled = value;
         element('externalEditorInputs').disabled = value || !album || album.status !== 'ready';
         ['externalImportClose', 'externalEditorClose', 'externalApprove', 'externalRetry'].forEach(id => {
-            element(id).disabled = value;
+            const el = element(id);
+            if (el) el.disabled = value;
         });
         element('externalFidelityConsent').disabled = value;
         element('externalCopyConsent').disabled = value;
+        const spinner = element('externalSpinner');
+        if (spinner) spinner.hidden = !value;
         updateImportButton();
     }
 
@@ -142,9 +145,16 @@ const externalAlbums = (() => {
             await new Promise(resolve => setTimeout(resolve, 750));
             const { job } = await api('job?id=' + result.job);
             if (job.running) {
-                text(statusId, 'Working: copying / validating / rendering. Keep this window open; the main UI remains responsive.');
+                const el = element(statusId);
+                if (el) {
+                    const spinner = element('externalSpinner');
+                    if (spinner) spinner.hidden = false;
+                    el.textContent = 'Working: copying / validating / rendering. Keep this window open; the main UI remains responsive.';
+                }
                 continue;
             }
+            const spinner = element('externalSpinner');
+            if (spinner) spinner.hidden = true;
             if (job.error) throw new Error(job.error);
             if (!job.result) throw new Error('Job completed without an album result. Refresh the imported-album list.');
             return job.result;

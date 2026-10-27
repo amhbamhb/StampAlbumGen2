@@ -19,3 +19,15 @@
 .externalAlbumArgs input { width: 100%; min-width: 0; box-sizing: border-box; }
 #externalAlbumList button { margin: 6px 0; }
 .externalAlbumDialog a { color: #175699; text-decoration: underline; }
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(0,0,0,.1);
+    border-radius: 50%;
+    border-top-color: #2b4c7e;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
