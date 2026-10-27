@@ -27,3 +27,13 @@ pub struct ImportSummary {
     pub imported: usize,
     pub skipped: usize,
 }
+
+impl std::fmt::Debug for ImportSummary {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ImportSummary")
+            .field("total_found", &self.total_found)
+            .field("imported", &self.imported)
+            .field("skipped", &self.skipped)
+            .finish()
+    }
+}

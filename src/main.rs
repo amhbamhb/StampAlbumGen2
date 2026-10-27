@@ -25,9 +25,9 @@ use stamp_album_gen2::{
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
-        ensure_windows_desktop_integration, install_linux_desktop_integration, setup_logging,
+        ensure_windows_desktop_integration, setup_logging,
         startup_probe_path, uninstall_linux_desktop_integration, validate_os, write_startup_probe,
-        write_startup_probe_snapshot,
+        write_startup_probe_snapshot, ensure_first_run_installation,
     },
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -85,7 +85,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "startup.begin",
         &format!("probe_path={}", startup_probe_path().to_string_lossy()),
     );
-    write_startup_probe_snapshot(&raw_args, launched_without_args, interactive_terminal);
+    write_startup_probe_snapshot(
+        raw_args.as_slice(),
+        launched_without_args,
+        interactive_terminal,
+    );
+
+    if let Err(e) = ensure_first_run_installation() {
+        eprintln!("Failed to perform first-run installation: {}", e);
+    }
 
     // Allow forcing the initial first-run interactive flow for testing
     // (avoids loading an existing config.toml or auto-starting Review UI).
@@ -139,7 +147,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if cli.install_desktop_launcher {
-        match install_linux_desktop_integration() {
+        match uninstall_linux_desktop_integration() {
             Ok(report) => {
                 println!(
                     "{} (desktop entry: {}, icon: {})",
@@ -272,12 +280,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
-    if let Some(path) = aligned_runtime_dir.as_ref() {
+    if let Some(path) = aligned_runtime_dir {
+ 
         eprintln!(
             "Runtime working directory aligned to {}",
             path.to_string_lossy()
         );
     }
+
     if enable_pdf_dx_logging {
         eprintln!(
             "PDF DX logging is enabled (via {}); detailed PDF generation diagnostics will be written to Logs/",

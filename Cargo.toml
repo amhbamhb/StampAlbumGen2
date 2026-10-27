@@ -9,7 +9,7 @@ watch = "cargo watch  -w src -x run "
 dev = "cargo build "
 build = "cargo build --release"
 test = "cargo test -- --nocapture"
-copyapp="cp -r target/release/stamp_album_gen2 /home/ray/AlbumGen2/stamp_album_gen2"
+copyapp="cp -r target/release/stamp_album_gen2 ~/AlbumGen2/stamp_album_gen2"
 
 [ workspace]
 members = ["crates/stamp_album_db", "."]
@@ -19,7 +19,7 @@ opt-level = 3
 
 [features]
 # ISO country data and established flag aliases are always embedded.
-default = []
+default = ["rfd"]
 # full-flag-db = []
 # Optional GUI folder picker (enables optional `rfd` dependency)
 rfd = ["dep:rfd"]
@@ -64,6 +64,7 @@ urlencoding = "2.1"
 base64 = "0.23"
 # Native dialogs are opt-in so standard Linux builds need no Wayland libraries.
 rfd = { version = "0.17", optional = true, default-features = true }
+directories = "6.0"
 
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 

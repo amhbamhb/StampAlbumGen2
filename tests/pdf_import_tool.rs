@@ -1,5 +1,5 @@
 use stamp_album_gen2::review_ui::pdf_parser::types::PdfStampRecord;
-use stamp_album_gen2::review_ui::db_query::{process_pdf_records, is_duplicate};
+use stamp_album_gen2::review_ui::db_query::{process_pdf_records};
 use rusqlite::Connection;
 
 #[test]

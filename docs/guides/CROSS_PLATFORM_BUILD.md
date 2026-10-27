@@ -65,6 +65,38 @@ OPENSSL_STATIC=1 cargo build --release --target x86_64-unknown-linux-musl
 
 **Action for MUSL:** We recommend documenting this as a GitHub Actions CI step (see later section).
 
+### ⚠️ Cross-Compiling for Windows MSVC (`x86_64-pc-windows-msvc`)
+
+Building for `x86_64-pc-windows-msvc` on Linux is **not supported directly** because it requires the Microsoft Visual C++ (MSVC) toolchain (e.g., `lib.exe`, `link.exe`), which is not available on Linux.
+
+If you see errors like `failed to find tool "lib.exe": No such file or directory`, follow these approaches:
+
+#### Recommended Approach: Use `cross`
+Use the [`cross`](https://github.com/cross-rs/cross) tool, which uses Docker containers pre-configured with the correct cross-compilation environment for MSVC.
+
+1. Install `cross`:
+   ```bash
+   cargo install cross
+   ```
+2. Build your target:
+   ```bash
+   cross build --target x86_64-pc-windows-msvc --release
+   ```
+
+#### Alternative Approach: Use `gnu` Target
+If you do not strictly require MSVC, you can use the `x86_64-pc-windows-gnu` target, which relies on the MinGW-w64 toolchain.
+
+1. Add the target:
+   ```bash
+   rustup target add x86_64-pc-windows-gnu
+   ```
+2. Install MinGW-w64 on your Linux system (e.g., `sudo apt install mingw-w64` on Ubuntu).
+3. Build for the target:
+   ```bash
+   cargo build --target x86_64-pc-windows-gnu --release
+   ```
+
+
 ### 📌 REQUIRES ANOTHER MACHINE
 
 #### 4. macOS x86_64 (Intel Mac)
@@ -282,4 +314,4 @@ ls -lh "$RELEASE_DIR/"
 2. **This week:** Set up GitHub Actions CI for automated cross-compilation
 3. **Later:** Build macOS and Windows binaries using CI
 
-Would you like help setting up GitHub Actions next?
+

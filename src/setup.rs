@@ -7,6 +7,8 @@ use std::process::{Command, Stdio};
 
 const DESKTOP_LAUNCHER_DISABLED_MARKER: &str = "desktop_launcher_disabled.flag";
 
+const FIRST_RUN_HANDLED_MARKER: &str = ".first_run_handled.flag";
+
 #[derive(Debug, Clone)]
 pub struct LinuxDesktopIntegrationReport {
     pub changed: bool,
@@ -912,5 +914,112 @@ mod tests {
         // This test runs from the workspace root in normal cargo flows.
         let result = align_process_working_dir_to_runtime_layout().expect("align cwd");
         let _ = result;
+    }
+}
+
+// Decision-making logic
+#[derive(Debug, PartialEq)]
+pub enum FirstRunDecision {
+    Stay,
+    MoveTo(PathBuf),
+}
+
+pub fn first_run_decision(
+    config_exists: bool,
+    albums_exists: bool,
+    exe_dir: &Path,
+    default_dest: &Path,
+) -> FirstRunDecision {
+    if config_exists || albums_exists {
+        return FirstRunDecision::Stay;
+    }
+
+    if let Some(dir_name) = exe_dir.file_name().and_then(|n| n.to_str()) {
+        if dir_name.eq_ignore_ascii_case("StampAlbumGen2") {
+            return FirstRunDecision::Stay;
+        }
+    }
+
+    FirstRunDecision::MoveTo(default_dest.to_path_buf())
+}
+pub fn ensure_first_run_installation() -> std::io::Result<()> {
+    let config_exists = Path::new("config.toml").exists();
+    let albums_exists = Path::new("Albums").exists();
+    let handled_marker = Path::new(FIRST_RUN_HANDLED_MARKER);
+
+    if handled_marker.exists() {
+        return Ok(());
+    }
+
+    let exe_path = std::env::current_exe()?;
+    let exe_dir = exe_path.parent().unwrap_or_else(|| Path::new("."));
+    
+    let default_dest = directories::UserDirs::new()
+        .and_then(|dirs| dirs.document_dir().map(|p| p.to_path_buf().join("StampAlbumGen2")))
+        .unwrap_or_else(|| PathBuf::from("StampAlbumGen2"));
+
+    let decision = first_run_decision(config_exists, albums_exists, exe_dir, &default_dest);
+
+    // If we stay, or if user cancels the move, we mark it handled.
+    if let FirstRunDecision::Stay = decision {
+        std::fs::File::create(handled_marker)?;
+        return Ok(());
+    }
+
+    // Attempt to move.
+    let dest = if cfg!(feature = "rfd") {
+        rfd::FileDialog::new()
+            .set_title("Select Destination Folder")
+            .set_directory(default_dest.parent().unwrap_or(Path::new(".")))
+            .pick_folder()
+    } else {
+        None
+    };
+
+    if let Some(selected_path) = dest {
+        let dest_path = if selected_path.file_name().and_then(|n| n.to_str()) != Some("StampAlbumGen2") {
+            selected_path.join("StampAlbumGen2")
+        } else {
+            selected_path
+        };
+        
+        let target_bin = dest_path.join(exe_path.file_name().unwrap());
+        
+        std::fs::create_dir_all(&dest_path)?;
+        std::fs::create_dir_all(dest_path.join("Albums"))?;
+        std::fs::copy(&exe_path, &target_bin)?;
+
+        Command::new(&target_bin)
+            .args(std::env::args().skip(1))
+            .spawn()?;
+
+        std::process::exit(0);
+    }
+
+    // User cancelled move, mark as handled so we stop asking.
+    std::fs::File::create(handled_marker)?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod setup_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_decision_stays_if_already_configured() {
+        assert_eq!(
+            first_run_decision(true, false, Path::new("/tmp"), Path::new("/dst")),
+            FirstRunDecision::Stay
+        );
+    }
+
+    #[test]
+    fn test_decision_moves_if_first_run() {
+        let dest = PathBuf::from("/dest/StampAlbumGen2");
+        assert_eq!(
+            first_run_decision(false, false, Path::new("/tmp/downloads"), &dest),
+            FirstRunDecision::MoveTo(dest)
+        );
     }
 }
