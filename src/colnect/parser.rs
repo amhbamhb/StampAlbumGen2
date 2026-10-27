@@ -1,3 +1,4 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use std::error::Error;
@@ -5,13 +6,16 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
+static RE_NAME: Lazy<Regex> = Lazy::new(|| Regex::new(r"\s*-\s*P\(([^)]+)\)\s*$").unwrap());
+static RE_TAGS: Lazy<Regex> = Lazy::new(|| Regex::new(r"<[^>]+>").unwrap());
+static RE_PREFIX: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^(comb|line)\s*").unwrap());
+
 /// Clean up the Name field by extracting perforation suffix like "- P(14 x 15)"
 /// and reformatting it on a new line without the dash and brackets
 fn clean_name(name: &str) -> String {
     // Match pattern like "- P(14 x 15)" or "- P(14½ x 14)" at end of string
-    let re = Regex::new(r"\s*-\s*P\(([^)]+)\)\s*$").unwrap();
-    if let Some(caps) = re.captures(name) {
-        let base_name = re.replace(name, "").trim().to_string();
+    if let Some(caps) = RE_NAME.captures(name) {
+        let base_name = RE_NAME.replace(name, "").trim().to_string();
         let perf_info = &caps[1];
         format!("{} \\n P {}", base_name, perf_info)
     } else {
@@ -23,12 +27,10 @@ fn clean_name(name: &str) -> String {
 /// Example: "comb<i> 14 x 14½</i>" -> "14 x 14½"
 fn clean_perforation(perf: &str) -> String {
     // Remove HTML tags
-    let re_tags = Regex::new(r"<[^>]+>").unwrap();
-    let no_tags = re_tags.replace_all(perf, "");
+    let no_tags = RE_TAGS.replace_all(perf, "");
 
     // Remove "comb" or "line" prefix (case insensitive)
-    let re_prefix = Regex::new(r"(?i)^(comb|line)\s*").unwrap();
-    let cleaned = re_prefix.replace(&no_tags, "");
+    let cleaned = RE_PREFIX.replace(&no_tags, "");
 
     cleaned.trim().to_string()
 }
