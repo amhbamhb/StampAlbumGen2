@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_perforation_default_checked
-resource: src/config.rs#L1503-L1508
+resource: src/config.rs#L1475-L1480
 generated:
   by: okf-rs/0.4.0
 relationships:

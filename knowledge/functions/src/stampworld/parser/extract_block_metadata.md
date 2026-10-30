@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_block_metadata
-resource: src/stampworld/parser.rs#L40-L144
+resource: src/stampworld/parser.rs#L47-L127
 generated:
   by: okf-rs/0.4.0
 relationships:

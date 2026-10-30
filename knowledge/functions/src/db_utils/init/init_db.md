@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/db_utils/migrations/ensure_schema_migrations_table
     resolved_by: tree-sitter
     confidence: exact
@@ -28,5 +31,6 @@ relationships:
 
 - [open](../../../../functions/src/external_album/open.md)
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [metadata](../../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [ensure_schema_migrations_table](../../../../functions/src/db_utils/migrations/ensure_schema_migrations_table.md)
 - [run_pending_schema_migrations](../../../../functions/src/db_utils/migrations/run_pending_schema_migrations.md)

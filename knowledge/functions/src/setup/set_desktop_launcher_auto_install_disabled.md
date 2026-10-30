@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_desktop_launcher_auto_install_disabled
-resource: src/setup.rs#L436-L451
+resource: src/setup.rs#L438-L453
 visibility: private
 generated:
   by: okf-rs/0.4.0

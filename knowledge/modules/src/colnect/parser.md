@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: parser
-resource: src/colnect/parser.rs#L1-L174
+resource: src/colnect/parser.rs#L1-L176
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/once-cell-sync-lazy
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/regex-regex
     resolved_by: tree-sitter
     confidence: exact
@@ -39,6 +42,7 @@ relationships:
 
 # Imports
 
+- `once_cell::sync::Lazy`
 - `regex::Regex`
 - `serde::Deserialize`
 - `std::error::Error`

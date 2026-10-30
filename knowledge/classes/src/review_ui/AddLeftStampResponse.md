@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: AddLeftStampResponse
-resource: src/review_ui.rs#L1301-L1305
+resource: src/review_ui.rs#L1311-L1315
 visibility: private
 generated:
   by: okf-rs/0.4.0

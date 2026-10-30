@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_csv
-resource: src/colnect/parser.rs#L116-L174
+resource: src/colnect/parser.rs#L118-L176
 generated:
   by: okf-rs/0.4.0
 relationships:

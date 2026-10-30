@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_cargo_build_binary
-resource: src/setup.rs#L181-L191
+resource: src/setup.rs#L183-L193
 visibility: private
 generated:
   by: okf-rs/0.4.0

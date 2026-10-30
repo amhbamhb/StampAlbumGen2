@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: looks_like_runtime_root
-resource: src/setup.rs#L224-L231
+resource: src/setup.rs#L226-L233
 visibility: private
 generated:
   by: okf-rs/0.4.0

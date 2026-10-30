@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_series_page_text_centre_template
-resource: src/album_globals/generator_new/helpers.rs#L138-L170
+resource: src/album_globals/generator_new/helpers.rs#L158-L190
 generated:
   by: okf-rs/0.4.0
 relationships:

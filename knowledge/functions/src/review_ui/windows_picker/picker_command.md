@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: picker_command
-resource: src/review_ui/windows_picker.rs#L9-L36
+resource: src/review_ui/windows_picker.rs#L10-L38
 visibility: private
 generated:
   by: okf-rs/0.4.0

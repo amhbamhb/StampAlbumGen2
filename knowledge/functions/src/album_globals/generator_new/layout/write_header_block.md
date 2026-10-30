@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_header_block
-resource: src/album_globals/generator_new/layout.rs#L138-L156
+resource: src/album_globals/generator_new/layout.rs#L141-L159
 generated:
   by: okf-rs/0.4.0
 relationships:

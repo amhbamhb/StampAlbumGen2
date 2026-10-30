@@ -1076,15 +1076,15 @@ async function pickAndCopyStampworldPdfFile() {
     if (statusEl) { statusEl.className = 'colnectCopyStatus'; statusEl.style.display = ''; statusEl.textContent = 'Opening file picker\u2026'; }
     if (logEl) logEl.style.display = '';
     try {
-        const r = await fetch('/api/bootstrap-pick-stampworld-file', {
+        const r = await fetch('/api/stampworld-import-file', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ country })
         });
         const j = await r.json();
         if (j.ok && j.picked) {
-            if (statusEl) { statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 Copied: ' + (j.file_name || ''); }
-            appendStampworldCopyLog('\u2714 ' + (j.message || 'File copied'));
+            if (statusEl) { statusEl.className = 'colnectCopyStatus ok'; statusEl.textContent = '\u2714 ' + j.message; }
+            appendStampworldCopyLog('\u2714 ' + j.message);
             await refreshState();
         } else if (j.ok && !j.picked) {
             if (statusEl) statusEl.textContent = 'Cancelled';

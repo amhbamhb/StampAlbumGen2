@@ -587,7 +587,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Execute appropriate mode
-    if cli.db_path.is_some()
+    if effective_source == "pdf" {
+        stamp_album_gen2::modes::run_stampworld_file_import(&cli)?;
+    } else if cli.db_path.is_some()
         || (effective_source == "colnectexport"
             && (cli.colnect_csv.is_some() || cli.colnect_inbox.is_some()))
     {

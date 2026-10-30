@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: bundled_windows_icon_ico
-resource: src/setup.rs#L457-L459
+resource: src/setup.rs#L459-L461
 visibility: private
 generated:
   by: okf-rs/0.4.0

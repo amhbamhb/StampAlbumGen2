@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_add_modal_html
-resource: src/review_ui/views/compare_assets.rs#L132-L160
+resource: src/review_ui/views/compare_assets.rs#L133-L161
 generated:
   by: okf-rs/0.4.0
 relationships:

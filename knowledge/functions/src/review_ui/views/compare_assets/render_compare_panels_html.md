@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_compare_panels_html
-resource: src/review_ui/views/compare_assets.rs#L89-L130
+resource: src/review_ui/views/compare_assets.rs#L90-L131
 generated:
   by: okf-rs/0.4.0
 relationships:

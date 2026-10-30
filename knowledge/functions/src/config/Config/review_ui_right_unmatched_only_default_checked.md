@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_right_unmatched_only_default_checked
-resource: src/config.rs#L1545-L1550
+resource: src/config.rs#L1517-L1522
 generated:
   by: okf-rs/0.4.0
 relationships:

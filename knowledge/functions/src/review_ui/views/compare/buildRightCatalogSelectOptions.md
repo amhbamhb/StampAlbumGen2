@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: buildRightCatalogSelectOptions
-resource: src/review_ui/views/compare.js#L1987-L2027
+resource: src/review_ui/views/compare.js#L2024-L2064
 generated:
   by: okf-rs/0.4.0
 relationships:

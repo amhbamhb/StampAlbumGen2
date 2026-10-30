@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: pollReviewStampWorldStatus
-resource: src/review_ui/views/compare.js#L1301-L1396
+resource: src/review_ui/views/compare.js#L1308-L1403
 generated:
   by: okf-rs/0.4.0
 relationships:

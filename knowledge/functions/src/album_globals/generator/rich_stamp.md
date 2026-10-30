@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: rich_stamp
-resource: src/album_globals/generator.rs#L2835-L2866
+resource: src/album_globals/generator.rs#L2836-L2867
 visibility: private
 generated:
   by: okf-rs/0.4.0

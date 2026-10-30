@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_stamps_issued
-resource: src/stampworld/parser.rs#L6-L19
+resource: src/stampworld/parser.rs#L9-L21
 generated:
   by: okf-rs/0.4.0
 relationships:

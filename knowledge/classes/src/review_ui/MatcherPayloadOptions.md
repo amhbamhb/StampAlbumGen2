@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: MatcherPayloadOptions
-resource: src/review_ui.rs#L2527-L2549
+resource: src/review_ui.rs#L2594-L2616
 generated:
   by: okf-rs/0.4.0
 ---

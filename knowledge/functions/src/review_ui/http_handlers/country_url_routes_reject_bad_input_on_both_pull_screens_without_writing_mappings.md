@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings
-resource: src/review_ui/http_handlers.rs#L380-L424
+resource: src/review_ui/http_handlers.rs#L2819-L2863
 visibility: private
 generated:
   by: okf-rs/0.4.0

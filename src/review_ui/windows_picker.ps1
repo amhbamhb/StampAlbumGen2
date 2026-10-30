@@ -29,6 +29,7 @@ try {
         }
         switch ($env:STAMP_PICKER_KIND) {
             'csv' { $dialog.Filter = 'Colnect CSV (*.csv)|*.csv' }
+            'stampworld' { $dialog.Filter = 'StampWorld PDF/HTML (*.pdf;*.html;*.htm)|*.pdf;*.html;*.htm' }
             'executable' {
                 $dialog.Filter = 'Executables (*.exe;*.com;*.bat;*.cmd)|*.exe;*.com;*.bat;*.cmd|All files (*.*)|*.*'
                 if (Test-Path -LiteralPath $start -PathType Leaf) {

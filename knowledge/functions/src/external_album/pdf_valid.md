@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pdf_valid
-resource: src/external_album.rs#L1043-L1057
+resource: src/external_album.rs#L1051-L1065
 visibility: private
 generated:
   by: okf-rs/0.4.0

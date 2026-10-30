@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: detect_duplicate_keys
-resource: src/config.rs#L1714-L1783
+resource: src/config.rs#L1686-L1755
 visibility: private
 generated:
   by: okf-rs/0.4.0

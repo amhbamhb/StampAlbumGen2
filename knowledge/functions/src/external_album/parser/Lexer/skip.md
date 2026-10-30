@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: skip
-resource: src/external_album/parser.rs#L248-L262
+resource: src/external_album/parser.rs#L256-L270
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -26,6 +26,9 @@ relationships:
   - target: functions/src/external_album/parser/parse
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/setup/ensure_first_run_installation
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps
     resolved_by: tree-sitter
     confidence: exact
@@ -46,4 +49,5 @@ relationships:
 - [main](../../../../../functions/src/bin/inspect_image_paths/main.md)
 - [ensure_config_and_template_files](../../../../../functions/src/config/ensure_config_and_template_files.md)
 - [parse](../../../../../functions/src/external_album/parser/parse.md)
+- [ensure_first_run_installation](../../../../../functions/src/setup/ensure_first_run_installation.md)
 - [spain_colnect_layout_packs_rich_rows_without_losing_stamps](../../../../../functions/tests/colnect_layout_spain/spain_colnect_layout_packs_rich_rows_without_losing_stamps.md)

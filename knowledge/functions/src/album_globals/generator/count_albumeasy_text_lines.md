@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: count_albumeasy_text_lines
-resource: src/album_globals/generator.rs#L230-L234
+resource: src/album_globals/generator.rs#L231-L235
 visibility: private
 generated:
   by: okf-rs/0.4.0

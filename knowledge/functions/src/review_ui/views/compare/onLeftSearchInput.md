@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: onLeftSearchInput
-resource: src/review_ui/views/compare.js#L1164-L1170
+resource: src/review_ui/views/compare.js#L1171-L1177
 generated:
   by: okf-rs/0.4.0
 relationships:

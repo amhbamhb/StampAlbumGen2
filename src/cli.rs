@@ -9,7 +9,7 @@ use clap::Parser;
     about = "Stamp Album Generator 2"
 )]
 pub struct Cli {
-    /// Source type: stampworld, touchstamps, extractfile, colnectexport, us1847
+    /// Source type: stampworld, touchstamps, extractfile, colnectexport, us1847, pdf
     #[arg(long, default_value = "stampworld")]
     pub source: String,
 
@@ -25,7 +25,7 @@ pub struct Cli {
     #[arg(long)]
     pub album_name: Option<String>,
 
-    /// Database path (for output-only mode)
+    /// Database path for output-only mode or an explicit offline PDF import target
     #[arg(long)]
     pub db_path: Option<String>,
 
@@ -76,7 +76,7 @@ pub struct Cli {
     #[arg(long)]
     pub colnect_csv: Option<String>,
 
-    /// Path to a local source HTML file to parse in scraping mode (compatibility wrapper for --source extractfile)
+    /// Local StampWorld HTML file; use --source pdf for offline PDF/HTML import without scraping
     #[arg(long)]
     pub source_file: Option<String>,
 

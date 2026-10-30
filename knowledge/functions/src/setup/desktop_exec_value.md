@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: desktop_exec_value
-resource: src/setup.rs#L335-L337
+resource: src/setup.rs#L337-L339
 visibility: private
 generated:
   by: okf-rs/0.4.0

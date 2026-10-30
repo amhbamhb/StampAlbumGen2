@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: new_series
-resource: src/album_globals/page_functions.rs#L16-L44
+resource: src/album_globals/page_functions.rs#L17-L45
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: toggleLeftEditorImageOptions
-resource: src/review_ui/views/compare.js#L2604-L2612
+resource: src/review_ui/views/compare.js#L2641-L2649
 generated:
   by: okf-rs/0.4.0
 relationships:

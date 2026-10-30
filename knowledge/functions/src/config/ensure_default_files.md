@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_default_files
-resource: src/config.rs#L439-L484
+resource: src/config.rs#L411-L456
 visibility: private
 generated:
   by: okf-rs/0.4.0

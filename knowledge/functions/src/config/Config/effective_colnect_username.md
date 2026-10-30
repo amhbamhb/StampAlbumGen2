@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_colnect_username
-resource: src/config.rs#L980-L993
+resource: src/config.rs#L952-L965
 generated:
   by: okf-rs/0.4.0
 relationships:

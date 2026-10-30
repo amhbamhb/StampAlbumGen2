@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: StampContext
-resource: src/album_globals/page_functions.rs#L130-L142
+resource: src/album_globals/page_functions.rs#L131-L143
 generated:
   by: okf-rs/0.4.0
 ---

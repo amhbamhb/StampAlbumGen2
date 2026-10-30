@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: app_state_dir
-resource: src/setup.rs#L424-L426
+resource: src/setup.rs#L426-L428
 visibility: private
 generated:
   by: okf-rs/0.4.0

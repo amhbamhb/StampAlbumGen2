@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: normalizeSortMode
-resource: src/review_ui/views/compare.js#L905-L913
+resource: src/review_ui/views/compare.js#L912-L920
 generated:
   by: okf-rs/0.4.0
 relationships:

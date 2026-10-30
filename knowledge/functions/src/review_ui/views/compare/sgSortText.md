@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: sgSortText
-resource: src/review_ui/views/compare.js#L901-L903
+resource: src/review_ui/views/compare.js#L908-L910
 generated:
   by: okf-rs/0.4.0
 relationships:

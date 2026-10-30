@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: leftSearchText
-resource: src/review_ui/views/compare.js#L1046-L1063
+resource: src/review_ui/views/compare.js#L1053-L1070
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: import_album
-resource: src/external_album.rs#L797-L926
+resource: src/external_album.rs#L800-L928
 generated:
   by: okf-rs/0.4.0
 relationships:

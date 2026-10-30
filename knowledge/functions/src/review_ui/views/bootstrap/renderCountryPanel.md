@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: renderCountryPanel
-resource: src/review_ui/views/bootstrap.js#L950-L1017
+resource: src/review_ui/views/bootstrap.js#L950-L1022
 generated:
   by: okf-rs/0.4.0
 relationships:

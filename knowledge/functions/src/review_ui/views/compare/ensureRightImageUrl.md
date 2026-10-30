@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: ensureRightImageUrl
-resource: src/review_ui/views/compare.js#L1208-L1236
+resource: src/review_ui/views/compare.js#L1215-L1243
 generated:
   by: okf-rs/0.4.0
 relationships:

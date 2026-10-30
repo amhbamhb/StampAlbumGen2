@@ -34,7 +34,11 @@ pub(super) fn validate(command: &LayoutCommand) -> Result<()> {
             "ROW_ALIGN_BOTTOM" | "PAGE_START" => (0, 0, &[], &[]),
             "PAGE_START_VAR" => (0, 10, &[], &[]), // Placeholder
             "PAGE_TEXT_CENTRE" => (3, 6, &[1, 3], &[2]), // Increased max args
+            "ROW_START_ES" => (3, 3, &[1, 2], &[]),
+            "ROW_START_JS" => (3, 3, &[1, 2], &[]),
             "ROW_START_FS" => (4, 4, &[1, 2, 3], &[]),
+            "ROW_ALIGN_TOP" => (0, 0, &[], &[]),
+            "ROW_ALIGN_MIDDLE" => (0, 0, &[], &[]),
             "STAMP_ADD_IMG" => (6, 7, &[0, 1], &[2, 3, 4, 5]),
             "STAMP_ADD" => (0, 10, &[], &[]), // Placeholder
             "COLOUR_STAMP_BORDER" => (0, 10, &[], &[]), // Placeholder
@@ -142,8 +146,8 @@ pub(super) fn validate_page(page: &LayoutPage) -> Result<()> {
             "PAGE_START" if index != 0 => {
                 return Err("Editing cannot add/remove page boundaries".into())
             }
-            "ROW_START_FS" | "STAMP_ADD_IMG" | "PAGE_TEXT_CENTRE" => {}
-            "ROW_ALIGN_BOTTOM" | "PAGE_START" | "PAGE_START_VAR" => {}
+            "ROW_START_ES" | "ROW_START_JS" | "ROW_START_FS" | "STAMP_ADD_IMG" | "PAGE_TEXT_CENTRE" => {}
+            "ROW_ALIGN_TOP" | "ROW_ALIGN_MIDDLE" | "ROW_ALIGN_BOTTOM" | "PAGE_START" | "PAGE_START_VAR" => {}
             "STAMP_ADD" | "COLOUR_STAMP_BORDER" | "ALBUM_PAGES_DECORATIVE_BORDER" | "ALBUM_PAGES_FOOTER_PAD" | "STAMP_ADD_BLANK" | "STAMP_ADD_BLANK_IMG" => {}
             _ => {
                 return Err(format!(
@@ -161,7 +165,7 @@ pub(super) fn validate_document(globals: &[LayoutCommand], pages: &[LayoutPage])
         validate(command)?;
         if matches!(
             command.name.as_str(),
-            "PAGE_START" | "PAGE_TEXT_CENTRE" | "ROW_START_FS" | "STAMP_ADD_IMG"
+            "PAGE_START" | "PAGE_TEXT_CENTRE" | "ROW_START_ES" | "ROW_START_JS" | "ROW_START_FS" | "STAMP_ADD_IMG"
         ) {
             return Err(format!("{} cannot precede the first page", command.name));
         }

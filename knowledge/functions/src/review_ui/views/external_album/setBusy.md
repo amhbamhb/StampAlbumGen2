@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: setBusy
-resource: src/review_ui/views/external_album.js#L40-L50
+resource: src/review_ui/views/external_album.js#L40-L53
 generated:
   by: okf-rs/0.4.0
 relationships:

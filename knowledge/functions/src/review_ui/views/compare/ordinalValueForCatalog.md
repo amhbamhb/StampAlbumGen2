@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: ordinalValueForCatalog
-resource: src/review_ui/views/compare.js#L2029-L2036
+resource: src/review_ui/views/compare.js#L2066-L2073
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: handle_site_account_request
-resource: src/review_ui/http_handlers.rs#L154-L215
+resource: src/review_ui/http_handlers.rs#L114-L175
 visibility: private
 generated:
   by: okf-rs/0.4.0

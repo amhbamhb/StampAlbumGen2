@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_colnect_detail_fields
-resource: src/config.rs#L1215-L1221
+resource: src/config.rs#L1187-L1193
 generated:
   by: okf-rs/0.4.0
 relationships:

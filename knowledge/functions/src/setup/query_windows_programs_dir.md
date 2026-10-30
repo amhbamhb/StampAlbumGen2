@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: query_windows_programs_dir
-resource: src/setup.rs#L487-L507
+resource: src/setup.rs#L489-L509
 visibility: private
 generated:
   by: okf-rs/0.4.0

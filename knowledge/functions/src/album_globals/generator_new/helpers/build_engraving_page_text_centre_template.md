@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_engraving_page_text_centre_template
-resource: src/album_globals/generator_new/helpers.rs#L226-L235
+resource: src/album_globals/generator_new/helpers.rs#L246-L255
 generated:
   by: okf-rs/0.4.0
 relationships:

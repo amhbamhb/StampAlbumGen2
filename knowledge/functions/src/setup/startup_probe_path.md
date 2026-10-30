@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: startup_probe_path
-resource: src/setup.rs#L106-L115
+resource: src/setup.rs#L108-L117
 generated:
   by: okf-rs/0.4.0
 relationships:

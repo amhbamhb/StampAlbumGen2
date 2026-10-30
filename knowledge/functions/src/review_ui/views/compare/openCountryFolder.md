@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: openCountryFolder
-resource: src/review_ui/views/compare.js#L1252-L1262
+resource: src/review_ui/views/compare.js#L1259-L1269
 generated:
   by: okf-rs/0.4.0
 relationships:

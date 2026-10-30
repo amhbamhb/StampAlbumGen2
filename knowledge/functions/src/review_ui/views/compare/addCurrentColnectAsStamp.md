@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: addCurrentColnectAsStamp
-resource: src/review_ui/views/compare.js#L3113-L3175
+resource: src/review_ui/views/compare.js#L3150-L3212
 generated:
   by: okf-rs/0.4.0
 relationships:

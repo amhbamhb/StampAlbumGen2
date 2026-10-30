@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: rich_config
-resource: src/album_globals/generator.rs#L2868-L2891
+resource: src/album_globals/generator.rs#L2869-L2892
 visibility: private
 generated:
   by: okf-rs/0.4.0

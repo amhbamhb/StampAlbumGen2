@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: fileToDataUrl
-resource: src/review_ui/views/compare.js#L2587-L2594
+resource: src/review_ui/views/compare.js#L2624-L2631
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -14,13 +14,49 @@ by `--help` is therefore expected to change over time.
 
 | Option | Default | Purpose |
 |--------|---------|---------|
-| `--source <SOURCE>` | `stampworld` | Select a source: `stampworld`, `touchstamps`, `extractfile`, `colnectexport`, or `us1847`. |
+| `--source <SOURCE>` | `stampworld` | Select a source: `stampworld`, `touchstamps`, `extractfile`, `colnectexport`, `us1847`, or `pdf` (offline StampWorld PDF/HTML import). |
 | `--site-name <NAME>` | — | Country or site name used by scraping sources. |
 | `--stampworld-country-url <URL>` | — | Override the StampWorld country page URL for this run without changing the country or album name. |
 | `--album-name <NAME>` | — | Name used for the generated album. |
-| `--db-path <PATH>` | — | Database path for generation from an existing database or for a Colnect import target. |
+| `--db-path <PATH>` | — | Database path for generation from an existing database, a Colnect import target, or an offline StampWorld import target. With `--source pdf`, this imports rather than generating output. |
 | `--base-url <URL>` | — | Override the constructed StampWorld base URL. |
-| `--source-file <PATH>` | — | Parse a local source HTML file; compatibility shortcut for `--source extractfile`. |
+| `--source-file <PATH>` | — | Local StampWorld HTML file. With `--source pdf`, import PDF/HTML metadata offline into the country database. |
+
+### Offline StampWorld PDF/HTML import
+
+```text
+stamp_album_gen2 --source pdf --source-file "download-pdf/Great Britain - Postage stamps (1970 - 1979).pdf" --site-name "Great Britain" --db-path "Albums/Great-Britain/Great-Britain.db"
+```
+
+The same arguments work on Windows and Linux; use a local file path appropriate
+to the OS. Without `--db-path`, the database is placed under the configured
+Albums root in `<Country>/<Country>.db` (spaces in the folder name become hyphens).
+`--album-name` can supply the country if `--site-name` is omitted.
+`--start-year` and `--end-year` filter imported records.
+
+The importer uses native Rust PDF extraction; Poppler/`pdftotext` and site
+credentials are not required. Text-based StampWorld catalogue PDFs and saved
+StampWorld HTML are supported. Scanned PDFs require OCR before import. Group
+price-summary ranges are excluded from individual stamp rows. Series/year,
+type, denomination, color, description, issued quantity, prices/currency,
+watermark, designer and engraver are mapped to the database.
+Embedded stamp images are not extracted; existing images are left untouched.
+
+Existing country/series/catalogue-number records are skipped without overwriting
+metadata. A database error rolls back the file and reports a failure rather than
+counting it as a duplicate. The completion message reports found/imported/skipped
+counts; skipped includes duplicates and records excluded by the year filter.
+Import does not automatically generate an album; use the normal generation flow
+after reviewing the imported data.
+
+Both the startup **Import StampWorld - PDF / HTML Files** panel and the country
+review **StampWorld Pull** panel offer **Browse & Import**. The selected file is
+copied into the destination album's `stampworld` folder and imported into its
+database. Selecting an existing file in that folder reuses it; a different file
+with the same name is rejected rather than overwritten. Cancellation makes no
+database changes. Import errors are displayed and logged; the copied source is
+retained for diagnosis/retry. Country review enables **show imageless** after
+import so metadata-only records appear immediately.
 
 ## Year range and scraping
 

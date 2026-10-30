@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: generatePdfNowReview
-resource: src/review_ui/views/compare.js#L3449-L3559
+resource: src/review_ui/views/compare.js#L3486-L3596
 generated:
   by: okf-rs/0.4.0
 relationships:

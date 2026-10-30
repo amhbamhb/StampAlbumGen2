@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: prevRight
-resource: src/review_ui/views/compare.js#L2379-L2387
+resource: src/review_ui/views/compare.js#L2416-L2424
 generated:
   by: okf-rs/0.4.0
 relationships:

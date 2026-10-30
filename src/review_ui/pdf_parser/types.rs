@@ -1,6 +1,6 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct PdfStampRecord {
     pub catalog_number: String,
     pub stamp_type: String,
@@ -22,18 +22,9 @@ pub struct PdfStampRecord {
     pub local_image_path: Option<String>,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ImportSummary {
     pub total_found: usize,
     pub imported: usize,
     pub skipped: usize,
-}
-
-impl std::fmt::Debug for ImportSummary {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ImportSummary")
-            .field("total_found", &self.total_found)
-            .field("imported", &self.imported)
-            .field("skipped", &self.skipped)
-            .finish()
-    }
 }

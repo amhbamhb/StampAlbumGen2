@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: create_windows_shortcut
-resource: src/setup.rs#L509-L545
+resource: src/setup.rs#L511-L547
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: try_acquire
-resource: src/review_ui.rs#L164-L173
+resource: src/review_ui.rs#L172-L181
 visibility: private
 generated:
   by: okf-rs/0.4.0

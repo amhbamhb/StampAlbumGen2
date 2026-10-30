@@ -1447,11 +1447,38 @@ pub async fn run_database_mode(
 }
 
 /// Run the scraping mode (scrape StampWorld and generate album)
+pub fn run_stampworld_file_import(
+    cli: &crate::cli::Cli,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let source_file = cli.source_file.as_deref()
+        .filter(|value| !value.trim().is_empty())
+        .ok_or("StampWorld file import requires --source-file <PDF-or-HTML>")?;
+    let country = cli.site_name.as_deref().or(cli.album_name.as_deref())
+        .filter(|value| !value.trim().is_empty())
+        .ok_or("StampWorld file import requires --site-name or --album-name")?;
+    let directory = canonical_album_dir_name(country);
+    let db_path = cli.db_path.as_ref().map(std::path::PathBuf::from).unwrap_or_else(|| {
+        resolve_runtime_albums_root().join(&directory).join(format!("{}.db", directory))
+    });
+    let conn = crate::db_utils::init_db(&db_path.to_string_lossy())?;
+    let summary = crate::data_sources::pdf::import_stampworld_file(
+        &conn, std::path::Path::new(source_file), country, cli.start_year, cli.end_year,
+    ).map_err(std::io::Error::other)?;
+    println!(
+        "StampWorld import complete: database={}, found={}, imported={}, skipped={} (duplicates or year filter)",
+        db_path.display(), summary.total_found, summary.imported, summary.skipped,
+    );
+    Ok(())
+}
+
 pub async fn run_scraping_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
     source: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if source == "pdf" {
+        return run_stampworld_file_import(cli);
+    }
     use crate::commands_file_generator::CommandsFileGenerator;
     use log::{error, info, warn};
 
@@ -1660,25 +1687,7 @@ pub async fn run_scraping_mode(
     progress.set_message(&format!("Stamp Database path set to {}", db_path));
 
     progress.set_message(&format!("🌐 Starting data collection from: {}", base_url));
-    let pages = if source == "pdf" {
-        use crate::data_sources::pdf::collect_pdf_data;
-        // Use an absolute path if available, otherwise resolve from the current directory
-        let path_str = cli.source_file.clone().unwrap_or_default();
-        let full_pdf_path = std::path::PathBuf::from(path_str);
-        let final_path = if full_pdf_path.is_absolute() {
-            full_pdf_path
-        } else {
-            std::env::current_dir().unwrap().join(full_pdf_path)
-        };
-
-        Ok(collect_pdf_data(
-            &mut 0,
-            ",",
-            &site_name,
-            &cfg.image_path,
-            &final_path.to_string_lossy(),
-        ))
-    } else if source == "us1847" {
+    let pages = if source == "us1847" {
         // For 1847us.com, we process a single URL directly
         // Initialize DB
         let conn = match crate::db_utils::init_db(&db_path) {

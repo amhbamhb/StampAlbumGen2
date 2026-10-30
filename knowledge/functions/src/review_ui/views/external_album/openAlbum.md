@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: openAlbum
-resource: src/review_ui/views/external_album.js#L170-L177
+resource: src/review_ui/views/external_album.js#L180-L187
 generated:
   by: okf-rs/0.4.0
 relationships:

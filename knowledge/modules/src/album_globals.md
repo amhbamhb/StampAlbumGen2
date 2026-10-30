@@ -12,7 +12,7 @@ relationships:
   - target: external/pub-use-globals-compute-usable-height-write-globals
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/pub-use-helpers-build-page-text-template-emit-row-start-es
+  - target: external/pub-use-helpers-build-page-text-template-emit-row-start
     resolved_by: tree-sitter
     confidence: exact
   - target: external/pub-use-page-functions-add-stamp-new-page-new-row-new-series-new-year
@@ -82,7 +82,7 @@ relationships:
 
 - `pub use constants::MONTH_NAMES`
 - `pub use globals::{compute_usable_height, write_globals}`
-- `pub use helpers::{build_page_text_template, emit_row_start_es}`
+- `pub use helpers::{build_page_text_template, emit_row_start}`
 - `pub use page_functions::{add_stamp, new_page, new_row, new_series, new_year}`
 - `pub use structs::{GenericAttrs, Stamp}`
 - `rusqlite::Connection`

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: verify_uploaded
-resource: src/external_album.rs#L1187-L1202
+resource: src/external_album.rs#L1195-L1210
 visibility: private
 generated:
   by: okf-rs/0.4.0

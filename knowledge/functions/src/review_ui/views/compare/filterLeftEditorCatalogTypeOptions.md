@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: filterLeftEditorCatalogTypeOptions
-resource: src/review_ui/views/compare.js#L2757-L2760
+resource: src/review_ui/views/compare.js#L2794-L2797
 generated:
   by: okf-rs/0.4.0
 relationships:

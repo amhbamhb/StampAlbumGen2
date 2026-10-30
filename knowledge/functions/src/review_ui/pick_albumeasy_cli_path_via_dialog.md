@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick_albumeasy_cli_path_via_dialog
-resource: src/review_ui.rs#L2087-L2099
+resource: src/review_ui.rs#L2133-L2145
 visibility: private
 generated:
   by: okf-rs/0.4.0

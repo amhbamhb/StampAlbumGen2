@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render
-resource: src/external_album.rs#L1059-L1154
+resource: src/external_album.rs#L1067-L1162
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -19,6 +19,9 @@ relationships:
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/pdf_valid
     resolved_by: tree-sitter
     confidence: exact
@@ -34,4 +37,5 @@ relationships:
 - [err](../../../functions/src/external_album/err.md)
 - [count](../../../functions/src/album_globals/selection/count.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [pdf_valid](../../../functions/src/external_album/pdf_valid.md)

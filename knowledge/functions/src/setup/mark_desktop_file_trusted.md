@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: mark_desktop_file_trusted
-resource: src/setup.rs#L406-L422
+resource: src/setup.rs#L408-L424
 visibility: private
 generated:
   by: okf-rs/0.4.0

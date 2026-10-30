@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: new_page
-resource: src/album_globals/page_functions.rs#L47-L69
+resource: src/album_globals/page_functions.rs#L48-L70
 generated:
   by: okf-rs/0.4.0
 relationships:

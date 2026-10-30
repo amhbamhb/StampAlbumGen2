@@ -1,3 +1,4 @@
+use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use crate::album_globals::generator_new::layout;
 use log::info;
 use std::io::Write;
@@ -417,9 +418,7 @@ pub async fn write_globals<W: Write>(
                 // Ensure page sections begin with a row start when enabled
                 if cfg_row_start_es {
                     // Use centralized helper to emit ROW_START_ES
-                    let _ = crate::album_globals::generator_new::layout::emit_row_start_es(
-                        writer, &cfg,
-                    );
+                    let _ = crate::album_globals::generator_new::layout::emit_row_start(writer, RowSpacingMode::FS, &cfg);
                 }
                 last_was_page_start = true;
             }
@@ -434,7 +433,7 @@ pub async fn write_globals<W: Write>(
             // Follow PAGE_START with a ROW_START_ES so the page has an initialized row
             if cfg_row_start_es {
                 let _ =
-                    crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
+                    crate::album_globals::generator_new::layout::emit_row_start(writer, RowSpacingMode::FS, &cfg);
             }
             last_was_page_start = true;
             continue;
@@ -548,8 +547,8 @@ pub async fn write_globals<W: Write>(
                     if let Some(cp) = coat_path_opt.as_ref() {
                         // Emit a row start before the coat (large vertical element)
                         if cfg_row_start_es {
-                            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(
-                                writer, &cfg,
+                            let _ = crate::album_globals::generator_new::layout::emit_row_start( writer,RowSpacingMode::FS, 
+                                &cfg,
                             );
                         }
                         // Background color for the coat area (from config)
@@ -588,8 +587,8 @@ pub async fn write_globals<W: Write>(
                     if let Some(fp) = flag_path_opt.as_ref() {
                         // Emit a small-row_start before the flag (HN 1 as requested)
                         if cfg_row_start_es {
-                            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(
-                                writer, &cfg,
+                            let _ = crate::album_globals::generator_new::layout::emit_row_start(writer,RowSpacingMode::FS, 
+                                 &cfg,
                             );
                         }
                         let _ = writeln!(writer, "# Cover flag image for album");
@@ -624,8 +623,9 @@ pub async fn write_globals<W: Write>(
                 }
                 "name" => {
                     if cfg_row_start_es {
-                        let _ = crate::album_globals::generator_new::layout::emit_row_start_es(
-                            writer, &cfg,
+                        let _ = crate::album_globals::generator_new::layout::emit_row_start(  writer, RowSpacingMode::FS, 
+                           
+                          &cfg,
                         );
                     }
                     let title_size = cfg.flag_cover_image_title_size.unwrap_or(32.0);
@@ -649,7 +649,7 @@ pub async fn write_globals<W: Write>(
             let _title_scale = cfg.flag_cover_text_only_title_scale.unwrap_or(1.0);
 
             let _ = layout::write_page_vspace(writer, top_vspace as f64);
-            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
+            let _ = crate::album_globals::generator_new::layout::emit_row_start(writer, RowSpacingMode::FS, &cfg);
             let _ = writeln!(
                 writer,
                 "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
@@ -668,7 +668,7 @@ pub async fn write_globals<W: Write>(
 
                 let _ = layout::write_page_vspace(writer, top_vspace as f64);
                 let _ =
-                    crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
+                    crate::album_globals::generator_new::layout::emit_row_start(writer, RowSpacingMode::FS, &cfg);
                 let _ = writeln!(
                     writer,
                     "PAGE_TEXT_CENTRE (TB {} \"{}\" 1.0)",
@@ -764,7 +764,7 @@ fn add_wikipedia_section<W: Write>(
             // Add row start if configured and account for its height
             let _row_start_height = if cfg.row_start_es_enabled.unwrap_or(true) {
                 let rs_vspace = cfg.row_start_es_vspace.unwrap_or(5.0);
-                let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, cfg);
+                let _ = crate::album_globals::generator_new::layout::emit_row_start(writer, RowSpacingMode::FS, cfg);
                 let _ = writeln!(writer, "################################################################################");
 
                 // Estimate height of row start (rough approximation)

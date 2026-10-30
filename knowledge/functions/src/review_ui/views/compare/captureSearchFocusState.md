@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: captureSearchFocusState
-resource: src/review_ui/views/compare.js#L1172-L1182
+resource: src/review_ui/views/compare.js#L1179-L1189
 generated:
   by: okf-rs/0.4.0
 relationships:

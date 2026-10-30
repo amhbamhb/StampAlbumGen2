@@ -1655,6 +1655,36 @@ function updateGuide() {
     guide.style.display = '';
 }
 
+async function importReviewStampworldFile() {
+    const button = document.getElementById('reviewSwImportBtn');
+    const status = document.getElementById('reviewSwImportStatus');
+    if (button) button.disabled = true;
+    if (status) status.textContent = 'Select a StampWorld PDF/HTML file. Importing may take a moment...';
+    try {
+        const response = await fetch('/api/stampworld-import-file', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ country: reviewCountryName })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.message || 'StampWorld import failed');
+        if (status) status.textContent = result.message;
+        logRuntimeCompare(result.message);
+        if (result.picked) {
+            const showImageless = document.getElementById('f_show_imageless_left');
+            if (showImageless) showImageless.checked = true;
+            if (!await reloadLeftRowsFromServer()) {
+                throw new Error('Import completed, but refreshing the stamp list failed. Reload the page.');
+            }
+        }
+    } catch (error) {
+        if (status) status.textContent = 'Import failed: ' + error.message;
+        logRuntimeCompare('StampWorld import failed: ' + error.message);
+    } finally {
+        if (button) button.disabled = false;
+    }
+}
+
 function initReviewStampWorldPanel() {
     const currentCountry = String(reviewCountryName || currentReviewCountryEls[0]?.textContent || '').trim() || 'Unknown';
     const countryLabel = document.getElementById('reviewSwCountry');

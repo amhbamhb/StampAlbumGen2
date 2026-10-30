@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: windows_picker_uses_sta_and_passes_inputs_as_literal_environment_values
-resource: src/review_ui/windows_picker.rs#L74-L104
+resource: src/review_ui/windows_picker.rs#L76-L107
 visibility: private
 generated:
   by: okf-rs/0.4.0

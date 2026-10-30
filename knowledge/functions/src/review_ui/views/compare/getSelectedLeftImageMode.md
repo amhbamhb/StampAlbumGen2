@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: getSelectedLeftImageMode
-resource: src/review_ui/views/compare.js#L2596-L2602
+resource: src/review_ui/views/compare.js#L2633-L2639
 generated:
   by: okf-rs/0.4.0
 relationships:

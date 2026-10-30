@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: handle_country_url_request
-resource: src/review_ui/http_handlers.rs#L217-L271
+resource: src/review_ui/http_handlers.rs#L177-L231
 visibility: private
 generated:
   by: okf-rs/0.4.0

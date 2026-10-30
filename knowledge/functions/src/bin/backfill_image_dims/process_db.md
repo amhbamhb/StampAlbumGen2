@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: process_db
-resource: src/bin/backfill_image_dims.rs#L27-L81
+resource: src/bin/backfill_image_dims.rs#L27-L82
 visibility: private
 generated:
   by: okf-rs/0.4.0

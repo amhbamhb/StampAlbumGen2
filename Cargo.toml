@@ -10,6 +10,7 @@ dev = "cargo build "
 build = "cargo build --release"
 test = "cargo test -- --nocapture"
 copyapp="cp -r target/release/stamp_album_gen2 ~/AlbumGen2/stamp_album_gen2"
+Windows = "cargo build --release --target x86_64-pc-windows-msvc"
 
 [ workspace]
 members = ["crates/stamp_album_db", "."]

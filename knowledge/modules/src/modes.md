@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: modes
-resource: src/modes.rs#L1-L1922
+resource: src/modes.rs#L1-L1949
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -57,6 +57,7 @@ relationships:
 - [remap_colnect_sg_to_existing_stamps](../../functions/src/modes/remap_colnect_sg_to_existing_stamps.md)
 - [backfill_colnect_links_on_existing_stamps](../../functions/src/modes/backfill_colnect_links_on_existing_stamps.md)
 - [run_database_mode](../../functions/src/modes/run_database_mode.md)
+- [run_stampworld_file_import](../../functions/src/modes/run_stampworld_file_import.md)
 - [run_scraping_mode](../../functions/src/modes/run_scraping_mode.md)
 
 # Imports

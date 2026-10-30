@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: windows_picker_distinguishes_cancellation_from_failure
-resource: src/review_ui/windows_picker.rs#L122-L129
+resource: src/review_ui/windows_picker.rs#L125-L132
 visibility: private
 generated:
   by: okf-rs/0.4.0

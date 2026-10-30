@@ -5,6 +5,10 @@ resource: src/colnect/template.rs#L8-L40
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/main
     resolved_by: tree-sitter
@@ -23,6 +27,10 @@ relationships:
 # Signature
 
 `pub fn ensure_manual_import_files(runtime_dir: &Path) -> io::Result<Vec<PathBuf>>`
+
+# Calls
+
+- [metadata](../../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 
 # Called by
 

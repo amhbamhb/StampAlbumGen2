@@ -1,7 +1,7 @@
 ---
 type: Rust Enum
 title: SetupError
-resource: src/setup.rs#L29-L33
+resource: src/setup.rs#L31-L35
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: deleteCurrentLeft
-resource: src/review_ui/views/compare.js#L3048-L3078
+resource: src/review_ui/views/compare.js#L3085-L3115
 generated:
   by: okf-rs/0.4.0
 relationships:

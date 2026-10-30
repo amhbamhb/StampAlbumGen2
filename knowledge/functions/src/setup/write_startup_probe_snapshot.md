@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_startup_probe_snapshot
-resource: src/setup.rs#L127-L167
+resource: src/setup.rs#L129-L169
 generated:
   by: okf-rs/0.4.0
 relationships:

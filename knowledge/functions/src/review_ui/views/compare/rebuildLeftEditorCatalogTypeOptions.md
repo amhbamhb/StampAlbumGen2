@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: rebuildLeftEditorCatalogTypeOptions
-resource: src/review_ui/views/compare.js#L2709-L2755
+resource: src/review_ui/views/compare.js#L2746-L2792
 generated:
   by: okf-rs/0.4.0
 relationships:

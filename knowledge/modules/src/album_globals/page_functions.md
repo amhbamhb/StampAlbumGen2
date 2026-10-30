@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: page_functions
-resource: src/album_globals/page_functions.rs#L1-L160
+resource: src/album_globals/page_functions.rs#L1-L161
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/crate-album-globals-generator-new-helpers-rowspacingmode
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/super-generator-new-layout
     resolved_by: tree-sitter
     confidence: exact
@@ -33,6 +36,7 @@ relationships:
 
 # Imports
 
+- `crate::album_globals::generator_new::helpers::RowSpacingMode`
 - `super::generator_new::layout`
 - `super::helpers::build_page_text_template`
 - `crate::config::Config`

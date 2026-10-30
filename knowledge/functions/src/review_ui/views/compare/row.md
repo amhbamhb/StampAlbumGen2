@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: row
-resource: src/review_ui/views/compare.js#L616
+resource: src/review_ui/views/compare.js#L616-L623
 generated:
   by: okf-rs/0.4.0
 relationships:

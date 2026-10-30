@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateRightSearchStatus
-resource: src/review_ui/views/compare.js#L1093-L1107
+resource: src/review_ui/views/compare.js#L1100-L1114
 generated:
   by: okf-rs/0.4.0
 relationships:

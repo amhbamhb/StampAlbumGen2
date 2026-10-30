@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_linux_desktop_integration
-resource: src/setup.rs#L623-L789
+resource: src/setup.rs#L625-L791
 generated:
   by: okf-rs/0.4.0
 relationships:

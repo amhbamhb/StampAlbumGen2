@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: create_bootstrap_country_or_theme
-resource: src/review_ui.rs#L1918-L1985
+resource: src/review_ui.rs#L1941-L2008
 visibility: private
 generated:
   by: okf-rs/0.4.0

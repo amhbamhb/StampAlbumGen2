@@ -1,3 +1,4 @@
+use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use super::constants::MONTH_NAMES;
 use super::globals::{compute_usable_height, write_globals};
 use super::helpers::{
@@ -2232,7 +2233,7 @@ where
                 total_row_height + row_start_total_height - series_gap) {
                 log::error!("Failed to write row height measurement: {}", error);
             }
-            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
+            let _ = crate::album_globals::generator_new::layout::emit_row_start(&mut output, RowSpacingMode::FS, &config);
 
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: user_home_dir
-resource: src/setup.rs#L393-L397
+resource: src/setup.rs#L395-L399
 visibility: private
 generated:
   by: okf-rs/0.4.0

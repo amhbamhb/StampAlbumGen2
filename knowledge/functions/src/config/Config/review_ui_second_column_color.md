@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_second_column_color
-resource: src/config.rs#L1434-L1441
+resource: src/config.rs#L1406-L1413
 generated:
   by: okf-rs/0.4.0
 relationships:

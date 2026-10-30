@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshColnectCandidatesReview
-resource: src/review_ui/views/compare.js#L3782-L3823
+resource: src/review_ui/views/compare.js#L3819-L3860
 generated:
   by: okf-rs/0.4.0
 relationships:

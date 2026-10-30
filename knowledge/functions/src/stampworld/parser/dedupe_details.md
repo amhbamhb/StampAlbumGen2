@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: dedupe_details
-resource: src/stampworld/parser.rs#L22-L36
+resource: src/stampworld/parser.rs#L29-L43
 generated:
   by: okf-rs/0.4.0
 relationships:

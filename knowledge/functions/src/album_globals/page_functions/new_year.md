@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: new_year
-resource: src/album_globals/page_functions.rs#L73-L81
+resource: src/album_globals/page_functions.rs#L74-L82
 generated:
   by: okf-rs/0.4.0
 relationships:

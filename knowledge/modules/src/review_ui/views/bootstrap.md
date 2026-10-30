@@ -1,7 +1,7 @@
 ---
 type: JavaScript Module
 title: bootstrap
-resource: src/review_ui/views/bootstrap.js#L1-L1607
+resource: src/review_ui/views/bootstrap.js#L1-L1658
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -67,6 +67,8 @@ relationships:
 - [renderCountryPanel](../../../../functions/src/review_ui/views/bootstrap/renderCountryPanel.md)
 - [pickAndCopyColnectFile](../../../../functions/src/review_ui/views/bootstrap/pickAndCopyColnectFile.md)
 - [appendColnectCopyLog](../../../../functions/src/review_ui/views/bootstrap/appendColnectCopyLog.md)
+- [pickAndCopyStampworldPdfFile](../../../../functions/src/review_ui/views/bootstrap/pickAndCopyStampworldPdfFile.md)
+- [appendStampworldCopyLog](../../../../functions/src/review_ui/views/bootstrap/appendStampworldCopyLog.md)
 - [revealColnectImportSection](../../../../functions/src/review_ui/views/bootstrap/revealColnectImportSection.md)
 - [refreshState](../../../../functions/src/review_ui/views/bootstrap/refreshState.md)
 - [promptCreateCountryOrTheme](../../../../functions/src/review_ui/views/bootstrap/promptCreateCountryOrTheme.md)

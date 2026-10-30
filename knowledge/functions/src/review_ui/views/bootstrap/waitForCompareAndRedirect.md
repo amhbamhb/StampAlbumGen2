@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: waitForCompareAndRedirect
-resource: src/review_ui/views/bootstrap.js#L1318-L1330
+resource: src/review_ui/views/bootstrap.js#L1369-L1381
 generated:
   by: okf-rs/0.4.0
 relationships:

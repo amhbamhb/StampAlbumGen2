@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: escape_powershell_single_quoted
-resource: src/setup.rs#L461-L463
+resource: src/setup.rs#L463-L465
 visibility: private
 generated:
   by: okf-rs/0.4.0

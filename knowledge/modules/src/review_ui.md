@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: review_ui
-resource: src/review_ui.rs#L1-L3471
+resource: src/review_ui.rs#L1-L3539
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -193,6 +193,8 @@ relationships:
 - [probe_port](../../functions/src/review_ui/probe_port.md)
 - [is_colnect_csv_file](../../functions/src/review_ui/is_colnect_csv_file.md)
 - [count_colnect_csv_files_rec](../../functions/src/review_ui/count_colnect_csv_files_rec.md)
+- [is_stampworld_import_file](../../functions/src/review_ui/is_stampworld_import_file.md)
+- [count_import_files_rec](../../functions/src/review_ui/count_import_files_rec.md)
 - [count_colnect_candidates_in_db](../../functions/src/review_ui/count_colnect_candidates_in_db.md)
 - [scan_bootstrap_countries](../../functions/src/review_ui/scan_bootstrap_countries.md)
 - [create_bootstrap_country_or_theme](../../functions/src/review_ui/create_bootstrap_country_or_theme.md)
@@ -200,6 +202,7 @@ relationships:
 - [pick_bootstrap_albums_root_via_dialog](../../functions/src/review_ui/pick_bootstrap_albums_root_via_dialog.md)
 - [pick_folder_via_dialog](../../functions/src/review_ui/pick_folder_via_dialog.md)
 - [pick_folder_via_dialog](../../functions/src/review_ui/pick_folder_via_dialog-2.md)
+- [pick_and_copy_stampworld_file_via_dialog](../../functions/src/review_ui/pick_and_copy_stampworld_file_via_dialog.md)
 - [pick_and_copy_colnect_file_via_dialog](../../functions/src/review_ui/pick_and_copy_colnect_file_via_dialog.md)
 - [pick_albumeasy_cli_path_via_dialog](../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog.md)
 - [pick_albumeasy_cli_path_via_dialog](../../functions/src/review_ui/pick_albumeasy_cli_path_via_dialog-2.md)

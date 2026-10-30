@@ -4,6 +4,7 @@ pub(super) enum PickerKind {
     Folder,
     Executable,
     Csv,
+    Stampworld,
 }
 
 fn picker_command(kind: PickerKind, title: &str, start: &str) -> Command {
@@ -25,6 +26,7 @@ fn picker_command(kind: PickerKind, title: &str, start: &str) -> Command {
                 PickerKind::Folder => "folder",
                 PickerKind::Executable => "executable",
                 PickerKind::Csv => "csv",
+                PickerKind::Stampworld => "stampworld",
             },
         );
     #[cfg(windows)]
@@ -78,6 +80,7 @@ mod tests {
             (PickerKind::Folder, "folder"),
             (PickerKind::Executable, "executable"),
             (PickerKind::Csv, "csv"),
+            (PickerKind::Stampworld, "stampworld"),
         ] {
             let command = picker_command(kind, title, start);
             assert_eq!(command.get_program(), "powershell.exe");

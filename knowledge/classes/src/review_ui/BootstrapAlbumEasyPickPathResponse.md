@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapAlbumEasyPickPathResponse
-resource: src/review_ui.rs#L515-L520
+resource: src/review_ui.rs#L525-L530
 visibility: private
 generated:
   by: okf-rs/0.4.0

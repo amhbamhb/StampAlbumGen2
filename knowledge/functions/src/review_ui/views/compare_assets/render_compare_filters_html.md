@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_compare_filters_html
-resource: src/review_ui/views/compare_assets.rs#L46-L78
+resource: src/review_ui/views/compare_assets.rs#L47-L79
 generated:
   by: okf-rs/0.4.0
 relationships:

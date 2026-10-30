@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ClearLeftColnectLinkRequest
-resource: src/review_ui.rs#L1321-L1323
+resource: src/review_ui.rs#L1331-L1333
 visibility: private
 generated:
   by: okf-rs/0.4.0

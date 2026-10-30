@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: validate_os
-resource: src/setup.rs#L170-L176
+resource: src/setup.rs#L172-L178
 generated:
   by: okf-rs/0.4.0
 relationships:

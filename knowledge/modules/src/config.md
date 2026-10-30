@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config
-resource: src/config.rs#L1-L3150
+resource: src/config.rs#L1-L3122
 generated:
   by: okf-rs/0.4.0
 relationships:

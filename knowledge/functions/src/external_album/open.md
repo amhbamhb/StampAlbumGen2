@@ -155,6 +155,9 @@ relationships:
   - target: functions/tests/page_fit_regression/page_fit_regression_for_conservative_buffer
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/pdf_import_tool/imports_real_pdfs_into_disk_database_and_skips_reimports
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db
     resolved_by: tree-sitter
     confidence: exact
@@ -168,6 +171,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/placeholder_regeneration/placeholder_regeneration_forced
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/stampworld_pdf_cli/cli_import_targets_explicit_db_instead_of_output_only_mode
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/stampworld_pdf_cli/executable_routes_pdf_with_db_path_to_import_not_album_generation
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache
@@ -233,9 +242,12 @@ relationships:
 - [selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rejected](../../../functions/tests/external_album_backend/selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rejected.md)
 - [overflowing_row_moves_to_next_page_and_emits_row_start](../../../functions/tests/page_break_overflow/overflowing_row_moves_to_next_page_and_emits_row_start.md)
 - [page_fit_regression_for_conservative_buffer](../../../functions/tests/page_fit_regression/page_fit_regression_for_conservative_buffer.md)
+- [imports_real_pdfs_into_disk_database_and_skips_reimports](../../../functions/tests/pdf_import_tool/imports_real_pdfs_into_disk_database_and_skips_reimports.md)
 - [test_ensure_placeholder_for_stamp_and_update_db](../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.md)
 - [spec_placeholder_inverts_for_dark_stamp_background](../../../functions/tests/placeholder_image_inversion_spec/spec_placeholder_inverts_for_dark_stamp_background.md)
 - [placeholder_series_size_matches_hint](../../../functions/tests/placeholder_image_series_size/placeholder_series_size_matches_hint.md)
 - [placeholder_per_stamp_has_expected_dimensions](../../../functions/tests/placeholder_image_size/placeholder_per_stamp_has_expected_dimensions.md)
 - [placeholder_regeneration_forced](../../../functions/tests/placeholder_regeneration/placeholder_regeneration_forced.md)
+- [cli_import_targets_explicit_db_instead_of_output_only_mode](../../../functions/tests/stampworld_pdf_cli/cli_import_targets_explicit_db_instead_of_output_only_mode.md)
+- [executable_routes_pdf_with_db_path_to_import_not_album_generation](../../../functions/tests/stampworld_pdf_cli/executable_routes_pdf_with_db_path_to_import_not_album_generation.md)
 - [wikipedia_ingest_inserts_up_to_max_entries_from_cache](../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.md)

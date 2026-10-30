@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_context_default_checked
-resource: src/config.rs#L1510-L1515
+resource: src/config.rs#L1482-L1487
 generated:
   by: okf-rs/0.4.0
 relationships:

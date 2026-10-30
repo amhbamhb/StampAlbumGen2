@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: albumeasy_auto_pdf_enabled
-resource: src/config.rs#L1626-L1628
+resource: src/config.rs#L1598-L1600
 generated:
   by: okf-rs/0.4.0
 relationships:

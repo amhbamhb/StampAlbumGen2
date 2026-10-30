@@ -27,6 +27,12 @@ relationships:
   - target: functions/src/review_ui/config_editor/parse_template_config_sections
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/end_page
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -42,3 +48,5 @@ relationships:
 - [drop](../../../../functions/src/progress/ProgressIndicator/drop/drop.md)
 - [load_example_config_help_map](../../../../functions/src/review_ui/config_editor/load_example_config_help_map.md)
 - [parse_template_config_sections](../../../../functions/src/review_ui/config_editor/parse_template_config_sections.md)
+- [end_page](../../../../functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/end_page.md)
+- [parse_stampworld_text](../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text.md)

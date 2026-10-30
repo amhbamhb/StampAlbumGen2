@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_globals
-resource: src/album_utils/globals.rs#L33-L699
+resource: src/album_utils/globals.rs#L34-L699
 generated:
   by: okf-rs/0.4.0
 relationships:

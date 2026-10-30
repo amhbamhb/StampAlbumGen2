@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_stampworld_password
-resource: src/config.rs#L965-L978
+resource: src/config.rs#L937-L950
 generated:
   by: okf-rs/0.4.0
 relationships:

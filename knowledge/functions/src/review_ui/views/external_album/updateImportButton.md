@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateImportButton
-resource: src/review_ui/views/external_album.js#L52-L55
+resource: src/review_ui/views/external_album.js#L55-L58
 generated:
   by: okf-rs/0.4.0
 relationships:

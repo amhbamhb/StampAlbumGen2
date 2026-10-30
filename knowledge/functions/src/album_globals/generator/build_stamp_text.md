@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_stamp_text
-resource: src/album_globals/generator.rs#L295-L849
+resource: src/album_globals/generator.rs#L296-L850
 visibility: private
 generated:
   by: okf-rs/0.4.0

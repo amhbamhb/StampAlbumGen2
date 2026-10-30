@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: runtime_root_from_executable_path
-resource: src/setup.rs#L274-L300
+resource: src/setup.rs#L276-L302
 visibility: private
 generated:
   by: okf-rs/0.4.0

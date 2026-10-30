@@ -12,9 +12,6 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/album_globals/selection/normalized
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
@@ -38,7 +35,6 @@ relationships:
 
 - [load_stamps](../../../../functions/src/album_globals/selection/load_stamps.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
-- [normalized](../../../../functions/src/album_globals/selection/normalized.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 
 # Called by

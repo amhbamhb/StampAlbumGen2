@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: DbField
-resource: src/review_ui.rs#L183-L186
+resource: src/review_ui.rs#L191-L194
 visibility: private
 generated:
   by: okf-rs/0.4.0

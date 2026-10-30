@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/album_globals/imported_artifacts
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/generated_artifacts_from_path
     resolved_by: tree-sitter
     confidence: exact
@@ -49,6 +52,7 @@ relationships:
 # Calls
 
 - [imported_artifacts](../../../functions/src/album_globals/imported_artifacts.md)
+- [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [generated_artifacts_from_path](../../../functions/src/album_globals/generated_artifacts_from_path.md)
 
 # Called by

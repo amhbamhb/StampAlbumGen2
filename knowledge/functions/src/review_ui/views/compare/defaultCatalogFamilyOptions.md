@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: defaultCatalogFamilyOptions
-resource: src/review_ui/views/compare.js#L647-L718
+resource: src/review_ui/views/compare.js#L654-L725
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stamp_dedupe_fingerprints
-resource: src/album_globals/generator.rs#L78-L111
+resource: src/album_globals/generator.rs#L79-L112
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -118,6 +118,11 @@ flag_cover_text_only_vspace_after = 18.0
 # output. They are optional; sensible defaults are used when omitted.
 # page_vspace_marker = "(6)"
 # row_start_es_marker = "ROW_START_ES"
+row_start_js_marker = "ROW_START_JS"
+# row_start_fs_marker = "ROW_START_FS"
+# Default vertical alignment for stamp rows (ROW_ALIGN_TOP, ROW_ALIGN_MIDDLE, ROW_ALIGN_BOTTOM)
+row_align_default = "ROW_ALIGN_TOP"
+
 # historical token is not required; use font/size/spacing settings instead
 # row_start_es_font = "6"
 # row_start_es_size = 0.10
@@ -245,6 +250,7 @@ catalog_family_options = [
 	"sg|Stanley Gibbons|705728",
 	"mi|Michel|1126331",
 	"yt|Yvert et Tellier|925704",
+
 	"afa|AFA number|116770",
 	"ank|ANK|8320",
 	"un|Unificato|169053",

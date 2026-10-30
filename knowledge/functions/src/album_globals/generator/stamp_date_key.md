@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stamp_date_key
-resource: src/album_globals/generator.rs#L50-L76
+resource: src/album_globals/generator.rs#L51-L77
 visibility: private
 generated:
   by: okf-rs/0.4.0

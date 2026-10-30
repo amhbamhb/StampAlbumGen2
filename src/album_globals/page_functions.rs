@@ -1,3 +1,4 @@
+use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use super::generator_new::layout;
 use super::helpers::build_page_text_template;
 use crate::config::Config;
@@ -116,7 +117,7 @@ pub fn new_row<W: std::io::Write>(
 
     // Write ROW_START_ES using the loaded config so the emitted vspace and
     // spacing match the current configuration.
-    let _ = crate::album_globals::generator_new::layout::emit_row_start_es(writer, &cfg);
+    let _ = crate::album_globals::generator_new::layout::emit_row_start(writer, RowSpacingMode::FS, &cfg);
 
     *rows_written += 1;
     *stamps_written = 0;

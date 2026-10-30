@@ -47,6 +47,8 @@ AlbumEasy process itself. An unchanged pre-existing PDF is not accepted.
 | `album_stamp_img_new_setting_w_mm` | f32 | - | New stamp image width setting |
 | `album_stamp_img_new_setting_h_mm` | f32 | - | New stamp image height setting |
 | `album_stamp_img_new_setting_preserve_aspect` | bool | - | Preserve aspect ratio in new stamp settings |
+| `row_align_default` | String | "ROW_ALIGN_TOP" | Default vertical alignment for stamp rows. Options: `ROW_ALIGN_TOP`, `ROW_ALIGN_MIDDLE`, `ROW_ALIGN_BOTTOM`. |
+
 | `preserve_aspect` | bool | - | Backwards-compatible alias for preserve aspect ratio |
 | `preserve_real_image_size` | bool | false | Don't scale images to stamp_box_height |
 | `force_dpi` | f32 | - | Override DPI calculation for pixel->mm conversion |

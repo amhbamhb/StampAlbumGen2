@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: WindowsDesktopIntegrationReport
-resource: src/setup.rs#L19-L25
+resource: src/setup.rs#L21-L27
 generated:
   by: okf-rs/0.4.0
 ---

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: restoreSearchFocusState
-resource: src/review_ui/views/compare.js#L1184-L1194
+resource: src/review_ui/views/compare.js#L1191-L1201
 generated:
   by: okf-rs/0.4.0
 relationships:

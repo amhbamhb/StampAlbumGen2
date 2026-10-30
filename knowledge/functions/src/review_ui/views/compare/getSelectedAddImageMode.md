@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: getSelectedAddImageMode
-resource: src/review_ui/views/compare.js#L2540-L2546
+resource: src/review_ui/views/compare.js#L2577-L2583
 generated:
   by: okf-rs/0.4.0
 relationships:

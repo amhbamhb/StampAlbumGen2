@@ -23,6 +23,88 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
+fn handle_stampworld_import_request(
+    mut request: tiny_http::Request,
+    review: Option<(&Connection, &str, &str)>,
+) -> Option<tiny_http::Request> {
+    if request.method() != &Method::Post || request.url() != "/api/stampworld-import-file" {
+        return Some(request);
+    }
+    let result = (|| -> Result<serde_json::Value, String> {
+        let mut body = String::new();
+        request.as_reader().read_to_string(&mut body)
+            .map_err(|e| format!("Failed to read import request: {}", e))?;
+        let req: BootstrapPickColnectFileRequest = serde_json::from_str(&body)
+            .map_err(|e| format!("Invalid import request: {}", e))?;
+        let bootstrap;
+        let (country, db_path) = if let Some((_, country, db_path)) = review {
+            (country, db_path)
+        } else {
+            bootstrap = scan_bootstrap_countries().into_iter()
+                .find(|c| c.country == req.country)
+                .ok_or_else(|| format!("Country '{}' not found", req.country))?;
+            (bootstrap.country.as_str(), bootstrap.db_path.as_str())
+        };
+        let directory = Path::new(db_path).parent()
+            .ok_or("Destination database has no parent directory")?.join("stampworld");
+        let fail = |message| BootstrapPickColnectFileResponse {
+            ok: false, picked: false, message, file_name: None, dest_path: None, colnect_dir: None,
+        };
+        let picked = pick_and_copy_colnect_file_to_dir(
+            &directory,
+            &format!("Import StampWorld PDF/HTML for {}", country),
+            &directory.to_string_lossy(),
+            true,
+            fail,
+        );
+        if !picked.ok {
+            return Err(picked.message);
+        }
+        if !picked.picked {
+            return Ok(serde_json::json!({"ok": true, "picked": false, "message": "Cancelled"}));
+        }
+        let path = picked.dest_path.as_deref().ok_or("File picker returned no destination")?;
+        let opened;
+        let conn = if let Some((conn, _, _)) = review {
+            conn
+        } else {
+            opened = crate::db_utils::init_db(db_path).map_err(|e| e.to_string())?;
+            &opened
+        };
+        let summary = pdf_parser::import_stampworld_file(conn, Path::new(path), country, 0, i32::MAX)
+            .map_err(|e| format!("Import failed for {}: {}", path, e))?;
+        let message = format!(
+            "{}: found={}, imported={}, skipped={} (duplicates or year filter). Database: {}",
+            picked.file_name.as_deref().unwrap_or(path),
+            summary.total_found, summary.imported, summary.skipped, db_path,
+        );
+        Ok(serde_json::json!({
+            "ok": true, "picked": true, "message": message,
+            "summary": summary, "db_path": db_path, "file_name": picked.file_name,
+        }))
+    })();
+    let (body, status) = match result {
+        Ok(body) => {
+            log_runtime_event(&format!("StampWorld import: {}", body["message"]));
+            (body, StatusCode(200))
+        }
+        Err(message) => {
+            log_runtime_event(&format!("StampWorld import error: {}", message));
+            (serde_json::json!({"ok": false, "picked": false, "message": message}), StatusCode(400))
+        }
+    };
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!("StampWorld import response failed: {}", error));
+    }
+    None
+}
 
 
 // Removed duplicate function
@@ -155,6 +237,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
     let reload_requested = false;
 
     for request in server.incoming_requests() {
+        let Some(request) = handle_stampworld_import_request(request, None) else {
+            continue;
+        };
         let Some(request) = handle_site_account_request(request) else {
             continue;
         };
@@ -1193,6 +1278,11 @@ pub(super) fn serve_review_requests(
     let mut return_to_start_requested = false;
 
     for request in server.incoming_requests() {
+        let Some(request) = handle_stampworld_import_request(
+            request, Some((&input.conn, &input.album_name, &input.db_path)),
+        ) else {
+            continue;
+        };
         let Some(request) = handle_site_account_request(request) else {
             continue;
         };
@@ -2626,6 +2716,35 @@ mod site_account_tests {
     }
 
     #[test]
+    fn stampworld_file_import_route_reports_invalid_requests_in_both_loops() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10)).build().expect("HTTP client");
+            for body in ["{", "{}", r#"{"country":42}"#] {
+                let response = client.post(format!("http://{addr}/api/stampworld-import-file"))
+                    .body(body).send().expect("import response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                let error: serde_json::Value = response.json().expect("structured error");
+                assert_eq!(error["ok"], false);
+                assert!(error["message"].as_str().expect("error message").contains("Invalid import request"));
+            }
+            server.unblock();
+            worker.join().expect("server worker");
+        }
+    }
+
+    #[test]
     fn review_pdf_filters_routes_validate_requests_and_report_empty_selection() {
         let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
         let addr = server.server_addr().to_ip().expect("TCP address");
@@ -2791,4 +2910,3 @@ mod site_account_tests {
         }
     }
 }
-

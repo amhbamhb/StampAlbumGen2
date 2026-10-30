@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: catalogDisplayName
-resource: src/review_ui/views/compare.js#L738-L743
+resource: src/review_ui/views/compare.js#L745-L750
 generated:
   by: okf-rs/0.4.0
 relationships:

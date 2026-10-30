@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: from
-resource: src/setup.rs#L52-L54
+resource: src/setup.rs#L54-L56
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -79,6 +79,9 @@ relationships:
   - target: functions/src/review_ui/log_startup
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/pick_and_copy_stampworld_file_via_dialog
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/pick_and_copy_colnect_file_via_dialog
     resolved_by: tree-sitter
     confidence: exact
@@ -98,6 +101,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/serve_review_requests
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/http_utils/test_is_pdf_with_directory_path
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/pollStampWorldStatus
@@ -128,6 +134,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/ensure_linux_desktop_integration
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/setup/ensure_first_run_installation
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/setup/test_decision_moves_if_first_run
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/stampworld/country_url/multiword_names_and_explicit_mappings_build_the_expected_urls
@@ -183,6 +195,7 @@ relationships:
 - [draw_text](../../../../../functions/src/placeholder_image/draw_text.md)
 - [start_bootstrap_stampworld_job](../../../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
 - [log_startup](../../../../../functions/src/review_ui/log_startup.md)
+- [pick_and_copy_stampworld_file_via_dialog](../../../../../functions/src/review_ui/pick_and_copy_stampworld_file_via_dialog.md)
 - [pick_and_copy_colnect_file_via_dialog](../../../../../functions/src/review_ui/pick_and_copy_colnect_file_via_dialog.md)
 - [pick_and_copy_colnect_file_for_db](../../../../../functions/src/review_ui/pick_and_copy_colnect_file_for_db.md)
 - [pick_and_copy_colnect_file_to_dir](../../../../../functions/src/review_ui/pick_and_copy_colnect_file_to_dir.md)
@@ -190,6 +203,7 @@ relationships:
 - [album_dir_for_ui](../../../../../functions/src/review_ui/album_dir_for_ui.md)
 - [colnect_import_data](../../../../../functions/src/review_ui/colnect_import_data.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
+- [test_is_pdf_with_directory_path](../../../../../functions/src/review_ui/http_utils/test_is_pdf_with_directory_path.md)
 - [pollStampWorldStatus](../../../../../functions/src/review_ui/views/bootstrap/pollStampWorldStatus.md)
 - [openReviewAfterStampWorld](../../../../../functions/src/review_ui/views/bootstrap/openReviewAfterStampWorld.md)
 - [applyRightCatalogSearchChoice](../../../../../functions/src/review_ui/views/compare/applyRightCatalogSearchChoice.md)
@@ -200,6 +214,8 @@ relationships:
 - [query_windows_programs_dir](../../../../../functions/src/setup/query_windows_programs_dir.md)
 - [ensure_windows_desktop_integration](../../../../../functions/src/setup/ensure_windows_desktop_integration.md)
 - [ensure_linux_desktop_integration](../../../../../functions/src/setup/ensure_linux_desktop_integration.md)
+- [ensure_first_run_installation](../../../../../functions/src/setup/ensure_first_run_installation.md)
+- [test_decision_moves_if_first_run](../../../../../functions/src/setup/test_decision_moves_if_first_run.md)
 - [multiword_names_and_explicit_mappings_build_the_expected_urls](../../../../../functions/src/stampworld/country_url/multiword_names_and_explicit_mappings_build_the_expected_urls.md)
 - [collect_stampworld_data_async](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_async.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)

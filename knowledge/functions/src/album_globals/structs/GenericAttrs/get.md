@@ -243,6 +243,9 @@ relationships:
   - target: functions/src/modes/extract_year
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review/config_api/validate_config
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/count_colnect_candidates_in_db
     resolved_by: tree-sitter
     confidence: exact
@@ -270,6 +273,9 @@ relationships:
   - target: functions/src/review_ui/config_editor/save_album_config_diff
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/serve_review_requests
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
     resolved_by: tree-sitter
     confidence: exact
@@ -277,9 +283,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/review_ui/http_handlers/serve_review_requests
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/load_left_stamps
@@ -295,6 +298,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/catalogDisplayName
@@ -414,6 +423,12 @@ relationships:
   - target: functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/pdf_import_tool/test_manual_import_single_record
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/pdf_import_tool/imports_denmark_pages_and_skips_all_266_on_second_pass
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db
     resolved_by: tree-sitter
     confidence: exact
@@ -424,6 +439,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/review_ui_stampworld_credentials/test/harness
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/stampworld_pdf_cli/cli_import_targets_explicit_db_instead_of_output_only_mode
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache
@@ -516,6 +534,7 @@ relationships:
 - [merge_overrides](../../../../../functions/src/flagdb/countries/merge_overrides.md)
 - [download_image](../../../../../functions/src/image_downloader/download_image.md)
 - [extract_year](../../../../../functions/src/modes/extract_year.md)
+- [validate_config](../../../../../functions/src/review/config_api/validate_config.md)
 - [count_colnect_candidates_in_db](../../../../../functions/src/review_ui/count_colnect_candidates_in_db.md)
 - [sync_processed_colnect_candidates_marks_existing_stamp_links](../../../../../functions/src/review_ui/sync_processed_colnect_candidates_marks_existing_stamp_links.md)
 - [mark_colnect_candidate_processed_sets_flag_for_matching_candidate](../../../../../functions/src/review_ui/mark_colnect_candidate_processed_sets_flag_for_matching_candidate.md)
@@ -525,15 +544,17 @@ relationships:
 - [save_full_config_values](../../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
 - [build_config_editor_data_for_album](../../../../../functions/src/review_ui/config_editor/build_config_editor_data_for_album.md)
 - [save_album_config_diff](../../../../../functions/src/review_ui/config_editor/save_album_config_diff.md)
+- [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
-- [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [load_left_stamps](../../../../../functions/src/review_ui/matcher_service/load_left_stamps.md)
 - [load_right_candidates](../../../../../functions/src/review_ui/matcher_service/load_right_candidates.md)
 - [apply_matches](../../../../../functions/src/review_ui/matcher_service/apply_matches.md)
 - [load_left_stamp_by_rowid](../../../../../functions/src/review_ui/matcher_service/load_left_stamp_by_rowid.md)
 - [load_right_candidate_by_colnect_id](../../../../../functions/src/review_ui/matcher_service/load_right_candidate_by_colnect_id.md)
+- [metadata](../../../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
+- [parse_stampworld_text](../../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text.md)
 - [catalogDisplayName](../../../../../functions/src/review_ui/views/compare/catalogDisplayName.md)
 - [inferInitialCatalogCodeFromLeftRows](../../../../../functions/src/review_ui/views/compare/inferInitialCatalogCodeFromLeftRows.md)
 - [listing_url](../../../../../functions/src/stampworld/country_url/listing_url.md)
@@ -573,8 +594,11 @@ relationships:
 - [report_brazil_db_counts](../../../../../functions/tests/external_album_backend/report_brazil_db_counts.md)
 - [uploads_work_for_nested_entries_and_old_metadata_migrates_additively](../../../../../functions/tests/external_album_backend/uploads_work_for_nested_entries_and_old_metadata_migrates_additively.md)
 - [manual_rows_parse_and_replace_only_the_same_staged_identity](../../../../../functions/tests/manual_import_template/manual_rows_parse_and_replace_only_the_same_staged_identity.md)
+- [test_manual_import_single_record](../../../../../functions/tests/pdf_import_tool/test_manual_import_single_record.md)
+- [imports_denmark_pages_and_skips_all_266_on_second_pass](../../../../../functions/tests/pdf_import_tool/imports_denmark_pages_and_skips_all_266_on_second_pass.md)
 - [test_ensure_placeholder_for_stamp_and_update_db](../../../../../functions/tests/placeholder_helper_test/test_ensure_placeholder_for_stamp_and_update_db.md)
 - [fixture](../../../../../functions/tests/review_pdf_filters_ui/fixture.md)
 - [harness](../../../../../functions/tests/review_ui_external_album/test/harness.md)
 - [harness](../../../../../functions/tests/review_ui_stampworld_credentials/test/harness.md)
+- [cli_import_targets_explicit_db_instead_of_output_only_mode](../../../../../functions/tests/stampworld_pdf_cli/cli_import_targets_explicit_db_instead_of_output_only_mode.md)
 - [wikipedia_ingest_inserts_up_to_max_entries_from_cache](../../../../../functions/tests/wikipedia_and_config_tests/wikipedia_ingest_inserts_up_to_max_entries_from_cache.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: header_spacing_is_numeric_even_with_a_legacy_marker
-resource: src/album_globals/generator_new/layout.rs#L180-L200
+resource: src/album_globals/generator_new/layout.rs#L183-L203
 visibility: private
 generated:
   by: okf-rs/0.4.0

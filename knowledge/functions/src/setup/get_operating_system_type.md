@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_operating_system_type
-resource: src/setup.rs#L58-L66
+resource: src/setup.rs#L60-L68
 generated:
   by: okf-rs/0.4.0
 relationships:

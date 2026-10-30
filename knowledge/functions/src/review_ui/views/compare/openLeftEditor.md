@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: openLeftEditor
-resource: src/review_ui/views/compare.js#L2775-L2899
+resource: src/review_ui/views/compare.js#L2812-L2936
 generated:
   by: okf-rs/0.4.0
 relationships:

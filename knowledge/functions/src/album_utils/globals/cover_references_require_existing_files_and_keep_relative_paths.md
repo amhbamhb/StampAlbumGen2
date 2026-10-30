@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: cover_references_require_existing_files_and_keep_relative_paths
-resource: src/album_utils/globals.rs#L19-L29
+resource: src/album_utils/globals.rs#L20-L30
 visibility: private
 generated:
   by: okf-rs/0.4.0
