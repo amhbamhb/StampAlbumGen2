@@ -1462,7 +1462,7 @@ pub fn run_stampworld_file_import(
     });
     let conn = crate::db_utils::init_db(&db_path.to_string_lossy())?;
     let summary = crate::data_sources::pdf::import_stampworld_file(
-        &conn, std::path::Path::new(source_file), country, cli.start_year, cli.end_year,
+        &conn, std::path::Path::new(source_file), country, &cli.start_year.to_string(), &cli.end_year.to_string(),
     ).map_err(std::io::Error::other)?;
     println!(
         "StampWorld import complete: database={}, found={}, imported={}, skipped={} (duplicates or year filter)",
