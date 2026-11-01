@@ -9,9 +9,11 @@ pub fn import_stampworld_file(
     conn: &Connection,
     path: &Path,
     country: &str,
-    start_year: i32,
-    end_year: i32,
+    start_year: &str,
+    end_year: &str,
 ) -> Result<ImportSummary, String> {
+    let start = start_year.to_string();
+    let end = end_year.to_string();
     if country.trim().is_empty() {
         return Err("A destination country is required".to_string());
     }
@@ -23,7 +25,7 @@ pub fn import_stampworld_file(
         .and_then(|s| s.to_str())
         .unwrap_or_default();
     let records = match extension.to_ascii_lowercase().as_str() {
-        "pdf" => extraction::parse_stampworld_pdf(path)?,
+        "pdf" => extraction::parse_stampworld_pdf(path, country,&start, &end)?,
         "html" | "htm" => extraction::parse_stampworld_html(path)?,
         _ => return Err("Select a StampWorld PDF or HTML file".to_string()),
     };
@@ -34,7 +36,7 @@ pub fn import_stampworld_file(
             .year
             .parse::<i32>()
             .map_err(|_| format!("Invalid year for stamp {}", record.catalog_number))?;
-        if (start_year..=end_year).contains(&year) {
+        if (start_year.parse::<i32>().unwrap()..=end_year.parse::<i32>().unwrap()).contains(&year) {
             filtered.push(record);
         }
     }

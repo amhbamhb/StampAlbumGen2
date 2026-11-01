@@ -71,7 +71,7 @@ fn handle_stampworld_import_request(
             opened = crate::db_utils::init_db(db_path).map_err(|e| e.to_string())?;
             &opened
         };
-        let summary = pdf_parser::import_stampworld_file(conn, Path::new(path), country, 0, i32::MAX)
+        let summary = pdf_parser::import_stampworld_file(conn, Path::new(path), country, "1840", "9999")
             .map_err(|e| format!("Import failed for {}: {}", path, e))?;
         let message = format!(
             "{}: found={}, imported={}, skipped={} (duplicates or year filter). Database: {}",

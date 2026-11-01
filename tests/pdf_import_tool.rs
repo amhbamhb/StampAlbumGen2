@@ -71,12 +71,12 @@ fn imports_real_pdfs_into_disk_database_and_skips_reimports() {
         ),
     ] {
         let path = fixture(name);
-        let first = import_stampworld_file(&conn, &path, country, 0, 9999).expect("first import");
+        let first = import_stampworld_file(&conn, &path, country, "1840", "9999").expect("first import");
         assert_eq!(
             (first.total_found, first.imported, first.skipped),
             (count, count, 0)
         );
-        let second = import_stampworld_file(&conn, &path, country, 0, 9999).expect("repeat import");
+        let second = import_stampworld_file(&conn, &path, country, "1840", "9999").expect("repeat import");
         assert_eq!(
             (second.total_found, second.imported, second.skipped),
             (count, 0, count)
@@ -110,7 +110,7 @@ fn imports_denmark_pages_and_skips_all_266_on_second_pass() {
             if pass == 1 {
                 let records =
                     stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(
-                        &path,
+                        &path,"DK","1980","1989"
                     )
                     .expect("repeat parse");
                 for record in records {
@@ -128,7 +128,7 @@ fn imports_denmark_pages_and_skips_all_266_on_second_pass() {
                     );
                 }
             }
-            let summary = import_stampworld_file(&conn, &path, "Denmark", 0, 9999)
+            let summary = import_stampworld_file(&conn, &path, "Denmark", "1980", "1989")
                 .expect("Denmark page import");
             imported += summary.imported;
             skipped += summary.skipped;
@@ -189,7 +189,7 @@ fn filters_years_imports_html_and_reports_invalid_inputs() {
     let conn = stamp_album_gen2::db_utils::init_db(":memory:").expect("initialize schema");
     let path = fixture("Great Britain - Postage stamps (1970 - 1979).pdf");
     let summary =
-        import_stampworld_file(&conn, &path, "Great Britain", 1973, 1974).expect("filter");
+        import_stampworld_file(&conn, &path, "Great Britain", "1973", "1974").expect("filter");
     assert_eq!(
         (summary.total_found, summary.imported, summary.skipped),
         (22, 0, 22)
@@ -202,12 +202,12 @@ fn filters_years_imports_html_and_reports_invalid_inputs() {
     )
     .expect("HTML fixture");
     let summary =
-        import_stampworld_file(&conn, &html, "Switzerland", 0, 9999).expect("HTML import");
+        import_stampworld_file(&conn, &html, "Switzerland", "1840", "9999").expect("HTML import");
     assert_eq!((summary.imported, summary.skipped), (4, 0));
-    assert!(import_stampworld_file(&conn, &path, "", 0, 9999).is_err());
-    assert!(import_stampworld_file(&conn, &path, "GB", 1974, 1973).is_err());
-    assert!(import_stampworld_file(&conn, Path::new("not-a-pdf.csv"), "GB", 0, 9999).is_err());
+    assert!(import_stampworld_file(&conn, &path, "", "1840", "9999").is_err());
+    assert!(import_stampworld_file(&conn, &path, "GB", "1974", "1973").is_err());
+    assert!(import_stampworld_file(&conn, Path::new("not-a-pdf.csv"), "GB", "1840", "9999").is_err());
     let invalid = temp.path().join("broken.pdf");
     std::fs::write(&invalid, b"not a PDF").expect("invalid fixture");
-    assert!(import_stampworld_file(&conn, &invalid, "GB", 0, 9999).is_err());
+    assert!(import_stampworld_file(&conn, &invalid, "GB", "1840", "9999").is_err());
 }

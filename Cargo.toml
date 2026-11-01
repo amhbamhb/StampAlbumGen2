@@ -12,6 +12,7 @@ test = "cargo test -- --nocapture"
 copyapp="cp -r target/release/stamp_album_gen2 ~/AlbumGen2/stamp_album_gen2"
 Windows = "cargo build --release --target x86_64-pc-windows-msvc"
 
+
 [ workspace]
 members = ["crates/stamp_album_db", "."]
 
@@ -25,7 +26,13 @@ default = ["rfd"]
 # Optional GUI folder picker (enables optional `rfd` dependency)
 rfd = ["dep:rfd"]
 
+# otherwise it conflicts with criterion benches
+[[bench]]
+name = "my_bench"
+harness = false
+
 [dependencies]
+criterion = "0.5"
 pdf-extract = "0.12"
 csv = "1.2"
 # win_dialog = "1.0.1"
@@ -75,6 +82,7 @@ tiny-skia = "0.12.0"
 # Explicit OpenSSL with vendored feature for MUSL builds
 openssl = { version = "0.10.76", optional = true, features = ["vendored"] }
 win_dialog = "1.0.1"
+oxidize-pdf = "5.5.5"
 
 [dev-dependencies]
 assert_cmd = "2.0"
