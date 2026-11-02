@@ -175,6 +175,7 @@ fn test_issue_resolution() {
     let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
         .expect("Failed to read album_globals/generator.rs");
 
+
     // These are the specific lines that were missing width parameter usage
 
     let compact_content: String = album_globals_content
@@ -188,7 +189,7 @@ fn test_issue_resolution() {
         "config.extra_height_mm.unwrap_or(cfg_defaults.extra_height_mm",
         "+extra_width_mm+stamp_box_adjust",
         "+extra_height_mm+stamp_box_adjust",
->>>>>>> fix/complex-stamp-db-type
+
     ];
 
     for pattern in required_patterns {

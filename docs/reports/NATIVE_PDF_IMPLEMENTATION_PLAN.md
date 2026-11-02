@@ -200,12 +200,17 @@ the native renderer.
 
 - [ ] T011 [Plan:3.1] Adapt `generator_new/emit.rs` and related emit/postprocess helpers to consume a compatibility projection of the shared document/layout; classify each feature as exact, approximated, omitted or blocked before writing target-version commands.
 - [ ] T012 [Plan:3.1] Preserve escaping, relative image paths, command order, row spacing semantics, page breaks, fonts, numbering and all supported global settings. Keep asset paths portable.
+
 - [ ] T013 [Plan:3.1] Validate emitted TXT against the pinned language and, during development, compare AlbumEasy-rendered outputs against the common-feature baseline. Persist divergence findings and require explicit approval for lossy mappings; native-only enhancements need not match AlbumEasy appearance.
+- [ ] T013 [Plan:3.1] Validate emitted TXT against the pinned language and, during development, compare AlbumEasy-rendered outputs against the common-feature baseline. Persist divergence findings and require explicit approval for lossy mappings; native-only enhancements need not match AlbumEasy appearance.
+
 
 - [ ] T011 [Plan:3.1] Adapt `generator_new/emit.rs` and related emit/postprocess helpers to consume a compatibility projection of the shared document/layout; classify each feature as exact, approximated, omitted or blocked before writing target-version commands.
 - [ ] T012 [Plan:3.1] Preserve escaping, relative image paths, command order, row spacing semantics, page breaks, fonts, numbering and all supported global settings. Keep asset paths portable.
 - [ ] T013 [Plan:3.1] Validate emitted TXT against the pinned language and, during development, compare AlbumEasy-rendered outputs against the common-feature baseline. Persist divergence findings and require explicit approval for lossy mappings; native-only enhancements need not match AlbumEasy appearance.
 >>>>>>> fix/complex-stamp-db-type
+=======
+>>>>>>> Stashed changes
 
 **Exit gate:** Exported TXT opens/renders in AlbumEasy. Preserve byte-normalized
 baseline TXT where feasible; review intentional differences and prove their effect.
@@ -331,6 +336,12 @@ The previous **29–61 day** range covered the ordinary-album foundation only.
 Full language support materially expands the project; revise the new estimate
 after the versioned command matrix is complete. Unspecified future enhancements
 are excluded.
+Allow roughly 20–30% contingency: approximately **67–151 developer-days overall**.
+The previous **29–61 day** range covered the ordinary-album foundation only.
+Full language support materially expands the project; revise the new estimate
+after the versioned command matrix is complete. Unspecified future enhancements
+are excluded.
+<<<<<<< Updated upstream
 
 Allow roughly 20–30% contingency: approximately **67–151 developer-days overall**.
 The previous **29–61 day** range covered the ordinary-album foundation only.
@@ -338,6 +349,8 @@ Full language support materially expands the project; revise the new estimate
 after the versioned command matrix is complete. Unspecified future enhancements
 are excluded.
 >>>>>>> fix/complex-stamp-db-type
+=======
+>>>>>>> Stashed changes
 
 **Dependencies:** Phase 1 precedes Phase 2; Phase 2 precedes Phases 3/4. Native
 and TXT exporters can then be developed independently against a frozen layout

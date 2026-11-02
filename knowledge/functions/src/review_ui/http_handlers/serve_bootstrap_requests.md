@@ -1,25 +1,10 @@
 ---
 type: Rust Function
 title: serve_bootstrap_requests
-<<<<<<<
-<<<<<<< Updated upstream
-resource: src/review_ui/http_handlers.rs#L233-L1212
-=======
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
->>>>>>>
+
+
 resource: src/review_ui/http_handlers.rs#L234-L1213
-<<<<<<<
-=======
-resource: src/review_ui/http_handlers.rs#L273-L1224
->>>>>>> fix/complex-stamp-db-type
->>>>>>> Stashed changes
-=======
-=======
-resource: src/review_ui/http_handlers.rs#L273-L1224
->>>>>>> fix/complex-stamp-db-type
->>>>>>>
+
 generated:
   by: okf-rs/0.4.0
 relationships:
