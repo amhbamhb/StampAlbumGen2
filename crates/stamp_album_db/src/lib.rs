@@ -294,34 +294,34 @@ pub fn insert_stamp_from_struct(conn: &Connection, si: &StampInsert) -> Result<b
 }
 
 /// Encapsulated private query helper function
+type ExistingStamp = (
+    i64,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+);
+
 fn load_existing_stamp(
     conn: &Connection,
     predicate: &str,
     bind: &[&dyn rusqlite::ToSql],
-) -> Result<
-    Option<(
-        i64,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-        String,
-    )>,
-> {
+) -> Result<Option<ExistingStamp>> {
     let existing_select = "SELECT rowid, image_path, remote_image_url, original_image_url, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, watermark, design, engraving, perforation, context, COALESCE(catalog_code, ''), COALESCE(stampworld_image_url, ''), COALESCE(colnect_page_url, ''), COALESCE(colnect_image_url, '') FROM stamps WHERE {predicate} LIMIT 1";
     let sql = existing_select.replace("{predicate}", predicate);
     let mut stmt = conn.prepare(&sql)?;

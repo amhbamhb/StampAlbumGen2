@@ -1,7 +1,10 @@
 ---
 type: Rust Function
 title: serve_bootstrap_requests
-resource: src/review_ui/http_handlers.rs#L233-L1212
+
+
+resource: src/review_ui/http_handlers.rs#L234-L1213
+
 generated:
   by: okf-rs/0.4.0
 relationships:

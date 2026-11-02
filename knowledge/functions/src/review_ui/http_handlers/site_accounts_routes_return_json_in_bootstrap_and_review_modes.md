@@ -1,7 +1,10 @@
 ---
 type: Rust Function
 title: site_accounts_routes_return_json_in_bootstrap_and_review_modes
-resource: src/review_ui/http_handlers.rs#L2865-L2910
+
+
+resource: src/review_ui/http_handlers.rs#L2866-L2911
+
 visibility: private
 generated:
   by: okf-rs/0.4.0

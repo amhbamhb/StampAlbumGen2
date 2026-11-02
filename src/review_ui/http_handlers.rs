@@ -2728,6 +2728,7 @@ mod site_account_tests {
     }
 
     #[test]
+<<<<<<< HEAD
     fn stampworld_file_import_route_reports_invalid_requests_in_both_loops() {
         for review in [false, true] {
             let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
@@ -2765,6 +2766,8 @@ mod site_account_tests {
     }
 
     #[test]
+=======
+>>>>>>> fix/complex-stamp-db-type
     fn review_pdf_filters_routes_validate_requests_and_report_empty_selection() {
         let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
         let addr = server.server_addr().to_ip().expect("TCP address");

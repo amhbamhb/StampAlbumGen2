@@ -1,7 +1,9 @@
 ---
 type: Rust Module
 title: http_handlers
-resource: src/review_ui/http_handlers.rs#L1-L2911
+
+resource: src/review_ui/http_handlers.rs#L1-L2912
+
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -36,7 +38,10 @@ relationships:
 - [ReviewHandlersStateRequests](../../../classes/src/review_ui/http_handlers/ReviewHandlersStateRequests.md)
 - [serve_review_requests](../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [review_input](../../../functions/src/review_ui/http_handlers/review_input.md)
+<<<<<<< HEAD
 - [stampworld_file_import_route_reports_invalid_requests_in_both_loops](../../../functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops.md)
+=======
+>>>>>>> fix/complex-stamp-db-type
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)

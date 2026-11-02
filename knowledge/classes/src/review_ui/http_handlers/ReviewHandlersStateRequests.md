@@ -1,7 +1,11 @@
 ---
 type: Rust Struct
 title: ReviewHandlersStateRequests
-resource: src/review_ui/http_handlers.rs#L1215-L1242
+<<<<<<< HEAD
+resource: src/review_ui/http_handlers.rs#L1216-L1243
+=======
+resource: src/review_ui/http_handlers.rs#L1227-L1254
+>>>>>>> fix/complex-stamp-db-type
 generated:
   by: okf-rs/0.4.0
 ---

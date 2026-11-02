@@ -30483,6 +30483,7 @@
             "description": null,
             "location": {
               "file": "src/album_utils/globals.rs",
+<<<<<<< HEAD
               "start_line": 7,
               "end_line": 18
             },
@@ -30948,6 +30949,10 @@
             "call_site": {
               "line": 77,
               "character": 48
+=======
+              "line": 74,
+              "character": 50
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -30956,6 +30961,9 @@
             "call_site": {
               "line": 78,
               "character": 45
+=======
+              "character": 46
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -30972,6 +30980,9 @@
             "call_site": {
               "line": 80,
               "character": 47
+=======
+              "character": 45
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -30980,6 +30991,9 @@
             "call_site": {
               "line": 81,
               "character": 49
+=======
+              "character": 47
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -30996,6 +31010,9 @@
             "call_site": {
               "line": 83,
               "character": 52
+=======
+              "character": 49
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -31004,6 +31021,9 @@
             "call_site": {
               "line": 84,
               "character": 39
+=======
+              "character": 52
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -31012,6 +31032,8 @@
             "call_site": {
               "line": 85,
               "character": 40
+=======
+              "character": 52
             }
           },
           {
@@ -31096,6 +31118,14 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 98,
+              "character": 13
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
               "line": 106,
@@ -31112,6 +31142,14 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 98,
+              "character": 13
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
               "line": 108,
@@ -31123,6 +31161,40 @@
             "callee_name": "push",
             "call_site": {
               "line": 114,
+              "character": 10
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
+            "callee_name": "push",
+            "call_site": {
+              "line": 107,
+              "character": 10
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
+            "callee_name": "push",
+            "call_site": {
+              "line": 113,
+>>>>>>> fix/complex-stamp-db-type
+              "character": 10
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
+            "callee_name": "push",
+            "call_site": {
+              "line": 107,
+              "character": 10
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
+            "callee_name": "push",
+            "call_site": {
+              "line": 113,
+>>>>>>> fix/complex-stamp-db-type
               "character": 10
             }
           },
@@ -31384,6 +31456,17 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+<<<<<<< HEAD
+=======
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 245,
+              "character": 18
+            }
+          },
+          {
+            "caller_id": "functions/src/album_utils/globals/write_globals",
+>>>>>>> fix/complex-stamp-db-type
             "callee_name": "push",
             "call_site": {
               "line": 246,
@@ -31707,6 +31790,9 @@
             "callee_name": "push",
             "call_site": {
               "line": 342,
+=======
+              "line": 344,
+>>>>>>> fix/complex-stamp-db-type
               "character": 14
             }
           },
@@ -31714,7 +31800,11 @@
             "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
+<<<<<<< HEAD
               "line": 345,
+=======
+              "line": 347,
+>>>>>>> fix/complex-stamp-db-type
               "character": 14
             }
           },
@@ -31722,7 +31812,11 @@
             "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
+<<<<<<< HEAD
               "line": 348,
+=======
+              "line": 350,
+>>>>>>> fix/complex-stamp-db-type
               "character": 14
             }
           },
@@ -31730,7 +31824,11 @@
             "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
+<<<<<<< HEAD
               "line": 351,
+=======
+              "line": 353,
+>>>>>>> fix/complex-stamp-db-type
               "character": 14
             }
           },
@@ -31746,7 +31844,11 @@
             "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
+<<<<<<< HEAD
               "line": 358,
+=======
+              "line": 360,
+>>>>>>> fix/complex-stamp-db-type
               "character": 14
             }
           },
@@ -31754,6 +31856,7 @@
             "caller_id": "functions/src/album_utils/globals/write_globals",
             "callee_name": "push",
             "call_site": {
+<<<<<<< HEAD
               "line": 361,
               "character": 14
             }
@@ -31763,6 +31866,9 @@
             "callee_name": "push",
             "call_site": {
               "line": 364,
+=======
+              "line": 363,
+>>>>>>> fix/complex-stamp-db-type
               "character": 14
             }
           },
@@ -31968,6 +32074,7 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+<<<<<<< HEAD
             "callee_name": "to_string",
             "call_site": {
               "line": 401,
@@ -32084,6 +32191,9 @@
             "call_site": {
               "line": 408,
               "character": 87
+=======
+              "character": 69
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -32096,6 +32206,7 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+<<<<<<< HEAD
             "callee_name": "iter",
             "call_site": {
               "line": 415,
@@ -32528,6 +32639,7 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+<<<<<<< HEAD
             "callee_name": "emit_image_only",
             "call_site": {
               "line": 579,
@@ -32584,6 +32696,7 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
+<<<<<<< HEAD
             "callee_name": "emit_image_only",
             "call_site": {
               "line": 614,
@@ -32680,7 +32793,7 @@
           },
           {
             "caller_id": "functions/src/album_utils/globals/write_globals",
-            "callee_name": "emit_row_start",
+            "callee_name": "emit_row_start_es",
             "call_site": {
               "line": 654,
               "character": 65
@@ -118956,6 +119069,7 @@
             "relationships": []
           },
           {
+<<<<<<< HEAD
             "id": "functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops",
             "kind": "Function",
             "language": "Rust",
@@ -118974,6 +119088,8 @@
             "relationships": []
           },
           {
+=======
+>>>>>>> fix/complex-stamp-db-type
             "id": "functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection",
             "kind": "Function",
             "language": "Rust",
@@ -122251,6 +122367,10 @@
             "call_site": {
               "line": 899,
               "character": 25
+=======
+              "line": 698,
+              "character": 203
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -122274,6 +122394,86 @@
             "callee_name": "respond",
             "call_site": {
               "line": 905,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 934,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 936,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 939,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 940,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 942,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 934,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 936,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 939,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 940,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_bootstrap_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 942,
               "character": 28
             }
           },
@@ -124311,9 +124511,3779 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "album_dir_for_ui",
             "call_site": {
               "line": 1535,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1344,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1348,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "stampworld_job_state",
+            "call_site": {
+              "line": 1350,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "lock",
+            "call_site": {
+              "line": 1351,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1352,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1353,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "clone",
+            "call_site": {
+              "line": 1353,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or",
+            "call_site": {
+              "line": 1354,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1362,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1367,
+              "character": 43
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "into_iter",
+            "call_site": {
+              "line": 1368,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "last",
+            "call_site": {
+              "line": 1369,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1370,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1370,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1370,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1371,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1380,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1381,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1393,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1395,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1396,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1401,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1402,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1402,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1403,
+              "character": 162
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1406,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1407,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1409,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1413,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1414,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1416,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1417,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1418,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1418,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1420,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1421,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1423,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1428,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1429,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1429,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1429,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1430,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1430,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1430,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1435,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1436,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "get",
+            "call_site": {
+              "line": 1437,
+              "character": 22
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1438,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_str",
+            "call_site": {
+              "line": 1438,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1439,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1439,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1439,
+              "character": 42
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1441,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1441,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1442,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1442,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1442,
+              "character": 47
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1444,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1445,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1448,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1448,
+              "character": 65
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1449,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1450,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1452,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1457,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1458,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1458,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1458,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1459,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1462,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1462,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1462,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1466,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1471,
+              "character": 79
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1474,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "start_bootstrap_stampworld_job",
+            "call_site": {
+              "line": 1482,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1489,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1497,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1507,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1511,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1520,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1520,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1520,
+              "character": 71
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1522,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_status_code",
+            "call_site": {
+              "line": 1524,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1525,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1526,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1528,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1533,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1533,
+              "character": 68
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1534,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1535,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1537,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
+            "callee_name": "album_dir_for_ui",
+            "call_site": {
+              "line": 1542,
+>>>>>>> fix/complex-stamp-db-type
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1344,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1348,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "stampworld_job_state",
+            "call_site": {
+              "line": 1350,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "lock",
+            "call_site": {
+              "line": 1351,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1352,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1353,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "clone",
+            "call_site": {
+              "line": 1353,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or",
+            "call_site": {
+              "line": 1354,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1362,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1367,
+              "character": 43
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "into_iter",
+            "call_site": {
+              "line": 1368,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "last",
+            "call_site": {
+              "line": 1369,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1370,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1370,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1370,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1371,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1380,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1381,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1393,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1395,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1396,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1401,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1402,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1402,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1403,
+              "character": 162
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1406,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1407,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1409,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1413,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1414,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1416,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1417,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1418,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1418,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1420,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1421,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1423,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1428,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1429,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1429,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1429,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1430,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1430,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1430,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1435,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1436,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "get",
+            "call_site": {
+              "line": 1437,
+              "character": 22
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1438,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_str",
+            "call_site": {
+              "line": 1438,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1439,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1439,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1439,
+              "character": 42
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1441,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1441,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1442,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1442,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1442,
+              "character": 47
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1444,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1445,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1448,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1448,
+              "character": 65
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1449,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1450,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1452,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1457,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1458,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1458,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1458,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1459,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1462,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1462,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1462,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1466,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1471,
+              "character": 79
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1474,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "start_bootstrap_stampworld_job",
+            "call_site": {
+              "line": 1482,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1489,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1497,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1507,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1511,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1520,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1520,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1520,
+              "character": 71
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1522,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_status_code",
+            "call_site": {
+              "line": 1524,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1525,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1526,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1528,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1533,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1533,
+              "character": 68
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1534,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1535,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1537,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
+            "callee_name": "album_dir_for_ui",
+            "call_site": {
+              "line": 1542,
+>>>>>>> fix/complex-stamp-db-type
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1344,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1348,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "stampworld_job_state",
+            "call_site": {
+              "line": 1350,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "lock",
+            "call_site": {
+              "line": 1351,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1352,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1353,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "clone",
+            "call_site": {
+              "line": 1353,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or",
+            "call_site": {
+              "line": 1354,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1362,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1367,
+              "character": 43
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "into_iter",
+            "call_site": {
+              "line": 1368,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "last",
+            "call_site": {
+              "line": 1369,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1370,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1370,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1370,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1371,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1380,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1381,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1393,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1395,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1396,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1401,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1402,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1402,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1403,
+              "character": 162
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1406,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1407,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1409,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1413,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1414,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1416,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1417,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1418,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1418,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1420,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1421,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1423,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1428,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1429,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1429,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1429,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1430,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1430,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1430,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1435,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1436,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "get",
+            "call_site": {
+              "line": 1437,
+              "character": 22
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1438,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_str",
+            "call_site": {
+              "line": 1438,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1439,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1439,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1439,
+              "character": 42
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1441,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1441,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1442,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1442,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1442,
+              "character": 47
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1444,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1445,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1448,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1448,
+              "character": 65
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1449,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1450,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1452,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1457,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1458,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1458,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1458,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1459,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1462,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1462,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1462,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1466,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1471,
+              "character": 79
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1474,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "start_bootstrap_stampworld_job",
+            "call_site": {
+              "line": 1482,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1489,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1497,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1507,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1511,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1520,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1520,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1520,
+              "character": 71
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1522,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_status_code",
+            "call_site": {
+              "line": 1524,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1525,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1526,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1528,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1533,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1533,
+              "character": 68
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1534,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1535,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1537,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
+            "callee_name": "album_dir_for_ui",
+            "call_site": {
+              "line": 1542,
+>>>>>>> fix/complex-stamp-db-type
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1344,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1348,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "stampworld_job_state",
+            "call_site": {
+              "line": 1350,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "lock",
+            "call_site": {
+              "line": 1351,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1352,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1353,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "clone",
+            "call_site": {
+              "line": 1353,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or",
+            "call_site": {
+              "line": 1354,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1362,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1367,
+              "character": 43
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "into_iter",
+            "call_site": {
+              "line": 1368,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "last",
+            "call_site": {
+              "line": 1369,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1370,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1370,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1370,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1371,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1380,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1381,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1393,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1395,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1396,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1401,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1402,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1402,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1403,
+              "character": 162
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1406,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1407,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1409,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1413,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1414,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1416,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1417,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1418,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1418,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1420,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1421,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1423,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1428,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1429,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1429,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1429,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1430,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1430,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1430,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1435,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1436,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "get",
+            "call_site": {
+              "line": 1437,
+              "character": 22
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1438,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_str",
+            "call_site": {
+              "line": 1438,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1439,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1439,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1439,
+              "character": 42
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1441,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1441,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1442,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1442,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1442,
+              "character": 47
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1444,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1445,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1448,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1448,
+              "character": 65
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1449,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1450,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1452,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1457,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1458,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1458,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1458,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1459,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1462,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1462,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1462,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1466,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1471,
+              "character": 79
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1474,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "start_bootstrap_stampworld_job",
+            "call_site": {
+              "line": 1482,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1489,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1497,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1507,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1511,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1520,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1520,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1520,
+              "character": 71
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1522,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_status_code",
+            "call_site": {
+              "line": 1524,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1525,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1526,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1528,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1533,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1533,
+              "character": 68
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1534,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1535,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1537,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
+            "callee_name": "album_dir_for_ui",
+            "call_site": {
+              "line": 1542,
+>>>>>>> fix/complex-stamp-db-type
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1344,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1348,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "stampworld_job_state",
+            "call_site": {
+              "line": 1350,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "lock",
+            "call_site": {
+              "line": 1351,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1352,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1353,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "clone",
+            "call_site": {
+              "line": 1353,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or",
+            "call_site": {
+              "line": 1354,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1362,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1367,
+              "character": 43
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "into_iter",
+            "call_site": {
+              "line": 1368,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "last",
+            "call_site": {
+              "line": 1369,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1370,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1370,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1370,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1371,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1380,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1381,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1393,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1395,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "Some",
+            "call_site": {
+              "line": 1396,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1401,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1402,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1402,
+              "character": 49
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1403,
+              "character": 162
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1406,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1407,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1409,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1413,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "tail_current_log",
+            "call_site": {
+              "line": 1414,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1416,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1417,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1418,
+              "character": 21
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1418,
+              "character": 70
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1420,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1421,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1423,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1428,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1429,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1429,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1429,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1430,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1430,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1430,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "ok",
+            "call_site": {
+              "line": 1435,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1436,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "get",
+            "call_site": {
+              "line": 1437,
+              "character": 22
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "and_then",
+            "call_site": {
+              "line": 1438,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_str",
+            "call_site": {
+              "line": 1438,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "map",
+            "call_site": {
+              "line": 1439,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1439,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1439,
+              "character": 42
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "filter",
+            "call_site": {
+              "line": 1441,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1441,
+              "character": 31
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1442,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "trim",
+            "call_site": {
+              "line": 1442,
+              "character": 40
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1442,
+              "character": 47
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_empty",
+            "call_site": {
+              "line": 1444,
+              "character": 24
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1445,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1448,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1448,
+              "character": 65
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1449,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1450,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1452,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1457,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1458,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1458,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1458,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1459,
+              "character": 16
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1462,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1462,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1462,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1466,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1471,
+              "character": 79
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1474,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "start_bootstrap_stampworld_job",
+            "call_site": {
+              "line": 1482,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1489,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1497,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1507,
+              "character": 20
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "log_runtime_event",
+            "call_site": {
+              "line": 1511,
+              "character": 12
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1520,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1520,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1520,
+              "character": 71
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1522,
+              "character": 25
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_status_code",
+            "call_site": {
+              "line": 1524,
+              "character": 17
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1525,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1526,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1528,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1533,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1533,
+              "character": 68
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1534,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1535,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1537,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "album_dir_for_ui",
+            "call_site": {
+              "line": 1542,
+>>>>>>> fix/complex-stamp-db-type
               "character": 28
             }
           },
@@ -125115,6 +129085,10 @@
             "call_site": {
               "line": 1758,
               "character": 25
+=======
+              "line": 1557,
+              "character": 139
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125123,6 +129097,10 @@
             "call_site": {
               "line": 1762,
               "character": 37
+=======
+              "line": 1559,
+              "character": 42
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125135,6 +129113,7 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "with_header",
             "call_site": {
               "line": 1764,
@@ -125163,6 +129142,10 @@
             "call_site": {
               "line": 1772,
               "character": 23
+=======
+              "line": 1615,
+              "character": 24
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125267,6 +129250,10 @@
             "call_site": {
               "line": 1795,
               "character": 89
+=======
+              "line": 1623,
+              "character": 27
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125467,6 +129454,10 @@
             "call_site": {
               "line": 1840,
               "character": 23
+=======
+              "line": 1639,
+              "character": 28
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125483,6 +129474,10 @@
             "call_site": {
               "line": 1840,
               "character": 61
+=======
+              "line": 1642,
+              "character": 28
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125515,6 +129510,10 @@
             "call_site": {
               "line": 1845,
               "character": 77
+=======
+              "line": 1644,
+              "character": 28
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125523,6 +129522,10 @@
             "call_site": {
               "line": 1847,
               "character": 39
+=======
+              "line": 1648,
+              "character": 44
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125539,14 +129542,33 @@
             "call_site": {
               "line": 1853,
               "character": 17
+=======
+              "line": 1650,
+              "character": 56
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "to_string",
             "call_site": {
               "line": 1855,
               "character": 25
+=======
+            "callee_name": "from",
+            "call_site": {
+              "line": 1653,
+              "character": 29
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "exists",
+            "call_site": {
+              "line": 1654,
+              "character": 18
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125555,13 +129577,174 @@
             "call_site": {
               "line": 1857,
               "character": 38
+=======
+              "line": 1655,
+              "character": 32
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "unwrap_or_else",
             "call_site": {
               "line": 1863,
+              "character": 17
+=======
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1655,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1655,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "open",
+            "call_site": {
+              "line": 1658,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_file",
+            "call_site": {
+              "line": 1660,
+              "character": 45
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1662,
+              "character": 32
+>>>>>>> fix/complex-stamp-db-type
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1865,
+              "character": 25
+=======
+            "callee_name": "mime_from_path",
+            "call_site": {
+              "line": 1662,
+              "character": 65
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_bytes",
+            "call_site": {
+              "line": 1662,
+              "character": 84
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1664,
+              "character": 36
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1666,
+              "character": 36
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1669,
+              "character": 36
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1669,
+              "character": 54
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1669,
+              "character": 60
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "starts_with",
+            "call_site": {
+              "line": 1675,
+              "character": 44
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "parse_query_param",
+            "call_site": {
+              "line": 1676,
+              "character": 33
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1677,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1677,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1677,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "resolve_colnect_image_url",
+            "call_site": {
+              "line": 1681,
+              "character": 59
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_default",
+            "call_site": {
+              "line": 1682,
               "character": 17
             }
           },
@@ -125569,8 +129752,9 @@
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
             "callee_name": "to_string",
             "call_site": {
-              "line": 1865,
-              "character": 25
+              "line": 1687,
+              "character": 13
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125667,6 +129851,10 @@
             "call_site": {
               "line": 1884,
               "character": 72
+=======
+              "line": 1704,
+              "character": 70
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125679,6 +129867,7 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "add_colnect_stamp_to_stamps",
             "call_site": {
               "line": 1886,
@@ -125711,6 +129900,7 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "unwrap_or_else",
             "call_site": {
               "line": 1902,
@@ -125723,6 +129913,10 @@
             "call_site": {
               "line": 1903,
               "character": 119
+=======
+              "line": 1727,
+              "character": 25
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125819,6 +130013,10 @@
             "call_site": {
               "line": 1922,
               "character": 79
+=======
+              "line": 1746,
+              "character": 70
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125843,6 +130041,10 @@
             "call_site": {
               "line": 1924,
               "character": 95
+=======
+              "line": 1754,
+              "character": 17
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -125851,6 +130053,10 @@
             "call_site": {
               "line": 1925,
               "character": 123
+=======
+              "line": 1756,
+              "character": 25
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126027,6 +130233,10 @@
             "call_site": {
               "line": 1966,
               "character": 89
+=======
+              "line": 1765,
+              "character": 25
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126123,6 +130333,10 @@
             "call_site": {
               "line": 1985,
               "character": 70
+=======
+              "line": 1784,
+              "character": 69
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126147,6 +130361,10 @@
             "call_site": {
               "line": 1993,
               "character": 21
+=======
+              "line": 1792,
+              "character": 17
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126155,6 +130373,10 @@
             "call_site": {
               "line": 1995,
               "character": 29
+=======
+              "line": 1794,
+              "character": 25
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126283,6 +130505,10 @@
             "call_site": {
               "line": 2045,
               "character": 36
+=======
+              "line": 1864,
+              "character": 38
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126403,6 +130629,10 @@
             "call_site": {
               "line": 2072,
               "character": 20
+=======
+              "line": 1870,
+              "character": 17
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126451,6 +130681,10 @@
             "call_site": {
               "line": 2085,
               "character": 25
+=======
+              "line": 1885,
+              "character": 35
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126459,6 +130693,58 @@
             "call_site": {
               "line": 2087,
               "character": 26
+=======
+              "line": 1886,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1886,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1886,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1887,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1887,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1887,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1891,
+              "character": 72
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126475,6 +130761,10 @@
             "call_site": {
               "line": 2087,
               "character": 69
+=======
+              "line": 1899,
+              "character": 17
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126611,6 +130901,18 @@
             "call_site": {
               "line": 2122,
               "character": 82
+=======
+              "line": 1903,
+              "character": 38
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "unwrap_or_else",
+            "call_site": {
+              "line": 1909,
+              "character": 17
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126619,6 +130921,122 @@
             "call_site": {
               "line": 2124,
               "character": 46
+=======
+              "line": 1910,
+              "character": 119
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_string",
+            "call_site": {
+              "line": 1914,
+              "character": 37
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_bytes",
+            "call_site": {
+              "line": 1915,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "with_header",
+            "call_site": {
+              "line": 1916,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1918,
+              "character": 28
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "new",
+            "call_site": {
+              "line": 1923,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 1924,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 1924,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 1924,
+              "character": 61
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "respond",
+            "call_site": {
+              "line": 1925,
+              "character": 32
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "empty",
+            "call_site": {
+              "line": 1925,
+              "character": 50
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "StatusCode",
+            "call_site": {
+              "line": 1925,
+              "character": 56
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "from_str",
+            "call_site": {
+              "line": 1929,
+              "character": 79
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "to_string",
+            "call_site": {
+              "line": 1931,
+              "character": 39
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "delete_colnect_candidate",
+            "call_site": {
+              "line": 1931,
+              "character": 50
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126635,6 +131053,10 @@
             "call_site": {
               "line": 2129,
               "character": 85
+=======
+              "line": 1931,
+              "character": 95
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -126675,6 +131097,10 @@
             "call_site": {
               "line": 2141,
               "character": 35
+=======
+              "line": 1940,
+              "character": 17
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127315,6 +131741,10 @@
             "call_site": {
               "line": 2351,
               "character": 81
+=======
+              "line": 2569,
+              "character": 37
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127323,6 +131753,10 @@
             "call_site": {
               "line": 2352,
               "character": 39
+=======
+              "line": 2570,
+              "character": 35
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127331,6 +131765,10 @@
             "call_site": {
               "line": 2353,
               "character": 32
+=======
+              "line": 2571,
+              "character": 28
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127339,10 +131777,15 @@
             "call_site": {
               "line": 2355,
               "character": 32
+=======
+              "line": 2573,
+              "character": 28
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "respond",
             "call_site": {
               "line": 2362,
@@ -127363,6 +131806,36 @@
             "call_site": {
               "line": 2369,
               "character": 36
+=======
+            "callee_name": "new",
+            "call_site": {
+              "line": 2578,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "as_reader",
+            "call_site": {
+              "line": 2579,
+              "character": 23
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "read_to_string",
+            "call_site": {
+              "line": 2579,
+              "character": 35
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+            "callee_name": "is_err",
+            "call_site": {
+              "line": 2579,
+              "character": 61
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127375,7 +131848,7 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
-            "callee_name": "review_pdf_error",
+            "callee_name": "empty",
             "call_site": {
               "line": 2370,
               "character": 40
@@ -127383,15 +131856,19 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
-            "callee_name": "is_all",
+            "callee_name": "catch_unwind",
             "call_site": {
               "line": 2376,
               "character": 42
+=======
+              "line": 2600,
+              "character": 52
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
-            "callee_name": "prepare_pdf_stamps",
+            "callee_name": "AssertUnwindSafe",
             "call_site": {
               "line": 2379,
               "character": 55
@@ -127419,6 +131896,10 @@
             "call_site": {
               "line": 2387,
               "character": 48
+=======
+              "line": 2600,
+              "character": 77
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127427,6 +131908,10 @@
             "call_site": {
               "line": 2393,
               "character": 67
+=======
+              "line": 2602,
+              "character": 45
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127435,6 +131920,10 @@
             "call_site": {
               "line": 2394,
               "character": 40
+=======
+              "line": 2603,
+              "character": 60
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127499,6 +131988,10 @@
             "call_site": {
               "line": 2404,
               "character": 54
+=======
+              "line": 2603,
+              "character": 70
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -127507,14 +132000,21 @@
             "call_site": {
               "line": 2405,
               "character": 39
+=======
+              "line": 2604,
+              "character": 55
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
-            "callee_name": "generate_album_output_conn_with_prepared_pdf",
+            "callee_name": "generate_album_output_conn_with_pdf_override",
             "call_site": {
               "line": 2407,
               "character": 54
+=======
+              "line": 2605,
+              "character": 66
             }
           },
           {
@@ -127527,6 +132027,7 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/serve_review_requests",
+<<<<<<< HEAD
             "callee_name": "generate_album_output_conn_with_pdf_override",
             "call_site": {
               "line": 2417,
@@ -128539,6 +133040,10 @@
             "call_site": {
               "line": 2695,
               "character": 36
+=======
+              "line": 2696,
+              "character": 32
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -128547,6 +133052,9 @@
             "call_site": {
               "line": 2696,
               "character": 40
+=======
+              "character": 26
+>>>>>>> fix/complex-stamp-db-type
             }
           },
           {
@@ -128566,6 +133074,7 @@
             }
           },
           {
+<<<<<<< HEAD
             "caller_id": "functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops",
             "callee_name": "new",
             "call_site": {
@@ -128915,6 +133424,9 @@
             "call_site": {
               "line": 2768,
               "character": 13
+=======
+              "line": 2746,
+              "character": 13
             }
           },
           {
@@ -129223,7 +133735,11 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings",
+<<<<<<< HEAD
             "callee_name": "expect",
+=======
+            "callee_name": "send",
+>>>>>>> fix/complex-stamp-db-type
             "call_site": {
               "line": 2832,
               "character": 17
@@ -129231,6 +133747,7 @@
           },
           {
             "caller_id": "functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings",
+<<<<<<< HEAD
             "callee_name": "post",
             "call_site": {
               "line": 2840,
@@ -130102,6 +134619,11 @@
               "line": 115,
               "character": 27
             }
+=======
+              "line": 2885,
+              "character": 26
+            }
+>>>>>>> fix/complex-stamp-db-type
           }
         ]
       }
@@ -161106,6 +165628,7 @@
             "description": null,
             "location": {
               "file": "src/review_ui/views/external_album.js",
+<<<<<<< HEAD
               "start_line": 189,
               "end_line": 222
             },
@@ -162595,6 +167118,39 @@
           },
           {
             "caller_id": "functions/src/review_ui/views/external_album/save",
+            "callee_name": "text",
+            "call_site": {
+              "line": 294,
+              "character": 26
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/save",
+            "callee_name": "setBusy",
+            "call_site": {
+              "line": 295,
+              "character": 18
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/retry",
+            "callee_name": "setBusy",
+            "call_site": {
+              "line": 300,
+>>>>>>> fix/complex-stamp-db-type
+              "character": 8
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/save",
+            "callee_name": "text",
+            "call_site": {
+              "line": 294,
+              "character": 8
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/save",
             "callee_name": "api",
             "call_site": {
               "line": 298,
@@ -162626,7 +167182,19 @@
             }
           },
           {
+<<<<<<< HEAD
             "caller_id": "functions/src/review_ui/views/external_album/save",
+=======
+            "caller_id": "functions/src/review_ui/views/external_album/retry",
+            "callee_name": "api",
+            "call_site": {
+              "line": 302,
+              "character": 41
+            }
+          },
+          {
+            "caller_id": "functions/src/review_ui/views/external_album/retry",
+>>>>>>> fix/complex-stamp-db-type
             "callee_name": "renderAlbum",
             "call_site": {
               "line": 303,
