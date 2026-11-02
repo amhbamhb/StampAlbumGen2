@@ -46,7 +46,10 @@ pub fn set_db_path_from_cli(path: &str) {
 
 /// Gets the database path from CLI arguments
 pub fn get_db_path_from_cli() -> String {
-    ALBUM_DB_PATH.lock().expect("ALBUM_DB_PATH lock poisoned").clone()
+    ALBUM_DB_PATH
+        .lock()
+        .expect("ALBUM_DB_PATH lock poisoned")
+        .clone()
 }
 
 /// Finds the configuration file path
@@ -90,13 +93,17 @@ pub fn image_exists(album_name: &str, image_path: &str) -> bool {
 /// Set the overwrite-album flag (typically from CLI)
 pub fn set_overwrite_album_from_cli(flag: bool) {
     use crate::types::OVERWRITE_ALBUM;
-    *OVERWRITE_ALBUM.lock().expect("OVERWRITE_ALBUM lock poisoned") = flag;
+    *OVERWRITE_ALBUM
+        .lock()
+        .expect("OVERWRITE_ALBUM lock poisoned") = flag;
 }
 
 /// Get the overwrite-album flag
 pub fn get_overwrite_album_from_cli() -> bool {
     use crate::types::OVERWRITE_ALBUM;
-    *OVERWRITE_ALBUM.lock().expect("OVERWRITE_ALBUM lock poisoned")
+    *OVERWRITE_ALBUM
+        .lock()
+        .expect("OVERWRITE_ALBUM lock poisoned")
 }
 
 /// Gets the appropriate image path, using placeholder if the original doesn't exist

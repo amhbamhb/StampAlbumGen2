@@ -1,5 +1,6 @@
 # Modules
 
+- [my_bench](../modules/benches/my_bench.md) — Rust Module
 - [build](../modules/build.md) — Rust Module
 - [src](../modules/crates/stamp_album_db/src.md) — Rust Module
 - [unit_tests](../modules/crates/stamp_album_db/tests/unit_tests.md) — Rust Module
@@ -184,6 +185,7 @@
 - [placeholder_image_series_size](../modules/tests/placeholder_image_series_size.md) — Rust Module
 - [placeholder_image_size](../modules/tests/placeholder_image_size.md) — Rust Module
 - [placeholder_regeneration](../modules/tests/placeholder_regeneration.md) — Rust Module
+- [release_publication_shell](../modules/tests/release_publication_shell.md) — JavaScript Module
 - [review_pdf_filters_ui](../modules/tests/review_pdf_filters_ui.md) — JavaScript Module
 - [test](../modules/tests/review_ui_external_album/test.md) — JavaScript Module
 - [test](../modules/tests/review_ui_stampworld_credentials/test.md) — JavaScript Module

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: undoLastDelete
-resource: src/review_ui/views/compare.js#L3249-L3279
+resource: src/review_ui/views/compare.js#L3253-L3283
 generated:
   by: okf-rs/0.4.0
 relationships:

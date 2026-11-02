@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: for_add
-resource: src/review_ui/matcher_service.rs#L1132-L1141
+resource: src/review_ui/matcher_service.rs#L1133-L1142
 visibility: private
 generated:
   by: okf-rs/0.4.0

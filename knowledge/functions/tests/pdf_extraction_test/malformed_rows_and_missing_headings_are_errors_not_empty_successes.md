@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: malformed_rows_and_missing_headings_are_errors_not_empty_successes
-resource: tests/pdf_extraction_test.rs#L99-L116
+resource: tests/pdf_extraction_test.rs#L107-L124
 visibility: private
 generated:
   by: okf-rs/0.4.0

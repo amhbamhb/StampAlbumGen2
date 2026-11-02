@@ -24,10 +24,11 @@ use stamp_album_gen2::{
         ReviewUiBootstrapOutcome, ReviewUiRunOutcome, ReviewUiSelected,
     },
     setup::{
-        align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
-        ensure_windows_desktop_integration, setup_logging,
-        startup_probe_path, uninstall_linux_desktop_integration, validate_os, write_startup_probe,
-        write_startup_probe_snapshot, ensure_first_run_installation,
+        align_process_working_dir_to_runtime_layout, ensure_first_run_installation,
+        ensure_linux_desktop_integration, ensure_windows_desktop_integration,
+        install_linux_desktop_integration, setup_logging, startup_probe_path,
+        uninstall_linux_desktop_integration, validate_os, write_startup_probe,
+        write_startup_probe_snapshot,
     },
     validation::{
         print_validation_error, validate_source, validate_user_input, validate_year_range,
@@ -91,8 +92,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         interactive_terminal,
     );
 
-    if let Err(e) = ensure_first_run_installation() {
-        eprintln!("Failed to perform first-run installation: {}", e);
+    if launched_without_args && !running_from_target {
+        if let Err(e) = ensure_first_run_installation() {
+            eprintln!("Failed to perform first-run installation: {}", e);
+        }
     }
 
     // Allow forcing the initial first-run interactive flow for testing
@@ -147,7 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if cli.install_desktop_launcher {
-        match uninstall_linux_desktop_integration() {
+        match install_linux_desktop_integration() {
             Ok(report) => {
                 println!(
                     "{} (desktop entry: {}, icon: {})",
@@ -281,7 +284,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
     if let Some(path) = aligned_runtime_dir {
- 
         eprintln!(
             "Runtime working directory aligned to {}",
             path.to_string_lossy()
@@ -595,7 +597,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     {
         // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
         run_database_mode(&cli, show_progress).await?;
-    } else if effective_source == "stampworld" || effective_source == "us1847" || effective_source == "pdf" {
+    } else if effective_source == "stampworld"
+        || effective_source == "us1847"
+        || effective_source == "pdf"
+    {
         // Scraping mode
         // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
         // network operations, but we must still validate required CLI

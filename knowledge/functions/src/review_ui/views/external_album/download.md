@@ -1,7 +1,10 @@
 ---
 type: JavaScript Function
 title: download
+
+
 resource: src/review_ui/views/external_album.js#L358-L367
+
 generated:
   by: okf-rs/0.4.0
 relationships:

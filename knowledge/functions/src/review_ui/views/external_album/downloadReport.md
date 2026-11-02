@@ -1,7 +1,9 @@
 ---
 type: JavaScript Function
 title: downloadReport
+
 resource: src/review_ui/views/external_album.js#L369-L375
+
 generated:
   by: okf-rs/0.4.0
 relationships:

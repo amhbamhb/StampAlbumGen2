@@ -8,4 +8,3 @@ pub struct ReviewHandlersState {
     pub reload_requested: bool,
     pub return_to_start_requested: bool,
 }
-

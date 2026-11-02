@@ -1,7 +1,10 @@
 ---
 type: JavaScript Function
 title: renderAlbum
+
 resource: src/review_ui/views/external_album.js#L189-L220
+
+
 generated:
   by: okf-rs/0.4.0
 relationships:

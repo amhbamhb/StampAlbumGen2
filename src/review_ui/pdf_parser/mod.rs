@@ -25,7 +25,7 @@ pub fn import_stampworld_file(
         .and_then(|s| s.to_str())
         .unwrap_or_default();
     let records = match extension.to_ascii_lowercase().as_str() {
-        "pdf" => extraction::parse_stampworld_pdf(path, country,&start, &end)?,
+        "pdf" => extraction::parse_stampworld_pdf(path, country, &start, &end)?,
         "html" | "htm" => extraction::parse_stampworld_html(path)?,
         _ => return Err("Select a StampWorld PDF or HTML file".to_string()),
     };

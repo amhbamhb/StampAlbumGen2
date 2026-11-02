@@ -50,7 +50,7 @@ pub fn open_local_path<P: AsRef<Path>>(path: P) -> bool {
 
 /// Opens a folder in the file manager (platform-specific)
 pub fn open_folder_in_file_manager<P: AsRef<Path>>(folder_path: P) -> bool {
-#[allow(dead_code)]
+    #[allow(dead_code)]
     let path = folder_path.as_ref();
     if path.is_dir() {
         #[cfg(target_family = "unix")]
@@ -91,10 +91,10 @@ mod tests {
     fn test_is_pdf() {
         let pdf = Path::new("document.pdf");
         assert!(is_pdf(pdf));
-        
+
         let txt = Path::new("document.txt");
         assert!(!is_pdf(txt));
-        
+
         let no_ext = Path::new("document");
         assert!(!is_pdf(no_ext));
     }
@@ -103,10 +103,10 @@ mod tests {
     fn test_is_pdf_extension_case_insensitive() {
         let pdf = Path::new("document.PDF");
         assert!(is_pdf(pdf));
-        
+
         let pdf = Path::new("document.Pdf");
         assert!(is_pdf(pdf));
-        
+
         let pdf = Path::new("Document.pdf");
         assert!(is_pdf(pdf));
     }

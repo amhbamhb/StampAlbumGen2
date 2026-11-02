@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: extraction
-resource: src/review_ui/pdf_parser/extraction.rs#L1-L294
+resource: src/review_ui/pdf_parser/extraction.rs#L1-L348
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -12,13 +12,16 @@ relationships:
   - target: external/pdf-extract-document-mediabox-outputdev-outputerror-transform
     resolved_by: tree-sitter
     confidence: exact
+  - target: external/oxidize-pdf-operations-extract-images-from-pdf-extractimagesoptions
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/std-path-path
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/regex-regex
     resolved_by: tree-sitter
     confidence: exact
   - target: external/scraper-html-selector
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: external/std-path-path
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -37,6 +40,8 @@ relationships:
 - [end_word](../../../../functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/end_word.md)
 - [end_line](../../../../functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/end_line.md)
 - [parse_stampworld_pdf](../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_pdf.md)
+- [extract_stampworld_pdf_content](../../../../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_content.md)
+- [extract_stampworld_pdf_images](../../../../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_images.md)
 - [extract_stampworld_pdf_text](../../../../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_text.md)
 - [normalized](../../../../functions/src/review_ui/pdf_parser/extraction/normalized.md)
 - [metadata](../../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
@@ -47,9 +52,10 @@ relationships:
 
 - `super::types::PdfStampRecord`
 - `pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform}`
+- `oxidize_pdf::operations::{extract_images_from_pdf, ExtractImagesOptions}`
+- `std::path::{Path}`
 - `regex::Regex`
 - `scraper::{Html, Selector}`
-- `std::path::Path`
 
 # Member of
 

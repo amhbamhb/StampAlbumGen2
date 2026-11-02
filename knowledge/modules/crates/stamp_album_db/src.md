@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: src
-resource: crates/stamp_album_db/src/lib.rs#L1-L1273
+resource: crates/stamp_album_db/src/lib.rs#L1-L1212
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -15,6 +15,9 @@ relationships:
   - target: external/rusqlite-params-connection-optionalextension-result
     resolved_by: tree-sitter
     confidence: exact
+  - target: external/uuid-uuid
+    resolved_by: tree-sitter
+    confidence: exact
   member_of:
   - target: packages/crates/stamp_album_db
     resolved_by: tree-sitter
@@ -24,6 +27,7 @@ relationships:
 # Contains
 
 - [insert_stamp_from_struct](../../../functions/crates/stamp_album_db/src/insert_stamp_from_struct.md)
+- [load_existing_stamp](../../../functions/crates/stamp_album_db/src/load_existing_stamp.md)
 - [StampInsert](../../../classes/crates/stamp_album_db/src/StampInsert.md)
 - [StampStub](../../../classes/crates/stamp_album_db/src/StampStub.md)
 - [get_stamps_by_series](../../../functions/crates/stamp_album_db/src/get_stamps_by_series.md)
@@ -49,6 +53,7 @@ relationships:
 - `log::{debug, error}`
 - `regex::Regex`
 - `rusqlite::{params, Connection, OptionalExtension, Result}`
+- `uuid::Uuid`
 
 # Member of
 

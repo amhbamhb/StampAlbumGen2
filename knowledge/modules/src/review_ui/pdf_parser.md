@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: pdf_parser
-resource: src/review_ui/pdf_parser/mod.rs#L1-L46
+resource: src/review_ui/pdf_parser/mod.rs#L1-L48
 generated:
   by: okf-rs/0.4.0
 relationships:

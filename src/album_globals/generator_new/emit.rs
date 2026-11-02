@@ -222,7 +222,7 @@ pub fn emit_stamp_lines<W: Write>(
         let sh_size = config.stamp_heading_size.unwrap_or(10.0) as i32;
         writeln!(
             out,
-            "STAMP_HEADING({} {} \"{} : {}\")",
+            "STAMP_HEADING_VA({} {} \"{} : {}\")",
             sh_font, sh_size, sh_label, ctx.sgnum
         )?;
     }
@@ -324,7 +324,7 @@ pub fn emit_stamp<W: Write>(
             ) {
                 writeln!(
                     out,
-                    "STAMP_HEADING({} {} \"{}\")",
+                    "STAMP_HEADING_VA({} {} \"{}\")",
                     ctx.sh_font, ctx.sh_size, heading
                 )?;
             }
@@ -351,7 +351,7 @@ pub fn emit_stamp<W: Write>(
             ) {
                 writeln!(
                     out,
-                    "STAMP_HEADING({} {} \"{}\")",
+                    "STAMP_HEADING_VA({} {} \"{}\")",
                     ctx.sh_font, ctx.sh_size, heading
                 )?;
             }
@@ -386,4 +386,50 @@ pub fn emit_image_only<W: Write>(
     }
     writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn unequal_headings_use_shared_vertical_alignment_without_padding() {
+        for has_image in [true, false] {
+            let mut output = Vec::new();
+            for (number, name, width, height) in [
+                ("1", "First\\nSecond\\nThird", 30.0, 40.0),
+                ("2", "Short", 50.0, 30.0),
+            ] {
+                let ctx = EmitContext {
+                    emit_width: width,
+                    emit_height: height,
+                    image_path: "images/stamp.png",
+                    left: "18",
+                    centre: "Original caption",
+                    right: "",
+                    sh_font: "HN",
+                    sh_size: 8,
+                    sh_label: "Scott",
+                    sgnum: number,
+                    stamp_name: Some(name),
+                    perforation: None,
+                    include_perforation: false,
+                };
+                emit_stamp(&mut output, has_image, &ctx).expect("emit stamp");
+            }
+            let output = String::from_utf8(output).expect("UTF-8 output");
+            assert_eq!(output.matches("STAMP_HEADING_VA(").count(), 2);
+            assert!(!output.contains("STAMP_HEADING("));
+            assert!(output.contains("\"Scott : 1 \\n First \\n Second \\n Third\""));
+            assert!(output.contains("\"Scott : 2 \\n Short\""));
+            let command = if has_image {
+                "STAMP_ADD_IMG"
+            } else {
+                "STAMP_ADD"
+            };
+            assert!(output.contains(&format!("{command} (30.0 40.0")));
+            assert!(output.contains(&format!("{command} (50.0 30.0")));
+            assert_eq!(output.matches("\"Original caption\"").count(), 2);
+        }
+    }
 }

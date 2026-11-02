@@ -120,7 +120,10 @@ pub(super) fn validate(command: &LayoutCommand) -> Result<()> {
             command.args[2].value.to_ascii_uppercase().as_str(),
             "L" | "R" | "C" | "LR" | "RL" | "BL" | "BR" | "TL" | "TR" | "TC" // Added more alignments
         ) {
-            return Err(format!("Invalid page-number alignment: {}", command.args[2].value));
+            return Err(format!(
+                "Invalid page-number alignment: {}",
+                command.args[2].value
+            ));
         }
         if command.args.len() > 3 && command.args[3].value.parse::<u32>().is_err() {
             return Err("Page numbering start must be a nonnegative integer".into());
@@ -146,9 +149,16 @@ pub(super) fn validate_page(page: &LayoutPage) -> Result<()> {
             "PAGE_START" if index != 0 => {
                 return Err("Editing cannot add/remove page boundaries".into())
             }
-            "ROW_START_ES" | "ROW_START_JS" | "ROW_START_FS" | "STAMP_ADD_IMG" | "PAGE_TEXT_CENTRE" => {}
-            "ROW_ALIGN_TOP" | "ROW_ALIGN_MIDDLE" | "ROW_ALIGN_BOTTOM" | "PAGE_START" | "PAGE_START_VAR" => {}
-            "STAMP_ADD" | "COLOUR_STAMP_BORDER" | "ALBUM_PAGES_DECORATIVE_BORDER" | "ALBUM_PAGES_FOOTER_PAD" | "STAMP_ADD_BLANK" | "STAMP_ADD_BLANK_IMG" => {}
+            "ROW_START_ES" | "ROW_START_JS" | "ROW_START_FS" | "STAMP_ADD_IMG"
+            | "PAGE_TEXT_CENTRE" => {}
+            "ROW_ALIGN_TOP" | "ROW_ALIGN_MIDDLE" | "ROW_ALIGN_BOTTOM" | "PAGE_START"
+            | "PAGE_START_VAR" => {}
+            "STAMP_ADD"
+            | "COLOUR_STAMP_BORDER"
+            | "ALBUM_PAGES_DECORATIVE_BORDER"
+            | "ALBUM_PAGES_FOOTER_PAD"
+            | "STAMP_ADD_BLANK"
+            | "STAMP_ADD_BLANK_IMG" => {}
             _ => {
                 return Err(format!(
                     "{} is a document setting, not an editable page command",
@@ -165,7 +175,12 @@ pub(super) fn validate_document(globals: &[LayoutCommand], pages: &[LayoutPage])
         validate(command)?;
         if matches!(
             command.name.as_str(),
-            "PAGE_START" | "PAGE_TEXT_CENTRE" | "ROW_START_ES" | "ROW_START_JS" | "ROW_START_FS" | "STAMP_ADD_IMG"
+            "PAGE_START"
+                | "PAGE_TEXT_CENTRE"
+                | "ROW_START_ES"
+                | "ROW_START_JS"
+                | "ROW_START_FS"
+                | "STAMP_ADD_IMG"
         ) {
             return Err(format!("{} cannot precede the first page", command.name));
         }
@@ -272,7 +287,8 @@ impl Lexer {
         let mut name = String::new();
         while self
             .peek()
-            .is_some_and(|c| c.is_alphabetic() || c.is_ascii_digit() || c == '_') // Allow all casing
+            .is_some_and(|c| c.is_alphabetic() || c.is_ascii_digit() || c == '_')
+        // Allow all casing
         {
             name.push(self.bump().ok_or("Unexpected EOF")?);
         }

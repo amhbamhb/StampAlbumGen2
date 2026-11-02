@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: balance_pages
-resource: src/album_utils/globals.rs#L1330-L1375
+resource: src/album_utils/globals.rs#L1333-L1378
 generated:
   by: okf-rs/0.4.0
 relationships:

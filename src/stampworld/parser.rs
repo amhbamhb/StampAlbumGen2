@@ -20,10 +20,14 @@ pub fn normalize_stamps_issued(s: &str) -> String {
     v
 }
 
-static RE_WM: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^\s*(?:wm|watermark)\s*[:\-]?\s*(.+)$").unwrap());
-static RE_DESIGN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^\s*design\s*[:\-]?\s*(.+)$").unwrap());
-static RE_ENGR: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^\s*engraving\s*[:\-]?\s*(.+)$").unwrap());
-static RE_PERF: Lazy<Regex> = Lazy::new(|| Regex::new(r"(?i)^\s*(?:perforation|perf)\s*[:\-]?\s*(.+)$").unwrap());
+static RE_WM: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*(?:wm|watermark)\s*[:\-]?\s*(.+)$").unwrap());
+static RE_DESIGN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*design\s*[:\-]?\s*(.+)$").unwrap());
+static RE_ENGR: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*engraving\s*[:\-]?\s*(.+)$").unwrap());
+static RE_PERF: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*(?:perforation|perf)\s*[:\-]?\s*(.+)$").unwrap());
 
 // Remove duplicate detail lines while preserving order.
 pub fn dedupe_details(details: &[String]) -> Vec<String> {
@@ -49,7 +53,7 @@ pub fn extract_block_metadata(details: &[String]) -> (String, String, String, St
     let mut design = String::new();
     let mut engraving = String::new();
     let mut perforation = String::new();
-    
+
     for d in details {
         for line in d.lines() {
             let l = line.trim();
@@ -119,10 +123,22 @@ pub fn extract_block_metadata(details: &[String]) -> (String, String, String, St
             }
         }
     }
-    watermark = watermark.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
-    design = design.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
-    engraving = engraving.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
-    perforation = perforation.trim().trim_matches(|c: char| c == ':' || c == '.').to_string();
+    watermark = watermark
+        .trim()
+        .trim_matches(|c: char| c == ':' || c == '.')
+        .to_string();
+    design = design
+        .trim()
+        .trim_matches(|c: char| c == ':' || c == '.')
+        .to_string();
+    engraving = engraving
+        .trim()
+        .trim_matches(|c: char| c == ':' || c == '.')
+        .to_string();
+    perforation = perforation
+        .trim()
+        .trim_matches(|c: char| c == ':' || c == '.')
+        .to_string();
     (watermark, design, engraving, perforation)
 }
 

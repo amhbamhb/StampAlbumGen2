@@ -7,6 +7,7 @@ edition = "2021"
 rusqlite = { version = "0.40", features = ["bundled"] }
 regex = "1.10"
 log = "0.4"
+uuid = { version = "1", features = ["v4"] }
 
 [features]
 # no default features; keep small

@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: for_save
-resource: src/review_ui/matcher_service.rs#L1121-L1130
+resource: src/review_ui/matcher_service.rs#L1122-L1131
 visibility: private
 generated:
   by: okf-rs/0.4.0

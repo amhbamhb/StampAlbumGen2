@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_errors_roll_back_the_entire_file_and_are_not_counted_as_duplicates
-resource: tests/pdf_import_tool.rs#L155-L174
+resource: tests/pdf_import_tool.rs#L166-L185
 visibility: private
 generated:
   by: okf-rs/0.4.0

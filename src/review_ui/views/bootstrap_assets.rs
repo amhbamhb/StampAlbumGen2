@@ -33,10 +33,7 @@ pub(super) fn render_bootstrap_body_html(
 ) -> String {
     let html_template = include_str!("bootstrap.html");
     html_template
-        .replace(
-            "{external_album_html}",
-            include_str!("external_album.html"),
-        )
+        .replace("{external_album_html}", include_str!("external_album.html"))
         .replace("{country_url_controls}", include_str!("country_url.html"))
         .replace("{inbox_hint}", inbox_hint)
         .replace("{reconnect_banner_html}", reconnect_banner_html)

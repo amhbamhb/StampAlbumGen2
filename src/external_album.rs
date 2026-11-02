@@ -666,11 +666,19 @@ pub fn list_albums(root: &Path) -> Result<Vec<AlbumSummary>> {
             .to_str()
             .ok_or("Non-UTF-8 album folder")?
             .to_owned();
-        
-        let is_dir = entry.file_type().map_err(|e| err("Inspect album folder", e))?.is_dir();
+
+        let is_dir = entry
+            .file_type()
+            .map_err(|e| err("Inspect album folder", e))?
+            .is_dir();
         let slug_valid = validate_slug(&name).is_ok();
-        
-        log::debug!("Checking entry: {} (is_dir={}, slug_valid={})", name, is_dir, slug_valid);
+
+        log::debug!(
+            "Checking entry: {} (is_dir={}, slug_valid={})",
+            name,
+            is_dir,
+            slug_valid
+        );
 
         if !slug_valid || !is_dir {
             continue;
@@ -1233,8 +1241,7 @@ pub fn retry_album(root: &Path, name: &str, cli: &str, timeout: Duration) -> Res
         }
     };
     tx.commit().map_err(|e| err("Commit retry", e))?;
-    if let Some(_rendered) = rendered {
-    }
+    if let Some(_rendered) = rendered {}
     details(&conn, name)
 }
 
@@ -1374,8 +1381,7 @@ pub fn edit_page(
         }
     };
     tx.commit().map_err(|e| err("Commit page edit", e))?;
-    if let Some(_rendered) = rendered {
-    }
+    if let Some(_rendered) = rendered {}
     details(&conn, name)
 }
 

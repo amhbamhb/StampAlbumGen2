@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: deleteCurrentCandidate
-resource: src/review_ui/views/compare.js#L3214-L3247
+resource: src/review_ui/views/compare.js#L3216-L3251
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/setMatchStatus
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/compare/confirmDestructiveActionCompare
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/json
@@ -28,5 +31,6 @@ relationships:
 
 - [currentRightCandidate](../../../../../functions/src/review_ui/views/compare/currentRightCandidate.md)
 - [setMatchStatus](../../../../../functions/src/review_ui/views/compare/setMatchStatus.md)
+- [confirmDestructiveActionCompare](../../../../../functions/src/review_ui/views/compare/confirmDestructiveActionCompare.md)
 - [json](../../../../../functions/src/external_album/json.md)
 - [removeCandidateFromUi](../../../../../functions/src/review_ui/views/compare/removeCandidateFromUi.md)

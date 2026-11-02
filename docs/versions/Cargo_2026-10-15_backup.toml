@@ -1,0 +1,104 @@
+[package.metadata.scripts]
+
+
+# For workspace projects
+[workspace.metadata.scripts]
+updateVersion = "sh ./scripts/update_versions.sh"
+precheck = "sh ./format-and-check.sh"
+lint = "cargo clippy --all-targets -- -D warnings"
+run = "cargo run -- "
+watch = "cargo watch  -w src -x run "
+dev = "cargo build "
+build = "cargo build --release"
+test = "cargo test -- --nocapture"
+copyapp = "cp -r target/release/stamp_album_gen2 /home/ray/AlbumGen2/stamp_album_gen2"
+
+[workspace]
+members = ["crates/stamp_album_db", "."]
+
+[profile.release]
+opt-level = 3
+
+[features]
+# ISO country data and established flag aliases are always embedded.
+default = []
+# full-flag-db = []
+# Optional GUI folder picker (enables optional `rfd` dependency)
+rfd = ["dep:rfd"]
+
+
+
+
+[dependencies]
+csv = "1.2"
+# Lets you generate random UUIDs
+# uuid = { version = "1.18.1", features = ["atomic", "borsh", "default", "fast-rng", "js"] }
+uuid = { version = "1.18.1", features = ["atomic", "borsh", "default", "fast-rng", "js"] }
+
+
+
+# uuid = { version = "1.28.0", default-features = true }
+# win_dialog = "1.0.1"
+image = { version = "0.25.10", features = ["png"] }
+ab_glyph = "0.2"
+scraper = "0.27"
+tokio = { version = "1", features = ["full"] }
+async-trait = "0.1"
+# tokio_test = "0.4"
+
+# For MUSL builds, we need rustls instead of native OpenSSL to avoid cross-compilation issues
+# Using feature flags to conditionally use rustls on MUSL targets
+reqwest = { version = "0.13.2", features = ["blocking", "json"] }
+lazy_static = "1.5.0"
+regex = "1.10"
+rusqlite = { version = "0.40", features = ["bundled"] }
+
+log = "0.4"
+stamp_album_db = { path = "crates/stamp_album_db" }
+env_logger = "0.11.10"
+flexi_logger = "0.31.8"
+indicatif = "0.18"
+toml = "1.1.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive"] }
+chrono = "0.4"
+whoami = "2.1.1"
+sha2 = "0.11.0"
+tempfile = "3.6"
+once_cell = "1.21.3"
+strsim = "0.11.1"
+which = "8"
+tiny_http = "0.12"
+webbrowser = "1.0"
+urlencoding = "2.1"
+base64 = "0.23"
+# Native dialogs are opt-in so standard Linux builds need no Wayland libraries.
+rfd = { version = "0.17", optional = true, default-features = true }
+
+# Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
+
+resvg = "0.48"
+usvg = "0.48"
+tiny-skia = "0.12.0"
+# Explicit OpenSSL with vendored feature for MUSL builds
+openssl = { version = "0.10.76", optional = true, features = ["vendored"] }
+win_dialog = "1.0.1"
+
+
+[dev-dependencies]
+assert_cmd = "2.0"
+predicates = "3.1"
+tempfile = "3.6"
+serial_test = "4.0"
+
+
+[package]
+name = "stamp_album_gen2"
+version = "1.11.0"
+edition = "2021"
+default-run = "stamp_album_gen2"
+
+[build-dependencies]
+chrono = "0.4"
+winres = "0.1"

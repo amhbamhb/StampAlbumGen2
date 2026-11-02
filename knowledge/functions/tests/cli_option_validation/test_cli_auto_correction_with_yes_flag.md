@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_cli_auto_correction_with_yes_flag
-resource: tests/cli_option_validation.rs#L471-L489
+resource: tests/cli_option_validation.rs#L472-L490
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_placeholder_image_path
-resource: crates/stamp_album_db/src/lib.rs#L647-L649
+resource: crates/stamp_album_db/src/lib.rs#L579-L581
 visibility: private
 generated:
   by: okf-rs/0.4.0

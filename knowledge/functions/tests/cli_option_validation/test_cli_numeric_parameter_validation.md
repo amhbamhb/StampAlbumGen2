@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_cli_numeric_parameter_validation
-resource: tests/cli_option_validation.rs#L420-L468
+resource: tests/cli_option_validation.rs#L421-L469
 visibility: private
 generated:
   by: okf-rs/0.4.0

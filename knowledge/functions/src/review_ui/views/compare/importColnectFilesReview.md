@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: importColnectFilesReview
-resource: src/review_ui/views/compare.js#L3598-L3729
+resource: src/review_ui/views/compare.js#L3602-L3733
 generated:
   by: okf-rs/0.4.0
 relationships:

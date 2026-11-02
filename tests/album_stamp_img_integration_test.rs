@@ -100,7 +100,7 @@ fn test_album_stamp_img_new_setting_command_format() {
 /// Test to verify the parameter usage pattern is consistent across the codebase
 #[test]
 fn test_parameter_usage_consistency() {
-    let album_globals_content = fs::read_to_string("src/album_utils/globals.rs")
+    let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
         .expect("Failed to read album_globals/generator.rs");
 
     // Count all usages of each parameter
@@ -172,30 +172,30 @@ fn test_default_values_consistency() {
 /// Test to verify that the changes we made solve the original issue
 #[test]
 fn test_issue_resolution() {
-    let album_globals_content = fs::read_to_string("src/album_utils/globals.rs")
+    let album_globals_content = fs::read_to_string("src/album_globals/generator.rs")
         .expect("Failed to read album_globals/generator.rs");
 
     // These are the specific lines that were missing width parameter usage
-    let problematic_patterns = [
-        // Line 870 area - should now have both width and height
-        (
-            "ALBUM_STAMP_IMG_NEW_SETTING",
-            true,
-        ),
-        // The pattern should appear in height calculation sections
-        ("cfg.extra_height_mm.unwrap_or(6.0)", true),
-        // And width should be defined in the same sections
-        ("cfg.extra_width_mm.unwrap_or(6.0)", true),
+
+    let compact_content: String = album_globals_content
+        .chars()
+        .filter(|c| !c.is_whitespace())
+        .collect();
+
+    // Width and height must both be read from config and applied to emitted dimensions.
+    let required_patterns = [
+        "config.extra_width_mm.unwrap_or(cfg_defaults.extra_width_mm",
+        "config.extra_height_mm.unwrap_or(cfg_defaults.extra_height_mm",
+        "+extra_width_mm+stamp_box_adjust",
+        "+extra_height_mm+stamp_box_adjust",
+>>>>>>> fix/complex-stamp-db-type
     ];
 
-    for (pattern, should_exist) in problematic_patterns.iter() {
-        let exists = album_globals_content.contains(pattern);
-        assert_eq!(
-            exists,
-            *should_exist,
-            "Pattern '{}' should {} in album_globals.rs",
-            pattern,
-            if *should_exist { "exist" } else { "not exist" }
+    for pattern in required_patterns {
+        assert!(
+            compact_content.contains(pattern),
+            "Pattern '{}' should exist in album_globals/generator.rs",
+            pattern
         );
     }
 

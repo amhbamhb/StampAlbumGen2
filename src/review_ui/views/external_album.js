@@ -215,6 +215,8 @@ const externalAlbums = (() => {
         if ([...select.options].some(option => option.value === previous)) select.value = previous;
         else if (album.pages.length) select.value = String(album.pages[0].index);
         selectPage();
+// Fix: update commands when page selection changes
+select.addEventListener('change', selectPage);
         setBusy(busy);
         if (!element('externalEditorDialog').open) element('externalEditorDialog').showModal();
     }

@@ -71,12 +71,14 @@ fn imports_real_pdfs_into_disk_database_and_skips_reimports() {
         ),
     ] {
         let path = fixture(name);
-        let first = import_stampworld_file(&conn, &path, country, "1840", "9999").expect("first import");
+        let first =
+            import_stampworld_file(&conn, &path, country, "1840", "9999").expect("first import");
         assert_eq!(
             (first.total_found, first.imported, first.skipped),
             (count, count, 0)
         );
-        let second = import_stampworld_file(&conn, &path, country, "1840", "9999").expect("repeat import");
+        let second =
+            import_stampworld_file(&conn, &path, country, "1840", "9999").expect("repeat import");
         assert_eq!(
             (second.total_found, second.imported, second.skipped),
             (count, 0, count)
@@ -110,7 +112,7 @@ fn imports_denmark_pages_and_skips_all_266_on_second_pass() {
             if pass == 1 {
                 let records =
                     stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(
-                        &path,"DK","1980","1989"
+                        &path, "DK", "1980", "1989",
                     )
                     .expect("repeat parse");
                 for record in records {
@@ -206,7 +208,9 @@ fn filters_years_imports_html_and_reports_invalid_inputs() {
     assert_eq!((summary.imported, summary.skipped), (4, 0));
     assert!(import_stampworld_file(&conn, &path, "", "1840", "9999").is_err());
     assert!(import_stampworld_file(&conn, &path, "GB", "1974", "1973").is_err());
-    assert!(import_stampworld_file(&conn, Path::new("not-a-pdf.csv"), "GB", "1840", "9999").is_err());
+    assert!(
+        import_stampworld_file(&conn, Path::new("not-a-pdf.csv"), "GB", "1840", "9999").is_err()
+    );
     let invalid = temp.path().join("broken.pdf");
     std::fs::write(&invalid, b"not a PDF").expect("invalid fixture");
     assert!(import_stampworld_file(&conn, &invalid, "GB", "1840", "9999").is_err());

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: supplied_denmark_pages_have_266_individual_stamps
-resource: tests/pdf_extraction_test.rs#L73-L96
+resource: tests/pdf_extraction_test.rs#L72-L104
 visibility: private
 generated:
   by: okf-rs/0.4.0

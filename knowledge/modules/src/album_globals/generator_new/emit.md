@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: emit
-resource: src/album_globals/generator_new/emit.rs#L1-L389
+resource: src/album_globals/generator_new/emit.rs#L1-L435
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-io-self-write
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/super
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -33,11 +36,13 @@ relationships:
 - [resolve_stamp_heading_label](../../../../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md)
 - [emit_stamp](../../../../functions/src/album_globals/generator_new/emit/emit_stamp.md)
 - [emit_image_only](../../../../functions/src/album_globals/generator_new/emit/emit_image_only.md)
+- [unequal_headings_use_shared_vertical_alignment_without_padding](../../../../functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding.md)
 
 # Imports
 
 - `log::debug`
 - `std::io::{self, Write}`
+- `super::*`
 
 # Member of
 

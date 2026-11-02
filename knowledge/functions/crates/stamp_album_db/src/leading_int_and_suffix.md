@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: leading_int_and_suffix
-resource: crates/stamp_album_db/src/lib.rs#L556-L583
+resource: crates/stamp_album_db/src/lib.rs#L488-L515
 visibility: private
 generated:
   by: okf-rs/0.4.0

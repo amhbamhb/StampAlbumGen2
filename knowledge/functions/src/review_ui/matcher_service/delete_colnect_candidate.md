@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: delete_colnect_candidate
-resource: src/review_ui/matcher_service.rs#L1695-L1736
+resource: src/review_ui/matcher_service.rs#L1698-L1739
 generated:
   by: okf-rs/0.4.0
 relationships:

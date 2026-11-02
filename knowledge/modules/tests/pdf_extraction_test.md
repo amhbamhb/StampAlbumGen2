@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: pdf_extraction_test
-resource: tests/pdf_extraction_test.rs#L1-L116
+resource: tests/pdf_extraction_test.rs#L1-L124
 generated:
   by: okf-rs/0.4.0
 relationships:

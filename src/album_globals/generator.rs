@@ -1,4 +1,3 @@
-use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use super::constants::MONTH_NAMES;
 use super::globals::{compute_usable_height, write_globals};
 use super::helpers::{
@@ -7,6 +6,7 @@ use super::helpers::{
     build_watermark_page_text_centre_template,
 };
 use super::structs::Stamp;
+use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
 use crate::config::load_effective_config;

@@ -3048,18 +3048,20 @@ async function submitLeftEditor() {
     await reviewPdfFilters.refresh();
 }
 
-function confirmDestructiveActionCompare(message) {
+function confirmDestructiveActionCompare(message, title = 'Permanent deletion warning', confirmLabel = 'Delete permanently') {
     return new Promise(resolve => {
         const dlg = document.createElement('dialog');
         dlg.className = 'destructiveConfirmDialog';
         dlg.innerHTML =
-            "<div class='destructiveConfirmHead'>Permanent deletion warning</div>" +
+            "<div class='destructiveConfirmHead'></div>" +
             "<div class='destructiveConfirmBody'></div>" +
             "<div class='destructiveConfirmActions'>" +
             "<button type='button' class='neutral'>Cancel</button>" +
-            "<button type='button' class='destructiveConfirmDelete'>Delete permanently</button>" +
+            "<button type='button' class='destructiveConfirmDelete'></button>" +
             "</div>";
+        dlg.querySelector('.destructiveConfirmHead').textContent = String(title || '');
         dlg.querySelector('.destructiveConfirmBody').textContent = String(message || '');
+        dlg.querySelector('.destructiveConfirmDelete').textContent = String(confirmLabel || '');
         let settled = false;
         const finish = confirmed => {
             if (settled) return;
@@ -3218,9 +3220,11 @@ async function deleteCurrentCandidate() {
         return;
     }
 
-    if (!confirm(`Soft delete colnect candidate ${r.colnect_id} from colnect_stamps?`)) {
-        return;
-    }
+    const assignedCount = Object.values(assignedByLeft).filter(id => id === r.colnect_id).length;
+    const warning = assignedCount
+        ? `Delete Colnect candidate ${r.colnect_id}? It is assigned to ${assignedCount} left-side row(s); those assignments will be removed.\n\nUse Undo Delete to restore it.`
+        : `Delete Colnect candidate ${r.colnect_id} from the candidate list?\n\nUse Undo Delete to restore it.`;
+    if (!await confirmDestructiveActionCompare(warning, 'Delete candidate warning', 'Delete candidate')) return;
 
     const res = await fetch('/delete-colnect-candidate', {
         method: 'POST',

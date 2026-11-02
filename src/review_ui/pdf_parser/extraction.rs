@@ -1,13 +1,10 @@
 use super::types::PdfStampRecord;
-use pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform};
 use oxidize_pdf::operations::{extract_images_from_pdf, ExtractImagesOptions};
-use std::path::{Path};
+use pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform};
+use std::path::Path;
 
 use regex::Regex;
 use scraper::{Html, Selector};
-
-
-
 
 #[derive(Default)]
 struct LayoutText {
@@ -91,11 +88,16 @@ impl OutputDev for LayoutText {
     }
 }
 
-pub fn parse_stampworld_pdf<P: AsRef<Path>>(path: P, country: &str, start_year: &str, end_year: &str) -> Result<Vec<PdfStampRecord>, String> {
+pub fn parse_stampworld_pdf<P: AsRef<Path>>(
+    path: P,
+    country: &str,
+    start_year: &str,
+    end_year: &str,
+) -> Result<Vec<PdfStampRecord>, String> {
     let start = start_year.to_string();
     let end = end_year.to_string();
-    let _images = extract_stampworld_pdf_images(path.as_ref(),&country, &start, &end)?;
-    println!("path imgs: {}", path.as_ref().display ());
+    let _images = extract_stampworld_pdf_images(path.as_ref(), &country, &start, &end)?;
+    println!("path imgs: {}", path.as_ref().display());
     println!("imgs: {}", _images.len());
     println!("start year: {}", start);
     println!("end year: {}", end);
@@ -107,7 +109,7 @@ pub fn extract_stampworld_pdf_content<P: AsRef<Path>>(
     path: P,
 ) -> Result<(String, Vec<oxidize_pdf::operations::ExtractedImage>), String> {
     let text = extract_stampworld_pdf_text(path.as_ref())?;
-    let images = extract_stampworld_pdf_images(path.as_ref(),"", &"", &"")?;
+    let images = extract_stampworld_pdf_images(path.as_ref(), "", &"", &"")?;
     Ok((text, images))
 }
 
@@ -118,23 +120,28 @@ pub fn extract_stampworld_pdf_images<P: AsRef<Path>>(
     end_year: &str,
 ) -> Result<Vec<oxidize_pdf::operations::ExtractedImage>, String> {
     let pdf_path = path.as_ref();
-// Get the filename without extension, e.g. "Denmark -Postage stamps (1980 - 1989) - Page 4"
+    // Get the filename without extension, e.g. "Denmark -Postage stamps (1980 - 1989) - Page 4"
     let stem = pdf_path
         .file_stem()
         .and_then(|s| s.to_str())
         .unwrap_or("extracted");
 
-        let output_dir = path.as_ref()
-            .parent()
-            .unwrap_or_else(|| Path::new("."))
-            .join(stem);
-    
+    let output_dir = path
+        .as_ref()
+        .parent()
+        .unwrap_or_else(|| Path::new("."))
+        .join(stem);
+
     let options = ExtractImagesOptions {
         output_dir: output_dir, // or whatever you want
         name_pattern: format!(
-            "{country}_{start_year}-{end_year}_{{page}}_img_{{index}}.{{format}}", country=country, start_year=start_year, end_year=end_year),
+            "{country}_{start_year}-{end_year}_{{page}}_img_{{index}}.{{format}}",
+            country = country,
+            start_year = start_year,
+            end_year = end_year
+        ),
         extract_inline: true,
-        min_size: Some(20),          // ignore tiny icons if desired
+        min_size: Some(20), // ignore tiny icons if desired
         create_dir: true,
         ..Default::default()
     };
@@ -142,7 +149,6 @@ pub fn extract_stampworld_pdf_images<P: AsRef<Path>>(
     extract_images_from_pdf(path.as_ref(), options)
         .map_err(|e| format!("Failed to extract images: {}", e))
 }
-
 
 pub fn extract_stampworld_pdf_text<P: AsRef<Path>>(path: P) -> Result<String, String> {
     let mut document = Document::load(path.as_ref())

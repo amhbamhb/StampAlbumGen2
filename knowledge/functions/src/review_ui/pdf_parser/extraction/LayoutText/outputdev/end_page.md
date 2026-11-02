@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: end_page
-resource: src/review_ui/pdf_parser/extraction.rs#L41-L72
+resource: src/review_ui/pdf_parser/extraction.rs#L46-L77
 visibility: private
 generated:
   by: okf-rs/0.4.0

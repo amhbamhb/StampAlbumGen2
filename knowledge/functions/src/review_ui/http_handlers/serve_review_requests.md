@@ -1,7 +1,8 @@
 ---
 type: Rust Function
 title: serve_review_requests
-resource: src/review_ui/http_handlers.rs#L1273-L2682
+
+resource: src/review_ui/http_handlers.rs#L1284-L2688
 generated:
   by: okf-rs/0.4.0
 relationships:

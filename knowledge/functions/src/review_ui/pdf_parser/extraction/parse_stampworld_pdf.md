@@ -1,11 +1,14 @@
 ---
 type: Rust Function
 title: parse_stampworld_pdf
-resource: src/review_ui/pdf_parser/extraction.rs#L89-L91
+resource: src/review_ui/pdf_parser/extraction.rs#L94-L104
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_images
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text
     resolved_by: tree-sitter
     confidence: exact
@@ -32,10 +35,11 @@ relationships:
 
 # Signature
 
-`pub fn parse_stampworld_pdf<P: AsRef<Path>>(path: P) -> Result<Vec<PdfStampRecord>, String>`
+`pub fn parse_stampworld_pdf<P: AsRef<Path>>(path: P, country: &str, start_year: &str, end_year: &str) -> Result<Vec<PdfStampRecord>, String>`
 
 # Calls
 
+- [extract_stampworld_pdf_images](../../../../../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_images.md)
 - [parse_stampworld_text](../../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text.md)
 - [extract_stampworld_pdf_text](../../../../../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_text.md)
 

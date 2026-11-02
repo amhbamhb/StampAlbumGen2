@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_cli_error_message_quality
-resource: tests/cli_option_validation.rs#L333-L383
+resource: tests/cli_option_validation.rs#L334-L384
 visibility: private
 generated:
   by: okf-rs/0.4.0

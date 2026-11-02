@@ -1,6 +1,6 @@
+use crate::review_ui::log_runtime_event;
 /// PDF generation utilities for the Review UI.
 use tiny_http::{Header, Response, StatusCode};
-use crate::review_ui::log_runtime_event;
 
 #[allow(dead_code)]
 #[derive(Debug, serde::Serialize)]
@@ -30,4 +30,3 @@ pub fn review_pdf_error(message: &str, status: u16) -> Response<std::io::Cursor<
 
 // Future implementation: StampWorld PDF import utilities
 // These will be used to bypass anti-bot measures by importing PDF exports directly.
-

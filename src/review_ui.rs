@@ -29,15 +29,13 @@ use matcher_service::{
     delete_colnect_candidate, delete_left_stamp, load_left_stamps, load_right_candidates,
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
+pub mod db_query;
 mod external_album_api;
 mod http_handlers;
 mod http_utils;
-pub mod db_query;
-mod ui_state;
-mod report_generation;
 mod pdf_generation;
-
-
+mod report_generation;
+mod ui_state;
 
 #[cfg(any(windows, test))]
 mod windows_picker;
@@ -1837,7 +1835,8 @@ fn count_colnect_csv_files_rec(root: &Path) -> usize {
 }
 
 fn is_stampworld_import_file(path: &Path) -> bool {
-    path.extension().and_then(|value| value.to_str())
+    path.extension()
+        .and_then(|value| value.to_str())
         .is_some_and(|value| matches!(value.to_ascii_lowercase().as_str(), "pdf" | "html" | "htm"))
 }
 
@@ -1921,7 +1920,8 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
         let colnect_dir = dir.join("colnect");
         let stampworld_dir = dir.join("stampworld");
         let colnect_file_count = count_colnect_csv_files_rec(&colnect_dir);
-        let stampworld_file_count = count_import_files_rec(&stampworld_dir, is_stampworld_import_file);
+        let stampworld_file_count =
+            count_import_files_rec(&stampworld_dir, is_stampworld_import_file);
         let colnect_candidate_count = count_colnect_candidates_in_db(&db_path);
         out.push(BootstrapCountryInfo {
             country,
@@ -2106,7 +2106,6 @@ fn pick_and_copy_stampworld_file_via_dialog(country: &str) -> BootstrapPickColne
     pick_and_copy_colnect_file_to_dir(&sw_dir, &title, &sw_dir_str, true, fail)
 }
 
-
 fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
     let fail = |msg: String| BootstrapPickColnectFileResponse {
         ok: false,
@@ -2251,7 +2250,11 @@ where
     }
     #[cfg(windows)]
     let pick_result = windows_picker::pick(
-        if stampworld { windows_picker::PickerKind::Stampworld } else { windows_picker::PickerKind::Csv },
+        if stampworld {
+            windows_picker::PickerKind::Stampworld
+        } else {
+            windows_picker::PickerKind::Csv
+        },
         title,
         colnect_dir_str,
     );
@@ -2350,7 +2353,9 @@ where
                 };
                 let destination = match fs::canonicalize(&dest) {
                     Ok(path) => path,
-                    Err(error) => return fail(format!("Cannot resolve destination file: {}", error)),
+                    Err(error) => {
+                        return fail(format!("Cannot resolve destination file: {}", error))
+                    }
                 };
                 if source != destination {
                     return fail(format!("Destination already exists: {}. Select the existing file or rename the new file to avoid overwriting it.", dest.display()));

@@ -152,6 +152,14 @@ AlbumEasy process itself. An unchanged pre-existing PDF is not accepted.
 | `stamp_heading_label` | String | "auto" | Label prefix for stamp headings. Use `auto` to follow catalog family dynamically per stamp; set empty string to hide heading labels. |
 | `stamp_heading_in_row_height` | bool | false | Legacy compatibility flag; visible headings are always measured |
 
+Generated stamp rows use `ROW_ALIGN_TOP` with `STAMP_HEADING_VA`, allowing
+AlbumEasy to reserve shared heading space and align stamp-box tops even when
+captions have different line counts. Caption wording, box dimensions and image
+proportions are unchanged; shorter headings leave unused space above their boxes.
+This also applies to generated placeholders and commemorative stamp headings.
+External imported layouts retain their saved alignment and heading commands.
+Regenerate the album TXT/PDF to apply this behavior to existing ordinary albums.
+
 ### Review UI Catalog Families
 
 | Parameter | Type | Default | Description |

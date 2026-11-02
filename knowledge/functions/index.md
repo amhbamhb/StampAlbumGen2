@@ -1,5 +1,7 @@
 # Functions
 
+- [bench_sum](../functions/benches/my_bench/bench_sum.md) — Rust Function
+- [sum_to](../functions/benches/my_bench/sum_to.md) — Rust Function
 - [main](../functions/build/main.md) — Rust Function
 - [cleanup_stampworld_identity_duplicates](../functions/crates/stamp_album_db/src/cleanup_stampworld_identity_duplicates.md) — Rust Function
 - [extract_block_metadata_local](../functions/crates/stamp_album_db/src/extract_block_metadata_local.md) — Rust Function
@@ -15,6 +17,7 @@
 - [is_real_image_candidate](../functions/crates/stamp_album_db/src/is_real_image_candidate.md) — Rust Function
 - [is_stampworld_image_url](../functions/crates/stamp_album_db/src/is_stampworld_image_url.md) — Rust Function
 - [leading_int_and_suffix](../functions/crates/stamp_album_db/src/leading_int_and_suffix.md) — Rust Function
+- [load_existing_stamp](../functions/crates/stamp_album_db/src/load_existing_stamp.md) — Rust Function
 - [migrate_fix_block_metadata](../functions/crates/stamp_album_db/src/migrate_fix_block_metadata.md) — Rust Function
 - [migrate_stamps_table](../functions/crates/stamp_album_db/src/migrate_stamps_table.md) — Rust Function
 - [normalize_currency_token_inner](../functions/crates/stamp_album_db/src/normalize_currency_token_inner.md) — Rust Function
@@ -86,6 +89,7 @@
 - [format_stamp_heading](../functions/src/album_globals/generator_new/emit/format_stamp_heading.md) — Rust Function
 - [heading_max_chars_per_line](../functions/src/album_globals/generator_new/emit/heading_max_chars_per_line.md) — Rust Function
 - [resolve_stamp_heading_label](../functions/src/album_globals/generator_new/emit/resolve_stamp_heading_label.md) — Rust Function
+- [unequal_headings_use_shared_vertical_alignment_without_padding](../functions/src/album_globals/generator_new/emit/unequal_headings_use_shared_vertical_alignment_without_padding.md) — Rust Function
 - [wrap_preserving_breaks](../functions/src/album_globals/generator_new/emit/wrap_preserving_breaks.md) — Rust Function
 - [wrap_preserving_breaks_keep_empty](../functions/src/album_globals/generator_new/emit/wrap_preserving_breaks_keep_empty.md) — Rust Function
 - [wrap_segment_words](../functions/src/album_globals/generator_new/emit/wrap_segment_words.md) — Rust Function
@@ -700,6 +704,8 @@
 - [end_page](../functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/end_page.md) — Rust Method
 - [end_word](../functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/end_word.md) — Rust Method
 - [output_character](../functions/src/review_ui/pdf_parser/extraction/LayoutText/outputdev/output_character.md) — Rust Method
+- [extract_stampworld_pdf_content](../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_content.md) — Rust Function
+- [extract_stampworld_pdf_images](../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_images.md) — Rust Function
 - [extract_stampworld_pdf_text](../functions/src/review_ui/pdf_parser/extraction/extract_stampworld_pdf_text.md) — Rust Function
 - [metadata](../functions/src/review_ui/pdf_parser/extraction/metadata.md) — Rust Function
 - [normalized](../functions/src/review_ui/pdf_parser/extraction/normalized.md) — Rust Function

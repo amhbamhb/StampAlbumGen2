@@ -953,9 +953,12 @@ pub fn ensure_first_run_installation() -> std::io::Result<()> {
 
     let exe_path = std::env::current_exe()?;
     let exe_dir = exe_path.parent().unwrap_or_else(|| Path::new("."));
-    
+
     let default_dest = directories::UserDirs::new()
-        .and_then(|dirs| dirs.document_dir().map(|p| p.to_path_buf().join("StampAlbumGen2")))
+        .and_then(|dirs| {
+            dirs.document_dir()
+                .map(|p| p.to_path_buf().join("StampAlbumGen2"))
+        })
         .unwrap_or_else(|| PathBuf::from("StampAlbumGen2"));
 
     let decision = first_run_decision(config_exists, albums_exists, exe_dir, &default_dest);
@@ -977,14 +980,15 @@ pub fn ensure_first_run_installation() -> std::io::Result<()> {
     };
 
     if let Some(selected_path) = dest {
-        let dest_path = if selected_path.file_name().and_then(|n| n.to_str()) != Some("StampAlbumGen2") {
-            selected_path.join("StampAlbumGen2")
-        } else {
-            selected_path
-        };
-        
+        let dest_path =
+            if selected_path.file_name().and_then(|n| n.to_str()) != Some("StampAlbumGen2") {
+                selected_path.join("StampAlbumGen2")
+            } else {
+                selected_path
+            };
+
         let target_bin = dest_path.join(exe_path.file_name().unwrap());
-        
+
         std::fs::create_dir_all(&dest_path)?;
         std::fs::create_dir_all(dest_path.join("Albums"))?;
         std::fs::copy(&exe_path, &target_bin)?;

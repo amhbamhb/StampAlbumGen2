@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: create_balanced_pages
-resource: src/album_utils/globals.rs#L1230-L1291
+resource: src/album_utils/globals.rs#L1233-L1294
 visibility: private
 generated:
   by: okf-rs/0.4.0

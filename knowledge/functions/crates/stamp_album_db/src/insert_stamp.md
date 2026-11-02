@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: insert_stamp
-resource: crates/stamp_album_db/src/lib.rs#L908-L1227
+resource: crates/stamp_album_db/src/lib.rs#L840-L1166
 generated:
   by: okf-rs/0.4.0
 relationships:

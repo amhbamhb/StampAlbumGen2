@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_stampworld_html
-resource: src/review_ui/pdf_parser/extraction.rs#L235-L294
+resource: src/review_ui/pdf_parser/extraction.rs#L289-L348
 generated:
   by: okf-rs/0.4.0
 relationships:

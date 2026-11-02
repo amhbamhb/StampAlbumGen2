@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: matcher_service
-resource: src/review_ui/matcher_service.rs#L1-L1776
+resource: src/review_ui/matcher_service.rs#L1-L1779
 generated:
   by: okf-rs/0.4.0
 relationships:

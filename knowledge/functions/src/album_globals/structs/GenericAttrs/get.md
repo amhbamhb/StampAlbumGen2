@@ -6,9 +6,6 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   called_by:
-  - target: functions/crates/stamp_album_db/src/insert_stamp_from_struct
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/crates/stamp_album_db/src/extract_block_metadata_local
     resolved_by: tree-sitter
     confidence: exact
@@ -455,7 +452,6 @@ relationships:
 
 # Called by
 
-- [insert_stamp_from_struct](../../../../../functions/crates/stamp_album_db/src/insert_stamp_from_struct.md)
 - [extract_block_metadata_local](../../../../../functions/crates/stamp_album_db/src/extract_block_metadata_local.md)
 - [migrate_fix_block_metadata](../../../../../functions/crates/stamp_album_db/src/migrate_fix_block_metadata.md)
 - [insert_stamp](../../../../../functions/crates/stamp_album_db/src/insert_stamp.md)

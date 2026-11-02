@@ -2,8 +2,10 @@
 fn stampworld_pdf_extraction_layout() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("download-pdf/Great Britain - Postage stamps (1970 - 1979).pdf");
-    let records = stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(path,"GB","1970","1979")
-        .expect("parse local StampWorld PDF");
+    let records = stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(
+        path, "GB", "1970", "1979",
+    )
+    .expect("parse local StampWorld PDF");
     assert_eq!(records.len(), 22);
     let first = &records[0];
     assert_eq!(first.catalog_number, "571");
@@ -43,10 +45,11 @@ fn all_supplied_stampworld_pdfs_have_individual_rows() {
         ("United States - Postage stamps (1970 - 1979).pdf", 27),
     ] {
         let path = directory.join(name);
-        let records =
-            stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(&path,"GB","1970","1979")
-                .unwrap_or_else(|e| {
-                    panic!(
+        let records = stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(
+            &path, "GB", "1970", "1979",
+        )
+        .unwrap_or_else(|e| {
+            panic!(
                 "{}: {}\n{}",
                 path.display(),
                 e,
@@ -58,7 +61,7 @@ fn all_supplied_stampworld_pdfs_have_individual_rows() {
                 .take(2000)
                 .collect::<String>()
             )
-                });
+        });
         assert_eq!(records.len(), count, "{}", path.display());
         assert!(records
             .iter()
@@ -78,9 +81,10 @@ fn supplied_denmark_pages_have_266_individual_stamps() {
                 "Denmark - Postage stamps (1980 - 1989) - Page {}.pdf",
                 index + 1
             ));
-        let records =
-            stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(&path,"DK","1980","1989")
-                .unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
+        let records = stamp_album_gen2::review_ui::pdf_parser::extraction::parse_stampworld_pdf(
+            &path, "DK", "1980", "1989",
+        )
+        .unwrap_or_else(|e| panic!("{}: {}", path.display(), e));
         assert!(records.iter().all(|r| r.watermark == "None"));
         let first = 700 + total;
         for (index, record) in records.iter().enumerate() {

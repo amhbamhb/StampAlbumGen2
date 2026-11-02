@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sort_stampstubs_inplace
-resource: crates/stamp_album_db/src/lib.rs#L586-L626
+resource: crates/stamp_album_db/src/lib.rs#L518-L558
 generated:
   by: okf-rs/0.4.0
 relationships:

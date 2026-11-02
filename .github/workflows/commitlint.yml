@@ -28,7 +28,23 @@ jobs:
         run: |
           # Ensure repository history is available
           git fetch --no-tags --prune || true
-          # Check the latest PR commit without rejecting pre-existing history
-          npx commitlint --from=${{ github.event.pull_request.head.sha }}^ --to=${{ github.event.pull_request.head.sha }} --config ./.commitlintrc.json
+          # Check the latest non-merge PR commit without rejecting pre-existing history
+          commit_sha=$(git rev-list --first-parent --no-merges -n 1 "${{ github.event.pull_request.head.sha }}")
+          if [ -z "$commit_sha" ]; then
+            echo "No non-merge PR commit found to lint"
+            exit 1
+          fi
+          commit_message=$(git show -s --format=%B "$commit_sha")
+          if [ "$(git show -s --format=%s "$commit_sha")" = "SIMPLE:" ]; then
+            simple_message=$(printf '%s\n' "$commit_message" | awk '
+              /^SIMPLE:$/ { in_simple = 1; next }
+              in_simple && /^DETAILED:$/ { exit }
+              in_simple && NF { print; exit }
+            ')
+            if [ -n "$simple_message" ]; then
+              commit_message=$simple_message
+            fi
+          fi
+          printf '%s\n' "$commit_message" | npx commitlint --config ./.commitlintrc.json
         env:
           CI: true

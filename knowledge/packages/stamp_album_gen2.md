@@ -8,6 +8,7 @@ generated:
 
 # Contains
 
+- [my_bench](../modules/benches/my_bench.md)
 - [build](../modules/build.md)
 - [commemorative_generator](../modules/src/album_globals/commemorative_generator.md)
 - [constants](../modules/src/album_globals/constants.md)
@@ -190,6 +191,7 @@ generated:
 - [placeholder_image_series_size](../modules/tests/placeholder_image_series_size.md)
 - [placeholder_image_size](../modules/tests/placeholder_image_size.md)
 - [placeholder_regeneration](../modules/tests/placeholder_regeneration.md)
+- [release_publication_shell](../modules/tests/release_publication_shell.md)
 - [review_pdf_filters_ui](../modules/tests/review_pdf_filters_ui.md)
 - [test](../modules/tests/review_ui_external_album/test.md)
 - [test](../modules/tests/review_ui_stampworld_credentials/test.md)

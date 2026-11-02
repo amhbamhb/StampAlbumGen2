@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: import_stampworld_file
-resource: src/review_ui/pdf_parser/mod.rs#L8-L46
+resource: src/review_ui/pdf_parser/mod.rs#L8-L48
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -38,7 +38,7 @@ relationships:
 
 # Signature
 
-`pub fn import_stampworld_file( conn: &Connection, path: &Path, country: &str, start_year: i32, end_year: i32, ) -> Result<ImportSummary, String>`
+`pub fn import_stampworld_file( conn: &Connection, path: &Path, country: &str, start_year: &str, end_year: &str, ) -> Result<ImportSummary, String>`
 
 # Calls
 

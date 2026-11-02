@@ -6,7 +6,7 @@ use tokio::sync::Mutex;
 
 // Integration test: create a tiny config and DB so a row will overflow the usable
 // height and force the generator to emit a new page. Verify the emitted AlbumEasy
-// text contains the expected PAGE_START followed by ROW_START_ES for the forced
+// text contains the expected PAGE_START followed by ROW_START_FS for the forced
 // page break (Page 2).
 #[tokio::test]
 async fn overflowing_row_moves_to_next_page_and_emits_row_start() {
@@ -131,7 +131,7 @@ single_stamp_threshold_pct = 0.5
     // Restore cwd
     std::env::set_current_dir(orig_cwd).expect("restore cwd");
 
-    // Read the generated file (filename may include inferred years) and verify it contains a forced page 2 header with PAGE_START followed by ROW_START_ES
+    // Read the generated file (filename may include inferred years) and verify it contains a forced page 2 header with PAGE_START followed by ROW_START_FS
     let album_dir = td_path.join("Albums").join("TestAlbum");
     let mut found_content = None;
     if let Ok(entries) = std::fs::read_dir(&album_dir) {
@@ -153,15 +153,15 @@ single_stamp_threshold_pct = 0.5
 
     // Look for the Page 2 marker and ensure the sequence exists. The page
     // header may include a suffix like " - Stamps", so locate the "### Page 2"
-    // marker and then assert the PAGE_START + ROW_START_ES sequence appears
+    // marker and then assert the PAGE_START + ROW_START_FS sequence appears
     // after that location.
     let page2_pos = s
         .find("### Page 2")
         .expect("expected a Page 2 marker in generated output");
     let after_page2 = &s[page2_pos..];
     assert!(
-        after_page2.contains("PAGE_START\nROW_START_ES"),
-        "expected forced page 2 with PAGE_START + ROW_START_ES after Page 2 marker, got:\n{}",
+        after_page2.contains("PAGE_START\nROW_START_FS"),
+        "expected forced page 2 with PAGE_START + ROW_START_FS after Page 2 marker, got:\n{}",
         after_page2
     );
 }
