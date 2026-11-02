@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: strip_bracket_tags
-resource: src/album_globals/generator.rs#L113-L130
+resource: src/album_globals/generator.rs#L114-L131
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refreshState
-resource: src/review_ui/views/bootstrap.js#L1078-L1114
+resource: src/review_ui/views/bootstrap.js#L1129-L1165
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -29,6 +29,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/pickAndCopyColnectFile
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/bootstrap/pickAndCopyStampworldPdfFile
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/submitCreateCountryOrTheme
@@ -59,6 +62,7 @@ relationships:
 - [applyAlbumsRootResponse](../../../../../functions/src/review_ui/views/bootstrap/applyAlbumsRootResponse.md)
 - [pollStampWorldStatus](../../../../../functions/src/review_ui/views/bootstrap/pollStampWorldStatus.md)
 - [pickAndCopyColnectFile](../../../../../functions/src/review_ui/views/bootstrap/pickAndCopyColnectFile.md)
+- [pickAndCopyStampworldPdfFile](../../../../../functions/src/review_ui/views/bootstrap/pickAndCopyStampworldPdfFile.md)
 - [submitCreateCountryOrTheme](../../../../../functions/src/review_ui/views/bootstrap/submitCreateCountryOrTheme.md)
 - [importColnectFiles](../../../../../functions/src/review_ui/views/bootstrap/importColnectFiles.md)
 - [pick](../../../../../functions/src/review_ui/views/external_album/pick.md)

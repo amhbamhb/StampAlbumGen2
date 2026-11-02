@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: decode_selection
-resource: src/review_ui/windows_picker.rs#L38-L59
+resource: src/review_ui/windows_picker.rs#L40-L61
 visibility: private
 generated:
   by: okf-rs/0.4.0

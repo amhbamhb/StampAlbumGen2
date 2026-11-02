@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: renderCommands
-resource: src/review_ui/views/external_album.js#L220-L265
+resource: src/review_ui/views/external_album.js#L230-L275
 generated:
   by: okf-rs/0.4.0
 relationships:

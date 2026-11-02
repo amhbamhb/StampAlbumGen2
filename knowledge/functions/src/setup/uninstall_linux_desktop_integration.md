@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: uninstall_linux_desktop_integration
-resource: src/setup.rs#L791-L855
+resource: src/setup.rs#L793-L857
 generated:
   by: okf-rs/0.4.0
 relationships:

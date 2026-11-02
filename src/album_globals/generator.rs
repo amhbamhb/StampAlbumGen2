@@ -6,6 +6,7 @@ use super::helpers::{
     build_watermark_page_text_centre_template,
 };
 use super::structs::Stamp;
+use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use crate::album_globals::generator_new::layout;
 use crate::album_utils::clean_text;
 use crate::config::load_effective_config;
@@ -2232,7 +2233,7 @@ where
                 total_row_height + row_start_total_height - series_gap) {
                 log::error!("Failed to write row height measurement: {}", error);
             }
-            let _ = crate::album_globals::generator_new::layout::emit_row_start_es(&mut output, &config);
+            let _ = crate::album_globals::generator_new::layout::emit_row_start(&mut output, RowSpacingMode::FS, &config);
 
             // row start written (diagnostics suppressed)
             for stamp in stamps_in_row {

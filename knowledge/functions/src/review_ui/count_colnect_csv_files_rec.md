@@ -1,13 +1,13 @@
 ---
 type: Rust Function
 title: count_colnect_csv_files_rec
-resource: src/review_ui.rs#L1825-L1843
+resource: src/review_ui.rs#L1835-L1837
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/review_ui/is_colnect_csv_file
+  - target: functions/src/review_ui/count_import_files_rec
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -25,7 +25,7 @@ relationships:
 
 # Calls
 
-- [is_colnect_csv_file](../../../functions/src/review_ui/is_colnect_csv_file.md)
+- [count_import_files_rec](../../../functions/src/review_ui/count_import_files_rec.md)
 
 # Called by
 

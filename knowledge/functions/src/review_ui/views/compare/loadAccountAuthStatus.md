@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: loadAccountAuthStatus
-resource: src/review_ui/views/compare.js#L1497-L1526
+resource: src/review_ui/views/compare.js#L1504-L1533
 generated:
   by: okf-rs/0.4.0
 ---

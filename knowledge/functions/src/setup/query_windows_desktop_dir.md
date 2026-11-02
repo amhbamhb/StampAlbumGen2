@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: query_windows_desktop_dir
-resource: src/setup.rs#L465-L485
+resource: src/setup.rs#L467-L487
 visibility: private
 generated:
   by: okf-rs/0.4.0

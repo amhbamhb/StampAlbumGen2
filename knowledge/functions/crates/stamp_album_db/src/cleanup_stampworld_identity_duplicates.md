@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: cleanup_stampworld_identity_duplicates
-resource: crates/stamp_album_db/src/lib.rs#L651-L659
+resource: crates/stamp_album_db/src/lib.rs#L583-L591
 visibility: private
 generated:
   by: okf-rs/0.4.0

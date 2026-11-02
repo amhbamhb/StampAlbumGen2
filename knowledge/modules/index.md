@@ -1,5 +1,6 @@
 # Modules
 
+- [my_bench](../modules/benches/my_bench.md) — Rust Module
 - [build](../modules/build.md) — Rust Module
 - [src](../modules/crates/stamp_album_db/src.md) — Rust Module
 - [unit_tests](../modules/crates/stamp_album_db/tests/unit_tests.md) — Rust Module
@@ -48,6 +49,7 @@
 - [utils](../modules/src/commands_file_generator/utils.md) — Rust Module
 - [config](../modules/src/config.md) — Rust Module
 - [data_sources](../modules/src/data_sources.md) — Rust Module
+- [pdf](../modules/src/data_sources/pdf.md) — Rust Module
 - [stampworld](../modules/src/data_sources/stampworld.md) — Rust Module
 - [db_utils](../modules/src/db_utils.md) — Rust Module
 - [formatting](../modules/src/db_utils/formatting.md) — Rust Module
@@ -69,13 +71,26 @@
 - [modes](../modules/src/modes.md) — Rust Module
 - [placeholder_image](../modules/src/placeholder_image.md) — Rust Module
 - [progress](../modules/src/progress.md) — Rust Module
+- [config_api](../modules/src/review/config_api.md) — Rust Module
+- [pdf_generation](../modules/src/review/pdf_generation.md) — Rust Module
+- [ui_state](../modules/src/review/ui_state.md) — Rust Module
 - [review_ui](../modules/src/review_ui.md) — Rust Module
+- [config_api](../modules/src/review_ui/config_api.md) — Rust Module
 - [config_editor](../modules/src/review_ui/config_editor.md) — JavaScript Module
 - [config_editor](../modules/src/review_ui/config_editor-2.md) — Rust Module
+- [db_query](../modules/src/review_ui/db_query.md) — Rust Module
 - [external_album_api](../modules/src/review_ui/external_album_api.md) — Rust Module
 - [html_templates](../modules/src/review_ui/html_templates.md) — Rust Module
 - [http_handlers](../modules/src/review_ui/http_handlers.md) — Rust Module
+- [http_utils](../modules/src/review_ui/http_utils.md) — Rust Module
 - [matcher_service](../modules/src/review_ui/matcher_service.md) — Rust Module
+- [mods](../modules/src/review_ui/mods.md) — Rust Module
+- [pdf_generation](../modules/src/review_ui/pdf_generation.md) — Rust Module
+- [pdf_parser](../modules/src/review_ui/pdf_parser.md) — Rust Module
+- [extraction](../modules/src/review_ui/pdf_parser/extraction.md) — Rust Module
+- [types](../modules/src/review_ui/pdf_parser/types.md) — Rust Module
+- [report_generation](../modules/src/review_ui/report_generation.md) — Rust Module
+- [ui_state](../modules/src/review_ui/ui_state.md) — Rust Module
 - [views](../modules/src/review_ui/views.md) — Rust Module
 - [bootstrap](../modules/src/review_ui/views/bootstrap.md) — JavaScript Module
 - [bootstrap](../modules/src/review_ui/views/bootstrap-2.md) — Rust Module
@@ -158,6 +173,8 @@
 - [page_break_overflow](../modules/tests/page_break_overflow.md) — Rust Module
 - [page_callback](../modules/tests/page_callback.md) — Rust Module
 - [page_fit_regression](../modules/tests/page_fit_regression.md) — Rust Module
+- [pdf_extraction_test](../modules/tests/pdf_extraction_test.md) — Rust Module
+- [pdf_import_tool](../modules/tests/pdf_import_tool.md) — Rust Module
 - [perforation_header](../modules/tests/perforation_header.md) — Rust Module
 - [perforation_header_negative](../modules/tests/perforation_header_negative.md) — Rust Module
 - [phase1_generate_conn](../modules/tests/phase1_generate_conn.md) — Rust Module
@@ -168,6 +185,7 @@
 - [placeholder_image_series_size](../modules/tests/placeholder_image_series_size.md) — Rust Module
 - [placeholder_image_size](../modules/tests/placeholder_image_size.md) — Rust Module
 - [placeholder_regeneration](../modules/tests/placeholder_regeneration.md) — Rust Module
+- [release_publication_shell](../modules/tests/release_publication_shell.md) — JavaScript Module
 - [review_pdf_filters_ui](../modules/tests/review_pdf_filters_ui.md) — JavaScript Module
 - [test](../modules/tests/review_ui_external_album/test.md) — JavaScript Module
 - [test](../modules/tests/review_ui_stampworld_credentials/test.md) — JavaScript Module
@@ -177,6 +195,8 @@
 - [site_accounts_ui](../modules/tests/site_accounts_ui.md) — JavaScript Module
 - [stamp_flags_dir_lookup](../modules/tests/stamp_flags_dir_lookup.md) — Rust Module
 - [stampworld_country_url_ui](../modules/tests/stampworld_country_url_ui.md) — JavaScript Module
+- [stampworld_pdf_cli](../modules/tests/stampworld_pdf_cli.md) — Rust Module
+- [stampworld_pdf_import_ui](../modules/tests/stampworld_pdf_import_ui.md) — JavaScript Module
 - [test_image_naming](../modules/tests/test_image_naming.md) — Rust Module
 - [test_stampworld_parsing](../modules/tests/test_stampworld_parsing.md) — Rust Module
 - [test_wikipedia_vspace](../modules/tests/test_wikipedia_vspace.md) — Rust Module

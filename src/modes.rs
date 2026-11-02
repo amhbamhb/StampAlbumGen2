@@ -1447,11 +1447,52 @@ pub async fn run_database_mode(
 }
 
 /// Run the scraping mode (scrape StampWorld and generate album)
+pub fn run_stampworld_file_import(cli: &crate::cli::Cli) -> Result<(), Box<dyn std::error::Error>> {
+    let source_file = cli
+        .source_file
+        .as_deref()
+        .filter(|value| !value.trim().is_empty())
+        .ok_or("StampWorld file import requires --source-file <PDF-or-HTML>")?;
+    let country = cli
+        .site_name
+        .as_deref()
+        .or(cli.album_name.as_deref())
+        .filter(|value| !value.trim().is_empty())
+        .ok_or("StampWorld file import requires --site-name or --album-name")?;
+    let directory = canonical_album_dir_name(country);
+    let db_path = cli
+        .db_path
+        .as_ref()
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| {
+            resolve_runtime_albums_root()
+                .join(&directory)
+                .join(format!("{}.db", directory))
+        });
+    let conn = crate::db_utils::init_db(&db_path.to_string_lossy())?;
+    let summary = crate::data_sources::pdf::import_stampworld_file(
+        &conn,
+        std::path::Path::new(source_file),
+        country,
+        &cli.start_year.to_string(),
+        &cli.end_year.to_string(),
+    )
+    .map_err(std::io::Error::other)?;
+    println!(
+        "StampWorld import complete: database={}, found={}, imported={}, skipped={} (duplicates or year filter)",
+        db_path.display(), summary.total_found, summary.imported, summary.skipped,
+    );
+    Ok(())
+}
+
 pub async fn run_scraping_mode(
     cli: &crate::cli::Cli,
     show_progress: bool,
     source: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    if source == "pdf" {
+        return run_stampworld_file_import(cli);
+    }
     use crate::commands_file_generator::CommandsFileGenerator;
     use log::{error, info, warn};
 

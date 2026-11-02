@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: log_runtime_event
-resource: src/review_ui.rs#L70-L79
+resource: src/review_ui.rs#L78-L87
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -52,7 +52,7 @@ relationships:
   - target: functions/src/review_ui/external_album_api/respond
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/http_handlers/review_pdf_error
+  - target: functions/src/review_ui/http_handlers/handle_stampworld_import_request
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/handle_site_account_request
@@ -65,6 +65,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/serve_review_requests
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_generation/review_pdf_error
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -93,8 +96,9 @@ relationships:
 - [store_image](../../../functions/src/review_ui/external_album_api/store_image.md)
 - [handle](../../../functions/src/review_ui/external_album_api/handle.md)
 - [respond](../../../functions/src/review_ui/external_album_api/respond.md)
-- [review_pdf_error](../../../functions/src/review_ui/http_handlers/review_pdf_error.md)
+- [handle_stampworld_import_request](../../../functions/src/review_ui/http_handlers/handle_stampworld_import_request.md)
 - [handle_site_account_request](../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
 - [handle_country_url_request](../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [serve_bootstrap_requests](../../../functions/src/review_ui/http_handlers/serve_bootstrap_requests.md)
 - [serve_review_requests](../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
+- [review_pdf_error](../../../functions/src/review_ui/pdf_generation/review_pdf_error.md)

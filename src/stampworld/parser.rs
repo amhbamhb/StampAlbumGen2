@@ -1,5 +1,8 @@
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::collections::HashSet;
+
+static RE_NON: Lazy<Regex> = Lazy::new(|| Regex::new(r"[^0-9\.,]").unwrap());
 
 // Normalize stamps_issued values and provide small parser helpers used by
 // both runtime code and unit tests.
@@ -9,14 +12,22 @@ pub fn normalize_stamps_issued(s: &str) -> String {
         v = v[1..v.len() - 1].to_string();
     }
     // Remove any characters except digits, dot and comma
-    let re_non = Regex::new(r"[^0-9\.,]").unwrap();
-    v = re_non.replace_all(&v, "").to_string();
+    v = RE_NON.replace_all(&v, "").to_string();
     // If dots are used as thousand separators and no commas are present, replace them with commas
     if v.contains('.') && !v.contains(',') {
         v = v.replace('.', ",");
     }
     v
 }
+
+static RE_WM: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*(?:wm|watermark)\s*[:\-]?\s*(.+)$").unwrap());
+static RE_DESIGN: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*design\s*[:\-]?\s*(.+)$").unwrap());
+static RE_ENGR: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*engraving\s*[:\-]?\s*(.+)$").unwrap());
+static RE_PERF: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r"(?i)^\s*(?:perforation|perf)\s*[:\-]?\s*(.+)$").unwrap());
 
 // Remove duplicate detail lines while preserving order.
 pub fn dedupe_details(details: &[String]) -> Vec<String> {
@@ -42,44 +53,34 @@ pub fn extract_block_metadata(details: &[String]) -> (String, String, String, St
     let mut design = String::new();
     let mut engraving = String::new();
     let mut perforation = String::new();
-    // Precompile simple regexes for per-line capture (case-insensitive)
-    let re_wm = Regex::new(r"(?i)^\s*(?:wm|watermark)\s*[:\-]?\s*(.+)$").unwrap();
-    let re_design = Regex::new(r"(?i)^\s*design\s*[:\-]?\s*(.+)$").unwrap();
-    let re_engr = Regex::new(r"(?i)^\s*engraving\s*[:\-]?\s*(.+)$").unwrap();
-    let re_perf = Regex::new(r"(?i)^\s*(?:perforation|perf)\s*[:\-]?\s*(.+)$").unwrap();
+
     for d in details {
-        // Some <p> blocks include multiple logical lines concatenated with newlines.
-        // Split into actual lines and inspect each one independently so we don't
-        // accidentally capture the remainder of the block when multiple labels
-        // appear in the same <p> element.
         for line in d.lines() {
             let l = line.trim();
             if l.is_empty() {
                 continue;
             }
             if watermark.is_empty() {
-                if let Some(cap) = re_wm.captures(l) {
+                if let Some(cap) = RE_WM.captures(l) {
                     watermark = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
                     continue;
                 }
             }
             if design.is_empty() {
-                if let Some(cap) = re_design.captures(l) {
+                if let Some(cap) = RE_DESIGN.captures(l) {
                     design = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
                     continue;
                 }
             }
             if engraving.is_empty() {
-                if let Some(cap) = re_engr.captures(l) {
+                if let Some(cap) = RE_ENGR.captures(l) {
                     engraving = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
                     continue;
                 }
             }
             if perforation.is_empty() {
-                if let Some(cap) = re_perf.captures(l) {
-                    // capture only numeric portion where possible
+                if let Some(cap) = RE_PERF.captures(l) {
                     let mut val = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
-                    // If the captured value contains non-digit extras, try to extract the first number token
                     if !val.chars().all(|c| c.is_ascii_digit()) {
                         for tok in val.split_whitespace() {
                             if tok
@@ -99,7 +100,6 @@ pub fn extract_block_metadata(details: &[String]) -> (String, String, String, St
                     perforation = val;
                     continue;
                 } else {
-                    // fallback: if the line contains the word 'perf' or 'perforation' anywhere, try to extract digits
                     let low = l.to_lowercase();
                     if (low.contains("perf") || low.contains("perforation"))
                         && perforation.is_empty()
@@ -123,7 +123,6 @@ pub fn extract_block_metadata(details: &[String]) -> (String, String, String, St
             }
         }
     }
-    // Final trimming and normalization
     watermark = watermark
         .trim()
         .trim_matches(|c: char| c == ':' || c == '.')

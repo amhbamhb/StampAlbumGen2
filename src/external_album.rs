@@ -439,9 +439,9 @@ pub fn inspect(source: &Path, entry: &Path) -> Result<Inspection> {
 }
 
 fn copy_tree(source: &Path, target: &Path, files: &Inventory) -> Result<()> {
-    fs::create_dir(target).map_err(|e| err("Create copied source directory", e))?;
+    fs::create_dir_all(target).map_err(|e| err("Create copied source directory", e))?;
     for directory in &files.directories {
-        fs::create_dir(target.join(directory)).map_err(|e| err("Copy directory", e))?;
+        fs::create_dir_all(target.join(directory)).map_err(|e| err("Copy directory", e))?;
     }
     for (path, size, hash) in &files.files {
         let hash = hash
@@ -657,6 +657,7 @@ pub fn list_albums(root: &Path) -> Result<Vec<AlbumSummary>> {
     let root = root
         .canonicalize()
         .map_err(|e| err("Resolve selected album root", e))?;
+    log::info!("Scanning album root: {:?}", root);
     let mut result = Vec::new();
     for entry in fs::read_dir(&root).map_err(|e| err("List album root", e))? {
         let entry = entry.map_err(|e| err("Read album listing", e))?;
@@ -665,16 +666,26 @@ pub fn list_albums(root: &Path) -> Result<Vec<AlbumSummary>> {
             .to_str()
             .ok_or("Non-UTF-8 album folder")?
             .to_owned();
-        if validate_slug(&name).is_err()
-            || !entry
-                .file_type()
-                .map_err(|e| err("Inspect album folder", e))?
-                .is_dir()
-        {
+
+        let is_dir = entry
+            .file_type()
+            .map_err(|e| err("Inspect album folder", e))?
+            .is_dir();
+        let slug_valid = validate_slug(&name).is_ok();
+
+        log::debug!(
+            "Checking entry: {} (is_dir={}, slug_valid={})",
+            name,
+            is_dir,
+            slug_valid
+        );
+
+        if !slug_valid || !is_dir {
             continue;
         }
         let db = entry.path().join(format!("{name}.db"));
         if !db.exists() {
+            log::debug!("Skipping album {}: database not found at {:?}", name, db);
             continue;
         }
         no_links(&db)?;
@@ -910,7 +921,6 @@ pub fn import_album(
     match render_pair(stage.path(), &conn, &current, cli, timeout) {
         Ok(rendered) => {
             set_rendered(&conn, &rendered)?;
-            let _ = rendered.workspace.keep();
         }
         Err(message) => {
             log::warn!("External album {name_slug} remains draft: {message}");
@@ -932,7 +942,7 @@ struct Rendered {
     generated_hash: String,
     layout_hash: String,
     uploaded_hash: String,
-    workspace: tempfile::TempDir,
+    workspace: PathBuf,
 }
 
 fn render_pair(
@@ -951,14 +961,20 @@ fn render_pair(
     let source = album.join("source");
     verify_source(conn, &source)?;
     let files = inventory(&source)?;
-    let stage = tempfile::Builder::new()
-        .prefix("render-")
-        .tempdir_in(album)
-        .map_err(|e| err("Create rendering workspace", e))?;
-    copy_tree(&source, &stage.path().join("reference"), &files)?;
-    copy_tree(&source, &stage.path().join("reconstructed"), &files)?;
-    let reference = stage.path().join("reference").join(&entry);
-    let generated = stage.path().join("reconstructed").join(&entry);
+    let build_dir = album.join("build");
+    if build_dir.exists() {
+        fs::remove_dir_all(&build_dir).map_err(|e| err("Clear build directory", e))?;
+    }
+    fs::create_dir_all(&build_dir).map_err(|e| err("Create build directory", e))?;
+    let reference_dir = build_dir.join("reference");
+    let reconstructed_dir = build_dir.join("reconstructed");
+    fs::create_dir(&reference_dir).map_err(|e| err("Create reference directory", e))?;
+    fs::create_dir(&reconstructed_dir).map_err(|e| err("Create reconstructed directory", e))?;
+
+    copy_tree(&source, &reference_dir, &files)?;
+    copy_tree(&source, &reconstructed_dir, &files)?;
+    let reference = reference_dir.join(&entry);
+    let generated = reconstructed_dir.join(&entry);
     let uploaded_hash = uploaded_hash(album, &current.pages)?;
     copy_uploaded_assets(
         album,
@@ -1002,7 +1018,7 @@ fn render_pair(
         generated_hash: digest(&generated)?,
         layout_hash: layout_hash(&layout),
         uploaded_hash,
-        workspace: stage,
+        workspace: build_dir,
     };
     Ok(result)
 }
@@ -1225,9 +1241,7 @@ pub fn retry_album(root: &Path, name: &str, cli: &str, timeout: Duration) -> Res
         }
     };
     tx.commit().map_err(|e| err("Commit retry", e))?;
-    if let Some(rendered) = rendered {
-        let _ = rendered.workspace.keep();
-    }
+    if let Some(_rendered) = rendered {}
     details(&conn, name)
 }
 
@@ -1367,9 +1381,7 @@ pub fn edit_page(
         }
     };
     tx.commit().map_err(|e| err("Commit page edit", e))?;
-    if let Some(rendered) = rendered {
-        let _ = rendered.workspace.keep();
-    }
+    if let Some(_rendered) = rendered {}
     details(&conn, name)
 }
 

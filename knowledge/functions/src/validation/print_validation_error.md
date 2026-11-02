@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: print_validation_error
-resource: src/validation.rs#L172-L215
+resource: src/validation.rs#L173-L216
 generated:
   by: okf-rs/0.4.0
 relationships:

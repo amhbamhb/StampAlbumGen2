@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_left_editor_image_path
-resource: src/review_ui/matcher_service.rs#L1162-L1204
+resource: src/review_ui/matcher_service.rs#L1163-L1205
 visibility: private
 generated:
   by: okf-rs/0.4.0

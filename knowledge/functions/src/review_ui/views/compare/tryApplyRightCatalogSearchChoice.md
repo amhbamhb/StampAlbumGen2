@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: tryApplyRightCatalogSearchChoice
-resource: src/review_ui/views/compare.js#L1980-L1985
+resource: src/review_ui/views/compare.js#L2017-L2022
 generated:
   by: okf-rs/0.4.0
 relationships:

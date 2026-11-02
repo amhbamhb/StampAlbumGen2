@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_album_output_conn_prepared
-resource: src/album_globals/generator.rs#L921-L2792
+resource: src/album_globals/generator.rs#L922-L2793
 generated:
   by: okf-rs/0.4.0
 relationships:

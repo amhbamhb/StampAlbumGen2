@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: clean_name
-resource: src/colnect/parser.rs#L10-L20
+resource: src/colnect/parser.rs#L15-L24
 visibility: private
 generated:
   by: okf-rs/0.4.0

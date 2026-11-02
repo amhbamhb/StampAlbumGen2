@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: read_entry
-resource: src/external_album.rs#L1376-L1383
+resource: src/external_album.rs#L1382-L1389
 visibility: private
 generated:
   by: okf-rs/0.4.0

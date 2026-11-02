@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_album_config
-resource: src/review_ui.rs#L2678-L2681
+resource: src/review_ui.rs#L2753-L2756
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,6 +1,10 @@
 //! Formatting utilities for database data
 
+use once_cell::sync::Lazy;
 use regex::Regex;
+
+static RE_KEEP: Lazy<Regex> = Lazy::new(|| Regex::new(r"[^0-9\.,]").unwrap());
+static RE_DIGITS: Lazy<Regex> = Lazy::new(|| Regex::new(r"\D").unwrap());
 
 /// Format stamps_issued into thousands-separated form and preserve decimals.
 /// Output uses comma for thousands and dot for decimal separator, e.g. "1,234.56".
@@ -17,8 +21,7 @@ pub fn format_stamps_issued(s: &str) -> String {
     }
 
     // Keep only digits, dot, comma
-    let re_keep = Regex::new(r"[^0-9\.,]").unwrap();
-    v = re_keep.replace_all(&v, "").to_string();
+    v = RE_KEEP.replace_all(&v, "").to_string();
     if v.is_empty() {
         return String::new();
     }
@@ -27,8 +30,8 @@ pub fn format_stamps_issued(s: &str) -> String {
     let dot_count = v.matches('.').count();
     let comma_count = v.matches(',').count();
     let (int_part, frac_part_opt) = if dot_count > 0 && comma_count > 0 {
-        let last_dot = v.rfind('.').unwrap();
-        let last_comma = v.rfind(',').unwrap();
+        let last_dot = v.rfind('.').unwrap_or(0);
+        let last_comma = v.rfind(',').unwrap_or(0);
         if last_dot > last_comma {
             (
                 v[..last_dot].to_string(),
@@ -44,7 +47,7 @@ pub fn format_stamps_issued(s: &str) -> String {
         if dot_count > 1 {
             (v.replace('.', ""), None)
         } else {
-            let idx = v.rfind('.').unwrap();
+            let idx = v.rfind('.').unwrap_or(v.len());
             let right_len = v.len() - idx - 1;
             if right_len == 3 {
                 (v.replace('.', ""), None)
@@ -56,7 +59,7 @@ pub fn format_stamps_issued(s: &str) -> String {
         if comma_count > 1 {
             (v.replace(',', ""), None)
         } else {
-            let idx = v.rfind(',').unwrap();
+            let idx = v.rfind(',').unwrap_or(v.len());
             let right_len = v.len() - idx - 1;
             if right_len == 3 {
                 (v.replace(',', ""), None)
@@ -68,8 +71,7 @@ pub fn format_stamps_issued(s: &str) -> String {
         (v.clone(), None)
     };
 
-    let re_digits = Regex::new(r"\D").unwrap();
-    let int_digits = re_digits.replace_all(&int_part, "").to_string();
+    let int_digits = RE_DIGITS.replace_all(&int_part, "").to_string();
     if int_digits.is_empty() {
         return String::new();
     }
@@ -85,7 +87,7 @@ pub fn format_stamps_issued(s: &str) -> String {
     let int_fmt: String = grouped.chars().rev().collect();
 
     if let Some(frac_raw) = frac_part_opt {
-        let frac_digits = re_digits.replace_all(&frac_raw, "").to_string();
+        let frac_digits = RE_DIGITS.replace_all(&frac_raw, "").to_string();
         if frac_digits.is_empty() {
             return int_fmt;
         }

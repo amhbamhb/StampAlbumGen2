@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: awaitJob
-resource: src/review_ui/views/external_album.js#L140-L152
+resource: src/review_ui/views/external_album.js#L143-L162
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: data_sources
-resource: src/data_sources/mod.rs#L1-L3
+resource: src/data_sources/mod.rs#L1-L5
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: closeLeftEditor
-resource: src/review_ui/views/compare.js#L2901-L2904
+resource: src/review_ui/views/compare.js#L2938-L2941
 generated:
   by: okf-rs/0.4.0
 relationships:

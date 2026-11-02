@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: albumeasy_pdf_timeout_secs
-resource: src/config.rs#L1631-L1634
+resource: src/config.rs#L1603-L1606
 generated:
   by: okf-rs/0.4.0
 relationships:

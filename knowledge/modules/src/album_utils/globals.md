@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/crate-album-globals-generator-new-helpers-rowspacingmode
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/crate-album-globals-generator-new-layout
     resolved_by: tree-sitter
     confidence: exact
@@ -47,6 +50,7 @@ relationships:
 
 # Imports
 
+- `crate::album_globals::generator_new::helpers::RowSpacingMode`
 - `crate::album_globals::generator_new::layout`
 - `log::info`
 - `std::io::Write`

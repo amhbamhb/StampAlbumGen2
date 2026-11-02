@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
-  - target: external/pub-use-crate-album-globals-generator-new-helpers-build-date-page-text-centre-template-build-engraving-page-text-centre-template-build-page-text-template-build-series-page-text-centre-template-build-watermark-page-text-centre-template-emit-row-start-es
+  - target: external/pub-use-crate-album-globals-generator-new-helpers-build-date-page-text-centre-template-build-engraving-page-text-centre-template-build-page-text-template-build-series-page-text-centre-template-build-watermark-page-text-centre-template-emit-row-start
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -20,7 +20,7 @@ relationships:
 - `pub use crate::album_globals::generator_new::helpers::{
     build_date_page_text_centre_template, build_engraving_page_text_centre_template,
     build_page_text_template, build_series_page_text_centre_template,
-    build_watermark_page_text_centre_template, emit_row_start_es,
+    build_watermark_page_text_centre_template, emit_row_start,
 }`
 
 # Member of

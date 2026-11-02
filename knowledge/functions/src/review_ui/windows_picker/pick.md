@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pick
-resource: src/review_ui/windows_picker.rs#L62-L67
+resource: src/review_ui/windows_picker.rs#L64-L69
 generated:
   by: okf-rs/0.4.0
 relationships:

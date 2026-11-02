@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: format_number_with_commas
-resource: src/album_globals/generator.rs#L177-L228
+resource: src/album_globals/generator.rs#L178-L229
 visibility: private
 generated:
   by: okf-rs/0.4.0

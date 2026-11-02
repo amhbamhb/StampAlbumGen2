@@ -40,6 +40,11 @@ docs/                  All project documentation
   reports/             Audit and status reports
   testing/             Test run artifacts
 samples/               Reference input files (canonical HTML, CSVs)
+### 11. Error Handling and Safety
+- **No Unwraps:** Do not use `.unwrap()` in production code. Use `?` for propagation, `match` for explicit handling, or provide safe defaults via `unwrap_or_else`.
+- **Structured Errors:** When a request fails, return structured errors instead of panicking or ignoring the failure.
+- **Graceful Degradation:** When possible, provide reasonable defaults if data is missing, but log the discrepancy.
+
   reference/           Example-Stampworldwebpage.txt (canonical HTML)
 scripts/               Utility scripts (versioning, debug runner)
 flags/                 Country→flag mapping data

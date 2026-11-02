@@ -1,7 +1,11 @@
 use super::*;
 
+use crate::review_ui::db_query::best_effort_prepare_images_for_pdf;
+use crate::review_ui::pdf_generation::review_pdf_error;
+use crate::review_ui::ui_state::{BootstrapHandlersState, ReviewHandlersState};
+
 fn bundled_favicon_png() -> &'static [u8] {
-    include_bytes!("../../assets/icons/favicon.png")
+    include_bytes!("../../assets/icons/generated/MainIcon.ico")
 }
 
 /// Returns the JSON body for `GET /api/ping`.
@@ -15,141 +19,110 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
-fn review_pdf_error(message: &str, status: u16) -> Response<std::io::Cursor<Vec<u8>>> {
-    log_runtime_event(&format!("Review PDF: {message}"));
-    let body = serde_json::json!({
-        "ok": false,
-        "message": message,
-        "generated_output_path": null,
-        "generated_pdf_path": null
-    })
-    .to_string();
-    let mut response = Response::from_string(body).with_status_code(StatusCode(status));
-    if let Ok(header) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+fn handle_stampworld_import_request(
+    mut request: tiny_http::Request,
+    review: Option<(&Connection, &str, &str)>,
+) -> Option<tiny_http::Request> {
+    if request.method() != &Method::Post || request.url() != "/api/stampworld-import-file" {
+        return Some(request);
+    }
+    let result = (|| -> Result<serde_json::Value, String> {
+        let mut body = String::new();
+        request
+            .as_reader()
+            .read_to_string(&mut body)
+            .map_err(|e| format!("Failed to read import request: {}", e))?;
+        let req: BootstrapPickColnectFileRequest =
+            serde_json::from_str(&body).map_err(|e| format!("Invalid import request: {}", e))?;
+        let bootstrap;
+        let (country, db_path) = if let Some((_, country, db_path)) = review {
+            (country, db_path)
+        } else {
+            bootstrap = scan_bootstrap_countries()
+                .into_iter()
+                .find(|c| c.country == req.country)
+                .ok_or_else(|| format!("Country '{}' not found", req.country))?;
+            (bootstrap.country.as_str(), bootstrap.db_path.as_str())
+        };
+        let directory = Path::new(db_path)
+            .parent()
+            .ok_or("Destination database has no parent directory")?
+            .join("stampworld");
+        let fail = |message| BootstrapPickColnectFileResponse {
+            ok: false,
+            picked: false,
+            message,
+            file_name: None,
+            dest_path: None,
+            colnect_dir: None,
+        };
+        let picked = pick_and_copy_colnect_file_to_dir(
+            &directory,
+            &format!("Import StampWorld PDF/HTML for {}", country),
+            &directory.to_string_lossy(),
+            true,
+            fail,
+        );
+        if !picked.ok {
+            return Err(picked.message);
+        }
+        if !picked.picked {
+            return Ok(serde_json::json!({"ok": true, "picked": false, "message": "Cancelled"}));
+        }
+        let path = picked
+            .dest_path
+            .as_deref()
+            .ok_or("File picker returned no destination")?;
+        let opened;
+        let conn = if let Some((conn, _, _)) = review {
+            conn
+        } else {
+            opened = crate::db_utils::init_db(db_path).map_err(|e| e.to_string())?;
+            &opened
+        };
+        let summary =
+            pdf_parser::import_stampworld_file(conn, Path::new(path), country, "1840", "9999")
+                .map_err(|e| format!("Import failed for {}: {}", path, e))?;
+        let message = format!(
+            "{}: found={}, imported={}, skipped={} (duplicates or year filter). Database: {}",
+            picked.file_name.as_deref().unwrap_or(path),
+            summary.total_found,
+            summary.imported,
+            summary.skipped,
+            db_path,
+        );
+        Ok(serde_json::json!({
+            "ok": true, "picked": true, "message": message,
+            "summary": summary, "db_path": db_path, "file_name": picked.file_name,
+        }))
+    })();
+    let (body, status) = match result {
+        Ok(body) => {
+            log_runtime_event(&format!("StampWorld import: {}", body["message"]));
+            (body, StatusCode(200))
+        }
+        Err(message) => {
+            log_runtime_event(&format!("StampWorld import error: {}", message));
+            (
+                serde_json::json!({"ok": false, "picked": false, "message": message}),
+                StatusCode(400),
+            )
+        }
+    };
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
         response = response.with_header(header);
     }
-    response
-}
-
-fn is_real_image_path(image_path: &str) -> bool {
-    let p = image_path.trim();
-    !p.is_empty() && !p.to_ascii_lowercase().starts_with("images/no_image")
-}
-
-fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
-    crate::file_utils::resolve_album_image_path(album_name, image_path).exists()
-}
-
-async fn best_effort_prepare_images_for_pdf(conn: &Connection, album_name: &str) -> (usize, usize) {
-    let mut stmt = match conn.prepare(
-        "SELECT
-            COALESCE(sg_number, ''),
-            COALESCE(image_path, ''),
-            CASE
-                WHEN TRIM(COALESCE(remote_image_url, '')) != '' THEN TRIM(COALESCE(remote_image_url, ''))
-                WHEN TRIM(COALESCE(colnect_image_url, '')) != '' THEN TRIM(COALESCE(colnect_image_url, ''))
-                WHEN TRIM(COALESCE(original_image_url, '')) != '' THEN TRIM(COALESCE(original_image_url, ''))
-                ELSE ''
-            END AS best_remote_url
-         FROM stamps",
-    ) {
-        Ok(s) => s,
-        Err(_) => return (0, 0),
-    };
-
-    let rows = match stmt.query_map([], |row| {
-        Ok((
-            row.get::<_, String>(0)?,
-            row.get::<_, String>(1)?,
-            row.get::<_, String>(2)?,
-        ))
-    }) {
-        Ok(r) => r,
-        Err(_) => return (0, 0),
-    };
-
-    let mut stubs: Vec<crate::db_utils::StampStub> = Vec::new();
-    let mut real_image_rows = 0usize;
-    let mut existing_real_files_before = 0usize;
-
-    for row in rows.flatten() {
-        let (sg_number, image_path, remote_url) = row;
-        if !is_real_image_path(&image_path) {
-            continue;
-        }
-
-        real_image_rows += 1;
-        if local_image_file_exists(album_name, &image_path) {
-            existing_real_files_before += 1;
-        }
-
-        if remote_url.trim().is_empty() {
-            continue;
-        }
-
-        stubs.push(crate::db_utils::StampStub {
-            year: 0,
-            month: String::new(),
-            month_num: 0,
-            day: String::new(),
-            sg_number: sg_number.clone(),
-            r#type: String::new(),
-            stamp_type: String::new(),
-            denomination: String::new(),
-            color: String::new(),
-            description: String::new(),
-            desc: String::new(),
-            catalog_num: sg_number,
-            stamps_issued: String::new(),
-            mint_condition: String::new(),
-            unused: String::new(),
-            used: String::new(),
-            letter_fdc: String::new(),
-            currency: String::new(),
-            image_path: String::new(),
-            remote_image_url: remote_url,
-            original_image_url: String::new(),
-            image_width_px: None,
-            image_height_px: None,
-            watermark: String::new(),
-            design: String::new(),
-            engraving: String::new(),
-            perforation: String::new(),
-            series: String::new(),
-            context: String::new(),
-            issue_location: String::new(),
-            quantity_printed: String::new(),
-            multi_perf: false,
-        });
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
     }
-
-    let _ = crate::image_downloader::download_missing_stamp_images(&stubs, album_name).await;
-
-    let mut existing_real_files_after = 0usize;
-    if let Ok(mut verify_stmt) = conn.prepare("SELECT COALESCE(image_path, '') FROM stamps") {
-        if let Ok(paths) = verify_stmt.query_map([], |row| row.get::<_, String>(0)) {
-            for path in paths.flatten() {
-                if is_real_image_path(&path) && local_image_file_exists(album_name, &path) {
-                    existing_real_files_after += 1;
-                }
-            }
-        }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!("StampWorld import response failed: {}", error));
     }
-
-    let _new_files = existing_real_files_after.saturating_sub(existing_real_files_before);
-    (real_image_rows, existing_real_files_after)
+    None
 }
 
-pub(super) struct BootstrapHandlersState {
-    pub selected: Option<(String, String)>,
-    pub logout_requested: bool,
-    pub reload_requested: bool,
-}
-
-pub(super) struct ReviewHandlersState {
-    pub reload_requested: bool,
-    pub return_to_start_requested: bool,
-}
+// Removed duplicate function
 
 fn handle_site_account_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
     let method = request.method().clone();
@@ -276,6 +249,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
     let reload_requested = false;
 
     for request in server.incoming_requests() {
+        let Some(request) = handle_stampworld_import_request(request, None) else {
+            continue;
+        };
         let Some(request) = handle_site_account_request(request) else {
             continue;
         };
@@ -1189,6 +1165,30 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         }
 
+        if method == Method::Post && req_url == "/api/bootstrap-pick-stampworld-file" {
+            let mut body = String::new();
+            let _ = request.as_reader().read_to_string(&mut body);
+            let resp_json = match serde_json::from_str::<BootstrapPickColnectFileRequest>(&body) {
+                Ok(req) => {
+                    let result = pick_and_copy_stampworld_file_via_dialog(&req.country);
+                    serde_json::to_string(&result).unwrap_or_else(|_| {
+                        "{\"ok\":false,\"picked\":false,\"message\":\"serialization error\"}"
+                            .to_string()
+                    })
+                }
+                Err(e) => format!(
+                    "{{\"ok\":false,\"picked\":false,\"message\":\"invalid request: {}\"}}",
+                    e
+                ),
+            };
+            let mut resp = Response::from_string(resp_json);
+            if let Ok(h) = Header::from_bytes(&b"Content-Type"[..], &b"application/json"[..]) {
+                resp = resp.with_header(h);
+            }
+            let _ = request.respond(resp);
+            continue;
+        }
+
         if method == Method::Post && req_url == "/api/bootstrap-pick-colnect-file" {
             let mut body = String::new();
             let _ = request.as_reader().read_to_string(&mut body);
@@ -1289,6 +1289,12 @@ pub(super) fn serve_review_requests(
     let mut return_to_start_requested = false;
 
     for request in server.incoming_requests() {
+        let Some(request) = handle_stampworld_import_request(
+            request,
+            Some((&input.conn, &input.album_name, &input.db_path)),
+        ) else {
+            continue;
+        };
         let Some(request) = handle_site_account_request(request) else {
             continue;
         };
@@ -2718,6 +2724,43 @@ mod site_account_tests {
             albumeasy_auto_generate_pdf_default: false,
             albumeasy_cli_configured: false,
             catalog_family_options: Vec::new(),
+        }
+    }
+
+    #[test]
+    fn stampworld_file_import_route_reports_invalid_requests_in_both_loops() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("test server"));
+            let addr = server.server_addr().to_ip().expect("TCP address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("HTTP client");
+            for body in ["{", "{}", r#"{"country":42}"#] {
+                let response = client
+                    .post(format!("http://{addr}/api/stampworld-import-file"))
+                    .body(body)
+                    .send()
+                    .expect("import response");
+                assert_eq!(response.status().as_u16(), 400);
+                assert_eq!(response.headers()["content-type"], "application/json");
+                let error: serde_json::Value = response.json().expect("structured error");
+                assert_eq!(error["ok"], false);
+                assert!(error["message"]
+                    .as_str()
+                    .expect("error message")
+                    .contains("Invalid import request"));
+            }
+            server.unblock();
+            worker.join().expect("server worker");
         }
     }
 

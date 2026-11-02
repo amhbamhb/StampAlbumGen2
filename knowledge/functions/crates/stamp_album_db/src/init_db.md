@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: init_db
-resource: crates/stamp_album_db/src/lib.rs#L660-L703
+resource: crates/stamp_album_db/src/lib.rs#L592-L635
 generated:
   by: okf-rs/0.4.0
 relationships:

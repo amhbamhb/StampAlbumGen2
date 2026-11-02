@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
@@ -40,6 +43,7 @@ relationships:
 
 # Calls
 
+- [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [albumeasy_diagnostics](../../../functions/src/album_globals/albumeasy_diagnostics.md)
 - [albumeasy_reported_error](../../../functions/src/album_globals/albumeasy_reported_error.md)

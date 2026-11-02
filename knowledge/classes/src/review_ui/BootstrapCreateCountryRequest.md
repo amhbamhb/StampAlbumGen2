@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapCreateCountryRequest
-resource: src/review_ui.rs#L355-L357
+resource: src/review_ui.rs#L365-L367
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: readSiteAccountResponse
-resource: src/review_ui/views/compare.js#L1480-L1495
+resource: src/review_ui/views/compare.js#L1487-L1502
 generated:
   by: okf-rs/0.4.0
 relationships:

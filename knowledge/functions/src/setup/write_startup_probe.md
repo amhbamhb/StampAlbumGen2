@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_startup_probe
-resource: src/setup.rs#L117-L125
+resource: src/setup.rs#L119-L127
 generated:
   by: okf-rs/0.4.0
 relationships:

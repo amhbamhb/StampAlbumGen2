@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: count_nonempty_albumeasy_text_lines
-resource: src/album_globals/generator.rs#L236-L245
+resource: src/album_globals/generator.rs#L237-L246
 visibility: private
 generated:
   by: okf-rs/0.4.0

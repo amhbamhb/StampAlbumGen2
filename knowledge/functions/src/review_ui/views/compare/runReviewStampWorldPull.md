@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: runReviewStampWorldPull
-resource: src/review_ui/views/compare.js#L1398-L1478
+resource: src/review_ui/views/compare.js#L1405-L1485
 generated:
   by: okf-rs/0.4.0
 relationships:

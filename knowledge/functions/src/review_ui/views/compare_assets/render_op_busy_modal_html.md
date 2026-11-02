@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_op_busy_modal_html
-resource: src/review_ui/views/compare_assets.rs#L162-L174
+resource: src/review_ui/views/compare_assets.rs#L163-L175
 generated:
   by: okf-rs/0.4.0
 relationships:

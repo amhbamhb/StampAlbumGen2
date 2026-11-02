@@ -3,11 +3,11 @@
 
 # Stamp Album Generator 2
 
-![Stamp Album Generator 2 Logo](assets/icons/stamp_album_gen2.png)
+![Stamp Album Generator 2 Logo](assets/new/Stamp5WebHeader1.jpg)
 
-This application generates AlbumEasy source pages (*.txt files) from stamp data sources and SQLite databases.
+This application generates AlbumEasy source pages (*.txt files) from stamp data sources and has a built in SQLite database for each country/theme.  The application can update the database with new stamp information as it becomes available.
 
-Latest release: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
+The latest release is available on github with attestations: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
 
 The application is designed to simplify the process of generating stamp album pages from various data sources, ensuring that users can efficiently manage and update their collections.
 
@@ -25,14 +25,22 @@ creating a fork or making changes is not such approval. See [LICENSE.md](LICENSE
 
 ## Start Here
 
-Most people will just launch the binary and automatically start the application. To download the program, visit the [releases page](https://github.com/amhbamhb/StampAlbumGen2/releases/latest). The Web UI is default when starting the program directly.
+The simpliiste way to get started is to download the latest release and launch the binary. The application will automatically create the necessary files and directories upon the first run, making it easy for users to begin managing their stamp collections. No additional setup is required, and users can immediately start adding and organizing their stamps.
 
-All files that are needed for the application are created automatically upon the first launch.  Include the config.toml file, which contains the necessary configuration settings for the application.  A help file is also generated to assist users in understanding and using the application effectively.  If the file have been updated a new version will be created automatically.  This also applies to the config.toml.  The web UI will notify the user that there are new config items now active.
+## Quick Start 
+
+To quickly run the application, download the latest release from the [releases page](https://github.com/amhbamhb/StampAlbumGen2/releases/latest) and launch the binary. The Web UI will be the default interface when starting the program directly.
+
+## Building from Source
+
+For users who prefer to build from source, the repository contains all the necessary instructions and dependencies to compile the application on supported platforms. 
+
+Most people will just launch the binary and automatically start the application. To download the program, visit the [releases page](https://github.com/amhbamhb/StampAlbumGen2/releases/latest). The Web UI is default when starting the program directly.
 
 This works in both Linux and Windows environments.
 
-![Stamp Album Generator 2 Screenshot Linux](docs/images/application-linux.png)
-![Stamp Album Generator 2 Windows](docs/images/application-windows.png)
+
+![Stamp Album Generator 2 Screenshot Linux](image.png)   ![Stamp Album Generator 2 Screenshot Windows](image.png)
 
 There is a help pdf file that is created in the runtime working folder when the application is first launched. The help file is named `StampAlbumGenerator2HelpManual.pdf`. This contains detailed usage instructions and guidance for interacting with the application from a web UI.  
 
@@ -46,6 +54,8 @@ The Application, on every PDF generation, will always create a backup of the txt
 
 
 There are also command-line usage instructions available within the PDF.  Some instructions below are provided as examples.
+
+All files that are needed for the application are created automatically upon the first launch.  Include the config.toml file, which contains the necessary configuration settings for the application.  A help file is also generated to assist users in understanding and using the application effectively.  If the file have been updated, like the help file, a new version will be created automatically.  This also applies to the config.toml.  The web UI will notify the user that there are new config items now active.
 
 ## Advanced Usage
 

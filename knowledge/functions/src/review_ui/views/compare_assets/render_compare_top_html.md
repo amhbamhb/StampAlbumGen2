@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_compare_top_html
-resource: src/review_ui/views/compare_assets.rs#L1-L33
+resource: src/review_ui/views/compare_assets.rs#L1-L34
 generated:
   by: okf-rs/0.4.0
 relationships:

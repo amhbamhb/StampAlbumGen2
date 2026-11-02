@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: stepLeftSearch
-resource: src/review_ui/views/compare.js#L1196-L1206
+resource: src/review_ui/views/compare.js#L1203-L1213
 generated:
   by: okf-rs/0.4.0
 relationships:

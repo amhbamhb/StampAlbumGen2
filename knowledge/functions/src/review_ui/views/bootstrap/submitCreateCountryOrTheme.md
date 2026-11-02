@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: submitCreateCountryOrTheme
-resource: src/review_ui/views/bootstrap.js#L1135-L1184
+resource: src/review_ui/views/bootstrap.js#L1186-L1235
 generated:
   by: okf-rs/0.4.0
 relationships:

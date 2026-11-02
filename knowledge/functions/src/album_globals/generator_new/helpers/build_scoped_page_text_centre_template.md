@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_scoped_page_text_centre_template
-resource: src/album_globals/generator_new/helpers.rs#L172-L202
+resource: src/album_globals/generator_new/helpers.rs#L192-L222
 visibility: private
 generated:
   by: okf-rs/0.4.0

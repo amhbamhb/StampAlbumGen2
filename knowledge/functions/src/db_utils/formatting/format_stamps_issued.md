@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: format_stamps_issued
-resource: src/db_utils/formatting.rs#L7-L96
+resource: src/db_utils/formatting.rs#L11-L98
 generated:
   by: okf-rs/0.4.0
 relationships:

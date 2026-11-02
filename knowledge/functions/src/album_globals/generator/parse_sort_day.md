@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_sort_day
-resource: src/album_globals/generator.rs#L40-L48
+resource: src/album_globals/generator.rs#L41-L49
 visibility: private
 generated:
   by: okf-rs/0.4.0

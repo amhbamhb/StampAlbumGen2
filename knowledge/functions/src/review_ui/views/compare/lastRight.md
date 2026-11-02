@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: lastRight
-resource: src/review_ui/views/compare.js#L1826-L1833
+resource: src/review_ui/views/compare.js#L1863-L1870
 generated:
   by: okf-rs/0.4.0
 relationships:

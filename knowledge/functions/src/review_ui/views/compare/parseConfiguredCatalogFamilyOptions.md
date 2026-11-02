@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: parseConfiguredCatalogFamilyOptions
-resource: src/review_ui/views/compare.js#L632-L645
+resource: src/review_ui/views/compare.js#L639-L652
 generated:
   by: okf-rs/0.4.0
 ---

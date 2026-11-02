@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: allDbRows
-resource: src/review_ui/views/compare.js#L617-L620
+resource: src/review_ui/views/compare.js#L624-L627
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -31,7 +31,7 @@ relationships:
   - target: functions/src/review_ui/resolve_image_abs
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/http_handlers/local_image_file_exists
+  - target: functions/src/review_ui/http_utils/local_image_file_exists
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -53,4 +53,4 @@ relationships:
 - [download_stamp_image_if_missing](../../../functions/src/image_downloader/download_stamp_image_if_missing.md)
 - [download_missing_stamp_images](../../../functions/src/image_downloader/download_missing_stamp_images.md)
 - [resolve_image_abs](../../../functions/src/review_ui/resolve_image_abs.md)
-- [local_image_file_exists](../../../functions/src/review_ui/http_handlers/local_image_file_exists.md)
+- [local_image_file_exists](../../../functions/src/review_ui/http_utils/local_image_file_exists.md)

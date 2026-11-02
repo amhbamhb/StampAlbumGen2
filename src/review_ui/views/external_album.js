@@ -20,7 +20,7 @@ const externalAlbums = (() => {
         PAGE_TEXT_CENTRE: ['Font', 'Size (points)', 'Text', 'Optional spacing']
     };
     const element = id => document.getElementById(id);
-    const text = (id, value) => { element(id).textContent = value; };
+    const text = (id, value) => { const el = element(id); if (el) el.textContent = value; };
     const clone = value => JSON.parse(JSON.stringify(value));
     const source = () => ({
         source: element('externalSource').value.trim(),
@@ -42,10 +42,13 @@ const externalAlbums = (() => {
         element('externalImportInputs').disabled = value;
         element('externalEditorInputs').disabled = value || !album || album.status !== 'ready';
         ['externalImportClose', 'externalEditorClose', 'externalApprove', 'externalRetry'].forEach(id => {
-            element(id).disabled = value;
+            const el = element(id);
+            if (el) el.disabled = value;
         });
         element('externalFidelityConsent').disabled = value;
         element('externalCopyConsent').disabled = value;
+        const spinner = element('externalSpinner');
+        if (spinner) spinner.hidden = !value;
         updateImportButton();
     }
 
@@ -142,9 +145,16 @@ const externalAlbums = (() => {
             await new Promise(resolve => setTimeout(resolve, 750));
             const { job } = await api('job?id=' + result.job);
             if (job.running) {
-                text(statusId, 'Working: copying / validating / rendering. Keep this window open; the main UI remains responsive.');
+                const el = element(statusId);
+                if (el) {
+                    const spinner = element('externalSpinner');
+                    if (spinner) spinner.hidden = false;
+                    el.textContent = 'Working: copying / validating / rendering. Keep this window open; the main UI remains responsive.';
+                }
                 continue;
             }
+            const spinner = element('externalSpinner');
+            if (spinner) spinner.hidden = true;
             if (job.error) throw new Error(job.error);
             if (!job.result) throw new Error('Job completed without an album result. Refresh the imported-album list.');
             return job.result;
@@ -376,15 +386,15 @@ select.addEventListener('change', selectPage);
     }
 
     ['externalSource', 'externalEntry'].forEach(id => {
-        element(id).addEventListener('input', () => {
+        element(id)?.addEventListener('input', () => {
             inspectionKey = '';
             inspectionReport = null;
             updateImportButton();
         });
     });
-    element('externalCopyConsent').addEventListener('change', updateImportButton);
+    element('externalCopyConsent')?.addEventListener('change', updateImportButton);
     ['externalImportDialog', 'externalEditorDialog'].forEach(id => {
-        element(id).addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+        element(id)?.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
     });
     const closeImport = () => { if (!busy) element('externalImportDialog').close(); };
     const closeEditor = () => { if (!busy) element('externalEditorDialog').close(); };

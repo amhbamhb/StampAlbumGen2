@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: clean_perforation
-resource: src/colnect/parser.rs#L24-L34
+resource: src/colnect/parser.rs#L28-L36
 visibility: private
 generated:
   by: okf-rs/0.4.0

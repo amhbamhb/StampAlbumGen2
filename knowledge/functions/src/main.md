@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: src/main.rs#L39-L634
+resource: src/main.rs#L39-L646
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/setup/write_startup_probe_snapshot
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/setup/ensure_first_run_installation
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/parser/parse
     resolved_by: tree-sitter
     confidence: exact
@@ -23,9 +26,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/uninstall_linux_desktop_integration
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/setup/install_linux_desktop_integration
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/ensure_config_and_template_files
@@ -148,6 +148,9 @@ relationships:
   - target: functions/src/validation/validate_source
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/modes/run_stampworld_file_import
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/modes/run_database_mode
     resolved_by: tree-sitter
     confidence: exact
@@ -165,10 +168,10 @@ relationships:
 - [write_startup_probe](../../functions/src/setup/write_startup_probe.md)
 - [log_runtime_event](../../functions/src/review_ui/log_runtime_event.md)
 - [write_startup_probe_snapshot](../../functions/src/setup/write_startup_probe_snapshot.md)
+- [ensure_first_run_installation](../../functions/src/setup/ensure_first_run_installation.md)
 - [parse](../../functions/src/external_album/parser/parse.md)
 - [setup_logging](../../functions/src/setup/setup_logging.md)
 - [uninstall_linux_desktop_integration](../../functions/src/setup/uninstall_linux_desktop_integration.md)
-- [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
 - [align_process_working_dir_to_runtime_layout](../../functions/src/setup/align_process_working_dir_to_runtime_layout.md)
 - [ensure_manual_import_files](../../functions/src/colnect/template/ensure_manual_import_files.md)
@@ -209,5 +212,6 @@ relationships:
 - [validate_year_range](../../functions/src/validation/validate_year_range.md)
 - [print_validation_error](../../functions/src/validation/print_validation_error.md)
 - [validate_source](../../functions/src/validation/validate_source.md)
+- [run_stampworld_file_import](../../functions/src/modes/run_stampworld_file_import.md)
 - [run_database_mode](../../functions/src/modes/run_database_mode.md)
 - [run_scraping_mode](../../functions/src/modes/run_scraping_mode.md)

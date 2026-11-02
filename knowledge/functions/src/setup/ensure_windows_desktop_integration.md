@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_windows_desktop_integration
-resource: src/setup.rs#L547-L621
+resource: src/setup.rs#L549-L623
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: StampWorldLogTailResponse
-resource: src/review_ui.rs#L456-L459
+resource: src/review_ui.rs#L466-L469
 visibility: private
 generated:
   by: okf-rs/0.4.0

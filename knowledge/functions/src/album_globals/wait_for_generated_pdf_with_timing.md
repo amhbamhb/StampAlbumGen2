@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_globals/wait_for_generated_pdf
     resolved_by: tree-sitter
@@ -18,6 +22,10 @@ relationships:
 # Signature
 
 `fn wait_for_generated_pdf_with_timing( expected_pdf_path: &Path, previous_modified: Option<SystemTime>, timeout: Duration, poll_every: Duration, ) -> bool`
+
+# Calls
+
+- [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 
 # Called by
 

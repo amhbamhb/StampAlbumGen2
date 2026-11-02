@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: pad_centre_body_for_side_columns
-resource: src/album_globals/generator.rs#L247-L283
+resource: src/album_globals/generator.rs#L248-L284
 visibility: private
 generated:
   by: okf-rs/0.4.0

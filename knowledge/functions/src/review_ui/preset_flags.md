@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: preset_flags
-resource: src/review_ui.rs#L547-L563
+resource: src/review_ui.rs#L557-L573
 visibility: private
 generated:
   by: okf-rs/0.4.0

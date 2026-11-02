@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ColnectImportRequest
-resource: src/review_ui.rs#L1378-L1380
+resource: src/review_ui.rs#L1388-L1390
 visibility: private
 generated:
   by: okf-rs/0.4.0

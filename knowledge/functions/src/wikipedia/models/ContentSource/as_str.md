@@ -99,6 +99,9 @@ relationships:
   - target: functions/src/review_ui/external_album_api/same_origin
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/handle_stampworld_import_request
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/serve_review_requests
     resolved_by: tree-sitter
     confidence: exact
@@ -109,6 +112,15 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/save_left_stamp
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/import_stampworld_file
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/ensure_linux_desktop_integration
@@ -186,10 +198,14 @@ relationships:
 - [run_scraping_mode](../../../../../functions/src/modes/run_scraping_mode.md)
 - [mime_from_path](../../../../../functions/src/review_ui/mime_from_path.md)
 - [same_origin](../../../../../functions/src/review_ui/external_album_api/same_origin.md)
+- [handle_stampworld_import_request](../../../../../functions/src/review_ui/http_handlers/handle_stampworld_import_request.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [apply_matches](../../../../../functions/src/review_ui/matcher_service/apply_matches.md)
 - [resolve_left_editor_image_path](../../../../../functions/src/review_ui/matcher_service/resolve_left_editor_image_path.md)
 - [save_left_stamp](../../../../../functions/src/review_ui/matcher_service/save_left_stamp.md)
+- [metadata](../../../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
+- [parse_stampworld_text](../../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_text.md)
+- [import_stampworld_file](../../../../../functions/src/review_ui/pdf_parser/import_stampworld_file.md)
 - [ensure_linux_desktop_integration](../../../../../functions/src/setup/ensure_linux_desktop_integration.md)
 - [collect_stampworld_data_with_fetcher](../../../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
 - [extract_block_metadata](../../../../../functions/src/stampworld/parser/extract_block_metadata.md)

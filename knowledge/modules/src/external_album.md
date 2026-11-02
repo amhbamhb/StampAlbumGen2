@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: external_album
-resource: src/external_album.rs#L1-L1468
+resource: src/external_album.rs#L1-L1474
 generated:
   by: okf-rs/0.4.0
 relationships:

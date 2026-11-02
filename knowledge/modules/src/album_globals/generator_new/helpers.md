@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: helpers
-resource: src/album_globals/generator_new/helpers.rs#L1-L992
+resource: src/album_globals/generator_new/helpers.rs#L1-L1012
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -46,7 +46,8 @@ relationships:
 
 - [PlaceholderOptions](../../../../classes/src/album_globals/generator_new/helpers/PlaceholderOptions.md)
 - [PlaceholderCallOptions](../../../../classes/src/album_globals/generator_new/helpers/PlaceholderCallOptions.md)
-- [emit_row_start_es](../../../../functions/src/album_globals/generator_new/helpers/emit_row_start_es.md)
+- [RowSpacingMode](../../../../classes/src/album_globals/generator_new/helpers/RowSpacingMode.md)
+- [emit_row_start](../../../../functions/src/album_globals/generator_new/helpers/emit_row_start.md)
 - [emit_stamp_diag](../../../../functions/src/album_globals/generator_new/helpers/emit_stamp_diag.md)
 - [StampDiag](../../../../classes/src/album_globals/generator_new/helpers/StampDiag.md)
 - [build_page_text_template](../../../../functions/src/album_globals/generator_new/helpers/build_page_text_template.md)

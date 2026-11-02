@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: fmt
-resource: src/setup.rs#L36-L46
+resource: src/setup.rs#L38-L48
 visibility: private
 generated:
   by: okf-rs/0.4.0

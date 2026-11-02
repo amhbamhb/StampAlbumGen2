@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: desktop_launcher_disable_marker_path
-resource: src/setup.rs#L428-L430
+resource: src/setup.rs#L430-L432
 visibility: private
 generated:
   by: okf-rs/0.4.0

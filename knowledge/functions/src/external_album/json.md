@@ -26,6 +26,9 @@ relationships:
   - target: functions/src/review_ui/external_album_api/external_album_inspect_endpoint_reports_sample_and_rejects_cross_origin
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
     resolved_by: tree-sitter
     confidence: exact
@@ -66,6 +69,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/pickAndCopyColnectFile
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/bootstrap/pickAndCopyStampworldPdfFile
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/refreshState
@@ -114,6 +120,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/runReviewStampWorldPull
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/views/compare/importReviewStampworldFile
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/applyMatches
@@ -184,6 +193,7 @@ relationships:
 - [saveConfigEditorChanges](../../../functions/src/review_ui/config_editor/saveConfigEditorChanges.md)
 - [deleteAlbumConfigOverride](../../../functions/src/review_ui/config_editor/deleteAlbumConfigOverride.md)
 - [external_album_inspect_endpoint_reports_sample_and_rejects_cross_origin](../../../functions/src/review_ui/external_album_api/external_album_inspect_endpoint_reports_sample_and_rejects_cross_origin.md)
+- [stampworld_file_import_route_reports_invalid_requests_in_both_loops](../../../functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
@@ -198,6 +208,7 @@ relationships:
 - [saveAlbumeasyPath](../../../functions/src/review_ui/views/bootstrap/saveAlbumeasyPath.md)
 - [checkAlbumeasyStatusAfterPull](../../../functions/src/review_ui/views/bootstrap/checkAlbumeasyStatusAfterPull.md)
 - [pickAndCopyColnectFile](../../../functions/src/review_ui/views/bootstrap/pickAndCopyColnectFile.md)
+- [pickAndCopyStampworldPdfFile](../../../functions/src/review_ui/views/bootstrap/pickAndCopyStampworldPdfFile.md)
 - [refreshState](../../../functions/src/review_ui/views/bootstrap/refreshState.md)
 - [submitCreateCountryOrTheme](../../../functions/src/review_ui/views/bootstrap/submitCreateCountryOrTheme.md)
 - [startReview](../../../functions/src/review_ui/views/bootstrap/startReview.md)
@@ -214,6 +225,7 @@ relationships:
 - [ensureRightImageUrl](../../../functions/src/review_ui/views/compare/ensureRightImageUrl.md)
 - [openCountryFolder](../../../functions/src/review_ui/views/compare/openCountryFolder.md)
 - [runReviewStampWorldPull](../../../functions/src/review_ui/views/compare/runReviewStampWorldPull.md)
+- [importReviewStampworldFile](../../../functions/src/review_ui/views/compare/importReviewStampworldFile.md)
 - [applyMatches](../../../functions/src/review_ui/views/compare/applyMatches.md)
 - [submitLeftEditor](../../../functions/src/review_ui/views/compare/submitLeftEditor.md)
 - [deleteCurrentLeft](../../../functions/src/review_ui/views/compare/deleteCurrentLeft.md)

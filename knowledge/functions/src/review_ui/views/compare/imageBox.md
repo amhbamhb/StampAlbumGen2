@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: imageBox
-resource: src/review_ui/views/compare.js#L890-L893
+resource: src/review_ui/views/compare.js#L897-L900
 generated:
   by: okf-rs/0.4.0
 relationships:

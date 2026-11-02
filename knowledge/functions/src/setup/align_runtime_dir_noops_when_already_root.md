@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: align_runtime_dir_noops_when_already_root
-resource: src/setup.rs#L911-L915
+resource: src/setup.rs#L913-L917
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -17,7 +17,7 @@ pub use constants::MONTH_NAMES;
 // safe-forwarding wrapper functions below that prefer the refactored
 // implementation but fall back to the original implementation when needed.
 pub use globals::{compute_usable_height, write_globals};
-pub use helpers::{build_page_text_template, emit_row_start_es};
+pub use helpers::{build_page_text_template, emit_row_start};
 pub use page_functions::{add_stamp, new_page, new_row, new_series, new_year};
 pub use structs::{GenericAttrs, Stamp};
 

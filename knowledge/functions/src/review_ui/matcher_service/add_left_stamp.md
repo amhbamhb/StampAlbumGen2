@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: add_left_stamp
-resource: src/review_ui/matcher_service.rs#L1382-L1539
+resource: src/review_ui/matcher_service.rs#L1383-L1542
 generated:
   by: okf-rs/0.4.0
 relationships:

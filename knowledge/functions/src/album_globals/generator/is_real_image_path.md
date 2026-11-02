@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_real_image_path
-resource: src/album_globals/generator.rs#L168-L171
+resource: src/album_globals/generator.rs#L169-L172
 visibility: private
 generated:
   by: okf-rs/0.4.0

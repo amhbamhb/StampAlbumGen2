@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: importAlbum
-resource: src/review_ui/views/external_album.js#L154-L168
+resource: src/review_ui/views/external_album.js#L164-L178
 generated:
   by: okf-rs/0.4.0
 relationships:

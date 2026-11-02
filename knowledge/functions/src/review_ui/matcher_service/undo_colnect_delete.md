@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: undo_colnect_delete
-resource: src/review_ui/matcher_service.rs#L1738-L1776
+resource: src/review_ui/matcher_service.rs#L1741-L1779
 generated:
   by: okf-rs/0.4.0
 relationships:

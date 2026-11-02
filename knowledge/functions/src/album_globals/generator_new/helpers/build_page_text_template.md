@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_page_text_template
-resource: src/album_globals/generator_new/helpers.rs#L91-L136
+resource: src/album_globals/generator_new/helpers.rs#L111-L156
 generated:
   by: okf-rs/0.4.0
 relationships:

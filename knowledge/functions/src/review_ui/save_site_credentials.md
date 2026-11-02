@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_site_credentials
-resource: src/review_ui.rs#L777-L793
+resource: src/review_ui.rs#L787-L803
 generated:
   by: okf-rs/0.4.0
 relationships:

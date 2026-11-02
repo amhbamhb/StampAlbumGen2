@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_watermark_page_text_centre_template
-resource: src/album_globals/generator_new/helpers.rs#L215-L224
+resource: src/album_globals/generator_new/helpers.rs#L235-L244
 generated:
   by: okf-rs/0.4.0
 relationships:

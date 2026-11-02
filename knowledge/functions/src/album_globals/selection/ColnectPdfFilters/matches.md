@@ -6,9 +6,6 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/album_globals/selection/normalized
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -42,7 +39,6 @@ relationships:
 
 # Calls
 
-- [normalized](../../../../../functions/src/album_globals/selection/normalized.md)
 - [get](../../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 
 # Called by

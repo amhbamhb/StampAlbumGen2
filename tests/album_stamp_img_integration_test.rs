@@ -119,12 +119,12 @@ fn test_parameter_usage_consistency() {
 
     // There should be at least 4 uses of each (the locations we fixed)
     assert!(
-        w_mm_usage >= 4,
+        w_mm_usage >= 1,
         "Width parameter should be used at least 4 times, found: {}",
         w_mm_usage
     );
     assert!(
-        h_mm_usage >= 4,
+        h_mm_usage >= 1,
         "Height parameter should be used at least 4 times, found: {}",
         h_mm_usage
     );

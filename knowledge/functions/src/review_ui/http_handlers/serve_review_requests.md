@@ -1,11 +1,14 @@
 ---
 type: Rust Function
 title: serve_review_requests
-resource: src/review_ui/http_handlers.rs#L1284-L2688
+resource: src/review_ui/http_handlers.rs#L1272-L2681
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/review_ui/http_handlers/handle_stampworld_import_request
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/handle_site_account_request
     resolved_by: tree-sitter
     confidence: exact
@@ -96,7 +99,7 @@ relationships:
   - target: functions/src/album_globals/selection/colnect_pdf_options
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/http_handlers/review_pdf_error
+  - target: functions/src/review_ui/pdf_generation/review_pdf_error
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/matcher_service/load_right_candidates
@@ -126,7 +129,7 @@ relationships:
   - target: functions/src/album_globals/selection/prepare_pdf_stamps
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/http_handlers/best_effort_prepare_images_for_pdf
+  - target: functions/src/review_ui/db_query/best_effort_prepare_images_for_pdf
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/with_album_config_override_async
@@ -138,14 +141,11 @@ relationships:
   - target: functions/src/album_globals/generate_album_output_conn_with_pdf_override
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/open_local_path
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/review_ui/open_folder_in_file_manager
-    resolved_by: tree-sitter
-    confidence: exact
   called_by:
   - target: functions/src/review_ui/run_review_ui
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
@@ -165,6 +165,7 @@ relationships:
 
 # Calls
 
+- [handle_stampworld_import_request](../../../../functions/src/review_ui/http_handlers/handle_stampworld_import_request.md)
 - [handle_site_account_request](../../../../functions/src/review_ui/http_handlers/handle_site_account_request.md)
 - [handle_country_url_request](../../../../functions/src/review_ui/http_handlers/handle_country_url_request.md)
 - [bundled_favicon_png](../../../../functions/src/review_ui/http_handlers/bundled_favicon_png.md)
@@ -195,7 +196,7 @@ relationships:
 - [undo_colnect_delete](../../../../functions/src/review_ui/matcher_service/undo_colnect_delete.md)
 - [colnect_import_data](../../../../functions/src/review_ui/colnect_import_data.md)
 - [colnect_pdf_options](../../../../functions/src/album_globals/selection/colnect_pdf_options.md)
-- [review_pdf_error](../../../../functions/src/review_ui/http_handlers/review_pdf_error.md)
+- [review_pdf_error](../../../../functions/src/review_ui/pdf_generation/review_pdf_error.md)
 - [load_right_candidates](../../../../functions/src/review_ui/matcher_service/load_right_candidates.md)
 - [load_left_stamps](../../../../functions/src/review_ui/matcher_service/load_left_stamps.md)
 - [pick_and_copy_colnect_file_for_db](../../../../functions/src/review_ui/pick_and_copy_colnect_file_for_db.md)
@@ -205,16 +206,15 @@ relationships:
 - [try_acquire](../../../../functions/src/review_ui/PdfGenerationGuard/try_acquire.md)
 - [is_all](../../../../functions/src/album_globals/selection/ColnectPdfFilters/is_all.md)
 - [prepare_pdf_stamps](../../../../functions/src/album_globals/selection/prepare_pdf_stamps.md)
-- [best_effort_prepare_images_for_pdf](../../../../functions/src/review_ui/http_handlers/best_effort_prepare_images_for_pdf.md)
+- [best_effort_prepare_images_for_pdf](../../../../functions/src/review_ui/db_query/best_effort_prepare_images_for_pdf.md)
 - [with_album_config_override_async](../../../../functions/src/config/with_album_config_override_async.md)
 - [generate_album_output_conn_with_prepared_pdf](../../../../functions/src/album_globals/generate_album_output_conn_with_prepared_pdf.md)
 - [generate_album_output_conn_with_pdf_override](../../../../functions/src/album_globals/generate_album_output_conn_with_pdf_override.md)
-- [open_local_path](../../../../functions/src/review_ui/open_local_path.md)
-- [open_folder_in_file_manager](../../../../functions/src/review_ui/open_folder_in_file_manager.md)
 
 # Called by
 
 - [run_review_ui](../../../../functions/src/review_ui/run_review_ui.md)
+- [stampworld_file_import_route_reports_invalid_requests_in_both_loops](../../../../functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)

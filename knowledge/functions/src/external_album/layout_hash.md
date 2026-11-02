@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: layout_hash
-resource: src/external_album.rs#L1156-L1161
+resource: src/external_album.rs#L1164-L1169
 visibility: private
 generated:
   by: okf-rs/0.4.0

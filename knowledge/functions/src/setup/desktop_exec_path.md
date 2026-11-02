@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: desktop_exec_path
-resource: src/setup.rs#L193-L208
+resource: src/setup.rs#L195-L210
 visibility: private
 generated:
   by: okf-rs/0.4.0

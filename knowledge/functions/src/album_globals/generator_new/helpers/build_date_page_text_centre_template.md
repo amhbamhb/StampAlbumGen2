@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_date_page_text_centre_template
-resource: src/album_globals/generator_new/helpers.rs#L204-L213
+resource: src/album_globals/generator_new/helpers.rs#L224-L233
 generated:
   by: okf-rs/0.4.0
 relationships:

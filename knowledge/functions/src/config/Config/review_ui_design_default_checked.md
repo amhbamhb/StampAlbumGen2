@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: review_ui_design_default_checked
-resource: src/config.rs#L1489-L1494
+resource: src/config.rs#L1461-L1466
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: approve_album
-resource: src/external_album.rs#L1234-L1273
+resource: src/external_album.rs#L1241-L1280
 generated:
   by: okf-rs/0.4.0
 relationships:

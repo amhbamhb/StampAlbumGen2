@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: setup_logging
-resource: src/setup.rs#L69-L104
+resource: src/setup.rs#L71-L106
 generated:
   by: okf-rs/0.4.0
 relationships:

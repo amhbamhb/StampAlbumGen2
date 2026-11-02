@@ -217,6 +217,9 @@ row_font_spacing = 0.1
 # Extra spacing around header text blocks
 header_font_spacing = 2.0
 # Conservative page-fit padding before forcing a new page
+# Default vertical alignment for stamp rows (ROW_ALIGN_TOP, ROW_ALIGN_MIDDLE, ROW_ALIGN_BOTTOM)
+# row_align_default = "ROW_ALIGN_TOP"
+
 page_fit_conservative_buffer_mm = 2.0
 
 # Legacy marker setting. Header spacing now always uses configured numeric
@@ -236,6 +239,8 @@ row_start_es_spacing = 0.1
 row_start_es_vspace = 6.0
 # Custom marker string emitted for ROW_START_ES lines in album output.
 row_start_es_marker = "ROW_START_ES"
+row_start_js_marker = "ROW_START_JS"
+row_start_fs_marker = "ROW_START_FS"
 
 # Row packing diagnostics / centering
 # NOTE: enable_row_centering is accepted by the config parser but is NOT

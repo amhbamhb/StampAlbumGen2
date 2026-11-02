@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: generateAlbumPdfNow
-resource: src/review_ui/views/bootstrap.js#L1499-L1552
+resource: src/review_ui/views/bootstrap.js#L1550-L1603
 generated:
   by: okf-rs/0.4.0
 relationships:

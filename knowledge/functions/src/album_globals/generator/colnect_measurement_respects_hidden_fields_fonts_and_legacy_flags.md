@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_measurement_respects_hidden_fields_fonts_and_legacy_flags
-resource: src/album_globals/generator.rs#L2923-L2952
+resource: src/album_globals/generator.rs#L2924-L2953
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: refresh_linux_desktop_caches
-resource: src/setup.rs#L348-L391
+resource: src/setup.rs#L350-L393
 visibility: private
 generated:
   by: okf-rs/0.4.0

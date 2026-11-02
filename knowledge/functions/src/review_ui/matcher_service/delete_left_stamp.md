@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: delete_left_stamp
-resource: src/review_ui/matcher_service.rs#L1541-L1590
+resource: src/review_ui/matcher_service.rs#L1544-L1593
 generated:
   by: okf-rs/0.4.0
 relationships:

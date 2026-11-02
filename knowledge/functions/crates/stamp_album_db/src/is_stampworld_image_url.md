@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_stampworld_image_url
-resource: crates/stamp_album_db/src/lib.rs#L630-L632
+resource: crates/stamp_album_db/src/lib.rs#L562-L564
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: duplicate_detection_ignores_same_key_in_different_sections
-resource: src/config.rs#L3020-L3034
+resource: src/config.rs#L2992-L3006
 visibility: private
 generated:
   by: okf-rs/0.4.0

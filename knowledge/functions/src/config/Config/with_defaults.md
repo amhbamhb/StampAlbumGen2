@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: with_defaults
-resource: src/config.rs#L1011-L1201
+resource: src/config.rs#L983-L1173
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -33,6 +33,9 @@ relationships:
   - target: functions/tests/album_cover_output_root/database_cli_reports_renderer_error_and_returns_failure
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/stampworld_pdf_cli/executable_routes_pdf_with_db_path_to_import_not_album_generation
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/test_wikipedia_vspace/paragraph_vspace_uses_configured_value
     resolved_by: tree-sitter
     confidence: exact
@@ -53,4 +56,5 @@ relationships:
 - [main](../../../../functions/src/main.md)
 - [verify_filtered_output](../../../../functions/tests/album_colnect_pdf_filters/verify_filtered_output.md)
 - [database_cli_reports_renderer_error_and_returns_failure](../../../../functions/tests/album_cover_output_root/database_cli_reports_renderer_error_and_returns_failure.md)
+- [executable_routes_pdf_with_db_path_to_import_not_album_generation](../../../../functions/tests/stampworld_pdf_cli/executable_routes_pdf_with_db_path_to_import_not_album_generation.md)
 - [paragraph_vspace_uses_configured_value](../../../../functions/tests/test_wikipedia_vspace/paragraph_vspace_uses_configured_value.md)

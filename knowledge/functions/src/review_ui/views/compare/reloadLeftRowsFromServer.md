@@ -19,6 +19,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/pollReviewStampWorldStatus
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/compare/importReviewStampworldFile
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -34,3 +37,4 @@ relationships:
 # Called by
 
 - [pollReviewStampWorldStatus](../../../../../functions/src/review_ui/views/compare/pollReviewStampWorldStatus.md)
+- [importReviewStampworldFile](../../../../../functions/src/review_ui/views/compare/importReviewStampworldFile.md)

@@ -18,6 +18,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/runReviewStampWorldPull
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/views/compare/importReviewStampworldFile
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/compare/returnToStartReviewPage
     resolved_by: tree-sitter
     confidence: exact
@@ -33,4 +36,5 @@ relationships:
 - [openCountryFolder](../../../../../functions/src/review_ui/views/compare/openCountryFolder.md)
 - [pollReviewStampWorldStatus](../../../../../functions/src/review_ui/views/compare/pollReviewStampWorldStatus.md)
 - [runReviewStampWorldPull](../../../../../functions/src/review_ui/views/compare/runReviewStampWorldPull.md)
+- [importReviewStampworldFile](../../../../../functions/src/review_ui/views/compare/importReviewStampworldFile.md)
 - [returnToStartReviewPage](../../../../../functions/src/review_ui/views/compare/returnToStartReviewPage.md)

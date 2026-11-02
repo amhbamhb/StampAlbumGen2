@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: bundled_icon_png
-resource: src/setup.rs#L453-L455
+resource: src/setup.rs#L455-L457
 visibility: private
 generated:
   by: okf-rs/0.4.0

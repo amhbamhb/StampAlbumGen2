@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: retry
-resource: src/review_ui/views/external_album.js#L299-L308
+resource: src/review_ui/views/external_album.js#L309-L318
 generated:
   by: okf-rs/0.4.0
 relationships:

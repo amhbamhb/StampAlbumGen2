@@ -4,7 +4,7 @@ Usage: stamp_album_gen2 [OPTIONS]
 
 Options:
       --source <SOURCE>
-          Source type: stampworld, touchstamps, extractfile, colnectexport, us1847 [default: stampworld]
+          Source type: stampworld, touchstamps, extractfile, colnectexport, us1847, pdf [default: stampworld]
       --site-name <SITE_NAME>
           Site name for scraping (e.g. 'Great-Britain', 'Canada')
       --stampworld-country-url <STAMPWORLD_COUNTRY_URL>
@@ -12,7 +12,7 @@ Options:
       --album-name <ALBUM_NAME>
           Album name to generate
       --db-path <DB_PATH>
-          Database path (for output-only mode)
+          Database path for output-only mode or an explicit offline PDF import target
       --base-url <BASE_URL>
           Optional base URL to use when scraping StampWorld (overrides default construction)
       --start-year <START_YEAR>
@@ -36,7 +36,7 @@ Options:
       --colnect-csv <COLNECT_CSV>
           Path to Colnect CSV file for ingestion
       --source-file <SOURCE_FILE>
-          Path to a local source HTML file to parse in scraping mode (compatibility wrapper for --source extractfile)
+          Local StampWorld HTML file; use --source pdf for offline PDF/HTML import without scraping
       --colnect-inbox <COLNECT_INBOX>
           Path to a Colnect inbox folder. When set, matching CSV files are discovered recursively and processed country-by-country. By default this mode ingests data only; use --colnect-generate-after-import to auto-generate pages in the same run
       --colnect-generate-after-import

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: fetch_and_filter_stamps_impl
-resource: src/album_globals/generator_new/helpers.rs#L398-L728
+resource: src/album_globals/generator_new/helpers.rs#L418-L748
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -24,9 +24,10 @@ use stamp_album_gen2::{
         ReviewUiBootstrapOutcome, ReviewUiRunOutcome, ReviewUiSelected,
     },
     setup::{
-        align_process_working_dir_to_runtime_layout, ensure_linux_desktop_integration,
-        ensure_windows_desktop_integration, install_linux_desktop_integration, setup_logging,
-        startup_probe_path, uninstall_linux_desktop_integration, validate_os, write_startup_probe,
+        align_process_working_dir_to_runtime_layout, ensure_first_run_installation,
+        ensure_linux_desktop_integration, ensure_windows_desktop_integration,
+        install_linux_desktop_integration, setup_logging, startup_probe_path,
+        uninstall_linux_desktop_integration, validate_os, write_startup_probe,
         write_startup_probe_snapshot,
     },
     validation::{
@@ -85,7 +86,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "startup.begin",
         &format!("probe_path={}", startup_probe_path().to_string_lossy()),
     );
-    write_startup_probe_snapshot(&raw_args, launched_without_args, interactive_terminal);
+    write_startup_probe_snapshot(
+        raw_args.as_slice(),
+        launched_without_args,
+        interactive_terminal,
+    );
+
+    if launched_without_args && !running_from_target {
+        if let Err(e) = ensure_first_run_installation() {
+            eprintln!("Failed to perform first-run installation: {}", e);
+        }
+    }
 
     // Allow forcing the initial first-run interactive flow for testing
     // (avoids loading an existing config.toml or auto-starting Review UI).
@@ -272,12 +283,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let enable_pdf_dx_logging = startup_config.pdf_dx_logging_enabled() || cli.pdf_dx_logging;
     stamp_album_gen2::album_globals::set_pdf_dx_logging_enabled(enable_pdf_dx_logging);
-    if let Some(path) = aligned_runtime_dir.as_ref() {
+    if let Some(path) = aligned_runtime_dir {
         eprintln!(
             "Runtime working directory aligned to {}",
             path.to_string_lossy()
         );
     }
+
     if enable_pdf_dx_logging {
         eprintln!(
             "PDF DX logging is enabled (via {}); detailed PDF generation diagnostics will be written to Logs/",
@@ -577,13 +589,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     // Execute appropriate mode
-    if cli.db_path.is_some()
+    if effective_source == "pdf" {
+        stamp_album_gen2::modes::run_stampworld_file_import(&cli)?;
+    } else if cli.db_path.is_some()
         || (effective_source == "colnectexport"
             && (cli.colnect_csv.is_some() || cli.colnect_inbox.is_some()))
     {
         // Database-only mode (with explicit db-path or colnectexport with CSV that can infer path)
         run_database_mode(&cli, show_progress).await?;
-    } else if effective_source == "stampworld" || effective_source == "us1847" {
+    } else if effective_source == "stampworld"
+        || effective_source == "us1847"
+        || effective_source == "pdf"
+    {
         // Scraping mode
         // Tests may set `SKIP_NETWORK_SCRAPE` to avoid performing live
         // network operations, but we must still validate required CLI

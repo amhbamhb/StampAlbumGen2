@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: emit_stamp_diag
-resource: src/album_globals/generator_new/helpers.rs#L66-L78
+resource: src/album_globals/generator_new/helpers.rs#L86-L98
 generated:
   by: okf-rs/0.4.0
 relationships:

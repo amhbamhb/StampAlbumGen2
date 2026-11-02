@@ -29,8 +29,14 @@ use matcher_service::{
     delete_colnect_candidate, delete_left_stamp, load_left_stamps, load_right_candidates,
     save_left_stamp, sync_processed_colnect_candidates, undo_colnect_delete,
 };
+pub mod db_query;
 mod external_album_api;
 mod http_handlers;
+mod http_utils;
+mod pdf_generation;
+mod report_generation;
+mod ui_state;
+
 #[cfg(any(windows, test))]
 mod windows_picker;
 
@@ -330,6 +336,8 @@ struct BootstrapCountryInfo {
     colnect_file_count: usize,
     colnect_candidate_count: usize,
     colnect_dir: String,
+    stampworld_file_count: usize,
+    stampworld_dir: String,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -1823,6 +1831,16 @@ fn is_colnect_csv_file(path: &Path) -> bool {
 }
 
 fn count_colnect_csv_files_rec(root: &Path) -> usize {
+    count_import_files_rec(root, is_colnect_csv_file)
+}
+
+fn is_stampworld_import_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|value| value.to_str())
+        .is_some_and(|value| matches!(value.to_ascii_lowercase().as_str(), "pdf" | "html" | "htm"))
+}
+
+fn count_import_files_rec(root: &Path, accepts: fn(&Path) -> bool) -> usize {
     if !root.exists() {
         return 0;
     }
@@ -1834,8 +1852,8 @@ fn count_colnect_csv_files_rec(root: &Path) -> usize {
     for entry in entries.flatten() {
         let p = entry.path();
         if p.is_dir() {
-            count += count_colnect_csv_files_rec(&p);
-        } else if is_colnect_csv_file(&p) {
+            count += count_import_files_rec(&p, accepts);
+        } else if accepts(&p) {
             count += 1;
         }
     }
@@ -1900,7 +1918,10 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
 
         let country = slug.replace('-', " ");
         let colnect_dir = dir.join("colnect");
+        let stampworld_dir = dir.join("stampworld");
         let colnect_file_count = count_colnect_csv_files_rec(&colnect_dir);
+        let stampworld_file_count =
+            count_import_files_rec(&stampworld_dir, is_stampworld_import_file);
         let colnect_candidate_count = count_colnect_candidates_in_db(&db_path);
         out.push(BootstrapCountryInfo {
             country,
@@ -1908,6 +1929,8 @@ fn scan_bootstrap_countries() -> Vec<BootstrapCountryInfo> {
             colnect_file_count,
             colnect_candidate_count,
             colnect_dir: colnect_dir.to_string_lossy().to_string(),
+            stampworld_file_count,
+            stampworld_dir: stampworld_dir.to_string_lossy().to_string(),
         });
     }
 
@@ -2061,6 +2084,28 @@ fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, 
     Err("No supported folder picker found (install zenity or kdialog)".to_string())
 }
 
+fn pick_and_copy_stampworld_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
+    let fail = |msg: String| BootstrapPickColnectFileResponse {
+        ok: false,
+        picked: false,
+        message: msg,
+        file_name: None,
+        dest_path: None,
+        colnect_dir: None,
+    };
+
+    let countries = scan_bootstrap_countries();
+    let info = match countries.iter().find(|c| c.country == country) {
+        Some(i) => i.clone(),
+        None => return fail(format!("Country '{}' not found", country)),
+    };
+
+    let sw_dir = PathBuf::from(&info.stampworld_dir);
+    let sw_dir_str = sw_dir.to_string_lossy().to_string();
+    let title = format!("Select StampWorld PDF/HTML for {}", country);
+    pick_and_copy_colnect_file_to_dir(&sw_dir, &title, &sw_dir_str, true, fail)
+}
+
 fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
     let fail = |msg: String| BootstrapPickColnectFileResponse {
         ok: false,
@@ -2080,7 +2125,7 @@ fn pick_and_copy_colnect_file_via_dialog(country: &str) -> BootstrapPickColnectF
     let colnect_dir = PathBuf::from(&info.colnect_dir);
     let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
     let title = format!("Select Colnect CSV for {}", country);
-    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, false, fail)
 }
 
 #[cfg(windows)]
@@ -2185,13 +2230,14 @@ fn pick_and_copy_colnect_file_for_db(db_path: &str) -> BootstrapPickColnectFileR
         .unwrap_or_else(|| PathBuf::from("colnect"));
     let colnect_dir_str = colnect_dir.to_string_lossy().to_string();
     let title = "Select Colnect CSV for current country".to_string();
-    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, fail)
+    pick_and_copy_colnect_file_to_dir(&colnect_dir, &title, &colnect_dir_str, false, fail)
 }
 
 fn pick_and_copy_colnect_file_to_dir<F>(
     colnect_dir: &Path,
     title: &str,
     colnect_dir_str: &str,
+    stampworld: bool,
     fail: F,
 ) -> BootstrapPickColnectFileResponse
 where
@@ -2203,11 +2249,24 @@ where
         }
     }
     #[cfg(windows)]
-    let pick_result = windows_picker::pick(windows_picker::PickerKind::Csv, title, colnect_dir_str);
+    let pick_result = windows_picker::pick(
+        if stampworld {
+            windows_picker::PickerKind::Stampworld
+        } else {
+            windows_picker::PickerKind::Csv
+        },
+        title,
+        colnect_dir_str,
+    );
 
     #[cfg(not(windows))]
     let pick_result: Result<Option<String>, String> = (|| {
         let starting = format!("{}/", colnect_dir_str.trim_end_matches('/'));
+        let filter = if stampworld {
+            "StampWorld PDF/HTML | *.pdf *.html *.htm *.PDF *.HTML *.HTM"
+        } else {
+            "Colnect CSV | *.csv *.CSV"
+        };
         if which::which("zenity").is_ok() {
             let output = Command::new("zenity")
                 .arg("--file-selection")
@@ -2216,7 +2275,7 @@ where
                 .arg("--filename")
                 .arg(&starting)
                 .arg("--file-filter")
-                .arg("Colnect CSV | *.csv")
+                .arg(filter)
                 .output()
                 .map_err(|e| format!("failed to launch zenity: {}", e))?;
 
@@ -2241,7 +2300,7 @@ where
             let output = Command::new("kdialog")
                 .arg("--getopenfilename")
                 .arg(&starting)
-                .arg("*.csv")
+                .arg(filter)
                 .arg("--title")
                 .arg(title)
                 .output()
@@ -2279,16 +2338,37 @@ where
         },
         Ok(Some(src_path)) => {
             let src = PathBuf::from(&src_path);
+            if stampworld && !is_stampworld_import_file(&src) {
+                return fail("Select a StampWorld PDF or HTML file".to_string());
+            }
             let file_name = src
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| "file.csv".to_string());
             let dest = colnect_dir.join(&file_name);
-            match fs::copy(&src, &dest) {
+            let copy = if stampworld && dest.exists() {
+                let source = match fs::canonicalize(&src) {
+                    Ok(path) => path,
+                    Err(error) => return fail(format!("Cannot resolve selected file: {}", error)),
+                };
+                let destination = match fs::canonicalize(&dest) {
+                    Ok(path) => path,
+                    Err(error) => {
+                        return fail(format!("Cannot resolve destination file: {}", error))
+                    }
+                };
+                if source != destination {
+                    return fail(format!("Destination already exists: {}. Select the existing file or rename the new file to avoid overwriting it.", dest.display()));
+                }
+                Ok(0)
+            } else {
+                fs::copy(&src, &dest)
+            };
+            match copy {
                 Ok(_) => BootstrapPickColnectFileResponse {
                     ok: true,
                     picked: true,
-                    message: format!("Copied '{}' to colnect dir", file_name),
+                    message: format!("Copied '{}' to user folder(s) dir.", file_name),
                     file_name: Some(file_name),
                     dest_path: Some(dest.to_string_lossy().to_string()),
                     colnect_dir: Some(colnect_dir_str.to_string()),
@@ -3469,3 +3549,4 @@ mod tests {
         assert_eq!(processed, 1);
     }
 }
+pub mod pdf_parser;

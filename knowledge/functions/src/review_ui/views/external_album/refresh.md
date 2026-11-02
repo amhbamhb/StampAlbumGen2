@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: refresh
-resource: src/review_ui/views/external_album.js#L57-L73
+resource: src/review_ui/views/external_album.js#L60-L76
 generated:
   by: okf-rs/0.4.0
 relationships:

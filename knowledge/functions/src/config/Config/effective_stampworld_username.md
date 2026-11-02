@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_stampworld_username
-resource: src/config.rs#L950-L963
+resource: src/config.rs#L922-L935
 generated:
   by: okf-rs/0.4.0
 relationships:

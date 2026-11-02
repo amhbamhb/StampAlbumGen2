@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: save
-resource: src/review_ui/views/external_album.js#L284-L297
+resource: src/review_ui/views/external_album.js#L294-L307
 generated:
   by: okf-rs/0.4.0
 relationships:

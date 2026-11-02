@@ -12,6 +12,7 @@ dev = "cargo build "
 build = "cargo build --release"
 test = "cargo test -- --nocapture"
 copyapp = "cp -r target/release/stamp_album_gen2 /home/ray/AlbumGen2/stamp_album_gen2"
+Windows = "cargo build --release --target x86_64-pc-windows-msvc"
 
 [workspace]
 members = ["crates/stamp_album_db", "."]
@@ -21,15 +22,19 @@ opt-level = 3
 
 [features]
 # ISO country data and established flag aliases are always embedded.
-default = []
+default = ["rfd"]
 # full-flag-db = []
 # Optional GUI folder picker (enables optional `rfd` dependency)
 rfd = ["dep:rfd"]
 
-
-
+# otherwise it conflicts with criterion benches
+[[bench]]
+name = "my_bench"
+harness = false
 
 [dependencies]
+criterion = "0.5"
+pdf-extract = "0.12"
 csv = "1.2"
 # Lets you generate random UUIDs
 # uuid = { version = "1.18.1", features = ["atomic", "borsh", "default", "fast-rng", "js"] }
@@ -75,6 +80,7 @@ urlencoding = "2.1"
 base64 = "0.23"
 # Native dialogs are opt-in so standard Linux builds need no Wayland libraries.
 rfd = { version = "0.17", optional = true, default-features = true }
+directories = "6.0"
 
 # Use pure-Rust SVG rasterization for deterministic CI: resvg/usvg + tiny-skia
 
@@ -84,6 +90,7 @@ tiny-skia = "0.12.0"
 # Explicit OpenSSL with vendored feature for MUSL builds
 openssl = { version = "0.10.76", optional = true, features = ["vendored"] }
 win_dialog = "1.0.1"
+oxidize-pdf = "5.5.5"
 
 
 [dev-dependencies]
@@ -102,3 +109,9 @@ default-run = "stamp_album_gen2"
 [build-dependencies]
 chrono = "0.4"
 winres = "0.1"
+[[bin]]
+name = "manual_import"
+path = "scripts/manual_import.rs"
+[[bin]]
+name = "debug_db"
+path = "scripts/debug_db.rs"

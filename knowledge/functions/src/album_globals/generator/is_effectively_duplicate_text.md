@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_effectively_duplicate_text
-resource: src/album_globals/generator.rs#L152-L166
+resource: src/album_globals/generator.rs#L153-L167
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,11 +1,14 @@
 ---
 type: Rust Module
 title: generator
-resource: src/album_globals/generator.rs#L1-L2953
+resource: src/album_globals/generator.rs#L1-L2954
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
+  - target: external/crate-album-globals-generator-new-helpers-rowspacingmode
+    resolved_by: tree-sitter
+    confidence: exact
   - target: external/super-constants-month-names
     resolved_by: tree-sitter
     confidence: exact
@@ -96,6 +99,7 @@ relationships:
 
 # Imports
 
+- `crate::album_globals::generator_new::helpers::RowSpacingMode`
 - `super::constants::MONTH_NAMES`
 - `super::globals::{compute_usable_height, write_globals}`
 - `super::helpers::{

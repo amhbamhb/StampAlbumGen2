@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: inspect
-resource: src/review_ui/views/external_album.js#L115-L138
+resource: src/review_ui/views/external_album.js#L118-L141
 generated:
   by: okf-rs/0.4.0
 relationships:

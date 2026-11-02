@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: colnect_height_uses_the_exact_emitted_text_for_every_layout
-resource: src/album_globals/generator.rs#L2894-L2920
+resource: src/album_globals/generator.rs#L2895-L2921
 visibility: private
 generated:
   by: okf-rs/0.4.0

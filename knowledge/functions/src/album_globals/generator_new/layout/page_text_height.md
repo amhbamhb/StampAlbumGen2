@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: page_text_height
-resource: src/album_globals/generator_new/layout.rs#L111-L135
+resource: src/album_globals/generator_new/layout.rs#L114-L138
 generated:
   by: okf-rs/0.4.0
 relationships:

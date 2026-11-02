@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: restore_colnect_candidate_to_queue
-resource: src/review_ui/matcher_service.rs#L1104-L1118
+resource: src/review_ui/matcher_service.rs#L1105-L1119
 generated:
   by: okf-rs/0.4.0
 relationships:

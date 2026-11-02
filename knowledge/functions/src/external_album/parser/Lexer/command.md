@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: command
-resource: src/external_album/parser.rs#L263-L342
+resource: src/external_album/parser.rs#L271-L351
 visibility: private
 generated:
   by: okf-rs/0.4.0

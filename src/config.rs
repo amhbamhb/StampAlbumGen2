@@ -149,21 +149,7 @@ pub fn ensure_config_and_template_files(
                 let gui_initiated = cfg!(feature = "rfd");
                 #[cfg(feature = "rfd")]
                 {
-                    // Ask the user first with an explicit OK/Cancel dialog whether
-                    // they want to pick a folder to move/copy the binary. OK will
-                    // open the folder picker; Cancel will skip the interactive flow.
-                    let proceed = MessageDialog::new()
-                        .set_title("Select installation folder?")
-                        .set_description("Pick a folder to install/move this application to, or Cancel to continue here.")
-                        .set_buttons(MessageButtons::OkCancel)
-                        .set_level(MessageLevel::Info)
-                        .show();
-
-                    debug!("MessageDialog shown: proceed={}", proceed);
-                    // Mark that the GUI was invoked so we don't fall back to
-                    // a console prompt in non-interactive launches.
-                    // gui_initiated = true;
-                    // for OkCancel button sets:
+                    let proceed = MessageDialogResult::Ok;
                     if proceed == MessageDialogResult::Ok {
                         match FileDialog::new()
                             .set_title(
@@ -184,23 +170,9 @@ pub fn ensure_config_and_template_files(
                             }
                         }
                     } else {
-                        println!(
-                            "User cancelled folder selection; continuing in current directory"
-                        );
                         debug!("User cancelled folder selection");
                     }
                 }
-
-                // #[cfg(not(feature = "rfd"))]
-                // {
-                //     println!(
-                //         "GUI picker not compiled in; will use console prompt if terminal present"
-                //     );
-                // }
-
-                // If we don't have a picked folder from the GUI, only prompt
-                // on stdin when a terminal is present. Avoid blocking when the
-                // process was launched from a graphical session.
                 debug!(
                     "has_tty={} picked_opt.is_some={} gui_initiated={}",
                     has_tty,

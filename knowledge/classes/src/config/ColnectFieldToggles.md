@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ColnectFieldToggles
-resource: src/config.rs#L882-L922
+resource: src/config.rs#L854-L894
 generated:
   by: okf-rs/0.4.0
 ---

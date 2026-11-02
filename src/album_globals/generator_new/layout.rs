@@ -70,7 +70,7 @@ pub fn write_stamp_page_header<W: Write>(
     // Emit the ROW_START_ES marker using the shared helper so formatting stays consistent.
     // Use the local helper inside `generator_new` so the refactor can proceed
     // without touching the original top-level helpers module.
-    super::helpers::emit_row_start_es(out, Some(config))?;
+    super::helpers::emit_row_start(out, RowSpacingMode::FS, Some(config))?;
     writeln!(
         out,
         "################################################################################"
@@ -99,12 +99,15 @@ pub fn start_stamp_page<W: Write>(
 /// Emit the ROW_START_ES marker using the shared helper from `helpers`.
 /// This wrapper centralizes where ROW_START_ES comes from so callers
 /// can use `generator_new::layout::emit_row_start_es` during refactors.
-pub fn emit_row_start_es<W: Write>(
+use crate::album_globals::generator_new::helpers::RowSpacingMode;
+
+pub fn emit_row_start<W: Write>(
     out: &mut W,
+    mode: RowSpacingMode,
     config: &crate::config::Config,
 ) -> std::io::Result<()> {
     // forward to the existing helper to keep formatting consistent
-    super::helpers::emit_row_start_es(out, Some(config))
+    super::helpers::emit_row_start(out, mode, Some(config))
 }
 
 /// Measure the font and spacing from an emitted PAGE_TEXT command.

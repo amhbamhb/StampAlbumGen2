@@ -28,14 +28,11 @@
                         <label>Current country</label>
                         <span class='badge'><span id='reviewSwCountry'>Unknown</span></span>
                     </div>
-                    {stampworld_pull_year_setup}
                     {country_url_controls}
-                    {stampworld_pull_command_preset}
-                    
-                    {stampworld_pull_command_info}
-
-                   {stampworld_pull_review_status}
-
+                    <div class='sessionRow'>
+                        <button id='reviewSwImportBtn' class='accent' onclick='importReviewStampworldFile()'>Import StampWorld PDF/HTML&#8230;</button>
+                    </div>
+                    <div id='reviewSwImportStatus' class='sessionStatusBox' role='status'>Ready to import into the current country.</div>
                 </div>
                 <div class='sessionSection sessionSectionAmber'>
                         <div class='sessionSectionTitle'>PDF</div>

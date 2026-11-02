@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: upload
-resource: src/review_ui/views/external_album.js#L325-L348
+resource: src/review_ui/views/external_album.js#L335-L358
 generated:
   by: okf-rs/0.4.0
 relationships:

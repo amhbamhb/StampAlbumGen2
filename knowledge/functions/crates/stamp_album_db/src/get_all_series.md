@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_all_series
-resource: crates/stamp_album_db/src/lib.rs#L543-L553
+resource: crates/stamp_album_db/src/lib.rs#L475-L485
 generated:
   by: okf-rs/0.4.0
 ---

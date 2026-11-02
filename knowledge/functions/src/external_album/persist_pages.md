@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: persist_pages
-resource: src/external_album.rs#L697-L795
+resource: src/external_album.rs#L700-L798
 visibility: private
 generated:
   by: okf-rs/0.4.0

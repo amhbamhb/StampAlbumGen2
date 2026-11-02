@@ -1,7 +1,7 @@
 ---
 type: JavaScript Module
 title: compare
-resource: src/review_ui/views/compare.js#L1-L3919
+resource: src/review_ui/views/compare.js#L1-L3960
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -106,6 +106,7 @@ relationships:
 - [submitSiteAccounts](../../../../functions/src/review_ui/views/compare/submitSiteAccounts.md)
 - [copyReviewStampWorldCommand](../../../../functions/src/review_ui/views/compare/copyReviewStampWorldCommand.md)
 - [updateGuide](../../../../functions/src/review_ui/views/compare/updateGuide.md)
+- [importReviewStampworldFile](../../../../functions/src/review_ui/views/compare/importReviewStampworldFile.md)
 - [initReviewStampWorldPanel](../../../../functions/src/review_ui/views/compare/initReviewStampWorldPanel.md)
 - [initReviewPdfYearInputs](../../../../functions/src/review_ui/views/compare/initReviewPdfYearInputs.md)
 - [usedColnectIds](../../../../functions/src/review_ui/views/compare/usedColnectIds.md)

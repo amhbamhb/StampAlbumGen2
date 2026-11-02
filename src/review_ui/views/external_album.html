@@ -1,7 +1,7 @@
 <details id="externalAlbumPanel" class="panel collapsibleSection" open>
   <summary><span class="introArrow">&#9660;</span> Import &amp; edit external AlbumEasy albums <span class="introDimTag">click to expand / collapse</span></summary>
   <div class="collapsibleSectionBody">
-  <p><strong>Note: VERY EXPERIMENTAL at this point.</strong> Bring an existing AlbumEasy album into an editable database. Its original folder is never changed.</p>
+    <p><strong>Note: VERY EXPERIMENTAL at this point.</strong> Bring an existing AlbumEasy album into an editable database. Its original folder is never changed.</p>
     <div class="row">
       <button class="primary" type="button" onclick="externalAlbums.openImport()">Import AlbumEasy Album...</button>
       <button type="button" onclick="externalAlbums.refresh()">Refresh imported albums</button>
@@ -10,7 +10,7 @@
       <summary>Import help, fidelity checks &amp; editing limitations</summary>
       <p>Select the folder containing your AlbumEasy text file and images. Enter the text filename relative to that folder.
         The entire folder is copied into a <strong>new</strong> album under Albums Root, including unused images and supporting files.
-        Existing destinations are never merged or overwritten. Do not select a large parent folder.</p>
+        Existing destinations are never merged or overwritten. <strong>Do not select a  parent folder. Recursion could happen! </strong></p>
       <p>The importer reconstructs supported commands as database layout records: page and row order, headings,
         stamp boxes, captions, margins, fonts and image settings. It does not infer catalogue numbers from filenames
         or physical stamp sizes from box dimensions. Repeated image placements are retained.</p>
@@ -30,7 +30,10 @@
   </div>
 </details>
 <dialog id="externalImportDialog" class="externalAlbumDialog">
-  <h2>Import AlbumEasy Album</h2>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2>Import AlbumEasy Album</h2>
+    <button type="button" onclick="externalAlbums.closeImport()">Close</button>
+  </div>
   <p><strong>Step 1:</strong> Select source and new album name. <strong>Step 2:</strong> Inspect.
     <strong>Step 3:</strong> Copy and render. <strong>Step 4:</strong> Compare and approve.</p>
   <fieldset id="externalImportInputs">
@@ -51,8 +54,11 @@
   </div>
 </dialog>
 <dialog id="externalEditorDialog" class="externalAlbumDialog">
-  <h2 id="externalEditorTitle">Imported album</h2>
-  <p id="externalEditorStatus" role="status" aria-live="polite"></p>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <h2 id="externalEditorTitle">Imported album</h2>
+    <button type="button" onclick="externalAlbums.closeEditor()">Close</button>
+  </div>
+  <p id="externalEditorStatus" role="status" aria-live="polite"><span class="spinner" id="externalSpinner" hidden></span></p>
   <pre id="externalCompatibility" class="externalAlbumReport"></pre>
   <button type="button" onclick="externalAlbums.downloadAlbumReport()">Save album compatibility report</button>
   <div class="row">

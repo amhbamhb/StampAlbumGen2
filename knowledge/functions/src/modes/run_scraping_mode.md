@@ -1,11 +1,14 @@
 ---
 type: Rust Function
 title: run_scraping_mode
-resource: src/modes.rs#L1450-L1922
+resource: src/modes.rs#L1474-L1949
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/modes/run_stampworld_file_import
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/progress/ProgressIndicator/new_with_config
     resolved_by: tree-sitter
     confidence: exact
@@ -93,6 +96,7 @@ relationships:
 
 # Calls
 
+- [run_stampworld_file_import](../../../functions/src/modes/run_stampworld_file_import.md)
 - [new_with_config](../../../functions/src/progress/ProgressIndicator/new_with_config.md)
 - [finish_with_error](../../../functions/src/progress/ProgressIndicator/finish_with_error.md)
 - [canonical_album_dir_name](../../../functions/src/modes/canonical_album_dir_name.md)

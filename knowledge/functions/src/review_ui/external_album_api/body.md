@@ -13,6 +13,9 @@ relationships:
   - target: functions/src/review_ui/external_album_api/external_album_inspect_endpoint_reports_sample_and_rejects_cross_origin
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection
     resolved_by: tree-sitter
     confidence: exact
@@ -32,6 +35,7 @@ relationships:
 
 - [route](../../../../functions/src/review_ui/external_album_api/route.md)
 - [external_album_inspect_endpoint_reports_sample_and_rejects_cross_origin](../../../../functions/src/review_ui/external_album_api/external_album_inspect_endpoint_reports_sample_and_rejects_cross_origin.md)
+- [stampworld_file_import_route_reports_invalid_requests_in_both_loops](../../../../functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops.md)
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)

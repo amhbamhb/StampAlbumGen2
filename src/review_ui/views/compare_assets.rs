@@ -24,6 +24,7 @@ pub(super) fn render_compare_top_html(
             <button class='guideFieldOptionsButton' onclick='scrollToFilters()'>Review Field Options</button>
             <button class='guideComparePanelsButton' onclick='scrollToPanels()'>Jump To Compare Panels</button>
             <button class='neutral guideOpenCountryFolderButton' onclick='openCountryFolder()'>Open Country Folder</button>
+            <button class='neutral reviewNavigationExitButton' onclick='closeReviewUi()'>Close Review UI and exit the program</button>
         </div>
   </div>
     {runtime_log_compare_panel_html}"#,

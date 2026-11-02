@@ -62,7 +62,9 @@ impl Fixture {
 
     #[cfg(unix)]
     fn working_renderer(&self) -> PathBuf {
-        self.renderer("printf '%s\\n' '%PDF-1.4 fresh test PDF' > \"${2%.txt}.pdf\"")
+        self.renderer(
+            "printf '%s\\n' '%PDF-1.4 fresh test PDF' > \"${2%.txt}.pdf\"\ncat \"$2\" >> \"${2%.txt}.pdf\"",
+        )
     }
 
     #[cfg(unix)]
@@ -1075,6 +1077,13 @@ fn approved_page_and_global_edits_remain_ready_without_reapproving_initial_fidel
     let reference = approved.reference_pdf.clone();
     let reference_bytes =
         fs::read(fixture.root.join("test-album").join(&reference)).expect("Approved reference");
+    let approved_generated_bytes = fs::read(
+        fixture
+            .root
+            .join("test-album")
+            .join(&approved.generated_pdf),
+    )
+    .expect("Approved generated PDF");
     let identities = placement_identities(&fixture.db());
     let mut commands = approved.pages[0].commands.clone();
     commands[3].args[4].value = "Intentional caption edit".into();
@@ -1091,7 +1100,10 @@ fn approved_page_and_global_edits_remain_ready_without_reapproving_initial_fidel
     assert_eq!(edited.status, "ready");
     assert!(edited.message.is_empty());
     assert_eq!(edited.reference_pdf, reference);
-    assert_ne!(edited.generated_pdf, approved.generated_pdf);
+    assert_eq!(edited.generated_pdf, approved.generated_pdf);
+    let page_edit_pdf = fs::read(fixture.root.join("test-album").join(&edited.generated_pdf))
+        .expect("Generated PDF after page edit");
+    assert_ne!(page_edit_pdf, approved_generated_bytes);
     assert_eq!(edited.pages[1], approved.pages[1]);
     assert_eq!(placement_identities(&fixture.db()), identities);
     assert!(
@@ -1118,6 +1130,12 @@ fn approved_page_and_global_edits_remain_ready_without_reapproving_initial_fidel
     assert_eq!(global.status, "ready");
     assert!(global.message.is_empty());
     assert_eq!(global.reference_pdf, reference);
+    assert_eq!(global.generated_pdf, edited.generated_pdf);
+    assert_ne!(
+        fs::read(fixture.root.join("test-album").join(&global.generated_pdf))
+            .expect("Generated PDF after global edit"),
+        page_edit_pdf
+    );
     assert_eq!(
         fs::read(fixture.root.join("test-album").join(&reference))
             .expect("Unchanged approved reference"),

@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: validation
-resource: src/validation.rs#L1-L215
+resource: src/validation.rs#L1-L216
 generated:
   by: okf-rs/0.4.0
 relationships:

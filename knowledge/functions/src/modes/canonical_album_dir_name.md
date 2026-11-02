@@ -19,6 +19,9 @@ relationships:
   - target: functions/src/modes/run_database_mode
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/modes/run_stampworld_file_import
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/modes/run_scraping_mode
     resolved_by: tree-sitter
     confidence: exact
@@ -34,4 +37,5 @@ relationships:
 - [move_to_country_inbox](../../../functions/src/modes/move_to_country_inbox.md)
 - [run_colnect_inbox_mode](../../../functions/src/modes/run_colnect_inbox_mode.md)
 - [run_database_mode](../../../functions/src/modes/run_database_mode.md)
+- [run_stampworld_file_import](../../../functions/src/modes/run_stampworld_file_import.md)
 - [run_scraping_mode](../../../functions/src/modes/run_scraping_mode.md)

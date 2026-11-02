@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse
-resource: src/external_album/parser.rs#L186-L228
+resource: src/external_album/parser.rs#L194-L236
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -46,7 +46,13 @@ relationships:
   - target: functions/src/review_ui/probe_port
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/db_query/process_pdf_records
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/external_album_api/route
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/parse_stampworld_html
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/bootstrap/readSiteAccountResponse
@@ -97,6 +103,9 @@ relationships:
   - target: functions/tests/review_ui_external_album/test/harness
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/stampworld_pdf_import_ui/fixture
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/test_stampworld_parsing/description_extraction_prefers_td6_with_fallback
     resolved_by: tree-sitter
     confidence: exact
@@ -124,7 +133,9 @@ relationships:
 - [rasterize](../../../../functions/src/flagdb/assets/rasterize.md)
 - [main](../../../../functions/src/main.md)
 - [probe_port](../../../../functions/src/review_ui/probe_port.md)
+- [process_pdf_records](../../../../functions/src/review_ui/db_query/process_pdf_records.md)
 - [route](../../../../functions/src/review_ui/external_album_api/route.md)
+- [parse_stampworld_html](../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_html.md)
 - [readSiteAccountResponse](../../../../functions/src/review_ui/views/bootstrap/readSiteAccountResponse.md)
 - [restorePdfUiState](../../../../functions/src/review_ui/views/compare/restorePdfUiState.md)
 - [readSiteAccountResponse](../../../../functions/src/review_ui/views/compare/readSiteAccountResponse.md)
@@ -141,4 +152,5 @@ relationships:
 - [parse_grokipedia_html](../../../../functions/src/wikipedia/parsers/parse_grokipedia_html.md)
 - [parse_wikipedia_html](../../../../functions/src/wikipedia/parsers/parse_wikipedia_html.md)
 - [harness](../../../../functions/tests/review_ui_external_album/test/harness.md)
+- [fixture](../../../../functions/tests/stampworld_pdf_import_ui/fixture.md)
 - [description_extraction_prefers_td6_with_fallback](../../../../functions/tests/test_stampworld_parsing/description_extraction_prefers_td6_with_fallback.md)

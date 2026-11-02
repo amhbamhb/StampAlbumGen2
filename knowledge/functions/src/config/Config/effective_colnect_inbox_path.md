@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_colnect_inbox_path
-resource: src/config.rs#L1601-L1606
+resource: src/config.rs#L1573-L1578
 generated:
   by: okf-rs/0.4.0
 relationships:

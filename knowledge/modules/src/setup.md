@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: setup
-resource: src/setup.rs#L1-L916
+resource: src/setup.rs#L1-L1025
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -31,6 +31,12 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/tempfile-tempdir
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/super
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/std-path-pathbuf
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -82,6 +88,11 @@ relationships:
 - [runtime_root_detects_expected_markers](../../functions/src/setup/runtime_root_detects_expected_markers.md)
 - [runtime_root_search_prefers_exe_directory_markers](../../functions/src/setup/runtime_root_search_prefers_exe_directory_markers.md)
 - [align_runtime_dir_noops_when_already_root](../../functions/src/setup/align_runtime_dir_noops_when_already_root.md)
+- [FirstRunDecision](../../classes/src/setup/FirstRunDecision.md)
+- [first_run_decision](../../functions/src/setup/first_run_decision.md)
+- [ensure_first_run_installation](../../functions/src/setup/ensure_first_run_installation.md)
+- [test_decision_stays_if_already_configured](../../functions/src/setup/test_decision_stays_if_already_configured.md)
+- [test_decision_moves_if_first_run](../../functions/src/setup/test_decision_moves_if_first_run.md)
 
 # Imports
 
@@ -97,6 +108,8 @@ relationships:
         looks_like_runtime_root,
     }`
 - `tempfile::tempdir`
+- `super::*`
+- `std::path::PathBuf`
 
 # Member of
 

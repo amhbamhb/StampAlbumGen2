@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: parseCatalogCodeFromSearchValue
-resource: src/review_ui/views/compare.js#L2663-L2681
+resource: src/review_ui/views/compare.js#L2700-L2718
 generated:
   by: okf-rs/0.4.0
 relationships:

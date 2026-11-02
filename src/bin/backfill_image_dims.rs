@@ -26,7 +26,8 @@ fn resolve_dimensions(images_dir: &Path, image_path: &str) -> Option<(u32, u32)>
 
 fn process_db(db_path: &Path, apply: bool) -> Result<usize, Box<dyn std::error::Error>> {
     info!("Processing DB: {}", db_path.display());
-    let conn = stamp_album_gen2::db_utils::init_db(db_path.to_str().unwrap())?;
+    let db_path_str = db_path.to_str().ok_or("Invalid UTF-8 path")?;
+    let conn = stamp_album_gen2::db_utils::init_db(db_path_str)?;
     let album_dir = db_path.parent().unwrap_or_else(|| Path::new("."));
     let images_dir = album_dir.join("images");
 
@@ -138,29 +139,30 @@ fn main() {
         std::process::exit(1);
     }
 
-    for entry in std::fs::read_dir(&albums_dir)
-        .unwrap_or_else(|_| panic!("Failed to read Albums dir {}", albums_dir.display()))
-        .flatten()
-    {
-        let path = entry.path();
-        if path.is_dir() {
-            // Expect DB at Albums/<name>/<name>.db
-            if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                let db_path = path.join(format!("{}.db", name));
-                if db_path.exists() {
-                    match process_db(&db_path, apply) {
-                        Ok(n) => total_updated += n,
-                        Err(e) => error!("Error processing {}: {}", db_path.display(), e),
+    if let Ok(dir_entries) = std::fs::read_dir(&albums_dir) {
+        for entry in dir_entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                // Expect DB at Albums/<name>/<name>.db
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    let db_path = path.join(format!("{}.db", name));
+                    if db_path.exists() {
+                        match process_db(&db_path, apply) {
+                            Ok(n) => total_updated += n,
+                            Err(e) => error!("Error processing {}: {}", db_path.display(), e),
+                        }
+                    } else {
+                        debug!(
+                            "No DB found for album {} at expected path {}",
+                            name,
+                            db_path.display()
+                        );
                     }
-                } else {
-                    debug!(
-                        "No DB found for album {} at expected path {}",
-                        name,
-                        db_path.display()
-                    );
                 }
             }
         }
+    } else {
+        error!("Failed to read Albums dir {}", albums_dir.display());
     }
 
     info!("Backfill completed. total_updated={}", total_updated);

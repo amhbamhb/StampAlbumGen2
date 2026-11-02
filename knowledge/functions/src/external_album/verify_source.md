@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: verify_source
-resource: src/external_album.rs#L1010-L1041
+resource: src/external_album.rs#L1018-L1049
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -14,6 +14,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/no_links
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/pdf_parser/extraction/metadata
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/digest
@@ -40,6 +43,7 @@ relationships:
 - [err](../../../functions/src/external_album/err.md)
 - [relative](../../../functions/src/external_album/relative.md)
 - [no_links](../../../functions/src/external_album/no_links.md)
+- [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [digest](../../../functions/src/external_album/digest.md)
 
 # Called by

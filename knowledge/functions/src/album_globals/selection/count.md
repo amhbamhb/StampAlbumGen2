@@ -34,6 +34,9 @@ relationships:
   - target: functions/src/modes/score_candidate
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/report_generation/generate_pdf_report
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/wikipedia/utils/estimate_text_height
     resolved_by: tree-sitter
     confidence: exact
@@ -75,6 +78,7 @@ relationships:
 - [render](../../../../functions/src/external_album/render.md)
 - [reflow](../../../../functions/src/external_album/reflow/reflow.md)
 - [score_candidate](../../../../functions/src/modes/score_candidate.md)
+- [generate_pdf_report](../../../../functions/src/review_ui/report_generation/generate_pdf_report.md)
 - [estimate_text_height](../../../../functions/src/wikipedia/utils/estimate_text_height.md)
 - [test_parameter_usage_consistency](../../../../functions/tests/album_stamp_img_integration_test/test_parameter_usage_consistency.md)
 - [test_issue_resolution](../../../../functions/tests/album_stamp_img_integration_test/test_issue_resolution.md)

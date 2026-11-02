@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: currentRightCandidate
-resource: src/review_ui/views/compare.js#L1903-L1909
+resource: src/review_ui/views/compare.js#L1940-L1946
 generated:
   by: okf-rs/0.4.0
 relationships:

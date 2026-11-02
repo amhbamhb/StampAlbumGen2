@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: effectiveCatalogCodeForItem
-resource: src/review_ui/views/compare.js#L880-L889
+resource: src/review_ui/views/compare.js#L887-L896
 generated:
   by: okf-rs/0.4.0
 relationships:

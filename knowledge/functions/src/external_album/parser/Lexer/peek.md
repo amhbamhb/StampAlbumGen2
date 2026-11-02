@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: peek
-resource: src/external_album/parser.rs#L237-L239
+resource: src/external_album/parser.rs#L245-L247
 visibility: private
 generated:
   by: okf-rs/0.4.0

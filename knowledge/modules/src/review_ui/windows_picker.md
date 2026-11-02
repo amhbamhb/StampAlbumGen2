@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: windows_picker
-resource: src/review_ui/windows_picker.rs#L1-L143
+resource: src/review_ui/windows_picker.rs#L1-L146
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -38,8 +38,15 @@ pub struct PlaceholderCallOptions<'a> {
 // Local copy of helper functions so the refactor can be worked on inside
 // `generator_new` without changing behavior. These mirror the existing
 // `crate::album_globals::helpers` implementations and will be unified later.
-pub fn emit_row_start_es(
+pub enum RowSpacingMode {
+    ES,
+    JS,
+    FS,
+}
+
+pub fn emit_row_start(
     output: &mut dyn Write,
+    mode: RowSpacingMode,
     config_opt: Option<&Config>,
 ) -> std::io::Result<()> {
     let (rs_font, rs_size, rs_spacing, rs_vspace) = if let Some(cfg) = config_opt {
@@ -54,11 +61,24 @@ pub fn emit_row_start_es(
     } else {
         ("HN".to_string(), 6.0_f32, 0.1_f32, 5.0_f32)
     };
-    writeln!(
-        output,
-        "ROW_START_ES ({} {} {:.1} {:.1})",
-        rs_font, rs_size as i32, rs_spacing, rs_vspace
-    )
+
+    match mode {
+        RowSpacingMode::ES => writeln!(
+            output,
+            "ROW_START_ES ({} {} {:.1})",
+            rs_font, rs_size as i32, rs_spacing
+        ),
+        RowSpacingMode::JS => writeln!(
+            output,
+            "ROW_START_JS ({} {} {:.1})",
+            rs_font, rs_size as i32, rs_spacing
+        ),
+        RowSpacingMode::FS => writeln!(
+            output,
+            "ROW_START_FS ({} {} {:.1} {:.1})",
+            rs_font, rs_size as i32, rs_spacing, rs_vspace
+        ),
+    }
 }
 
 /// Emit a concise per-stamp diagnostic line that mirrors the legacy generator

@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: pick
-resource: src/review_ui/views/external_album.js#L86-L113
+resource: src/review_ui/views/external_album.js#L89-L116
 generated:
   by: okf-rs/0.4.0
 relationships:

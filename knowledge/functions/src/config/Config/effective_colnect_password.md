@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: effective_colnect_password
-resource: src/config.rs#L995-L1008
+resource: src/config.rs#L967-L980
 generated:
   by: okf-rs/0.4.0
 relationships:

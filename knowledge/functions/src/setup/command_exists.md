@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: command_exists
-resource: src/setup.rs#L339-L346
+resource: src/setup.rs#L341-L348
 visibility: private
 generated:
   by: okf-rs/0.4.0

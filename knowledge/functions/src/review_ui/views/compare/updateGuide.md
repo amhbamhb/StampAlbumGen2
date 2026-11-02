@@ -1,7 +1,7 @@
 ---
 type: JavaScript Function
 title: updateGuide
-resource: src/review_ui/views/compare.js#L1630-L1649
+resource: src/review_ui/views/compare.js#L1637-L1656
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stamp_content_height
-resource: src/album_globals/generator.rs#L851-L902
+resource: src/album_globals/generator.rs#L852-L903
 visibility: private
 generated:
   by: okf-rs/0.4.0
