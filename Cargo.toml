@@ -11,11 +11,10 @@ watch = "cargo watch  -w src -x run "
 dev = "cargo build "
 build = "cargo build --release"
 test = "cargo test -- --nocapture"
-<<<<<<< HEAD
+
 copyapp="cp -r target/release/stamp_album_gen2 ~/AlbumGen2/stamp_album_gen2"
 Windows = "cargo build --release --target x86_64-pc-windows-msvc"
 
-copyapp = "cp -r target/release/stamp_album_gen2 /home/ray/AlbumGen2/stamp_album_gen2"
 
 [workspace]
 members = ["crates/stamp_album_db", "."]
@@ -30,15 +29,12 @@ default = ["rfd"]
 # Optional GUI folder picker (enables optional `rfd` dependency)
 rfd = ["dep:rfd"]
 
-<<<<<<< HEAD
+
 # otherwise it conflicts with criterion benches
 [[bench]]
 name = "my_bench"
 harness = false
-=======
 
-
->>>>>>> fix/complex-stamp-db-type
 
 [dependencies]
 criterion = "0.5"
