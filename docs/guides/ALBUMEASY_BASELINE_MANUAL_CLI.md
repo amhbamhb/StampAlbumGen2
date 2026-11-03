@@ -149,3 +149,8 @@ For the separate page-size command fixtures, measurements, configuration mapping
 and manual reproduction commands, see
 [ALBUM_PAGES_SIZE conformance](../testing/ALBUMEASY_PAGE_SIZE_V1.md).
 That bundle is not yet wired into the core-specific Cargo checker.
+
+The next command bundle,
+[ALBUM_PAGES_MARGINS conformance](../testing/ALBUMEASY_MARGINS_V1.md), covers
+asymmetric/fractional margins, even-page overrides and failure diagnostics.
+It likewise has separate manual checks rather than core-runner integration.

@@ -2,8 +2,8 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 7
-**Status:** Draft plan; bounded T003 checker/page-size fixtures authorized; native implementation not started
+**Revision:** 8
+**Status:** Draft plan; bounded T003 checker/command fixtures authorized; native implementation not started
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current planning checkpoint — command inventory first
@@ -26,6 +26,13 @@ Four valid dimensions and two explicit failure cases were measured without
 renderer/application changes. The findings include AlbumEasy's zero exit code on
 semantic errors and the current emitter's one-decimal precision mismatch with
 fractional configuration/layout values. Neither issue is silently fixed here.
+
+The subsequent margins-only increment (#59) adds
+[margins-v1 evidence](../testing/ALBUMEASY_MARGINS_V1.md): symmetric/asymmetric,
+fractional and explicit even-page-override references plus two failure cases.
+Eight page borders were measured, including the half-stroke inset from margins.
+No automatic even-page mirroring was observed without MARGINSE. These command
+bundles remain measured specifications, not part of the core-specific test runner.
 
 Start with the supplied [AlbumEasy 4.2.1 manual](../AlbumEasy_4.2.1.pdf), not just
 the commands this application currently emits. The new
@@ -566,3 +573,4 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 6: approved T003 baby step | Maintainer accepted visual/100%-scale print baseline and selected `development/native-pdf`. Added Cargo checksum, geometry/text and strict same-renderer drift checks; two fresh AlbumEasy renders match the frozen reference. Epic #55 / sub-issue #56. Native application/config changes remain paused. | Commit and merge validated checker locally, then stop for maintainer review. Full T003 and command/config contracts remain open. |
 | 2026-11-03 | T003 extraction-standard follow-up (#57) | Maintainer requested existing `oxidize-pdf` for baseline text extraction instead of `pdftotext`; all 20 text assertions preserved, with extraction failure/page-count/truncation gates. MuPDF geometry/trace checks retained. Six explicit checker tests pass. | Stop for review; native application/config changes and broader import-parser migration remain outside this increment. |
 | 2026-11-03 | Revision 7: page-size-only conformance (#58) | Verified A4 portrait/landscape, exact Letter and fractional dimensions; captured four references and two missing-input diagnostics. Mapped existing config precedence/defaults/emission, recording precision and exit-code risks. No renderer/application changes. | Preserve separate page-size-v1 bundle and stop for review. Full T001/T003/T036/T046 remain incomplete; no generalized fixture runner or native renderer is claimed. |
+| 2026-11-03 | Revision 8: margins-only conformance (#59) | Verified left/right/top/bottom order, asymmetric/fractional margins, explicit even-page override and two failure diagnostics. Measured eight page borders and repeated four renders; traced config mapping and border half-stroke inset. No renderer/application changes. | Preserve margins-v1 and stop for review. Generalized fixture automation, native implementation and full command/config contracts remain open. |
