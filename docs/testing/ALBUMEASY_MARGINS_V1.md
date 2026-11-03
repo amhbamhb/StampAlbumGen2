@@ -181,3 +181,11 @@ None was silently fixed.
 This measured specification is **not yet wired into the core-specific Cargo
 checker**. A generalized command-fixture runner and native PDF implementation
 remain separate increments.
+
+## Compiled native follow-up (#61)
+
+[Native page-settings tests](../../tests/native_pdf_page_settings.rs) now reuse
+the four valid cases and both negative inputs. Shared base/even-page state and
+actual native margin strokes match the frozen border expectations within
+0.01 mm. The proof adds a diagnostic content guide; it is not a full native
+rendering of the reference TXT. See the [native example instructions](../guides/ALBUMEASY_BASELINE_MANUAL_CLI.md#native-rust-page-settings-proof).

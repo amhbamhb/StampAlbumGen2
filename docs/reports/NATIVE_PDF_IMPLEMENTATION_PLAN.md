@@ -2,17 +2,19 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 9
-**Status:** Draft plan; bounded T003 checker/command fixtures authorized; native implementation not started
+**Revision:** 10
+**Status:** Incremental implementation authorized; isolated native page-settings slice verified; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
-### Current planning checkpoint — command inventory first
+### Current implementation checkpoint — verify and implement together
 
 The final goal is to **replace external AlbumEasy PDF generation with internal
-PDF generation**. The maintainer has authorized only a baby-step T003 increment:
-preserve the baseline, add an automated drift checker, validate, commit and merge
-locally, then stop for review. No native renderer, CLI/UI or configuration changes
-are authorized yet. Earlier broad implementation requests remain paused.
+PDF generation**. The maintainer now authorizes small vertical slices: verify a
+command's semantics, implement a reusable compiled module, compare with frozen
+fixtures, validate/commit/merge locally, then stop for review. One file per
+AlbumEasy command, grouped by command family, is the approved structure.
+This supersedes fixture-only work for approved slices, not all remaining gates.
+Production backend/CLI/UI/config changes remain unapproved in this increment.
 The integration branch is `development/native-pdf`, created from
 `docs/albumeasy-421-command-inventory`. Phase 1 epic is GitHub #55; the bounded
 T003 sub-issue is #56, branch `issue/56-t003-baseline-drift-checker`.
@@ -41,6 +43,100 @@ Measured text/frame deltas isolate both axes. Misleading config descriptions,
 default discrepancies and layout-accounting differences are recorded without
 changing configuration, application or renderer behavior.
 
+The first compiled slice (#61) implements page size, base/even-page margins and
+spacing under `src/native_pdf/commands/page/`, with shared `units.rs`,
+`document.rs` and a small proof renderer. Commands validate already-numeric
+arguments; there is no second production TXT tokenizer/importer. Required
+settings are explicit; no global config is read or silently defaulted.
+
+```text
+src/native_pdf/
+  mod.rs
+  units.rs
+  document.rs
+  renderer.rs
+  commands/
+    mod.rs
+    page/
+      mod.rs
+      album_pages_size.rs
+      album_pages_margins.rs
+      album_pages_marginse.rs
+      album_pages_spacing.rs
+```
+
+Use the [native proof instructions](../guides/ALBUMEASY_BASELINE_MANUAL_CLI.md#native-rust-page-settings-proof).
+The example renders three geometry-only pages (margin border/content guide);
+text, rows, images, full border semantics, TXT export and application wiring
+are not implemented. Even-page selection uses one-based physical page numbers;
+custom footer/parity semantics remain unverified. Vertical spacing is
+inter-element state, not an implicit top/bottom inset.
+
+T004/T005/T006/T007 have partial evidence only; none is declared complete.
+Do not treat four command modules as complete command-language coverage.
+
+#### #61 verification and implementation record
+
+- Branch: `issue/61-native-page-settings`; integration: `development/native-pdf`.
+- Traceability: REQ-001/shared settings, REQ-002/native generation,
+  REQ-006/physical dimensions, REQ-007/errors and REQ-009/portability;
+  partial T004/T005/T006/T007 only.
+- Canonical geometry is unrounded `f64` millimetres, PDF bottom-left origin;
+  conversion is `mm * (72 / 25.4)`. Preserve explicit fractional values and
+  historical config defaults rather than normalizing either silently.
+- A resolved page contains margin/content bounds; horizontal spacing insets both
+  content edges. Vertical spacing advances between elements. Border occupancy
+  is explicit; the proof uses a fixed single 0.2 mm border plus a diagnostic
+  0.1 mm guide, not a command-language border implementation.
+- Required size/margins/spacing are constructor inputs. Missing/incorrect
+  arguments, non-finite/negative values, zero size, conversion overflow,
+  invalid page number and unusable area return explicit errors. Even-page
+  settings are distinct. All pages are validated before output writing.
+- Scope excludes TXT parsing, persistence/provenance, global config snapshots,
+  text/fonts/images/row layout, automatic pagination, compatibility export,
+  full border semantics and production routing.
+
+Exact Linux acceptance commands (each final exit code 0):
+
+```bash
+ALBUMEASY_BASELINE_CANDIDATE=/home/ray/.copilot/session-state/80e32404-199a-4106-9649-659ef9662bab/files/t003-core-verification-6RHMrG/first/album.pdf cargo test --test native_pdf_page_settings --test albumeasy_baseline -- --include-ignored --nocapture
+cargo test --test external_album_backend -- --nocapture
+cargo clippy --test native_pdf_page_settings --example native_pdf_page_settings
+cargo check --lib --example native_pdf_page_settings --target x86_64-pc-windows-gnu --no-default-features
+cargo run --example native_pdf_page_settings -- /home/ray/.copilot/session-state/80e32404-199a-4106-9649-659ef9662bab/files/native-page-settings-first.pdf
+```
+
+Results: **6 native + 6 core tests passed**, no skips in that acceptance run;
+**23 existing external-album tests passed**, three unrelated opt-in Brazil
+tests ignored. Four native sizes are read back using `oxidize-pdf` and compared
+with actual AlbumEasy reference MediaBoxes. Margin/even-page layouts and spacing
+state use the frozen JSON expectations. Independent MuPDF inspection checks the
+actual native margin/content strokes, widths and page transforms across eight
+valid margin/spacing cases (12 pages, two rectangles each), within **0.01 mm**.
+The extra guide intentionally differs from the reference; strict identical
+whole-page traces are not claimed for native proofs.
+
+Negative controls cover all six existing missing-command/argument inputs,
+invalid numeric values, unusable even-page geometry, zero page count and output
+write failure. The invalid second-page test verifies no partial PDF is written.
+Initial TDD compilation failed with E0433 (native_pdf absent) before implementation;
+final checks passed. Clippy reports only existing application warnings.
+MuPDF still warns `ICC support is not available`; no color-profile claim.
+
+Filesystem impact: new focused Rust command/shared modules, integration tests
+and an example; library exports the module but does not call it from app flows.
+Tests create self-cleaning temporary PDFs/one invalid file; manual proof/logs
+persist only in session files. No frozen fixture/reference, input, production
+album, database or local config moved/deleted/changed. No ingest/schema operation
+occurred. The single example is explicitly tracked despite the repository's
+general `examples/` ignore rule; no ignore policy is changed.
+
+Windows GNU library/example cross-check passed with optional rfd disabled;
+Windows execution, default-feature Windows build, native print and font/image
+fidelity remain unverified. Portable Path APIs are used without platform
+branches. Application flow is unchanged, so no baseline draw.io copy is needed.
+Stop for review after this local checkpoint.
+
 Start with the supplied [AlbumEasy 4.2.1 manual](../AlbumEasy_4.2.1.pdf), not just
 the commands this application currently emits. The new
 [command inventory](../guides/ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) identifies
@@ -56,19 +152,20 @@ album-local `config.toml` behavior to command families and flags generator/manua
 syntax mismatches. No native album renderer is wired in the inspected paths.
 Do not treat these name counts as support percentages.
 
-Before deciding implementation order:
+For each subsequent implementation slice:
 
 1. Review the inventory and resolve its documented syntax/behavior gaps.
 2. Define per-command arguments, defaults, state, units, assets and interactions.
 3. Audit application support across parsing, layout, native rendering, editing
    and export; do not count accepted names/placeholders as implemented behavior.
 4. Define conformance examples and identify missing PDF-library capabilities.
-5. Incorporate the maintainer's remaining ideas, then approve a revised execution
-   sequence. Do not start the renderer simply because an older phase suggests it.
+5. Implement a small compiled command module and shared layout action, then test
+   the generated PDF against the reference before moving to the next item.
+   Record gaps explicitly; do not silently ignore unsupported commands.
 
 The existing phase/task IDs below are retained for continuity, not treated as an
 approved execution queue. T036's inventory work is pulled forward into this
-checkpoint; full command semantics need planning before the shared model is fixed.
+checkpoint; full command semantics still need planning before the model is fixed.
 T001 and T036 remain unchecked because the detailed matrix/audit is incomplete.
 The primary target is now installed **AlbumEasy 4.5.0**, with 4.2.1 retained as
 legacy coverage. The [4.5.0 reference update](../guides/ALBUMEASY_4_5_0_REFERENCE_UPDATE.md)
@@ -262,8 +359,8 @@ Stop for a maintainer decision if the library cannot meet a core requirement.
 **Plan P2.1:** Establish an authoritative editable document and resolved layout, with native-only features and provenance.
 **Plan P2.2:** Move layout decisions out of TXT emission without changing behavior.
 
-- [ ] T006 [Plan:2.1] Define the shared document/layout in the existing generation area, or focused `src/album_globals/album_layout.rs` if needed: album/page settings, rows, placements, text styles, title compositions, borders and resolved asset references. Preserve stable element identity, imported source locations and document revision; persist native-only settings additively without discarding existing command provenance. Resolve one effective configuration snapshot per run; imported explicit settings remain authoritative unless an explicit recorded user override changes them.
-- [ ] T007 [Plan:2.1] Define canonical units (prefer millimetres for album layout), conversion to PDF points (`mm * 72 / 25.4`), coordinate origin, floating-point rounding, page/margin bounds and physical-versus-presentation box dimensions.
+- [ ] T006 [Plan:2.1] Implement shared document/layout under approved `src/native_pdf/document.rs`, with one file per AlbumEasy command grouped under `commands/`: album/page settings, rows, placements, text styles, title compositions, borders and resolved assets. #61 implements explicit page settings only. Preserve stable element identity, imported source locations and document revision; persist native-only settings additively without discarding command provenance. Resolve one effective config snapshot per run; explicit imported settings remain authoritative unless a recorded user override changes them.
+- [ ] T007 [Plan:2.1] Define canonical units, coordinate origin, rounding, page/margin bounds and physical-versus-presentation boxes. #61 implements `src/native_pdf/units.rs` with unrounded f64 mm, PDF bottom-left coordinates, point conversion and validated page/margin/content bounds; wider precision/export/box policies remain open.
 - [ ] T008 [Plan:2.2] Establish a shared font measurement/wrapping policy. Map current AlbumEasy fonts explicitly to licensed, available fonts; specify embedding and substitution behavior. Never silently change fonts.
 - [ ] T009 [Plan:2.2] Extract ordering, stamp selection, row packing, spacing modes, caption heights, page breaks, even-page margins and image-box sizing from the active generator into the shared builder, reusing existing helpers.
 - [ ] T010 [Plan:2.2] Ensure the new path returns an actual layout/result rather than relying on `generator_new/mod.rs`'s empty-path fallback. Preserve callbacks, progress, filter behavior and existing output naming.
@@ -415,10 +512,10 @@ can start inventory/parser work after Phase 1, but complete semantics requires
 the shared document/renderer. Phase 9 depends on Phase 8 coverage and integrated
 editor support. Preserve task IDs; phase dependencies, not numeric IDs alone,
 determine execution order.
-The command-first checkpoint still gates native application implementation:
-complete the T001/T036 planning matrix and T046 configuration contract, then
-revisit these dependencies first. The approved T003 checker increment is test
-infrastructure only and does not bypass those gates.
+The maintainer approved incremental compiled slices alongside command analysis.
+T001/T036/T046 contracts still gate broad backend/import/config integration, not
+isolated tested page primitives. Each slice must record resolved semantics and
+unresolved interactions; do not require re-analysis of already verified behavior.
 
 ## 6. Validation strategy and proposed acceptance criteria
 
@@ -537,7 +634,7 @@ impacts and discovered logic risks in `docs/testing/`.
    approval does not mean every AlbumEasy command is supported.
 8. Revisit estimates when the pinned command matrix or enhancement scope changes.
 
-### Recorded execution workflow — approved for bounded T003 increments only
+### Recorded execution workflow — approved for bounded verified vertical slices
 
 - Use GitHub for this roadmap, as explicitly requested: one parent issue (epic)
   per phase and a sub-issue/branch per T-task. P-items group tasks; they do not
@@ -559,9 +656,9 @@ impacts and discovered logic risks in `docs/testing/`.
 | Phase | Status | Owner | Evidence / blocker |
 |-------|--------|-------|--------------------|
 | 1 | Planning inventory in progress | Unassigned | Initial 4.2.1 name inventory recorded; command behavior/support audit remains open |
-| 2 | Not started | Unassigned | Depends on Phase 1 |
+| 2 | Page-settings foundation started | Unassigned | #61: four small command modules, f64 units/state; full shared document/font/pagination contracts open |
 | 3 | Not started | Unassigned | Depends on shared layout |
-| 4 | Not started | Unassigned | Depends on shared layout/library proof |
+| 4 | Isolated geometry proof started | Unassigned | #61: native page sizes, margin borders and content guides; no production backend |
 | 5 | Not started | Unassigned | Depends on both exporters |
 | 6 | Not started | Unassigned | Depends on integrated generation paths |
 | 7 | Not started | Unassigned | Shared document/native renderer/export foundation; can precede Phase 6 |
@@ -582,3 +679,4 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 7: page-size-only conformance (#58) | Verified A4 portrait/landscape, exact Letter and fractional dimensions; captured four references and two missing-input diagnostics. Mapped existing config precedence/defaults/emission, recording precision and exit-code risks. No renderer/application changes. | Preserve separate page-size-v1 bundle and stop for review. Full T001/T003/T036/T046 remain incomplete; no generalized fixture runner or native renderer is claimed. |
 | 2026-11-03 | Revision 8: margins-only conformance (#59) | Verified left/right/top/bottom order, asymmetric/fractional margins, explicit even-page override and two failure diagnostics. Measured eight page borders and repeated four renders; traced config mapping and border half-stroke inset. No renderer/application changes. | Preserve margins-v1 and stop for review. Generalized fixture automation, native implementation and full command/config contracts remain open. |
 | 2026-11-03 | Revision 9: spacing-only conformance (#60) | Verified zero/fractional independent horizontal/vertical spacing with 16 frames and eight text anchors, four repeat renders and two failure cases. Documented misleading config descriptions, differing defaults and width-accounting risks. No application changes. | Preserve spacing-v1 and stop for review; generalized fixture runner and full command/config contracts remain open. |
+| 2026-11-03 | Revision 10: compiled page-settings slice (#61) | Approved one-command-per-file vertical slices. Added four typed command modules, explicit shared settings/f64 mm geometry and oxidize-pdf geometry proof/example. Six native tests plus six core tests pass, including actual PDF path checks. Windows GNU cross-check passed. | Review native proof; next implement another command with reference and native comparisons together. No production integration/full TXT parser or full task completion claimed. |

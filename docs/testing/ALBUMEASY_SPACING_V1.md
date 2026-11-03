@@ -188,3 +188,13 @@ were untouched. No country-ingest/schema operation occurred.
 Error inventory: expected missing-command/argument diagnostics above; MuPDF
 `warning: ICC support is not available`. Color-profile fidelity is not claimed.
 No `pdftotext` was used; existing core text extraction remains `oxidize-pdf`.
+
+## Compiled native follow-up (#61)
+
+[Native page-settings tests](../../tests/native_pdf_page_settings.rs) now reuse
+these settings, frozen text/frame anchors and negative inputs. Shared horizontal
+content bounds and vertical gap advancement match the recorded measurements;
+actual native content-guide strokes are independently inspected with MuPDF.
+Text/row rendering remains pending: the proof does not yet draw the fixture's
+text or stamp rows. The [example instructions](../guides/ALBUMEASY_BASELINE_MANUAL_CLI.md#native-rust-page-settings-proof)
+explain that boundary.

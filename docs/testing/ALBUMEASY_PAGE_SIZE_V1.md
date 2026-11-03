@@ -212,3 +212,11 @@ command/state interactions. The existing core-v1 Cargo runner is core-specific;
 this new bundle is a measured conformance specification, **not automatically
 executed by that runner**. A generalized command-fixture runner is a separate
 implementation increment.
+
+## Compiled native follow-up (#61)
+
+[Native page-settings tests](../../tests/native_pdf_page_settings.rs) now use
+this bundle to render all four valid page sizes through `oxidize-pdf`, read back
+their MediaBoxes, and compare them with the real AlbumEasy references. Both
+missing-input fixtures exercise native settings rejection. This is page geometry,
+not native interpretation/rendering of the fixture's text.

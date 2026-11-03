@@ -6,6 +6,7 @@ pub mod data_sources;
 pub mod external_album;
 pub mod flagdb;
 pub mod modes;
+pub mod native_pdf;
 pub mod progress;
 pub mod review_ui;
 pub mod runtime_defaults;
