@@ -1,3 +1,4 @@
+use oxidize_pdf::parser::PdfDocument;
 use roxmltree::{Document, Node};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
@@ -197,6 +198,36 @@ fn tool_output(program: &str, args: &[&OsStr]) -> Result<String> {
     Ok(String::from_utf8(output.stdout)?)
 }
 
+fn inspect_text(pdf: &Path, expected: &Expectations) -> Result<()> {
+    let document = PdfDocument::open(pdf)
+        .map_err(|error| format!("oxidize-pdf cannot open {}: {error}", pdf.display()))?;
+    let pages = document
+        .extract_text()
+        .map_err(|error| format!("oxidize-pdf cannot extract {}: {error}", pdf.display()))?;
+    if pages.len() != expected.pages || pages.len() != expected.required_text_by_page.len() {
+        return Err(format!(
+            "oxidize-pdf text page count mismatch for {}: expected {}, got {}",
+            pdf.display(),
+            expected.pages,
+            pages.len()
+        )
+        .into());
+    }
+    for (index, (page, required)) in pages
+        .iter()
+        .zip(&expected.required_text_by_page)
+        .enumerate()
+    {
+        if page.truncated {
+            return Err(
+                format!("oxidize-pdf truncated {} page {}", pdf.display(), index + 1).into(),
+            );
+        }
+        check_text(&page.text, required, index + 1)?;
+    }
+    Ok(())
+}
+
 fn inspect(pdf: &Path, expected: &Expectations) -> Result<String> {
     let trace = tool_output(
         "mutool",
@@ -209,21 +240,7 @@ fn inspect(pdf: &Path, expected: &Expectations) -> Result<String> {
         ],
     )?;
     check_trace(&trace, expected)?;
-    for (index, required) in expected.required_text_by_page.iter().enumerate() {
-        let page = (index + 1).to_string();
-        let text = tool_output(
-            "pdftotext",
-            &[
-                OsStr::new("-f"),
-                OsStr::new(&page),
-                OsStr::new("-l"),
-                OsStr::new(&page),
-                pdf.as_os_str(),
-                OsStr::new("-"),
-            ],
-        )?;
-        check_text(&text, required, index + 1)?;
-    }
+    inspect_text(pdf, expected)?;
     eprintln!(
         "PASS {}: {} pages, 11 frames, 20 required texts",
         pdf.display(),
@@ -273,6 +290,24 @@ fn frozen_identities_and_hash_drift() -> Result<()> {
 }
 
 #[test]
+fn oxidize_reference_text_and_negative_controls() -> Result<()> {
+    check_frozen()?;
+    let pdf = fixture().join("reference.pdf");
+    inspect_text(&pdf, &expectations()?)?;
+    let mut missing = expectations()?;
+    missing.required_text_by_page[0].push("THIS TEXT IS NOT IN CORE-V1".to_owned());
+    assert!(inspect_text(&pdf, &missing).is_err());
+    let mut wrong_pages = expectations()?;
+    wrong_pages.pages += 1;
+    assert!(inspect_text(&pdf, &wrong_pages).is_err());
+    let directory = tempfile::tempdir()?;
+    let invalid = directory.path().join("invalid.pdf");
+    fs::write(&invalid, b"not a PDF")?;
+    assert!(inspect_text(&invalid, &expectations()?).is_err());
+    Ok(())
+}
+
+#[test]
 fn tolerance_and_missing_text_are_rejected() -> Result<()> {
     near(25.009, 25.0, 0.01, "inside tolerance")?;
     assert!(near(25.011, 25.0, 0.01, "dimension drift").is_err());
@@ -299,7 +334,7 @@ fn strict_trace_detects_styles_but_ignores_filename() -> Result<()> {
 }
 
 #[test]
-#[ignore = "requires mutool and pdftotext on PATH; run explicitly before accepting baseline changes"]
+#[ignore = "requires mutool on PATH; run explicitly before accepting baseline changes"]
 fn reference_geometry_text_and_negative_controls() -> Result<()> {
     check_frozen()?;
     let expected = expectations()?;

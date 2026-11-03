@@ -158,14 +158,18 @@ may differ; inspect the actual fresh PDF and AlbumEasy's messages.
 test runner. `roxmltree` is a direct test-only dependency (already present in the
 lockfile transitively); no runtime dependency/backend is introduced.
 
-Normal tests check frozen TXT/PDF identities and negative controls. External-tool
+Normal tests check frozen TXT/PDF identities, extract reference text using
+`oxidize-pdf`, and exercise negative controls. External-tool
 tests are explicitly ignored in ordinary Cargo runs so Windows/Linux developers
-without MuPDF/Poppler can still run the normal suite. They **must** be run
+without MuPDF can still run the normal suite. They **must** be run
 explicitly for baseline acceptance; missing tools or a missing candidate variable
 fail, rather than silently skipping.
 
-Prerequisites: `mutool` and `pdftotext` on PATH. No browser, Docker, network or DB
-is needed for this file-based checker.
+Prerequisites: `mutool` on PATH for geometry/trace tests. Text extraction uses
+the existing `oxidize-pdf` Rust dependency; `pdftotext` is no longer invoked by
+the checker. No browser, Docker, network or DB is needed for this checker.
+Earlier inspection commands/results below and above are historical evidence,
+not the current extraction implementation.
 
 ```bash
 cargo test --test albumeasy_baseline --test external_album_backend -- --nocapture
@@ -247,6 +251,36 @@ certification and Windows execution remain open. The baseline approval is
 maintainer-reported; no physical-print automation is claimed. Full T003 remains
 unchecked. GitHub epic #55 / sub-issue #56; task branch
 `issue/56-t003-baseline-drift-checker`, local integration `development/native-pdf`.
+
+### Follow-up: oxidize-pdf text standard (#57)
+
+At the maintainer's request, replaced the checker's `pdftotext` subprocess with
+`PdfDocument::open` and `extract_text` from existing `oxidize-pdf`. The same
+20 required-text assertions and frozen fixtures remain unchanged. Extracted
+page counts must match, truncated extraction fails explicitly, and parsing/
+extraction failures propagate with the affected PDF path. No recovery or alternate
+extractor silently substitutes results. MuPDF still checks geometry and strict
+page traces; text extraction standardization does not replace those checks.
+
+Added ordinary Cargo coverage for real reference extraction, missing expected
+text, wrong page count and an invalid temporary PDF. Ordinary checker runs now
+report **4 passed / 0 failed / 2 ignored**; the explicit complete run reports
+**6 passed / 0 failed / 0 ignored**.
+
+Exact complete verification command (exit 0):
+
+```bash
+ALBUMEASY_BASELINE_CANDIDATE=/home/ray/.copilot/session-state/80e32404-199a-4106-9649-659ef9662bab/files/t003-core-verification-6RHMrG/first/album.pdf cargo test --test albumeasy_baseline -- --include-ignored --nocapture
+```
+
+Start/end: frozen reference and existing fresh AlbumEasy candidate both pass
+using `oxidize-pdf` text extraction. Filesystem impact: new test uses a
+self-cleaning temporary directory containing only `invalid.pdf`; Cargo updates
+build artifacts. No source inputs/PDF goldens were edited, moved or deleted;
+no production/config/DB operations occurred. No new runtime dependency was added.
+MuPDF's existing ICC warning remains; Windows execution and complex-font/image
+coverage remain unverified. This change is scoped to the baseline checker, not
+the separate StampWorld import parser.
 
 ## Drift protocol for subsequent implementation
 
