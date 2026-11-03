@@ -127,7 +127,7 @@ jobs:
         run: |
           case "${{ matrix.os }}" in
             "windows-latest") if [ -f target/release/stamp_album_gen2.exe ]; then mv target/release/stamp_album_gen2.exe stamp_album_gen2.exe; else echo 'Windows artifact not found' && exit 1; fi ;;
-            "ubuntu-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2-linux; else echo 'Linux artifact not found' && exit 1; fi ;;
+            "ubuntu-latest") if [ -f target/release/stamp_album_gen2 ]; then mv target/release/stamp_album_gen2 stamp_album_gen2; else echo 'Linux artifact not found' && exit 1; fi ;;
           esac
 
       - name: Upload artifact
@@ -136,7 +136,7 @@ jobs:
           name: stamp_artifact-${{ matrix.os }}
           path: |
             stamp_album_gen2.exe
-            stamp_album_gen2-linux
+            stamp_album_gen2
           if-no-files-found: error
           overwrite: true
 
@@ -278,7 +278,7 @@ jobs:
 
       - name: Compute SHA256 for each artifact
         run: |
-          for f in stamp_album_gen2.exe stamp_album_gen2-linux; do
+          for f in stamp_album_gen2.exe stamp_album_gen2; do
             test -s "$f"
             sha256sum "$f" > "$f.sha256"
           done
@@ -286,7 +286,7 @@ jobs:
         run: |
           TAG="${{ needs.prepare-release.outputs.release_tag }}"
           ARCHIVE_NAME="stamp_album_gen2-${TAG}.tar.gz"
-          tar -czf "$ARCHIVE_NAME" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2-linux stamp_album_gen2-linux.sha256
+          tar -czf "$ARCHIVE_NAME" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2 stamp_album_gen2.sha256
           ls -lh "$ARCHIVE_NAME"
       - name: Upload assets and publish release (retry safe)
         env:
@@ -309,6 +309,6 @@ jobs:
             *) echo "Release lookup failed (HTTP $status)." >&2; exit 1 ;;
           esac
           gh release upload "$TAG" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 \
-            stamp_album_gen2-linux stamp_album_gen2-linux.sha256 "stamp_album_gen2-${TAG}.tar.gz" --clobber
+            stamp_album_gen2 stamp_album_gen2.sha256 "stamp_album_gen2-${TAG}.tar.gz" --clobber
           gh release edit "$TAG" --draft=false
           echo "Published $TAG" >> "$GITHUB_STEP_SUMMARY"
