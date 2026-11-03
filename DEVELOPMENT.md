@@ -47,6 +47,10 @@ session is not required. Native-dialog builds are intended for graphical session
 
 The release workflow installs those Ubuntu build prerequisites defensively, but
 ships the Linux artifact without dialogs; the Windows artifact retains them.
+The headless CLI parity and CLI-docs workflows explicitly use
+`--no-default-features` for Cargo builds and runs, even if native dialogs are
+enabled in the package defaults. Check this invariant and the Linux dependency
+graph with `node --test tests/cli_workflows.test.cjs`.
 For Linux distribution, inspect shared libraries with `ldd` and test on X11,
 Wayland, and headless systems. Build against the oldest supported glibc baseline
 to support older distributions; removing Wayland does not remove that requirement.
@@ -97,6 +101,28 @@ Recommended flow:
 - Update versions with `scripts/update_versions.sh`.
 - Review `RELEASE_NOTES.md` before tagging.
 - Keep Conventional Commit format for clear history (`feat:`, `fix:`, `docs:`, etc.).
+
+The **Release (combined)** workflow builds an existing `vX.Y.Z` tag. It does not
+bump versions, regenerate/stage the lockfile, commit, create tags, or push source
+changes. Prepare and test the version change locally, commit it, and push the
+commit and matching tag to the approved release remote before dispatching.
+
+Enter the existing tag in the workflow's `release_tag` input. The tag must match
+`[package].version` in the tagged commit's `Cargo.toml`. Both platform builds and
+release finalization check out the validated commit SHA, not the current branch.
+Choose the workflow branch containing this updated workflow when dispatching;
+the release source still comes from the supplied tag.
+
+Retry a failed build using the same tag; no additional version bump is needed.
+Never move or overwrite a released tag. Correct source changes require a new
+version and tag. Runs for the same tag are serialized. Already-published
+immutable releases may reject replacement assets; use a new version for those.
+The lockfile is currently untracked, so dependency resolution is not frozen
+across separate builds or retries.
+
+Validate tag selection, version matching, read-only preparation, and retry
+behavior with `node --test tests/release_publication_shell.cjs` on Linux
+(requires Git, Bash, Node.js 18+, and Python 3.11+).
 
 ## License Policy
 

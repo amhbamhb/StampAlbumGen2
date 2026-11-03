@@ -3,12 +3,14 @@ name: Release (combined)
 on:
   workflow_dispatch:
     inputs:
-      version_type:
-        description: 'Version bump type'
+      release_tag:
+        description: 'Existing version tag to release (for example v1.14.0)'
         required: true
-        default: 'patch'
-        type: choice
-        options: [patch, minor, major]
+        type: string
+
+concurrency:
+  group: release-${{ inputs.release_tag }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -19,83 +21,51 @@ permissions:
 # available.
 
 jobs:
-  prepare-version:
-    name: Prepare version (bump & tag)
+  validate-release:
+    name: Validate existing release tag
     runs-on: ubuntu-latest
     outputs:
-      new_version: ${{ steps.new_version.outputs.new_version }}
+      release_tag: ${{ steps.validate.outputs.release_tag }}
+      source_sha: ${{ steps.validate.outputs.source_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set job env (CARGO_TARGET_DIR, RUSTFLAGS)
+      - name: Validate tag and package version
+        id: validate
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
-          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/cargo-target" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-C lto=off -C codegen-units=16" >> $GITHUB_ENV
+          python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import tomllib
 
-      - name: Get current version
-        id: current_version
-        run: |
-          VERSION=$(grep '^version = ' Cargo.toml | sed 's/version = "\(.*\)"/\1/')
-          echo "current_version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Determine version bump type
-        id: version_type
-        run: |
-          if [ "${{ github.event.inputs.version_type }}" != "" ]; then
-            echo "version_type=${{ github.event.inputs.version_type }}" >> $GITHUB_OUTPUT
-          else
-            if git log --oneline -n 20 | grep -q "feat:"; then
-              echo "version_type=minor" >> $GITHUB_OUTPUT
-            elif git log --oneline -n 20 | grep -q "fix:"; then
-              echo "version_type=patch" >> $GITHUB_OUTPUT
-            elif git log --oneline -n 20 | grep -q "BREAKING CHANGE"; then
-              echo "version_type=major" >> $GITHUB_OUTPUT
-            else
-              echo "version_type=patch" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-      - name: Calculate new version
-        id: new_version
-        run: |
-          CURRENT="${{ steps.current_version.outputs.current_version }}"
-          TYPE="${{ steps.version_type.outputs.version_type }}"
-          MAJOR=$(echo $CURRENT | cut -d. -f1)
-          MINOR=$(echo $CURRENT | cut -d. -f2)
-          PATCH=$(echo $CURRENT | cut -d. -f3)
-          case $TYPE in
-            "major") NEW_VERSION="$((MAJOR + 1)).0.0" ;;
-            "minor") NEW_VERSION="$MAJOR.$((MINOR + 1)).0" ;;
-            "patch") NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))" ;;
-          esac
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Calculated new version: $CURRENT -> $NEW_VERSION (type: $TYPE)"
-
-      - name: Update version in files and tag
-        run: |
-          NEW_VERSION="${{ steps.new_version.outputs.new_version }}"
-          DATE=$(date +%Y-%m-%d)
-          sed -i "s/^version = \".*\"/version = \"$NEW_VERSION\"/" Cargo.toml
-          sed -i "s/^# Version: .*/# Version: $NEW_VERSION/" .github/instructions || true
-          sed -i "s/^# Last Updated: .*/# Last Updated: $DATE/" .github/instructions || true
-          sed -i "s/^# Stamp Album Generator v.*/# Stamp Album Generator v$NEW_VERSION/" README.md || true
-          # Regenerate lockfile to keep Cargo.lock in sync with the version change
-          if command -v cargo >/dev/null 2>&1; then
-            cargo generate-lockfile || true
-          fi
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
-          git add Cargo.toml Cargo.lock .github/instructions README.md RELEASE_NOTES.md || true
-          git commit -m "chore: bump version to $NEW_VERSION" || echo "No changes to commit"
-          git tag -a "v$NEW_VERSION" -m "Release v$NEW_VERSION"
-          git push --atomic origin HEAD "refs/tags/v$NEW_VERSION"
+          tag = os.environ["RELEASE_TAG"]
+          if not re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", tag):
+              raise SystemExit("Release tag must have the form vX.Y.Z")
+          resolved = subprocess.run(
+              ["git", "rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}"],
+              capture_output=True, text=True,
+          )
+          if resolved.returncode:
+              raise SystemExit(f"Release tag {tag} does not exist or does not point to a commit")
+          sha = resolved.stdout.strip()
+          manifest = subprocess.check_output(["git", "show", f"{sha}:Cargo.toml"], text=True)
+          version = tomllib.loads(manifest)["package"]["version"]
+          if tag != f"v{version}":
+              raise SystemExit(f"Release tag {tag} does not match Cargo package version {version}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"release_tag={tag}\nsource_sha={sha}\n")
+          print(f"Release {tag} will build existing commit {sha}; source files and tags are unchanged")
+          PY
 
   build:
     name: Build artifacts (matrix)
-    needs: prepare-version
+    needs: validate-release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -105,7 +75,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: v${{ needs.prepare-version.outputs.new_version }}
+          ref: ${{ needs.validate-release.outputs.source_sha }}
       # Optional defensive step: logs top disk users and removes very large files
       # Keep while debugging runner OOM/disk issues; safe to remove later.
       - name: Early disk usage diagnostics and cleanup (linux only)
@@ -238,11 +208,13 @@ jobs:
 
   finalize-release:
     name: Create checksums, signatures and GitHub release
-    needs: [prepare-version, build, windows-sign]
+    needs: [validate-release, build, windows-sign]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.source_sha }}
 
       - name: Set job env (CARGO_TARGET_DIR, RUSTFLAGS)
         run: |
@@ -281,7 +253,7 @@ jobs:
           done
       - name: Package all binaries into a single archive
         run: |
-          TAG="v${{ needs.prepare-version.outputs.new_version }}"
+          TAG="${{ needs.validate-release.outputs.release_tag }}"
           ARCHIVE_NAME="stamp_album_gen2-${TAG}.tar.gz"
           # include binaries and their sha256 files
           artifacts=(stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2-linux stamp_album_gen2-linux.sha256)
@@ -291,13 +263,10 @@ jobs:
           done
           tar -czf "$ARCHIVE_NAME" "${files[@]}"
           ls -lh "$ARCHIVE_NAME"
-      - name: Fetch tags
-        run: git fetch --tags --prune
-
       - name: Create GitHub Release (draft) and upload artifacts
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ needs.prepare-version.outputs.new_version }}
+          tag_name: ${{ needs.validate-release.outputs.release_tag }}
           draft: true
           fail_on_unmatched_files: false
           files: |
@@ -316,7 +285,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="v${{ needs.prepare-version.outputs.new_version }}"
+          TAG="${{ needs.validate-release.outputs.release_tag }}"
           REPO="${GITHUB_REPOSITORY}"
           echo "Looking up release for tag $TAG in $REPO"
           release_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/releases/tags/$TAG")

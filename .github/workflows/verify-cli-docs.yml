@@ -25,11 +25,11 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Build
-        run: cargo build 
+      - name: Build headless CLI
+        run: cargo build --no-default-features
 
       - name: Capture CLI help
-        run: cargo run  -- --help > help.txt
+        run: cargo run --no-default-features -- --help > help.txt
 
       - name: Compare help to docs/CLI_USAGE.md (normalize trailing newlines)
         run: |
@@ -42,7 +42,7 @@ jobs:
           normalize help.txt help.normalized
           if ! diff -u docs/CLI_USAGE.normalized help.normalized; then
             echo "CLI docs (docs/CLI_USAGE.md) are out of date. Regenerate locally using:"
-            echo "  cargo run -- --help > docs/CLI_USAGE.md"
+            echo "  cargo run --no-default-features -- --help > docs/CLI_USAGE.md"
             exit 1
           fi
       # commitlint workflow enforces Conventional Commits on PRs

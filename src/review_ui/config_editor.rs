@@ -342,8 +342,7 @@ fn template_literal_kind(template_value: &str) -> &'static str {
 }
 
 fn quote_toml_basic_string(input: &str) -> String {
-    let escaped = input.replace('\\', "\\\\").replace('"', "\\\"");
-    format!("\"{}\"", escaped)
+    toml::Value::String(input.to_string()).to_string()
 }
 
 fn normalize_value_for_template(template_value: Option<&String>, raw_value: &str) -> String {
@@ -358,10 +357,18 @@ fn normalize_value_for_template(template_value: Option<&String>, raw_value: &str
         return String::new();
     }
 
-    if (trimmed.starts_with('"') && trimmed.ends_with('"'))
-        || (trimmed.starts_with('\'') && trimmed.ends_with('\''))
+    if trimmed.len() >= 2
+        && ((trimmed.starts_with('"') && trimmed.ends_with('"'))
+            || (trimmed.starts_with('\'') && trimmed.ends_with('\'')))
     {
-        return trimmed.to_string();
+        if matches!(
+            toml::from_str::<toml::Value>(&format!("value = {trimmed}")),
+            Ok(value) if value.get("value").and_then(toml::Value::as_str).is_some()
+        ) {
+            return trimmed.to_string();
+        }
+        // Pasted paths may include shell quotes rather than TOML escaping.
+        return quote_toml_basic_string(&trimmed[1..trimmed.len() - 1]);
     }
 
     if let Some(template) = template_value {
@@ -940,4 +947,93 @@ pub(super) fn render_config_editor_assets() -> String {
         html = html,
         javascript = javascript
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalizes_windows_paths_and_preserves_valid_toml_strings() {
+        let template = "\"\"".to_string();
+        let windows = r"C:\Program Files (x86)\AlbumEasy\AlbumEasy.exe";
+        for (input, expected) in [
+            (windows.to_string(), windows),
+            (format!("\"{windows}\""), windows),
+            (format!("'{windows}'"), windows),
+            (
+                r#""C:\\Program Files (x86)\\AlbumEasy\\AlbumEasy.exe""#.to_string(),
+                windows,
+            ),
+            (
+                r#""\\server\share\AlbumEasy.exe""#.to_string(),
+                r"\\server\share\AlbumEasy.exe",
+            ),
+            (
+                "/opt/Album Easy/AlbumEasy".to_string(),
+                "/opt/Album Easy/AlbumEasy",
+            ),
+            ("line\nwith\ttabs".to_string(), "line\nwith\ttabs"),
+        ] {
+            let normalized = normalize_value_for_template(Some(&template), &input);
+            let parsed: toml::Value = toml::from_str(&format!("value = {normalized}"))
+                .expect("normalized string must be valid TOML");
+            assert_eq!(parsed["value"].as_str(), Some(expected), "{input}");
+            assert_eq!(
+                normalize_value_for_template(Some(&template), &normalized),
+                normalized,
+                "reloading and saving must not double-escape"
+            );
+        }
+    }
+
+    #[test]
+    fn renders_global_and_saves_album_config_with_quoted_windows_path() {
+        let temp = tempfile::tempdir().expect("temporary config directory");
+        let global = temp.path().join("config.toml");
+        let template = temp.path().join("template.toml");
+        let pdf = temp.path().join("pdf.toml");
+        let album = temp.path().join("album");
+        let defaults = "[runtime]\nalbumeasy_cli_path = \"\"\n";
+        fs::write(&global, defaults).expect("global config");
+        fs::write(&template, defaults).expect("template config");
+        fs::write(&pdf, "").expect("pdf config");
+        let windows = r"C:\Program Files (x86)\AlbumEasy\AlbumEasy.exe";
+        let values = HashMap::from([(
+            "runtime.albumeasy_cli_path".to_string(),
+            format!("\"{windows}\""),
+        )]);
+
+        assert_eq!(
+            save_album_config_diff(
+                &album,
+                "Test",
+                global.to_str().expect("global path"),
+                pdf.to_str().expect("pdf path"),
+                template.to_str().expect("template path"),
+                &values,
+            )
+            .expect("save album config"),
+            1
+        );
+        let normalized = values
+            .iter()
+            .map(|(key, value)| {
+                (
+                    key.clone(),
+                    normalize_value_for_template(Some(&"\"\"".to_string()), value),
+                )
+            })
+            .collect();
+        let global_content = render_config_from_template_values(defaults, &normalized);
+        let album_content =
+            fs::read_to_string(album.join("config.toml")).expect("saved album config");
+        for content in [global_content, album_content] {
+            let parsed: toml::Value = toml::from_str(&content).expect("valid saved TOML");
+            assert_eq!(
+                parsed["runtime"]["albumeasy_cli_path"].as_str(),
+                Some(windows)
+            );
+        }
+    }
 }

@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - '**/*.rs'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/cli-parity.yml'
+      - '.github/workflows/verify-cli-docs.yml'
+      - 'tests/cli_workflows.test.cjs'
       - 'scripts/**'
       - 'Example-Stampworldwebpage.txt'
       - 'scripts/populate_example_db.data.json'
@@ -26,8 +31,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
-      - name: Build
-        run: cargo build
+      - name: Check headless CLI workflow configuration
+        run: node --test tests/cli_workflows.test.cjs
+      - name: Build headless CLI
+        run: cargo build --no-default-features
       - name: Make scripts executable
         run: |
           chmod +x scripts/cli_parity_test.sh
