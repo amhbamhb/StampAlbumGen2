@@ -75,6 +75,10 @@ Recommended flow:
 ## Testing Notes
 
 - Unit/integration tests live in `tests/` and code-level test modules.
+- Check that Cargo binary sources exist in clean checkouts with
+  `node --test tests/cargo_targets.test.cjs` (Node.js 18+). Do not declare
+  ignored local debugging scripts as Cargo binary targets: they may build
+  locally but fail target resolution in CI on both Windows and Linux.
 - StampWorld credential-recovery UI behavior can be checked without a browser
   or external services using `node --test tests/review_ui_stampworld_credentials.test.cjs`
   (Node.js 18+). Rendering and handler checks use `cargo test --lib review_ui::`.

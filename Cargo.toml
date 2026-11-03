@@ -113,9 +113,3 @@ default-run = "stamp_album_gen2"
 [build-dependencies]
 chrono = "0.4"
 winres = "0.1"
-[[bin]]
-name = "manual_import"
-path = "scripts/manual_import.rs"
-[[bin]]
-name = "debug_db"
-path = "scripts/debug_db.rs"

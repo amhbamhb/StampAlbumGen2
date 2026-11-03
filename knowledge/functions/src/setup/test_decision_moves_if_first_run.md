@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: test_decision_moves_if_first_run
-resource: src/setup.rs#L1018-L1024
+resource: src/setup.rs#L1021-L1027
 visibility: private
 generated:
   by: okf-rs/0.4.0

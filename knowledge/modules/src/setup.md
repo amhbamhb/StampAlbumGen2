@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: setup
-resource: src/setup.rs#L1-L1025
+resource: src/setup.rs#L1-L1028
 generated:
   by: okf-rs/0.4.0
 relationships:
