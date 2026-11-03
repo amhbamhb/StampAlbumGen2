@@ -3820,6 +3820,7 @@ dependencies = [
  "reqwest",
  "resvg",
  "rfd",
+ "roxmltree 0.21.2",
  "rusqlite",
  "scraper",
  "serde",

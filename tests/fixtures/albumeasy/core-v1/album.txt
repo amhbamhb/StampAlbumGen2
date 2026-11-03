@@ -1,0 +1,54 @@
+# Frozen core-v1 baseline. Do not edit after reference acceptance.
+# Primary renderer: AlbumEasy 4.5.0. Geometry is mm; fonts are points.
+# No dates, network data, external images, custom fonts, or runtime config.
+ALBUM_PAGES_SIZE (216.0 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+ALBUM_PAGES_HEADER (HN 8 C "StampAlbumGen2 core-v1 reference")
+ALBUM_PAGES_HEADER_PAD (3.0)
+ALBUM_PAGES_FOOTER_NUMBER (HN 8 C 1 "Page " " of $PAGES$")
+ALBUM_PAGES_FOOTER_PAD (3.0)
+ALBUM_AUTHOR ("StampAlbumGen2 baseline")
+ALBUM_TITLE ("AlbumEasy core-v1")
+STAMP_BOXES_SIZE_ADJUST (0.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HB 14 "CORE-V1 / PAGE 1" 3.0)
+PAGE_TEXT (HN 9 "Three row modes with unequal box heights." 2.0)
+PAGE_TEXT_RIGHT (HI 8 "All dimensions are millimetres." 4.0)
+
+ROW_ALIGN_TOP
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD (25.0 20.0 "ES-A" "L1" "C1" "R1")
+STAMP_ADD (30.0 30.0 "ES-B" "L2" "C2" "R2")
+STAMP_ADD (35.0 25.0 "ES-C" "L3" "C3" "R3")
+
+PAGE_TEXT_CENTRE (HB 9 "Equal gaps including the outer gaps; top aligned." 4.0)
+ROW_ALIGN_MIDDLE
+ROW_START_JS (HN 8 0.2)
+STAMP_ADD (25.0 20.0 "JS-A" "" "20 mm high" "")
+STAMP_ADD (30.0 30.0 "JS-B" "" "30 mm high" "")
+STAMP_ADD (35.0 25.0 "JS-C" "" "25 mm high" "")
+
+PAGE_TEXT_CENTRE (HB 9 "Justified outer edges; middle aligned." 4.0)
+ROW_ALIGN_BOTTOM
+ROW_START_FS (HN 8 0.2 6.0)
+STAMP_ADD (25.0 20.0 "FS-A" "" "20 mm high" "")
+STAMP_ADD (30.0 30.0 "FS-B" "" "30 mm high" "")
+STAMP_ADD (35.0 25.0 "FS-C" "" "25 mm high" "")
+PAGE_TEXT_CENTRE (HB 9 "Fixed 6 mm gaps; bottom aligned." 4.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HB 14 "CORE-V1 / PAGE 2" 3.0)
+PAGE_TEXT (HN 9 "Calibration: print at 100 percent, with fit-to-page disabled." 4.0)
+ROW_ALIGN_TOP
+ROW_START_FS (HN 8 0.2 6.0)
+STAMP_ADD (100.0 10.0 "HORIZONTAL: 100 x 10 mm" "" "Measure frame centreline to centreline." "")
+PAGE_VSPACE (6.0)
+ROW_START_FS (HN 8 0.2 6.0)
+STAMP_ADD (10.0 50.0 "" "" "10 x 50 mm" "")
+PAGE_TEXT_CENTRE (HN 9 "VERTICAL: 50 mm high; 10 mm wide." 4.0)
+PAGE_RULE_H (0.2 2.0 3.0)
+PAGE_TEXT_CENTRE (HN 9 "Multiline text: first line\nSecond line" 4.0)
+PAGE_TEXT_CENTRE (HB 10 "END CORE-V1" 4.0)

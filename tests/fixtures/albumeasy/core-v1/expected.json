@@ -1,0 +1,48 @@
+{
+  "baseline": "core-v1",
+  "reference_renderer": "AlbumEasy 4.5.0",
+  "input_sha256": "acc5a4bb5c643aa0db97f2f9c6e4ba7f44bbacedebbaf8ed913b7007a7bf73e7",
+  "pages": 2,
+  "page_size_mm": [216.0, 279.4],
+  "geometry_tolerance_mm": 0.01,
+  "native_placement_tolerance_mm": 0.25,
+  "native_dimension_tolerance_mm": 0.1,
+  "frame_coordinates": "millimetres, PDF bottom-left origin; stroke centreline intersections",
+  "frames_by_page": [
+    [
+      [39.1, 224.2639, 25.0, 20.0],
+      [88.0, 214.2639, 30.0, 30.0],
+      [141.9, 219.2639, 35.0, 25.0],
+      [18.2, 174.5611, 25.0, 20.0],
+      [88.0, 169.5611, 30.0, 30.0],
+      [162.8, 172.0611, 35.0, 25.0],
+      [57.0, 124.8583, 25.0, 20.0],
+      [88.0, 124.8583, 30.0, 30.0],
+      [124.0, 124.8583, 35.0, 25.0]
+    ],
+    [
+      [58.0, 239.0861, 100.0, 10.0],
+      [103.0, 175.5583, 10.0, 50.0]
+    ]
+  ],
+  "required_text_by_page": [
+    [
+      "StampAlbumGen2 core-v1 reference",
+      "CORE-V1 / PAGE 1",
+      "ES-A", "ES-B", "ES-C",
+      "JS-A", "JS-B", "JS-C",
+      "FS-A", "FS-B", "FS-C",
+      "Page 1 of 2"
+    ],
+    [
+      "StampAlbumGen2 core-v1 reference",
+      "CORE-V1 / PAGE 2",
+      "HORIZONTAL: 100 x 10 mm",
+      "VERTICAL: 50 mm high; 10 mm wide.",
+      "Multiline text: first line",
+      "Second line",
+      "END CORE-V1",
+      "Page 2 of 2"
+    ]
+  ]
+}

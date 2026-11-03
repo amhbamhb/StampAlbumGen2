@@ -1,10 +1,59 @@
 # Native PDF generation with AlbumEasy TXT export
 
 **Created:** 2026-11-01  
-**Last updated:** 2026-11-01  
-**Revision:** 2
-**Status:** Draft plan; implementation not started  
+**Last updated:** 2026-11-03
+**Revision:** 6
+**Status:** Draft plan; T003 baseline-checker increment authorized; native implementation not started
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
+
+### Current planning checkpoint — command inventory first
+
+The final goal is to **replace external AlbumEasy PDF generation with internal
+PDF generation**. The maintainer has authorized only a baby-step T003 increment:
+preserve the baseline, add an automated drift checker, validate, commit and merge
+locally, then stop for review. No native renderer, CLI/UI or configuration changes
+are authorized yet. Earlier broad implementation requests remain paused.
+The integration branch is `development/native-pdf`, created from
+`docs/albumeasy-421-command-inventory`. Phase 1 epic is GitHub #55; the bounded
+T003 sub-issue is #56, branch `issue/56-t003-baseline-drift-checker`.
+The maintainer reports visual and 100%-scale print acceptance of core-v1;
+Windows execution remains unverified.
+
+Start with the supplied [AlbumEasy 4.2.1 manual](../AlbumEasy_4.2.1.pdf), not just
+the commands this application currently emits. The new
+[command inventory](../guides/ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) identifies
+**92 canonical names**, including **9 obsolete commands** and **11 commands in
+the separate decorative-border language**. Twelve documented `COLOR_` aliases
+bring the total to **104 spellings**. These counts describe the manual, not
+implemented support.
+
+The [application/configuration gap analysis](ALBUMEASY_4_2_1_APPLICATION_GAPS.md)
+adds a static matrix for all 92 names: 24 occur in imported-command validation,
+including six placeholders; 68 are absent. It also maps existing global and
+album-local `config.toml` behavior to command families and flags generator/manual
+syntax mismatches. No native album renderer is wired in the inspected paths.
+Do not treat these name counts as support percentages.
+
+Before deciding implementation order:
+
+1. Review the inventory and resolve its documented syntax/behavior gaps.
+2. Define per-command arguments, defaults, state, units, assets and interactions.
+3. Audit application support across parsing, layout, native rendering, editing
+   and export; do not count accepted names/placeholders as implemented behavior.
+4. Define conformance examples and identify missing PDF-library capabilities.
+5. Incorporate the maintainer's remaining ideas, then approve a revised execution
+   sequence. Do not start the renderer simply because an older phase suggests it.
+
+The existing phase/task IDs below are retained for continuity, not treated as an
+approved execution queue. T036's inventory work is pulled forward into this
+checkpoint; full command semantics need planning before the shared model is fixed.
+T001 and T036 remain unchecked because the detailed matrix/audit is incomplete.
+The primary target is now installed **AlbumEasy 4.5.0**, with 4.2.1 retained as
+legacy coverage. The [4.5.0 reference update](../guides/ALBUMEASY_4_5_0_REFERENCE_UPDATE.md)
+records new command families and corrects version-related gap findings using
+the installed help archive. A full 4.5.0 coverage matrix remains to be completed;
+the existing 92-name denominator is legacy-only. Prior codebase observations and effort
+estimates below require reconfirmation before implementation.
 
 ## 1. Goal and recommended direction
 
@@ -63,12 +112,16 @@ Determine whether the selected AlbumEasy version can reproduce each title
 composition. If not, offer a clearly reported approximation or omission.
 Do not assume icons are inherently unsupported, rasterize a whole page silently,
 or constrain native layout to achieve cosmetic parity.
+The supplied manual already demonstrates title-side images using composed text,
+spacing and frameless-image commands (pp. 61–62), and reusable page-start groups
+(pp. 23–24). Treat native title-icon controls as a usability/layout enhancement,
+not automatically as an AlbumEasy-incompatible feature.
 
 Other enhancements are a backlog, not approved implementation scope: decorative
 headers/footers, richer typography, section badges, backgrounds and flexible
 image/text compositions. Each needs its own acceptance criteria and export policy.
 
-## 2. Verified starting point
+## 2. Previously inspected starting point — reverify before implementation
 
 | Area | Current implementation | Consequence for this plan |
 |------|------------------------|---------------------------|
@@ -97,17 +150,18 @@ capabilities or output fidelity have been certified.
 | REQ-008 | Keep CLI, startup UI, country review UI, configuration and diagnostics consistent. |
 | REQ-009 | Maintain Windows/Linux portability and validate both supported code paths. |
 | REQ-010 | Support configurable main-title icons on the left, right or both sides without clipping or overlap. |
-| REQ-011 | Support every command/item in a pinned current AlbumEasy language reference, including defaults, variants and interactions, across import, validation, editing, native rendering and export. |
+| REQ-011 | Support the installed AlbumEasy 4.5.0 command reference as the primary target, retaining documented 4.2.1 legacy coverage, including variants, preprocessing, border language, defaults and interactions across import, validation, editing, native rendering and export. Resolve documented ambiguities before claiming complete support. |
 | REQ-012 | Produce per-feature/page/source-location export compatibility findings; never silently omit or approximate native enhancements. |
 | REQ-013 | Preserve the full editable native document and assets so lossy TXT export/reimport cannot destroy native-only features. |
+| REQ-014 | Preserve and document effective configuration semantics: existing sectioned/legacy keys, defaults, units, album overrides and per-run settings; resolve one snapshot for both outputs and explicitly reconcile imported commands with user overrides. |
 
 ### Scope boundaries and staged exclusions
 
 - A complete versioned AlbumEasy interpreter is now an eventual deliverable,
   not part of the first ordinary-album release.
-- "All current items" means the complete documented album command language,
+- The compatibility baseline means the complete documented album command language,
   parameters, defaults, supported legacy aliases and file/dependency semantics
-  for the version pinned in Phase 1. Inventory examples and undocumented behavior
+  for the installed 4.5.0 reference with 4.2.1 legacy coverage. Inventory examples and undocumented behavior
   separately; do not make an unbounded claim about every historical version.
 - No recreation of unrelated AlbumEasy desktop UI or undocumented internals.
 - No changes to StampWorld/Colnect import semantics.
@@ -168,14 +222,16 @@ abstractions. Reuse existing modules wherever they already own the behavior.
 
 **Plan P1.1:** Freeze observable behavior and pin the full target language before altering the generator.
 **Plan P1.2:** Prove that `oxidize-pdf` can render the minimum required album page.
+**Plan P1.3:** Audit configuration semantics and approve a backwards-compatible native mapping (REQ-014).
 
-- [ ] T001 [Plan:1.1] Inventory emitted AlbumEasy commands and current layout/configuration behavior in `src/album_globals/generator.rs`, `generator_new/emit.rs`, `generator_new/layout.rs`, `generator_new/commemorative_layout.rs`, and `generator_new/postprocess.rs`. Pin the supported current AlbumEasy version/reference and inventory its entire command language, not just commands emitted today.
+- [ ] T001 [Plan:1.1] Complete the command-first audit using the installed 4.5.0 help, `docs/guides/ALBUMEASY_4_5_0_REFERENCE_UPDATE.md` and the retained 4.2.1 inventory/manual. Inventory emitted commands/current layout/configuration in `src/album_globals/generator.rs`, `generator_new/emit.rs`, `generator_new/layout.rs`, `generator_new/commemorative_layout.rs`, and `generator_new/postprocess.rs`; record versioned support evidence, missing behaviors and unresolved gaps. Legacy name inventory and 4.5.0 corrections exist; full modern matrix/audit remains open.
 - [ ] T002 [Plan:1.1] Inventory all ordinary/filtered generation callers in `src/album_globals/mod.rs`, `src/modes.rs`, `src/review_ui/http_handlers.rs`, and generation helpers. Record imported-album dispatch separately from ordinary albums.
-- [ ] T003 [Plan:1.1] Capture deterministic baseline TXT and fresh AlbumEasy PDFs for representative ordinary albums; retain existing imported-album fixtures as regression references. Put durable evidence in `docs/testing/`; never mutate production albums.
+- [ ] T003 [Plan:1.1] Capture deterministic baseline TXT and fresh AlbumEasy PDFs for representative ordinary albums; retain existing imported-album fixtures as regression references. The initial frozen `tests/fixtures/albumeasy/core-v1/album.txt` and `expected.json` establish basic geometry/text/row comparisons; see `docs/testing/ALBUMEASY_CORE_V1_BASELINE.md` for measured 4.5.0 reference evidence. Full command-family, ordinary-generated, asset and native comparisons remain open. Never mutate production albums.
 - [ ] T004 [Plan:1.2] Verify the installed `oxidize-pdf` generation API and license, font embedding/measurement, Unicode, images/transparency, page sizes, metadata and write errors. Record supported/unsupported features and exact limitations in this document.
 - [ ] T005 [Plan:1.2] Build an isolated proof page with known millimetre dimensions, a stamp image, caption, heading and border. Verify PDF dimensions, text extraction and a 100%-scale printed ruler.
+- [ ] T046 [Plan:1.3] Complete and approve the K1–K12 configuration contract in `docs/reports/ALBUMEASY_4_2_1_APPLICATION_GAPS.md`: map local `config.toml`, `src/config.rs`, `config_template.toml`, `config_full_example.toml` and `docs/guides/CONFIG_PARAMETERS_INVENTORY.md` to actual command/layout semantics, defaults, units, alias precedence and album/per-run overrides. Resolve image-padding/stretch/aspect, header/title and row-field naming conflicts before model design; preserve credentials and keep the local config untouched. Define fixture expectations and migration decisions, not implementation. ID appended for stability; planning precedes Phase 2.
 
-**Exit gate:** Command/feature inventory exists; native proof page opens and prints
+**Exit gate:** Command/feature and configuration contracts are approved; native proof page opens and prints
 correctly; required missing capabilities are identified before the larger refactor.
 Stop for a maintainer decision if the library cannot meet a core requirement.
 
@@ -184,7 +240,7 @@ Stop for a maintainer decision if the library cannot meet a core requirement.
 **Plan P2.1:** Establish an authoritative editable document and resolved layout, with native-only features and provenance.
 **Plan P2.2:** Move layout decisions out of TXT emission without changing behavior.
 
-- [ ] T006 [Plan:2.1] Define the shared document/layout in the existing generation area, or focused `src/album_globals/album_layout.rs` if needed: album/page settings, rows, placements, text styles, title compositions, borders and resolved asset references. Preserve stable element identity, imported source locations and document revision; persist native-only settings additively without discarding existing command provenance.
+- [ ] T006 [Plan:2.1] Define the shared document/layout in the existing generation area, or focused `src/album_globals/album_layout.rs` if needed: album/page settings, rows, placements, text styles, title compositions, borders and resolved asset references. Preserve stable element identity, imported source locations and document revision; persist native-only settings additively without discarding existing command provenance. Resolve one effective configuration snapshot per run; imported explicit settings remain authoritative unless an explicit recorded user override changes them.
 - [ ] T007 [Plan:2.1] Define canonical units (prefer millimetres for album layout), conversion to PDF points (`mm * 72 / 25.4`), coordinate origin, floating-point rounding, page/margin bounds and physical-versus-presentation box dimensions.
 - [ ] T008 [Plan:2.2] Establish a shared font measurement/wrapping policy. Map current AlbumEasy fonts explicitly to licensed, available fonts; specify embedding and substitution behavior. Never silently change fonts.
 - [ ] T009 [Plan:2.2] Extract ordering, stamp selection, row packing, spacing modes, caption heights, page breaks, even-page margins and image-box sizing from the active generator into the shared builder, reusing existing helpers.
@@ -200,17 +256,7 @@ the native renderer.
 
 - [ ] T011 [Plan:3.1] Adapt `generator_new/emit.rs` and related emit/postprocess helpers to consume a compatibility projection of the shared document/layout; classify each feature as exact, approximated, omitted or blocked before writing target-version commands.
 - [ ] T012 [Plan:3.1] Preserve escaping, relative image paths, command order, row spacing semantics, page breaks, fonts, numbering and all supported global settings. Keep asset paths portable.
-
 - [ ] T013 [Plan:3.1] Validate emitted TXT against the pinned language and, during development, compare AlbumEasy-rendered outputs against the common-feature baseline. Persist divergence findings and require explicit approval for lossy mappings; native-only enhancements need not match AlbumEasy appearance.
-- [ ] T013 [Plan:3.1] Validate emitted TXT against the pinned language and, during development, compare AlbumEasy-rendered outputs against the common-feature baseline. Persist divergence findings and require explicit approval for lossy mappings; native-only enhancements need not match AlbumEasy appearance.
-
-
-- [ ] T011 [Plan:3.1] Adapt `generator_new/emit.rs` and related emit/postprocess helpers to consume a compatibility projection of the shared document/layout; classify each feature as exact, approximated, omitted or blocked before writing target-version commands.
-- [ ] T012 [Plan:3.1] Preserve escaping, relative image paths, command order, row spacing semantics, page breaks, fonts, numbering and all supported global settings. Keep asset paths portable.
-- [ ] T013 [Plan:3.1] Validate emitted TXT against the pinned language and, during development, compare AlbumEasy-rendered outputs against the common-feature baseline. Persist divergence findings and require explicit approval for lossy mappings; native-only enhancements need not match AlbumEasy appearance.
->>>>>>> fix/complex-stamp-db-type
-=======
->>>>>>> Stashed changes
 
 **Exit gate:** Exported TXT opens/renders in AlbumEasy. Preserve byte-normalized
 baseline TXT where feasible; review intentional differences and prove their effect.
@@ -283,7 +329,7 @@ native document can regenerate the enhanced PDF even after a lossy TXT export.
 **Plan P8.1:** Implement a versioned command language, not an allowlist of names (REQ-011).
 **Plan P8.2:** Complete command-to-document/render/editor/export support (REQ-005, REQ-011, REQ-013).
 
-- [ ] T036 [Plan:8.1] Add a command coverage matrix under `docs/guides/` from T001's pinned official reference. For every command/alias record grammar, units, defaults, scope/state, interactions, parse/validation/edit/render/export status, source reference and conformance fixture.
+- [ ] T036 [Plan:8.1] Extend the coverage matrix to installed 4.5.0 using `docs/guides/ALBUMEASY_4_5_0_REFERENCE_UPDATE.md` and exact installed-help grammar; preserve `docs/guides/ALBUMEASY_4_2_1_COMMAND_INVENTORY.md` as the legacy 92-name/12-alias baseline. Reconcile renamed/obsolete names, additions and overloads; add per-command units, defaults, scope/state, interactions, parse/validation/edit/render/export evidence and conformance fixtures. Planning portion is pulled forward before Phase 2; implementation remains deferred.
 - [ ] T037 [Plan:8.1] Replace placeholder validation in `src/external_album/parser.rs` with documented argument rules and precise source diagnostics. Implement documented quoting/escapes, comments, ordering, includes/dependencies and command state semantics where present; reject unknown commands without silently ignoring them.
 - [ ] T038 [Plan:8.2] Implement command families incrementally across `src/external_album/parser.rs`, `src/external_album/reflow.rs`, shared document/layout and native rendering: page/global settings, text/fonts, rows/alignment, stamp/blank/image placements, borders/colors/decorations, and every additional family discovered by inventory.
 - [ ] T039 [Plan:8.2] Extend `src/review_ui/views/external_album.html` and owning API for typed editing of every documented supported command/item, preserving order, identity, scope, revisions and source provenance. Recognition or raw-text passthrough alone does not count as application support.
@@ -336,21 +382,6 @@ The previous **29–61 day** range covered the ordinary-album foundation only.
 Full language support materially expands the project; revise the new estimate
 after the versioned command matrix is complete. Unspecified future enhancements
 are excluded.
-Allow roughly 20–30% contingency: approximately **67–151 developer-days overall**.
-The previous **29–61 day** range covered the ordinary-album foundation only.
-Full language support materially expands the project; revise the new estimate
-after the versioned command matrix is complete. Unspecified future enhancements
-are excluded.
-<<<<<<< Updated upstream
-
-Allow roughly 20–30% contingency: approximately **67–151 developer-days overall**.
-The previous **29–61 day** range covered the ordinary-album foundation only.
-Full language support materially expands the project; revise the new estimate
-after the versioned command matrix is complete. Unspecified future enhancements
-are excluded.
->>>>>>> fix/complex-stamp-db-type
-=======
->>>>>>> Stashed changes
 
 **Dependencies:** Phase 1 precedes Phase 2; Phase 2 precedes Phases 3/4. Native
 and TXT exporters can then be developed independently against a frozen layout
@@ -362,6 +393,10 @@ can start inventory/parser work after Phase 1, but complete semantics requires
 the shared document/renderer. Phase 9 depends on Phase 8 coverage and integrated
 editor support. Preserve task IDs; phase dependencies, not numeric IDs alone,
 determine execution order.
+The command-first checkpoint still gates native application implementation:
+complete the T001/T036 planning matrix and T046 configuration contract, then
+revisit these dependencies first. The approved T003 checker increment is test
+infrastructure only and does not bypass those gates.
 
 ## 6. Validation strategy and proposed acceptance criteria
 
@@ -445,7 +480,7 @@ impacts and discovered logic risks in `docs/testing/`.
 - Native-default promotion: **Not approved; AlbumEasy remains default**
 - Enhanced native PDF with explicitly divergent compatibility export: **Requested direction**
 - Main-title left/right icons: **Requested scope; detailed design pending**
-- Complete pinned-version AlbumEasy application support and standalone import: **Requested eventual scope; coverage inventory pending**
+- Complete 4.2.1 AlbumEasy application support and standalone import: **Requested scope; initial manual inventory recorded, detailed coverage/ambiguities pending**
 - Export loss approval/report format: **Proposed strict default; design pending**
 - Other native enhancement ideas: **Backlog only; not approved**
 
@@ -466,6 +501,7 @@ impacts and discovered logic risks in `docs/testing/`.
 | REQ-011 | P1.1, P8.1, P8.2, P9.2 | Pinned command matrix and complete conformance evidence; T001, T036–T040, T044–T045 |
 | REQ-012 | P3.1, P4.2, P7.2 | Compatibility projection and visible persisted findings; T011–T013, T017–T018, T033–T035 |
 | REQ-013 | P2.1, P7.1, P8.2 | Editable native-only settings, stable identities and provenance; T006, T030–T032, T038–T040 |
+| REQ-014 | P1.3, P2.1, P5.1 | Configuration semantic/precedence map, snapshot and migration checks; T046, T006, T019–T021 |
 
 ## 9. How to keep this plan up to date
 
@@ -479,16 +515,35 @@ impacts and discovered logic risks in `docs/testing/`.
    approval does not mean every AlbumEasy command is supported.
 8. Revisit estimates when the pinned command matrix or enhancement scope changes.
 
+### Recorded execution workflow — approved for the T003 checker increment only
+
+- Use GitHub for this roadmap, as explicitly requested: one parent issue (epic)
+  per phase and a sub-issue/branch per T-task. P-items group tasks; they do not
+  require their own branches.
+- During implementation, start each task from the designated main development
+  branch, validate its acceptance criteria, commit the task, merge locally back
+  to that integration branch, then start the next dependency-ready task there.
+- Task commits and local merges may be automatic after required checks pass.
+  Ask before any push. Do not commit failing or unvalidated implementation.
+- Record epic/sub-issue, branch, checks, commit and merge evidence per task.
+- The maintainer selected `development/native-pdf` from the current documentation
+  branch. Preserve accumulated planning/baseline deliverables in the validated
+  T003 increment; exclude unrelated manual/autosave files.
+- GitHub #55 is the Phase 1 parent and #56 its T003 checker sub-issue. Full T003
+  coverage remains incomplete after this subset; stop for review before the next
+  increment. See the [baseline report](../testing/ALBUMEASY_CORE_V1_BASELINE.md)
+  for commands, counts, negative controls and limits.
+
 | Phase | Status | Owner | Evidence / blocker |
 |-------|--------|-------|--------------------|
-| 1 | Not started | Unassigned | |
+| 1 | Planning inventory in progress | Unassigned | Initial 4.2.1 name inventory recorded; command behavior/support audit remains open |
 | 2 | Not started | Unassigned | Depends on Phase 1 |
 | 3 | Not started | Unassigned | Depends on shared layout |
 | 4 | Not started | Unassigned | Depends on shared layout/library proof |
 | 5 | Not started | Unassigned | Depends on both exporters |
 | 6 | Not started | Unassigned | Depends on integrated generation paths |
 | 7 | Not started | Unassigned | Shared document/native renderer/export foundation; can precede Phase 6 |
-| 8 | Not started | Unassigned | Pinned language inventory, shared document and renderer |
+| 8 | Inventory planning pulled forward | Unassigned | T036 initial inventory exists; full matrix and implementation remain open |
 | 9 | Not started | Unassigned | Complete command support and editor/native integration |
 
 ### Progress and decision log
@@ -497,3 +552,7 @@ impacts and discovered logic risks in `docs/testing/`.
 |------|------------------|--------------------|-------------|
 | 2026-11-01 | Plan created for options 1, 2 and 4 | Repository generation/import paths inspected; no rendering implementation changed. | Approve boundaries and start Phase 1. |
 | 2026-11-01 | Revision 2: expanded native-first scope | Added title icons, explicit export divergence, complete versioned AlbumEasy support and standalone import. T001–T029 retained; T030–T045 added. Previous permanent import exclusions superseded. | Pin target language/reference, create coverage matrix and approve compatibility-loss policy. |
+| 2026-11-03 | Revision 3: manual-first planning checkpoint | Repaired duplicated merge-conflict text; inventoried supplied 4.2.1 manual (92 canonical names, 12 additional spelling aliases); recorded unresolved grammar discrepancies and existing title-icon composition. No application changes or commits. | Review command/behavior matrix and remaining maintainer ideas before approving implementation order. |
+| 2026-11-03 | Revision 4: application/configuration gap audit | Added per-command static gap matrix, 24-name validator breakdown and K1–K12 config mapping; identified emitted/imported/reference mismatches. Added REQ-014/P1.3/T046 without renumbering existing tasks. No application/config changes or runtime certification. | Resolve syntax/image semantics and approve configuration precedence before shared-model implementation. |
+| 2026-11-03 | Revision 5: reference version and core baseline | Selected 4.5.0 as primary with 4.2.1 legacy coverage; installed help resolves several alleged syntax gaps. Added core-v1 TXT and measured reference expectations without application code changes. | Preserve frozen reference; extend the versioned command matrix and add separate command-family fixtures. |
+| 2026-11-03 | Revision 6: approved T003 baby step | Maintainer accepted visual/100%-scale print baseline and selected `development/native-pdf`. Added Cargo checksum, geometry/text and strict same-renderer drift checks; two fresh AlbumEasy renders match the frozen reference. Epic #55 / sub-issue #56. Native application/config changes remain paused. | Commit and merge validated checker locally, then stop for maintainer review. Full T003 and command/config contracts remain open. |

@@ -98,6 +98,7 @@ oxidize-pdf = "5.5.5"
 
 
 [dev-dependencies]
+roxmltree = "0.21"
 assert_cmd = "2.0"
 predicates = "3.1"
 tempfile = "3.6"
