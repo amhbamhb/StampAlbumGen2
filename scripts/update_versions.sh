@@ -19,6 +19,7 @@ NON_INTERACTIVE=false
 SKIP_BACKUP=false
 FROM_HOOK=false
 AUTO_PATCH=false
+PREPARE_ONLY=false
 DO_GIT=false
 DO_PUSH=false
 SET_VERSION=""
@@ -37,6 +38,8 @@ Options:
   --yes, -y        Non-interactive mode
   --from-hook      Optimized mode for pre-commit hook (non-interactive, no backups)
   --no-backup      Skip creating docs/versions backups
+  --prepare-only   Update version files without building, committing, or pushing
+                   (non-interactive, no backups; intended for release CI)
   --git            Commit and tag after update
   --push           Push commit/tag (requires --git)
   --help, -h       Show this help
@@ -48,7 +51,7 @@ EOF
 }
 
 is_semver() {
-    [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+    [[ "$1" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
 }
 
 normalize_semver() {
@@ -136,6 +139,12 @@ parse_args() {
                 SKIP_BACKUP=true
                 shift
                 ;;
+            --prepare-only)
+                PREPARE_ONLY=true
+                NON_INTERACTIVE=true
+                SKIP_BACKUP=true
+                shift
+                ;;
             --git)
                 DO_GIT=true
                 shift
@@ -166,6 +175,10 @@ parse_args() {
         echo "Error: --push requires --git" >&2
         exit 1
     fi
+    if [[ "$PREPARE_ONLY" == true && ( "$DO_GIT" == true || "$AUTO_PATCH" == true ) ]]; then
+        echo "Error: --prepare-only cannot be combined with --git, --push, or auto-patch" >&2
+        exit 1
+    fi
 }
 
 extract_cargo_package_version() {
@@ -185,7 +198,8 @@ extract_cargo_package_version() {
 
 highest_semver_tag() {
     local highest=""
-    local tag
+    local tag tags
+    tags="$(git tag --list)" || return 1
     while IFS= read -r tag; do
         local s
         s="$(normalize_semver "$tag")"
@@ -195,7 +209,7 @@ highest_semver_tag() {
         if [[ -z "$highest" ]] || semver_ge "$s" "$highest"; then
             highest="$s"
         fi
-    done < <(git tag --list 2>/dev/null || true)
+    done <<< "$tags"
 
     if [[ -n "$highest" ]]; then
         echo "$highest"
@@ -245,17 +259,17 @@ update_line_patterns() {
     fi
 
     # Version and date lines that are intentionally repeated in this repo are all updated.
-    sed -E -i "s|^# Version: .*|# Version: ${new_version}|" "$file" || true
-    sed -E -i "s|^# Last Updated: .*|# Last Updated: ${date}|" "$file" || true
-    sed -E -i "s|^# Stamp Album Generator v.* Release Notes$|# Stamp Album Generator v${new_version} Release Notes|" "$file" || true
+    sed -E -i "s|^# Version: .*|# Version: ${new_version}|" "$file"
+    sed -E -i "s|^# Last Updated: .*|# Last Updated: ${date}|" "$file"
+    sed -E -i "s|^# Stamp Album Generator v.* Release Notes$|# Stamp Album Generator v${new_version} Release Notes|" "$file"
     if [[ "$file" == "RELEASE_NOTES.md" ]]; then
-        sed -E -i "s|^# Stamp Album Generator v.*$|# Stamp Album Generator v${new_version} Release Notes|" "$file" || true
+        sed -E -i "s|^# Stamp Album Generator v.*$|# Stamp Album Generator v${new_version} Release Notes|" "$file"
     fi
-    sed -E -i "s|^# Stamp Album Generator v[^ ]*$|# Stamp Album Generator v${new_version}|" "$file" || true
-    sed -E -i "s|^\*\*Version\*\*: .*|**Version**: ${new_version}|" "$file" || true
-    sed -E -i "s|^\*\*Release Date\*\*: .*|**Release Date**: ${date}|" "$file" || true
-    sed -E -i "s@^Version: .* \| Last Updated: .*@Version: ${new_version} | Last Updated: ${date}@" "$file" || true
-    sed -E -i "s@<!-- Version: .* \| Last Updated: .* \| Previous:@<!-- Version: ${new_version} | Last Updated: ${date} | Previous:@" "$file" || true
+    sed -E -i "s|^# Stamp Album Generator v[^ ]*$|# Stamp Album Generator v${new_version}|" "$file"
+    sed -E -i "s|^\*\*Version\*\*: .*|**Version**: ${new_version}|" "$file"
+    sed -E -i "s|^\*\*Release Date\*\*: .*|**Release Date**: ${date}|" "$file"
+    sed -E -i "s@^Version: .* \| Last Updated: .*@Version: ${new_version} | Last Updated: ${date}@" "$file"
+    sed -E -i "s@<!-- Version: .* \| Last Updated: .* \| Previous:@<!-- Version: ${new_version} | Last Updated: ${date} | Previous:@" "$file"
 }
 
 create_backups() {
@@ -291,25 +305,24 @@ git_commit_and_tag() {
     local new_version="$1"
     local tag="v${new_version}"
 
-    git add Cargo.toml .github/instructions README.md RELEASE_NOTES.md
-    git commit -m "chore(release): bump version to ${new_version}" --no-verify || true
-
     if git rev-parse --verify "refs/tags/${tag}" >/dev/null 2>&1; then
-        echo "Tag ${tag} already exists. Skipping tag creation."
-    else
-        git tag -a "$tag" -m "Release ${tag}"
-        echo "Created tag ${tag}"
+        echo "Error: tag ${tag} already exists; refusing to reuse or overwrite it." >&2
+        return 1
     fi
+    cargo test --release --workspace --lib --locked
+    git add Cargo.toml Cargo.lock .github/instructions README.md RELEASE_NOTES.md
+    git commit -m "chore(release): bump version to ${new_version}"
+    git tag -a "$tag" -m "Release ${tag}"
+    echo "Created tag ${tag}"
 
     if [[ "$DO_PUSH" == true ]]; then
-        git push --follow-tags
-        git push origin "refs/tags/${tag}" || true
+        git push --atomic origin HEAD "refs/tags/${tag}"
     fi
 }
 
 run_release_build() {
     # Keep pre-commit hook runs quick; full release build is for normal invocations.
-    if [[ "$FROM_HOOK" == true ]]; then
+    if [[ "$FROM_HOOK" == true || "$PREPARE_ONLY" == true ]]; then
         return
     fi
 

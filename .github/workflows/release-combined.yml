@@ -1,71 +1,76 @@
 name: Release (combined)
+run-name: Release next ${{ inputs.version_type }} version
 
 on:
   workflow_dispatch:
     inputs:
-      release_tag:
-        description: 'Existing version tag to release (for example v1.14.0)'
+      version_type:
+        description: 'Increment from the highest package version or release tag. Version numbers and tags are automatic.'
         required: true
-        type: string
+        default: patch
+        type: choice
+        options: [patch, minor, major]
 
 concurrency:
-  group: release-${{ inputs.release_tag }}
+  group: application-release
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  id-token: write
-
-# Note: `runner` expressions are only valid inside a job context. Set
-# `CARGO_TARGET_DIR` and `RUSTFLAGS` at job level where `runner.temp` is
-# available.
+  contents: read
 
 jobs:
-  validate-release:
-    name: Validate existing release tag
+  prepare-release:
+    name: Prepare next version (no publication)
     runs-on: ubuntu-latest
     outputs:
-      release_tag: ${{ steps.validate.outputs.release_tag }}
-      source_sha: ${{ steps.validate.outputs.source_sha }}
+      release_tag: ${{ steps.prepare.outputs.release_tag }}
+      base_sha: ${{ steps.prepare.outputs.base_sha }}
+      tree_sha: ${{ steps.prepare.outputs.tree_sha }}
+      reused_sha: ${{ steps.prepare.outputs.reused_sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
 
-      - name: Validate tag and package version
-        id: validate
+      - name: Require release from default branch
         env:
-          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          python3 - <<'PY'
-          import os
-          import re
-          import subprocess
-          import tomllib
+          if [ "$GITHUB_REF" != "refs/heads/$RELEASE_BRANCH" ]; then
+            echo "::error::Select '$RELEASE_BRANCH' in 'Use workflow from'. Releases build the latest default-branch source."
+            exit 1
+          fi
 
-          tag = os.environ["RELEASE_TAG"]
-          if not re.fullmatch(r"v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)", tag):
-              raise SystemExit("Release tag must have the form vX.Y.Z")
-          resolved = subprocess.run(
-              ["git", "rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}"],
-              capture_output=True, text=True,
-          )
-          if resolved.returncode:
-              raise SystemExit(f"Release tag {tag} does not exist or does not point to a commit")
-          sha = resolved.stdout.strip()
-          manifest = subprocess.check_output(["git", "show", f"{sha}:Cargo.toml"], text=True)
-          version = tomllib.loads(manifest)["package"]["version"]
-          if tag != f"v{version}":
-              raise SystemExit(f"Release tag {tag} does not match Cargo package version {version}")
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"release_tag={tag}\nsource_sha={sha}\n")
-          print(f"Release {tag} will build existing commit {sha}; source files and tags are unchanged")
-          PY
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Prepare versioned source
+        id: prepare
+        env:
+          VERSION_TYPE: ${{ inputs.version_type }}
+        run: bash scripts/prepare_release.sh
+
+      - name: Upload exact version changes
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-source
+          path: ${{ runner.temp }}/release-source/release-source.patch
+          if-no-files-found: error
+          overwrite: true
+
+      - name: Summarize selected version
+        env:
+          RELEASE_TAG: ${{ steps.prepare.outputs.release_tag }}
+          BASE_SHA: ${{ steps.prepare.outputs.base_sha }}
+        run: |
+          echo "## Automatic release: $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
+          echo "Prepared from $BASE_SHA. Commit and tag publication waits for both platform tests/builds." >> "$GITHUB_STEP_SUMMARY"
 
   build:
     name: Build artifacts (matrix)
-    needs: validate-release
+    needs: prepare-release
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -75,39 +80,47 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ needs.validate-release.outputs.source_sha }}
-      # Optional defensive step: logs top disk users and removes very large files
-      # Keep while debugging runner OOM/disk issues; safe to remove later.
-      - name: Early disk usage diagnostics and cleanup (linux only)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          echo "Disk usage before cleanup:"; df -h || true
-          echo "Top 50 largest files/dirs in workspace:"; du -xah "$GITHUB_WORKSPACE" 2>/dev/null | sort -hr | head -n 50 || true
-          find "$GITHUB_WORKSPACE" -xdev -type f -size +200M -maxdepth 6 -ls || true
-          if [ -f perf.data ]; then rm -f perf.data || true; fi
-          find "$GITHUB_WORKSPACE" -xdev -type f -size +200M -maxdepth 6 -print -exec rm -f {} \; || true
-        shell: bash
-
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+          ref: ${{ needs.prepare-release.outputs.base_sha }}
+      - name: Download exact version changes
+        uses: actions/download-artifact@v4
         with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
-      - name: Install Linux build prerequisites
-        if: matrix.os == 'ubuntu-latest'
+          name: release-source
+          path: ${{ runner.temp }}/release-source
+      - name: Apply tested release source
+        shell: bash
+        env:
+          TREE_SHA: ${{ needs.prepare-release.outputs.tree_sha }}
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libwayland-dev
+          git apply --index "$RUNNER_TEMP/release-source/release-source.patch"
+          test "$(git write-tree)" = "$TREE_SHA"
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Node for release regression tests
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Test release automation
+        if: matrix.os == 'ubuntu-latest'
+        run: node --test tests/release_publication_shell.cjs tests/cli_workflows.test.cjs tests/cargo_targets.test.cjs
+
+      - name: Test portable Linux release
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo test --release --workspace --lib --no-default-features --locked
+
+      - name: Test Windows release with native dialogs
+        if: matrix.os == 'windows-latest'
+        run: cargo test --release --workspace --lib --features rfd --locked
 
       - name: Build portable Linux release
         if: matrix.os == 'ubuntu-latest'
-        run: cargo build --release --no-default-features
+        run: cargo build --release --no-default-features --locked
 
       - name: Build Windows release with native dialogs
         if: matrix.os == 'windows-latest'
-        run: cargo build --release --features rfd
+        run: cargo build --release --features rfd --locked
 
       - name: Package artifact
         shell: bash
@@ -124,18 +137,16 @@ jobs:
           path: |
             stamp_album_gen2.exe
             stamp_album_gen2-linux
+          if-no-files-found: error
+          overwrite: true
 
   windows-sign:
     name: Sign Windows EXE (Authenticode)
     needs: build
     runs-on: windows-latest
+    outputs:
+      signed: ${{ steps.signing_pfx.outputs.enabled }}
     steps:
-      - name: Set job env (CARGO_TARGET_DIR, RUSTFLAGS)
-        shell: pwsh
-        run: |
-          echo "CARGO_TARGET_DIR=$env:RUNNER_TEMP\\cargo-target" >> $env:GITHUB_ENV
-          echo "RUSTFLAGS=-C lto=off -C codegen-units=16" >> $env:GITHUB_ENV
-
       - name: Check signing PFX secret
         id: signing_pfx
         shell: pwsh
@@ -197,6 +208,7 @@ jobs:
             }
             if (-not $signtool) { Write-Host 'signtool not found; aborting'; exit 1 }
             & "$signtool" sign /tr http://timestamp.digicert.com /td SHA256 /fd SHA256 /f cert.pfx /p "$env:SIGNING_PFX_PASSWORD" "stamp_album_gen2.exe"
+            if ($LASTEXITCODE -ne 0) { throw "SignTool exited with code $LASTEXITCODE" }
           } catch { Write-Host "SignTool invocation failed: $($_.Exception.Message)"; exit 1 }
 
       - name: Upload signed windows exe
@@ -205,26 +217,47 @@ jobs:
         with:
           name: signed-windows-exe
           path: stamp_album_gen2.exe
+          if-no-files-found: error
+          overwrite: true
+
+  publish-source:
+    name: Publish tested version commit and tag
+    needs: [prepare-release, build, windows-sign]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      source_sha: ${{ steps.publish.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare-release.outputs.base_sha }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-source
+          path: ${{ runner.temp }}/release-source
+      - name: Atomically publish source and tag
+        id: publish
+        env:
+          RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
+          BASE_SHA: ${{ needs.prepare-release.outputs.base_sha }}
+          TREE_SHA: ${{ needs.prepare-release.outputs.tree_sha }}
+          REUSED_SHA: ${{ needs.prepare-release.outputs.reused_sha }}
+          RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
+        run: bash scripts/publish_release_source.sh
 
   finalize-release:
     name: Create checksums, signatures and GitHub release
-    needs: [validate-release, build, windows-sign]
+    needs: [prepare-release, publish-source, windows-sign]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.validate-release.outputs.source_sha }}
-
-      - name: Set job env (CARGO_TARGET_DIR, RUSTFLAGS)
-        run: |
-          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/cargo-target" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-C lto=off -C codegen-units=16" >> $GITHUB_ENV
-
-      - name: Set job env (CARGO_TARGET_DIR, RUSTFLAGS)
-        run: |
-          echo "CARGO_TARGET_DIR=$RUNNER_TEMP/cargo-target" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-C lto=off -C codegen-units=16" >> $GITHUB_ENV
+          ref: ${{ needs.publish-source.outputs.source_sha }}
 
       - name: Download Linux artifact
         uses: actions/download-artifact@v4.1.3
@@ -232,75 +265,50 @@ jobs:
           name: stamp_artifact-ubuntu-latest
 
 
-      - name: Download signed windows artifact (if present)
+      - name: Download signed Windows artifact
+        if: needs.windows-sign.outputs.signed == 'true'
         uses: actions/download-artifact@v4.1.3
         with:
           name: signed-windows-exe
-        continue-on-error: true
-
-      - name: Normalize filenames
-        run: |
-          # Only rename when an alternate source filename exists and the normalized target is missing.
-          if [ -f stamp_album_gen2 ] && [ ! -f stamp_album_gen2-linux ]; then
-            mv stamp_album_gen2 stamp_album_gen2-linux
-          fi
-          # macOS artifact disabled temporarily (no macOS certificate available)
+      - name: Download unsigned Windows artifact
+        if: needs.windows-sign.outputs.signed != 'true'
+        uses: actions/download-artifact@v4.1.3
+        with:
+          name: stamp_artifact-windows-latest
 
       - name: Compute SHA256 for each artifact
         run: |
           for f in stamp_album_gen2.exe stamp_album_gen2-linux; do
-            if [ -f "$f" ]; then sha256sum "$f" > "$f.sha256"; fi
+            test -s "$f"
+            sha256sum "$f" > "$f.sha256"
           done
       - name: Package all binaries into a single archive
         run: |
-          TAG="${{ needs.validate-release.outputs.release_tag }}"
+          TAG="${{ needs.prepare-release.outputs.release_tag }}"
           ARCHIVE_NAME="stamp_album_gen2-${TAG}.tar.gz"
-          # include binaries and their sha256 files
-          artifacts=(stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2-linux stamp_album_gen2-linux.sha256)
-          files=()
-          for f in "${artifacts[@]}"; do
-            if [ -f "$f" ]; then files+=("$f"); fi
-          done
-          tar -czf "$ARCHIVE_NAME" "${files[@]}"
+          tar -czf "$ARCHIVE_NAME" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2-linux stamp_album_gen2-linux.sha256
           ls -lh "$ARCHIVE_NAME"
-      - name: Create GitHub Release (draft) and upload artifacts
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ needs.validate-release.outputs.release_tag }}
-          draft: true
-          fail_on_unmatched_files: false
-          files: |
-            stamp_album_gen2.exe
-            stamp_album_gen2.exe.sha256
-            stamp_album_gen2-linux
-            stamp_album_gen2-linux.sha256
-            stamp_album_gen2-*.tar.gz
+      - name: Upload assets and publish release (retry safe)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Publish GitHub Release
-        # Publish the previously-created draft release after assets uploaded to avoid
-        # immutable-release upload errors. Uses the REST API to set draft=false.
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.prepare-release.outputs.release_tag }}
         run: |
           set -euo pipefail
-          TAG="${{ needs.validate-release.outputs.release_tag }}"
-          REPO="${GITHUB_REPOSITORY}"
-          echo "Looking up release for tag $TAG in $REPO"
-          release_json=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
-          release_id=$(echo "$release_json" | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j.get("id",""))')
-          if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
-            echo "Release not found for tag $TAG; creating a draft release"
-            create_json=$(curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
-              -d "{\"tag_name\": \"$TAG\", \"name\": \"$TAG\", \"draft\": true}" \
-              "https://api.github.com/repos/$REPO/releases")
-            release_id=$(echo "$create_json" | python3 -c 'import sys, json; j=json.load(sys.stdin); print(j.get("id",""))')
-            if [ -z "$release_id" ] || [ "$release_id" = "null" ]; then
-              echo "Failed to create release for tag $TAG"; echo "$create_json" | sed -n '1,200p'; exit 1
-            fi
-            echo "Created release id=$release_id"
-          fi
-          echo "Publishing release id=$release_id"
-          curl -s -X PATCH -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
-            -d '{"draft":false}' "https://api.github.com/repos/$REPO/releases/$release_id" | sed -n '1,200p'
+          status=$(curl --silent --show-error --output "$RUNNER_TEMP/release.json" --write-out '%{http_code}' \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
+          case "$status" in
+            200)
+              draft=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["draft"])' "$RUNNER_TEMP/release.json")
+              if [ "$draft" = False ]; then
+                echo "$TAG is already published; keeping its assets unchanged."
+                exit 0
+              fi
+              ;;
+            404) gh release create "$TAG" --verify-tag --draft --title "$TAG" --generate-notes ;;
+            *) echo "Release lookup failed (HTTP $status)." >&2; exit 1 ;;
+          esac
+          gh release upload "$TAG" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 \
+            stamp_album_gen2-linux stamp_album_gen2-linux.sha256 "stamp_album_gen2-${TAG}.tar.gz" --clobber
+          gh release edit "$TAG" --draft=false
+          echo "Published $TAG" >> "$GITHUB_STEP_SUMMARY"

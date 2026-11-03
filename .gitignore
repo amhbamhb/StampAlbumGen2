@@ -1,7 +1,6 @@
 # Rust
 /target/
 **/*.rs.bk
-Cargo.lock
 Albums/**
 /UserImport/
 Alblums/
@@ -16,7 +15,9 @@ SHA256SUMS.txt
 .venv
 backups
 tools
-scripts
+scripts/*
+!scripts/prepare_release.sh
+!scripts/publish_release_source.sh
 samples/views_split_plan.md
 .gitlab-ci.yml
 verify_setup.sh
@@ -137,7 +138,6 @@ Thumbs.db
 
 # Rust build
 /target/
-Cargo.lock
 
 # VS Code extensions
 .vscode/extensions.json
@@ -211,4 +211,3 @@ download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 3.pdf
 download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 4.pdf
 download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 5.pdf
 download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 6.pdf
-
