@@ -970,14 +970,13 @@ pub fn ensure_first_run_installation() -> std::io::Result<()> {
     }
 
     // Attempt to move.
-    let dest = if cfg!(feature = "rfd") {
-        rfd::FileDialog::new()
-            .set_title("Select Destination Folder")
-            .set_directory(default_dest.parent().unwrap_or(Path::new(".")))
-            .pick_folder()
-    } else {
-        None
-    };
+    #[cfg(feature = "rfd")]
+    let dest = rfd::FileDialog::new()
+        .set_title("Select Destination Folder")
+        .set_directory(default_dest.parent().unwrap_or(Path::new(".")))
+        .pick_folder();
+    #[cfg(not(feature = "rfd"))]
+    let dest: Option<PathBuf> = None;
 
     if let Some(selected_path) = dest {
         let dest_path =

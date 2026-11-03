@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ensure_first_run_installation
-resource: src/setup.rs#L945-L1002
+resource: src/setup.rs#L945-L1005
 generated:
   by: okf-rs/0.4.0
 relationships:
