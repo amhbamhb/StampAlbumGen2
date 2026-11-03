@@ -144,3 +144,8 @@ no source input is moved or deleted.
 See the [baseline execution report](../testing/ALBUMEASY_CORE_V1_BASELINE.md)
 for frozen identities, coverage, tolerances and limitations, and the
 [checker source](../../tests/albumeasy_baseline.rs) for assertions.
+
+For the separate page-size command fixtures, measurements, configuration mapping
+and manual reproduction commands, see
+[ALBUM_PAGES_SIZE conformance](../testing/ALBUMEASY_PAGE_SIZE_V1.md).
+That bundle is not yet wired into the core-specific Cargo checker.

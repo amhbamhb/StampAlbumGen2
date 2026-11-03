@@ -2,8 +2,8 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 6
-**Status:** Draft plan; T003 baseline-checker increment authorized; native implementation not started
+**Revision:** 7
+**Status:** Draft plan; bounded T003 checker/page-size fixtures authorized; native implementation not started
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current planning checkpoint — command inventory first
@@ -18,6 +18,14 @@ The integration branch is `development/native-pdf`, created from
 T003 sub-issue is #56, branch `issue/56-t003-baseline-drift-checker`.
 The maintainer reports visual and 100%-scale print acceptance of core-v1;
 Windows execution remains unverified.
+
+The next approved baby step (#58) verifies `ALBUM_PAGES_SIZE` only: installed-help
+semantics, existing configuration mapping and an isolated
+[page-size-v1 fixture bundle/report](../testing/ALBUMEASY_PAGE_SIZE_V1.md).
+Four valid dimensions and two explicit failure cases were measured without
+renderer/application changes. The findings include AlbumEasy's zero exit code on
+semantic errors and the current emitter's one-decimal precision mismatch with
+fractional configuration/layout values. Neither issue is silently fixed here.
 
 Start with the supplied [AlbumEasy 4.2.1 manual](../AlbumEasy_4.2.1.pdf), not just
 the commands this application currently emits. The new
@@ -515,7 +523,7 @@ impacts and discovered logic risks in `docs/testing/`.
    approval does not mean every AlbumEasy command is supported.
 8. Revisit estimates when the pinned command matrix or enhancement scope changes.
 
-### Recorded execution workflow — approved for the T003 checker increment only
+### Recorded execution workflow — approved for bounded T003 increments only
 
 - Use GitHub for this roadmap, as explicitly requested: one parent issue (epic)
   per phase and a sub-issue/branch per T-task. P-items group tasks; they do not
@@ -557,3 +565,4 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 5: reference version and core baseline | Selected 4.5.0 as primary with 4.2.1 legacy coverage; installed help resolves several alleged syntax gaps. Added core-v1 TXT and measured reference expectations without application code changes. | Preserve frozen reference; extend the versioned command matrix and add separate command-family fixtures. |
 | 2026-11-03 | Revision 6: approved T003 baby step | Maintainer accepted visual/100%-scale print baseline and selected `development/native-pdf`. Added Cargo checksum, geometry/text and strict same-renderer drift checks; two fresh AlbumEasy renders match the frozen reference. Epic #55 / sub-issue #56. Native application/config changes remain paused. | Commit and merge validated checker locally, then stop for maintainer review. Full T003 and command/config contracts remain open. |
 | 2026-11-03 | T003 extraction-standard follow-up (#57) | Maintainer requested existing `oxidize-pdf` for baseline text extraction instead of `pdftotext`; all 20 text assertions preserved, with extraction failure/page-count/truncation gates. MuPDF geometry/trace checks retained. Six explicit checker tests pass. | Stop for review; native application/config changes and broader import-parser migration remain outside this increment. |
+| 2026-11-03 | Revision 7: page-size-only conformance (#58) | Verified A4 portrait/landscape, exact Letter and fractional dimensions; captured four references and two missing-input diagnostics. Mapped existing config precedence/defaults/emission, recording precision and exit-code risks. No renderer/application changes. | Preserve separate page-size-v1 bundle and stop for review. Full T001/T003/T036/T046 remain incomplete; no generalized fixture runner or native renderer is claimed. |
