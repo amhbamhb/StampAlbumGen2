@@ -3829,6 +3829,7 @@ dependencies = [
  "sha2 0.11.1",
  "stamp_album_db",
  "strsim",
+ "svgtypes",
  "tempfile",
  "tiny-skia",
  "tiny_http",

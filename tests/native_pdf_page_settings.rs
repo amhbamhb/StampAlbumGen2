@@ -2,8 +2,9 @@ use oxidize_pdf::parser::PdfDocument;
 use serde_json::Value;
 use stamp_album_gen2::native_pdf::{
     commands::page::{
-        album_pages_margins::Margins, album_pages_marginse::EvenMargins,
-        album_pages_size::PageSize, album_pages_spacing::Spacing,
+        album_pages_border::PageBorder, album_pages_margins::Margins,
+        album_pages_marginse::EvenMargins, album_pages_size::PageSize,
+        album_pages_spacing::Spacing,
     },
     document::PageSettings,
     renderer::write_page_geometry_proof,
@@ -40,6 +41,7 @@ fn settings(source: &str) -> Result<PageSettings> {
         Margins::parse(&args(source, "ALBUM_PAGES_MARGINS")?)?,
         Spacing::parse(&args(source, "ALBUM_PAGES_SPACING")?)?,
     );
+    settings.set_border(PageBorder::parse(&[0.2, 0.0, 0.0, 0.0])?);
     if source
         .lines()
         .any(|line| line.starts_with("ALBUM_PAGES_MARGINSE "))
@@ -104,7 +106,7 @@ fn margin_and_even_page_bounds_match_frozen_expectations() -> Result<()> {
             .iter()
             .enumerate()
         {
-            let layout = settings.resolve(index + 1, 0.2)?;
+            let layout = settings.resolve(index + 1)?;
             let border = layout.margin_bounds.inset(0.1, 0.1)?;
             for (actual, wanted) in [border.left, border.bottom, border.right, border.top]
                 .iter()
@@ -127,7 +129,7 @@ fn spacing_state_matches_reference_content_anchors_and_gaps() -> Result<()> {
         }
         let source = fs::read_to_string(root.join(case["input"].as_str().ok_or("input")?))?;
         let settings = settings(&source)?;
-        let layout = settings.resolve(1, 0.2)?;
+        let layout = settings.resolve(1)?;
         let frames = case["frames_mm"].as_array().ok_or("frames")?;
         near(
             layout.content_bounds.left,
@@ -175,11 +177,12 @@ fn invalid_commands_geometry_and_output_fail_explicitly() -> Result<()> {
     assert!(Spacing::parse(&[0.0, 0.0]).is_ok());
     let source = fs::read_to_string(fixture("page-size-v1").join("a4-portrait.txt"))?;
     let mut settings = settings(&source)?;
-    assert!(settings.resolve(0, 0.2).is_err());
-    assert!(settings.resolve(1, -0.2).is_err());
-    assert!(settings.resolve(1, f64::NAN).is_err());
+    assert!(settings.resolve(0).is_err());
+    let bounds = settings.resolve(1)?.margin_bounds;
+    assert!(bounds.inset(-0.2, -0.2).is_err());
+    assert!(bounds.inset(f64::NAN, f64::NAN).is_err());
     settings.set_even_margins(EvenMargins::parse(&[200.0, 200.0, 15.0, 15.0])?);
-    assert!(settings.resolve(2, 0.2).is_err());
+    assert!(settings.resolve(2).is_err());
     let temporary = tempfile::tempdir()?;
     let output = temporary.path().join("not-created.pdf");
     assert!(write_page_geometry_proof(&settings, 2, &output).is_err());

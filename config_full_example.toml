@@ -26,8 +26,13 @@ page_border_outer = 0.5
 page_border_inner1 = 0.1
 page_border_inner2 = 0.0
 page_border_spacing = 3.0
+# Horizontal within-page spacing (mm), including left/right content insets.
 album_pages_spacing_h = 0.0
+# Vertical gap between elements (mm), not a page-edge inset.
 album_pages_spacing_v = 0.0
+# Native border colour; legacy root form is supported, [colors] wins if present.
+# Opaque SVG named colours only; omitted means black in the native proof.
+color_album_border = "darkblue"
 
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
@@ -256,3 +261,11 @@ catalog_family_options = [
 	"un|Unificato|169053",
 	"col|Colnect codes|445975"
 ]
+
+# Optional native PDF proof setting only; the main application does not use it.
+# Keep this table after other settings when uncommenting it in this flat example.
+# [page.even_margins]
+# left_mm = 10.0
+# right_mm = 10.0
+# top_mm = 10.0
+# bottom_mm = 10.0

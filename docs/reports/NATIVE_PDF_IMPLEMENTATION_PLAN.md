@@ -2,11 +2,31 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 10
-**Status:** Incremental implementation authorized; isolated native page-settings slice verified; production backend not integrated
+**Revision:** 14
+**Status:** Native page settings, borders/colour and explicit user-config bridge verified; previous commit blocker resolved and local checkpoint authorized; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Commit checkpoint (#65)
+
+The maintainer requested two commits: fix the acceptance regression first, then
+commit the accumulated native border/configuration/colour work. The regression
+was a stale assertion, not a renderer failure: `render_pair` intentionally
+reuses `build/reconstructed/Brazil.pdf`. The test now captures original PDF
+bytes before editing and checks changed contents, retaining all raster checks.
+Commit `333c398b` records this fix. The repository pre-commit hook also staged
+the pending direct `svgtypes` declaration from Cargo.toml in that commit.
+
+All **26 external-backend tests**, including every opt-in test, passed with the
+real AlbumEasy launcher. Reference/reconstructed output had **85 identical
+raster pages**; the edit changed page 1 and preserved all 84 others. Original
+source checksums and placement/database invariants passed. The previous failure
+records below are historical and no longer block the checkpoint.
+
+Current branch is `fix/native-pdf-commit-checkpoint`. The second commit captures
+#62/#63/#64 together, excluding the ignored user `config-pdf.toml` and unrelated
+autosave. No push or production integration is authorized by this checkpoint.
 
 The final goal is to **replace external AlbumEasy PDF generation with internal
 PDF generation**. The maintainer now authorizes small vertical slices: verify a
@@ -14,7 +34,9 @@ command's semantics, implement a reusable compiled module, compare with frozen
 fixtures, validate/commit/merge locally, then stop for review. One file per
 AlbumEasy command, grouped by command family, is the approved structure.
 This supersedes fixture-only work for approved slices, not all remaining gates.
-Production backend/CLI/UI/config changes remain unapproved in this increment.
+Production backend/CLI/UI changes remain unapproved in this increment. The
+maintainer has separately approved a local `config-pdf.toml` bridge for the
+isolated native proof, without changing the main `config.toml` loader.
 The integration branch is `development/native-pdf`, created from
 `docs/albumeasy-421-command-inventory`. Phase 1 epic is GitHub #55; the bounded
 T003 sub-issue is #56, branch `issue/56-t003-baseline-drift-checker`.
@@ -53,27 +75,177 @@ settings are explicit; no global config is read or silently defaulted.
 src/native_pdf/
   mod.rs
   units.rs
+  colour.rs
   document.rs
   renderer.rs
   commands/
     mod.rs
+    colour/
+      mod.rs
+      colour_album_border.rs
     page/
       mod.rs
       album_pages_size.rs
       album_pages_margins.rs
       album_pages_marginse.rs
       album_pages_spacing.rs
+      album_pages_border.rs
 ```
+
+The shared native folder also contains `config.rs`, a per-run configuration
+adapter, not an AlbumEasy command module.
 
 Use the [native proof instructions](../guides/ALBUMEASY_BASELINE_MANUAL_CLI.md#native-rust-page-settings-proof).
 The example renders three geometry-only pages (margin border/content guide);
-text, rows, images, full border semantics, TXT export and application wiring
-are not implemented. Even-page selection uses one-based physical page numbers;
+text, rows, images, decorative borders, other colour commands, TXT export and
+application wiring are not implemented. Even-page selection uses one-based physical page numbers;
 custom footer/parity semantics remain unverified. Vertical spacing is
 inter-element state, not an implicit top/bottom inset.
 
 T004/T005/T006/T007 have partial evidence only; none is declared complete.
-Do not treat four command modules as complete command-language coverage.
+Do not treat six command modules as complete command-language coverage.
+
+#### #64 page-border colour and configuration
+
+The next compiled command is `COLOUR_ALBUM_BORDER` (including the
+`COLOR_ALBUM_BORDER` spelling alias), in its own file under `commands/colour/`.
+A small shared `colour.rs` represents opaque SVG named RGB colours using the
+existing transitive `svgtypes` parser, now declared directly. No new package or
+version is introduced. Defaults are explicitly black when the command/config
+key is absent, matching the reference renderer.
+
+Six valid references (seven pages, 21 border strokes) and six failure inputs
+live in `tests/fixtures/albumeasy/border-colour-v1/`. Each valid case has an
+independently repeated identical page trace. Cases verify black default,
+case-insensitive darkblue, green via alias, lightgrey, white and a final navy
+command after page starts. AlbumEasy applies the last border colour globally,
+including preceding pages. A future native TXT interpreter must retain that
+global behavior; the current test-only fixture adapter is not a new importer.
+
+**Compatibility discovery:** AlbumEasy 4.5 rejected bare hex as a comment/
+missing-parenthesis error and quoted hex as an invalid colour name. Native
+code therefore supports opaque named colours only for this command and rejects
+hex/RGB functions/transparency explicitly. Previous template hex-support claims
+are corrected, without changing production TXT emission. A future hex extension
+would need an explicit compatibility policy rather than silent divergent output.
+
+The existing `[colors].color_album_border` now reaches native strokes through
+the same snapshot; `[colors]` overrides a legacy root key with reporting.
+The local `config-pdf.toml` value remains `"darkblue"` and now visibly affects
+output. Both templates/inventory/manual are updated. Other colour keys remain
+unapplied; the current full template now has 240 unapplied settings.
+The diagnostic guide is explicitly reset to black, including when borders are
+disabled. Colour does not alter any geometry or reserve additional space.
+
+Four new tests verify frozen identities/text, command negatives, config
+precedence/redaction, rendered RGB and unchanged path geometry. Native RGB is
+serialized by oxidize-pdf to three decimals: use an explicit 0.00051 component
+tolerance (less than one 8-bit channel step), while parsed values match the
+reference to 0.00001 and geometry retains 0.01 mm. These are DeviceRGB checks,
+not ICC/display/print colour certification. Tests and execution details are
+recorded in the [border report follow-up](../testing/ALBUMEASY_BORDER_V1.md#64-native-border-colour-follow-up).
+Full roadmap tasks remain open. No production config/CLI/UI/backend routing
+changes or diagram changes are introduced.
+
+Branch `issue/64-native-border-colour` carries the prior uncommitted #62/#63
+dependencies. The earlier opt-in Brazil path assertion still blocks committing/
+merging; no unrelated fix or push is made.
+
+#### #63 explicit user-config bridge
+
+The maintainer requested introducing configuration now, copied from the template
+as local `config-pdf.toml`, eventually renamed/reused as `config.toml`.
+`src/native_pdf/config.rs` now loads an explicit `Path` into the compiled command
+types. This completes the bounded bridge, not full T046 or backend integration.
+
+- Current working branch: `issue/63-native-pdf-config`, carrying the uncommitted
+  #62 border dependency. No commit/merge/push; the prior unrelated opt-in
+  Brazil assertion still blocks the commit quality gate.
+- `config-pdf.toml` was copied from the template, remains Git-ignored and is
+  intentionally not embedded/committed. Templates remain the shipped reference.
+  The user's main `config.toml`, credentials, albums and autosave are untouched.
+- Required size, base margins and spacing use existing names; border is an
+  optional all-or-none group. `[page]` overrides stale root keys just as in the
+  current app. Invalid winning values fail. Values remain unrounded `f64` mm.
+- Optional native-only `[page.even_margins]` requires `left_mm`, `right_mm`,
+  `top_mm`, `bottom_mm`; no table means no mirroring. Both page parities and
+  stroke footprints are validated at load. The main `Config` struct is not
+  extended until production integration is approved.
+- No global searches, implicit defaults, environment/album overlays or imported
+  source merging occur. This avoids coupling to the current loader's `f32`
+  conversions and fallback/logging behavior. No alternative production importer
+  is introduced. Parsed state goes directly to existing command/renderer APIs.
+- Every unconsumed key is returned in a sorted `unapplied_keys` list; overridden
+  root names are returned separately. The example warns that only page geometry
+  is applied (241 other template settings currently unsupported). Neither
+  parse diagnostics nor reports expose configuration values/source snippets.
+- The example accepts `<new-output.pdf> [config-path]`; its default is exactly
+  `config-pdf.toml` in the working directory. Editing/reloading changes output;
+  an existing job retains its snapshot. Output overwrite refusal is preserved.
+- Both templates document the native-only even-margin table. Spacing comments
+  now describe measured within-page behavior; existing numeric defaults remain.
+  See the [manual guide](../guides/ALBUMEASY_BASELINE_MANUAL_CLI.md) and
+  [parameter inventory](../guides/CONFIG_PARAMETERS_INVENTORY.md).
+
+Verification: **7 configuration + 10 native command + 6 core tests passed**,
+including actual configured stroke coordinates/widths on three pages to 0.01 mm.
+The config tests load both templates, cover section/root precedence, per-run
+snapshots/user edits, missing/malformed/type/numeric/geometry errors, redacted
+diagnostics and incomplete optional groups. Template output and an explicit
+custom path containing spaces were executed manually; invalid config creates no
+PDF and repeated output is refused without changing its SHA256.
+Existing main-config unit tests: **10 passed**; external-album default suite:
+**23 passed, 3 unrelated opt-in tests ignored**. Total: **56 passed** across
+the focused native/core and existing suites.
+
+Exact focused commands:
+
+```bash
+ALBUMEASY_BASELINE_CANDIDATE=/home/ray/.copilot/session-state/80e32404-199a-4106-9649-659ef9662bab/files/t003-core-verification-6RHMrG/first/album.pdf cargo test --test native_pdf_config --test native_pdf_page_settings --test native_pdf_page_border --test albumeasy_baseline -- --include-ignored --nocapture
+cargo clippy --test native_pdf_config --test native_pdf_page_settings --test native_pdf_page_border --example native_pdf_page_settings
+cargo check --lib --example native_pdf_page_settings --target x86_64-pc-windows-gnu --no-default-features
+cargo test --lib config::tests -- --nocapture
+cargo test --test external_album_backend -- --nocapture
+```
+
+Clippy and Windows GNU cross-compilation pass with existing application warnings.
+Windows execution/default-feature build and physical printing remain unverified.
+Detailed commands/logs, test impacts and traceability remain in session
+`files/native-config/`; the prior #62 opt-in failure is not suppressed or patched.
+No database migration, ingest, country processing, production runtime flow or
+diagram change is introduced. Traceability: partial REQ-001/006/007/008/009/014,
+T005/T006/T007/T046; all full tasks stay open. The next command should consume this
+same explicit snapshot rather than independently reread global configuration.
+
+#### #62 border verification and implementation record
+
+The next compiled slice implements numeric `ALBUM_PAGES_BORDER` in its own
+command file, replacing the proof's hardcoded border with explicit border state.
+The optional command defaults to no border; existing page-settings tests now
+explicitly request their original 0.2 mm border. The example demonstrates a
+triple border. The isolated resolver now obtains occupancy from border state
+instead of accepting an unrelated scalar. No production caller is affected.
+
+The [border-v1 report](../testing/ALBUMEASY_BORDER_V1.md) records ten frozen,
+independently repeated references, fifteen measured strokes, ten text anchors
+and a missing-argument failure. It captures the legacy three-argument overload,
+disabled strokes and AlbumEasy's distinct drawing-slot/content-gap behavior.
+Native paths and content guides match to 0.01 mm. Four new tests and six existing
+native tests pass, as do all six core tests and 23 default external-album tests.
+Clippy and Windows GNU library/example compilation pass with existing warnings.
+The report includes commands, filesystem/database impact and the error inventory.
+
+Branch `issue/62-native-page-border` is intentionally **not committed or merged**:
+an additionally enabled, unrelated real-Brazil opt-in test fails at its existing
+generated-PDF-path inequality assertion after comparing 85 identical reference/
+reconstructed raster pages. Its initial missing `ALBUMEASY_TEST_CLI` environment
+was corrected before retrying. No unrelated code/test was changed to force green.
+The commit quality gate therefore remains blocked. No push occurred.
+
+Traceability remains partial T004/T005/T006/T007 and REQ-001/002/006/007/009;
+colour/decorative borders, mid-document state transitions, TXT grammar,
+production configuration integration and Windows runtime/printing remain open.
+The historical #61 record below describes the earlier fixed-border proof.
 
 #### #61 verification and implementation record
 
@@ -348,7 +520,7 @@ abstractions. Reuse existing modules wherever they already own the behavior.
 - [ ] T003 [Plan:1.1] Capture deterministic baseline TXT and fresh AlbumEasy PDFs for representative ordinary albums; retain existing imported-album fixtures as regression references. The initial frozen `tests/fixtures/albumeasy/core-v1/album.txt` and `expected.json` establish basic geometry/text/row comparisons; see `docs/testing/ALBUMEASY_CORE_V1_BASELINE.md` for measured 4.5.0 reference evidence. Full command-family, ordinary-generated, asset and native comparisons remain open. Never mutate production albums.
 - [ ] T004 [Plan:1.2] Verify the installed `oxidize-pdf` generation API and license, font embedding/measurement, Unicode, images/transparency, page sizes, metadata and write errors. Record supported/unsupported features and exact limitations in this document.
 - [ ] T005 [Plan:1.2] Build an isolated proof page with known millimetre dimensions, a stamp image, caption, heading and border. Verify PDF dimensions, text extraction and a 100%-scale printed ruler.
-- [ ] T046 [Plan:1.3] Complete and approve the K1–K12 configuration contract in `docs/reports/ALBUMEASY_4_2_1_APPLICATION_GAPS.md`: map local `config.toml`, `src/config.rs`, `config_template.toml`, `config_full_example.toml` and `docs/guides/CONFIG_PARAMETERS_INVENTORY.md` to actual command/layout semantics, defaults, units, alias precedence and album/per-run overrides. Resolve image-padding/stretch/aspect, header/title and row-field naming conflicts before model design; preserve credentials and keep the local config untouched. Define fixture expectations and migration decisions, not implementation. ID appended for stability; planning precedes Phase 2.
+- [ ] T046 [Plan:1.3] Complete and approve the K1–K12 configuration contract in `docs/reports/ALBUMEASY_4_2_1_APPLICATION_GAPS.md`: map local `config.toml`, `src/config.rs`, `config_template.toml`, `config_full_example.toml` and `docs/guides/CONFIG_PARAMETERS_INVENTORY.md` to actual command/layout semantics, defaults, units, alias precedence and album/per-run overrides. Resolve image-padding/stretch/aspect, header/title and row-field naming conflicts before model design; preserve credentials and keep the local config untouched. #63 implements only the separately authorized explicit native page-settings adapter and tests; broad contracts, overlays and migration decisions remain open. ID appended for stability; planning precedes broad Phase 2 integration.
 
 **Exit gate:** Command/feature and configuration contracts are approved; native proof page opens and prints
 correctly; required missing capabilities are identified before the larger refactor.
@@ -359,7 +531,7 @@ Stop for a maintainer decision if the library cannot meet a core requirement.
 **Plan P2.1:** Establish an authoritative editable document and resolved layout, with native-only features and provenance.
 **Plan P2.2:** Move layout decisions out of TXT emission without changing behavior.
 
-- [ ] T006 [Plan:2.1] Implement shared document/layout under approved `src/native_pdf/document.rs`, with one file per AlbumEasy command grouped under `commands/`: album/page settings, rows, placements, text styles, title compositions, borders and resolved assets. #61 implements explicit page settings only. Preserve stable element identity, imported source locations and document revision; persist native-only settings additively without discarding command provenance. Resolve one effective config snapshot per run; explicit imported settings remain authoritative unless a recorded user override changes them.
+- [ ] T006 [Plan:2.1] Implement shared document/layout under approved `src/native_pdf/document.rs`, with one file per AlbumEasy command grouped under `commands/`: album/page settings, rows, placements, text styles, title compositions, borders and resolved assets. #61 implements explicit page settings, #62 adds numeric borders, and #63 adds a separate user-config-to-settings snapshot. Preserve stable element identity, imported source locations and document revision; persist native-only settings additively without discarding command provenance. Resolve one effective config snapshot per run; explicit imported settings remain authoritative unless a recorded user override changes them.
 - [ ] T007 [Plan:2.1] Define canonical units, coordinate origin, rounding, page/margin bounds and physical-versus-presentation boxes. #61 implements `src/native_pdf/units.rs` with unrounded f64 mm, PDF bottom-left coordinates, point conversion and validated page/margin/content bounds; wider precision/export/box policies remain open.
 - [ ] T008 [Plan:2.2] Establish a shared font measurement/wrapping policy. Map current AlbumEasy fonts explicitly to licensed, available fonts; specify embedding and substitution behavior. Never silently change fonts.
 - [ ] T009 [Plan:2.2] Extract ordering, stamp selection, row packing, spacing modes, caption heights, page breaks, even-page margins and image-box sizing from the active generator into the shared builder, reusing existing helpers.

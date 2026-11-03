@@ -1,3 +1,4 @@
+pub mod colour;
 pub mod page;
 
 use super::Result;

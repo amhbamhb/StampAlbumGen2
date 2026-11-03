@@ -32,12 +32,21 @@ page_border_inner1 = 0.5
 page_border_inner2 = 0.1
 # page_border_spacing : gap between border lines
 page_border_spacing = 1.0
-# Gap between album pages when rendering multiple pages per output sheet
+# Horizontal within-page spacing (mm), including left/right content insets
 album_pages_spacing_h = 3.0
-# Gap between album pages when rendering multiple pages per output sheet
+# Vertical gap between elements on a page (mm), not a page-edge inset
 album_pages_spacing_v = 3.0
 # Maximum vertical spacer emitted between sections before a new page is preferred
 max_page_vspace_mm = 10.0
+
+# Optional native PDF proof setting (not yet used by the main application).
+# Uncomment the entire table for explicit even physical-page margins (mm).
+# Without it, every page uses the base margins above; no automatic mirroring.
+# [page.even_margins]
+# left_mm = 10.0
+# right_mm = 10.0
+# top_mm = 10.0
+# bottom_mm = 10.0
 
 ###################################
 # Header / Footer
@@ -261,13 +270,14 @@ series_order = "first_date"
 #   black, white, red, blue, darkblue, navy, green, darkgreen,
 #   teal, purple, maroon, olive, gray, silver, orange, gold,
 #   brown, cyan, magenta, yellow
-# - Hex colors are also supported:
-#   #RRGGBB (example: #1E4A7A)
-#   #RGB    (short form, example: #F80)
+# - Native page borders use opaque SVG named colors (case-insensitive).
+# - AlbumEasy 4.5 border probes rejected bare and quoted hex forms.
+#   Use named colors here; hex/RGB functions/transparency are not supported
+#   by the native COLOUR_ALBUM_BORDER command.
 #
 # Tips:
 # - Keep quotes around values in TOML.
-# - Use hex colors for exact, repeatable output between systems.
+# - Native color_album_border is active; other native color commands are pending.
 # - Start with border/text colors first, then tune title/header/footer.
 color_album_border = "darkblue"
 ## Album title, header, footer, and margin text colors

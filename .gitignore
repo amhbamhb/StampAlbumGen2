@@ -156,6 +156,7 @@ artifacts/stamp_album_gen2.exe.sha256
 
 # Local runtime configs and credentials (templates remain tracked)
 config.toml
+/config-pdf.toml
 /artifacts/config.toml
 /Albums/*/config.toml
 /Albums/**/config.toml

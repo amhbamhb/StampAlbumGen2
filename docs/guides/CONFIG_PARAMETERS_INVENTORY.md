@@ -2,6 +2,47 @@
 
 ## Complete Config Parameters from config.rs (UPDATED)
 
+### Isolated native PDF configuration
+
+The native proof now reads a separate, local Git-ignored `config-pdf.toml`,
+copied from `config_template.toml`. This is not a switch in the main application:
+its existing `config.toml` loader and defaults are unchanged. See the
+[manual native proof guide](ALBUMEASY_BASELINE_MANUAL_CLI.md#user-configuration-to-command-state).
+
+The [native bridge](../../src/native_pdf/config.rs) deliberately does not call
+the global `Config` loader: it reads only the explicit path, retains `f64`
+millimetres, validates required values without silent defaults and never logs
+configuration source/credential values. Both `[page]` and legacy root keys are
+accepted; `[page]` wins with overridden names reported. `[colors]` likewise
+overrides the root `color_album_border` value.
+
+| Native input | Command | Policy |
+|---|---|---|
+| `album_page_width_mm`, `album_page_height_mm` | `ALBUM_PAGES_SIZE` | Both required, finite positive mm |
+| `page_left_margin_mm`, `page_right_margin_mm`, `page_top_margin_mm`, `page_bottom_margin_mm` | `ALBUM_PAGES_MARGINS` | All required, finite nonnegative mm |
+| `album_pages_spacing_h`, `album_pages_spacing_v` | `ALBUM_PAGES_SPACING` | Both required; within-page gaps, not between-sheet spacing |
+| `page_border_outer`, `page_border_inner1`, `page_border_inner2`, `page_border_spacing` | `ALBUM_PAGES_BORDER` | All four or none; absent means no border; widths zero disable strokes |
+| `[page.even_margins]` with `left_mm`, `right_mm`, `top_mm`, `bottom_mm` | `ALBUM_PAGES_MARGINSE` | Native-only extension; table optional, all four values required if present |
+| `[colors].color_album_border` or legacy root `color_album_border` | `COLOUR_ALBUM_BORDER` / `COLOR_ALBUM_BORDER` | Optional opaque SVG named colour string; absent means black; shared by every border stroke/page |
+
+Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
+names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
+rejected both bare and quoted hex forms, correcting older template claims.
+The fixed diagnostic guide remains black. Other colour keys are still unapplied.
+The existing main `Config.color_album_border` field/default/emitter is unchanged;
+the new native bridge consumes its existing spelling directly.
+
+No automatic even-page mirroring is inferred. All geometry must remain usable;
+both base and even-page bounds are validated when loading. Other template
+settings are returned as unapplied key names and summarized by the example;
+they are not silently advertised as supported native features. The two
+templates contain commented examples of the optional even-margin table.
+
+No new fields were added to the main `Config` struct: the new table currently
+belongs only to the isolated native configuration bridge. Its application/UI,
+album-overlay and imported-command integration remains pending. Renaming the
+file later does not require a key migration; pass the intended path explicitly.
+
 ### Site Account Credentials
 
 Set `username` and `password` under `[stampworld]` and `[colnect]` in the
@@ -63,8 +104,8 @@ AlbumEasy process itself. An unchanged pre-existing PDF is not accepted.
 | `page_bottom_margin_mm` | f32 | 10.0 | Bottom page margin |
 | `page_left_margin_mm` | f32 | 10.0 | Left page margin |
 | `page_right_margin_mm` | f32 | 10.0 | Right page margin |
-| `album_pages_spacing_h` | f32 | 0.0 | Horizontal spacing between album pages |
-| `album_pages_spacing_v` | f32 | - | Vertical spacing between album pages |
+| `album_pages_spacing_h` | f32 | 0.0 | Horizontal within-page spacing, including content insets |
+| `album_pages_spacing_v` | f32 | - | Vertical gap between elements on a page |
 | `page_fit_conservative_buffer_mm` | f32 | 11.0 | Buffer reserved at bottom of page |
 | `usable_height_padding_mm` | f32 | - | Extra padding subtracted from usable height |
 | `allow_single_large_stamp_per_page` | bool | false | Allow single large stamp to occupy full page |

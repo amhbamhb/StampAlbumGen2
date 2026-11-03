@@ -1,7 +1,9 @@
 use super::{
+    commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
-        album_pages_margins::Margins, album_pages_marginse::EvenMargins,
-        album_pages_size::PageSize, album_pages_spacing::Spacing,
+        album_pages_border::PageBorder, album_pages_margins::Margins,
+        album_pages_marginse::EvenMargins, album_pages_size::PageSize,
+        album_pages_spacing::Spacing,
     },
     Result,
 };
@@ -60,6 +62,8 @@ pub struct PageSettings {
     margins: Margins,
     even_margins: Option<EvenMargins>,
     spacing: Spacing,
+    border: PageBorder,
+    border_colour: AlbumBorderColour,
 }
 
 impl PageSettings {
@@ -69,6 +73,8 @@ impl PageSettings {
             margins,
             even_margins: None,
             spacing,
+            border: PageBorder::default(),
+            border_colour: AlbumBorderColour::default(),
         }
     }
 
@@ -80,9 +86,24 @@ impl PageSettings {
         self.spacing
     }
 
+    pub fn set_border(&mut self, border: PageBorder) {
+        self.border = border;
+    }
+
+    pub fn border(&self) -> PageBorder {
+        self.border
+    }
+
+    pub fn set_border_colour(&mut self, colour: AlbumBorderColour) {
+        self.border_colour = colour;
+    }
+
+    pub fn border_colour(&self) -> AlbumBorderColour {
+        self.border_colour
+    }
+
     /// Physical page numbers are one-based; no footer-label parity is inferred.
-    /// Border occupancy is explicit until ALBUM_PAGES_BORDER is implemented.
-    pub fn resolve(&self, page_number: usize, border_occupancy_mm: f64) -> Result<PageLayout> {
+    pub fn resolve(&self, page_number: usize) -> Result<PageLayout> {
         if page_number == 0 {
             return Err("Native PDF page number must be one-based".into());
         }
@@ -97,6 +118,8 @@ impl PageSettings {
             top: self.size.height_mm() - margins.top,
         };
         margin_bounds.validate()?;
+        self.border.strokes(margin_bounds)?;
+        let border_occupancy_mm = self.border.occupancy_mm();
         // Vertical spacing belongs between elements, not at page edges.
         let content_bounds = margin_bounds
             .inset(border_occupancy_mm, border_occupancy_mm)?
