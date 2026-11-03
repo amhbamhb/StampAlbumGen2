@@ -44,7 +44,9 @@ refactor-plans/diagrams/**
 /Archive/
 Archive/
 Archive/**
-Archives/*.rs
+/Archives/
+Archives/
+Archives/**
 examples/
 /examples/
 examples/*
