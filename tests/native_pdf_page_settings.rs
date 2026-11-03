@@ -1,15 +1,18 @@
 use oxidize_pdf::parser::PdfDocument;
 use serde_json::Value;
 use stamp_album_gen2::native_pdf::{
+    commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder, album_pages_margins::Margins,
         album_pages_marginse::EvenMargins, album_pages_size::PageSize,
         album_pages_spacing::Spacing,
     },
     document::PageSettings,
-    renderer::write_page_geometry_proof,
     units::{mm_to_points, points_to_mm},
 };
+#[path = "support/native_pdf_proof.rs"]
+mod proof;
+use proof::write_page_geometry_proof;
 use std::{error::Error, fs, path::Path};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -40,8 +43,9 @@ fn settings(source: &str) -> Result<PageSettings> {
         PageSize::parse(&args(source, "ALBUM_PAGES_SIZE")?)?,
         Margins::parse(&args(source, "ALBUM_PAGES_MARGINS")?)?,
         Spacing::parse(&args(source, "ALBUM_PAGES_SPACING")?)?,
+        PageBorder::parse(&[0.2, 0.0, 0.0, 0.0])?,
+        AlbumBorderColour::parse(&["black"])?,
     );
-    settings.set_border(PageBorder::parse(&[0.2, 0.0, 0.0, 0.0])?);
     if source
         .lines()
         .any(|line| line.starts_with("ALBUM_PAGES_MARGINSE "))

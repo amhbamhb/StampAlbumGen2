@@ -279,13 +279,14 @@ series_order = "first_date"
 # - Keep quotes around values in TOML.
 # - Native color_album_border is active; other native color commands are pending.
 # - Start with border/text colors first, then tune title/header/footer.
-color_album_border = "darkblue"
+# Shared legacy colour; native per-line settings below take precedence.
+color_album_border = "black"
 ## Album title, header, footer, and margin text colors
 color_album_footer = "darkblue"
 # Album page header text color 
 color_album_header = "darkblue"
 # Album title text color
-color_album_title = "darkblue"
+color_album_title = "black"
 # Album margin text color
 color_album_margin_txt = "darkblue"
 # Stamp page Border color
@@ -1136,3 +1137,26 @@ detailed_page_fit = false            # Enables detailed page-fit diagnostics
 detailed_page_fit_diagnostics = false # Emits extra page-fit debug diagnostics
 # Enables placeholder-image debug diagnostics
 emit_placeholder_diagnostics = false # Emits placeholder-image debug diagnostics
+
+# Native diagnostic proof only; not consumed by the main application.
+# All fields are required by the native loader, even when the guide is disabled.
+[native_pdf.proof]
+page_count = 3
+guide_enabled = true
+guide_width_mm = 0.1
+guide_colour = "black" # Opaque SVG named colour, independent of album border colour.
+
+# Native per-line colours. Edit each independently; all three are required.
+# Without this table, the explicit color_album_border value colours all lines.
+[native_pdf.border_colours]
+outer = "black"
+inner1 = "black"
+inner2 = "black"
+
+# Native repeating page title. Disabled by default to retain geometry-only proof.
+# Font/size use [header].album_pages_title_font/size; colour uses [colors].color_album_title.
+[native_pdf.title]
+enabled = false
+text = "Stamp Album"
+vspace_after_mm = 0.0
+minimum_height_mm = 0.0 # Automatic measured height; positive values reserve at least this height.

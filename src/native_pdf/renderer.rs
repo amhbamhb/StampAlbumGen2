@@ -1,19 +1,21 @@
-use super::{document::PageSettings, units::mm_to_points, Result};
+use super::{document::PageSettings, proof::GeometryProofSettings, units::mm_to_points, Result};
 use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
 
-/// Isolated proof: configured border plus a 0.1 mm content-area guide.
+/// Isolated proof: configured border and optional configured content-area guide.
 /// This is not an album renderer; text and rows are pending.
 pub fn write_page_geometry_proof(
     settings: &PageSettings,
-    pages: usize,
+    proof: &GeometryProofSettings,
     output: &Path,
 ) -> Result<()> {
-    if pages == 0 {
-        return Err("Native PDF proof requires at least one page".into());
-    }
-    let layouts = (1..=pages)
-        .map(|number| settings.resolve(number))
+    proof.validate()?;
+    let layouts = (1..=proof.page_count)
+        .map(|number| {
+            let layout = settings.resolve(number)?;
+            proof.validate_layout(&layout)?;
+            Ok(layout)
+        })
         .collect::<Result<Vec<_>>>()?;
     let mut document = Document::new();
     for layout in layouts {
@@ -21,22 +23,29 @@ pub fn write_page_geometry_proof(
             mm_to_points(layout.size.width_mm()),
             mm_to_points(layout.size.height_mm()),
         );
-        let mut strokes = settings.border().strokes(layout.margin_bounds)?;
-        let border_count = strokes.len();
-        strokes.push(super::commands::page::album_pages_border::BorderStroke {
-            bounds: layout.content_bounds,
-            width_mm: 0.1,
-        });
-        for (index, stroke) in strokes.iter().enumerate() {
-            let bounds = stroke.bounds;
-            let [red, green, blue] = if index < border_count {
-                settings.border_colour().rgb()
-            } else {
-                [0.0; 3]
-            };
+        let mut strokes: Vec<_> = settings
+            .border()
+            .strokes(layout.margin_bounds)?
+            .into_iter()
+            .map(|stroke| {
+                (
+                    stroke.bounds,
+                    stroke.width_mm,
+                    settings.border_line_colour(stroke.line).rgb(),
+                )
+            })
+            .collect();
+        if proof.guide_enabled {
+            strokes.push((
+                layout.content_bounds,
+                proof.guide_width_mm,
+                proof.guide_colour.rgb(),
+            ));
+        }
+        for (bounds, width_mm, [red, green, blue]) in strokes {
             page.graphics()
                 .set_stroke_color(Color::rgb(red, green, blue))
-                .set_line_width(mm_to_points(stroke.width_mm))
+                .set_line_width(mm_to_points(width_mm))
                 .rect(
                     mm_to_points(bounds.left),
                     mm_to_points(bounds.bottom),
@@ -44,6 +53,17 @@ pub fn write_page_geometry_proof(
                     mm_to_points(bounds.top - bounds.bottom),
                 )
                 .stroke();
+        }
+        if let Some(title) = layout.title {
+            let [red, green, blue] = title.colour.rgb();
+            for line in title.lines {
+                page.text()
+                    .set_font(title.font.clone(), title.size_pt)
+                    .set_fill_color(Color::rgb(red, green, blue))
+                    .at(mm_to_points(line.left_mm), mm_to_points(line.baseline_mm))
+                    .write(&line.text)
+                    .map_err(|error| format!("Cannot draw native page title: {error}"))?;
+            }
         }
         document.add_page(page);
     }

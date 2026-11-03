@@ -1,14 +1,17 @@
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use stamp_album_gen2::native_pdf::{
+    commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder, album_pages_margins::Margins, album_pages_size::PageSize,
         album_pages_spacing::Spacing,
     },
     document::{Bounds, PageSettings},
-    renderer::write_page_geometry_proof,
     units::points_to_mm,
 };
+#[path = "support/native_pdf_proof.rs"]
+mod proof;
+use proof::write_page_geometry_proof;
 use std::{error::Error, fs, path::Path};
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
@@ -29,7 +32,7 @@ fn border(source: &str) -> Result<PageBorder> {
         .lines()
         .find(|line| line.starts_with("ALBUM_PAGES_BORDER "))
     else {
-        return Ok(PageBorder::default());
+        return Ok(PageBorder::parse(&[0.0; 4])?);
     };
     let (_, values) = line.split_once('(').ok_or("opening parenthesis")?;
     let (values, _) = values.split_once(')').ok_or("closing parenthesis")?;
@@ -41,12 +44,13 @@ fn border(source: &str) -> Result<PageBorder> {
 }
 
 fn settings(border: PageBorder) -> Result<PageSettings> {
-    let mut settings = PageSettings::new(
+    let settings = PageSettings::new(
         PageSize::parse(&[210.0, 297.0])?,
         Margins::parse(&[15.0; 4])?,
         Spacing::parse(&[3.0, 4.0])?,
+        border,
+        AlbumBorderColour::parse(&["black"])?,
     );
-    settings.set_border(border);
     Ok(settings)
 }
 

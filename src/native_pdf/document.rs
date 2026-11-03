@@ -1,9 +1,12 @@
 use super::{
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
-        album_pages_border::PageBorder, album_pages_margins::Margins,
-        album_pages_marginse::EvenMargins, album_pages_size::PageSize,
+        album_pages_border::PageBorder,
+        album_pages_margins::Margins,
+        album_pages_marginse::EvenMargins,
+        album_pages_size::PageSize,
         album_pages_spacing::Spacing,
+        album_pages_title::{AlbumPagesTitle, TitleLayout},
     },
     Result,
 };
@@ -49,11 +52,12 @@ impl Bounds {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct PageLayout {
     pub size: PageSize,
     pub margin_bounds: Bounds,
     pub content_bounds: Bounds,
+    pub title: Option<TitleLayout>,
 }
 
 #[derive(Clone, Debug)]
@@ -64,22 +68,36 @@ pub struct PageSettings {
     spacing: Spacing,
     border: PageBorder,
     border_colour: AlbumBorderColour,
+    border_line_colours: [AlbumBorderColour; 3],
+    title: Option<AlbumPagesTitle>,
 }
 
 impl PageSettings {
-    pub fn new(size: PageSize, margins: Margins, spacing: Spacing) -> Self {
+    pub fn new(
+        size: PageSize,
+        margins: Margins,
+        spacing: Spacing,
+        border: PageBorder,
+        border_colour: AlbumBorderColour,
+    ) -> Self {
         Self {
             size,
             margins,
             even_margins: None,
             spacing,
-            border: PageBorder::default(),
-            border_colour: AlbumBorderColour::default(),
+            border,
+            border_colour,
+            border_line_colours: [border_colour; 3],
+            title: None,
         }
     }
 
     pub fn set_even_margins(&mut self, margins: EvenMargins) {
         self.even_margins = Some(margins);
+    }
+
+    pub fn set_title(&mut self, title: AlbumPagesTitle) {
+        self.title = Some(title);
     }
 
     pub fn spacing(&self) -> Spacing {
@@ -96,10 +114,29 @@ impl PageSettings {
 
     pub fn set_border_colour(&mut self, colour: AlbumBorderColour) {
         self.border_colour = colour;
+        self.border_line_colours = [colour; 3];
     }
 
+    /// Shared AlbumEasy command value; use border_line_colour for native strokes.
     pub fn border_colour(&self) -> AlbumBorderColour {
         self.border_colour
+    }
+
+    /// Native per-line overrides, independent of the shared AlbumEasy command.
+    pub fn set_border_line_colours(&mut self, colours: [AlbumBorderColour; 3]) {
+        self.border_line_colours = colours;
+    }
+
+    pub fn border_line_colour(
+        &self,
+        line: super::commands::page::album_pages_border::BorderLine,
+    ) -> AlbumBorderColour {
+        use super::commands::page::album_pages_border::BorderLine;
+        match line {
+            BorderLine::Outer => self.border_line_colours[0],
+            BorderLine::Inner1 => self.border_line_colours[1],
+            BorderLine::Inner2 => self.border_line_colours[2],
+        }
     }
 
     /// Physical page numbers are one-based; no footer-label parity is inferred.
@@ -121,13 +158,23 @@ impl PageSettings {
         self.border.strokes(margin_bounds)?;
         let border_occupancy_mm = self.border.occupancy_mm();
         // Vertical spacing belongs between elements, not at page edges.
-        let content_bounds = margin_bounds
+        let mut content_bounds = margin_bounds
             .inset(border_occupancy_mm, border_occupancy_mm)?
             .inset(self.spacing.horizontal_mm(), 0.0)?;
+        let title = self
+            .title
+            .as_ref()
+            .map(|title| title.layout(content_bounds, self.spacing.vertical_mm()))
+            .transpose()?;
+        if let Some(title) = &title {
+            content_bounds.top = title.next_content_top_mm;
+            content_bounds.validate()?;
+        }
         Ok(PageLayout {
             size: self.size,
             margin_bounds,
             content_bounds,
+            title,
         })
     }
 }

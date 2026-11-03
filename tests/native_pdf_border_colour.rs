@@ -1,9 +1,12 @@
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 use stamp_album_gen2::native_pdf::{
-    commands::colour::colour_album_border::AlbumBorderColour, config::NativePdfConfig,
-    renderer::write_page_geometry_proof, units::points_to_mm,
+    commands::colour::colour_album_border::AlbumBorderColour, config::NativePdfConfig, renderer,
+    units::points_to_mm,
 };
+#[path = "support/native_pdf_proof.rs"]
+mod proof;
+use proof::write_page_geometry_proof;
 use std::{
     error::Error,
     fs,
@@ -13,6 +16,11 @@ use std::{
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 const PAGE: &str = r#"
+[native_pdf.proof]
+page_count = 3
+guide_enabled = true
+guide_width_mm = 0.1
+guide_colour = "black"
 [page]
 album_page_width_mm = 210
 album_page_height_mm = 297
@@ -40,7 +48,7 @@ fn manifest() -> Result<Value> {
 
 // Test-only adapter; the native production TXT interpreter is still pending.
 fn source_colour(source: &str) -> Result<AlbumBorderColour> {
-    let mut colour = AlbumBorderColour::default();
+    let mut colour = AlbumBorderColour::parse(&["black"])?;
     for line in source.lines() {
         let Some((name, values)) = line.split_once('(') else {
             continue;
@@ -135,7 +143,9 @@ fn colour_validation_rejects_unsupported_forms_without_echoing_values() -> Resul
 
 #[test]
 fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() -> Result<()> {
-    let base = NativePdfConfig::from_toml(PAGE)?.page_settings;
+    assert!(NativePdfConfig::from_toml(PAGE).is_err());
+    let base = NativePdfConfig::from_toml(&format!("color_album_border = \"black\"\n{PAGE}"))?
+        .page_settings;
     let root = NativePdfConfig::from_toml(&format!("color_album_border = \"green\"\n{PAGE}"))?;
     assert_eq!(
         root.page_settings.border_colour().rgb(),
@@ -151,10 +161,7 @@ fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() ->
     assert_eq!(section.overridden_keys, ["color_album_border"]);
     assert_eq!(section.unapplied_keys, ["colors.color_album_footer"]);
     let template = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
-    assert_eq!(
-        template.page_settings.border_colour().rgb(),
-        [0.0, 0.0, 139.0 / 255.0]
-    );
+    assert_eq!(template.page_settings.border_colour().rgb(), [0.0; 3]);
     assert!(!template
         .unapplied_keys
         .contains(&"colors.color_album_border".into()));
@@ -177,7 +184,10 @@ fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() ->
         assert!(error.contains("color_album_border") || error.contains("COLOUR_ALBUM_BORDER"));
         assert!(!error.contains("private-value"));
     }
-    assert!(NativePdfConfig::from_toml(&format!("{PAGE}\ncolors = false\n")).is_ok());
+    assert!(NativePdfConfig::from_toml(&format!(
+        "color_album_border = \"black\"\n{PAGE}\ncolors = false\n"
+    ))
+    .is_ok());
     assert!(NativePdfConfig::from_toml(&format!("colors = false\n{PAGE}")).is_err());
     assert!(NativePdfConfig::from_toml(&format!(
         "color_album_border = \"green\"\n{PAGE}\n[colors]\ncolor_album_border = \"invalid\"\n"
@@ -206,7 +216,9 @@ fn rendered_colours_match_reference_and_guide_stays_black() -> Result<()> {
         let name = case["name"].as_str().ok_or("name")?;
         let source = fs::read_to_string(root().join(format!("{name}.txt")))?;
         let colour = source_colour(&source)?;
-        let mut settings = NativePdfConfig::from_toml(PAGE)?.page_settings;
+        let mut settings =
+            NativePdfConfig::from_toml(&format!("color_album_border = \"black\"\n{PAGE}"))?
+                .page_settings;
         settings.set_border_colour(colour);
         let pages = usize::try_from(case["pages"].as_u64().ok_or("pages")?)?;
         let output = temporary.path().join("native.pdf");
@@ -290,7 +302,9 @@ fn rendered_colours_match_reference_and_guide_stays_black() -> Result<()> {
         "{PAGE}\n[colors]\ncolor_album_border = \"green\"\n"
     ))?;
     let output = temporary.path().join("config.pdf");
-    write_page_geometry_proof(&config.page_settings, 1, &output)?;
+    let mut config = config;
+    config.proof.page_count = 1;
+    renderer::write_page_geometry_proof(&config.page_settings, &config.proof, &output)?;
     let text = trace(&output)?;
     let document = roxmltree::Document::parse(&text)?;
     let first = document
@@ -306,7 +320,9 @@ fn rendered_colours_match_reference_and_guide_stays_black() -> Result<()> {
         "{disabled}\n[colors]\ncolor_album_border = \"red\"\n"
     ))?;
     let output = temporary.path().join("no-border.pdf");
-    write_page_geometry_proof(&config.page_settings, 2, &output)?;
+    let mut config = config;
+    config.proof.page_count = 2;
+    renderer::write_page_geometry_proof(&config.page_settings, &config.proof, &output)?;
     let text = trace(&output)?;
     let document = roxmltree::Document::parse(&text)?;
     let paths: Vec<_> = document

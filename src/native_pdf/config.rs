@@ -1,11 +1,13 @@
 use super::{
+    colour::NamedColour,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder, album_pages_margins::Margins,
         album_pages_marginse::EvenMargins, album_pages_size::PageSize,
-        album_pages_spacing::Spacing,
+        album_pages_spacing::Spacing, album_pages_title::AlbumPagesTitle,
     },
     document::PageSettings,
+    proof::GeometryProofSettings,
     Result,
 };
 use std::{fs, path::Path};
@@ -30,6 +32,7 @@ const BORDER: [&str; 4] = [
 /// Other template settings are reported by key, never interpreted as supported.
 pub struct NativePdfConfig {
     pub page_settings: PageSettings,
+    pub proof: GeometryProofSettings,
     pub unapplied_keys: Vec<String>,
     pub overridden_keys: Vec<String>,
 }
@@ -45,6 +48,9 @@ impl NativePdfConfig {
     }
 
     pub fn from_toml(source: &str) -> Result<Self> {
+        // TODO(native-pdf-ui): Surface missing/empty/invalid setting errors in the
+        // settings UI, identify the key and ask the user to correct their TOML.
+        // Keep shipped defaults in TOML; never silently replace a user's value.
         let mut root: Table = toml::from_str(source).map_err(|error: toml::de::Error| {
             // TOML Display includes source snippets, which may contain credentials.
             match error.span() {
@@ -80,17 +86,118 @@ impl NativePdfConfig {
         let size = PageSize::parse(&numbers(&mut root, &SIZE, "")?)?;
         let margins = Margins::parse(&numbers(&mut root, &MARGINS, "")?)?;
         let spacing = Spacing::parse(&numbers(&mut root, &SPACING, "")?)?;
-        let mut page_settings = PageSettings::new(size, margins, spacing);
-        if BORDER.iter().any(|key| root.contains_key(*key)) {
-            page_settings.set_border(PageBorder::parse(&numbers(&mut root, &BORDER, "")?)?);
-        }
-        if let Some(value) = root.remove("color_album_border") {
-            let Value::String(name) = value else {
-                return Err(
-                    "Native PDF setting color_album_border must be a named colour string".into(),
-                );
+        let border = PageBorder::parse(&numbers(&mut root, &BORDER, "")?)?;
+        let colour = string(&mut root, "color_album_border", "")?;
+        let border_colour = AlbumBorderColour::parse(&[&colour])
+            .map_err(|error| format!("color_album_border: {error}"))?;
+        let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
+        let mut native = table(&mut root, "native_pdf", "")?;
+        if native.contains_key("title") {
+            let mut title = table(&mut native, "title", "native_pdf.")?;
+            let enabled = match title.remove("enabled") {
+                Some(Value::Boolean(enabled)) => enabled,
+                _ => {
+                    return Err(
+                        "Missing or invalid native_pdf.title.enabled; expected a boolean".into(),
+                    )
+                }
             };
-            page_settings.set_border_colour(AlbumBorderColour::parse(&[&name])?);
+            let mut header = match root.remove("header") {
+                Some(Value::Table(table)) => table,
+                Some(_) => return Err("Native PDF setting header must be a table".into()),
+                None => Table::new(),
+            };
+            for key in ["album_pages_title_font", "album_pages_title_size"] {
+                if let Some(value) = header.remove(key) {
+                    if root.insert(key.into(), value).is_some() {
+                        overridden_keys.push(key.into());
+                    }
+                }
+            }
+            if let Some(value) = colors.remove("color_album_title") {
+                if root.insert("color_album_title".into(), value).is_some() {
+                    overridden_keys.push("color_album_title".into());
+                }
+            }
+            let font = string(&mut root, "album_pages_title_font", "")?;
+            let size = number(&mut root, "album_pages_title_size", "", "points")?;
+            let colour = NamedColour::parse(&string(&mut root, "color_album_title", "")?)
+                .map_err(|error| format!("color_album_title: {error}"))?;
+            let text = string(&mut title, "text", "native_pdf.title.")?;
+            let vspace = number(
+                &mut title,
+                "vspace_after_mm",
+                "native_pdf.title.",
+                "millimetres",
+            )?;
+            let minimum = number(
+                &mut title,
+                "minimum_height_mm",
+                "native_pdf.title.",
+                "millimetres",
+            )?;
+            let command = AlbumPagesTitle::new(&font, size, &text, vspace, minimum, colour)?;
+            if enabled {
+                page_settings.set_title(command);
+            }
+            if !header.is_empty() {
+                root.insert("header".into(), Value::Table(header));
+            }
+            if !title.is_empty() {
+                native.insert("title".into(), Value::Table(title));
+            }
+        }
+        if native.contains_key("border_colours") {
+            let mut colours = table(&mut native, "border_colours", "native_pdf.")?;
+            let mut parse_colour = |key| -> Result<AlbumBorderColour> {
+                let name = string(&mut colours, key, "native_pdf.border_colours.")?;
+                AlbumBorderColour::parse(&[&name])
+                    .map_err(|error| format!("native_pdf.border_colours.{key}: {error}"))
+            };
+            page_settings.set_border_line_colours([
+                parse_colour("outer")?,
+                parse_colour("inner1")?,
+                parse_colour("inner2")?,
+            ]);
+            if !colours.is_empty() {
+                native.insert("border_colours".into(), Value::Table(colours));
+            }
+        }
+        let mut proof_table = table(&mut native, "proof", "native_pdf.")?;
+        let prefix = "native_pdf.proof.";
+        let page_count = match proof_table.remove("page_count") {
+            Some(Value::Integer(count)) => usize::try_from(count).map_err(|_| {
+                "native_pdf.proof.page_count must be a positive PDF page count".to_string()
+            })?,
+            _ => {
+                return Err(
+                    "Missing or invalid native_pdf.proof.page_count; expected an integer".into(),
+                )
+            }
+        };
+        let guide_enabled = match proof_table.remove("guide_enabled") {
+            Some(Value::Boolean(enabled)) => enabled,
+            _ => {
+                return Err(
+                    "Missing or invalid native_pdf.proof.guide_enabled; expected a boolean".into(),
+                )
+            }
+        };
+        let guide_width_mm = numbers(&mut proof_table, &["guide_width_mm"], prefix)?[0];
+        let guide_colour = NamedColour::parse(&string(&mut proof_table, "guide_colour", prefix)?)
+            .map_err(|error| format!("{prefix}guide_colour: {error}"))?;
+        let proof = GeometryProofSettings {
+            page_count,
+            guide_enabled,
+            guide_width_mm,
+            guide_colour,
+        };
+        proof.validate()?;
+        if !proof_table.is_empty() {
+            native.insert("proof".into(), Value::Table(proof_table));
+        }
+        if !native.is_empty() {
+            root.insert("native_pdf".into(), Value::Table(native));
         }
         if let Some(value) = page.remove("even_margins") {
             let Value::Table(mut table) = value else {
@@ -106,9 +213,10 @@ impl NativePdfConfig {
             }
         }
         for number in [1, 2] {
-            page_settings
+            let layout = page_settings
                 .resolve(number)
                 .map_err(|error| format!("Native PDF page {number}: {error}"))?;
+            proof.validate_layout(&layout)?;
         }
         if !page.is_empty() {
             root.insert("page".into(), Value::Table(page));
@@ -119,29 +227,49 @@ impl NativePdfConfig {
         let mut unapplied_keys = Vec::new();
         collect_keys(&root, "", &mut unapplied_keys);
         unapplied_keys.sort();
+        overridden_keys.sort();
         Ok(Self {
             page_settings,
+            proof,
             unapplied_keys,
             overridden_keys,
         })
     }
 }
 
+fn table(parent: &mut Table, key: &str, prefix: &str) -> Result<Table> {
+    match parent.remove(key) {
+        Some(Value::Table(table)) => Ok(table),
+        _ => Err(format!("Missing or invalid native PDF table {prefix}{key}")),
+    }
+}
+
+fn string(table: &mut Table, key: &str, prefix: &str) -> Result<String> {
+    match table.remove(key) {
+        Some(Value::String(value)) => Ok(value),
+        _ => Err(format!(
+            "Missing or invalid native PDF setting {prefix}{key}; expected a string"
+        )),
+    }
+}
+
 fn numbers(table: &mut Table, keys: &[&str], prefix: &str) -> Result<Vec<f64>> {
     keys.iter()
-        .map(|key| {
-            let value = table
-                .remove(*key)
-                .ok_or_else(|| format!("Missing native PDF setting {prefix}{key}"))?;
-            match value {
-                Value::Float(value) => Ok(value),
-                Value::Integer(value) => Ok(value as f64),
-                _ => Err(format!(
-                    "Native PDF setting {prefix}{key} must be a number in millimetres"
-                )),
-            }
-        })
+        .map(|key| number(table, key, prefix, "millimetres"))
         .collect()
+}
+
+fn number(table: &mut Table, key: &str, prefix: &str, unit: &str) -> Result<f64> {
+    let value = table
+        .remove(key)
+        .ok_or_else(|| format!("Missing native PDF setting {prefix}{key}"))?;
+    match value {
+        Value::Float(value) => Ok(value),
+        Value::Integer(value) => Ok(value as f64),
+        _ => Err(format!(
+            "Native PDF setting {prefix}{key} must be a number in {unit}"
+        )),
+    }
 }
 
 fn collect_keys(table: &Table, prefix: &str, keys: &mut Vec<String>) {

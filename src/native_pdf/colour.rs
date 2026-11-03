@@ -1,7 +1,7 @@
 use super::Result;
 
 /// Opaque SVG named colour, shared by native colour commands.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct NamedColour {
     rgb: [u8; 3],
 }

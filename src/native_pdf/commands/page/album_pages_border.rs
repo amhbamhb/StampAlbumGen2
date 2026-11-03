@@ -1,16 +1,24 @@
 use crate::native_pdf::{commands::arguments, document::Bounds, units::mm_to_points, Result};
 
-/// Omitted ALBUM_PAGES_BORDER means no border and no reserved border space.
-#[derive(Clone, Copy, Debug, Default)]
+/// Explicit ALBUM_PAGES_BORDER arguments; zero widths disable border strokes.
+#[derive(Clone, Copy, Debug)]
 pub struct PageBorder {
     widths_mm: [f64; 3],
     gap_mm: f64,
 }
 
 #[derive(Clone, Copy, Debug)]
+pub enum BorderLine {
+    Outer,
+    Inner1,
+    Inner2,
+}
+
+#[derive(Clone, Copy, Debug)]
 pub struct BorderStroke {
     pub bounds: Bounds,
     pub width_mm: f64,
+    pub line: BorderLine,
 }
 
 impl PageBorder {
@@ -50,7 +58,10 @@ impl PageBorder {
     pub fn strokes(self, margin_bounds: Bounds) -> Result<Vec<BorderStroke>> {
         let mut strokes = Vec::new();
         let mut inset = 0.0;
-        for width_mm in self.widths_mm {
+        for (line, width_mm) in [BorderLine::Outer, BorderLine::Inner1, BorderLine::Inner2]
+            .into_iter()
+            .zip(self.widths_mm)
+        {
             if width_mm > 0.0 {
                 let center = inset + width_mm / 2.0;
                 // Validate the entire stroke footprint, not just its centreline.
@@ -58,6 +69,7 @@ impl PageBorder {
                 strokes.push(BorderStroke {
                     bounds: margin_bounds.inset(center, center)?,
                     width_mm,
+                    line,
                 });
             }
             inset += width_mm + self.gap_mm;

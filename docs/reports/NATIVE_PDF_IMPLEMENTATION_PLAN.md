@@ -2,11 +2,139 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 14
-**Status:** Native page settings, borders/colour and explicit user-config bridge verified; previous commit blocker resolved and local checkpoint authorized; production backend not integrated
+**Revision:** 17
+**Status:** Native repeating page title with shared measurements and TOML minimum-height hint implemented; existing geometry/colour compatibility retained; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Measured repeating page title (#67)
+
+The maintainer approved `ALBUM_PAGES_TITLE` as the next slice, with measured text
+height plus an optional TOML minimum-height hint to improve future stamp-layout
+calculations. `minimum_height_mm = 0.0` means automatic; a positive value reserves
+at least that height, never shrinks measured text, and never changes glyph size
+or position. Following spacing remains independently configured.
+
+`text.rs` measures standard-font advance widths and ascent/descent once.
+`commands/page/album_pages_title.rs` owns the command and resolves positioned
+lines plus measured/reserved heights and the next content boundary.
+`PageSettings::resolve` returns the same title result used by the renderer and
+reduces its usable content bounds. The diagnostic guide therefore represents
+remaining room for future stamps; no stamp-row engine is implemented here.
+
+Configuration reuses existing `[header].album_pages_title_font/size` and
+`[colors].color_album_title`, including section-over-root precedence.
+`[native_pdf.title]` supplies `enabled`, `text`, `vspace_after_mm` and
+`minimum_height_mm`, all explicit editable TOML fields. Templates ship title
+disabled, HN/10 pt/black, text "Stamp Album", zero extra gap and automatic height.
+The ignored local file received only the new table; existing title font/size/
+colour edits are preserved. Missing/invalid fields fail with keyed errors.
+No native settings UI or production CLI/backend wiring is introduced.
+
+Five isolated AlbumEasy 4.5 reference cases cover 8/25 pt Helvetica, two-line
+16 pt Times Bold, omitted/zero gap equivalence and negative spacing. Six pages
+were rendered twice; complete MuPDF page traces matched on repeat. Ten source/
+PDF hashes are frozen in `tests/fixtures/albumeasy/title-v1/sha256.txt`.
+Native comparisons check every title glyph's font, size and position within
+0.01 mm, on two native pages per case, with both automatic and 25 mm hints.
+
+**Intentional native safety difference:** title positions follow AlbumEasy, but
+native content reservation includes the final font descent. The measured
+AlbumEasy cursor stops at the last baseline; claiming identical remaining-page
+space/pagination would be incorrect. The additional descent prevents following
+stamp boxes from consuming the descender region under normal nonnegative gaps.
+Negative following gaps explicitly permit overlap. AFM advance/line metrics do
+not certify exact glyph-outline bounds/italic side overhang.
+
+Scope: 12 standard AlbumEasy font tokens, WinAnsi text, explicit multiline
+titles. Custom fonts, unsupported Unicode/shaping, automatic wrapping and
+over-wide titles fail rather than silently substitute/clip. Full text/row layout,
+information pages, source-command parsing/export and production integration
+remain pending. Shared measurement state is reusable by later text/stamp slices.
+The existing application layout engine and baseline draw.io are unchanged.
+Branch `issue/67-native-pdf-page-title` carries the uncommitted #66 foundation;
+the maintainer subsequently authorized committing both slices together before
+starting another command. Commit-gate validation reran all 33 native tests and
+ten main-config tests: **43 passed, 0 failed, 0 ignored**. The checkpoint excludes
+the ignored local configuration and unrelated manual/design/autosave files.
+No merge or push is authorized.
+
+Validation: **43 passed, 0 failed, 0 ignored**: seven title tests, 26 prior native
+tests and ten existing main-config tests. Targeted Clippy and focused formatting
+passed (existing application warnings remain); Windows GNU library/example
+cross-compilation passed with optional rfd disabled. Windows execution and
+physical print are unverified. Reference repeats matched complete page traces.
+MuPDF still reports unavailable ICC support; no physical colour claim.
+
+The runnable demo uses a 25 pt title measured at **10.6451 mm**, a **25 mm**
+minimum reservation, independent **3 mm** following space and a green remaining
+content guide at **249.8 mm** from the page bottom. Title positions stay unchanged
+when the hint grows. Its raster was visually inspected. The local config's
+default-disabled title preserves the three-page geometry-only proof and now
+reports 237 unapplied keys rather than 240 (font/size/title colour are consumed).
+Test tempdirs self-clean; references are copied, not moved; no source inputs or
+databases are modified. Existing unrelated manual/autosave edits are preserved.
+
+#### Explicit TOML policy retrofit (#66)
+
+Maintainer clarification: defaults belong **in TOML**, editable as in the
+regular application, not hidden in code. All implemented values have explicit
+template entries; border/guide colours default to black. Missing/empty/invalid
+required values must become user-visible settings errors when the UI is added.
+The native loader now contains a TODO for that future UI behavior; no UI
+implementation is claimed.
+
+The approved follow-up implements independent border colours under
+`[native_pdf.border_colours]`: `outer`, `inner1`, `inner2`, all default black
+in both shipped examples and the local native config. All three are required
+when the table is present; absent table uses the explicit legacy shared TOML
+colour. Per-line values take precedence. Existing local shared-colour edits
+are preserved, but the new table deliberately controls native border colours.
+Disabled slots keep their identities, so disabling outer/inner1 cannot move
+another colour to the wrong stroke. This is a native extension; AlbumEasy's
+shared `COLOUR_ALBUM_BORDER` command and frozen compatibility tests are unchanged.
+
+The maintainer requires rendering settings/defaults to originate in TOML;
+stamp/layout records may supply item-specific data. This applies to every future
+native command, not just this proof. Mathematical/unit constants, command syntax
+semantics and reference-test values remain code.
+
+The native adapter now requires all four border arguments and border colour.
+Zero border widths explicitly select no border; missing colour is no longer
+silently black. `PageSettings::new` requires explicit border/colour and their
+types no longer implement `Default`. Command modules remain independent of files.
+The optional even-margin table still selects explicit overrides; otherwise
+pages use the base margins from TOML, never numeric fallback margins.
+
+`proof.rs` owns diagnostic-only typed settings, separate from album command
+state. `[native_pdf.proof]` requires `page_count`, `guide_enabled`,
+`guide_width_mm` and `guide_colour`; width/colour remain required when disabled.
+The example passes loaded settings to the renderer rather than literal page
+counts, guide widths or colours. Both shipped templates and the existing ignored
+local configuration contain explicit values preserving previous geometry.
+Border defaults are now black as explicitly requested, instead of darkblue.
+No new main `Config`, application CLI/UI or production routing is introduced.
+
+New no-fallback tests exercise missing/invalid settings and serialized PDF
+output: two pages, pink borders, independent green 0.35 mm guides, and disabled
+guides. Existing frozen size/margins/spacing/border/colour comparisons retain
+explicit reference choices in test-only inputs; no golden fixture is changed.
+Branch: `issue/66-native-pdf-explicit-toml`. Historical checkpoints below retain
+their original omitted-default behavior descriptions; this contract supersedes
+those descriptions.
+
+Validation: **36 passed, 0 failed, 0 ignored** (26 native tests, including actual
+MuPDF trace checks, plus 10 existing main-config tests). The local-config example,
+focused formatting, Clippy and Windows GNU library/example cross-check passed.
+Workspace-wide formatting still reports pre-existing differences in
+`tests/album_stamp_img_integration_test.rs`; that unrelated file is unchanged.
+Existing application warnings and MuPDF's unavailable-ICC warning remain.
+Windows execution/default-feature build and physical printing are unverified.
+Test tempdirs were cleaned, no source inputs moved/deleted, and no databases
+were accessed. The ignored local config received the new proof and per-line colour tables;
+existing user values, main config and credentials were preserved. No new
+dependency, fixture, commit, merge or push belongs to this retrofit checkpoint.
 
 #### Commit checkpoint (#65)
 

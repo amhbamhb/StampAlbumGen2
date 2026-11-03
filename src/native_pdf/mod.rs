@@ -4,7 +4,9 @@ pub mod colour;
 pub mod commands;
 pub mod config;
 pub mod document;
+pub mod proof;
 pub mod renderer;
+pub mod text;
 pub mod units;
 
 pub type Result<T> = std::result::Result<T, String>;

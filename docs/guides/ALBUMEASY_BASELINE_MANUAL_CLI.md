@@ -1,6 +1,7 @@
 # Manually checking the AlbumEasy baseline
 
 A native page-geometry proof now exists alongside the frozen AlbumEasy baselines.
+It can also render an optional repeating page title with measured space reservation.
 There is **no native-PDF application CLI option yet**. Sections 1–5 below generate
 external AlbumEasy comparisons; the isolated Rust proof runs separately.
 
@@ -43,14 +44,16 @@ malformed or invalid configuration is an error, never a fallback to defaults.
 Existing output files are refused.
 
 The template's three pages are **216 x 279.4 mm**, with 10 mm margins, a triple
-darkblue border (0.1/0.5/0.1 mm strokes, 1 mm gaps), horizontal/vertical spacing 3/3 mm,
-and a **0.1 mm diagnostic content guide**. Those historical values are preserved,
+black border (0.1/0.5/0.1 mm strokes, 1 mm gaps), horizontal/vertical spacing 3/3 mm,
+and a **0.1 mm black diagnostic content guide**. Geometry values are preserved,
 not normalized to exact Letter (215.9 mm) or A4. They contain no text, stamp rows,
 images or export. Horizontal spacing is reflected in the content guide; vertical
 spacing is implemented/tested as an inter-element gap, not an outer-page inset.
 This is diagnostic geometry, not an album-rendering backend. The numeric
 `ALBUM_PAGES_BORDER` command now supports legacy three-argument double borders,
-four-argument single/double/triple borders and omitted/disabled borders.
+four-argument single/double/triple borders and explicitly disabled borders.
+Omitted-command reference cases are represented by explicit zero-width test inputs,
+not native runtime defaults.
 See the [border verification report](../testing/ALBUMEASY_BORDER_V1.md) for
 AlbumEasy's sparse-slot behavior and remaining interactions.
 
@@ -62,26 +65,77 @@ margins, spacing and border command types used by the fixture tests.
 There is no intermediate `f32` conversion or decimal formatting. It resolves
 and validates base and even-page geometry before the renderer receives state.
 
-Required: width, height, all four margins and both spacing values. Existing
+Required: width, height, all four margins, both spacing values, all four border
+arguments, border colour and the proof settings below. Existing
 flat root keys are accepted; explicit `[page]` keys win over stale root values,
 and the example reports overridden key names. Invalid winning values fail,
-not fall back to valid root values. Border keys are optional as a **complete
-four-key group**; omit all four for no border, or set all widths to zero.
+not fall back to valid root values. Set all three border widths to zero for no
+border; missing border keys fail, even if all four are omitted.
 
-Border colour is now configurable in the existing section:
+The shared legacy border colour remains configurable in the existing section:
 
 ```toml
 [colors]
-color_album_border = "darkblue"
+color_album_border = "black"
 ```
 
 Edit the existing key/table rather than adding a duplicate. Opaque SVG named
-colours are case-insensitive (`black`, `green`, `navy`, `lightgrey`, `white`).
+colours are case-insensitive (`pink`, `black`, `green`, `navy`, `lightgrey`, `white`).
 The legacy root key is also supported; `[colors]` wins and the overridden name
-is reported. An omitted border colour means black. Invalid names, hex, RGB
+is reported. An omitted border colour is an error. Invalid names, hex, RGB
 functions and transparency fail explicitly without echoing the value.
-The three border lines share that colour; the diagnostic content guide stays
-black. Colour never changes border thickness, spacing or content bounds.
+For independent colours, edit the native table now included in both templates
+and the local configuration:
+
+```toml
+[native_pdf.border_colours]
+outer = "black"
+inner1 = "black"
+inner2 = "black"
+```
+
+Each line may have a different colour, for example `outer = "pink"`,
+`inner1 = "green"` and `inner2 = "navy"`. All three fields must be populated
+when the table is present, even for disabled lines. These native-only values
+override the shared colour; without this table, the explicit shared TOML colour
+applies to all three lines. Disabled border slots retain their colour identity.
+This is a native extension, not a change to `COLOUR_ALBUM_BORDER` syntax;
+that AlbumEasy command still sets one shared colour.
+
+The diagnostic guide has its own TOML colour. Colour never changes border
+thickness, spacing or content bounds.
+
+The proof's settings are separate from album command state. Both shipped
+templates and the local configuration include:
+
+```toml
+[native_pdf.proof]
+page_count = 3
+guide_enabled = true
+guide_width_mm = 0.1
+guide_colour = "black"
+```
+
+Edit each field independently. All four are required, including width/colour
+when the guide is disabled. Page count must be a positive integer representable
+as a PDF page count; guide width must be finite and positive, and an enabled
+guide must fit its content rectangle. Colours use the same opaque SVG names.
+For example, `guide_colour = "pink"` changes only the diagnostic guide;
+`outer = "pink"` in the border-colour table changes only the outer album border.
+The shared `color_album_border` controls native borders only when per-line
+settings are absent.
+
+**Native rendering policy:** rendering settings/defaults originate in TOML,
+never hidden runtime constants or `Default` implementations. Stamp/layout
+records may supply item-specific data. Mathematical conversions, command
+semantics and frozen test expectations are not configurable policy. Future
+native commands must follow this same explicit-input contract.
+Every implemented setting has an editable default value in the TOML templates;
+black is the shipped border/guide colour. Missing, empty or invalid required
+values return an error rather than secretly substituting black or another value.
+A code TODO at the native loader records that future UI integration must display
+these errors, identify the affected key and prompt the user to correct their file.
+No native settings UI has been implemented yet.
 
 AlbumEasy 4.5 probes **rejected bare and quoted hex forms**, contrary to earlier
 template comments. Use named colours for this verified command. Final border
@@ -106,14 +160,17 @@ base margins with no automatic mirroring. This table is native-proof-only;
 the main application's configuration loader has not been extended.
 
 The full copied template contains many settings for unimplemented native
-features. The example explicitly warns that they are not applied (240 with
+features. The example explicitly warns that they are not applied (237 with
 the current template). The bridge exposes sorted `unapplied_keys` and
 `overridden_keys`, never their values. Text, fonts, headers, footers, images,
-runtime options and `max_page_vspace_mm` do not affect this proof yet.
+runtime options and `max_page_vspace_mm` do not affect this proof yet. General
+page/stamp text remains unsupported; the title is the first isolated text slice.
 Errors do not echo source lines or credential values.
 
 `NativePdfConfig::load(&Path)` returns a per-run snapshot. The application-facing
-contract is `loaded.page_settings`, passed to `write_page_geometry_proof`.
+contract is `loaded.page_settings` plus `loaded.proof`, both passed to
+`write_page_geometry_proof`. The typed command/settings constructors require
+explicit border and colour inputs and have no implicit rendering defaults.
 Existing command modules remain independent of files and globals. Editing the
 file affects the next load, not an existing snapshot. Future main-app integration
 can supply the actual `config.toml` path without renaming any configuration keys;
@@ -131,6 +188,18 @@ Checks include both shipped template formats, user edits, fractional values,
 all implemented command mappings, precedence, redacted errors, incomplete groups,
 even margins, real PDF dimensions and actual rectangle coordinates/widths.
 
+Run the no-fallback and proof-output checks:
+
+```bash
+cargo test --test native_pdf_explicit_settings -- --include-ignored --nocapture
+```
+
+Expected: **5 passed, 0 ignored** with `mutool`. Missing settings and invalid
+values fail explicitly; actual PDF traces verify page count, pink borders,
+independently green 0.35 mm guides and guide disabling. Additional checks verify
+black template defaults and red/green/blue per-line PDF strokes, including
+disabled outer/inner slots without colour shifts.
+
 Run border-colour checks:
 
 ```bash
@@ -144,6 +213,81 @@ defaults, alias, global last-value semantics and unsupported forms. RGB componen
 match to 0.00051 (the native PDF library serializes RGB to three decimals);
 geometry retains its 0.01 mm tolerance. No ICC/profile/physical colour match
 is claimed.
+
+### Repeating page title and measured-height hint
+
+`ALBUM_PAGES_TITLE (Font Fontsize Title [vspace])` places a centred title on each
+ordinary page. Font sizes are **points**; the optional following space is **mm**.
+AlbumEasy 4.5 references verified 8 pt and 25 pt Helvetica, multiline 16 pt
+Times Bold, omitted/zero spacing equivalence and negative following spacing.
+The [title command](../../src/native_pdf/commands/page/album_pages_title.rs)
+uses the [shared font-measurement foundation](../../src/native_pdf/text.rs).
+
+Both templates and local `config-pdf.toml` now contain this table:
+
+```toml
+[native_pdf.title]
+enabled = false
+text = "Stamp Album"
+vspace_after_mm = 0.0
+minimum_height_mm = 0.0
+```
+
+Set `enabled = true` to see the title. All fields are required when the table is
+present, even when disabled. An older explicit native configuration without this
+extension has no title. `text` uses TOML string escapes: `"First\nSecond"` gives
+two lines. Font and size reuse `[header].album_pages_title_font` and
+`album_pages_title_size`; colour reuses `[colors].color_album_title`. These keys
+also accept legacy root spellings, with section values winning. The shipped
+defaults are HN / 10 pt / black; existing local font/size/colour edits are
+preserved. Header position does not change the title: the command is centred.
+
+Supported built-in font tokens: HN/HB/HI/HS (Helvetica), TN/TB/TI/TS (Times),
+CN/CB/CI/CS (Courier), normal/bold/italic/bold-italic respectively. Text must be
+representable in WinAnsi; unsupported characters/fonts, control characters,
+empty text and over-wide lines fail explicitly. Custom fonts, shaping and
+automatic wrapping are not implemented. Insert explicit newlines or choose a
+smaller font rather than relying on clipping, substitution or silent resizing.
+
+The minimum-height value is the requested layout “hint”:
+
+- `0.0`: automatic measured line-box height, including final font descent.
+- A positive value: reserve `max(measured_height_mm, minimum_height_mm)`.
+- A smaller-than-measured hint never shrinks the text box or changes font size.
+- `vspace_after_mm` is separate additional space. Negative values intentionally
+  raise the following-content boundary and can overlap the title; use nonnegative
+  values when collision-free spacing is desired.
+
+Font advance widths, ascent/descent and line count are measured once in command
+state. Resolution centres those same measured lines and returns both their PDF
+baselines and the remaining-content boundary. The renderer draws from that
+result; the diagnostic guide shows the area left for future stamp rows.
+Increasing the hint moves the guide down **without moving or resizing the title**.
+Both page parities and guide fit are validated before any PDF is saved.
+
+**Compatibility boundary:** title glyph positions match the reference to 0.01 mm;
+native reservation additionally includes the final descent to protect stamp
+placement. AlbumEasy's observed cursor stops at the last title baseline, so
+native remaining space is deliberately more conservative by that descent
+(before any minimum-height extension). This native safety policy is not claimed
+as identical AlbumEasy pagination. AFM advance/line metrics are not exact glyph
+outline bounds (particularly italic side overhang); physical/font-substitution
+equivalence is unverified.
+
+Run the title slice checks:
+
+```bash
+cargo test --test native_pdf_page_title -- --include-ignored --nocapture
+```
+
+Expected: **7 passed, 0 ignored** with `mutool`. Checks include frozen identities,
+12 built-in font tokens, 8/25 pt measurements, multiline/blank lines, keyed errors,
+legacy precedence, reload snapshots, exact width fit, just-too-wide rejection,
+vertical fit/overflow, smaller/larger hints and no PDF on invalid layout.
+Actual PDF traces compare every title glyph's position, font and size against
+five frozen AlbumEasy references (six pages); both 0 mm and 25 mm hints verify
+the serialized guide boundary. General stamp/row composition and the current
+application layout engine remain unchanged.
 
 ### Frozen command checks
 

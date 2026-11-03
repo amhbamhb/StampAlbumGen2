@@ -7,6 +7,12 @@ use std::{error::Error, fs};
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 const PAGE: &str = r#"
+color_album_border = "black"
+[native_pdf.proof]
+page_count = 3
+guide_enabled = true
+guide_width_mm = 0.1
+guide_colour = "black"
 [page]
 album_page_width_mm = 210.25
 album_page_height_mm = 297.75
@@ -56,7 +62,7 @@ fn copied_template_values_reach_every_existing_command() -> Result<()> {
     for (stroke, width) in strokes.iter().zip([0.1, 0.5, 0.1]) {
         near(stroke.width_mm, width);
     }
-    assert!(loaded
+    assert!(!loaded
         .unapplied_keys
         .contains(&"header.album_pages_title_font".into()));
     assert!(loaded
@@ -95,7 +101,7 @@ fn explicit_file_changes_preserve_precision_even_margins_and_native_output() -> 
     near(third.margin_bounds.left, first.margin_bounds.left);
     near(settings.spacing().next_top(100.0)?, 91.25);
     let output = temporary.path().join("native.pdf");
-    write_page_geometry_proof(settings, 3, &output)?;
+    write_page_geometry_proof(settings, &loaded.proof, &output)?;
     let pdf = PdfDocument::open(&output)?;
     assert_eq!(pdf.page_count()?, 3);
     let media = pdf.get_page(0)?.media_box;
@@ -111,7 +117,10 @@ fn explicit_file_changes_preserve_precision_even_margins_and_native_output() -> 
 
 #[test]
 fn legacy_root_and_section_precedence_are_explicit() -> Result<()> {
-    let flat = PAGE.replace("[page]", "");
+    let mut flat: toml::Table = toml::from_str(PAGE)?;
+    let page = flat.remove("page").ok_or("page")?;
+    flat.extend(page.as_table().ok_or("page table")?.clone());
+    let flat = toml::to_string(&flat)?;
     let loaded = NativePdfConfig::from_toml(&flat)?;
     near(loaded.page_settings.resolve(1)?.size.width_mm(), 210.25);
     let loaded = NativePdfConfig::from_toml(&format!(
@@ -129,14 +138,14 @@ fn legacy_root_and_section_precedence_are_explicit() -> Result<()> {
 }
 
 #[test]
-fn optional_groups_are_complete_or_absent_and_never_implicitly_defaulted() -> Result<()> {
+fn borders_are_required_and_even_margins_are_complete_or_absent() -> Result<()> {
     let bare = PAGE
         .lines()
         .filter(|line| !line.starts_with("page_border_"))
         .collect::<Vec<_>>()
         .join("\n");
-    let loaded = NativePdfConfig::from_toml(&bare)?;
-    near(loaded.page_settings.border().occupancy_mm(), 0.0);
+    assert!(NativePdfConfig::from_toml(&bare).is_err());
+    let loaded = NativePdfConfig::from_toml(PAGE)?;
     near(loaded.page_settings.resolve(2)?.margin_bounds.left, 25.125);
     for key in [
         "page_border_outer",
@@ -248,10 +257,11 @@ fn unapplied_settings_are_reported_by_key_not_value() -> Result<()> {
 #[test]
 #[ignore = "requires mutool on PATH; verifies configuration controls actual native page strokes"]
 fn user_config_controls_actual_rendered_paths() -> Result<()> {
-    let settings = NativePdfConfig::from_toml(&format!("{PAGE}{EVEN}"))?.page_settings;
+    let config = NativePdfConfig::from_toml(&format!("{PAGE}{EVEN}"))?;
+    let settings = config.page_settings;
     let temporary = tempfile::tempdir()?;
     let output = temporary.path().join("configured.pdf");
-    write_page_geometry_proof(&settings, 3, &output)?;
+    write_page_geometry_proof(&settings, &config.proof, &output)?;
     let trace = std::process::Command::new("mutool")
         .args(["draw", "-q", "-F", "trace"])
         .arg(&output)

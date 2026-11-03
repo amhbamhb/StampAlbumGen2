@@ -31,8 +31,12 @@ album_pages_spacing_h = 0.0
 # Vertical gap between elements (mm), not a page-edge inset.
 album_pages_spacing_v = 0.0
 # Native border colour; legacy root form is supported, [colors] wins if present.
-# Opaque SVG named colours only; omitted means black in the native proof.
-color_album_border = "darkblue"
+# Opaque SVG named colours only; required by the native loader.
+color_album_border = "black"
+# Native title font (AlbumEasy token), size (points) and named colour.
+album_pages_title_font = "HN"
+album_pages_title_size = 10.0
+color_album_title = "black"
 
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
@@ -269,3 +273,25 @@ catalog_family_options = [
 # right_mm = 10.0
 # top_mm = 10.0
 # bottom_mm = 10.0
+
+# Native diagnostic proof only; not consumed by the main application.
+# All fields are required by the native loader, even when the guide is disabled.
+[native_pdf.proof]
+page_count = 3
+guide_enabled = true
+guide_width_mm = 0.1
+guide_colour = "black" # Opaque SVG named colour, independent of album border colour.
+
+# Native per-line colours override the shared color_album_border setting.
+# All three are required when this table is present.
+[native_pdf.border_colours]
+outer = "black"
+inner1 = "black"
+inner2 = "black"
+
+# Native repeating page title, disabled to retain geometry-only proof.
+[native_pdf.title]
+enabled = false
+text = "Stamp Album"
+vspace_after_mm = 0.0
+minimum_height_mm = 0.0 # Automatic; positive values reserve at least this height.

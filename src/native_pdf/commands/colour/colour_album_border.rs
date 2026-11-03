@@ -2,7 +2,7 @@ use crate::native_pdf::{colour::NamedColour, Result};
 
 /// COLOUR_ALBUM_BORDER and its COLOR_ALBUM_BORDER spelling alias.
 /// AlbumEasy applies the final setting to every page, including earlier pages.
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug)]
 pub struct AlbumBorderColour(NamedColour);
 
 impl AlbumBorderColour {

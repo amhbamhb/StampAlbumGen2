@@ -21,16 +21,51 @@ overrides the root `color_album_border` value.
 | `album_page_width_mm`, `album_page_height_mm` | `ALBUM_PAGES_SIZE` | Both required, finite positive mm |
 | `page_left_margin_mm`, `page_right_margin_mm`, `page_top_margin_mm`, `page_bottom_margin_mm` | `ALBUM_PAGES_MARGINS` | All required, finite nonnegative mm |
 | `album_pages_spacing_h`, `album_pages_spacing_v` | `ALBUM_PAGES_SPACING` | Both required; within-page gaps, not between-sheet spacing |
-| `page_border_outer`, `page_border_inner1`, `page_border_inner2`, `page_border_spacing` | `ALBUM_PAGES_BORDER` | All four or none; absent means no border; widths zero disable strokes |
+| `page_border_outer`, `page_border_inner1`, `page_border_inner2`, `page_border_spacing` | `ALBUM_PAGES_BORDER` | All four required; widths zero explicitly disable strokes |
 | `[page.even_margins]` with `left_mm`, `right_mm`, `top_mm`, `bottom_mm` | `ALBUM_PAGES_MARGINSE` | Native-only extension; table optional, all four values required if present |
-| `[colors].color_album_border` or legacy root `color_album_border` | `COLOUR_ALBUM_BORDER` / `COLOR_ALBUM_BORDER` | Optional opaque SVG named colour string; absent means black; shared by every border stroke/page |
+| `[colors].color_album_border` or legacy root `color_album_border` | `COLOUR_ALBUM_BORDER` / `COLOR_ALBUM_BORDER` | Required opaque SVG named colour string; shared legacy colour, template default black |
+| `[native_pdf.border_colours]` with `outer`, `inner1`, `inner2` | Native-only extension | Independent named colours; all three required when table present; shipped defaults all black; overrides shared colour |
+| `[native_pdf.proof].page_count` | Diagnostic only | Required positive integer PDF page count; template value 3 |
+| `[native_pdf.proof].guide_enabled` | Diagnostic only | Required boolean; template value true |
+| `[native_pdf.proof].guide_width_mm` | Diagnostic only | Required finite positive mm; template value 0.1; enabled guide must fit content rectangle |
+| `[native_pdf.proof].guide_colour` | Diagnostic only | Required opaque SVG named colour; template value black; independent of album border |
+| `[native_pdf.title].enabled` | Native title extension | Required boolean when title table exists; template false |
+| `[native_pdf.title].text` | `ALBUM_PAGES_TITLE` | Required nonempty WinAnsi string; template "Stamp Album"; explicit newlines supported |
+| `[native_pdf.title].vspace_after_mm` | `ALBUM_PAGES_TITLE` | Required finite following gap; template 0.0 mm; negative values explicitly allow overlap |
+| `[native_pdf.title].minimum_height_mm` | Native reservation hint | Required finite nonnegative mm; template 0.0 = measured height; positive reserves at least requested height |
+| `[header].album_pages_title_font`, `.album_pages_title_size` or legacy root keys | `ALBUM_PAGES_TITLE` | Required when title table exists; supported built-in token and finite positive points; templates HN/10 |
+| `[colors].color_album_title` or legacy root key | Title colour | Required when title table exists; named opaque colour; shipped black |
 
 Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
 names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
 rejected both bare and quoted hex forms, correcting older template claims.
-The fixed diagnostic guide remains black. Other colour keys are still unapplied.
+The diagnostic guide uses its own configured colour. Width/colour remain required
+even when the guide is disabled. Other colour keys are still unapplied.
 The existing main `Config.color_album_border` field/default/emitter is unchanged;
 the new native bridge consumes its existing spelling directly.
+Without the per-line table, all lines use the explicit shared TOML colour.
+When present, the table must be complete, including disabled border slots.
+Slot identity is preserved even if an earlier line has zero width. The original
+AlbumEasy colour command still sets a single colour, not three arguments.
+
+All implemented native rendering settings/defaults must come from TOML.
+Neither the loader nor typed native state provides hidden rendering defaults.
+Item-specific values may come from stamp/layout records. Unit conversions,
+command semantics and fixed reference-test expectations are not rendering policy.
+The values above are template choices, not runtime fallback constants.
+The shipped TOML files contain editable defaults for every implemented setting.
+Missing, empty or invalid required settings fail explicitly. A TODO in the
+native loader requires future UI integration to show these errors with the
+affected key and request a correction; that UI is not implemented yet.
+
+Title state uses standard-font advance widths and ascent/descent, explicit line
+breaks, and an AlbumEasy-compatible baseline/centering policy. The same resolved
+layout drives drawing and the remaining content guide. Reservation includes
+final font descent, deliberately more conservative than the reference cursor;
+the hint never replaces measured height with a smaller value. The optional
+title table is absent only for older/no-title configurations. When present,
+every field must be supplied, including while disabled. Custom fonts, automatic
+wrapping, general stamp text and production page-break integration remain open.
 
 No automatic even-page mirroring is inferred. All geometry must remain usable;
 both base and even-page bounds are validated when loading. Other template
@@ -38,8 +73,8 @@ settings are returned as unapplied key names and summarized by the example;
 they are not silently advertised as supported native features. The two
 templates contain commented examples of the optional even-margin table.
 
-No new fields were added to the main `Config` struct: the new table currently
-belongs only to the isolated native configuration bridge. Its application/UI,
+No new fields were added to the main `Config` struct: the new tables currently
+belong only to the isolated native configuration bridge. Their application/UI,
 album-overlay and imported-command integration remains pending. Renaming the
 file later does not require a key migration; pass the intended path explicitly.
 
