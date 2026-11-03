@@ -45,8 +45,8 @@ On Ubuntu, the optional Linux dialog build requires `pkg-config` and
 desktop portal/backend at runtime. An X11 desktop can provide these; a Wayland
 session is not required. Native-dialog builds are intended for graphical sessions.
 
-The release workflow installs those Ubuntu build prerequisites defensively, but
-ships the Linux artifact without dialogs; the Windows artifact retains them.
+The release workflow ships the Linux artifact without dialogs and does not
+install Wayland development libraries; the Windows artifact retains dialogs.
 The headless CLI parity and CLI-docs workflows explicitly use
 `--no-default-features` for Cargo builds and runs, even if native dialogs are
 enabled in the package defaults. Check this invariant and the Linux dependency
@@ -98,31 +98,58 @@ Recommended flow:
 
 ## Release Workflow
 
-- Update versions with `scripts/update_versions.sh`.
-- Review `RELEASE_NOTES.md` before tagging.
-- Keep Conventional Commit format for clear history (`feat:`, `fix:`, `docs:`, etc.).
+For setup, public-release verification, and recovery procedures, follow the
+[Public Release Checklist](docs/guides/PUBLIC_RELEASE_CHECKLIST.md).
 
-The **Release (combined)** workflow builds an existing `vX.Y.Z` tag. It does not
-bump versions, regenerate/stage the lockfile, commit, create tags, or push source
-changes. Prepare and test the version change locally, commit it, and push the
-commit and matching tag to the approved release remote before dispatching.
+Normal releases require no manual version edits, scripts, or tags:
 
-Enter the existing tag in the workflow's `release_tag` input. The tag must match
-`[package].version` in the tagged commit's `Cargo.toml`. Both platform builds and
-release finalization check out the validated commit SHA, not the current branch.
-Choose the workflow branch containing this updated workflow when dispatching;
-the release source still comes from the supplied tag.
+1. Merge the changes and release notes into the default branch (normally `main`).
+2. Open **Release (combined)**, choose that branch in **Use workflow from**, and
+   select **patch** (default), **minor**, or **major**.
+3. Click **Run workflow**. The run summary displays the calculated release tag.
 
-Retry a failed build using the same tag; no additional version bump is needed.
-Never move or overwrite a released tag. Correct source changes require a new
-version and tag. Runs for the same tag are serialized. Already-published
-immutable releases may reject replacement assets; use a new version for those.
-The lockfile is currently untracked, so dependency resolution is not frozen
-across separate builds or retries.
+The existing `scripts/update_versions.sh` is the single version calculator and
+file synchronizer. CI calls its non-building `--prepare-only` mode. It increments
+the greater of `[package].version` and all existing plain `vX.Y.Z` tags.
+For example, package `1.13.2` plus existing tag `v1.14.0` produces patch `1.14.1`,
+minor `1.15.0`, or major `2.0.0`. Older broken tags are never reused or moved.
 
-Validate tag selection, version matching, read-only preparation, and retry
-behavior with `node --test tests/release_publication_shell.cjs` on Linux
-(requires Git, Bash, Node.js 18+, and Python 3.11+).
+The workflow:
+
+- Updates Cargo, README, release-note, and instruction version headers together.
+- Updates the workspace entry in the committed `Cargo.lock` rather than
+  regenerating dependency versions. Platform builds and tests use `--locked`.
+- Shares the exact version patch between the Windows/native-dialog and
+  Linux/headless test/build jobs, verifying the complete Git tree hash.
+- Only after both platforms and optional signing pass, commits the tested
+  changes and atomically pushes the version commit and annotated tag.
+- Uploads both binaries, checksums, and archive to a draft before publishing.
+  Windows artifacts are included even when signing is not configured.
+
+Releases are serialized. Repository permissions must let `GITHUB_TOKEN` push
+the version commit to the default branch and create tags/releases. A protected
+branch requiring PRs needs an approved automation exception; the workflow does
+not bypass protections. If the branch advances during the build, the atomic
+push fails without publishing the tag. Use **Re-run all jobs** to prepare and
+validate against the new branch tip.
+
+For transient build/signing failures, use **Re-run failed jobs**. If source
+publication already succeeded, reruns of the same workflow run identify its
+release commit by `Release-Run` and reuse that version, even if the default
+branch has advanced. Draft uploads can resume; published releases are left
+unchanged. Clicking **Run workflow** again starts a *new* release and increments
+again. Never manually move a released tag.
+
+The manual version script remains available for exceptional local preparation;
+it is not needed before clicking Release. Do not separately bump versions in
+pre-commit hooks or other workflows. Use Conventional Commits for source
+changes; this release model uses the selected increment, not commit-message
+heuristics.
+
+Test automation with
+`node --test tests/release_publication_shell.cjs tests/cli_workflows.test.cjs tests/cargo_targets.test.cjs`
+on Linux (Git, Bash, Cargo, Node.js 18+, and Python 3.11+). These tests use small
+temporary repositories and local remotes; they do not publish real releases.
 
 ## License Policy
 
