@@ -47,6 +47,10 @@ session is not required. Native-dialog builds are intended for graphical session
 
 The release workflow installs those Ubuntu build prerequisites defensively, but
 ships the Linux artifact without dialogs; the Windows artifact retains them.
+The headless CLI parity and CLI-docs workflows explicitly use
+`--no-default-features` for Cargo builds and runs, even if native dialogs are
+enabled in the package defaults. Check this invariant and the Linux dependency
+graph with `node --test tests/cli_workflows.test.cjs`.
 For Linux distribution, inspect shared libraries with `ldd` and test on X11,
 Wayland, and headless systems. Build against the oldest supported glibc baseline
 to support older distributions; removing Wayland does not remove that requirement.
