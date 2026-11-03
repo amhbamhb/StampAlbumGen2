@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 8
+**Revision:** 9
 **Status:** Draft plan; bounded T003 checker/command fixtures authorized; native implementation not started
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
@@ -33,6 +33,13 @@ fractional and explicit even-page-override references plus two failure cases.
 Eight page borders were measured, including the half-stroke inset from margins.
 No automatic even-page mirroring was observed without MARGINSE. These command
 bundles remain measured specifications, not part of the core-specific test runner.
+
+The spacing-only increment (#60) adds
+[spacing-v1 evidence](../testing/ALBUMEASY_SPACING_V1.md): zero, fractional
+horizontal-only/vertical-only and combined probes, plus two failure cases.
+Measured text/frame deltas isolate both axes. Misleading config descriptions,
+default discrepancies and layout-accounting differences are recorded without
+changing configuration, application or renderer behavior.
 
 Start with the supplied [AlbumEasy 4.2.1 manual](../AlbumEasy_4.2.1.pdf), not just
 the commands this application currently emits. The new
@@ -574,3 +581,4 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | T003 extraction-standard follow-up (#57) | Maintainer requested existing `oxidize-pdf` for baseline text extraction instead of `pdftotext`; all 20 text assertions preserved, with extraction failure/page-count/truncation gates. MuPDF geometry/trace checks retained. Six explicit checker tests pass. | Stop for review; native application/config changes and broader import-parser migration remain outside this increment. |
 | 2026-11-03 | Revision 7: page-size-only conformance (#58) | Verified A4 portrait/landscape, exact Letter and fractional dimensions; captured four references and two missing-input diagnostics. Mapped existing config precedence/defaults/emission, recording precision and exit-code risks. No renderer/application changes. | Preserve separate page-size-v1 bundle and stop for review. Full T001/T003/T036/T046 remain incomplete; no generalized fixture runner or native renderer is claimed. |
 | 2026-11-03 | Revision 8: margins-only conformance (#59) | Verified left/right/top/bottom order, asymmetric/fractional margins, explicit even-page override and two failure diagnostics. Measured eight page borders and repeated four renders; traced config mapping and border half-stroke inset. No renderer/application changes. | Preserve margins-v1 and stop for review. Generalized fixture automation, native implementation and full command/config contracts remain open. |
+| 2026-11-03 | Revision 9: spacing-only conformance (#60) | Verified zero/fractional independent horizontal/vertical spacing with 16 frames and eight text anchors, four repeat renders and two failure cases. Documented misleading config descriptions, differing defaults and width-accounting risks. No application changes. | Preserve spacing-v1 and stop for review; generalized fixture runner and full command/config contracts remain open. |

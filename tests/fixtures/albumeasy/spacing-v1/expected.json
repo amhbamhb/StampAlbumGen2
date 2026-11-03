@@ -1,0 +1,74 @@
+{
+  "baseline": "spacing-v1",
+  "command": "ALBUM_PAGES_SPACING",
+  "reference_renderer": "AlbumEasy 4.5.0",
+  "page_size_mm": [210.0, 297.0],
+  "geometry_tolerance_mm": 0.01,
+  "spacing_order": ["horizontal", "vertical"],
+  "coordinates": "millimetres, PDF bottom-left origin; text first-glyph baseline anchors; frame left/bottom/width/height centrelines",
+  "required_text": ["SPACING-V1 / FIRST", "SPACING-V1 / SECOND"],
+  "cases": [
+    {
+      "input": "zero.txt",
+      "input_sha256": "b45d903d1da2905a1b6363e2d7ad91fb584451710280d6873d252fa2984797e7",
+      "reference": "zero.reference.pdf",
+      "reference_sha256": "fd5c3dcd1a2206d0602564dcb6485ef1c68eeb0dd4387ea9c57fc130d696a81f",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "spacing_mm": [0.0, 0.0],
+      "text_anchors_mm": [[15.2, 278.27224], [15.2, 274.74446]],
+      "frames_mm": [[15.2, 254.74444, 25.0, 20.0], [164.8, 249.74444, 30.0, 25.0], [15.2, 229.74444, 25.0, 20.0], [164.8, 224.74444, 30.0, 25.0]]
+    },
+    {
+      "input": "horizontal.txt",
+      "input_sha256": "6d200ffeed9fd275b83941bed4e7011f59bf2bc048c012e9956188aece1e3fd7",
+      "reference": "horizontal.reference.pdf",
+      "reference_sha256": "44369993e140114fc87e26252eaa00af38fae24fdefc70181db6ee920b0e6292",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "spacing_mm": [6.25, 0.0],
+      "text_anchors_mm": [[21.45, 278.27224], [21.45, 274.74446]],
+      "frames_mm": [[21.45, 254.74444, 25.0, 20.0], [158.55, 249.74444, 30.0, 25.0], [21.45, 229.74444, 25.0, 20.0], [158.55, 224.74444, 30.0, 25.0]]
+    },
+    {
+      "input": "vertical.txt",
+      "input_sha256": "80538657710590494c6b22519245a4e7c53a258222e7afd79c0b3a8d95b96ee8",
+      "reference": "vertical.reference.pdf",
+      "reference_sha256": "6bcd0baa95b7e9d6f7ba2cd56bff69a1d74205f97ef5fb9617a357f63a19af23",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "spacing_mm": [0.0, 8.75],
+      "text_anchors_mm": [[15.2, 278.27224], [15.2, 265.99444]],
+      "frames_mm": [[15.2, 237.24444, 25.0, 20.0], [164.8, 232.24444, 30.0, 25.0], [15.2, 203.49444, 25.0, 20.0], [164.8, 198.49444, 30.0, 25.0]]
+    },
+    {
+      "input": "combined.txt",
+      "input_sha256": "97abbdd6d071ed9f810da0f5a8b60c138802e4a55a54dc764ccde9ced77ddcff",
+      "reference": "combined.reference.pdf",
+      "reference_sha256": "4e636e6e04bdea939d951209408226f573462ecb73914e9e921cd57f5a0687e9",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "spacing_mm": [6.25, 8.75],
+      "text_anchors_mm": [[21.45, 278.27224], [21.45, 265.99444]],
+      "frames_mm": [[21.45, 237.24444, 25.0, 20.0], [158.55, 232.24444, 30.0, 25.0], [21.45, 203.49444, 25.0, 20.0], [158.55, 198.49444, 30.0, 25.0]]
+    },
+    {
+      "input": "missing-spacing.txt",
+      "input_sha256": "d92a6290c0c5e24459bae84630eded91adeea93dc1890b193b47fb3112b34866",
+      "renderer_exit_code": 0,
+      "pdf_created": false,
+      "stderr_contains": "PDF generation error: Page spacing not set."
+    },
+    {
+      "input": "missing-vertical.txt",
+      "input_sha256": "d590b85537303000f11fe1e34d4d9cbff7bc9782ae56660396d4a4898e1bec79",
+      "renderer_exit_code": 0,
+      "pdf_created": false,
+      "stderr_contains": "Error in line 4: ALBUM_PAGES_SPACING command - Incorrect number or format of parameters."
+    }
+  ]
+}

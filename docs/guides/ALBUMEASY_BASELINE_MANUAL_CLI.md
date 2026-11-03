@@ -154,3 +154,7 @@ The next command bundle,
 [ALBUM_PAGES_MARGINS conformance](../testing/ALBUMEASY_MARGINS_V1.md), covers
 asymmetric/fractional margins, even-page overrides and failure diagnostics.
 It likewise has separate manual checks rather than core-runner integration.
+
+[ALBUM_PAGES_SPACING conformance](../testing/ALBUMEASY_SPACING_V1.md) adds isolated
+horizontal/vertical spacing probes, measured text/frame deltas and missing-input
+diagnostics. This bundle is also separate from the core-specific Cargo runner.
