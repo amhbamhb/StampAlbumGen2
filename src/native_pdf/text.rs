@@ -10,6 +10,14 @@ pub struct MeasuredLine {
     pub width_mm: f64,
 }
 
+#[derive(Clone, Debug)]
+pub struct PositionedTextLine {
+    pub text: String,
+    pub left_mm: f64,
+    pub baseline_mm: f64,
+    pub width_mm: f64,
+}
+
 /// Standard-font measurements shared by layout and drawing; no wrapping fallback.
 #[derive(Clone, Debug)]
 pub struct MeasuredText {
@@ -36,15 +44,10 @@ impl MeasuredText {
             "CB" => Font::CourierBold,
             "CI" => Font::CourierOblique,
             "CS" => Font::CourierBoldOblique,
-            _ => {
-                return Err(
-                    "album_pages_title_font must be a supported built-in AlbumEasy font token"
-                        .into(),
-                )
-            }
+            _ => return Err("Text font must be a supported built-in AlbumEasy font token".into()),
         };
         if !size_pt.is_finite() || size_pt <= 0.0 {
-            return Err("album_pages_title_size must be finite and positive points".into());
+            return Err("Text size must be finite and positive points".into());
         }
         let text = text.replace("\r\n", "\n");
         if text.trim().is_empty()
@@ -53,10 +56,12 @@ impl MeasuredText {
                 .encode_strict(&text.replace('\n', ""))
                 .is_err()
         {
-            return Err("native_pdf.title.text must be nonempty WinAnsi text; only newline controls are supported".into());
+            return Err(
+                "Text must be nonempty WinAnsi text; only newline controls are supported".into(),
+            );
         }
         let metrics = get_standard_font_metrics(&font)
-            .ok_or("album_pages_title_font has no verified standard-font metrics")?;
+            .ok_or("Text font has no verified standard-font metrics")?;
         let ascent_mm = points_to_mm(metrics.to_user_space(metrics.ascender, size_pt));
         let descent_mm = -points_to_mm(metrics.to_user_space(metrics.descender, size_pt));
         let line_advance_mm = points_to_mm(size_pt).max(ascent_mm + descent_mm);
@@ -74,7 +79,7 @@ impl MeasuredText {
                 .iter()
                 .any(|line| !line.width_mm.is_finite() || !mm_to_points(line.width_mm).is_finite())
         {
-            return Err("album_pages_title_size overflows native text measurements".into());
+            return Err("Text size overflows native text measurements".into());
         }
         Ok(Self {
             font,

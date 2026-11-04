@@ -16,13 +16,7 @@ pub struct AlbumPagesTitle {
     colour: NamedColour,
 }
 
-#[derive(Clone, Debug)]
-pub struct PositionedTitleLine {
-    pub text: String,
-    pub left_mm: f64,
-    pub baseline_mm: f64,
-    pub width_mm: f64,
-}
+pub use crate::native_pdf::text::PositionedTextLine as PositionedTitleLine;
 
 /// One result drives both PDF positions and the remaining-content boundary.
 #[derive(Clone, Debug)]
@@ -58,7 +52,9 @@ impl AlbumPagesTitle {
             );
         }
         Ok(Self {
-            text: MeasuredText::new(font, size_pt, text)?,
+            text: MeasuredText::new(font, size_pt, text).map_err(|error| {
+                format!("ALBUM_PAGES_TITLE (album_pages_title_font/album_pages_title_size/native_pdf.title.text): {error}")
+            })?,
             vspace_after_mm,
             minimum_height_mm,
             colour,

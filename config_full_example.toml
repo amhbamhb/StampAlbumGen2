@@ -37,6 +37,8 @@ color_album_border = "black"
 album_pages_title_font = "HN"
 album_pages_title_size = 10.0
 color_album_title = "black"
+album_pages_header_position = "C"
+color_album_header = "black"
 
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
@@ -295,3 +297,12 @@ enabled = false
 text = "Stamp Album"
 vspace_after_mm = 0.0
 minimum_height_mm = 0.0 # Automatic; positive values reserve at least this height.
+
+# Native header in the top margin, independently measured from the title.
+[native_pdf.header]
+enabled = false
+font = "HN"
+size_pt = 8.0
+text = "Stamp Album Header"
+padding_mm = 0.0 # Positive moves away from the top border; negative moves closer.
+minimum_height_mm = 0.0 # Automatic; positive enlarges reservation below the text.

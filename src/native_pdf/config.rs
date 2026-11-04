@@ -2,9 +2,14 @@ use super::{
     colour::NamedColour,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
-        album_pages_border::PageBorder, album_pages_margins::Margins,
-        album_pages_marginse::EvenMargins, album_pages_size::PageSize,
-        album_pages_spacing::Spacing, album_pages_title::AlbumPagesTitle,
+        album_pages_border::PageBorder,
+        album_pages_header::{AlbumPagesHeader, HeaderPosition},
+        album_pages_header_pad::HeaderPadding,
+        album_pages_margins::Margins,
+        album_pages_marginse::EvenMargins,
+        album_pages_size::PageSize,
+        album_pages_spacing::Spacing,
+        album_pages_title::AlbumPagesTitle,
     },
     document::PageSettings,
     proof::GeometryProofSettings,
@@ -92,6 +97,61 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        if native.contains_key("header") {
+            let mut settings = table(&mut native, "header", "native_pdf.")?;
+            let enabled = match settings.remove("enabled") {
+                Some(Value::Boolean(enabled)) => enabled,
+                _ => {
+                    return Err(
+                        "Missing or invalid native_pdf.header.enabled; expected a boolean".into(),
+                    )
+                }
+            };
+            let mut header = match root.remove("header") {
+                Some(Value::Table(table)) => table,
+                Some(_) => return Err("Native PDF setting header must be a table".into()),
+                None => Table::new(),
+            };
+            if let Some(position) = header.remove("album_pages_header_position") {
+                if root
+                    .insert("album_pages_header_position".into(), position)
+                    .is_some()
+                {
+                    overridden_keys.push("album_pages_header_position".into());
+                }
+            }
+            if let Some(colour) = colors.remove("color_album_header") {
+                if root.insert("color_album_header".into(), colour).is_some() {
+                    overridden_keys.push("color_album_header".into());
+                }
+            }
+            let position =
+                HeaderPosition::parse(&string(&mut root, "album_pages_header_position", "")?)?;
+            let colour = NamedColour::parse(&string(&mut root, "color_album_header", "")?)
+                .map_err(|error| format!("color_album_header: {error}"))?;
+            let prefix = "native_pdf.header.";
+            let font = string(&mut settings, "font", prefix)?;
+            let size = number(&mut settings, "size_pt", prefix, "points")?;
+            let text = string(&mut settings, "text", prefix)?;
+            let padding = HeaderPadding::parse(&[number(
+                &mut settings,
+                "padding_mm",
+                prefix,
+                "millimetres",
+            )?])?;
+            let minimum = number(&mut settings, "minimum_height_mm", prefix, "millimetres")?;
+            let command =
+                AlbumPagesHeader::new(&font, size, position, &text, padding, minimum, colour)?;
+            if enabled {
+                page_settings.set_header(command);
+            }
+            if !header.is_empty() {
+                root.insert("header".into(), Value::Table(header));
+            }
+            if !settings.is_empty() {
+                native.insert("header".into(), Value::Table(settings));
+            }
+        }
         if native.contains_key("title") {
             let mut title = table(&mut native, "title", "native_pdf.")?;
             let enabled = match title.remove("enabled") {

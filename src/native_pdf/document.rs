@@ -2,6 +2,7 @@ use super::{
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder,
+        album_pages_header::{AlbumPagesHeader, HeaderLayout},
         album_pages_margins::Margins,
         album_pages_marginse::EvenMargins,
         album_pages_size::PageSize,
@@ -58,6 +59,7 @@ pub struct PageLayout {
     pub margin_bounds: Bounds,
     pub content_bounds: Bounds,
     pub title: Option<TitleLayout>,
+    pub header: Option<HeaderLayout>,
 }
 
 #[derive(Clone, Debug)]
@@ -70,6 +72,7 @@ pub struct PageSettings {
     border_colour: AlbumBorderColour,
     border_line_colours: [AlbumBorderColour; 3],
     title: Option<AlbumPagesTitle>,
+    header: Option<AlbumPagesHeader>,
 }
 
 impl PageSettings {
@@ -89,6 +92,7 @@ impl PageSettings {
             border_colour,
             border_line_colours: [border_colour; 3],
             title: None,
+            header: None,
         }
     }
 
@@ -98,6 +102,10 @@ impl PageSettings {
 
     pub fn set_title(&mut self, title: AlbumPagesTitle) {
         self.title = Some(title);
+    }
+
+    pub fn set_header(&mut self, header: AlbumPagesHeader) {
+        self.header = Some(header);
     }
 
     pub fn spacing(&self) -> Spacing {
@@ -161,6 +169,28 @@ impl PageSettings {
         let mut content_bounds = margin_bounds
             .inset(border_occupancy_mm, border_occupancy_mm)?
             .inset(self.spacing.horizontal_mm(), 0.0)?;
+        let header = self
+            .header
+            .as_ref()
+            .map(|header| {
+                header.layout(
+                    margin_bounds,
+                    Bounds {
+                        left: 0.0,
+                        bottom: 0.0,
+                        right: self.size.width_mm(),
+                        top: self.size.height_mm(),
+                    },
+                    page_number,
+                )
+            })
+            .transpose()?;
+        if let Some(header) = &header {
+            content_bounds.top = content_bounds.top.min(header.reservation_bottom_mm);
+            content_bounds
+                .validate()
+                .map_err(|error| format!("native_pdf.header.minimum_height_mm: {error}"))?;
+        }
         let title = self
             .title
             .as_ref()
@@ -175,6 +205,7 @@ impl PageSettings {
             margin_bounds,
             content_bounds,
             title,
+            header,
         })
     }
 }

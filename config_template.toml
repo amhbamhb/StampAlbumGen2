@@ -284,7 +284,7 @@ color_album_border = "black"
 ## Album title, header, footer, and margin text colors
 color_album_footer = "darkblue"
 # Album page header text color 
-color_album_header = "darkblue"
+color_album_header = "black"
 # Album title text color
 color_album_title = "black"
 # Album margin text color
@@ -1160,3 +1160,13 @@ enabled = false
 text = "Stamp Album"
 vspace_after_mm = 0.0
 minimum_height_mm = 0.0 # Automatic measured height; positive values reserve at least this height.
+
+# Native page header in the top margin, independent of the page title.
+# Position uses [header].album_pages_header_position; colour uses [colors].color_album_header.
+[native_pdf.header]
+enabled = false
+font = "HN"
+size_pt = 8.0
+text = "Stamp Album Header"
+padding_mm = 0.0 # Positive moves away from the top border; negative moves closer.
+minimum_height_mm = 0.0 # Automatic; positive values enlarge reservation below the text.

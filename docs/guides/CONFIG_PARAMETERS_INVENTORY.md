@@ -35,6 +35,13 @@ overrides the root `color_album_border` value.
 | `[native_pdf.title].minimum_height_mm` | Native reservation hint | Required finite nonnegative mm; template 0.0 = measured height; positive reserves at least requested height |
 | `[header].album_pages_title_font`, `.album_pages_title_size` or legacy root keys | `ALBUM_PAGES_TITLE` | Required when title table exists; supported built-in token and finite positive points; templates HN/10 |
 | `[colors].color_album_title` or legacy root key | Title colour | Required when title table exists; named opaque colour; shipped black |
+| `[native_pdf.header].enabled` | Native header extension | Required boolean when header table exists; template false |
+| `[native_pdf.header].font`, `.size_pt` | `ALBUM_PAGES_HEADER` | Independent header font and positive point size; templates HN/8 |
+| `[native_pdf.header].text` | `ALBUM_PAGES_HEADER` | Nonempty WinAnsi string with explicit newlines; template "Stamp Album Header" |
+| `[header].album_pages_header_position` or legacy root key | `ALBUM_PAGES_HEADER` | L/C/R/LR/RL; templates C; section overrides root |
+| `[colors].color_album_header` or legacy root key | Header colour | Named opaque colour; shipped black; section overrides root |
+| `[native_pdf.header].padding_mm` | `ALBUM_PAGES_HEADER_PAD` | Finite signed mm; template 0.0; positive raises the header |
+| `[native_pdf.header].minimum_height_mm` | Native reservation hint | Finite nonnegative mm; template 0.0 = automatic; positive extends reservation below header |
 
 Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
 names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
@@ -66,6 +73,18 @@ the hint never replaces measured height with a smaller value. The optional
 title table is absent only for older/no-title configurations. When present,
 every field must be supplied, including while disabled. Custom fonts, automatic
 wrapping, general stamp text and production page-break integration remain open.
+
+Headers sit above the top margin boundary, not inside title/stamp space.
+The bottom line's baseline is 2 mm above that boundary plus configured padding
+(2 mm is verified AlbumEasy command semantics, not a rendering fallback).
+Multiline headers grow upwards. Horizontal alignment uses margin bounds:
+LR is left on odd physical pages/right on even; RL is the reverse.
+The shared measurements drive both drawing and layout reservation. Normal
+headers do not consume content; only descent/minimum-hint spill into content
+lowers its top boundary before the title is laid out. Physical-page overflow
+and unusable content fail explicitly. The optional header table has no header
+when absent; all fields remain required when present, including when disabled.
+No header page-number/date expansion or automatic wrapping is implemented.
 
 No automatic even-page mirroring is inferred. All geometry must remain usable;
 both base and even-page bounds are validated when loading. Other template

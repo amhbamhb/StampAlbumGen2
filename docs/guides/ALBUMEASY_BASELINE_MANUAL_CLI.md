@@ -160,11 +160,11 @@ base margins with no automatic mirroring. This table is native-proof-only;
 the main application's configuration loader has not been extended.
 
 The full copied template contains many settings for unimplemented native
-features. The example explicitly warns that they are not applied (237 with
+features. The example explicitly warns that they are not applied (235 with
 the current template). The bridge exposes sorted `unapplied_keys` and
-`overridden_keys`, never their values. Text, fonts, headers, footers, images,
+`overridden_keys`, never their values. General text, custom fonts, footers, images,
 runtime options and `max_page_vspace_mm` do not affect this proof yet. General
-page/stamp text remains unsupported; the title is the first isolated text slice.
+page/stamp text remains unsupported; repeating title/header text is supported.
 Errors do not echo source lines or credential values.
 
 `NativePdfConfig::load(&Path)` returns a per-run snapshot. The application-facing
@@ -213,6 +213,61 @@ defaults, alias, global last-value semantics and unsupported forms. RGB componen
 match to 0.00051 (the native PDF library serializes RGB to three decimals);
 geometry retains its 0.01 mm tolerance. No ICC/profile/physical colour match
 is claimed.
+
+### Repeating page header and independent padding
+
+`ALBUM_PAGES_HEADER (Font Fontsize Position Text)` repeats a header in the top
+margin. `ALBUM_PAGES_HEADER_PAD (padding)` shifts the entire header in signed
+millimetres: positive raises it away from the border; negative lowers it.
+Both have independent [command modules](../../src/native_pdf/commands/page/).
+Font size is in points; the twelve built-in font tokens and explicit multiline
+WinAnsi text use the [shared measurement engine](../../src/native_pdf/text.rs).
+
+Both templates and local `config-pdf.toml` contain:
+
+```toml
+[native_pdf.header]
+enabled = false
+font = "HN"
+size_pt = 8.0
+text = "Stamp Album Header"
+padding_mm = 0.0
+minimum_height_mm = 0.0
+```
+
+Position uses `[header].album_pages_header_position`: **L**, **C**, **R**,
+**LR** (left odd/right even physical pages), or **RL** (reverse).
+Colour uses `[colors].color_album_header`, including opaque named colours such
+as `"pink"`. Those sections override legacy root values. Shipped position/colour
+defaults are C/black; existing local choices are preserved.
+Header font/size/text/padding/hint are independent of title settings.
+All fields must be valid when the table exists, even when disabled; absent
+table means no header for older configurations. Enable it explicitly to draw.
+
+AlbumEasy 4.5 places the final baseline **2 mm above the top margin boundary**
+plus padding. Horizontal alignment uses margin bounds, not the content inset.
+Multiline headers grow upwards. Seven cases/nine reference pages were rendered
+twice and complete page traces matched. Native tests compare every header glyph,
+font and point size within 0.01 mm, including title interaction and LR/RL.
+
+**Layout hint:** zero selects measured height; positive reserves
+`max(measured_height, minimum_height_mm)`. Extra reservation extends down from
+the measured text box without moving/resizing header glyphs. A normal header
+does not push content/title down. If its descent or hint spills into content,
+the shared layout lowers the content boundary before placing the title.
+This safety reservation is a deliberate native extension, not identical
+AlbumEasy pagination. Headers beyond physical-page bounds fail before saving.
+Automatic wrapping, custom fonts, general page text, page-number/date expansion,
+footers and production UI/CLI/backend wiring remain pending.
+
+```bash
+cargo test --test native_pdf_page_header -- --include-ignored --nocapture
+```
+
+Expected: **8 passed, 0 ignored** with `mutool`. Tests cover frozen source/PDF
+hashes, TOML defaults/precedence/snapshots/errors, signed padding, parity,
+all font variants, blank lines, physical fit/spill, no partial output on
+invalid later pages, actual pink colour and measured remaining-content guides.
 
 ### Repeating page title and measured-height hint
 

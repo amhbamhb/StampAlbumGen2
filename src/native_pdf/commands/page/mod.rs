@@ -1,4 +1,6 @@
 pub mod album_pages_border;
+pub mod album_pages_header;
+pub mod album_pages_header_pad;
 pub mod album_pages_margins;
 pub mod album_pages_marginse;
 pub mod album_pages_size;

@@ -1,9 +1,12 @@
-use super::{document::PageSettings, proof::GeometryProofSettings, units::mm_to_points, Result};
+use super::{
+    colour::NamedColour, document::PageSettings, proof::GeometryProofSettings,
+    text::PositionedTextLine, units::mm_to_points, Result,
+};
 use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
 
 /// Isolated proof: configured border and optional configured content-area guide.
-/// This is not an album renderer; text and rows are pending.
+/// Optional measured title/header text is supported; stamp rows are pending.
 pub fn write_page_geometry_proof(
     settings: &PageSettings,
     proof: &GeometryProofSettings,
@@ -54,17 +57,27 @@ pub fn write_page_geometry_proof(
                 )
                 .stroke();
         }
-        if let Some(title) = layout.title {
-            let [red, green, blue] = title.colour.rgb();
-            for line in title.lines {
-                page.text()
-                    .set_font(title.font.clone(), title.size_pt)
-                    .set_fill_color(Color::rgb(red, green, blue))
-                    .at(mm_to_points(line.left_mm), mm_to_points(line.baseline_mm))
-                    .write(&line.text)
-                    .map_err(|error| format!("Cannot draw native page title: {error}"))?;
-            }
+        if let Some(header) = layout.header {
+            draw_text_lines(
+                &mut page,
+                header.font,
+                header.size_pt,
+                header.colour,
+                header.lines,
+                "header",
+            )?;
         }
+        if let Some(title) = layout.title {
+            draw_text_lines(
+                &mut page,
+                title.font,
+                title.size_pt,
+                title.colour,
+                title.lines,
+                "title",
+            )?;
+        }
+
         document.add_page(page);
     }
     document.save(output).map_err(|error| {
@@ -73,4 +86,24 @@ pub fn write_page_geometry_proof(
             output.display()
         )
     })
+}
+
+fn draw_text_lines(
+    page: &mut Page,
+    font: oxidize_pdf::text::Font,
+    size_pt: f64,
+    colour: NamedColour,
+    lines: Vec<PositionedTextLine>,
+    kind: &str,
+) -> Result<()> {
+    let [red, green, blue] = colour.rgb();
+    for line in lines {
+        page.text()
+            .set_font(font.clone(), size_pt)
+            .set_fill_color(Color::rgb(red, green, blue))
+            .at(mm_to_points(line.left_mm), mm_to_points(line.baseline_mm))
+            .write(&line.text)
+            .map_err(|error| format!("Cannot draw native page {kind}: {error}"))?;
+    }
+    Ok(())
 }

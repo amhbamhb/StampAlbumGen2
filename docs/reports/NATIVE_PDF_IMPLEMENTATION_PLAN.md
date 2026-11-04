@@ -2,11 +2,65 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 17
-**Status:** Native repeating page title with shared measurements and TOML minimum-height hint implemented; existing geometry/colour compatibility retained; production backend not integrated
+**Revision:** 18
+**Status:** Native repeating page header/padding and title with shared measurements and TOML hints implemented; existing geometry/colour compatibility retained; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Measured repeating header and padding (#68)
+
+The maintainer approved `ALBUM_PAGES_HEADER` and `ALBUM_PAGES_HEADER_PAD`.
+Each owns a separate compiled command module. Header position supports L/C/R,
+LR (odd-left/even-right physical pages), and RL (reverse). Header font, size,
+text, signed padding and minimum-height hint are independent TOML values;
+existing section-over-root position/colour spellings are reused. Shipped
+defaults are disabled/HN/8 pt/"Stamp Album Header"/0 mm/automatic/C/black.
+The local file receives only the native header table; existing choices remain.
+Missing/invalid fields return keyed redacted errors without hidden defaults.
+
+Seven isolated AlbumEasy 4.5 cases/nine pages verify 8/25 pt Helvetica,
+multiline 16 pt Times Bold plus title, signed/omitted padding, and LR/RL
+with asymmetric even margins. Independent renders matched complete page traces.
+Fourteen source/PDF hashes are frozen in the new header-v1 fixture directory.
+
+**Reference correction found by actual PDF testing:** the bottom baseline is
+2 **mm**, not 2 PDF points, above the top margin boundary plus configured padding.
+Multiline headers grow upwards; horizontal alignment uses margin bounds.
+These are measured command semantics, not configurable policy defaults.
+Native glyph checks now match each header font/size/position within 0.01 mm.
+Title interaction retains previously verified coordinates.
+
+Shared positioned text lines and drawing serve header and title. Normal headers
+do not push content down. Native minimum hints extend reservation downwards
+without moving glyphs; only spill into content lowers its boundary before title
+layout. This is an explicit safety difference from AlbumEasy, not identical
+pagination. Physical overflow, over-wide text and unusable content are errors.
+All pages preflight before saving, including invalid later-page headers.
+Standard-font AFM measurements remain line boxes, not exact glyph-outline/
+italic-overhang certification. Automatic wrapping, custom fonts, header date/
+number expansion, footer and general stamp/row layout remain unimplemented.
+
+Branch `issue/68-native-pdf-page-header`; no production app/CLI/UI routing,
+merge or push. Existing diagram baseline and unrelated manual/design/autosave
+files are unchanged by this slice. Full roadmap text/row/integration items
+remain partial; this is an isolated reusable command checkpoint.
+
+Validation: **51 passed, 0 failed, 0 ignored** (eight header, 33 preceding
+native tests and ten main-config tests). Targeted Clippy/focused formatting
+and scoped diff checks pass with pre-existing application warnings only.
+Windows GNU library/example cross-compilation passes with optional rfd disabled;
+Windows runtime execution and physical printing remain unverified.
+MuPDF reports unavailable ICC support; no physical-colour match is claimed.
+
+The saved three-page demonstration uses a 16 pt LR header, 3 mm padding,
+25 mm minimum reservation, and a separately configured title. Header measured
+height is **5.2211 mm**, reservation bottom **253.4527 mm**, and remaining content
+top after the title **246.1947 mm**. Its raster was visually inspected.
+The actual local configuration still renders three geometry-only pages with
+title/header disabled and reports 235 unapplied settings. No database rows or
+source inputs are modified/moved; test tempdirs clean themselves up, references
+are copied, and generated proofs/logs/knowledge stay in the session workspace.
 
 #### Measured repeating page title (#67)
 
