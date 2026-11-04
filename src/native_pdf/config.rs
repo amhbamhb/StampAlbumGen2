@@ -7,6 +7,7 @@ use super::{
         album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_footer_pad::FooterPadding,
         album_pages_header::{AlbumPagesHeader, HeaderPosition},
+        album_pages_header_date::AlbumPagesHeaderDate,
         album_pages_header_number::AlbumPagesHeaderNumber,
         album_pages_header_pad::HeaderPadding,
         album_pages_margins::Margins,
@@ -15,6 +16,7 @@ use super::{
         album_pages_spacing::Spacing,
         album_pages_title::AlbumPagesTitle,
     },
+    date::{DateFormat, DateSource},
     document::PageSettings,
     proof::GeometryProofSettings,
     text::TextPosition,
@@ -302,6 +304,41 @@ impl NativePdfConfig {
                 native.insert("header_number".into(), Value::Table(settings));
             }
         }
+        if native.contains_key("header_date") {
+            let mut settings = table(&mut native, "header_date", "native_pdf.")?;
+            let prefix = "native_pdf.header_date.";
+            let enabled = boolean(&mut settings, "enabled", prefix)?;
+            let font = string(&mut settings, "font", prefix)?;
+            let size = number(&mut settings, "size_pt", prefix, "points")?;
+            let position = TextPosition::parse_for(
+                &string(&mut settings, "position", prefix)?,
+                "native_pdf.header_date.position",
+            )?;
+            let format = DateFormat::parse(&string(&mut settings, "format", prefix)?)?;
+            let separator = string(&mut settings, "separator", prefix)?;
+            let before = string(&mut settings, "before", prefix)?;
+            let after = string(&mut settings, "after", prefix)?;
+            let source_token = string(&mut settings, "date_source", prefix)?;
+            let fixed_date = string(&mut settings, "fixed_date", prefix)?;
+            let source = DateSource::parse(&source_token, &fixed_date)?;
+            let (padding, minimum, colour) = header_policy
+                .ok_or("native_pdf.header_date requires explicit native_pdf.header padding/height/colour settings")?;
+            let style =
+                AlbumPagesHeader::new(&font, size, position, &fixed_date, padding, minimum, colour)
+                    .map_err(|error| {
+                        format!(
+                            "native_pdf.header_date.font/size_pt/position/before/after: {error}"
+                        )
+                    })?;
+            let command =
+                AlbumPagesHeaderDate::new(style, format, &separator, &before, &after, source)?;
+            if enabled {
+                page_settings.set_header_date(command);
+            }
+            if !settings.is_empty() {
+                native.insert("header_date".into(), Value::Table(settings));
+            }
+        }
         if native.contains_key("title") {
             let mut title = table(&mut native, "title", "native_pdf.")?;
             let enabled = match title.remove("enabled") {
@@ -427,9 +464,16 @@ impl NativePdfConfig {
         } else {
             vec![1, 2]
         };
+        let generation_date = page_settings.capture_generation_date();
         for number in pages {
-            let layout = if numbering_enabled {
-                page_settings.resolve_with_page_count(number, proof.page_count)
+            let layout = if numbering_enabled || generation_date.is_some() {
+                // Legacy validation still checks both base/even geometry when
+                // proof count is one; do not remove that existing safety gate.
+                page_settings.resolve_with_context(
+                    number,
+                    proof.page_count.max(number),
+                    generation_date,
+                )
             } else {
                 page_settings.resolve(number)
             }

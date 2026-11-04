@@ -1196,3 +1196,17 @@ position = "R" # Physical-page parity: L, C, R, LR or RL.
 start = 1
 before = "Page "
 after = " of $PAGES$" # Final document count, not the last printed label.
+
+# Generation date is local and captured once per document. Fixed mode is reproducible.
+# Every field, including the inactive fixed override, must be valid.
+[native_pdf.header_date]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "L" # L, C, R, LR or RL; independent of header text/number position.
+format = "YMD" # YMD, DMY or MDY.
+separator = "-"
+before = "Generated: "
+after = ""
+date_source = "generation" # generation or fixed.
+fixed_date = "2026-01-01" # Used only when date_source = "fixed"; YYYY-MM-DD.

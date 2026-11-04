@@ -2,11 +2,72 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 21
-**Status:** Native header/footer numbering and actionable top-text overlap checks with explicit TOML policy; production backend not integrated
+**Revision:** 22
+**Status:** Native header generation dates with fixed-date override join measured text/numbering and overlap checks; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Header generation date and deterministic date context (#72)
+
+The maintainer approved header dates, all three formats and a generation-date
+default with fixed-date override. Separate `ALBUM_PAGES_HEADER_DATE` command
+state reuses measured header placement, colour, padding and minimum-height hints.
+Explicit `[native_pdf.header_date]` defaults are disabled/HN/8 pt/L/YMD/"-"/
+"Generated:" followed by a space/empty suffix/generation/2026-01-01 fixed override.
+No rendering fallback values are supplied. All fields and the inactive override
+are validated even when disabled; local user settings are preserved.
+
+Generation mode uses local calendar date captured once per document outside the
+page loop; fixed mode uses strict valid YYYY-MM-DD in years 0001–9999.
+YMD/DMY/MDY pad month/day to two and year to four digits; separator and prefix/
+suffix remain independent literal WinAnsi strings, empty allowed. Configuration
+loading uses a separate preview date for validation, not a frozen rendering date.
+`resolve_with_context` and the explicit-date proof entry point let callers use
+the same date for layout/drawing/reporting. Legacy resolving refuses generation
+mode without a context. The ordinary writer captures once; fixed mode ignores
+supplied generation context. No silent local-to-UTC fallback is introduced.
+
+Seven actual AlbumEasy 4.5 cases/11 pages were independently repeated with
+identical complete page traces. Observed date 2026-11-03 is frozen separately;
+15 hashes cover the source/PDF/date bundle. Native tests use that fixed date,
+not today's clock. Every reference date/header/number/title glyph/font/size
+matches within 0.01 mm for all formats, L/C/R/LR/RL, custom/empty separators,
+multiline 16 pt Times Bold, 25 pt Helvetica, asymmetric even margins and
+coexistence. Actual pink colour and measured hint/content guides are checked.
+Reference ordering is header number, footer number, header date, plain header/
+footer and title; date reservation applies before title and stamp content.
+
+The shared AFM line-box check now includes date vs header text, date vs header
+number and date vs title. Errors identify physical page/keys; code TODO records
+future UI notification/correction. No automatic movement or UI is implemented.
+Every page is preflighted before saving; an invalid page-2 date preserves
+existing output and creates no new output. Signed padding border overlap is
+still intentional; hint rectangles alone are not glyph collisions.
+
+Validation: **87 passed, 0 failed, 0 ignored** (76 native integration tests
+including ten new date tests, one shared collision unit test and ten main-config
+tests). Focused Clippy, formatting and scoped diff checks pass. Windows GNU
+library/example compilation passes without optional rfd; Windows runtime/
+default-feature build/printing remain unverified. Calendar/leap-year/redacted
+errors, immutable snapshots, explicit fixed/generation contexts across a year
+boundary and all twelve built-in fonts' exact-width boundaries are covered.
+Existing app warnings and MuPDF unavailable-ICC warning remain.
+
+The three-page demo is visually checked: pink date left, "Collection" centre,
+header numbers 8/9/10 right, black 25 pt title, independent footer labels 1/2/3.
+The fixed date is the same on every page; a shared 25 mm hint leaves page-1
+content top **244.3813 mm**. Ignored local config remains three geometry-only
+pages, disabled text/date/numbers and 227 unapplied keys.
+
+Branch `issue/72-native-pdf-header-date`; maintainer requested a scoped local
+commit after validation. No merge/push requested.
+Broad T005/T006/T007/T046 remain partial; footer dates, custom fonts/wrapping,
+exact glyph-outline/italic-overhang certification, full pagination/count
+convergence and production app/UI/backend remain pending. Source imports,
+databases, staged user manual/design/autosave work and baseline diagram are
+untouched. Synthetic fixtures are copied, no inputs moved/deleted; test tempdirs
+self-clean, while evidence/demo/reports/isolated knowledge stay session-only.
 
 #### Header page numbering and overlap diagnostics (#71)
 

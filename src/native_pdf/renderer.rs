@@ -12,10 +12,24 @@ pub fn write_page_geometry_proof(
     proof: &GeometryProofSettings,
     output: &Path,
 ) -> Result<()> {
+    let generation_date = settings.capture_generation_date();
+    write_page_geometry_proof_with_date(settings, proof, output, generation_date)
+}
+
+/// Explicit context entry point for deterministic generation-date testing and
+/// callers that also report the resolved layout. Fixed TOML dates take precedence.
+pub fn write_page_geometry_proof_with_date(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    output: &Path,
+    generation_date: Option<chrono::NaiveDate>,
+) -> Result<()> {
     proof.validate()?;
     let layouts = (1..=proof.page_count)
         .map(|number| {
-            let layout = settings.resolve_with_page_count(number, proof.page_count)?;
+            let layout = settings
+                .resolve_with_context(number, proof.page_count, generation_date)
+                .map_err(|error| format!("Native PDF page {number}: {error}"))?;
             proof.validate_layout(&layout)?;
             Ok(layout)
         })
@@ -75,6 +89,16 @@ pub fn write_page_geometry_proof(
                 number.colour,
                 number.lines,
                 "footer number",
+            )?;
+        }
+        if let Some(date) = layout.header_date {
+            draw_text_lines(
+                &mut page,
+                date.font,
+                date.size_pt,
+                date.colour,
+                date.lines,
+                "header date",
             )?;
         }
         if let Some(header) = layout.header {

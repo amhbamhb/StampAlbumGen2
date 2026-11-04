@@ -5,6 +5,7 @@ use super::{
         album_pages_footer::{AlbumPagesFooter, FooterLayout},
         album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_header::{AlbumPagesHeader, HeaderLayout},
+        album_pages_header_date::AlbumPagesHeaderDate,
         album_pages_header_number::AlbumPagesHeaderNumber,
         album_pages_margins::Margins,
         album_pages_marginse::EvenMargins,
@@ -12,6 +13,7 @@ use super::{
         album_pages_spacing::Spacing,
         album_pages_title::{AlbumPagesTitle, TitleLayout},
     },
+    date::DateSource,
     text::text_lines_overlap,
     Result,
 };
@@ -65,6 +67,7 @@ pub struct PageLayout {
     pub title: Option<TitleLayout>,
     pub header: Option<HeaderLayout>,
     pub header_number: Option<HeaderLayout>,
+    pub header_date: Option<HeaderLayout>,
     pub footer: Option<FooterLayout>,
     pub footer_number: Option<FooterLayout>,
 }
@@ -81,6 +84,7 @@ pub struct PageSettings {
     title: Option<AlbumPagesTitle>,
     header: Option<AlbumPagesHeader>,
     header_number: Option<AlbumPagesHeaderNumber>,
+    header_date: Option<AlbumPagesHeaderDate>,
     footer: Option<AlbumPagesFooter>,
     footer_number: Option<AlbumPagesFooterNumber>,
 }
@@ -104,6 +108,7 @@ impl PageSettings {
             title: None,
             header: None,
             header_number: None,
+            header_date: None,
             footer: None,
             footer_number: None,
         }
@@ -123,6 +128,19 @@ impl PageSettings {
 
     pub fn set_header_number(&mut self, number: AlbumPagesHeaderNumber) {
         self.header_number = Some(number);
+    }
+
+    pub fn set_header_date(&mut self, date: AlbumPagesHeaderDate) {
+        self.header_date = Some(date);
+    }
+
+    /// Capture local calendar date once, outside the page loop. Fixed/disabled
+    /// dates do not consult the clock; callers can reuse this exact context.
+    pub fn capture_generation_date(&self) -> Option<chrono::NaiveDate> {
+        match self.header_date.as_ref().map(AlbumPagesHeaderDate::source) {
+            Some(DateSource::Generation) => Some(chrono::Local::now().date_naive()),
+            _ => None,
+        }
     }
 
     pub fn set_footer(&mut self, footer: AlbumPagesFooter) {
@@ -180,13 +198,22 @@ impl PageSettings {
         if self.header_number.is_some() {
             return Err("ALBUM_PAGES_HEADER_NUMBER requires the final page count; use resolve_with_page_count".into());
         }
-        self.resolve_page(page_number, None)
+        self.resolve_page(page_number, None, None)
     }
 
     pub fn resolve_with_page_count(
         &self,
         page_number: usize,
         total_pages: usize,
+    ) -> Result<PageLayout> {
+        self.resolve_with_context(page_number, total_pages, None)
+    }
+
+    pub fn resolve_with_context(
+        &self,
+        page_number: usize,
+        total_pages: usize,
+        generation_date: Option<chrono::NaiveDate>,
     ) -> Result<PageLayout> {
         if total_pages == 0
             || u32::try_from(total_pages).is_err()
@@ -197,10 +224,15 @@ impl PageSettings {
                 "Native PDF physical page must be within a positive final PDF page count".into(),
             );
         }
-        self.resolve_page(page_number, Some(total_pages))
+        self.resolve_page(page_number, Some(total_pages), generation_date)
     }
 
-    fn resolve_page(&self, page_number: usize, total_pages: Option<usize>) -> Result<PageLayout> {
+    fn resolve_page(
+        &self,
+        page_number: usize,
+        total_pages: Option<usize>,
+        generation_date: Option<chrono::NaiveDate>,
+    ) -> Result<PageLayout> {
         if page_number == 0 {
             return Err("Native PDF page number must be one-based".into());
         }
@@ -263,6 +295,37 @@ impl PageSettings {
                 return Err(format!("Native PDF page {page_number}: native_pdf.header.text overlaps ALBUM_PAGES_HEADER_NUMBER; adjust album_pages_header_position or native_pdf.header_number.position, native_pdf.header.text, native_pdf.header_number.before/after or font/size_pt values"));
             }
         }
+        let header_date = self
+            .header_date
+            .as_ref()
+            .map(|date| date.layout(margin_bounds, physical_page, page_number, generation_date))
+            .transpose()?;
+        if let Some(date) = &header_date {
+            content_bounds.top = content_bounds.top.min(date.reservation_bottom_mm);
+            content_bounds.validate().map_err(|error| {
+                format!("ALBUM_PAGES_HEADER_DATE/native_pdf.header.minimum_height_mm: {error}")
+            })?;
+            for (element, layout, keys) in [
+                (
+                    "native_pdf.header.text",
+                    header.as_ref(),
+                    "album_pages_header_position or native_pdf.header.font/size_pt/text",
+                ),
+                (
+                    "ALBUM_PAGES_HEADER_NUMBER",
+                    header_number.as_ref(),
+                    "native_pdf.header_number.position/font/size_pt/before/after",
+                ),
+            ] {
+                if let Some(layout) = layout {
+                    if text_lines_overlap(&date.lines, date.bounds, &layout.lines, layout.bounds)? {
+                        // TODO(native-pdf-ui): Include date conflicts in the UI's
+                        // physical-page warning and TOML correction choices.
+                        return Err(format!("Native PDF page {page_number}: ALBUM_PAGES_HEADER_DATE overlaps {element}; adjust native_pdf.header_date.position/font/size_pt/before/after/separator or {keys}"));
+                    }
+                }
+            }
+        }
         let footer = self
             .footer
             .as_ref()
@@ -306,6 +369,7 @@ impl PageSettings {
             for (element, layout, keys) in [
                 ("native_pdf.header.text", header.as_ref(), "album_pages_header_position, native_pdf.header.font/size_pt/text/padding_mm"),
                 ("ALBUM_PAGES_HEADER_NUMBER", header_number.as_ref(), "native_pdf.header_number.position/font/size_pt/before/after, native_pdf.header.padding_mm"),
+                ("ALBUM_PAGES_HEADER_DATE", header_date.as_ref(), "native_pdf.header_date.position/font/size_pt/before/after/separator, native_pdf.header.padding_mm"),
             ] {
                 if let Some(layout) = layout {
                     if text_lines_overlap(&layout.lines, layout.bounds, &title.lines, title.bounds)? {
@@ -323,6 +387,7 @@ impl PageSettings {
             title,
             header,
             header_number,
+            header_date,
             footer,
             footer_number,
         })

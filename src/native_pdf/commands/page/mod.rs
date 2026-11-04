@@ -3,6 +3,7 @@ pub mod album_pages_footer;
 pub mod album_pages_footer_number;
 pub mod album_pages_footer_pad;
 pub mod album_pages_header;
+pub mod album_pages_header_date;
 pub mod album_pages_header_number;
 pub mod album_pages_header_pad;
 pub mod album_pages_margins;

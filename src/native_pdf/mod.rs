@@ -3,6 +3,7 @@
 pub mod colour;
 pub mod commands;
 pub mod config;
+pub mod date;
 pub mod document;
 mod numbering;
 pub mod proof;

@@ -60,6 +60,13 @@ overrides the root `color_album_border` value.
 | `[native_pdf.header_number].position` | `ALBUM_PAGES_HEADER_NUMBER` | L/C/R/LR/RL using physical parity; template R; independent of plain header/footer |
 | `[native_pdf.header_number].start` | `ALBUM_PAGES_HEADER_NUMBER` | Signed 32-bit integer; template 1; checked printed-label arithmetic |
 | `[native_pdf.header_number].before`, `.after` | `ALBUM_PAGES_HEADER_NUMBER` | Explicit WinAnsi strings, empty allowed; templates "Page " / " of $PAGES$"; all total tokens expanded |
+| `[native_pdf.header_date].enabled` | Native header date opt-in | Required boolean when table exists; template false |
+| `[native_pdf.header_date].font`, `.size_pt` | `ALBUM_PAGES_HEADER_DATE` | Independent built-in font/positive point size; templates HN/8 |
+| `[native_pdf.header_date].position` | `ALBUM_PAGES_HEADER_DATE` | L/C/R/LR/RL using physical parity; template L |
+| `[native_pdf.header_date].format` | `ALBUM_PAGES_HEADER_DATE` | YMD/DMY/MDY, padded fields; template YMD |
+| `[native_pdf.header_date].separator`, `.before`, `.after` | `ALBUM_PAGES_HEADER_DATE` | Explicit WinAnsi strings, empty allowed; templates "-" / "Generated: " / ""; literal, no number-token substitution |
+| `[native_pdf.header_date].date_source` | Native document date policy | generation/fixed; template generation; local date captured once at generation |
+| `[native_pdf.header_date].fixed_date` | Native reproducible override | Strict valid YYYY-MM-DD, years 0001–9999; template 2026-01-01; validated even inactive, used only in fixed mode |
 
 Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
 names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
@@ -107,8 +114,8 @@ header padding/minimum height and header colour; the header policy table is
 required even when its plain text is disabled. All number fields are required
 and validated when the number table exists, including when disabled. Absence
 preserves older no-number proofs. Header/footer starts and styles are independent;
-both require the same final actual document count. No date expansion or
-automatic wrapping is implemented.
+both require the same final actual document count. Header dates are separately
+supported; footer dates and automatic wrapping remain pending.
 
 Header text, header number and title are checked pairwise using nonblank
 per-line AFM boxes. Touching edges and overlapping reservation hints alone
@@ -116,8 +123,20 @@ are not text collisions. Errors identify the physical page, conflicting
 elements and correction keys; every page is preflighted before saving, so
 late digit/parity collisions cannot truncate an existing output. Edit the
 named TOML values and rerun for now. The code records a future UI warning
-and correction dialog TODO; no UI is implemented, and future date/image
-elements are not covered yet. These checks are not exact glyph outlines.
+and correction dialog TODO; no UI is implemented, and future footer-date/
+image elements are not covered yet. Header date is additionally checked against
+header text/number/title using the same mechanism. These checks are not exact glyph outlines.
+
+The optional header-date table requires every explicit field, including when
+disabled, and requires the native header padding/hint/colour policy. Generation
+mode captures local calendar date once at document creation, not during config
+loading or each page. Fixed mode uses its validated override and ignores the
+supplied generation context. Both use the same shared header measurement,
+reservation and draw state. `resolve_with_context` and the explicit-date writer
+allow consistent reporting and deterministic tests; legacy resolve methods
+reject generation mode without context. Loader validation uses a separate
+preview date and renderer preflights all pages with the actual document date.
+Missing/invalid dates are explicit keyed errors with no source values echoed.
 
 Footers sit below the bottom margin. The first baseline is one font-size step
 (points converted to mm) plus **0.5 mm** below the boundary, minus padding;

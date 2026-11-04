@@ -1,4 +1,6 @@
-use stamp_album_gen2::native_pdf::{config::NativePdfConfig, renderer::write_page_geometry_proof};
+use stamp_album_gen2::native_pdf::{
+    config::NativePdfConfig, renderer::write_page_geometry_proof_with_date,
+};
 use std::{error::Error, path::PathBuf};
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -24,13 +26,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     }
     if !config.unapplied_keys.is_empty() {
-        eprintln!("Native proof applies page geometry, border colours, optional measured title/header/footer and header/footer page numbers; {} other config settings are not applied (including general text, custom fonts, dates, images and runtime options).", config.unapplied_keys.len());
+        eprintln!("Native proof applies page geometry, border colours, optional measured title/header/footer, header/footer page numbers and header dates; {} other config settings are not applied (including general text, custom fonts, footer dates, images and runtime options).", config.unapplied_keys.len());
     }
-    write_page_geometry_proof(&config.page_settings, &config.proof, &output)?;
+    let generation_date = config.page_settings.capture_generation_date();
+    write_page_geometry_proof_with_date(
+        &config.page_settings,
+        &config.proof,
+        &output,
+        generation_date,
+    )?;
     println!("Created {} using {}: {} diagnostic pages; configured borders; guide enabled: {}, width: {} mm, RGB: {:?}; no stamp rows. Vertical inter-element gap state: {} mm.", output.display(), config_path.display(), config.proof.page_count, config.proof.guide_enabled, config.proof.guide_width_mm, config.proof.guide_colour.rgb(), config.page_settings.spacing().vertical_mm());
-    let first = config
-        .page_settings
-        .resolve_with_page_count(1, config.proof.page_count)?;
+    let first =
+        config
+            .page_settings
+            .resolve_with_context(1, config.proof.page_count, generation_date)?;
+    if let Some(date) = first.header_date {
+        println!("Page 1 header date: {:?}; measured height {:.4} mm, reserved height {:.4} mm; remaining content top {:.4} mm.", date.lines.iter().map(|line| line.text.as_str()).collect::<Vec<_>>(), date.measured_height_mm, date.reserved_height_mm, first.content_bounds.top);
+    }
     if let Some(number) = first.header_number {
         println!("Page 1 header number: {:?}; measured height {:.4} mm, reserved height {:.4} mm; remaining content top {:.4} mm.", number.lines.iter().map(|line| line.text.as_str()).collect::<Vec<_>>(), number.measured_height_mm, number.reserved_height_mm, first.content_bounds.top);
     }
