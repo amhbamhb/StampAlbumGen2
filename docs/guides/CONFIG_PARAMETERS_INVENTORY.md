@@ -34,6 +34,14 @@ overrides the root `color_album_border` value.
 | `[native_pdf.crop_marks].horizontal_padding_mm`, `.vertical_padding_mm` | `ALBUM_PAGES_CROP_MARKS` | Finite nonnegative mm; templates 1.0/1.0; centres offset inward by padding minus half line width |
 | `[native_pdf.crop_marks].arms_mm` | `ALBUM_PAGES_CROP_MARKS` | Finite nonnegative half-length of each cross segment; template 5.0; zero makes degenerate butt-capped segments |
 | `[native_pdf.crop_marks].colour` | Native crop colour extension | Required opaque SVG named colour; template black, independent of all border/text colours; AlbumEasy references use black |
+| `[native_pdf.decorative_border].enabled` | Native decorative-border opt-in | Optional table; all fields required/validated if present; template false; disabled mode opens no files |
+| `[native_pdf.decorative_border].definition_file` | `ALBUM_PAGES_DECORATIVE_BORDER` | String; template empty, nonempty when enabled; relative to explicit config directory, never AlbumEasy/global search; PNG path relative to definition |
+| `[native_pdf.decorative_border].image_scale` | Omitted `IMAGE_SCALE` policy | Explicit positive unitless factor; template 1.0; PNG pixels become points before scaling |
+| `[native_pdf.decorative_border].corner_padding_h_mm`, `.corner_padding_v_mm` | Omitted `IMAGE_CORNER_PAD` policy | Finite signed mm; templates 0/0; positive moves corners outward |
+| `[native_pdf.decorative_border].line_outer_mm`, `.line_inner1_mm`, `.line_inner2_mm`, `.line_spacing_mm` | Omitted `BORDER_LINES` policy | Nonnegative mm; templates all 0; disabled slots retain fixed centreline spacing, not cumulative widths |
+| `[native_pdf.decorative_border].line_padding_h_mm`, `.line_padding_v_mm` | Omitted `BORDER_PAD` policy | Signed mm; templates 0/0; positive moves lines outward |
+| `[native_pdf.decorative_border].end_offset_h_mm`, `.end_offset_v_mm` | Omitted `BORDER_END_OFFSETS` policy | Nonnegative mm; templates 0/0; endpoints measured from original margin corners |
+| `[native_pdf.decorative_border].colour` | Native decorative-line colour | Opaque named colour; template black, independent of numeric border; does not recolour PNG artwork |
 | `[native_pdf.title].enabled` | Native title extension | Required boolean when title table exists; template false |
 | `[native_pdf.title].text` | `ALBUM_PAGES_TITLE` | Required nonempty WinAnsi string; template "Stamp Album"; explicit newlines supported |
 | `[native_pdf.title].vspace_after_mm` | `ALBUM_PAGES_TITLE` | Required finite following gap; template 0.0 mm; negative values explicitly allow overlap |

@@ -71,6 +71,48 @@ pub fn write_page_geometry_proof_with_date(
                 )
                 .stroke();
         }
+        if let Some(border) = layout.decorative_border {
+            let footprints = border.footprints();
+            if footprints.iter().any(|b| {
+                b.left < 0.0
+                    || b.bottom < 0.0
+                    || b.right > layout.size.width_mm()
+                    || b.top > layout.size.height_mm()
+            }) {
+                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER crosses the physical page and will be clipped; adjust IMAGE_SCALE/IMAGE_CORNER_PAD/BORDER_PAD or native_pdf.decorative_border policy. Page size is unchanged.",index+1);
+            }
+            if footprints.iter().any(|b| {
+                b.left < layout.content_bounds.right
+                    && b.right > layout.content_bounds.left
+                    && b.bottom < layout.content_bounds.top
+                    && b.top > layout.content_bounds.bottom
+            }) {
+                // TODO(native-pdf-ui): Show page/definition element and offer scale,
+                // padding/end-offset or content-spacing/hint corrections. Do not silently move content.
+                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER footprint intersects the content area; transparent image pixels may be clear. Adjust definition scale/padding/end offsets or content spacing/height hints. Decorative borders do not reserve content space (AlbumEasy-compatible).",index+1);
+            }
+            page.add_image("NativeDecorativeCorner", border.image.as_ref().clone());
+            for [x, y, width, height] in border.corners {
+                page.draw_image(
+                    "NativeDecorativeCorner",
+                    mm_to_points(x),
+                    mm_to_points(y),
+                    mm_to_points(width),
+                    mm_to_points(height),
+                )
+                .map_err(|error| format!("Cannot draw native decorative corner: {error}"))?;
+            }
+            let [red, green, blue] = border.colour.rgb();
+            for line in border.lines {
+                let [a, b] = line.points;
+                page.graphics()
+                    .set_stroke_color(Color::rgb(red, green, blue))
+                    .set_line_width(mm_to_points(line.width_mm))
+                    .move_to(mm_to_points(a[0]), mm_to_points(a[1]))
+                    .line_to(mm_to_points(b[0]), mm_to_points(b[1]))
+                    .stroke();
+            }
+        }
         if let Some(marks) = layout.crop_marks {
             if marks.clipped {
                 // TODO(native-pdf-ui): Show the physical-page clipping warning

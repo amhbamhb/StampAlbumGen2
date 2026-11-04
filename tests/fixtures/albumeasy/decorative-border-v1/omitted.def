@@ -1,0 +1,2 @@
+# All omitted definition settings resolve from explicit native TOML policy.
+IMAGE_CORNER("ornament.png")

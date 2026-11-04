@@ -4,6 +4,7 @@ use super::{
     commands::page::{
         album_pages_border::PageBorder,
         album_pages_crop_marks::AlbumPagesCropMarks,
+        album_pages_decorative_border::{AlbumPagesDecorativeBorder, DecorativeBorderPolicy},
         album_pages_footer::AlbumPagesFooter,
         album_pages_footer_date::AlbumPagesFooterDate,
         album_pages_footer_number::AlbumPagesFooterNumber,
@@ -57,11 +58,20 @@ impl NativePdfConfig {
         let source = fs::read_to_string(path).map_err(|error| {
             format!("Cannot read native PDF config {}: {error}", path.display())
         })?;
-        Self::from_toml(&source)
+        Self::from_toml_in(&source, path.parent().unwrap_or_else(|| Path::new("")))
             .map_err(|error| format!("Native PDF config {}: {error}", path.display()))
     }
 
     pub fn from_toml(source: &str) -> Result<Self> {
+        Self::parse(source, None)
+    }
+
+    /// Explicit asset base for in-memory settings; never searches global/CWD directories.
+    pub fn from_toml_in(source: &str, base: &Path) -> Result<Self> {
+        Self::parse(source, Some(base))
+    }
+
+    fn parse(source: &str, base: Option<&Path>) -> Result<Self> {
         // TODO(native-pdf-ui): Surface missing/empty/invalid setting errors in the
         // settings UI, identify the key and ask the user to correct their TOML.
         // Keep shipped defaults in TOML; never silently replace a user's value.
@@ -106,6 +116,48 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        if native.contains_key("decorative_border") {
+            let prefix = "native_pdf.decorative_border.";
+            let mut settings = table(&mut native, "decorative_border", "native_pdf.")?;
+            let enabled = boolean(&mut settings, "enabled", prefix)?;
+            let filename = string(&mut settings, "definition_file", prefix)?;
+            let values = DecorativeBorderPolicy::KEYS
+                .iter()
+                .map(|key| {
+                    number(
+                        &mut settings,
+                        key,
+                        prefix,
+                        if *key == "image_scale" {
+                            "scale factor"
+                        } else {
+                            "millimetres"
+                        },
+                    )
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let colour = NamedColour::parse(&string(&mut settings, "colour", prefix)?)
+                .map_err(|error| format!("{prefix}colour: {error}"))?;
+            let policy = DecorativeBorderPolicy::parse(&values, colour)?;
+            if enabled {
+                if filename.trim().is_empty() {
+                    return Err(format!(
+                        "{prefix}definition_file must not be empty when enabled"
+                    ));
+                }
+                let path = Path::new(&filename);
+                let path = if path.is_absolute() {
+                    path.to_path_buf()
+                } else {
+                    base.ok_or("native_pdf.decorative_border.definition_file is relative; use load or from_toml_in with an explicit config directory")?.join(path)
+                };
+                page_settings
+                    .set_decorative_border(AlbumPagesDecorativeBorder::load(&path, policy)?);
+            }
+            if !settings.is_empty() {
+                native.insert("decorative_border".into(), Value::Table(settings));
+            }
+        }
         if native.contains_key("crop_marks") {
             let mut settings = table(&mut native, "crop_marks", "native_pdf.")?;
             let prefix = "native_pdf.crop_marks.";

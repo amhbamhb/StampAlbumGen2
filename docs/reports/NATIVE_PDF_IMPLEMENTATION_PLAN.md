@@ -2,11 +2,81 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 24
-**Status:** Native crop marks verified with unchanged page/content geometry and explicit clipping warnings; production backend not integrated
+**Revision:** 25
+**Status:** Native decorative PNG corners/connecting lines verified with explicit asset/default policies and unchanged content geometry; edge ornaments and production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Decorative corner ornaments and connecting lines (#75)
+
+The maintainer approved `ALBUM_PAGES_DECORATIVE_BORDER` and selected corner
+ornaments plus connecting lines first. A separate command module loads a strict
+definition containing `IMAGE_CORNER`, `IMAGE_SCALE`, `IMAGE_CORNER_PAD`,
+`BORDER_LINES`, `BORDER_PAD` and `BORDER_END_OFFSETS`. Unsupported commands,
+including edge ornaments, fail with definition path/line rather than being
+silently omitted. Transparent PNG artwork in the fixtures is original synthetic
+test material, not copied AlbumEasy artwork.
+
+The optional complete `[native_pdf.decorative_border]` table has fourteen
+explicit fields: disabled/empty definition filename, scale 1, all padding,
+width/spacing/end-offset values 0, and black connecting lines. All fields
+validate even when disabled; absent tables preserve older configurations.
+Definition commands override their corresponding explicit omitted-command
+policy. Enabled relative definitions resolve beside the config, PNGs beside
+the definition; in-memory relative definitions require an explicit base path.
+There is no global/AlbumEasy directory search. Definition and PNG are loaded
+once and snapshotted, so later asset deletion does not change rendering.
+Errors identify settings without echoing arbitrary configuration/source values.
+
+Five AlbumEasy 4.5 cases/six pages were independently repeated with identical
+complete page traces; sixteen hashes freeze source/definition/PDF/PNG assets.
+Actual image and alpha-mask transforms, connecting stroke topology/endpoints,
+widths/colours, MediaBox and content anchors match. Pixel dimensions represent
+points multiplied by scale; corners mirror rather than rotate. Positive
+corner/line padding moves outward. Line centrelines advance by slot index
+times spacing, not cumulative width; disabled slots retain their spacing.
+Line endpoints remain based on unpadded margin corners. Sparse lines, signed
+padding, asymmetric even pages, fractional landscape paper and coexistence
+with a red numeric border are covered. Independent native line colour does
+not recolour PNGs. Raster samples verify opaque, partially transparent and
+clear pixels on mirrored corners, within two RGB levels per channel.
+
+Decorative borders intentionally reserve no content space. Numeric borders
+retain their existing content-inset semantics. Conservative rectangular PNG
+footprints and exact butt-capped stroke footprints produce page-specific
+clipping/content-intersection warnings without moving/resizing anything.
+Transparent pixels may be clear; this is not exact alpha/text collision
+certification. Dedicated header/footer/title collision checks against artwork
+are not implemented. A future UI TODO records correction choices; users must
+check text clearance. Existing text-overlap errors and all-page preflight remain.
+
+Validation: **117 passed, 0 failed, 0 ignored** (106 native integration tests,
+including ten decorative tests; ten main-config tests; one collision unit test).
+Additional checks cover strict syntax/unsupported commands, duplicate overrides,
+missing/corrupt/no-alpha PNGs, config/definition paths with spaces, asset
+snapshots, redaction, missing/disabled/template/unknown keys, finite geometry,
+overflow and later-page failure preserving new/existing output.
+Focused Clippy/format/scoped whitespace checks and Windows GNU library/example
+compilation pass. Windows runtime/default-feature build and physical printing
+remain unverified; existing application/ICC warnings remain.
+
+The three-page demo was visually inspected with mirrored corners, connecting
+lines, crop marks, header/date/number/title/footer and asymmetric even margins
+coexisting without visible text collision. Page 1 content bottom/top stay
+**36.0936/265.1549 mm**; no demo clipping/content warnings. The ignored local
+config has only a disabled decorative table appended; existing user values and
+three-page geometry-only output/227 unapplied keys are preserved.
+An intentional two-page oversized-artwork run emits exactly four actionable
+warnings (clipping plus content intersection on each page) while both pages
+retain their requested 100 x 150 mm MediaBox.
+
+Branch `issue/75-native-pdf-decorative-border`; no commit/merge/push requested.
+Broad T005/T006/T007/T046 remain partial. Production routes/import/pagination,
+databases, historical diagram and tagged album-globals test remain untouched.
+Unrelated manual/design/autosave staging and the existing roadmap EOF cleanup
+are preserved. Session evidence includes demos, traces, reports and isolated
+regenerated knowledge. Crop marks were locally committed as `68102d2a`.
 
 #### Crop marks with explicit clipping policy (#74)
 

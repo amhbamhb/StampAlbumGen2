@@ -682,6 +682,85 @@ The two ignored-by-default path/colour tests require `mutool` on `PATH`; the
 remaining tests do not. This remains an isolated native proof, not production
 CLI/UI/backend integration or physical print certification.
 
+### Decorative corner borders from a definition file
+
+The bounded native `ALBUM_PAGES_DECORATIVE_BORDER` implementation supports a
+transparent PNG corner ornament and optional connecting lines. Supported
+definition commands are `IMAGE_CORNER`, `IMAGE_SCALE`, `IMAGE_CORNER_PAD`,
+`BORDER_LINES`, `BORDER_PAD` and `BORDER_END_OFFSETS`. Edge-image commands and
+other unsupported syntax fail explicitly; no partially rendered border is
+returned as success. This is a border-definition parser, not a general album
+TXT importer. The installed artwork is not copied into this repository.
+Committed test artwork is an original asymmetric, partially transparent PNG.
+
+Copy the **complete** disabled `[native_pdf.decorative_border]` table from the
+template into an older local proof config. Set `enabled = true` and
+`definition_file = "my-border.txt"` (or a quoted absolute path). Create that
+definition beside the config and put your PNG beside the definition:
+
+```text
+IMAGE_CORNER("my-ornament.png")
+IMAGE_SCALE(1.0)
+IMAGE_CORNER_PAD(1 -4)
+BORDER_LINES(0.25 0.1 0 1.25)
+BORDER_PAD(0 -1)
+BORDER_END_OFFSETS(20 15)
+```
+
+One command per line is supported, with optional trailing semicolon and `#`
+comments outside quoted filenames; later repeated commands win. Filenames are
+double-quoted, without quote escapes or multiline continuation. PNGs must
+decode successfully and have an alpha channel. PNG dimensions are pixels
+treated as PDF points, multiplied by the positive scale factor. Corners are
+mirrored left/right and top/bottom, **not rotated**, preserving non-square
+artwork proportions. Positive corner/line padding moves outward; negative
+moves inward. Line endpoints are offset from the original margins. Connecting
+line centrelines advance by spacing alone, including disabled slots; widths
+are not added to that advance.
+
+Every TOML table field is explicit and validated even when disabled; disabled
+mode does not open a definition/PNG, and its filename may be empty. A missing
+table disables the feature for older configs. Definition commands override
+the corresponding TOML omitted-command policy: `image_scale` defaults in the
+shipped template to 1.0, all numeric padding/line/spacing/end-offset fields
+to 0.0, and `colour` to black. There are no runtime numeric fallback defaults.
+The independent named `colour` affects connecting lines only, not the artwork.
+
+`NativePdfConfig::load` resolves relative definition paths against the config
+file's directory; the PNG resolves against the definition directory. It does
+not search AlbumEasy's installation or silently use the working directory.
+The in-memory `from_toml` entry point requires absolute asset paths when enabled;
+`from_toml_in` accepts an explicit base directory. Use forward slashes in TOML
+paths for portable examples, or TOML literal strings for Windows backslashes.
+The loaded definition and decoded PNG are snapshotted for the run, so edits or
+deletions after loading cannot change its output.
+
+As verified against AlbumEasy, decorative borders coexist with numeric borders
+and **do not reserve space or move content**. Base/even margins position them.
+Check your title/header/footer and body clearance: conservative image rectangles
+(including transparent pixels) and actual connecting-line footprints produce an
+actionable warning if they intersect the remaining content area. A separate
+warning identifies physical-page clipping. Neither warning silently resizes or
+moves anything. Exact alpha-mask/text collision certification is not implemented;
+code TODOs retain future UI correction choices. Numeric overflow/unusable line
+geometry is an error, and all pages preflight before writing.
+
+Five synthetic cases/six pages were independently repeated with identical full
+page traces. Tests compare all actual native/reference image and alpha-mask
+transforms, dimensions, line topology/width/colour/coordinates, MediaBox and
+reference content anchors. Raster samples also verify black/red/partially
+transparent blue/clear pixels across mirrored corners. Parser, explicit config,
+relative-path/snapshot, missing/corrupt/no-alpha PNG, numeric safety and
+output-preservation tests run with:
+
+```bash
+cargo test --test native_pdf_decorative_border -- --include-ignored
+```
+
+Two ignored-by-default path/raster tests require `mutool` on `PATH`. Windows
+runtime/physical printing, edge ornaments and production app/UI/backend
+integration remain pending.
+
 ### Repeating page title and measured-height hint
 
 `ALBUM_PAGES_TITLE (Font Fontsize Title [vspace])` places a centred title on each

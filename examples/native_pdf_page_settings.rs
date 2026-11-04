@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     }
     if !config.unapplied_keys.is_empty() {
-        eprintln!("Native proof applies page geometry, border colours, optional crop marks, measured title/header/footer, header/footer page numbers and dates; {} other config settings are not applied (including general text, custom fonts, images and runtime options).", config.unapplied_keys.len());
+        eprintln!("Native proof applies page geometry, border colours, optional crop marks/decorative corner borders, measured title/header/footer, header/footer page numbers and dates; {} other config settings are not applied (including general text, custom fonts, stamp images, edge ornaments and runtime options).", config.unapplied_keys.len());
     }
     let generation_date = config.page_settings.capture_generation_date();
     write_page_geometry_proof_with_date(
@@ -42,6 +42,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             .resolve_with_context(1, config.proof.page_count, generation_date)?;
     if let Some(marks) = first.crop_marks {
         println!("Page 1 crop marks: four crosses, line width {} mm, RGB {:?}; clipped: {}; physical page {:.4} x {:.4} mm and content geometry unchanged.", marks.line_width_mm, marks.colour.rgb(), marks.clipped, first.size.width_mm(), first.size.height_mm());
+    }
+    if let Some(border) = first.decorative_border {
+        println!("Page 1 decorative border: four mirrored PNG corners and {} connecting strokes; RGB {:?}; unchanged content bounds {:.4}/{:.4}/{:.4}/{:.4} mm (left/bottom/right/top).",border.lines.len(),border.colour.rgb(),first.content_bounds.left,first.content_bounds.bottom,first.content_bounds.right,first.content_bounds.top);
     }
     if let Some(date) = first.footer_date {
         println!("Page 1 footer date: {:?}; measured height {:.4} mm, reserved height {:.4} mm; remaining content bottom {:.4} mm.", date.lines.iter().map(|line| line.text.as_str()).collect::<Vec<_>>(), date.measured_height_mm, date.reserved_height_mm, first.content_bounds.bottom);

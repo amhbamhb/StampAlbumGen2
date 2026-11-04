@@ -3,6 +3,7 @@ use super::{
     commands::page::{
         album_pages_border::PageBorder,
         album_pages_crop_marks::{AlbumPagesCropMarks, CropMarksLayout},
+        album_pages_decorative_border::{AlbumPagesDecorativeBorder, DecorativeBorderLayout},
         album_pages_footer::{AlbumPagesFooter, FooterLayout},
         album_pages_footer_date::AlbumPagesFooterDate,
         album_pages_footer_number::AlbumPagesFooterNumber,
@@ -65,6 +66,7 @@ impl Bounds {
 pub struct PageLayout {
     pub size: PageSize,
     pub crop_marks: Option<CropMarksLayout>,
+    pub decorative_border: Option<DecorativeBorderLayout>,
     pub margin_bounds: Bounds,
     pub content_bounds: Bounds,
     pub title: Option<TitleLayout>,
@@ -80,6 +82,7 @@ pub struct PageLayout {
 pub struct PageSettings {
     size: PageSize,
     crop_marks: Option<AlbumPagesCropMarks>,
+    decorative_border: Option<AlbumPagesDecorativeBorder>,
     margins: Margins,
     even_margins: Option<EvenMargins>,
     spacing: Spacing,
@@ -106,6 +109,7 @@ impl PageSettings {
         Self {
             size,
             crop_marks: None,
+            decorative_border: None,
             margins,
             even_margins: None,
             spacing,
@@ -128,6 +132,10 @@ impl PageSettings {
 
     pub fn set_crop_marks(&mut self, marks: AlbumPagesCropMarks) {
         self.crop_marks = Some(marks);
+    }
+
+    pub fn set_decorative_border(&mut self, border: AlbumPagesDecorativeBorder) {
+        self.decorative_border = Some(border);
     }
 
     pub fn set_title(&mut self, title: AlbumPagesTitle) {
@@ -442,6 +450,11 @@ impl PageSettings {
         }
         Ok(PageLayout {
             size: self.size,
+            decorative_border: self
+                .decorative_border
+                .as_ref()
+                .map(|border| border.layout(margin_bounds))
+                .transpose()?,
             crop_marks: self
                 .crop_marks
                 .map(|marks| marks.layout(self.size))
