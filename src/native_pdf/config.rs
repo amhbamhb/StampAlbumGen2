@@ -3,6 +3,7 @@ use super::{
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder,
+        album_pages_crop_marks::AlbumPagesCropMarks,
         album_pages_footer::AlbumPagesFooter,
         album_pages_footer_date::AlbumPagesFooterDate,
         album_pages_footer_number::AlbumPagesFooterNumber,
@@ -105,6 +106,32 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        if native.contains_key("crop_marks") {
+            let mut settings = table(&mut native, "crop_marks", "native_pdf.")?;
+            let prefix = "native_pdf.crop_marks.";
+            let enabled = boolean(&mut settings, "enabled", prefix)?;
+            let values = numbers(
+                &mut settings,
+                &[
+                    "line_width_mm",
+                    "horizontal_padding_mm",
+                    "vertical_padding_mm",
+                    "arms_mm",
+                ],
+                prefix,
+            )?;
+            let colour = NamedColour::parse(&string(&mut settings, "colour", prefix)?)
+                .map_err(|error| format!("{prefix}colour: {error}"))?;
+            let command = AlbumPagesCropMarks::parse(&values, colour)?;
+            // Validate disabled settings too; never hide an unusable override.
+            command.layout(size)?;
+            if enabled {
+                page_settings.set_crop_marks(command);
+            }
+            if !settings.is_empty() {
+                native.insert("crop_marks".into(), Value::Table(settings));
+            }
+        }
         let mut footer_policy = None;
         if native.contains_key("footer") {
             let mut settings = table(&mut native, "footer", "native_pdf.")?;

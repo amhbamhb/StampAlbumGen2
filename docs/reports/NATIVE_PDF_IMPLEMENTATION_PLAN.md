@@ -2,11 +2,74 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 23
-**Status:** Native header/footer dates share document context with explicit TOML styles and overlap checks; production backend not integrated
+**Revision:** 24
+**Status:** Native crop marks verified with unchanged page/content geometry and explicit clipping warnings; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Crop marks with explicit clipping policy (#74)
+
+The maintainer approved `ALBUM_PAGES_CROP_MARKS`, then explicitly chose to match
+AlbumEasy's unchanged MediaBox/partially clipped arms rather than silently
+enlarging paper. The separate command module resolves four crosses into the
+shared page layout; drawing uses those exact endpoints/width/colour. The complete
+optional `[native_pdf.crop_marks]` table has shipped defaults disabled, line
+0.1 mm, horizontal/vertical padding 1/1 mm, arms 5 mm, black. All six fields,
+including disabled settings, validate; absence retains older geometry-only
+behavior. No numeric/colour fallback exists in the command/loader. Black is
+independent of album border colour; editable named colour is a native extension.
+
+Nine AlbumEasy 4.5 cases/11 pages were independently repeated with identical
+complete page traces. Eighteen hashes freeze source/PDF pairs. References cover
+omitted/default/one-/two-/three-/four-argument commands, custom dimensions,
+fractional landscape pages, asymmetric even margins, zero dimensions and pink
+album border with black crop marks. Actual native/reference stroke topology,
+affine-transformed endpoints, widths and colours match within 0.01 mm/0.00051
+RGB; PDF page dimensions remain exactly those requested within that tolerance.
+The fixture-only optional argument adapter is not a production TXT importer.
+
+Actual centres are padding minus half line width inward from physical page
+edges; arms are half-lengths of each disconnected segment. Zero width means a
+PDF device hairline, not off. Zero arms are degenerate butt-capped segments
+that paint nothing. Physical-page clipping is measured from the finite stroke
+footprint (hairlines use centreline; device pixels are not certified). Defaults
+clip; native emits one actionable warning per affected physical page with
+padding/arms/line-width keys. A future UI TODO records correction choices.
+No automatic resizing, trim-box feature, margin shifts or content reservation
+is introduced. Crop/text/border collision avoidance is not implemented; users
+must choose sufficient clear margins/padding. Existing text-overlap errors and
+all-page preflight remain unchanged.
+
+Validation: **107 passed, 0 failed, 0 ignored** (96 native integration tests,
+including ten crop-mark tests; ten main-config tests; one collision unit test).
+The crop suite also checks exact edge touching, invalid/missing/disabled keys,
+redaction, explicit template defaults, unknown-key reporting, independent
+snapshots/colour, PDF-coordinate overflow and new/existing output preservation.
+All seven measured title/header/footer text/date/number components retain
+their glyph positions and content bounds on every page with crop marks enabled.
+Focused Clippy/format/scoped whitespace checks and Windows GNU library/example
+compilation pass. Windows runtime/default-feature build, physical printing and
+device hairline footprint remain unverified. Existing app/ICC warnings remain.
+
+The three-page demo uses fully visible black 0.25 mm crosses, padding 8/9 mm
+and arms 2.5 mm; all three rasters were inspected with no text/border collision.
+Asymmetric margins do not move marks away from the physical corners. The
+separate default-settings demo emits exactly three page-specific clipping
+warnings, while the visible demo emits none. Header/date/number/title/footer
+coexist; content bottom/top stay **36.0936/265.1549 mm** on page 1. The ignored
+local config has only a disabled crop table appended; existing user settings
+and geometry-only three-page output/227 unapplied keys are preserved.
+
+Branch `issue/74-native-pdf-crop-marks`; maintainer approved the completed slice
+and requested a local commit. All 107 relevant tests passed again before
+committing; no merge/push requested.
+Broad T005/T006/T007/T046 remain partial. No production routes, parser/import,
+database or historical diagram changes; unrelated manual/design/autosave and
+tagged album-globals test remain untouched. Synthetic fixtures were copied;
+no inputs moved/deleted. Session-only evidence includes reports, demos, traces
+and isolated regenerated knowledge. Footer-date work was locally committed
+as `ca5a01b3` before this slice.
 
 #### Footer generation dates and shared date text (#73)
 
@@ -1333,3 +1396,4 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 8: margins-only conformance (#59) | Verified left/right/top/bottom order, asymmetric/fractional margins, explicit even-page override and two failure diagnostics. Measured eight page borders and repeated four renders; traced config mapping and border half-stroke inset. No renderer/application changes. | Preserve margins-v1 and stop for review. Generalized fixture automation, native implementation and full command/config contracts remain open. |
 | 2026-11-03 | Revision 9: spacing-only conformance (#60) | Verified zero/fractional independent horizontal/vertical spacing with 16 frames and eight text anchors, four repeat renders and two failure cases. Documented misleading config descriptions, differing defaults and width-accounting risks. No application changes. | Preserve spacing-v1 and stop for review; generalized fixture runner and full command/config contracts remain open. |
 | 2026-11-03 | Revision 10: compiled page-settings slice (#61) | Approved one-command-per-file vertical slices. Added four typed command modules, explicit shared settings/f64 mm geometry and oxidize-pdf geometry proof/example. Six native tests plus six core tests pass, including actual PDF path checks. Windows GNU cross-check passed. | Review native proof; next implement another command with reference and native comparisons together. No production integration/full TXT parser or full task completion claimed. |
+apt list --upgradable

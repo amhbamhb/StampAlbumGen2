@@ -1,4 +1,5 @@
 pub mod album_pages_border;
+pub mod album_pages_crop_marks;
 pub mod album_pages_footer;
 pub mod album_pages_footer_date;
 pub mod album_pages_footer_number;

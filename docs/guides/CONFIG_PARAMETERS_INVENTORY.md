@@ -29,6 +29,11 @@ overrides the root `color_album_border` value.
 | `[native_pdf.proof].guide_enabled` | Diagnostic only | Required boolean; template value true |
 | `[native_pdf.proof].guide_width_mm` | Diagnostic only | Required finite positive mm; template value 0.1; enabled guide must fit content rectangle |
 | `[native_pdf.proof].guide_colour` | Diagnostic only | Required opaque SVG named colour; template value black; independent of album border |
+| `[native_pdf.crop_marks].enabled` | Native crop-mark opt-in | Optional table; all fields required/validated if present, even disabled; template false |
+| `[native_pdf.crop_marks].line_width_mm` | `ALBUM_PAGES_CROP_MARKS` | Finite nonnegative mm fitting PDF points; template 0.1; zero is device hairline, not off |
+| `[native_pdf.crop_marks].horizontal_padding_mm`, `.vertical_padding_mm` | `ALBUM_PAGES_CROP_MARKS` | Finite nonnegative mm; templates 1.0/1.0; centres offset inward by padding minus half line width |
+| `[native_pdf.crop_marks].arms_mm` | `ALBUM_PAGES_CROP_MARKS` | Finite nonnegative half-length of each cross segment; template 5.0; zero makes degenerate butt-capped segments |
+| `[native_pdf.crop_marks].colour` | Native crop colour extension | Required opaque SVG named colour; template black, independent of all border/text colours; AlbumEasy references use black |
 | `[native_pdf.title].enabled` | Native title extension | Required boolean when title table exists; template false |
 | `[native_pdf.title].text` | `ALBUM_PAGES_TITLE` | Required nonempty WinAnsi string; template "Stamp Album"; explicit newlines supported |
 | `[native_pdf.title].vspace_after_mm` | `ALBUM_PAGES_TITLE` | Required finite following gap; template 0.0 mm; negative values explicitly allow overlap |

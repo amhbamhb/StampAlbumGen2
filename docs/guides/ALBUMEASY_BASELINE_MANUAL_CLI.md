@@ -621,6 +621,67 @@ all twelve standard-font exact-width boundaries, overlaps and no output
 truncation. The same Cargo command works in Windows PowerShell with MuPDF on
 PATH; Windows execution and physical printing remain unverified.
 
+### Crop marks without resizing the page
+
+`ALBUM_PAGES_CROP_MARKS ([line] [horizontal-padding] [vertical-padding] [arms])`
+now has a separate native command module. Add the complete optional table to
+an older local proof config, or edit the disabled table in either template:
+
+```toml
+[native_pdf.crop_marks]
+enabled = true
+line_width_mm = 0.1
+horizontal_padding_mm = 1.0
+vertical_padding_mm = 1.0
+arms_mm = 5.0
+colour = "black"
+```
+
+All six fields are required and validated if the table exists, even when
+disabled. Absence disables this extension for older configs. Dimensions are
+finite nonnegative millimetres and must fit PDF point coordinates after layout.
+Shipped values match AlbumEasy 4.5's optional argument defaults, but the native
+typed command/loader do not supply hidden defaults. This is not a TXT importer.
+`enabled = false` is the off switch; width zero is a PDF device hairline.
+`arms_mm` is the half-length of each segment (5 mm means a 10 mm segment).
+Zero arms produce degenerate butt-capped segments, not useful cutting guides.
+Opaque named `colour` is independently editable; black matches AlbumEasy,
+including when its album border is pink. Native colour overrides are an
+extension, not a new AlbumEasy colour command.
+
+**Verified behavior differs from the help's apparent intent:** AlbumEasy keeps
+the configured PDF page dimensions and content positions. Four crosses are
+centred inward from its physical corners by padding minus half the line width.
+The outer arms can therefore extend beyond the page, including with the
+shipped 1/1 mm padding and 5 mm arms. Native rendering deliberately preserves
+that geometry, reports a physical-page warning with correction keys, and
+leaves clipping to the PDF page boundary. It does not silently expand paper,
+add a trim box, shift text or reserve more stamp space.
+
+For fully visible marks try width **0.25**, horizontal padding **8**, vertical
+padding **9**, arms **2.5** mm. Check their position relative to your border and
+header/footer: crop marks do **not** participate in text-overlap avoidance or
+reserve content space. No automatic repositioning is implemented. A code TODO
+records future UI clipping warnings/correction choices. Hairline thickness
+depends on the viewing/printing device; its clipping diagnostic uses the path
+centreline, not a certified device-pixel footprint.
+
+Nine synthetic AlbumEasy cases/11 pages were independently repeated with
+identical full-page traces. Frozen references cover omitted/default/partial
+arguments, custom padding/line/arms, fractional landscape pages with asymmetric
+even margins, zero dimensions and independent black crop marks/pink borders.
+Tests compare actual native/reference stroke topology, transformed endpoints,
+widths/colours and MediaBox dimensions, plus unchanged measured text/content,
+explicit config/redaction/snapshots and output preservation:
+
+```bash
+cargo test --test native_pdf_crop_marks -- --include-ignored
+```
+
+The two ignored-by-default path/colour tests require `mutool` on `PATH`; the
+remaining tests do not. This remains an isolated native proof, not production
+CLI/UI/backend integration or physical print certification.
+
 ### Repeating page title and measured-height hint
 
 `ALBUM_PAGES_TITLE (Font Fontsize Title [vspace])` places a centred title on each

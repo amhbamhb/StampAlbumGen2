@@ -1223,3 +1223,14 @@ before = "Generated: "
 after = ""
 date_source = "generation" # Header/footer generation modes share one document date.
 fixed_date = "2026-01-01" # Strict YYYY-MM-DD; used only in fixed mode.
+
+# Optional ALBUM_PAGES_CROP_MARKS; all values explicit even when disabled.
+# AlbumEasy preserves page size; outer arms may be clipped (reported as a warning).
+# Width 0 is a PDF hairline, not off. Set enabled=false to omit marks.
+[native_pdf.crop_marks]
+enabled = false
+line_width_mm = 0.1
+horizontal_padding_mm = 1.0
+vertical_padding_mm = 1.0
+arms_mm = 5.0
+colour = "black"

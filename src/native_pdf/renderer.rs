@@ -35,7 +35,7 @@ pub fn write_page_geometry_proof_with_date(
         })
         .collect::<Result<Vec<_>>>()?;
     let mut document = Document::new();
-    for layout in layouts {
+    for (index, layout) in layouts.into_iter().enumerate() {
         let mut page = Page::new(
             mm_to_points(layout.size.width_mm()),
             mm_to_points(layout.size.height_mm()),
@@ -70,6 +70,25 @@ pub fn write_page_geometry_proof_with_date(
                     mm_to_points(bounds.top - bounds.bottom),
                 )
                 .stroke();
+        }
+        if let Some(marks) = layout.crop_marks {
+            if marks.clipped {
+                // TODO(native-pdf-ui): Show the physical-page clipping warning
+                // and offer padding/arms corrections without resizing silently.
+                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_CROP_MARKS extend partly or wholly outside the physical page and will be clipped; adjust native_pdf.crop_marks.horizontal_padding_mm/vertical_padding_mm/arms_mm/line_width_mm. Page size and content are unchanged (AlbumEasy-compatible).", index + 1);
+            }
+            let [red, green, blue] = marks.colour.rgb();
+            for mark in marks.marks {
+                let [a, b, c, d] = mark.points;
+                page.graphics()
+                    .set_stroke_color(Color::rgb(red, green, blue))
+                    .set_line_width(mm_to_points(marks.line_width_mm))
+                    .move_to(mm_to_points(a[0]), mm_to_points(a[1]))
+                    .line_to(mm_to_points(b[0]), mm_to_points(b[1]))
+                    .move_to(mm_to_points(c[0]), mm_to_points(c[1]))
+                    .line_to(mm_to_points(d[0]), mm_to_points(d[1]))
+                    .stroke();
+            }
         }
         if let Some(number) = layout.header_number {
             draw_text_lines(

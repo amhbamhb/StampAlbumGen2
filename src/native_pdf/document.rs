@@ -2,6 +2,7 @@ use super::{
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder,
+        album_pages_crop_marks::{AlbumPagesCropMarks, CropMarksLayout},
         album_pages_footer::{AlbumPagesFooter, FooterLayout},
         album_pages_footer_date::AlbumPagesFooterDate,
         album_pages_footer_number::AlbumPagesFooterNumber,
@@ -63,6 +64,7 @@ impl Bounds {
 #[derive(Clone, Debug)]
 pub struct PageLayout {
     pub size: PageSize,
+    pub crop_marks: Option<CropMarksLayout>,
     pub margin_bounds: Bounds,
     pub content_bounds: Bounds,
     pub title: Option<TitleLayout>,
@@ -77,6 +79,7 @@ pub struct PageLayout {
 #[derive(Clone, Debug)]
 pub struct PageSettings {
     size: PageSize,
+    crop_marks: Option<AlbumPagesCropMarks>,
     margins: Margins,
     even_margins: Option<EvenMargins>,
     spacing: Spacing,
@@ -102,6 +105,7 @@ impl PageSettings {
     ) -> Self {
         Self {
             size,
+            crop_marks: None,
             margins,
             even_margins: None,
             spacing,
@@ -120,6 +124,10 @@ impl PageSettings {
 
     pub fn set_even_margins(&mut self, margins: EvenMargins) {
         self.even_margins = Some(margins);
+    }
+
+    pub fn set_crop_marks(&mut self, marks: AlbumPagesCropMarks) {
+        self.crop_marks = Some(marks);
     }
 
     pub fn set_title(&mut self, title: AlbumPagesTitle) {
@@ -434,6 +442,10 @@ impl PageSettings {
         }
         Ok(PageLayout {
             size: self.size,
+            crop_marks: self
+                .crop_marks
+                .map(|marks| marks.layout(self.size))
+                .transpose()?,
             margin_bounds,
             content_bounds,
             title,
