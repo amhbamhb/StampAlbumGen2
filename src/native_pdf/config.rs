@@ -3,6 +3,8 @@ use super::{
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder,
+        album_pages_footer::AlbumPagesFooter,
+        album_pages_footer_pad::FooterPadding,
         album_pages_header::{AlbumPagesHeader, HeaderPosition},
         album_pages_header_pad::HeaderPadding,
         album_pages_margins::Margins,
@@ -13,6 +15,7 @@ use super::{
     },
     document::PageSettings,
     proof::GeometryProofSettings,
+    text::TextPosition,
     Result,
 };
 use std::{fs, path::Path};
@@ -97,6 +100,47 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        if native.contains_key("footer") {
+            let mut settings = table(&mut native, "footer", "native_pdf.")?;
+            let enabled = match settings.remove("enabled") {
+                Some(Value::Boolean(enabled)) => enabled,
+                _ => {
+                    return Err(
+                        "Missing or invalid native_pdf.footer.enabled; expected a boolean".into(),
+                    )
+                }
+            };
+            if let Some(colour) = colors.remove("color_album_footer") {
+                if root.insert("color_album_footer".into(), colour).is_some() {
+                    overridden_keys.push("color_album_footer".into());
+                }
+            }
+            let colour = NamedColour::parse(&string(&mut root, "color_album_footer", "")?)
+                .map_err(|error| format!("color_album_footer: {error}"))?;
+            let prefix = "native_pdf.footer.";
+            let font = string(&mut settings, "font", prefix)?;
+            let size = number(&mut settings, "size_pt", prefix, "points")?;
+            let position = TextPosition::parse_for(
+                &string(&mut settings, "position", prefix)?,
+                "native_pdf.footer.position",
+            )?;
+            let text = string(&mut settings, "text", prefix)?;
+            let padding = FooterPadding::parse(&[number(
+                &mut settings,
+                "padding_mm",
+                prefix,
+                "millimetres",
+            )?])?;
+            let minimum = number(&mut settings, "minimum_height_mm", prefix, "millimetres")?;
+            let command =
+                AlbumPagesFooter::new(&font, size, position, &text, padding, minimum, colour)?;
+            if enabled {
+                page_settings.set_footer(command);
+            }
+            if !settings.is_empty() {
+                native.insert("footer".into(), Value::Table(settings));
+            }
+        }
         if native.contains_key("header") {
             let mut settings = table(&mut native, "header", "native_pdf.")?;
             let enabled = match settings.remove("enabled") {

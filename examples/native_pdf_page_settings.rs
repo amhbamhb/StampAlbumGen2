@@ -24,11 +24,14 @@ fn main() -> Result<(), Box<dyn Error>> {
         );
     }
     if !config.unapplied_keys.is_empty() {
-        eprintln!("Native proof applies page geometry, border colours and optional measured page title/header; {} other config settings are not applied (including general text, custom fonts, footers, images and runtime options).", config.unapplied_keys.len());
+        eprintln!("Native proof applies page geometry, border colours and optional measured page title/header/footer; {} other config settings are not applied (including general text, custom fonts, page numbers/dates, images and runtime options).", config.unapplied_keys.len());
     }
     write_page_geometry_proof(&config.page_settings, &config.proof, &output)?;
     println!("Created {} using {}: {} diagnostic pages; configured borders; guide enabled: {}, width: {} mm, RGB: {:?}; no stamp rows. Vertical inter-element gap state: {} mm.", output.display(), config_path.display(), config.proof.page_count, config.proof.guide_enabled, config.proof.guide_width_mm, config.proof.guide_colour.rgb(), config.page_settings.spacing().vertical_mm());
     let first = config.page_settings.resolve(1)?;
+    if let Some(footer) = first.footer {
+        println!("Page 1 footer: measured height {:.4} mm, reserved height {:.4} mm; reservation top {:.4} mm; remaining content bottom {:.4} mm.", footer.measured_height_mm, footer.reserved_height_mm, footer.reservation_top_mm, first.content_bounds.bottom);
+    }
     if let Some(header) = first.header {
         println!("Page 1 header: measured height {:.4} mm, reserved height {:.4} mm; reservation bottom {:.4} mm; remaining content top {:.4} mm.", header.measured_height_mm, header.reserved_height_mm, header.reservation_bottom_mm, first.content_bounds.top);
     }

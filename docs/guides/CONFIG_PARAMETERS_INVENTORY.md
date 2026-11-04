@@ -42,6 +42,13 @@ overrides the root `color_album_border` value.
 | `[colors].color_album_header` or legacy root key | Header colour | Named opaque colour; shipped black; section overrides root |
 | `[native_pdf.header].padding_mm` | `ALBUM_PAGES_HEADER_PAD` | Finite signed mm; template 0.0; positive raises the header |
 | `[native_pdf.header].minimum_height_mm` | Native reservation hint | Finite nonnegative mm; template 0.0 = automatic; positive extends reservation below header |
+| `[native_pdf.footer].enabled` | Native footer extension | Required boolean when table exists; template false |
+| `[native_pdf.footer].font`, `.size_pt` | `ALBUM_PAGES_FOOTER` | Independent built-in font and positive point size; templates HN/8 |
+| `[native_pdf.footer].position` | `ALBUM_PAGES_FOOTER` | L/C/R/LR/RL; template C; independent of page-number position |
+| `[native_pdf.footer].text` | `ALBUM_PAGES_FOOTER` | Nonempty WinAnsi string, explicit newlines; template "Stamp Album Footer" |
+| `[colors].color_album_footer` or legacy root key | Footer colour | Named opaque colour; shipped black; section overrides root |
+| `[native_pdf.footer].padding_mm` | `ALBUM_PAGES_FOOTER_PAD` | Finite signed mm; template 0.0; positive lowers footer away from border |
+| `[native_pdf.footer].minimum_height_mm` | Native reservation hint | Finite nonnegative mm; template 0.0 = automatic; positive extends reservation above footer |
 
 Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
 names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
@@ -85,6 +92,19 @@ lowers its top boundary before the title is laid out. Physical-page overflow
 and unusable content fail explicitly. The optional header table has no header
 when absent; all fields remain required when present, including when disabled.
 No header page-number/date expansion or automatic wrapping is implemented.
+
+Footers sit below the bottom margin. The first baseline is one font-size step
+(points converted to mm) plus **0.5 mm** below the boundary, minus padding;
+multiline text grows downwards. This verified AlbumEasy placement is command
+semantics, not a hidden rendering default. Extra minimum-height reservation
+extends upwards without moving glyphs; only spill into content raises its
+bottom boundary. Both top/header and bottom/footer constraints apply before
+title layout. Off-page descenders and unusable content are explicit errors,
+even if AlbumEasy accepts/clips the same configuration.
+The optional footer table is absent only for older/no-footer configurations;
+all fields and colour are required when present, including when disabled.
+The existing `[footer].album_pages_footer_number_*` keys remain unapplied:
+text-footer settings do not borrow or alter page-number/date settings.
 
 No automatic even-page mirroring is inferred. All geometry must remain usable;
 both base and even-page bounds are validated when loading. Other template

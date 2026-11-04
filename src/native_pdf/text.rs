@@ -4,6 +4,46 @@ use super::{
 };
 use oxidize_pdf::text::{fonts::get_standard_font_metrics, measure_text, Font, TextEncoding};
 
+#[derive(Clone, Copy, Debug)]
+pub enum TextPosition {
+    Left,
+    Centre,
+    Right,
+    LeftRight,
+    RightLeft,
+}
+
+impl TextPosition {
+    /// Retains the original header command's public parsing contract.
+    pub fn parse(token: &str) -> Result<Self> {
+        Self::parse_for(token, "album_pages_header_position")
+    }
+
+    pub fn parse_for(token: &str, key: &str) -> Result<Self> {
+        match token {
+            "L" => Ok(Self::Left),
+            "C" => Ok(Self::Centre),
+            "R" => Ok(Self::Right),
+            "LR" => Ok(Self::LeftRight),
+            "RL" => Ok(Self::RightLeft),
+            _ => Err(format!("{key} must be L, C, R, LR or RL")),
+        }
+    }
+
+    pub(crate) fn line_left(self, page_number: usize, left: f64, right: f64, width: f64) -> f64 {
+        let position = match (self, page_number.is_multiple_of(2)) {
+            (Self::LeftRight, false) | (Self::RightLeft, true) => Self::Left,
+            (Self::LeftRight, true) | (Self::RightLeft, false) => Self::Right,
+            _ => self,
+        };
+        match position {
+            Self::Left => left,
+            Self::Right => right - width,
+            _ => (left + right - width) / 2.0,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct MeasuredLine {
     pub text: String,

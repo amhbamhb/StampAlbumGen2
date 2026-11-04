@@ -39,6 +39,7 @@ album_pages_title_size = 10.0
 color_album_title = "black"
 album_pages_header_position = "C"
 color_album_header = "black"
+color_album_footer = "black"
 
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
@@ -306,3 +307,13 @@ size_pt = 8.0
 text = "Stamp Album Header"
 padding_mm = 0.0 # Positive moves away from the top border; negative moves closer.
 minimum_height_mm = 0.0 # Automatic; positive enlarges reservation below the text.
+
+# Native text footer; independent of page-number/date commands.
+[native_pdf.footer]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "C" # L, C, R, LR (odd-left/even-right) or RL.
+text = "Stamp Album Footer"
+padding_mm = 0.0 # Positive moves down, away from the bottom border; negative moves closer.
+minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the text.

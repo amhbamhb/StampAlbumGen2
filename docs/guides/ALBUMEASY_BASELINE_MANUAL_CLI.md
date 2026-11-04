@@ -160,11 +160,11 @@ base margins with no automatic mirroring. This table is native-proof-only;
 the main application's configuration loader has not been extended.
 
 The full copied template contains many settings for unimplemented native
-features. The example explicitly warns that they are not applied (235 with
+features. The example explicitly warns that they are not applied (234 with
 the current template). The bridge exposes sorted `unapplied_keys` and
-`overridden_keys`, never their values. General text, custom fonts, footers, images,
+`overridden_keys`, never their values. General text, custom fonts, page numbers/dates, images,
 runtime options and `max_page_vspace_mm` do not affect this proof yet. General
-page/stamp text remains unsupported; repeating title/header text is supported.
+page/stamp text remains unsupported; repeating title/header/footer text is supported.
 Errors do not echo source lines or credential values.
 
 `NativePdfConfig::load(&Path)` returns a per-run snapshot. The application-facing
@@ -268,6 +268,69 @@ Expected: **8 passed, 0 ignored** with `mutool`. Tests cover frozen source/PDF
 hashes, TOML defaults/precedence/snapshots/errors, signed padding, parity,
 all font variants, blank lines, physical fit/spill, no partial output on
 invalid later pages, actual pink colour and measured remaining-content guides.
+
+### Repeating page footer and independent padding
+
+`ALBUM_PAGES_FOOTER (Font Fontsize Position Text)` repeats text below the
+bottom margin. `ALBUM_PAGES_FOOTER_PAD (padding)` moves it farther down for
+positive signed millimetres, closer to the border for negative values.
+These have separate [footer](../../src/native_pdf/commands/page/album_pages_footer.rs)
+and [padding](../../src/native_pdf/commands/page/album_pages_footer_pad.rs) modules,
+reusing header/title font measurement, positioned lines and drawing.
+
+Both templates and local `config-pdf.toml` contain:
+
+```toml
+[native_pdf.footer]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "C"
+text = "Stamp Album Footer"
+padding_mm = 0.0
+minimum_height_mm = 0.0
+```
+
+Each value is independent; font sizes use points and padding/hints use mm.
+Position is L/C/R/LR/RL with physical odd/even parity, using margin bounds.
+Colour reuses `[colors].color_album_footer` or its legacy root equivalent;
+the section wins. Shipped colour is black; `"pink"` is supported. Existing
+local colour choices are preserved. The native `position` field deliberately
+does not reuse the existing page-number footer position: text and page-number
+commands are distinct and may coexist later.
+
+AlbumEasy 4.5 references establish the first baseline at
+`bottom_margin - font_size_in_mm - 0.5 mm - padding_mm`.
+Additional lines grow downwards by shared line advance. Normal footers leave
+content unchanged. Zero hint uses measured height; positive reserves at least
+the requested height, extending **upwards** without moving or resizing glyphs.
+Only spill into content raises its bottom boundary. Header and footer
+reservations are resolved before title layout and future stamp placement.
+
+Seven cases/nine reference pages cover small/large fonts, signed/omitted
+padding, multiline text, asymmetric margins, parity and simultaneous
+header/title. Independent runs matched complete reference page traces.
+Native comparisons verify every footer/header/title glyph within 0.01 mm,
+actual pink footer colour and both remaining-content guide boundaries.
+
+**Safety difference:** a 25 pt footer with 15 mm bottom margin and 5 mm
+padding has off-page descenders even though AlbumEasy creates a PDF.
+Native rejects it rather than clipping; use more bottom margin, smaller font
+or less padding. Frozen large-font comparisons use 3 mm padding.
+Over-wide/unsupported text, physical-page overflow and unusable reserved
+content fail explicitly. Missing/invalid table fields never get fallback
+values, including when disabled. Absent table means no footer.
+Page-number/date expansion, automatic wrapping, custom fonts and production
+UI/CLI/backend integration remain separate unfinished items.
+
+```bash
+cargo test --test native_pdf_page_footer -- --include-ignored --nocapture
+```
+
+Expected: **8 passed, 0 ignored** with `mutool`. Checks include frozen hashes,
+explicit TOML defaults/errors/precedence/snapshots, all built-in font layouts,
+blank lines, parity, physical fit, combined header/footer/title reservation,
+and preserving output when a later page fails preflight.
 
 ### Repeating page title and measured-height hint
 

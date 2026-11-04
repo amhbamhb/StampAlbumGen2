@@ -6,7 +6,7 @@ use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
 
 /// Isolated proof: configured border and optional configured content-area guide.
-/// Optional measured title/header text is supported; stamp rows are pending.
+/// Optional measured title/header/footer text is supported; stamp rows are pending.
 pub fn write_page_geometry_proof(
     settings: &PageSettings,
     proof: &GeometryProofSettings,
@@ -65,6 +65,16 @@ pub fn write_page_geometry_proof(
                 header.colour,
                 header.lines,
                 "header",
+            )?;
+        }
+        if let Some(footer) = layout.footer {
+            draw_text_lines(
+                &mut page,
+                footer.font,
+                footer.size_pt,
+                footer.colour,
+                footer.lines,
+                "footer",
             )?;
         }
         if let Some(title) = layout.title {

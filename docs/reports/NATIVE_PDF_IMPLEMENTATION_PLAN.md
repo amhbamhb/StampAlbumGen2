@@ -2,11 +2,68 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 18
-**Status:** Native repeating page header/padding and title with shared measurements and TOML hints implemented; existing geometry/colour compatibility retained; production backend not integrated
+**Revision:** 19
+**Status:** Native repeating footer/header with independent padding and title share measured layout/TOML hints; existing geometry/colour compatibility retained; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Measured repeating footer and padding (#69)
+
+The maintainer approved the text footer/padding slice after committing #68
+as `ba03fae9`. Separate `ALBUM_PAGES_FOOTER` and `ALBUM_PAGES_FOOTER_PAD`
+modules reuse shared standard-font measurement, positioned lines and drawing.
+Horizontal/parity alignment is extracted into shared `TextPosition`, retaining
+the existing `HeaderPosition` alias/public parser and header error keys.
+Footer parsing uses its own keyed `native_pdf.footer.position` error.
+
+All footer inputs have explicit editable TOML defaults: disabled/HN/8 pt/C/
+"Stamp Album Footer"/0 mm/automatic; existing footer colour spelling defaults
+to black in shipped templates. Section colour wins over root. Local config
+receives only the footer table and preserves previous colour/settings.
+The new text position is independent of existing footer-number position;
+number/date keys remain unapplied rather than being silently repurposed.
+
+Seven synthetic AlbumEasy 4.5 cases/nine pages were independently rendered
+twice, with identical complete page traces. The first baseline is verified at
+bottom margin minus one font-size step (converted to mm), minus 0.5 mm,
+minus padding. Multiline text grows down; positive padding moves down away
+from the border. Frozen cases include signed/omitted padding, 8/25 pt
+Helvetica, multiline 16 pt Times Bold, asymmetric even margins and LR/RL,
+plus simultaneous header/title. Fourteen source/PDF hashes are frozen.
+
+**Intentional safety difference:** the initial 25 pt/5 mm padding probe put
+descenders off the physical page while AlbumEasy reported success. Native
+rejects it; the large-font frozen comparison instead uses 3 mm padding.
+Minimum-height reservation is max(measured, hint); extra extends upwards
+without moving glyphs. Normal footers do not consume content. Spill raises
+its bottom boundary, alongside the header's top constraint before title layout.
+Off-page text and unusable content are errors, preflighted before PDF saving.
+AFM line/advance measurements do not certify exact glyph outlines or italic
+side overhang. General stamp/row layout, page numbering/date expansion,
+custom fonts, automatic wrapping and production app/CLI/UI integration
+remain pending; full T005/T006/T007/T046 tasks are still partial.
+
+Branch `issue/69-native-pdf-page-footer`; no commit/merge/push is authorized
+for this slice. User manual/design/autosave changes stay untouched and staged
+as they were; no baseline diagram copy is warranted by isolated proof work.
+
+Validation: **59 passed, 0 failed, 0 ignored** (eight footer tests, 41 prior
+native tests and ten main-config tests). Targeted Clippy, focused rustfmt and
+scoped whitespace/hash checks pass with pre-existing application warnings.
+Windows GNU library/example cross-compilation passes with optional rfd
+disabled; Windows execution/default-feature builds and physical printing
+remain unverified. MuPDF reports unavailable ICC support as before.
+
+The saved two-page demo uses a 16 pt pink LR footer, 1 mm padding and a 25 mm
+minimum hint, alongside a black header/title and green remaining-content guide.
+Page 1 measured footer height is **5.2211 mm**; reservation/content bottom is
+**31.6872 mm**; title leaves content top at **271.5420 mm**. Both page rasters
+were visually inspected: odd footer left/even right, no visible clipping.
+The actual local configuration still renders three geometry-only pages with
+all text extensions disabled and reports 234 unapplied keys. No database/input
+data is modified. Frozen references are copied; test tempdirs self-clean;
+proofs, logs, reports and regenerated knowledge stay in the session workspace.
 
 #### Measured repeating header and padding (#68)
 

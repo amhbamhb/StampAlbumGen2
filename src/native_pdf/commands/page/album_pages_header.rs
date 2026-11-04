@@ -8,35 +8,7 @@ use crate::native_pdf::{
 };
 use oxidize_pdf::text::Font;
 
-#[derive(Clone, Copy, Debug)]
-pub enum HeaderPosition {
-    Left,
-    Centre,
-    Right,
-    LeftRight,
-    RightLeft,
-}
-
-impl HeaderPosition {
-    pub fn parse(token: &str) -> Result<Self> {
-        match token {
-            "L" => Ok(Self::Left),
-            "C" => Ok(Self::Centre),
-            "R" => Ok(Self::Right),
-            "LR" => Ok(Self::LeftRight),
-            "RL" => Ok(Self::RightLeft),
-            _ => Err("album_pages_header_position must be L, C, R, LR or RL".into()),
-        }
-    }
-
-    fn for_page(self, page_number: usize) -> Self {
-        match (self, page_number.is_multiple_of(2)) {
-            (Self::LeftRight, false) | (Self::RightLeft, true) => Self::Left,
-            (Self::LeftRight, true) | (Self::RightLeft, false) => Self::Right,
-            _ => self,
-        }
-    }
-}
+pub use crate::native_pdf::text::TextPosition as HeaderPosition;
 
 /// ALBUM_PAGES_HEADER, positioned in the margin independently of page titles.
 #[derive(Clone, Debug)]
@@ -126,7 +98,6 @@ impl AlbumPagesHeader {
         {
             return Err("native_pdf.header size_pt/text/padding_mm/minimum_height_mm exceed physical page bounds".into());
         }
-        let position = self.position.for_page(page_number);
         let mut left = margin.right;
         let mut right = margin.left;
         let mut lines = Vec::new();
@@ -134,11 +105,9 @@ impl AlbumPagesHeader {
             if line.width_mm > margin.right - margin.left {
                 return Err("native_pdf.header.text exceeds margin width; use explicit newlines or a smaller font (automatic wrapping is not implemented)".into());
             }
-            let x = match position {
-                HeaderPosition::Left => margin.left,
-                HeaderPosition::Right => margin.right - line.width_mm,
-                _ => (margin.left + margin.right - line.width_mm) / 2.0,
-            };
+            let x = self
+                .position
+                .line_left(page_number, margin.left, margin.right, line.width_mm);
             left = left.min(x);
             right = right.max(x + line.width_mm);
             lines.push(PositionedTextLine {

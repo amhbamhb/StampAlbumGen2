@@ -282,7 +282,7 @@ series_order = "first_date"
 # Shared legacy colour; native per-line settings below take precedence.
 color_album_border = "black"
 ## Album title, header, footer, and margin text colors
-color_album_footer = "darkblue"
+color_album_footer = "black"
 # Album page header text color 
 color_album_header = "black"
 # Album title text color
@@ -1170,3 +1170,14 @@ size_pt = 8.0
 text = "Stamp Album Header"
 padding_mm = 0.0 # Positive moves away from the top border; negative moves closer.
 minimum_height_mm = 0.0 # Automatic; positive values enlarge reservation below the text.
+
+# Native text footer; independent of the existing [footer] page-number settings.
+# Colour uses [colors].color_album_footer; numbering/date expansion is pending.
+[native_pdf.footer]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "C" # L, C, R, LR (odd-left/even-right) or RL.
+text = "Stamp Album Footer"
+padding_mm = 0.0 # Positive moves down, away from the bottom border; negative moves closer.
+minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the text.
