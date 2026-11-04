@@ -2,11 +2,65 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 20
-**Status:** Native footer page numbering with explicit final total joins measured footer/header/title layout and TOML hints; production backend not integrated
+**Revision:** 21
+**Status:** Native header/footer numbering and actionable top-text overlap checks with explicit TOML policy; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Header page numbering and overlap diagnostics (#71)
+
+The maintainer approved independent header numbering and checking other
+implemented header values for overlaps. A separate `ALBUM_PAGES_HEADER_NUMBER`
+module uses shared checked numbering and existing header measurement/placement.
+Explicit `[native_pdf.header_number]` defaults are disabled/HN/8 pt/R/start1/
+"Page "/" of $PAGES$". Header padding/hint/colour are shared explicit TOML policy;
+the header policy table is required even if its text is disabled. No fallback
+rendering values are added. Footer APIs/labels remain independent and unchanged.
+
+Seven synthetic AlbumEasy 4.5 cases/14 pages were independently rendered twice
+with identical complete page traces; fourteen input/PDF hashes are frozen.
+Actual header-number glyph/font/size comparison passes within 0.01 mm for
+L/C/R/LR/RL, multiline Times Bold, signed starts, repeated total tokens,
+asymmetric even margins, 9-to-10 labels and header/title/footer coexistence.
+Header numbers draw before footer numbers, then plain header/footer and title,
+matching the reference order. Pink colour and hint guide boundaries are checked.
+
+Shared line-box intersection replaces footer-only duplicate logic and checks
+header text vs number, and each vs title. Blank lines/touching edges are
+excluded; hint rectangles are not glyph boxes. Explicit errors name physical
+page, conflicting components and TOML correction keys. Renderer preflights
+every page before saving; a tested page-3 width collision preserves existing
+output and creates no new output. A code TODO requires a future UI notification
+and correction dialog. For now users edit TOML and rerun, not interactively
+select an alternate layout. Signed padding border overlap remains intentional.
+AFM boxes are not exact glyph/italic-overhang certification; date/image checks,
+full stamp-pagination count convergence and production app/CLI/UI remain pending.
+Broad T005/T006/T007/T046 remain partial.
+
+Branch `issue/71-native-pdf-header-number`; maintainer requested a scoped local
+commit after validation. No merge/push requested.
+Unrelated user manual/design/evolving autosave work is untouched. No input
+imports, database rows, production routes or historical diagram are changed.
+Tests use self-cleaning tempdirs; frozen fixtures are copied synthetic inputs.
+Validation evidence, proofs and isolated regenerated knowledge stay session-only.
+
+Validation: **77 passed, 0 failed, 0 ignored** (66 native integration tests
+including nine new header-number tests, one shared collision unit test, and
+ten main-config tests). Focused Clippy/formatting/scoped diff checks and all
+fourteen frozen hashes pass. Windows GNU library/example compilation passes
+with optional rfd disabled; Windows runtime/default-feature build and printing
+remain unverified. Existing app warnings and MuPDF's unavailable-ICC warning
+remain. Early TDD missing-field and misplaced test-module compilation failures
+were fixed before the complete green validation.
+
+The visually inspected three-page demo uses pink 16 pt LR header numbering
+starting at 8, centred 8 pt "Collection", black 25 pt title and independent
+8 pt footer numbering starting at 1. Pages show "Page 8 of 3", "Page 9 of 3",
+"Page 10 of 3" above "Sheet 1 of 3" through "Sheet 3 of 3". All top text is
+separate; a shared 25 mm header hint leaves page-1 content top **244.3813 mm**.
+The actual ignored local config retains three geometry-only pages with
+text/numbering disabled and 227 unapplied keys; local colours are preserved.
 
 #### Measured footer page numbering (#70)
 

@@ -33,6 +33,12 @@ pub struct HeaderLayout {
 }
 
 impl AlbumPagesHeader {
+    pub fn with_text(&self, text: &str) -> Result<Self> {
+        let mut header = self.clone();
+        header.text = self.text.with_text(text)?;
+        Ok(header)
+    }
+
     pub fn new(
         font: &str,
         size_pt: f64,

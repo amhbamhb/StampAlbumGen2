@@ -1,4 +1,5 @@
 use super::{
+    document::Bounds,
     units::{mm_to_points, points_to_mm},
     Result,
 };
@@ -56,6 +57,43 @@ pub struct PositionedTextLine {
     pub left_mm: f64,
     pub baseline_mm: f64,
     pub width_mm: f64,
+}
+
+/// Intersects actual per-line AFM boxes, not the larger reserved hint rectangle.
+pub(crate) fn text_lines_overlap(
+    a: &[PositionedTextLine],
+    a_bounds: Bounds,
+    b: &[PositionedTextLine],
+    b_bounds: Bounds,
+) -> Result<bool> {
+    let a_first = a
+        .first()
+        .ok_or("Native text has no positioned lines")?
+        .baseline_mm;
+    let a_last = a
+        .last()
+        .ok_or("Native text has no positioned lines")?
+        .baseline_mm;
+    let b_first = b
+        .first()
+        .ok_or("Native text has no positioned lines")?
+        .baseline_mm;
+    let b_last = b
+        .last()
+        .ok_or("Native text has no positioned lines")?
+        .baseline_mm;
+    Ok(a.iter().any(|a| {
+        b.iter().any(|b| {
+            !a.text.trim().is_empty()
+                && !b.text.trim().is_empty()
+                && a.left_mm < b.left_mm + b.width_mm
+                && b.left_mm < a.left_mm + a.width_mm
+                && a.baseline_mm - (a_last - a_bounds.bottom)
+                    < b.baseline_mm + (b_bounds.top - b_first)
+                && b.baseline_mm - (b_last - b_bounds.bottom)
+                    < a.baseline_mm + (a_bounds.top - a_first)
+        })
+    }))
 }
 
 /// Standard-font measurements shared by layout and drawing; no wrapping fallback.
@@ -137,5 +175,74 @@ impl MeasuredText {
             descent_mm,
             line_advance_mm,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn line_collisions_ignore_blank_lines_hints_and_touching_edges() -> Result<()> {
+        let a = vec![PositionedTextLine {
+            text: "A".into(),
+            left_mm: 0.0,
+            baseline_mm: 10.0,
+            width_mm: 5.0,
+        }];
+        let bounds = Bounds {
+            left: 0.0,
+            right: 5.0,
+            bottom: 9.0,
+            top: 12.0,
+        };
+        let b = vec![PositionedTextLine {
+            left_mm: 5.0,
+            ..a[0].clone()
+        }];
+        assert!(!text_lines_overlap(&a, bounds, &b, bounds)?);
+        let b = vec![PositionedTextLine {
+            left_mm: 4.0,
+            ..a[0].clone()
+        }];
+        assert!(text_lines_overlap(&a, bounds, &b, bounds)?);
+        let b = vec![PositionedTextLine {
+            baseline_mm: 13.0,
+            ..a[0].clone()
+        }];
+        let upper = Bounds {
+            bottom: 12.0,
+            top: 15.0,
+            ..bounds
+        };
+        assert!(!text_lines_overlap(&a, bounds, &b, upper)?);
+        let b = vec![PositionedTextLine {
+            text: " ".into(),
+            ..a[0].clone()
+        }];
+        assert!(!text_lines_overlap(&a, bounds, &b, bounds)?);
+        let b = vec![
+            PositionedTextLine {
+                text: " ".into(),
+                baseline_mm: 15.0,
+                ..a[0].clone()
+            },
+            PositionedTextLine {
+                text: "B".into(),
+                baseline_mm: 5.0,
+                ..a[0].clone()
+            },
+        ];
+        assert!(!text_lines_overlap(
+            &a,
+            bounds,
+            &b,
+            Bounds {
+                bottom: 4.0,
+                top: 17.0,
+                ..bounds
+            }
+        )?);
+        Ok(())
     }
 }

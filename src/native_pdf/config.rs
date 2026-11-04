@@ -7,6 +7,7 @@ use super::{
         album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_footer_pad::FooterPadding,
         album_pages_header::{AlbumPagesHeader, HeaderPosition},
+        album_pages_header_number::AlbumPagesHeaderNumber,
         album_pages_header_pad::HeaderPadding,
         album_pages_margins::Margins,
         album_pages_marginse::EvenMargins,
@@ -206,6 +207,7 @@ impl NativePdfConfig {
                 native.insert("footer_number".into(), Value::Table(settings));
             }
         }
+        let mut header_policy = None;
         if native.contains_key("header") {
             let mut settings = table(&mut native, "header", "native_pdf.")?;
             let enabled = match settings.remove("enabled") {
@@ -249,6 +251,7 @@ impl NativePdfConfig {
                 "millimetres",
             )?])?;
             let minimum = number(&mut settings, "minimum_height_mm", prefix, "millimetres")?;
+            header_policy = Some((padding, minimum, colour));
             let command =
                 AlbumPagesHeader::new(&font, size, position, &text, padding, minimum, colour)?;
             if enabled {
@@ -259,6 +262,44 @@ impl NativePdfConfig {
             }
             if !settings.is_empty() {
                 native.insert("header".into(), Value::Table(settings));
+            }
+        }
+        if native.contains_key("header_number") {
+            let mut settings = table(&mut native, "header_number", "native_pdf.")?;
+            let prefix = "native_pdf.header_number.";
+            let enabled = boolean(&mut settings, "enabled", prefix)?;
+            let font = string(&mut settings, "font", prefix)?;
+            let size = number(&mut settings, "size_pt", prefix, "points")?;
+            let position = TextPosition::parse_for(
+                &string(&mut settings, "position", prefix)?,
+                "native_pdf.header_number.position",
+            )?;
+            let start = match settings.remove("start") {
+                Some(Value::Integer(value)) => i32::try_from(value)
+                    .map_err(|_| "native_pdf.header_number.start must be a signed 32-bit integer")?,
+                _ => return Err("Missing or invalid native_pdf.header_number.start; expected a signed 32-bit integer".into()),
+            };
+            let before = string(&mut settings, "before", prefix)?;
+            let after = string(&mut settings, "after", prefix)?;
+            let (padding, minimum, colour) = header_policy
+                .ok_or("native_pdf.header_number requires explicit native_pdf.header padding/height/colour settings")?;
+            let style = AlbumPagesHeader::new(
+                &font,
+                size,
+                position,
+                &start.to_string(),
+                padding,
+                minimum,
+                colour,
+            )
+            .map_err(|error| format!("native_pdf.header_number.font/size_pt/position: {error}"))?;
+            let command = AlbumPagesHeaderNumber::new(style, start, &before, &after)?;
+            numbering_enabled |= enabled;
+            if enabled {
+                page_settings.set_header_number(command);
+            }
+            if !settings.is_empty() {
+                native.insert("header_number".into(), Value::Table(settings));
             }
         }
         if native.contains_key("title") {

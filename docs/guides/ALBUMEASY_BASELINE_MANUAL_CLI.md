@@ -162,7 +162,7 @@ the main application's configuration loader has not been extended.
 The full copied template contains many settings for unimplemented native
 features. The example explicitly warns that they are not applied (227 with
 the current template). The bridge exposes sorted `unapplied_keys` and
-`overridden_keys`, never their values. General text, custom fonts, header numbers/dates, images,
+`overridden_keys`, never their values. General text, custom fonts, dates, images,
 runtime options and `max_page_vspace_mm` do not affect this proof yet. General
 page/stamp text remains unsupported; repeating title/header/footer text and footer page numbers are supported.
 Errors do not echo source lines or credential values.
@@ -379,7 +379,7 @@ from `[native_pdf.footer]`, which must exist even with its text disabled.
 Zero hint uses measured height; positive reserves at least that height upward,
 without shifting number glyphs. A text footer may coexist at a non-overlapping
 position; measured line-box overlap returns an actionable error instead of
-drawing text over numbers. Future date/header-number commands remain separate.
+drawing text over numbers. Date commands remain pending and separate.
 
 The application-facing numbered layout call is
 `PageSettings::resolve_with_page_count(physical_page, final_page_count)`.
@@ -404,7 +404,71 @@ two enablement gates, unknown-key reporting, snapshot/precedence, keyed/redacted
 errors, invalid totals, signed overflow, all font variants, 9-to-10 exact-width
 boundaries, collisions and no output truncation on invalid later pages.
 The native clipping/reservation safety differences remain intentional;
-production app/UI/CLI wiring, header numbering and dates remain pending.
+production app/UI/CLI wiring and dates remain pending.
+
+### Header page numbering and overlap diagnostics
+
+The separate [header-number command](../../src/native_pdf/commands/page/album_pages_header_number.rs)
+implements `ALBUM_PAGES_HEADER_NUMBER (Font Fontsize Position [Start] [Before] [After])`.
+Both templates ship these explicit, independently editable values:
+
+```toml
+[native_pdf.header_number]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "R"
+start = 1
+before = "Page "
+after = " of $PAGES$"
+```
+
+Enable the table in your local `config-pdf.toml` to test it. Every field must
+exist and validate when the table is present, even when disabled. Font, size,
+position and signed printed start are independent of plain header text and
+footer numbering. L/C/R/LR/RL follow physical-page parity. Empty before/after
+are valid; every exact `$PAGES$` expands to the final document count.
+The existing `[native_pdf.header]` table must also exist: its padding and
+minimum-height hint, plus `[colors].color_album_header`, are shared by text
+and numbered headers. No additional hidden defaults are supplied.
+
+The last baseline is 2 mm above the top margin plus signed header padding;
+multiline numbering grows upwards. Extra minimum-height reservation extends
+downwards without moving glyphs. Both header reservations constrain the title
+and future stamp area. Footer numbering retains its independent start/style.
+
+Implemented top text is checked pairwise: header text vs header number,
+header text vs title, header number vs title. Checks use nonblank per-line AFM
+boxes, not the larger reservation hints; touching boxes are not overlaps.
+They are conservative line-box checks, not exact glyph-outline certification.
+Signed padding may still intentionally overlap the border.
+
+On a text collision, the proof fails **before saving any PDF**, identifying
+the physical page, conflicting elements and relevant TOML correction keys.
+For testing, edit the named values and rerun: for example put plain header
+text at `album_pages_header_position = "L"` and its number at
+`native_pdf.header_number.position = "R"`, shorten text/prefixes or reduce
+their font sizes. Changing a shared padding moves both header elements and
+does not fix a text-vs-number collision. No automatic movement, clipping or
+interactive choice is implemented. A `TODO(native-pdf-ui)` records the future
+UI notification/correction dialog; dates/images are not yet overlap-checked.
+
+Seven AlbumEasy 4.5 cases/14 pages were independently repeated with identical
+complete page traces. Actual native glyph/font/size comparisons use 0.01 mm,
+including multiline, all positions, signed starts, total tokens, asymmetric
+even margins and simultaneous header/title/footer numbering. Pink colour,
+hint reservation and guide boundaries are checked separately.
+
+```bash
+cargo test --test native_pdf_header_number -- --include-ignored --nocapture
+```
+
+Expected: **9 passed, 0 ignored** with `mutool`. Also verifies explicit defaults,
+missing/invalid/redacted settings, snapshot/unapplied keys, all twelve fonts'
+9-to-10 width boundary, late-page overlaps and preservation of existing output.
+The shared line-intersection unit test runs with
+`cargo test --lib native_pdf::text::tests`. The same Cargo commands work in
+Windows PowerShell with MuPDF on PATH; Windows runtime remains unverified.
 
 ### Repeating page title and measured-height hint
 

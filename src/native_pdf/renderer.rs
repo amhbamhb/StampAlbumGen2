@@ -57,6 +57,16 @@ pub fn write_page_geometry_proof(
                 )
                 .stroke();
         }
+        if let Some(number) = layout.header_number {
+            draw_text_lines(
+                &mut page,
+                number.font,
+                number.size_pt,
+                number.colour,
+                number.lines,
+                "header number",
+            )?;
+        }
         if let Some(number) = layout.footer_number {
             draw_text_lines(
                 &mut page,

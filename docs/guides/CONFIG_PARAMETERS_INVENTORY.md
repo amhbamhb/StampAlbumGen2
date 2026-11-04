@@ -55,6 +55,11 @@ overrides the root `color_album_border` value.
 | `[footer].album_pages_footer_number_position` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | L/C/R/LR/RL using physical parity, not printed label; template C |
 | `[footer].album_pages_footer_number_start` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | Signed 32-bit integer; template 1; checked arithmetic; zero/negative labels supported |
 | `[footer].album_pages_footer_number_before`, `.album_pages_footer_number_after` or root keys | `ALBUM_PAGES_FOOTER_NUMBER` | Explicit WinAnsi strings, empty allowed; templates "Page " / " of $PAGES$"; every exact `$PAGES$` expands to actual count |
+| `[native_pdf.header_number].enabled` | Native header numbering opt-in | Required boolean when table exists; template false |
+| `[native_pdf.header_number].font`, `.size_pt` | `ALBUM_PAGES_HEADER_NUMBER` | Independent built-in font/positive point size; templates HN/8 |
+| `[native_pdf.header_number].position` | `ALBUM_PAGES_HEADER_NUMBER` | L/C/R/LR/RL using physical parity; template R; independent of plain header/footer |
+| `[native_pdf.header_number].start` | `ALBUM_PAGES_HEADER_NUMBER` | Signed 32-bit integer; template 1; checked printed-label arithmetic |
+| `[native_pdf.header_number].before`, `.after` | `ALBUM_PAGES_HEADER_NUMBER` | Explicit WinAnsi strings, empty allowed; templates "Page " / " of $PAGES$"; all total tokens expanded |
 
 Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
 names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
@@ -97,7 +102,22 @@ headers do not consume content; only descent/minimum-hint spill into content
 lowers its top boundary before the title is laid out. Physical-page overflow
 and unusable content fail explicitly. The optional header table has no header
 when absent; all fields remain required when present, including when disabled.
-No header page-number/date expansion or automatic wrapping is implemented.
+Header numbering is a separate optional command/table. It shares explicit
+header padding/minimum height and header colour; the header policy table is
+required even when its plain text is disabled. All number fields are required
+and validated when the number table exists, including when disabled. Absence
+preserves older no-number proofs. Header/footer starts and styles are independent;
+both require the same final actual document count. No date expansion or
+automatic wrapping is implemented.
+
+Header text, header number and title are checked pairwise using nonblank
+per-line AFM boxes. Touching edges and overlapping reservation hints alone
+are not text collisions. Errors identify the physical page, conflicting
+elements and correction keys; every page is preflighted before saving, so
+late digit/parity collisions cannot truncate an existing output. Edit the
+named TOML values and rerun for now. The code records a future UI warning
+and correction dialog TODO; no UI is implemented, and future date/image
+elements are not covered yet. These checks are not exact glyph outlines.
 
 Footers sit below the bottom margin. The first baseline is one font-size step
 (points converted to mm) plus **0.5 mm** below the boundary, minus padding;

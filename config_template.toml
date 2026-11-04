@@ -1186,3 +1186,13 @@ minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the tex
 # and native footer padding/height plus [colors].color_album_footer.
 [native_pdf.footer_number]
 enabled = false
+
+# Independent header labels; share native header padding/height and header colour.
+[native_pdf.header_number]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "R" # Physical-page parity: L, C, R, LR or RL.
+start = 1
+before = "Page "
+after = " of $PAGES$" # Final document count, not the last printed label.

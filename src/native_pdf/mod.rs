@@ -4,6 +4,7 @@ pub mod colour;
 pub mod commands;
 pub mod config;
 pub mod document;
+mod numbering;
 pub mod proof;
 pub mod renderer;
 pub mod text;

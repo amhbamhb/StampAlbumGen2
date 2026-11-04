@@ -5,12 +5,14 @@ use super::{
         album_pages_footer::{AlbumPagesFooter, FooterLayout},
         album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_header::{AlbumPagesHeader, HeaderLayout},
+        album_pages_header_number::AlbumPagesHeaderNumber,
         album_pages_margins::Margins,
         album_pages_marginse::EvenMargins,
         album_pages_size::PageSize,
         album_pages_spacing::Spacing,
         album_pages_title::{AlbumPagesTitle, TitleLayout},
     },
+    text::text_lines_overlap,
     Result,
 };
 
@@ -62,6 +64,7 @@ pub struct PageLayout {
     pub content_bounds: Bounds,
     pub title: Option<TitleLayout>,
     pub header: Option<HeaderLayout>,
+    pub header_number: Option<HeaderLayout>,
     pub footer: Option<FooterLayout>,
     pub footer_number: Option<FooterLayout>,
 }
@@ -77,6 +80,7 @@ pub struct PageSettings {
     border_line_colours: [AlbumBorderColour; 3],
     title: Option<AlbumPagesTitle>,
     header: Option<AlbumPagesHeader>,
+    header_number: Option<AlbumPagesHeaderNumber>,
     footer: Option<AlbumPagesFooter>,
     footer_number: Option<AlbumPagesFooterNumber>,
 }
@@ -99,6 +103,7 @@ impl PageSettings {
             border_line_colours: [border_colour; 3],
             title: None,
             header: None,
+            header_number: None,
             footer: None,
             footer_number: None,
         }
@@ -114,6 +119,10 @@ impl PageSettings {
 
     pub fn set_header(&mut self, header: AlbumPagesHeader) {
         self.header = Some(header);
+    }
+
+    pub fn set_header_number(&mut self, number: AlbumPagesHeaderNumber) {
+        self.header_number = Some(number);
     }
 
     pub fn set_footer(&mut self, footer: AlbumPagesFooter) {
@@ -167,6 +176,9 @@ impl PageSettings {
     pub fn resolve(&self, page_number: usize) -> Result<PageLayout> {
         if self.footer_number.is_some() {
             return Err("ALBUM_PAGES_FOOTER_NUMBER requires the final page count; use resolve_with_page_count".into());
+        }
+        if self.header_number.is_some() {
+            return Err("ALBUM_PAGES_HEADER_NUMBER requires the final page count; use resolve_with_page_count".into());
         }
         self.resolve_page(page_number, None)
     }
@@ -226,6 +238,31 @@ impl PageSettings {
                 .validate()
                 .map_err(|error| format!("native_pdf.header.minimum_height_mm: {error}"))?;
         }
+        let header_number = self
+            .header_number
+            .as_ref()
+            .map(|number| {
+                number.layout(
+                    margin_bounds,
+                    physical_page,
+                    page_number,
+                    total_pages.ok_or("ALBUM_PAGES_HEADER_NUMBER requires the final page count")?,
+                )
+            })
+            .transpose()?;
+        if let Some(number) = &header_number {
+            content_bounds.top = content_bounds.top.min(number.reservation_bottom_mm);
+            content_bounds.validate().map_err(|error| {
+                format!("ALBUM_PAGES_HEADER_NUMBER/native_pdf.header.minimum_height_mm: {error}")
+            })?;
+        }
+        if let (Some(header), Some(number)) = (&header, &header_number) {
+            if text_lines_overlap(&header.lines, header.bounds, &number.lines, number.bounds)? {
+                // TODO(native-pdf-ui): Show conflicting elements, physical page and
+                // TOML keys; offer correction in the UI rather than silently moving text.
+                return Err(format!("Native PDF page {page_number}: native_pdf.header.text overlaps ALBUM_PAGES_HEADER_NUMBER; adjust album_pages_header_position or native_pdf.header_number.position, native_pdf.header.text, native_pdf.header_number.before/after or font/size_pt values"));
+            }
+        }
         let footer = self
             .footer
             .as_ref()
@@ -244,40 +281,8 @@ impl PageSettings {
             })
             .transpose()?;
         if let (Some(footer), Some(number)) = (&footer, &footer_number) {
-            let text_first = footer
-                .lines
-                .first()
-                .ok_or("Native footer has no positioned lines")?
-                .baseline_mm;
-            let text_last = footer
-                .lines
-                .last()
-                .ok_or("Native footer has no positioned lines")?
-                .baseline_mm;
-            let number_first = number
-                .lines
-                .first()
-                .ok_or("Native footer number has no positioned lines")?
-                .baseline_mm;
-            let number_last = number
-                .lines
-                .last()
-                .ok_or("Native footer number has no positioned lines")?
-                .baseline_mm;
-            for text_line in &footer.lines {
-                for number_line in &number.lines {
-                    if !text_line.text.trim().is_empty()
-                        && !number_line.text.trim().is_empty()
-                        && text_line.left_mm < number_line.left_mm + number_line.width_mm
-                        && number_line.left_mm < text_line.left_mm + text_line.width_mm
-                        && text_line.baseline_mm - (text_last - footer.bounds.bottom)
-                            < number_line.baseline_mm + (number.bounds.top - number_first)
-                        && number_line.baseline_mm - (number_last - number.bounds.bottom)
-                            < text_line.baseline_mm + (footer.bounds.top - text_first)
-                    {
-                        return Err("native_pdf.footer.text overlaps ALBUM_PAGES_FOOTER_NUMBER; adjust native_pdf.footer.position or album_pages_footer_number_position, text or font sizes".into());
-                    }
-                }
+            if text_lines_overlap(&footer.lines, footer.bounds, &number.lines, number.bounds)? {
+                return Err("native_pdf.footer.text overlaps ALBUM_PAGES_FOOTER_NUMBER; adjust native_pdf.footer.position or album_pages_footer_number_position, text or font sizes".into());
             }
         }
         if let Some(footer) = &footer {
@@ -298,6 +303,16 @@ impl PageSettings {
             .map(|title| title.layout(content_bounds, self.spacing.vertical_mm()))
             .transpose()?;
         if let Some(title) = &title {
+            for (element, layout, keys) in [
+                ("native_pdf.header.text", header.as_ref(), "album_pages_header_position, native_pdf.header.font/size_pt/text/padding_mm"),
+                ("ALBUM_PAGES_HEADER_NUMBER", header_number.as_ref(), "native_pdf.header_number.position/font/size_pt/before/after, native_pdf.header.padding_mm"),
+            ] {
+                if let Some(layout) = layout {
+                    if text_lines_overlap(&layout.lines, layout.bounds, &title.lines, title.bounds)? {
+                        return Err(format!("Native PDF page {page_number}: {element} overlaps native_pdf.title.text; adjust {keys}, album_pages_title_font/size or native_pdf.title.text"));
+                    }
+                }
+            }
             content_bounds.top = title.next_content_top_mm;
             content_bounds.validate()?;
         }
@@ -307,6 +322,7 @@ impl PageSettings {
             content_bounds,
             title,
             header,
+            header_number,
             footer,
             footer_number,
         })
