@@ -1,5 +1,6 @@
 pub mod album_pages_border;
 pub mod album_pages_footer;
+pub mod album_pages_footer_number;
 pub mod album_pages_footer_pad;
 pub mod album_pages_header;
 pub mod album_pages_header_pad;

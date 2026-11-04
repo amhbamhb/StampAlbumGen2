@@ -2,11 +2,70 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 19
-**Status:** Native repeating footer/header with independent padding and title share measured layout/TOML hints; existing geometry/colour compatibility retained; production backend not integrated
+**Revision:** 20
+**Status:** Native footer page numbering with explicit final total joins measured footer/header/title layout and TOML hints; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Measured footer page numbering (#70)
+
+The maintainer approved `ALBUM_PAGES_FOOTER_NUMBER` after committing #69 as
+`55cb720c`. Its separate command module reuses footer placement/text measurement
+and rendering. Existing `[footer].album_pages_footer_number_*` fields supply
+enablement/font/size/position/start/before/after, with section-over-root
+precedence. Explicit native opt-in defaults false to preserve prior proof
+output despite the main template's existing true number-enabled field.
+Shipped numeric style defaults are HN/8 pt/C/start1/"Page "/" of $PAGES$";
+footer padding/hint/colour are shared explicit TOML values. Plain-footer
+font/position/text remain independent. Local edits are preserved.
+
+Reference verification: seven AlbumEasy 4.5 cases/15 pages independently
+rendered twice with identical complete page traces. Starting labels apply from
+physical page 1; zero/negative starts are supported. LR/RL follow physical
+parity, not printed labels. Every exact `$PAGES$` occurrence expands to the
+actual count, even with a non-1 start and multiple prefix/suffix tokens.
+Omitted reference arguments are compared against explicit native TOML choices;
+no runtime rendering defaults are reintroduced.
+
+`resolve_with_page_count` requires a positive final PDF page count and a valid
+physical page. Existing `resolve` refuses active numbering instead of guessing
+a total. The loader samples first/second/last numbered pages; renderer
+preflights all pages before saving. Checked signed 32-bit arithmetic prevents
+label overflow. Number width is measured after expansion for each page.
+Footer-number reservation uses the same resolved result as drawing.
+Plain and numbered footer line-box overlaps produce actionable config errors.
+Neither auto-pagination/count convergence nor full stamp-row engine is claimed.
+
+Native comparisons verify every number/header/footer/title glyph within
+0.01 mm, including signed labels, 9-to-10 width changes, asymmetric margins,
+LR/RL and coexistence. Actual pink footer colour and guide top/bottom verify
+TOML policy. Exact-width tests span all twelve built-in fonts.
+The AFM line/advance and clipping/reservation safety limitations still apply;
+custom fonts, wrapping, header numbers/dates and production app/CLI/UI remain
+pending. Full T005/T006/T007/T046 tasks remain partial.
+
+Branch `issue/70-native-pdf-footer-number`; no commit/merge/push yet.
+Unrelated user manual/design/evolving autosave files remain untouched.
+No source/input databases or production routing/baseline diagram are changed.
+
+Validation: **67 passed, 0 failed, 0 ignored** (eight numbering tests,
+49 preceding native tests and ten main-config tests). Targeted Clippy,
+focused formatting/scoped diff checks and fourteen frozen hashes pass.
+Windows GNU library/example compilation passes with optional rfd disabled;
+Windows runtime/default-feature build and physical printing remain unverified.
+Existing app warnings and MuPDF unavailable-ICC warning remain.
+
+The three-page demo uses pink 16 pt LR numbering starting at 8, displaying
+"Page 8 of 3", "Page 9 of 3", "Page 10 of 3", alongside an independent centred
+8 pt "Collection" footer and black header/title. All three rasters were
+visually inspected; numbering alternates left/right and no text overlaps.
+Shared 25 mm footer hints leave content bottom **36.0936 mm** and title leaves
+content top **271.5420 mm**. The actual ignored local config remains three
+geometry-only pages, text/number extensions disabled, 227 unapplied keys.
+Test tempdirs self-clean; copied synthetic fixtures preserve reference inputs;
+proofs/logs/reports/checkpoint and regenerated knowledge remain session-only.
+No database rows are inserted, updated or deleted.
 
 #### Measured repeating footer and padding (#69)
 

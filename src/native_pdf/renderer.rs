@@ -15,7 +15,7 @@ pub fn write_page_geometry_proof(
     proof.validate()?;
     let layouts = (1..=proof.page_count)
         .map(|number| {
-            let layout = settings.resolve(number)?;
+            let layout = settings.resolve_with_page_count(number, proof.page_count)?;
             proof.validate_layout(&layout)?;
             Ok(layout)
         })
@@ -56,6 +56,16 @@ pub fn write_page_geometry_proof(
                     mm_to_points(bounds.top - bounds.bottom),
                 )
                 .stroke();
+        }
+        if let Some(number) = layout.footer_number {
+            draw_text_lines(
+                &mut page,
+                number.font,
+                number.size_pt,
+                number.colour,
+                number.lines,
+                "footer number",
+            )?;
         }
         if let Some(header) = layout.header {
             draw_text_lines(

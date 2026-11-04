@@ -90,7 +90,7 @@ album_pages_footer_number_enabled = true
 album_pages_footer_number_font = "HN"
 # Font size in points for the page number footer
 album_pages_footer_number_size = 8.0
-# Position: L (left), C (center), R (right)
+# Position: L, C, R, LR (odd-left/even-right), RL (reverse physical parity)
 album_pages_footer_number_position = "C"
 # Starting page number
 album_pages_footer_number_start = 1
@@ -1181,3 +1181,8 @@ position = "C" # L, C, R, LR (odd-left/even-right) or RL.
 text = "Stamp Album Footer"
 padding_mm = 0.0 # Positive moves down, away from the bottom border; negative moves closer.
 minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the text.
+
+# Native page-number opt-in; uses explicit existing [footer] number values
+# and native footer padding/height plus [colors].color_album_footer.
+[native_pdf.footer_number]
+enabled = false

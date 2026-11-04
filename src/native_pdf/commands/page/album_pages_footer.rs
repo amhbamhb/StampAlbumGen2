@@ -133,4 +133,13 @@ impl AlbumPagesFooter {
             reservation_top_mm,
         })
     }
+
+    pub fn with_text(&self, text: &str) -> Result<Self> {
+        let mut footer = self.clone();
+        footer.text = self
+            .text
+            .with_text(text)
+            .map_err(|error| format!("native_pdf.footer.text: {error}"))?;
+        Ok(footer)
+    }
 }

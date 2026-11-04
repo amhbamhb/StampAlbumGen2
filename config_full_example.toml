@@ -40,6 +40,13 @@ color_album_title = "black"
 album_pages_header_position = "C"
 color_album_header = "black"
 color_album_footer = "black"
+album_pages_footer_number_enabled = true
+album_pages_footer_number_font = "HN"
+album_pages_footer_number_size = 8.0
+album_pages_footer_number_position = "C"
+album_pages_footer_number_start = 1
+album_pages_footer_number_before = "Page "
+album_pages_footer_number_after = " of $PAGES$"
 
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
@@ -317,3 +324,8 @@ position = "C" # L, C, R, LR (odd-left/even-right) or RL.
 text = "Stamp Album Footer"
 padding_mm = 0.0 # Positive moves down, away from the bottom border; negative moves closer.
 minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the text.
+
+# Native page-number opt-in; uses explicit root footer-number fields
+# and native footer padding/height plus color_album_footer.
+[native_pdf.footer_number]
+enabled = false

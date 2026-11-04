@@ -3,6 +3,7 @@ use super::{
     commands::page::{
         album_pages_border::PageBorder,
         album_pages_footer::{AlbumPagesFooter, FooterLayout},
+        album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_header::{AlbumPagesHeader, HeaderLayout},
         album_pages_margins::Margins,
         album_pages_marginse::EvenMargins,
@@ -62,6 +63,7 @@ pub struct PageLayout {
     pub title: Option<TitleLayout>,
     pub header: Option<HeaderLayout>,
     pub footer: Option<FooterLayout>,
+    pub footer_number: Option<FooterLayout>,
 }
 
 #[derive(Clone, Debug)]
@@ -76,6 +78,7 @@ pub struct PageSettings {
     title: Option<AlbumPagesTitle>,
     header: Option<AlbumPagesHeader>,
     footer: Option<AlbumPagesFooter>,
+    footer_number: Option<AlbumPagesFooterNumber>,
 }
 
 impl PageSettings {
@@ -97,6 +100,7 @@ impl PageSettings {
             title: None,
             header: None,
             footer: None,
+            footer_number: None,
         }
     }
 
@@ -114,6 +118,10 @@ impl PageSettings {
 
     pub fn set_footer(&mut self, footer: AlbumPagesFooter) {
         self.footer = Some(footer);
+    }
+
+    pub fn set_footer_number(&mut self, number: AlbumPagesFooterNumber) {
+        self.footer_number = Some(number);
     }
 
     pub fn spacing(&self) -> Spacing {
@@ -157,6 +165,30 @@ impl PageSettings {
 
     /// Physical page numbers are one-based; no footer-label parity is inferred.
     pub fn resolve(&self, page_number: usize) -> Result<PageLayout> {
+        if self.footer_number.is_some() {
+            return Err("ALBUM_PAGES_FOOTER_NUMBER requires the final page count; use resolve_with_page_count".into());
+        }
+        self.resolve_page(page_number, None)
+    }
+
+    pub fn resolve_with_page_count(
+        &self,
+        page_number: usize,
+        total_pages: usize,
+    ) -> Result<PageLayout> {
+        if total_pages == 0
+            || u32::try_from(total_pages).is_err()
+            || page_number == 0
+            || page_number > total_pages
+        {
+            return Err(
+                "Native PDF physical page must be within a positive final PDF page count".into(),
+            );
+        }
+        self.resolve_page(page_number, Some(total_pages))
+    }
+
+    fn resolve_page(&self, page_number: usize, total_pages: Option<usize>) -> Result<PageLayout> {
         if page_number == 0 {
             return Err("Native PDF page number must be one-based".into());
         }
@@ -199,11 +231,66 @@ impl PageSettings {
             .as_ref()
             .map(|footer| footer.layout(margin_bounds, physical_page, page_number))
             .transpose()?;
+        let footer_number = self
+            .footer_number
+            .as_ref()
+            .map(|number| {
+                number.layout(
+                    margin_bounds,
+                    physical_page,
+                    page_number,
+                    total_pages.ok_or("ALBUM_PAGES_FOOTER_NUMBER requires the final page count")?,
+                )
+            })
+            .transpose()?;
+        if let (Some(footer), Some(number)) = (&footer, &footer_number) {
+            let text_first = footer
+                .lines
+                .first()
+                .ok_or("Native footer has no positioned lines")?
+                .baseline_mm;
+            let text_last = footer
+                .lines
+                .last()
+                .ok_or("Native footer has no positioned lines")?
+                .baseline_mm;
+            let number_first = number
+                .lines
+                .first()
+                .ok_or("Native footer number has no positioned lines")?
+                .baseline_mm;
+            let number_last = number
+                .lines
+                .last()
+                .ok_or("Native footer number has no positioned lines")?
+                .baseline_mm;
+            for text_line in &footer.lines {
+                for number_line in &number.lines {
+                    if !text_line.text.trim().is_empty()
+                        && !number_line.text.trim().is_empty()
+                        && text_line.left_mm < number_line.left_mm + number_line.width_mm
+                        && number_line.left_mm < text_line.left_mm + text_line.width_mm
+                        && text_line.baseline_mm - (text_last - footer.bounds.bottom)
+                            < number_line.baseline_mm + (number.bounds.top - number_first)
+                        && number_line.baseline_mm - (number_last - number.bounds.bottom)
+                            < text_line.baseline_mm + (footer.bounds.top - text_first)
+                    {
+                        return Err("native_pdf.footer.text overlaps ALBUM_PAGES_FOOTER_NUMBER; adjust native_pdf.footer.position or album_pages_footer_number_position, text or font sizes".into());
+                    }
+                }
+            }
+        }
         if let Some(footer) = &footer {
             content_bounds.bottom = content_bounds.bottom.max(footer.reservation_top_mm);
             content_bounds
                 .validate()
                 .map_err(|error| format!("native_pdf.footer.minimum_height_mm: {error}"))?;
+        }
+        if let Some(number) = &footer_number {
+            content_bounds.bottom = content_bounds.bottom.max(number.reservation_top_mm);
+            content_bounds.validate().map_err(|error| {
+                format!("ALBUM_PAGES_FOOTER_NUMBER/native_pdf.footer.minimum_height_mm: {error}")
+            })?;
         }
         let title = self
             .title
@@ -221,6 +308,7 @@ impl PageSettings {
             title,
             header,
             footer,
+            footer_number,
         })
     }
 }

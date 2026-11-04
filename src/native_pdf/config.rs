@@ -4,6 +4,7 @@ use super::{
     commands::page::{
         album_pages_border::PageBorder,
         album_pages_footer::AlbumPagesFooter,
+        album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_footer_pad::FooterPadding,
         album_pages_header::{AlbumPagesHeader, HeaderPosition},
         album_pages_header_pad::HeaderPadding,
@@ -100,6 +101,7 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        let mut footer_policy = None;
         if native.contains_key("footer") {
             let mut settings = table(&mut native, "footer", "native_pdf.")?;
             let enabled = match settings.remove("enabled") {
@@ -132,6 +134,7 @@ impl NativePdfConfig {
                 "millimetres",
             )?])?;
             let minimum = number(&mut settings, "minimum_height_mm", prefix, "millimetres")?;
+            footer_policy = Some((padding, minimum, colour));
             let command =
                 AlbumPagesFooter::new(&font, size, position, &text, padding, minimum, colour)?;
             if enabled {
@@ -139,6 +142,68 @@ impl NativePdfConfig {
             }
             if !settings.is_empty() {
                 native.insert("footer".into(), Value::Table(settings));
+            }
+        }
+        let mut numbering_enabled = false;
+        if native.contains_key("footer_number") {
+            let mut settings = table(&mut native, "footer_number", "native_pdf.")?;
+            let opt_in = boolean(&mut settings, "enabled", "native_pdf.footer_number.")?;
+            let mut footer = match root.remove("footer") {
+                Some(Value::Table(table)) => table,
+                Some(_) => return Err("Native PDF setting footer must be a table".into()),
+                None => Table::new(),
+            };
+            for key in [
+                "album_pages_footer_number_enabled",
+                "album_pages_footer_number_font",
+                "album_pages_footer_number_size",
+                "album_pages_footer_number_position",
+                "album_pages_footer_number_start",
+                "album_pages_footer_number_before",
+                "album_pages_footer_number_after",
+            ] {
+                if let Some(value) = footer.remove(key) {
+                    if root.insert(key.into(), value).is_some() {
+                        overridden_keys.push(key.into());
+                    }
+                }
+            }
+            let enabled = boolean(&mut root, "album_pages_footer_number_enabled", "")?;
+            let font = string(&mut root, "album_pages_footer_number_font", "")?;
+            let size = number(&mut root, "album_pages_footer_number_size", "", "points")?;
+            let position = TextPosition::parse_for(
+                &string(&mut root, "album_pages_footer_number_position", "")?,
+                "album_pages_footer_number_position",
+            )?;
+            let start = match root.remove("album_pages_footer_number_start") {
+                    Some(Value::Integer(value)) => i32::try_from(value)
+                        .map_err(|_| "album_pages_footer_number_start must be a signed 32-bit integer")?,
+                    _ => return Err("Missing or invalid album_pages_footer_number_start; expected a signed 32-bit integer".into()),
+                };
+            let before = string(&mut root, "album_pages_footer_number_before", "")?;
+            let after = string(&mut root, "album_pages_footer_number_after", "")?;
+            let (padding, minimum, colour) = footer_policy
+                    .ok_or("native_pdf.footer_number requires explicit native_pdf.footer padding/height/colour settings")?;
+            let style = AlbumPagesFooter::new(
+                &font,
+                size,
+                position,
+                &start.to_string(),
+                padding,
+                minimum,
+                colour,
+            )
+            .map_err(|error| format!("album_pages_footer_number_font/size/position: {error}"))?;
+            let command = AlbumPagesFooterNumber::new(style, start, &before, &after)?;
+            numbering_enabled = opt_in && enabled;
+            if numbering_enabled {
+                page_settings.set_footer_number(command);
+            }
+            if !footer.is_empty() {
+                root.insert("footer".into(), Value::Table(footer));
+            }
+            if !settings.is_empty() {
+                native.insert("footer_number".into(), Value::Table(settings));
             }
         }
         if native.contains_key("header") {
@@ -316,10 +381,18 @@ impl NativePdfConfig {
                 page.insert("even_margins".into(), Value::Table(table));
             }
         }
-        for number in [1, 2] {
-            let layout = page_settings
-                .resolve(number)
-                .map_err(|error| format!("Native PDF page {number}: {error}"))?;
+        let pages = if numbering_enabled {
+            vec![1, 2.min(proof.page_count), proof.page_count]
+        } else {
+            vec![1, 2]
+        };
+        for number in pages {
+            let layout = if numbering_enabled {
+                page_settings.resolve_with_page_count(number, proof.page_count)
+            } else {
+                page_settings.resolve(number)
+            }
+            .map_err(|error| format!("Native PDF page {number}: {error}"))?;
             proof.validate_layout(&layout)?;
         }
         if !page.is_empty() {
@@ -353,6 +426,15 @@ fn string(table: &mut Table, key: &str, prefix: &str) -> Result<String> {
         Some(Value::String(value)) => Ok(value),
         _ => Err(format!(
             "Missing or invalid native PDF setting {prefix}{key}; expected a string"
+        )),
+    }
+}
+
+fn boolean(table: &mut Table, key: &str, prefix: &str) -> Result<bool> {
+    match table.remove(key) {
+        Some(Value::Boolean(value)) => Ok(value),
+        _ => Err(format!(
+            "Missing or invalid {prefix}{key}; expected a boolean"
         )),
     }
 }

@@ -86,6 +86,14 @@ impl MeasuredText {
             "CS" => Font::CourierBoldOblique,
             _ => return Err("Text font must be a supported built-in AlbumEasy font token".into()),
         };
+        Self::new_with_font(font, size_pt, text)
+    }
+
+    pub fn with_text(&self, text: &str) -> Result<Self> {
+        Self::new_with_font(self.font.clone(), self.size_pt, text)
+    }
+
+    fn new_with_font(font: Font, size_pt: f64, text: &str) -> Result<Self> {
         if !size_pt.is_finite() || size_pt <= 0.0 {
             return Err("Text size must be finite and positive points".into());
         }

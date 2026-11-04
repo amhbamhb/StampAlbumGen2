@@ -160,11 +160,11 @@ base margins with no automatic mirroring. This table is native-proof-only;
 the main application's configuration loader has not been extended.
 
 The full copied template contains many settings for unimplemented native
-features. The example explicitly warns that they are not applied (234 with
+features. The example explicitly warns that they are not applied (227 with
 the current template). The bridge exposes sorted `unapplied_keys` and
-`overridden_keys`, never their values. General text, custom fonts, page numbers/dates, images,
+`overridden_keys`, never their values. General text, custom fonts, header numbers/dates, images,
 runtime options and `max_page_vspace_mm` do not affect this proof yet. General
-page/stamp text remains unsupported; repeating title/header/footer text is supported.
+page/stamp text remains unsupported; repeating title/header/footer text and footer page numbers are supported.
 Errors do not echo source lines or credential values.
 
 `NativePdfConfig::load(&Path)` returns a per-run snapshot. The application-facing
@@ -320,7 +320,7 @@ or less padding. Frozen large-font comparisons use 3 mm padding.
 Over-wide/unsupported text, physical-page overflow and unusable reserved
 content fail explicitly. Missing/invalid table fields never get fallback
 values, including when disabled. Absent table means no footer.
-Page-number/date expansion, automatic wrapping, custom fonts and production
+Header-number/date expansion, automatic wrapping, custom fonts and production
 UI/CLI/backend integration remain separate unfinished items.
 
 ```bash
@@ -331,6 +331,80 @@ Expected: **8 passed, 0 ignored** with `mutool`. Checks include frozen hashes,
 explicit TOML defaults/errors/precedence/snapshots, all built-in font layouts,
 blank lines, parity, physical fit, combined header/footer/title reservation,
 and preserving output when a later page fails preflight.
+
+### Footer page numbering with a known final total
+
+`ALBUM_PAGES_FOOTER_NUMBER (Font Fontsize Position [Start] [Before] [After])`
+now has its own [native command module](../../src/native_pdf/commands/page/album_pages_footer_number.rs).
+It reuses the measured footer placement, padding, colour and height reservation
+without conflating page-number font/position/text with a plain text footer.
+
+Both templates and local `config-pdf.toml` add:
+
+```toml
+[native_pdf.footer_number]
+enabled = false
+```
+
+To enable native numbering, set this to true **and** keep
+`[footer].album_pages_footer_number_enabled = true`. The native opt-in prevents
+the main template's existing number-enabled default from unexpectedly changing
+the isolated proof. The remaining existing `[footer]` values are consumed:
+
+```toml
+[footer]
+album_pages_footer_number_enabled = true
+album_pages_footer_number_font = "HN"
+album_pages_footer_number_size = 8.0
+album_pages_footer_number_position = "C"
+album_pages_footer_number_start = 1
+album_pages_footer_number_before = "Page "
+album_pages_footer_number_after = " of $PAGES$"
+```
+
+Section values override the equivalent legacy root keys. All fields are
+required when the native number table exists, even when disabled. Empty
+prefix/suffix strings are valid. Starting at 7 labels physical page 1 as 7,
+page 2 as 8; it does not skip pages. Verified zero/negative starting labels
+are supported with signed 32-bit checked arithmetic, not wraparound.
+LR/RL follow physical page parity, never printed-label parity.
+
+Every exact `$PAGES$` occurrence in prefix/suffix expands to the actual total
+document pages. A three-page document starting at 8 reads "Page 8 of 3",
+"Page 9 of 3", "Page 10 of 3". This is a count, not the last printed label.
+Explicit multiline prefix/suffix uses the shared WinAnsi measurement policy.
+
+Colour comes from `[colors].color_album_footer`; padding/minimum height come
+from `[native_pdf.footer]`, which must exist even with its text disabled.
+Zero hint uses measured height; positive reserves at least that height upward,
+without shifting number glyphs. A text footer may coexist at a non-overlapping
+position; measured line-box overlap returns an actionable error instead of
+drawing text over numbers. Future date/header-number commands remain separate.
+
+The application-facing numbered layout call is
+`PageSettings::resolve_with_page_count(physical_page, final_page_count)`.
+The older `resolve(physical_page)` still works without active numbering and
+errors when numbering needs a total. The proof renderer supplies its configured
+actual page count, preflights every page, then draws each resolved result.
+The loader additionally checks first/second/last numbered pages. Width changes
+from 9 to 10 or a later collision cannot silently clip or leave a partial PDF.
+Final pagination/count solving for full stamp albums is not implemented here.
+
+Seven AlbumEasy 4.5 cases/15 pages were rendered independently twice with
+identical complete page traces. Native checks compare every number and
+coexisting header/footer/title glyph/font/size within 0.01 mm, total substitution,
+signed labels, asymmetric even margins, actual pink colour and content guides.
+
+```bash
+cargo test --test native_pdf_footer_number -- --include-ignored --nocapture
+```
+
+Expected: **8 passed, 0 ignored** with `mutool`. Includes explicit defaults,
+two enablement gates, unknown-key reporting, snapshot/precedence, keyed/redacted
+errors, invalid totals, signed overflow, all font variants, 9-to-10 exact-width
+boundaries, collisions and no output truncation on invalid later pages.
+The native clipping/reservation safety differences remain intentional;
+production app/UI/CLI wiring, header numbering and dates remain pending.
 
 ### Repeating page title and measured-height hint
 

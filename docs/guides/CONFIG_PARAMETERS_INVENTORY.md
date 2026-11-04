@@ -49,6 +49,12 @@ overrides the root `color_album_border` value.
 | `[colors].color_album_footer` or legacy root key | Footer colour | Named opaque colour; shipped black; section overrides root |
 | `[native_pdf.footer].padding_mm` | `ALBUM_PAGES_FOOTER_PAD` | Finite signed mm; template 0.0; positive lowers footer away from border |
 | `[native_pdf.footer].minimum_height_mm` | Native reservation hint | Finite nonnegative mm; template 0.0 = automatic; positive extends reservation above footer |
+| `[native_pdf.footer_number].enabled` | Native numbering opt-in | Required boolean when table exists; template false; also requires existing footer-number enablement |
+| `[footer].album_pages_footer_number_enabled` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | Required boolean when native number table exists; template true; section overrides root |
+| `[footer].album_pages_footer_number_font`, `.album_pages_footer_number_size` or root keys | `ALBUM_PAGES_FOOTER_NUMBER` | Independent built-in font/positive point size; templates HN/8 |
+| `[footer].album_pages_footer_number_position` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | L/C/R/LR/RL using physical parity, not printed label; template C |
+| `[footer].album_pages_footer_number_start` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | Signed 32-bit integer; template 1; checked arithmetic; zero/negative labels supported |
+| `[footer].album_pages_footer_number_before`, `.album_pages_footer_number_after` or root keys | `ALBUM_PAGES_FOOTER_NUMBER` | Explicit WinAnsi strings, empty allowed; templates "Page " / " of $PAGES$"; every exact `$PAGES$` expands to actual count |
 
 Border colours are case-insensitive. Hex, RGB functions, transparent and unknown
 names are rejected, not silently mapped to black. Actual AlbumEasy 4.5 probes
@@ -103,8 +109,21 @@ title layout. Off-page descenders and unusable content are explicit errors,
 even if AlbumEasy accepts/clips the same configuration.
 The optional footer table is absent only for older/no-footer configurations;
 all fields and colour are required when present, including when disabled.
-The existing `[footer].album_pages_footer_number_*` keys remain unapplied:
-text-footer settings do not borrow or alter page-number/date settings.
+Text-footer settings do not borrow or alter the independent page-number
+font/size/position/prefix/suffix. Numbering shares explicit footer padding,
+minimum-height and colour (the native footer table is required even if text
+is disabled). Both native opt-in and existing number-enabled field must be
+true to render numbers. All number fields must be present/valid when the
+native number table exists, including when disabled. Absent number table
+preserves older no-number proofs and reports existing number keys unapplied.
+Section-over-root precedence applies to all seven existing number fields.
+`PageSettings::resolve_with_page_count` requires the frozen actual total and
+valid physical page; `resolve` explicitly refuses active numbering rather
+than guessing a total. Loading validates first, second if present, and last
+numbered page; rendering preflights every page before saving. A changing
+digit count may increase width or cause a collision on a later page.
+Measured text/number footer line-box overlaps fail with actionable position/
+font/text keys. Negative padding still deliberately permits border overlap.
 
 No automatic even-page mirroring is inferred. All geometry must remain usable;
 both base and even-page bounds are validated when loading. Other template
