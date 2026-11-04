@@ -3,6 +3,7 @@ use super::{
     commands::page::{
         album_pages_border::PageBorder,
         album_pages_footer::{AlbumPagesFooter, FooterLayout},
+        album_pages_footer_date::AlbumPagesFooterDate,
         album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_header::{AlbumPagesHeader, HeaderLayout},
         album_pages_header_date::AlbumPagesHeaderDate,
@@ -70,6 +71,7 @@ pub struct PageLayout {
     pub header_date: Option<HeaderLayout>,
     pub footer: Option<FooterLayout>,
     pub footer_number: Option<FooterLayout>,
+    pub footer_date: Option<FooterLayout>,
 }
 
 #[derive(Clone, Debug)]
@@ -87,6 +89,7 @@ pub struct PageSettings {
     header_date: Option<AlbumPagesHeaderDate>,
     footer: Option<AlbumPagesFooter>,
     footer_number: Option<AlbumPagesFooterNumber>,
+    footer_date: Option<AlbumPagesFooterDate>,
 }
 
 impl PageSettings {
@@ -111,6 +114,7 @@ impl PageSettings {
             header_date: None,
             footer: None,
             footer_number: None,
+            footer_date: None,
         }
     }
 
@@ -137,9 +141,17 @@ impl PageSettings {
     /// Capture local calendar date once, outside the page loop. Fixed/disabled
     /// dates do not consult the clock; callers can reuse this exact context.
     pub fn capture_generation_date(&self) -> Option<chrono::NaiveDate> {
-        match self.header_date.as_ref().map(AlbumPagesHeaderDate::source) {
-            Some(DateSource::Generation) => Some(chrono::Local::now().date_naive()),
-            _ => None,
+        let sources = [
+            self.header_date.as_ref().map(AlbumPagesHeaderDate::source),
+            self.footer_date.as_ref().map(AlbumPagesFooterDate::source),
+        ];
+        if sources
+            .iter()
+            .any(|source| matches!(source, Some(DateSource::Generation)))
+        {
+            Some(chrono::Local::now().date_naive())
+        } else {
+            None
         }
     }
 
@@ -149,6 +161,10 @@ impl PageSettings {
 
     pub fn set_footer_number(&mut self, number: AlbumPagesFooterNumber) {
         self.footer_number = Some(number);
+    }
+
+    pub fn set_footer_date(&mut self, date: AlbumPagesFooterDate) {
+        self.footer_date = Some(date);
     }
 
     pub fn spacing(&self) -> Spacing {
@@ -360,12 +376,48 @@ impl PageSettings {
                 format!("ALBUM_PAGES_FOOTER_NUMBER/native_pdf.footer.minimum_height_mm: {error}")
             })?;
         }
+        let footer_date = self
+            .footer_date
+            .as_ref()
+            .map(|date| date.layout(margin_bounds, physical_page, page_number, generation_date))
+            .transpose()?;
+        if let Some(date) = &footer_date {
+            content_bounds.bottom = content_bounds.bottom.max(date.reservation_top_mm);
+            content_bounds.validate().map_err(|error| {
+                format!("ALBUM_PAGES_FOOTER_DATE/native_pdf.footer.minimum_height_mm: {error}")
+            })?;
+            for (element, layout, keys) in [
+                (
+                    "native_pdf.footer.text",
+                    footer.as_ref(),
+                    "native_pdf.footer.position/font/size_pt/text",
+                ),
+                (
+                    "ALBUM_PAGES_FOOTER_NUMBER",
+                    footer_number.as_ref(),
+                    "album_pages_footer_number_position/font/size/before/after",
+                ),
+            ] {
+                if let Some(layout) = layout {
+                    if text_lines_overlap(&date.lines, date.bounds, &layout.lines, layout.bounds)? {
+                        // TODO(native-pdf-ui): Show footer date conflicts and
+                        // physical-page/TOML correction choices in the UI.
+                        return Err(format!("Native PDF page {page_number}: ALBUM_PAGES_FOOTER_DATE overlaps {element}; adjust native_pdf.footer_date.position/font/size_pt/before/after/separator or {keys}"));
+                    }
+                }
+            }
+        }
         let title = self
             .title
             .as_ref()
             .map(|title| title.layout(content_bounds, self.spacing.vertical_mm()))
             .transpose()?;
         if let Some(title) = &title {
+            if let Some(date) = &footer_date {
+                if text_lines_overlap(&date.lines, date.bounds, &title.lines, title.bounds)? {
+                    return Err(format!("Native PDF page {page_number}: ALBUM_PAGES_FOOTER_DATE overlaps native_pdf.title.text; adjust native_pdf.footer_date.font/size_pt/before/after/separator, native_pdf.footer.padding_mm or album_pages_title_font/size/native_pdf.title.text"));
+                }
+            }
             for (element, layout, keys) in [
                 ("native_pdf.header.text", header.as_ref(), "album_pages_header_position, native_pdf.header.font/size_pt/text/padding_mm"),
                 ("ALBUM_PAGES_HEADER_NUMBER", header_number.as_ref(), "native_pdf.header_number.position/font/size_pt/before/after, native_pdf.header.padding_mm"),
@@ -390,6 +442,7 @@ impl PageSettings {
             header_date,
             footer,
             footer_number,
+            footer_date,
         })
     }
 }

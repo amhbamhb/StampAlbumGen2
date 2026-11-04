@@ -2,11 +2,79 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-03
-**Revision:** 22
-**Status:** Native header generation dates with fixed-date override join measured text/numbering and overlap checks; production backend not integrated
+**Revision:** 23
+**Status:** Native header/footer dates share document context with explicit TOML styles and overlap checks; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Footer generation dates and shared date text (#73)
+
+The maintainer approved `ALBUM_PAGES_FOOTER_DATE`. Its separate command module
+reuses footer placement/measurement and shared date text/source/format logic.
+Explicit `[native_pdf.footer_date]` defaults are disabled/HN/8 pt/L/YMD/"-"/
+"Generated: "/empty suffix/generation/2026-01-01 fixed override. The existing
+footer policy supplies padding/minimum height/colour, even if plain text is
+disabled. No hidden rendering values are added and local edits are preserved.
+Date font/size/position/text are independent of plain footer and numbering.
+
+Header/footer generation modes share a single local calendar date captured
+outside the page loop; either may independently use its fixed override.
+Footer-only generation captures a date too. Shared `DateText` owns formatting,
+fragments and source resolution rather than duplicating the header logic.
+Keyed helper entry points report the appropriate footer/header settings while
+preserving the original public header API. Every explicit field and inactive
+override validates even when disabled, with strict YYYY-MM-DD/leap-year/range
+checks and redacted errors. Literal prefixes/suffixes do not expand number tokens.
+
+Seven actual AlbumEasy 4.5 cases/11 pages were independently repeated with
+identical full-page traces. Observed date 2026-11-03 is frozen for deterministic
+native tests; fifteen source/PDF/date hashes are checked. Actual glyph/font/size
+comparisons pass within 0.01 mm for all formats/positions, multiline TB16,
+HN8/HN25, custom/empty separators, asymmetric even margins and all implemented
+header/footer text/numbers/dates/title coexisting. Reference order is header
+number, footer number, header date, footer date, plain header/footer, title.
+Pink footer colour and hint/content guide boundaries are checked separately.
+
+The footer's one-em plus 0.5 mm below-margin baseline is reused; multiline dates
+grow downwards. Height hints extend reservation upwards without moving glyphs.
+Date reservation constrains the content bottom before title layout. Date vs
+footer text/number/title uses the shared nonblank per-line AFM checker; touching
+boxes and reservation-only intersections are not collisions. Page-specific
+errors name correction keys and a TODO records future UI choices. There is no
+automatic movement or implemented UI. Invalid later-page dates create no new
+PDF and preserve existing output. Signed padding border overlap remains
+intentional; native rejects off-page descenders even if AlbumEasy accepts them.
+The large-font reference uses safe 3 mm padding, not the clipping 5 mm setting.
+
+Validation: **97 passed, 0 failed, 0 ignored** (86 native integration tests,
+including ten new footer-date tests; one shared collision unit test; ten
+main-config tests). Focused Clippy, formatting/scoped diff checks and all frozen
+hashes pass. Windows GNU library/example compilation passes without optional
+rfd; Windows runtime/default-feature build and printing remain unverified.
+Mixed date sources, header/footer date consistency on every page, injected
+year-boundary contexts, footer-only capture, calendar/redacted errors,
+defaults/precedence/snapshots and all twelve fonts' exact-width checks pass.
+Existing app warnings and MuPDF's unavailable-ICC warning remain.
+
+The visually inspected three-page demo has black header date/text/numbers and
+25 pt title, pink footer date left, text centre and numbered labels right.
+Both fixed dates match on every page; header labels start at 8 and footer at 1.
+The shared 25 mm footer hint leaves page-1 content bottom **36.0936 mm**;
+content top after title is **265.1549 mm**. The ignored local config remains
+three geometry-only pages with all text/number/date extensions disabled and
+227 unapplied keys.
+
+Branch `issue/73-native-pdf-footer-date`; maintainer approved the demo and
+requested a local commit. All 97 relevant tests passed again before committing;
+no merge/push requested.
+Broad T005/T006/T007/T046 remain partial; production app/UI/backend, full
+pagination/count convergence, custom fonts/wrapping and exact glyph-outline/
+italic-overhang certification remain pending. No imports/databases/production
+routes or historical diagram changes. Unrelated user manual/design/autosave
+and the tagged album-globals test are untouched. Synthetic fixtures are copied,
+no inputs moved/deleted; test tempdirs self-clean. Evidence/demo/reports/
+isolated regenerated knowledge stay session-only.
 
 #### Header generation date and deterministic date context (#72)
 

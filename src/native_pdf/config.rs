@@ -4,6 +4,7 @@ use super::{
     commands::page::{
         album_pages_border::PageBorder,
         album_pages_footer::AlbumPagesFooter,
+        album_pages_footer_date::AlbumPagesFooterDate,
         album_pages_footer_number::AlbumPagesFooterNumber,
         album_pages_footer_pad::FooterPadding,
         album_pages_header::{AlbumPagesHeader, HeaderPosition},
@@ -145,6 +146,43 @@ impl NativePdfConfig {
             }
             if !settings.is_empty() {
                 native.insert("footer".into(), Value::Table(settings));
+            }
+        }
+        if native.contains_key("footer_date") {
+            let mut settings = table(&mut native, "footer_date", "native_pdf.")?;
+            let prefix = "native_pdf.footer_date.";
+            let enabled = boolean(&mut settings, "enabled", prefix)?;
+            let font = string(&mut settings, "font", prefix)?;
+            let size = number(&mut settings, "size_pt", prefix, "points")?;
+            let position = TextPosition::parse_for(
+                &string(&mut settings, "position", prefix)?,
+                "native_pdf.footer_date.position",
+            )?;
+            let format = DateFormat::parse_for(
+                &string(&mut settings, "format", prefix)?,
+                "native_pdf.footer_date",
+            )?;
+            let separator = string(&mut settings, "separator", prefix)?;
+            let before = string(&mut settings, "before", prefix)?;
+            let after = string(&mut settings, "after", prefix)?;
+            let source_token = string(&mut settings, "date_source", prefix)?;
+            let fixed_date = string(&mut settings, "fixed_date", prefix)?;
+            let source =
+                DateSource::parse_for(&source_token, &fixed_date, "native_pdf.footer_date")?;
+            let (padding, minimum, colour) = footer_policy
+                .ok_or("native_pdf.footer_date requires explicit native_pdf.footer padding/height/colour settings")?;
+            let style =
+                AlbumPagesFooter::new(&font, size, position, &fixed_date, padding, minimum, colour)
+                    .map_err(|error| {
+                        format!("native_pdf.footer_date.font/size_pt/position: {error}")
+                    })?;
+            let command =
+                AlbumPagesFooterDate::new(style, format, &separator, &before, &after, source)?;
+            if enabled {
+                page_settings.set_footer_date(command);
+            }
+            if !settings.is_empty() {
+                native.insert("footer_date".into(), Value::Table(settings));
             }
         }
         let mut numbering_enabled = false;

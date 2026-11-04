@@ -162,7 +162,7 @@ the main application's configuration loader has not been extended.
 The full copied template contains many settings for unimplemented native
 features. The example explicitly warns that they are not applied (227 with
 the current template). The bridge exposes sorted `unapplied_keys` and
-`overridden_keys`, never their values. General text, custom fonts, footer dates, images,
+`overridden_keys`, never their values. General text, custom fonts, images,
 runtime options and `max_page_vspace_mm` do not affect this proof yet. General
 page/stamp text remains unsupported; repeating title/header/footer text and footer page numbers are supported.
 Errors do not echo source lines or credential values.
@@ -379,7 +379,7 @@ from `[native_pdf.footer]`, which must exist even with its text disabled.
 Zero hint uses measured height; positive reserves at least that height upward,
 without shifting number glyphs. A text footer may coexist at a non-overlapping
 position; measured line-box overlap returns an actionable error instead of
-drawing text over numbers. Header dates use a separate command; footer dates remain pending.
+drawing text over numbers. Header/footer dates use their own separate commands.
 
 The application-facing numbered layout call is
 `PageSettings::resolve_with_page_count(physical_page, final_page_count)`.
@@ -404,7 +404,7 @@ two enablement gates, unknown-key reporting, snapshot/precedence, keyed/redacted
 errors, invalid totals, signed overflow, all font variants, 9-to-10 exact-width
 boundaries, collisions and no output truncation on invalid later pages.
 The native clipping/reservation safety differences remain intentional;
-production app/UI/CLI wiring and footer dates remain pending.
+production app/UI/CLI wiring remains pending.
 
 ### Header page numbering and overlap diagnostics
 
@@ -451,8 +451,8 @@ text at `album_pages_header_position = "L"` and its number at
 their font sizes. Changing a shared padding moves both header elements and
 does not fix a text-vs-number collision. No automatic movement, clipping or
 interactive choice is implemented. A `TODO(native-pdf-ui)` records the future
-UI notification/correction dialog; header dates are also checked, while
-footer dates/images remain unimplemented.
+UI notification/correction dialog; header/footer dates are also checked, while
+images remain unimplemented.
 
 Seven AlbumEasy 4.5 cases/14 pages were independently repeated with identical
 complete page traces. Actual native glyph/font/size comparisons use 0.01 mm,
@@ -548,6 +548,78 @@ redacted settings, all twelve font variants' exact-width boundary, overlaps,
 title separation and no output/truncation on invalid later pages. The same
 Cargo command works in Windows PowerShell with MuPDF on PATH; compilation was
 checked on Windows GNU, but Windows execution/printing remains unverified.
+
+### Footer generation date and shared document date
+
+The separate [footer-date command](../../src/native_pdf/commands/page/album_pages_footer_date.rs)
+implements `ALBUM_PAGES_FOOTER_DATE (Font Fontsize Position Format [Separator] [Before] [After])`.
+Both templates provide explicit editable defaults:
+
+```toml
+[native_pdf.footer_date]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "L"
+format = "YMD"
+separator = "-"
+before = "Generated: "
+after = ""
+date_source = "generation"
+fixed_date = "2026-01-01"
+```
+
+All fields must exist and validate when the table exists, including when
+disabled. The native footer policy table is required even when its text is
+disabled. Date font/size/position/format/text are independent of plain footer
+and numbering; padding/minimum-height/colour share the explicit footer policy.
+The shared date helper now reports the appropriate header/footer keys while
+preserving the original public header parsing contract.
+
+`YMD`, `DMY`, `MDY`, editable/empty separators and literal prefixes/suffixes
+work as described for header dates. Strict fixed overrides validate leap years
+and exact `YYYY-MM-DD` in years 0001 through 9999, even when inactive.
+Header and footer in generation mode share **one local date captured for the
+document**, not one clock read each. Either can instead use its own explicit
+fixed override. Mixed modes preserve that fixed date while the other uses the
+generation context. A footer-only generation configuration also captures a
+date. The explicit-context resolver/writer supports deterministic testing,
+and legacy resolving refuses either generation date without context.
+
+Measured placement reuses the footer's first baseline: bottom margin minus
+one font-size step in mm, minus 0.5 mm, minus signed padding. Multiline dates
+grow downwards. The minimum-height hint extends reservation upwards, without
+moving/resizing glyphs; only content spill raises the lower content boundary.
+Native rejects off-page descenders even if AlbumEasy accepts the configuration.
+The 25 pt reference uses safe 3 mm padding, not the known clipping 5 mm case.
+
+Footer date is checked against plain footer, footer numbering and title using
+the shared nonblank AFM line-box checker. Errors identify the physical page
+and TOML correction keys before any PDF is saved; late-page failure preserves
+an existing output. Date left, plain footer centre and number right are useful
+testing choices, not guaranteed to fit arbitrary text. Shorten the date text/
+prefixes or reduce font sizes if needed, then rerun. Shared padding moves all
+footer elements, so it does not solve their horizontal collisions. The code
+TODO records future UI warnings and correction choices; no interactive UI,
+automatic repositioning or exact glyph-outline certification is claimed.
+
+Seven actual AlbumEasy cases/11 pages were independently repeated with
+identical full-page traces, with observed generation date frozen for stable
+native tests. Fifteen hashes cover input/PDF/date identity. Native comparisons
+verify every coexisting glyph/font/size within 0.01 mm, including all formats/
+positions, multiline, empty/custom separators, 8/16/25 pt and asymmetric even
+margins. Pink footer colour and both content-guide boundaries are checked.
+
+```bash
+cargo test --test native_pdf_footer_date -- --include-ignored --nocapture
+```
+
+Expected: **10 passed, 0 ignored** with `mutool`. Includes generation/fixed/
+mixed contexts, shared date on all pages, year-boundary injection, calendar
+validation, keyed/redacted errors, defaults/precedence/snapshot/unapplied keys,
+all twelve standard-font exact-width boundaries, overlaps and no output
+truncation. The same Cargo command works in Windows PowerShell with MuPDF on
+PATH; Windows execution and physical printing remain unverified.
 
 ### Repeating page title and measured-height hint
 

@@ -101,6 +101,16 @@ pub fn write_page_geometry_proof_with_date(
                 "header date",
             )?;
         }
+        if let Some(date) = layout.footer_date {
+            draw_text_lines(
+                &mut page,
+                date.font,
+                date.size_pt,
+                date.colour,
+                date.lines,
+                "footer date",
+            )?;
+        }
         if let Some(header) = layout.header {
             draw_text_lines(
                 &mut page,
