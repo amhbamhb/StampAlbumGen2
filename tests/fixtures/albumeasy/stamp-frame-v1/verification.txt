@@ -1,0 +1,19 @@
+Independent MuPDF trace verification: all-cases.pdf (Letter edition)
+Page size: 215.9 x 279.4 mm; labels 10 pt; case headings 14 pt.
+Tolerance: 0.004 mm for extents (two rounded coordinates).
+case,physical_width,physical_height,frame_width,frame_height,image_width,image_height,result
+01-standard-small-image,21.999222,25.001382,27.999972,30.998583,10.999611,12.498917,PASS
+02-standard-fit-image,21.999222,25.001382,27.999972,30.998583,21.999222,25.001361,PASS
+03-fractional,22.500163,25.001382,25.999719,30.501167,21.999222,25.001361,PASS
+04-portrait,25.001361,40.001472,30.998583,45.998694,25.001361,28.409194,PASS
+05-landscape,40.001472,25.001382,45.998694,30.998583,21.999222,25.001361,PASS
+06-booklet,43.998444,90.000667,49.999194,96.001417,43.998444,49.999194,PASS
+07-se-tenant,124.999743,66.001191,131.000496,71.998410,58.081333,66.001194,PASS
+08-wide,103.000528,51.001083,109.001278,56.998306,44.880389,51.001083,PASS
+09-zero-clearance,21.999222,25.001382,21.999222,25.001382,21.999222,25.001361,PASS
+10-calibration,99.998385,99.998389,99.998385,99.998389,10.999611,12.498917,PASS
+10/10 pass: Letter media size, physical/frame/image dimensions, 10/14 pt text and label baseline positions inside page margins.
+Page border is inset approximately 12 mm on all edges.
+AlbumEasy companion TXT has not been reference-rendered.
+Previous A4 page 1 user print: image 11x13 mm (expected 11x12.5), physical 22x25 mm, frame 28x31 mm; bottom border missing on Letter paper.
+Revised Letter print and 100x100 mm calibration measurements pending.

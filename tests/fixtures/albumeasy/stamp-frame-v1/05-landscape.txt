@@ -1,0 +1,15 @@
+# Independent frame-size comparison, not native image/text parity.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (12 12 12 12)
+ALBUM_PAGES_SPACING (3 4)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+STAMP_BOXES_SIZE_ADJUST (0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HB 12 "05-landscape" 4)
+PAGE_TEXT_CENTRE (HN 9 "Frame 46 x 31 mm; physical 40 x 25 mm" 4)
+ROW_START_ES (HN 6 0.1)
+STAMP_ADD (46 31 "" "" "Frame" "")
+PAGE_VSPACE (10)
+ROW_START_ES (HN 6 0.1)
+STAMP_ADD (40 25 "" "" "Physical reference" "")

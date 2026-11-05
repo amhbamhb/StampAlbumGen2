@@ -110,9 +110,9 @@ cargo build --features full-flag-db
 
 ### 4. Git / Version Control
 
-- **Do not use GitHub APIs, GitHub PRs, or GitHub Issues** for this project.  
-  See `docs/COPILOT_AGENT_INSTRUCTIONS.md` for details on the preferred GitLab remote.
-- Preferred remote: self-hosted GitLab at `gitinfo.laserspider.info`.
+- This repository uses **GitHub**: `amhbamhb/StampAlbumGen2`.
+- Use GitHub Issues and pull requests for project tracking; prefer `gh` for GitHub operations.
+- This repository-specific policy replaces the former GitLab-only guidance.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.
 - Branch naming: `feature/<short-name>`, `fix/<short-name>`, `refactor/<file-or-area>`.

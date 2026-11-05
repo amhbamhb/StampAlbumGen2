@@ -33,6 +33,19 @@ accuracy claim is supported by this sample.
 - The present check evaluates physical-size estimates only, not row packing,
   frame/text geometry, printed illustrations, or physical print measurements.
 
+### Approved clearance compatibility contract (2026-11-04)
+
+Preserve the existing total-addition settings; use explicit per-edge geometry
+internally. Frame width is physical width + `extra_width_mm` +
+`stamp_box_adjust`; frame height uses `extra_height_mm` in the same way.
+A 22x25 mm physical stamp with 6 mm total additions becomes a 28x31 mm frame,
+with 3 mm per edge when centred. Achieving 6 mm per edge would require
+12 mm total additions, not reinterpreting existing settings.
+
+The [native PDF roadmap](NATIVE_PDF_IMPLEMENTATION_PLAN.md) records the #77
+known-size geometry/proof slice and its validation. It does not implement the
+experimental unknown-size estimator or change legacy generation behavior.
+
 ## Inputs and coverage
 
 Album: `/home/ray/AlbumGen2/Albums/United-States`.

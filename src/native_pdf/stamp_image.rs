@@ -3,6 +3,7 @@
 use super::{
     colour::NamedColour,
     document::{Bounds, PageLayout},
+    stamp_box::StampBoxGeometry,
     text::{MeasuredText, PositionedTextLine},
     units::{mm_to_points, points_to_mm},
     Result,
@@ -52,6 +53,15 @@ pub struct StampImageProofSettings {
 }
 
 impl StampImageProofSettings {
+    /// Uses the mounting frame for text anchors while fitting the illustration
+    /// inside the physical stamp area. The source image scale is unchanged.
+    pub fn with_stamp_box(mut self, geometry: &StampBoxGeometry) -> Self {
+        self.box_bounds = geometry.frame_bounds();
+        self.image_padding_horizontal_mm = geometry.horizontal_clearance_mm();
+        self.image_padding_vertical_mm = geometry.vertical_clearance_mm();
+        self
+    }
+
     fn validate_numbers(&self) -> Result<()> {
         if !self.image_scale_pt_per_pixel.is_finite()
             || self.image_scale_pt_per_pixel <= 0.0

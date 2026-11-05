@@ -10,9 +10,10 @@ use stamp_album_gen2::native_pdf::{
     },
     document::{Bounds, PageSettings},
     proof::GeometryProofSettings,
-    renderer::write_stamp_image_proof,
+    renderer::{write_stamp_box_geometry_proof, write_stamp_image_proof},
+    stamp_box::StampBoxGeometry,
     stamp_image::{StampImageProofSettings, StampTextProofSettings},
-    units::points_to_mm,
+    units::{mm_to_points, points_to_mm},
 };
 use std::{error::Error, fs, path::Path};
 
@@ -131,5 +132,84 @@ fn invalid_image_does_not_create_or_truncate_the_output() -> Result<()> {
     fs::write(&output, b"existing output")?;
     assert!(write_stamp_image_proof(&settings()?, &proof()?, &stamp, &output).is_err());
     assert_eq!(fs::read(output)?, b"existing output");
+    Ok(())
+}
+
+#[test]
+fn illustration_scale_changes_pdf_image_but_not_known_size_or_frame() -> Result<()> {
+    let temporary = tempfile::tempdir()?;
+    let image_path = temporary.path().join("known-stamp.png");
+    image::RgbImage::from_pixel(220, 250, image::Rgb([30, 50, 120])).save(&image_path)?;
+    let geometry = StampBoxGeometry::from_total_additions(
+        Bounds {
+            left: 80.0,
+            bottom: 116.0,
+            right: 102.0,
+            top: 141.0,
+        },
+        6.0,
+        6.0,
+        0.0,
+    )?;
+    for (index, mm_per_pixel, expected_width, expected_height) in
+        [(0, 0.05, 11.0, 12.5), (1, 0.2, 22.0, 25.0)]
+    {
+        let stamp = StampImageProofSettings {
+            image_path: image_path.clone(),
+            box_bounds: geometry.physical_bounds(),
+            image_scale_pt_per_pixel: mm_to_points(mm_per_pixel),
+            image_padding_horizontal_mm: 0.0,
+            image_padding_vertical_mm: 0.0,
+            text_gap_mm: 2.0,
+            heading: None,
+            caption: None,
+        }
+        .with_stamp_box(&geometry);
+        assert_eq!(stamp.image_scale_pt_per_pixel, mm_to_points(mm_per_pixel));
+        assert_eq!(stamp.image_padding_horizontal_mm, 3.0);
+        assert_eq!(stamp.image_padding_vertical_mm, 3.0);
+        assert_eq!(stamp.box_bounds.right - stamp.box_bounds.left, 28.0);
+        assert_eq!(stamp.box_bounds.top - stamp.box_bounds.bottom, 31.0);
+        let output = temporary.path().join(format!("known-stamp-{index}.pdf"));
+        write_stamp_box_geometry_proof(&settings()?, &proof()?, &stamp, &geometry, &output)?;
+        let pdf = PdfDocument::open(&output)?;
+        let page = pdf.get_page(0)?;
+        let streams = pdf.get_page_content_streams(&page)?;
+        let mut image_matrix = None;
+        let mut rectangles = 0;
+        for stream in streams {
+            let content = std::str::from_utf8(&stream)?;
+            let tokens: Vec<_> = content.split_whitespace().collect();
+            rectangles += tokens.iter().filter(|token| **token == "re").count();
+            for window in tokens.windows(9) {
+                if window[6..] == ["cm", "/native_stamp_image", "Do"] {
+                    let values = window[..6]
+                        .iter()
+                        .map(|value| value.parse::<f64>())
+                        .collect::<std::result::Result<Vec<_>, _>>()?;
+                    assert!(image_matrix.replace(values).is_none());
+                }
+            }
+        }
+        let matrix = image_matrix.ok_or("PDF stamp image transform not found")?;
+        assert_eq!(
+            rectangles, 4,
+            "page border, content guide, frame, physical outline"
+        );
+        // The PDF writer serializes matrix coordinates to two decimal points.
+        let tolerance_mm = points_to_mm(0.005) + 1e-9;
+        assert!((points_to_mm(matrix[0]) - expected_width).abs() < tolerance_mm);
+        assert_eq!(matrix[1], 0.0);
+        assert_eq!(matrix[2], 0.0);
+        assert!(
+            (points_to_mm(matrix[3]) - expected_height).abs() < tolerance_mm,
+            "expected height {expected_height} mm; PDF matrix {matrix:?}"
+        );
+        assert!((points_to_mm(matrix[4]) - (91.0 - expected_width / 2.0)).abs() < tolerance_mm);
+        assert!((points_to_mm(matrix[5]) - (128.5 - expected_height / 2.0)).abs() < tolerance_mm);
+        let physical = geometry.physical_bounds();
+        assert_eq!(physical.right - physical.left, 22.0);
+        assert_eq!(physical.top - physical.bottom, 25.0);
+    }
     Ok(())
 }

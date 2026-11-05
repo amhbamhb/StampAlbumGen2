@@ -2,11 +2,91 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-04
-**Revision:** 29
-**Status:** Native decorative PNG corners, edges, and connecting lines are verified; a proof-only stamp-image box with measured heading/caption is implemented; production backend not integrated
+**Revision:** 30
+**Status:** Known physical stamp bounds and independent frame clearance are verified in the stamp-image proof; production sizing/backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Known-size physical bounds and frame clearance (#77, T007 slice)
+
+Added `StampBoxGeometry` with validated f64 millimetre bounds in PDF bottom-left
+coordinates. Physical bounds include outer perforation tips and remain
+unchanged. The existing settings retain their approved total-addition meaning:
+frame width = physical width + `extra_width_mm` + `stamp_box_adjust`;
+height uses `extra_height_mm` analogously. Each total addition is split equally
+between its two edges. Thus 22x25 mm plus 6 mm on each total dimension produces
+a 28x31 mm frame, not 34x37 mm.
+
+Signed components remain supported when the resulting net additions are
+nonnegative. The isolated geometry rejects net negative clearance rather than
+shrinking a known physical stamp; no legacy generator validation was changed.
+NaN, infinity, inverted/empty bounds and PDF-coordinate/extent overflow fail
+explicitly. Sizes are never capped at 25 mm or rotated to fit.
+
+`StampImageProofSettings::with_stamp_box` uses the mounting frame for
+heading/caption anchors and its per-edge clearance to fit the illustration
+within the physical bounds. It preserves the caller's image scale and the
+existing no-upscale rule. PDF read-back verifies both small natural-size and
+down-to-fit image transforms/centres while the 22x25 mm physical size and
+28x31 mm frame stay fixed. This does not yet draw a stamp-frame stroke, reserve
+interior text, infer unknown sizes, pack rows, or wire production/CLI/UI/config.
+
+Validation:
+
+- `cargo test --test native_pdf_stamp_box --test native_pdf_stamp_image`:
+  8 passed, 0 failed, 0 ignored.
+- `cargo test --lib native_pdf::stamp_image::tests`:
+  2 passed, 0 failed, 0 ignored.
+- Tests cover 22.5 mm fractional sizes, landscape stamps, 44x90 mm booklets,
+  125x66 mm se-tenant items, zero/unequal clearance and signed adjustments.
+  PDF matrix checks allow only the writer's 0.005-point rounding bound.
+- Focused rustfmt and Clippy pass; pre-existing application/parser warnings
+  remain. Windows GNU library check passes with the existing unavailable
+  `winres` resource-tool warning; Windows runtime and physical printing are
+  not verified. The local `knowledge/` bundle was regenerated; its validator
+  reports reciprocal-relationship/orphan warnings in unrelated concepts.
+- Tests use temporary synthetic images/PDFs; no album DB, image, config or
+  saved PDF was modified. Initial red tests exposed the missing module, then
+  two test-expectation issues (a finite overflow fixture and PDF rounding);
+  both expectations were corrected and the final suite is green.
+
+Persistent [PDF/TXT visual proofs](../../tests/fixtures/albumeasy/stamp-frame-v1/README.md)
+now supplement those temporary tests. The reproducible `stamp_frame_proofs`
+example writes ten labelled Letter PDFs, a synthetic image, measurements and an
+AlbumEasy frame/physical-rectangle comparison TXT. The saved combined PDF has
+all ten cases, including a 100x100 mm print calibration square. A dedicated
+diagnostic renderer draws black frame and blue physical outlines; production
+frame styling remains unimplemented. Independent MuPDF traces verify every
+page's extents within 0.004 mm and image sizes within 0.002 mm; three raster
+pages were visually inspected. The AlbumEasy TXT is not yet reference-rendered
+and must not be described as native image/text parity. Physical printing is
+still pending maintainer review.
+
+Print feedback: the original A4 proof's page 1 printed on Letter measured
+22x25 mm physical and 28x31 mm frame, matching calculations. Image measured
+11x13 mm versus calculated 11x12.5 mm; no correction was inferred from this.
+The missing bottom page border is consistent with the paper-size mismatch.
+The proof example now uses Letter (215.9x279.4 mm), 10 pt diagnostic labels
+instead of 4 pt and 14 pt headings instead of 7 pt, with unchanged stamp/frame
+dimensions. All ten revised pages pass independent geometry/font checks;
+revised Letter printing and two-axis calibration remain pending.
+
+Branch `issue/77-native-stamp-frame-geometry`, based on `e9b7ca4e`.
+The GitHub instruction correction is included with this slice;
+manual autosave changes are unrelated and excluded. No merge or push.
+Next: bounded known-size row fitting using frame extents without scaling
+physical mounting dimensions; resolve text/frame footprint rules before
+broader T009 packing. Full T005/T007 remain partial.
+
+Project verification conventions: keep new test/proof inputs and generated
+TXT/PDF fixtures under `tests/`, following the versioned directory/file style
+of `tests/fixtures/albumeasy/border-v1`, not under `docs/`. Use US Letter
+(215.9x279.4 mm) for new print proofs. A future reusable sample area (website
+or application) is deferred; do not build it as part of this conversion.
+Defer OKF knowledge regeneration until the native PDF conversion ends unless
+needed for the work. Already-generated bundle changes predate that decision
+and are left uncommitted for the end-of-conversion refresh.
 
 #### Shared physical-sizing evidence and layout requirements
 
@@ -70,8 +150,8 @@ available in this environment, so Windows resource embedding/runtime and
 physical printing remain unverified.
 
 Validated on `feature/native-stamp-image-layout`, based on `d422da10`.
-Next bounded slice: physical-versus-presentation box geometry for known sizes
-(T007), keeping clearance independent from image scale before row packing.
+The physical-versus-presentation box geometry follow-up for known sizes
+(T007) is recorded above, keeping clearance independent from image scale.
 The experimental unknown-size estimator remains unapproved; full T005,
 including physical print verification, remains partial. No merge or push.
 

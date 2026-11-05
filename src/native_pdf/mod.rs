@@ -8,6 +8,7 @@ pub mod document;
 mod numbering;
 pub mod proof;
 pub mod renderer;
+pub mod stamp_box;
 pub mod stamp_image;
 pub mod text;
 pub mod units;

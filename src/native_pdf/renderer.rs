@@ -1,6 +1,7 @@
 use super::{
     colour::NamedColour, document::PageSettings, proof::GeometryProofSettings,
-    stamp_image::StampImageProofSettings, text::PositionedTextLine, units::mm_to_points, Result,
+    stamp_box::StampBoxGeometry, stamp_image::StampImageProofSettings, text::PositionedTextLine,
+    units::mm_to_points, Result,
 };
 use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
@@ -24,7 +25,7 @@ pub fn write_page_geometry_proof_with_date(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<()> {
-    write_proof(settings, proof, output, generation_date, None)
+    write_proof(settings, proof, output, generation_date, None, None)
 }
 
 /// Writes a one-page diagnostic proof with one explicitly sized stamp image.
@@ -43,6 +44,30 @@ pub fn write_stamp_image_proof(
         output,
         settings.capture_generation_date(),
         Some(stamp),
+        None,
+    )
+}
+
+/// Diagnostic frame/physical outlines for a known-size stamp.
+/// These guides are not production stamp-frame styling.
+pub fn write_stamp_box_geometry_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    stamp: &StampImageProofSettings,
+    geometry: &StampBoxGeometry,
+    output: &Path,
+) -> Result<()> {
+    if proof.page_count != 1 {
+        return Err("native_pdf.stamp_box proof requires exactly one page".into());
+    }
+    let stamp = stamp.clone().with_stamp_box(geometry);
+    write_proof(
+        settings,
+        proof,
+        output,
+        settings.capture_generation_date(),
+        Some(&stamp),
+        Some(geometry),
     )
 }
 
@@ -52,6 +77,7 @@ fn write_proof(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
     stamp: Option<&StampImageProofSettings>,
+    geometry: Option<&StampBoxGeometry>,
 ) -> Result<()> {
     proof.validate()?;
     let layouts = (1..=proof.page_count)
@@ -258,6 +284,23 @@ fn write_proof(
                         kind,
                     )?;
                 }
+            }
+        }
+        if let Some(geometry) = geometry {
+            for (bounds, colour) in [
+                (geometry.frame_bounds(), Color::rgb(0.0, 0.0, 0.0)),
+                (geometry.physical_bounds(), Color::rgb(0.0, 0.3, 0.9)),
+            ] {
+                page.graphics()
+                    .set_stroke_color(colour)
+                    .set_line_width(mm_to_points(0.1))
+                    .rect(
+                        mm_to_points(bounds.left),
+                        mm_to_points(bounds.bottom),
+                        mm_to_points(bounds.right - bounds.left),
+                        mm_to_points(bounds.top - bounds.bottom),
+                    )
+                    .stroke();
             }
         }
 

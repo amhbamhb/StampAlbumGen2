@@ -44,28 +44,19 @@ Contact
  
 Agent tool usage and branching (important)
 
-- DO NOT use GitHub or GitHub APIs for branching, pull requests, issues, or other interactions. This project does not use GitHub-hosted workflows or PRs, and the automated agent must not create or reference GitHub PRs, issues, or API calls.
-- Prefer local git workflows: create local branches using the repository's configured git remote and branch naming conventions (e.g. `refactor/<file>`). Commit locally and then coordinate with the project maintainers for any pushes or remote PR creation using the project's preferred hosting. This project uses a self-hosted GitLab instance by default; prefer that as the remote host when instructed.
+- This repository uses GitHub: [amhbamhb/StampAlbumGen2](https://github.com/amhbamhb/StampAlbumGen2).
+- Use GitHub Issues and pull requests for project tracking; prefer the `gh` CLI for GitHub operations.
+- This repository-specific policy replaces the former GitLab-only guidance; it does not change hosting preferences for other repositories.
+- Create local branches using the repository's branch naming conventions. Prefer `issue/<number>-<short-description>` when a GitHub issue number is known.
+- Do not push without explicit maintainer instruction.
 
-Preferred GitLab instance and repository (project-specific)
+GitHub remotes (project-specific)
 
-- Self-hosted GitLab instance: [gitinfo.laserspider.info](https://gitinfo.laserspider.info/)
-- This repository on that instance: [rust-stamp_alblum_generate](https://gitinfo.laserspider.info/rust-apps/rust-stamp_alblum_generate)
+- SSH: `git@github.com:amhbamhb/StampAlbumGen2.git`
+- HTTPS: `https://github.com/amhbamhb/StampAlbumGen2.git`
 
-Example remote URLs (confirm with maintainers before pushing):
-
-- SSH: `git@gitinfo.laserspider.info:rust-apps/rust-stamp_alblum_generate.git`
-- HTTPS: `https://gitinfo.laserspider.info/rust-apps/rust-stamp_alblum_generate.git`
-
-When permitted to push branches or create merge requests on the self-hosted GitLab instance, prefer the SSH URL for authenticated pushes from developer machines. This repository's contributors typically have their SSH keys configured in their zsh environment; prefer SSH by default (for example, `git@gitinfo.laserspider.info:rust-apps/rust-stamp_alblum_generate.git`).
-
-Notes on SSH usage
-
-- Use the SSH remote when performing authenticated pushes or creating merge requests from developer machines or CI that has SSH keys configured.
-- Do not store private keys or credentials in the repository. If CI needs access, ask maintainers for a secure mechanism (deploy keys, CI variables).
-- If you detect SSH is not configured on the system, report that back and ask for permission before attempting any HTTPS push.
-- If you need to create a remote branch or push commits, always ask the maintainer which remote/host to use before performing the push. Do not assume `origin` points to GitHub. When permitted to push, prefer the project's self-hosted GitLab instance; ask for the exact remote URL (for example `git@gitlab.example.local:group/repo.git`) and any required authentication details. Do not expose credentials in logs or the repo.
-- Do not open or modify external-hosted issues on behalf of the project. For task tracking, update the repository's internal `todo`/docs files or send a direct report to the maintainers.
-- Avoid calling any tools or services that implicitly interact with GitHub (for example, any automated GitHub PR creation or GitHub API wrappers). If such a tool appears necessary, ask for explicit permission and the exact remote/host to use.
+- Verify the configured remote targets this GitHub repository before any authorized push; do not assume `origin` is correct or rewrite remotes automatically.
+- Never store or expose private keys, tokens, or credentials in the repository or logs.
+- If GitHub access is unavailable, report the blocker and continue locally on a descriptive branch; create/link the issue when access is restored.
 
 If in doubt, prefer a local branch and a clear commit message and then notify the maintainers with the branch name and the changes to be pushed by a human.
