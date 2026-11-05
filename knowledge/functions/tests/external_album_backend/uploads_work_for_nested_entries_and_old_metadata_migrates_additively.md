@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: uploads_work_for_nested_entries_and_old_metadata_migrates_additively
-resource: tests/external_album_backend.rs#L1418-L1482
+resource: tests/external_album_backend.rs#L1441-L1505
 visibility: private
 generated:
   by: okf-rs/0.4.0

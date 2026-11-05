@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: new_row
-resource: src/album_globals/page_functions.rs#L85-L127
+resource: src/album_globals/page_functions.rs#L85-L131
 generated:
   by: okf-rs/0.4.0
 relationships:

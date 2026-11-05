@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: repeated_images_remain_independent_placements_when_one_is_edited_or_deleted
-resource: tests/external_album_backend.rs#L1486-L1524
+resource: tests/external_album_backend.rs#L1509-L1547
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapSetAlbumsRootResponse
-resource: src/review_ui.rs#L487-L492
+resource: src/review_ui.rs#L485-L490
 visibility: private
 generated:
   by: okf-rs/0.4.0

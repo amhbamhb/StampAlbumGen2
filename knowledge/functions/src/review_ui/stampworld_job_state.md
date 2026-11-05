@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stampworld_job_state
-resource: src/review_ui.rs#L55-L57
+resource: src/review_ui.rs#L53-L55
 visibility: private
 generated:
   by: okf-rs/0.4.0

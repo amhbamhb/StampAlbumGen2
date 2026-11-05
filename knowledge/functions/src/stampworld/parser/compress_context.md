@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: compress_context
-resource: src/stampworld/parser.rs#L131-L159
+resource: src/stampworld/parser.rs#L147-L175
 generated:
   by: okf-rs/0.4.0
 relationships:

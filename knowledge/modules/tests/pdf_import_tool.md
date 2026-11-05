@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: pdf_import_tool
-resource: tests/pdf_import_tool.rs#L1-L213
+resource: tests/pdf_import_tool.rs#L1-L217
 generated:
   by: okf-rs/0.4.0
 relationships:

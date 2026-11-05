@@ -5,10 +5,6 @@ resource: src/review_ui/db_query.rs#L24-L90
 generated:
   by: okf-rs/0.4.0
 relationships:
-  calls:
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
   called_by:
   - target: functions/src/review_ui/pdf_parser/import_stampworld_file
     resolved_by: tree-sitter
@@ -27,10 +23,6 @@ relationships:
 # Signature
 
 `pub fn process_pdf_records( conn: &Connection, records: Vec<PdfStampRecord>, country: &str, ) -> Result<ImportSummary, String>`
-
-# Calls
-
-- [parse](../../../../functions/src/external_album/parser/parse.md)
 
 # Called by
 

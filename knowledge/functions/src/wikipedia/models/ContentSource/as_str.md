@@ -159,6 +159,33 @@ relationships:
   - target: functions/tests/data_collector/test_day_month_regex_unicode
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_border_colour/named_colours_defaults_aliases_and_frozen_identities_match
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_border_colour/rendered_colours_match_reference_and_guide_stays_black
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_border/frozen_reference_identities_and_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_border/border_geometry_and_content_occupancy_match_reference
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_border/rendered_border_paths_match_frozen_references
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/four_page_sizes_render_and_read_back
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/margin_and_even_page_bounds_match_frozen_expectations
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/spacing_state_matches_reference_content_anchors_and_gaps
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/rendered_paths_match_margin_and_spacing_fixtures
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -218,3 +245,12 @@ relationships:
 - [fetch_wikipedia_content](../../../../../functions/src/wikipedia/fetchers/fetch_wikipedia_content.md)
 - [fetch_and_save_summary_with_fetcher](../../../../../functions/src/wikipedia/legacy/fetch_and_save_summary_with_fetcher.md)
 - [test_day_month_regex_unicode](../../../../../functions/tests/data_collector/test_day_month_regex_unicode.md)
+- [named_colours_defaults_aliases_and_frozen_identities_match](../../../../../functions/tests/native_pdf_border_colour/named_colours_defaults_aliases_and_frozen_identities_match.md)
+- [rendered_colours_match_reference_and_guide_stays_black](../../../../../functions/tests/native_pdf_border_colour/rendered_colours_match_reference_and_guide_stays_black.md)
+- [frozen_reference_identities_and_text](../../../../../functions/tests/native_pdf_page_border/frozen_reference_identities_and_text.md)
+- [border_geometry_and_content_occupancy_match_reference](../../../../../functions/tests/native_pdf_page_border/border_geometry_and_content_occupancy_match_reference.md)
+- [rendered_border_paths_match_frozen_references](../../../../../functions/tests/native_pdf_page_border/rendered_border_paths_match_frozen_references.md)
+- [four_page_sizes_render_and_read_back](../../../../../functions/tests/native_pdf_page_settings/four_page_sizes_render_and_read_back.md)
+- [margin_and_even_page_bounds_match_frozen_expectations](../../../../../functions/tests/native_pdf_page_settings/margin_and_even_page_bounds_match_frozen_expectations.md)
+- [spacing_state_matches_reference_content_anchors_and_gaps](../../../../../functions/tests/native_pdf_page_settings/spacing_state_matches_reference_content_anchors_and_gaps.md)
+- [rendered_paths_match_margin_and_spacing_fixtures](../../../../../functions/tests/native_pdf_page_settings/rendered_paths_match_margin_and_spacing_fixtures.md)

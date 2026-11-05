@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_value_for_template
-resource: src/review_ui/config_editor.rs#L349-L401
+resource: src/review_ui/config_editor.rs#L348-L408
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -20,6 +20,12 @@ relationships:
   - target: functions/src/review_ui/config_editor/save_album_config_diff
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/config_editor/normalizes_windows_paths_and_preserves_valid_toml_strings
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -35,3 +41,5 @@ relationships:
 
 - [save_full_config_values](../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
 - [save_album_config_diff](../../../../functions/src/review_ui/config_editor/save_album_config_diff.md)
+- [normalizes_windows_paths_and_preserves_valid_toml_strings](../../../../functions/src/review_ui/config_editor/normalizes_windows_paths_and_preserves_valid_toml_strings.md)
+- [renders_global_and_saves_album_config_with_quoted_windows_path](../../../../functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_extra_flags
-resource: src/review_ui.rs#L547-L555
+resource: src/review_ui.rs#L545-L553
 visibility: private
 generated:
   by: okf-rs/0.4.0

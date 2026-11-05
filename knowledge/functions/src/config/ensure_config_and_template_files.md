@@ -6,7 +6,13 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/document/PageSettings/set_title
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/args
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/parser/Lexer/skip
@@ -45,7 +51,9 @@ relationships:
 
 # Calls
 
+- [set_title](../../../functions/src/native_pdf/document/PageSettings/set_title.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
+- [args](../../../functions/tests/native_pdf_page_settings/args.md)
 - [skip](../../../functions/src/external_album/parser/Lexer/skip.md)
 - [ensure_default_files](../../../functions/src/config/ensure_default_files.md)
 

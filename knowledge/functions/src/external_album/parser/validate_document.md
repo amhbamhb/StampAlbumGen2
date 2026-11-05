@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: validate_document
-resource: src/external_album/parser.rs#L163-L192
+resource: src/external_album/parser.rs#L173-L207
 generated:
   by: okf-rs/0.4.0
 relationships:

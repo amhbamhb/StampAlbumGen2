@@ -1,25 +1,59 @@
 # Native PDF generation with AlbumEasy TXT export
 
 **Created:** 2026-11-01  
-**Last updated:** 2026-11-03
-**Revision:** 25
-**Status:** Native decorative PNG corners/connecting lines verified with explicit asset/default policies and unchanged content geometry; edge ornaments and production backend not integrated
+**Last updated:** 2026-11-04
+**Revision:** 26
+**Status:** Native decorative PNG corners, edges, and connecting lines verified with explicit asset/default policies and unchanged content geometry; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Decorative edge ornaments (#76)
+
+The strict decorative-border definition parser now supports `IMAGE_EDGE_LEFT`,
+`IMAGE_EDGE_RIGHT`, `IMAGE_EDGE_TOP`, `IMAGE_EDGE_BOTTOM`, and
+`IMAGE_EDGE_PAD(h v)` alongside the corner and connecting-line commands.
+Definitions may contain any combination of corner and edge PNGs but must define
+at least one image. PNGs remain fixed-size; right/bottom artwork mirrors the
+corresponding left/top asset. Horizontal edge padding moves left/right artwork;
+vertical padding moves top/bottom artwork. Measured placement matches
+AlbumEasy 4.5 on asymmetric odd/even margins.
+
+The explicit native policy now has thirteen numeric values, including signed
+horizontal/vertical edge padding; both templates and the local PDF config
+provide the two zero-valued settings. Disabled configuration still opens no
+files, definitions override their matching policy values, and missing,
+corrupt, or non-alpha PNGs fail explicitly for all edge directions.
+
+Seven synthetic cases/eight pages were independently repeated with identical
+complete page traces; 24 hashes freeze the reference sources, definitions,
+PNGs, and PDFs. Native comparisons verify edge/corner transforms, image sizes,
+line geometry/colour, MediaBox, and content anchors. Raster checks sample
+corners plus edge-only pages with odd/even margins. Edges, like corners, do
+not reserve content space; conservative footprints report clipping or possible
+content overlap without silently moving artwork or text.
+
+Focused validation: **11 passed, 0 failed, 0 ignored** when including the two
+`mutool`-dependent checks. Changed Rust files pass formatting and targeted
+Clippy; workspace-wide formatting still reports unrelated whitespace in
+`tests/album_stamp_img_integration_test.rs`. ICC and pre-existing application
+warnings remain. Windows runtime and physical printing are not verified.
+
+Branch `issue/76-native-pdf-decorative-edges`; no commit, merge, or push.
+Production CLI/UI/backend integration remains pending.
 
 #### Decorative corner ornaments and connecting lines (#75)
 
 The maintainer approved `ALBUM_PAGES_DECORATIVE_BORDER` and selected corner
 ornaments plus connecting lines first. A separate command module loads a strict
 definition containing `IMAGE_CORNER`, `IMAGE_SCALE`, `IMAGE_CORNER_PAD`,
-`BORDER_LINES`, `BORDER_PAD` and `BORDER_END_OFFSETS`. Unsupported commands,
-including edge ornaments, fail with definition path/line rather than being
-silently omitted. Transparent PNG artwork in the fixtures is original synthetic
-test material, not copied AlbumEasy artwork.
+`BORDER_LINES`, `BORDER_PAD` and `BORDER_END_OFFSETS`. Other unsupported
+commands fail with definition path/line rather than being silently omitted.
+Transparent PNG artwork in the fixtures is original synthetic test material,
+not copied AlbumEasy artwork.
 
-The optional complete `[native_pdf.decorative_border]` table has fourteen
-explicit fields: disabled/empty definition filename, scale 1, all padding,
+The optional complete `[native_pdf.decorative_border]` table initially had
+fourteen explicit fields: disabled/empty definition filename, scale 1, all padding,
 width/spacing/end-offset values 0, and black connecting lines. All fields
 validate even when disabled; absent tables preserve older configurations.
 Definition commands override their corresponding explicit omitted-command
@@ -1466,4 +1500,3 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 8: margins-only conformance (#59) | Verified left/right/top/bottom order, asymmetric/fractional margins, explicit even-page override and two failure diagnostics. Measured eight page borders and repeated four renders; traced config mapping and border half-stroke inset. No renderer/application changes. | Preserve margins-v1 and stop for review. Generalized fixture automation, native implementation and full command/config contracts remain open. |
 | 2026-11-03 | Revision 9: spacing-only conformance (#60) | Verified zero/fractional independent horizontal/vertical spacing with 16 frames and eight text anchors, four repeat renders and two failure cases. Documented misleading config descriptions, differing defaults and width-accounting risks. No application changes. | Preserve spacing-v1 and stop for review; generalized fixture runner and full command/config contracts remain open. |
 | 2026-11-03 | Revision 10: compiled page-settings slice (#61) | Approved one-command-per-file vertical slices. Added four typed command modules, explicit shared settings/f64 mm geometry and oxidize-pdf geometry proof/example. Six native tests plus six core tests pass, including actual PDF path checks. Windows GNU cross-check passed. | Review native proof; next implement another command with reference and native comparisons together. No production integration/full TXT parser or full task completion claimed. |
-apt list --upgradable

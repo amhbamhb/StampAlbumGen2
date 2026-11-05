@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_artifacts
-resource: src/external_album.rs#L1446-L1474
+resource: src/external_album.rs#L1452-L1480
 generated:
   by: okf-rs/0.4.0
 relationships:

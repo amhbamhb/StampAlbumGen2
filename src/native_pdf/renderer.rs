@@ -79,7 +79,7 @@ pub fn write_page_geometry_proof_with_date(
                     || b.right > layout.size.width_mm()
                     || b.top > layout.size.height_mm()
             }) {
-                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER crosses the physical page and will be clipped; adjust IMAGE_SCALE/IMAGE_CORNER_PAD/BORDER_PAD or native_pdf.decorative_border policy. Page size is unchanged.",index+1);
+                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER crosses the physical page and will be clipped; adjust IMAGE_SCALE/IMAGE_CORNER_PAD/IMAGE_EDGE_PAD/BORDER_PAD or native_pdf.decorative_border policy. Page size is unchanged.",index+1);
             }
             if footprints.iter().any(|b| {
                 b.left < layout.content_bounds.right
@@ -89,12 +89,13 @@ pub fn write_page_geometry_proof_with_date(
             }) {
                 // TODO(native-pdf-ui): Show page/definition element and offer scale,
                 // padding/end-offset or content-spacing/hint corrections. Do not silently move content.
-                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER footprint intersects the content area; transparent image pixels may be clear. Adjust definition scale/padding/end offsets or content spacing/height hints. Decorative borders do not reserve content space (AlbumEasy-compatible).",index+1);
+                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER footprint intersects the content area; transparent image pixels may be clear. Adjust definition scale/corner/edge padding/end offsets or content spacing/height hints. Decorative borders do not reserve content space (AlbumEasy-compatible).",index+1);
             }
-            page.add_image("NativeDecorativeCorner", border.image.as_ref().clone());
-            for [x, y, width, height] in border.corners {
+            for image in border.corners.iter().chain(&border.edges) {
+                page.add_image(image.resource_name, image.image.as_ref().clone());
+                let [x, y, width, height] = image.rect_mm;
                 page.draw_image(
-                    "NativeDecorativeCorner",
+                    image.resource_name,
                     mm_to_points(x),
                     mm_to_points(y),
                     mm_to_points(width),

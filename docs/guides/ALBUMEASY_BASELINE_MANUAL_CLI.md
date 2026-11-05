@@ -682,16 +682,18 @@ The two ignored-by-default path/colour tests require `mutool` on `PATH`; the
 remaining tests do not. This remains an isolated native proof, not production
 CLI/UI/backend integration or physical print certification.
 
-### Decorative corner borders from a definition file
+### Decorative corner and edge borders from a definition file
 
 The bounded native `ALBUM_PAGES_DECORATIVE_BORDER` implementation supports a
-transparent PNG corner ornament and optional connecting lines. Supported
-definition commands are `IMAGE_CORNER`, `IMAGE_SCALE`, `IMAGE_CORNER_PAD`,
-`BORDER_LINES`, `BORDER_PAD` and `BORDER_END_OFFSETS`. Edge-image commands and
-other unsupported syntax fail explicitly; no partially rendered border is
-returned as success. This is a border-definition parser, not a general album
-TXT importer. The installed artwork is not copied into this repository.
-Committed test artwork is an original asymmetric, partially transparent PNG.
+transparent PNG corner ornament, optional side ornaments and optional
+connecting lines. Definitions need at least one `IMAGE_CORNER` or
+`IMAGE_EDGE_LEFT`, `IMAGE_EDGE_RIGHT`, `IMAGE_EDGE_TOP` or `IMAGE_EDGE_BOTTOM`
+command. Other supported commands are `IMAGE_SCALE`, `IMAGE_CORNER_PAD`,
+`IMAGE_EDGE_PAD`, `BORDER_LINES`, `BORDER_PAD` and `BORDER_END_OFFSETS`.
+Unsupported syntax fails explicitly; no partially rendered border is returned
+as success. This is a border-definition parser, not a general album TXT
+importer. The installed artwork is not copied into this repository. Committed
+test artwork is original synthetic material.
 
 Copy the **complete** disabled `[native_pdf.decorative_border]` table from the
 template into an older local proof config. Set `enabled = true` and
@@ -700,6 +702,9 @@ definition beside the config and put your PNG beside the definition:
 
 ```text
 IMAGE_CORNER("my-ornament.png")
+IMAGE_EDGE_LEFT("my-side-ornament.png")
+IMAGE_EDGE_TOP("my-horizontal-ornament.png")
+IMAGE_EDGE_PAD(3 -2)
 IMAGE_SCALE(1.0)
 IMAGE_CORNER_PAD(1 -4)
 BORDER_LINES(0.25 0.1 0 1.25)
@@ -717,6 +722,13 @@ artwork proportions. Positive corner/line padding moves outward; negative
 moves inward. Line endpoints are offset from the original margins. Connecting
 line centrelines advance by spacing alone, including disabled slots; widths
 are not added to that advance.
+
+Edge PNGs are positioned at the center of their page side and keep their
+intrinsic scaled dimensions; they are neither stretched nor tiled. Right and
+bottom edges mirror the corresponding left/top image. `IMAGE_EDGE_PAD(h v)`
+moves left/right artwork horizontally by signed `h` mm and top/bottom artwork
+vertically by signed `v` mm. Edge placement honors asymmetric margins on odd
+and even pages. Edge artwork, like corners, does not reserve content space.
 
 Every TOML table field is explicit and validated even when disabled; disabled
 mode does not open a definition/PNG, and its filename may be empty. A missing
@@ -745,11 +757,11 @@ moves anything. Exact alpha-mask/text collision certification is not implemented
 code TODOs retain future UI correction choices. Numeric overflow/unusable line
 geometry is an error, and all pages preflight before writing.
 
-Five synthetic cases/six pages were independently repeated with identical full
+Seven synthetic cases/eight pages were independently repeated with identical full
 page traces. Tests compare all actual native/reference image and alpha-mask
 transforms, dimensions, line topology/width/colour/coordinates, MediaBox and
-reference content anchors. Raster samples also verify black/red/partially
-transparent blue/clear pixels across mirrored corners. Parser, explicit config,
+reference content anchors. Raster samples also verify colored and transparent
+pixels across mirrored corners and edges. Parser, explicit config,
 relative-path/snapshot, missing/corrupt/no-alpha PNG, numeric safety and
 output-preservation tests run with:
 
@@ -758,8 +770,8 @@ cargo test --test native_pdf_decorative_border -- --include-ignored
 ```
 
 Two ignored-by-default path/raster tests require `mutool` on `PATH`. Windows
-runtime/physical printing, edge ornaments and production app/UI/backend
-integration remain pending.
+runtime/physical printing and production app/UI/backend integration remain
+pending.
 
 ### Repeating page title and measured-height hint
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_config_from_template_values
-resource: src/review_ui/config_editor.rs#L612-L728
+resource: src/review_ui/config_editor.rs#L619-L735
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -23,6 +23,9 @@ relationships:
   - target: functions/src/review_ui/config_editor/save_full_config_values
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -39,3 +42,4 @@ relationships:
 # Called by
 
 - [save_full_config_values](../../../../functions/src/review_ui/config_editor/save_full_config_values.md)
+- [renders_global_and_saves_album_config_with_quoted_windows_path](../../../../functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path.md)

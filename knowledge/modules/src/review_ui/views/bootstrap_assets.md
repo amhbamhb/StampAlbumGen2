@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: bootstrap_assets
-resource: src/review_ui/views/bootstrap_assets.rs#L1-L44
+resource: src/review_ui/views/bootstrap_assets.rs#L1-L41
 generated:
   by: okf-rs/0.4.0
 relationships:

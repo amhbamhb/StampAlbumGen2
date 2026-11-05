@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: mark_colnect_candidate_processed_sets_flag_for_matching_candidate
-resource: src/review_ui.rs#L3521-L3545
+resource: src/review_ui.rs#L3526-L3550
 visibility: private
 generated:
   by: okf-rs/0.4.0

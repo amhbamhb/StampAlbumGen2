@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: normalize_albums_root_candidate
-resource: src/review_ui.rs#L2473-L2493
+resource: src/review_ui.rs#L2478-L2498
 visibility: private
 generated:
   by: okf-rs/0.4.0

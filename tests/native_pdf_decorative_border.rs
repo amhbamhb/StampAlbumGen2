@@ -17,7 +17,9 @@ use std::{
 };
 
 type Result<T> = std::result::Result<T, Box<dyn Error>>;
-const POLICY: [f64; 11] = [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const POLICY: [f64; 13] = [
+    1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+];
 const BASE: &str = r#"
 color_album_border = "red"
 [page]
@@ -55,6 +57,8 @@ line_padding_v_mm = 0.0
 end_offset_h_mm = 0.0
 end_offset_v_mm = 0.0
 colour = "black"
+edge_padding_h_mm = 0.0
+edge_padding_v_mm = 0.0
 "#;
 fn root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/decorative-border-v1")
@@ -69,13 +73,16 @@ fn near(a: f64, b: f64) {
     assert!(a.is_finite() && (a - b).abs() <= 0.01, "{a} != {b}");
 }
 fn loaded(name: &str) -> Result<NativePdfConfig> {
-    Ok(NativePdfConfig::from_toml_in(
-        &format!(
-            "{BASE}{}",
-            DECOR.replace("corner.def", &format!("{name}.def"))
-        ),
-        &root(),
-    )?)
+    let mut source = format!(
+        "{BASE}{}",
+        DECOR.replace("corner.def", &format!("{name}.def"))
+    );
+    if name == "edge-only" {
+        source = source.replace("page_count = 1", "page_count = 2");
+        source
+            .push_str("\n[page.even_margins]\nleft_mm=12\nright_mm=15\ntop_mm=18\nbottom_mm=20\n");
+    }
+    Ok(NativePdfConfig::from_toml_in(&source, &root())?)
 }
 
 #[test]
@@ -87,7 +94,7 @@ fn mirrored_corner_bounds_and_fixed_slot_line_spacing() -> Result<()> {
         bottom: 18.0,
         top: 134.0,
     };
-    let layout = command.layout(margin)?;
+    let layout = command.layout(margin, 150.0)?;
     assert_eq!(layout.corners.len(), 4);
     let w = 30.0 * 25.4 / 72.0;
     let h = 18.0 * 25.4 / 72.0;
@@ -97,7 +104,7 @@ fn mirrored_corner_bounds_and_fixed_slot_line_spacing() -> Result<()> {
         [15.0, 18.0 + h, w, -h],
         [88.0, 18.0 + h, -w, -h],
     ]) {
-        for (a, b) in got.iter().zip(wanted) {
+        for (a, b) in got.rect_mm.iter().zip(wanted) {
             near(*a, b);
         }
     }
@@ -112,21 +119,81 @@ fn mirrored_corner_bounds_and_fixed_slot_line_spacing() -> Result<()> {
     near(footprints[4].left, 27.0);
     near(footprints[4].top, 134.15);
     near(footprints[4].bottom, 133.85);
-    let sparse =
-        AlbumPagesDecorativeBorder::load(&root().join("sparse.def"), policy()?)?.layout(margin)?;
+    let sparse = AlbumPagesDecorativeBorder::load(&root().join("sparse.def"), policy()?)?
+        .layout(margin, 150.0)?;
     assert_eq!(sparse.lines.len(), 8);
     near(sparse.lines[0].points[0][1], 130.5);
     Ok(())
 }
 
 #[test]
+fn edge_only_and_mixed_layouts_match_margin_and_padding_semantics() -> Result<()> {
+    let first = loaded("edge-only")?
+        .page_settings
+        .resolve(1)?
+        .decorative_border
+        .ok_or("edge layout")?;
+    assert!(first.corners.is_empty());
+    assert_eq!(first.edges.len(), 4);
+    let expected = [
+        [
+            15.0 - 3.0 - 12.0 * 25.4 / 72.0,
+            76.0 - 24.0 * 25.4 / 72.0,
+            12.0 * 25.4 / 72.0,
+            48.0 * 25.4 / 72.0,
+        ],
+        [
+            88.0 + 3.0 + 12.0 * 25.4 / 72.0,
+            76.0 - 24.0 * 25.4 / 72.0,
+            -12.0 * 25.4 / 72.0,
+            48.0 * 25.4 / 72.0,
+        ],
+        [
+            51.5 - 24.0 * 25.4 / 72.0,
+            132.0,
+            48.0 * 25.4 / 72.0,
+            12.0 * 25.4 / 72.0,
+        ],
+        [
+            51.5 - 24.0 * 25.4 / 72.0,
+            20.0,
+            48.0 * 25.4 / 72.0,
+            -12.0 * 25.4 / 72.0,
+        ],
+    ];
+    for (edge, expected) in first.edges.iter().zip(expected) {
+        for (actual, expected) in edge.rect_mm.iter().zip(expected) {
+            near(*actual, expected);
+        }
+    }
+    let even = loaded("edge-only")?
+        .page_settings
+        .resolve(2)?
+        .decorative_border
+        .ok_or("even edge layout")?;
+    assert_eq!(even.edges.len(), 4);
+    near(even.edges[0].rect_mm[0], 12.0 - 3.0 - 12.0 * 25.4 / 72.0);
+    near(even.edges[1].rect_mm[0], 85.0 + 3.0 + 12.0 * 25.4 / 72.0);
+    near(even.edges[2].rect_mm[1], 130.0);
+    let mixed = loaded("edge-mixed")?
+        .page_settings
+        .resolve(1)?
+        .decorative_border
+        .ok_or("mixed edge layout")?;
+    assert_eq!(mixed.corners.len(), 4);
+    assert_eq!(mixed.edges.len(), 4);
+    assert_eq!(mixed.lines.len(), 8);
+    Ok(())
+}
+
+#[test]
 fn explicit_policy_validation_and_definition_overrides() -> Result<()> {
-    for count in [0, 10, 12] {
+    for count in [0, 12, 14] {
         assert!(
             DecorativeBorderPolicy::parse(&vec![1.0; count], NamedColour::parse("black")?).is_err()
         );
     }
-    for index in 0..11 {
+    for index in 0..13 {
         for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, f64::MAX] {
             let mut values = POLICY;
             values[index] = bad;
@@ -157,7 +224,8 @@ fn explicit_policy_validation_and_definition_overrides() -> Result<()> {
             .resolve(1)?
             .decorative_border
             .ok_or("decor")?
-            .corners[0][2],
+            .corners[0]
+            .rect_mm[2],
         60.0 * 25.4 / 72.0,
     );
     // Definition settings override the explicit omitted-command policy.
@@ -174,7 +242,8 @@ fn explicit_policy_validation_and_definition_overrides() -> Result<()> {
             .resolve(1)?
             .decorative_border
             .ok_or("decor")?
-            .corners[0][2],
+            .corners[0]
+            .rect_mm[2],
         30.0 * 25.4 / 72.0,
     );
     Ok(())
@@ -189,7 +258,7 @@ fn strict_unsupported_invalid_and_redacted_definition_errors() -> Result<()> {
     )?;
     let file = temp.path().join("border.def");
     for (source, key) in [
-        ("IMAGE_EDGE_LEFT(\"ornament.png\")", "unsupported"),
+        ("IMAGE_EDGE_MYSTERY(\"ornament.png\")", "unsupported"),
         ("UNKNOWN(\"secret\")", "unsupported"),
         (
             "IMAGE_SCALE(nan)\nIMAGE_CORNER(\"ornament.png\")",
@@ -209,7 +278,7 @@ fn strict_unsupported_invalid_and_redacted_definition_errors() -> Result<()> {
         ),
         ("IMAGE_CORNER(\"secret", "syntax"),
         ("IMAGE_CORNER(\"ornament.png\") trailing", "syntax"),
-        ("BORDER_LINES(0 0 0 0)", "IMAGE_CORNER"),
+        ("BORDER_LINES(0 0 0 0)", "at least one image"),
         ("IMAGE_CORNER(ornament.png)", "quoted"),
         ("IMAGE_CORNER(\"\")", "empty"),
     ] {
@@ -220,14 +289,20 @@ fn strict_unsupported_invalid_and_redacted_definition_errors() -> Result<()> {
         assert!(error.contains(key), "{source}: {error}");
         assert!(!error.contains("secret"), "{error}");
     }
-    fs::write(&file,"# Comment\nIMAGE_SCALE(0.5)\nIMAGE_SCALE(1) # last wins\nIMAGE_CORNER(\"ornament.png\");\n")?;
-    let layout = AlbumPagesDecorativeBorder::load(&file, policy()?)?.layout(Bounds {
-        left: 10.0,
-        bottom: 10.0,
-        right: 90.0,
-        top: 140.0,
-    })?;
-    near(layout.corners[0][2], 30.0 * 25.4 / 72.0);
+    fs::write(
+        &file,
+        "# Comment\nIMAGE_SCALE(0.5)\nIMAGE_SCALE(1) # last wins\nIMAGE_CORNER(\"ornament.png\");\n",
+    )?;
+    let layout = AlbumPagesDecorativeBorder::load(&file, policy()?)?.layout(
+        Bounds {
+            left: 10.0,
+            bottom: 10.0,
+            right: 90.0,
+            top: 140.0,
+        },
+        150.0,
+    )?;
+    near(layout.corners[0].rect_mm[2], 30.0 * 25.4 / 72.0);
     Ok(())
 }
 
@@ -357,15 +432,30 @@ fn explicit_config_disabled_compatibility_and_templates() -> Result<()> {
 fn missing_corrupt_and_non_alpha_png_assets_fail_before_output() -> Result<()> {
     let temp = tempfile::tempdir()?;
     let file = temp.path().join("border.def");
-    fs::write(&file, "IMAGE_CORNER(\"missing.png\")")?;
-    assert!(AlbumPagesDecorativeBorder::load(&file, policy()?).is_err());
+    let commands = [
+        "IMAGE_CORNER(\"missing.png\")",
+        "IMAGE_EDGE_LEFT(\"missing.png\")",
+        "IMAGE_EDGE_RIGHT(\"missing.png\")",
+        "IMAGE_EDGE_BOTTOM(\"missing.png\")",
+        "IMAGE_EDGE_TOP(\"missing.png\")",
+    ];
+    for command in commands {
+        fs::write(&file, command)?;
+        assert!(AlbumPagesDecorativeBorder::load(&file, policy()?).is_err());
+    }
     fs::write(temp.path().join("missing.png"), b"not png")?;
-    assert!(AlbumPagesDecorativeBorder::load(&file, policy()?).is_err());
+    for command in commands {
+        fs::write(&file, command)?;
+        assert!(AlbumPagesDecorativeBorder::load(&file, policy()?).is_err());
+    }
     image::RgbImage::new(4, 4).save(temp.path().join("missing.png"))?;
-    let error = AlbumPagesDecorativeBorder::load(&file, policy()?)
-        .err()
-        .ok_or("no alpha accepted")?;
-    assert!(error.contains("alpha"), "{error}");
+    for command in commands {
+        fs::write(&file, command)?;
+        let error = AlbumPagesDecorativeBorder::load(&file, policy()?)
+            .err()
+            .ok_or("no alpha accepted")?;
+        assert!(error.contains("alpha"), "{error}");
+    }
     Ok(())
 }
 
@@ -425,7 +515,7 @@ fn numeric_content_is_unchanged_and_invalid_geometry_preserves_output() -> Resul
 #[test]
 fn frozen_reference_hashes_and_text() -> Result<()> {
     let source = fs::read_to_string(root().join("sha256.txt"))?;
-    assert_eq!(source.lines().count(), 16);
+    assert_eq!(source.lines().count(), 24);
     for line in source.lines() {
         let (hash, file) = line.split_once("  ").ok_or("hash")?;
         let actual: String = Sha256::digest(fs::read(root().join(file))?)
@@ -434,21 +524,43 @@ fn frozen_reference_hashes_and_text() -> Result<()> {
             .collect();
         assert_eq!(actual, hash, "{file}");
     }
-    for name in ["corner", "padded", "sparse", "image-only", "omitted"] {
+    for name in [
+        "corner",
+        "padded",
+        "sparse",
+        "image-only",
+        "omitted",
+        "edge-only",
+        "edge-mixed",
+    ] {
         let pdf = oxidize_pdf::parser::PdfDocument::open(root().join(format!("{name}.pdf")))?;
-        assert_eq!(pdf.page_count()?, if name == "padded" { 2 } else { 1 });
-        assert!(pdf.extract_text()?[0].text.contains("DECOR ANCHOR"));
+        assert_eq!(
+            pdf.page_count()?,
+            if matches!(name, "padded" | "edge-only") {
+                2
+            } else {
+                1
+            }
+        );
+        let expected = if name == "edge-only" {
+            "EDGE ONLY ANCHOR"
+        } else if name == "edge-mixed" {
+            "EDGE AND CORNER ANCHOR"
+        } else {
+            "DECOR ANCHOR"
+        };
+        assert!(pdf.extract_text()?[0].text.contains(expected));
     }
     Ok(())
 }
 
 #[test]
-#[ignore = "requires mutool; compares mirrored PNG RGB and transparency against AlbumEasy rasters"]
-fn actual_corner_pixels_and_transparency_match() -> Result<()> {
+#[ignore = "requires mutool; compares decorative PNG RGB and transparency against AlbumEasy rasters"]
+fn actual_decorative_pixels_and_transparency_match() -> Result<()> {
     let temp = tempfile::tempdir()?;
-    let loaded = loaded("image-only")?;
+    let corner_config = loaded("image-only")?;
     let native = temp.path().join("native.pdf");
-    write_page_geometry_proof(&loaded.page_settings, &loaded.proof, &native)?;
+    write_page_geometry_proof(&corner_config.page_settings, &corner_config.proof, &native)?;
     let mut rasters = Vec::new();
     for (name, path) in [
         ("native", native),
@@ -465,13 +577,14 @@ fn actual_corner_pixels_and_transparency_match() -> Result<()> {
         rasters.push(image::open(output)?.to_rgb8());
     }
     assert_eq!(rasters[0].dimensions(), rasters[1].dimensions());
-    let corners = loaded
+    let border = corner_config
         .page_settings
         .resolve(1)?
         .decorative_border
-        .ok_or("decor")?
-        .corners;
-    for (index, [x, y, w, h]) in corners.into_iter().enumerate() {
+        .ok_or("decor")?;
+    let corners = border.corners;
+    for (index, image) in corners.into_iter().enumerate() {
+        let [x, y, w, h] = image.rect_mm;
         for (u, v) in [(0.05, 0.1), (0.3, 0.4), (0.7, 0.65), (0.9, 0.9)] {
             // The reference intentionally overlays body text on the top-left ornament.
             if index == 0 && v > 0.15 {
@@ -486,6 +599,67 @@ fn actual_corner_pixels_and_transparency_match() -> Result<()> {
                     a.abs_diff(b) <= 2,
                     "corner {index} ({u},{v}) native {native:?} reference {reference:?}"
                 );
+            }
+        }
+    }
+    for name in ["edge-only", "edge-mixed"] {
+        let loaded = loaded(name)?;
+        let native_pdf = temp.path().join(format!("{name}-native.pdf"));
+        write_page_geometry_proof(&loaded.page_settings, &loaded.proof, &native_pdf)?;
+        let native_pattern = temp.path().join(format!("{name}-native-%d.png"));
+        let reference_pattern = temp.path().join(format!("{name}-reference-%d.png"));
+        for (pdf, pattern) in [
+            (&native_pdf, &native_pattern),
+            (&root().join(format!("{name}.pdf")), &reference_pattern),
+        ] {
+            let result = Command::new("mutool")
+                .args(["draw", "-q", "-r", "144", "-o"])
+                .arg(pattern)
+                .arg(pdf)
+                .output()?;
+            eprint!("{}", String::from_utf8_lossy(&result.stderr));
+            assert!(result.status.success());
+        }
+        for page_number in 1..=loaded.proof.page_count {
+            let native = image::open(temp.path().join(format!("{name}-native-{page_number}.png")))?
+                .to_rgb8();
+            let reference = image::open(
+                temp.path()
+                    .join(format!("{name}-reference-{page_number}.png")),
+            )?
+            .to_rgb8();
+            assert_eq!(native.dimensions(), reference.dimensions());
+            let border = loaded
+                .page_settings
+                .resolve(page_number)?
+                .decorative_border
+                .ok_or("edge layout")?;
+            for (index, image) in border.edges.iter().enumerate() {
+                if name == "edge-mixed" && index == 3 {
+                    // This reference intentionally overlays body text on the top edge.
+                    continue;
+                }
+                let [x, y, w, h] = image.rect_mm;
+                let pdf_y = 150.0 - y - h;
+                let (u_values, v_values): (&[f64], &[f64]) = if index < 2 {
+                    (&[0.2, 0.8], &[0.15, 0.85])
+                } else {
+                    (&[0.85, 0.95], &[0.2, 0.5])
+                };
+                for u in u_values {
+                    for v in v_values {
+                        let px = ((x + u * w) * 72.0 / 25.4 * 2.0).floor() as u32;
+                        let py = ((150.0 - pdf_y - v * h) * 72.0 / 25.4 * 2.0).floor() as u32;
+                        let native_pixel = native.get_pixel(px, py);
+                        let reference_pixel = reference.get_pixel(px, py);
+                        for (a, b) in native_pixel.0.into_iter().zip(reference_pixel.0) {
+                            assert!(
+                                a.abs_diff(b) <= 2,
+                                "{name} page {page_number} edge {index} ({u},{v}) native {native_pixel:?} reference {reference_pixel:?}"
+                            );
+                        }
+                    }
+                }
             }
         }
     }
@@ -512,7 +686,15 @@ fn nums(text: &str) -> Result<Vec<f64>> {
 #[ignore = "requires mutool; compares actual native and AlbumEasy paths and mirrored PNG transforms"]
 fn actual_native_strokes_images_alpha_and_content_match_references() -> Result<()> {
     let temp = tempfile::tempdir()?;
-    for name in ["corner", "padded", "sparse", "image-only", "omitted"] {
+    for name in [
+        "corner",
+        "padded",
+        "sparse",
+        "image-only",
+        "omitted",
+        "edge-only",
+        "edge-mixed",
+    ] {
         let mut source = format!(
             "{BASE}{}",
             DECOR.replace("corner.def", &format!("{name}.def"))
@@ -526,6 +708,12 @@ fn actual_native_strokes_images_alpha_and_content_match_references() -> Result<(
             source = source
                 .replace("page_count = 1", "page_count = 2")
                 .replace("page_border_outer = 0\n", "page_border_outer = 0.2\n");
+            source.push_str(
+                "\n[page.even_margins]\nleft_mm=12\nright_mm=15\ntop_mm=18\nbottom_mm=20\n",
+            );
+        }
+        if name == "edge-only" {
+            source = source.replace("page_count = 1", "page_count = 2");
             source.push_str(
                 "\n[page.even_margins]\nleft_mm=12\nright_mm=15\ntop_mm=18\nbottom_mm=20\n",
             );

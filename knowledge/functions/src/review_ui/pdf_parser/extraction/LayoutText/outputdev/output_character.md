@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: output_character
-resource: src/review_ui/pdf_parser/extraction.rs#L29-L44
+resource: src/review_ui/pdf_parser/extraction.rs#L26-L41
 visibility: private
 generated:
   by: okf-rs/0.4.0

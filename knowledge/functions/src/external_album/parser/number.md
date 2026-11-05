@@ -9,10 +9,6 @@ relationships:
   - target: functions/src/external_album/parser/numeric
     resolved_by: tree-sitter
     confidence: exact
-  called_by:
-  - target: functions/src/external_album/reflow/reflow
-    resolved_by: tree-sitter
-    confidence: exact
 ---
 
 # Signature
@@ -22,7 +18,3 @@ relationships:
 # Calls
 
 - [numeric](../../../../functions/src/external_album/parser/numeric.md)
-
-# Called by
-
-- [reflow](../../../../functions/src/external_album/reflow/reflow.md)

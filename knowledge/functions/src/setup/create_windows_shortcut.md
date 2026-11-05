@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/setup/escape_powershell_single_quoted
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/release_publication_shell/success
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/setup/ensure_windows_desktop_integration
     resolved_by: tree-sitter
@@ -23,6 +26,7 @@ relationships:
 # Calls
 
 - [escape_powershell_single_quoted](../../../functions/src/setup/escape_powershell_single_quoted.md)
+- [success](../../../functions/tests/release_publication_shell/success.md)
 
 # Called by
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: DeleteLeftStampResponse
-resource: src/review_ui.rs#L1323-L1328
+resource: src/review_ui.rs#L1321-L1326
 visibility: private
 generated:
   by: okf-rs/0.4.0

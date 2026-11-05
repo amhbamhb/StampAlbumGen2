@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: brazil_exact_acceptance_counts
-resource: tests/external_album_backend.rs#L567-L584
+resource: tests/external_album_backend.rs#L569-L586
 visibility: private
 generated:
   by: okf-rs/0.4.0

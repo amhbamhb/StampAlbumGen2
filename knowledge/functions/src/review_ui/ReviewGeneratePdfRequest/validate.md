@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: validate
-resource: src/review_ui.rs#L400-L415
+resource: src/review_ui.rs#L398-L413
 visibility: private
 generated:
   by: okf-rs/0.4.0

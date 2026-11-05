@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: import_album
-resource: src/external_album.rs#L800-L928
+resource: src/external_album.rs#L808-L936
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,9 +16,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/inventory
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/external_album/parser/parse
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/copy_tree
@@ -76,7 +73,6 @@ relationships:
 - [err](../../../functions/src/external_album/err.md)
 - [slug](../../../functions/src/external_album/slug.md)
 - [inventory](../../../functions/src/external_album/inventory.md)
-- [parse](../../../functions/src/external_album/parser/parse.md)
 - [copy_tree](../../../functions/src/external_album/copy_tree.md)
 - [schema](../../../functions/src/external_album/schema.md)
 - [persist_pages](../../../functions/src/external_album/persist_pages.md)

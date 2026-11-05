@@ -1,13 +1,16 @@
 ---
 type: Rust Function
 title: store_uploaded_image_from_data_url
-resource: src/review_ui.rs#L2797-L2851
+resource: src/review_ui.rs#L2802-L2856
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/ext_from_data_url
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/date/DateFormat/format
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/safe_filename_token
@@ -32,6 +35,7 @@ relationships:
 # Calls
 
 - [ext_from_data_url](../../../functions/src/review_ui/ext_from_data_url.md)
+- [format](../../../functions/src/native_pdf/date/DateFormat/format.md)
 - [safe_filename_token](../../../functions/src/review_ui/safe_filename_token.md)
 - [album_dir_for_ui](../../../functions/src/review_ui/album_dir_for_ui.md)
 

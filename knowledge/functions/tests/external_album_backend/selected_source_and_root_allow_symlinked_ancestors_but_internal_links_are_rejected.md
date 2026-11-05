@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rejected
-resource: tests/external_album_backend.rs#L1543-L1601
+resource: tests/external_album_backend.rs#L1566-L1624
 visibility: private
 generated:
   by: okf-rs/0.4.0

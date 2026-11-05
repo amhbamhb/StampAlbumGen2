@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_full_config_values
-resource: src/review_ui/config_editor.rs#L730-L764
+resource: src/review_ui/config_editor.rs#L737-L771
 generated:
   by: okf-rs/0.4.0
 relationships:

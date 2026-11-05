@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: canonical_html_preserves_individual_rows_and_metadata
-resource: tests/pdf_extraction_test.rs#L23-L36
+resource: tests/pdf_extraction_test.rs#L25-L38
 visibility: private
 generated:
   by: okf-rs/0.4.0

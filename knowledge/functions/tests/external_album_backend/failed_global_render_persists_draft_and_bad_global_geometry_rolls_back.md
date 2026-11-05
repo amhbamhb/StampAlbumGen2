@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: failed_global_render_persists_draft_and_bad_global_geometry_rolls_back
-resource: tests/external_album_backend.rs#L825-L876
+resource: tests/external_album_backend.rs#L827-L878
 visibility: private
 generated:
   by: okf-rs/0.4.0

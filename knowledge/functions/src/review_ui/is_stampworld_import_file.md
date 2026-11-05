@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: is_stampworld_import_file
-resource: src/review_ui.rs#L1839-L1842
+resource: src/review_ui.rs#L1837-L1841
 visibility: private
 generated:
   by: okf-rs/0.4.0

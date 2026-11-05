@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_site_credentials_to_path
-resource: src/review_ui.rs#L805-L868
+resource: src/review_ui.rs#L803-L866
 visibility: private
 generated:
   by: okf-rs/0.4.0

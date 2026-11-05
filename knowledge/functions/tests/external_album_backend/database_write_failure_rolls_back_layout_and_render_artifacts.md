@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: database_write_failure_rolls_back_layout_and_render_artifacts
-resource: tests/external_album_backend.rs#L588-L628
+resource: tests/external_album_backend.rs#L590-L630
 visibility: private
 generated:
   by: okf-rs/0.4.0

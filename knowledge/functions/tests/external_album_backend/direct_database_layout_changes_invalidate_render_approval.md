@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: direct_database_layout_changes_invalidate_render_approval
-resource: tests/external_album_backend.rs#L632-L658
+resource: tests/external_album_backend.rs#L634-L660
 visibility: private
 generated:
   by: okf-rs/0.4.0

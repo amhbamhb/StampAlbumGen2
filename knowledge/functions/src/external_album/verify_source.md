@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: verify_source
-resource: src/external_album.rs#L1018-L1049
+resource: src/external_album.rs#L1026-L1057
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Enum
 title: ReviewUiLaunchState
-resource: src/main.rs#L317-L327
+resource: src/main.rs#L319-L329
 visibility: private
 generated:
   by: okf-rs/0.4.0

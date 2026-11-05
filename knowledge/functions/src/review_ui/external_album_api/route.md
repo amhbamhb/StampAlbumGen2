@@ -10,13 +10,7 @@ relationships:
   - target: functions/src/review_ui/external_album_api/parameter
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/review_ui/external_album_api/body
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/review_ui/external_album_api/root
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/external_album_api/start_job
@@ -53,9 +47,7 @@ relationships:
 # Calls
 
 - [parameter](../../../../functions/src/review_ui/external_album_api/parameter.md)
-- [parse](../../../../functions/src/external_album/parser/parse.md)
 - [body](../../../../functions/src/review_ui/external_album_api/body.md)
-- [root](../../../../functions/src/review_ui/external_album_api/root.md)
 - [start_job](../../../../functions/src/review_ui/external_album_api/start_job.md)
 - [import_album](../../../../functions/src/external_album/import_album.md)
 - [retry_album](../../../../functions/src/external_album/retry_album.md)

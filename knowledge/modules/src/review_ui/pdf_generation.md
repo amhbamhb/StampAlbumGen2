@@ -1,15 +1,15 @@
 ---
 type: Rust Module
 title: pdf_generation
-resource: src/review_ui/pdf_generation.rs#L1-L33
+resource: src/review_ui/pdf_generation.rs#L1-L32
 generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
-  - target: external/tiny-http-header-response-statuscode
+  - target: external/crate-review-ui-log-runtime-event
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/crate-review-ui-log-runtime-event
+  - target: external/tiny-http-header-response-statuscode
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -25,8 +25,8 @@ relationships:
 
 # Imports
 
-- `tiny_http::{Header, Response, StatusCode}`
 - `crate::review_ui::log_runtime_event`
+- `tiny_http::{Header, Response, StatusCode}`
 
 # Member of
 

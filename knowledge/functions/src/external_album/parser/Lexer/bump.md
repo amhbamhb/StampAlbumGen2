@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: bump
-resource: src/external_album/parser.rs#L248-L255
+resource: src/external_album/parser.rs#L263-L270
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: brazil_real_albumeasy_import_approval_and_page_edit
-resource: tests/external_album_backend.rs#L880-L1039
+resource: tests/external_album_backend.rs#L882-L1046
 visibility: private
 generated:
   by: okf-rs/0.4.0

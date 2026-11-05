@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: end_word
-resource: src/review_ui/pdf_parser/extraction.rs#L83-L88
+resource: src/review_ui/pdf_parser/extraction.rs#L80-L85
 visibility: private
 generated:
   by: okf-rs/0.4.0

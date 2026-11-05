@@ -1,12 +1,18 @@
 ---
 type: Rust Function
 title: write_globals
-resource: src/album_utils/globals.rs#L36-L702
+resource: src/album_utils/globals.rs#L37-L721
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/date/DateFormat/format
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/time_utils/formatted_now
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/args
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/load_effective_config
@@ -47,7 +53,9 @@ relationships:
 
 # Calls
 
+- [format](../../../../functions/src/native_pdf/date/DateFormat/format.md)
 - [formatted_now](../../../../functions/src/time_utils/formatted_now.md)
+- [args](../../../../functions/tests/native_pdf_page_settings/args.md)
 - [load_effective_config](../../../../functions/src/config/load_effective_config.md)
 - [write_page_start](../../../../functions/src/album_globals/generator_new/layout/write_page_start.md)
 - [resolve_album_dir](../../../../functions/src/file_utils/resolve_album_dir.md)

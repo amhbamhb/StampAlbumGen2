@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: external_album_backend
-resource: tests/external_album_backend.rs#L1-L1601
+resource: tests/external_album_backend.rs#L1-L1624
 generated:
   by: okf-rs/0.4.0
 relationships:

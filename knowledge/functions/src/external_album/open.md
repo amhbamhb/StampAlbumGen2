@@ -131,6 +131,9 @@ relationships:
   - target: functions/src/wikipedia/database/get_cached_content
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/albumeasy_baseline/inspect_text
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/ensure_coa_integration/ensure_coa_from_local_svg_creates_png
     resolved_by: tree-sitter
     confidence: exact
@@ -147,6 +150,60 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/external_album_backend/selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rejected
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_border_colour/named_colours_defaults_aliases_and_frozen_identities_match
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_config/explicit_file_changes_preserve_precision_even_margins_and_native_output
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_crop_marks/frozen_reference_hashes_and_media_sizes
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_crop_marks/actual_native_paths_match_all_repeated_reference_cases
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_decorative_border/frozen_reference_hashes_and_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_decorative_border/actual_decorative_pixels_and_transparency_match
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_explicit_settings/all_proof_policy_controls_actual_output
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_footer_date/serialized_footer_dates_match_frozen_fonts_glyphs_colour_and_geometry
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_footer_date/header_and_footer_share_one_generation_date_with_independent_fixed_overrides
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_footer_number/serialized_numbers_tokens_and_footer_coexistence_match_references
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_header_date/serialized_dates_and_coexistence_match_frozen_reference_pdfs
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_header_date/generation_date_requires_one_explicit_document_context
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_header_number/serialized_header_numbers_match_reference_fonts_glyphs_and_geometry
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_border/frozen_reference_identities_and_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_footer/serialized_footer_positions_colours_and_content_match_references
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_header/serialized_headers_and_title_interactions_match_references
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_settings/four_page_sizes_render_and_read_back
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_title/title_pdf_positions_match_frozen_references_and_hint_controls_guide
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/page_break_overflow/overflowing_row_moves_to_next_page_and_emits_row_start
@@ -234,12 +291,31 @@ relationships:
 - [write_startup_probe](../../../functions/src/setup/write_startup_probe.md)
 - [fetch_and_cache_content](../../../functions/src/wikipedia/database/fetch_and_cache_content.md)
 - [get_cached_content](../../../functions/src/wikipedia/database/get_cached_content.md)
+- [inspect_text](../../../functions/tests/albumeasy_baseline/inspect_text.md)
 - [ensure_coa_from_local_svg_creates_png](../../../functions/tests/ensure_coa_integration/ensure_coa_from_local_svg_creates_png.md)
 - [db](../../../functions/tests/external_album_backend/Fixture/db.md)
 - [brazil_database_roundtrip_and_repeated_placements](../../../functions/tests/external_album_backend/brazil_database_roundtrip_and_repeated_placements.md)
 - [brazil_real_albumeasy_import_approval_and_page_edit](../../../functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit.md)
 - [source_checksums](../../../functions/tests/external_album_backend/source_checksums.md)
 - [selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rejected](../../../functions/tests/external_album_backend/selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rejected.md)
+- [named_colours_defaults_aliases_and_frozen_identities_match](../../../functions/tests/native_pdf_border_colour/named_colours_defaults_aliases_and_frozen_identities_match.md)
+- [explicit_file_changes_preserve_precision_even_margins_and_native_output](../../../functions/tests/native_pdf_config/explicit_file_changes_preserve_precision_even_margins_and_native_output.md)
+- [frozen_reference_hashes_and_media_sizes](../../../functions/tests/native_pdf_crop_marks/frozen_reference_hashes_and_media_sizes.md)
+- [actual_native_paths_match_all_repeated_reference_cases](../../../functions/tests/native_pdf_crop_marks/actual_native_paths_match_all_repeated_reference_cases.md)
+- [frozen_reference_hashes_and_text](../../../functions/tests/native_pdf_decorative_border/frozen_reference_hashes_and_text.md)
+- [actual_decorative_pixels_and_transparency_match](../../../functions/tests/native_pdf_decorative_border/actual_decorative_pixels_and_transparency_match.md)
+- [all_proof_policy_controls_actual_output](../../../functions/tests/native_pdf_explicit_settings/all_proof_policy_controls_actual_output.md)
+- [serialized_footer_dates_match_frozen_fonts_glyphs_colour_and_geometry](../../../functions/tests/native_pdf_footer_date/serialized_footer_dates_match_frozen_fonts_glyphs_colour_and_geometry.md)
+- [header_and_footer_share_one_generation_date_with_independent_fixed_overrides](../../../functions/tests/native_pdf_footer_date/header_and_footer_share_one_generation_date_with_independent_fixed_overrides.md)
+- [serialized_numbers_tokens_and_footer_coexistence_match_references](../../../functions/tests/native_pdf_footer_number/serialized_numbers_tokens_and_footer_coexistence_match_references.md)
+- [serialized_dates_and_coexistence_match_frozen_reference_pdfs](../../../functions/tests/native_pdf_header_date/serialized_dates_and_coexistence_match_frozen_reference_pdfs.md)
+- [generation_date_requires_one_explicit_document_context](../../../functions/tests/native_pdf_header_date/generation_date_requires_one_explicit_document_context.md)
+- [serialized_header_numbers_match_reference_fonts_glyphs_and_geometry](../../../functions/tests/native_pdf_header_number/serialized_header_numbers_match_reference_fonts_glyphs_and_geometry.md)
+- [frozen_reference_identities_and_text](../../../functions/tests/native_pdf_page_border/frozen_reference_identities_and_text.md)
+- [serialized_footer_positions_colours_and_content_match_references](../../../functions/tests/native_pdf_page_footer/serialized_footer_positions_colours_and_content_match_references.md)
+- [serialized_headers_and_title_interactions_match_references](../../../functions/tests/native_pdf_page_header/serialized_headers_and_title_interactions_match_references.md)
+- [four_page_sizes_render_and_read_back](../../../functions/tests/native_pdf_page_settings/four_page_sizes_render_and_read_back.md)
+- [title_pdf_positions_match_frozen_references_and_hint_controls_guide](../../../functions/tests/native_pdf_page_title/title_pdf_positions_match_frozen_references_and_hint_controls_guide.md)
 - [overflowing_row_moves_to_next_page_and_emits_row_start](../../../functions/tests/page_break_overflow/overflowing_row_moves_to_next_page_and_emits_row_start.md)
 - [page_fit_regression_for_conservative_buffer](../../../functions/tests/page_fit_regression/page_fit_regression_for_conservative_buffer.md)
 - [imports_real_pdfs_into_disk_database_and_skips_reimports](../../../functions/tests/pdf_import_tool/imports_real_pdfs_into_disk_database_and_skips_reimports.md)

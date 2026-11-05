@@ -1,7 +1,7 @@
 ---
 type: Rust Enum
 title: ContentSection
-resource: src/album_utils/globals.rs#L1140-L1143
+resource: src/album_utils/globals.rs#L1163-L1166
 visibility: private
 generated:
   by: okf-rs/0.4.0

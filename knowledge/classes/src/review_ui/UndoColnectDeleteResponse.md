@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: UndoColnectDeleteResponse
-resource: src/review_ui.rs#L1362-L1366
+resource: src/review_ui.rs#L1360-L1364
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -21,6 +21,12 @@ relationships:
   - target: functions/src/image_utils/calc_mm_per_pixel_embedded
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/release_publication_shell/success
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/image_utils/get_image_dimensions
     resolved_by: tree-sitter
     confidence: exact
@@ -37,4 +43,6 @@ relationships:
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [estimate_real_dimensions](../../../../functions/src/image_utils/estimate_real_dimensions.md)
 - [calc_mm_per_pixel_embedded](../../../../functions/src/image_utils/calc_mm_per_pixel_embedded.md)
+- [args](../../../../functions/tests/native_pdf_page_settings/args.md)
+- [success](../../../../functions/tests/release_publication_shell/success.md)
 - [get_image_dimensions](../../../../functions/src/image_utils/get_image_dimensions.md)

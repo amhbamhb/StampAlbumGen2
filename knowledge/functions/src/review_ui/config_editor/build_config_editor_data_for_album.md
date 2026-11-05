@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_config_editor_data_for_album
-resource: src/review_ui/config_editor.rs#L770-L817
+resource: src/review_ui/config_editor.rs#L777-L824
 generated:
   by: okf-rs/0.4.0
 relationships:

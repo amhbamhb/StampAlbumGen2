@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: parser
-resource: src/stampworld/parser.rs#L1-L159
+resource: src/stampworld/parser.rs#L1-L175
 generated:
   by: okf-rs/0.4.0
 relationships:

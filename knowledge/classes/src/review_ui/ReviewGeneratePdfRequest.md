@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: ReviewGeneratePdfRequest
-resource: src/review_ui.rs#L388-L397
+resource: src/review_ui.rs#L386-L395
 visibility: private
 generated:
   by: okf-rs/0.4.0

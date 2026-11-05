@@ -30,9 +30,6 @@ relationships:
   - target: functions/crates/stamp_album_db/src/is_placeholder_image_path
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
 ---
 
 # Signature
@@ -49,4 +46,3 @@ relationships:
 - [is_real_image_candidate](../../../../functions/crates/stamp_album_db/src/is_real_image_candidate.md)
 - [cleanup_stampworld_identity_duplicates](../../../../functions/crates/stamp_album_db/src/cleanup_stampworld_identity_duplicates.md)
 - [is_placeholder_image_path](../../../../functions/crates/stamp_album_db/src/is_placeholder_image_path.md)
-- [parse](../../../../functions/src/external_album/parser/parse.md)

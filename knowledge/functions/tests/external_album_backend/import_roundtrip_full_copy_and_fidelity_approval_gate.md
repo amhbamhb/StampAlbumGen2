@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: import_roundtrip_full_copy_and_fidelity_approval_gate
-resource: tests/external_album_backend.rs#L211-L294
+resource: tests/external_album_backend.rs#L213-L296
 visibility: private
 generated:
   by: okf-rs/0.4.0

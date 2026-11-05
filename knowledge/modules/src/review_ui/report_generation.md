@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: report_generation
-resource: src/review_ui/report_generation.rs#L1-L74
+resource: src/review_ui/report_generation.rs#L1-L76
 generated:
   by: okf-rs/0.4.0
 relationships:

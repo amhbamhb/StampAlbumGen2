@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: handle_stampworld_import_request
-resource: src/review_ui/http_handlers.rs#L26-L107
+resource: src/review_ui/http_handlers.rs#L22-L123
 visibility: private
 generated:
   by: okf-rs/0.4.0

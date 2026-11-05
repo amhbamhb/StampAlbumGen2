@@ -9,9 +9,6 @@ relationships:
   - target: functions/src/review_ui/views/bootstrap/getEffectiveStampworldCountry
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/views/country_url/StampWorldCountryUrl/load
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/review_ui/views/bootstrap/stampworldPresetFlags
     resolved_by: tree-sitter
     confidence: exact
@@ -31,7 +28,6 @@ relationships:
 # Calls
 
 - [getEffectiveStampworldCountry](../../../../../functions/src/review_ui/views/bootstrap/getEffectiveStampworldCountry.md)
-- [load](../../../../../functions/src/review_ui/views/country_url/StampWorldCountryUrl/load.md)
 - [stampworldPresetFlags](../../../../../functions/src/review_ui/views/bootstrap/stampworldPresetFlags.md)
 
 # Called by

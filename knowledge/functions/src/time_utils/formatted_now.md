@@ -5,6 +5,10 @@ resource: src/time_utils.rs#L6-L12
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/date/DateFormat/format
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_globals/generator/generate_album_output_conn_prepared
     resolved_by: tree-sitter
@@ -41,6 +45,10 @@ relationships:
 # Signature
 
 `pub fn formatted_now(fmt: &str) -> String`
+
+# Calls
+
+- [format](../../../functions/src/native_pdf/date/DateFormat/format.md)
 
 # Called by
 

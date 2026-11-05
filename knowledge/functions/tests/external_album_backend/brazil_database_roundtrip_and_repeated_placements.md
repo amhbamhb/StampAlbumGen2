@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: brazil_database_roundtrip_and_repeated_placements
-resource: tests/external_album_backend.rs#L663-L716
+resource: tests/external_album_backend.rs#L665-L718
 visibility: private
 generated:
   by: okf-rs/0.4.0

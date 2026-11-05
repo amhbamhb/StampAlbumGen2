@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: retry_album
-resource: src/external_album.rs#L1212-L1239
+resource: src/external_album.rs#L1220-L1246
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -1,9 +1,7 @@
 ---
 type: JavaScript Function
 title: downloadAlbumReport
-
-resource: src/review_ui/views/external_album.js#L377-L384
-
+resource: src/review_ui/views/external_album.js#L379-L386
 generated:
   by: okf-rs/0.4.0
 relationships:

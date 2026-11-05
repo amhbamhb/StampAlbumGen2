@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_pdf_report
-resource: src/review_ui/report_generation.rs#L14-L44
+resource: src/review_ui/report_generation.rs#L14-L47
 generated:
   by: okf-rs/0.4.0
 relationships:

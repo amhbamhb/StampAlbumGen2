@@ -12,9 +12,6 @@ relationships:
   - target: functions/src/review_ui/external_album_api/respond
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/review_ui/external_album_api/root
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/review_ui/external_album_api/pdf_path
     resolved_by: tree-sitter
     confidence: exact
@@ -44,7 +41,6 @@ relationships:
 
 - [same_origin](../../../../functions/src/review_ui/external_album_api/same_origin.md)
 - [respond](../../../../functions/src/review_ui/external_album_api/respond.md)
-- [root](../../../../functions/src/review_ui/external_album_api/root.md)
 - [pdf_path](../../../../functions/src/review_ui/external_album_api/pdf_path.md)
 - [parameter](../../../../functions/src/review_ui/external_album_api/parameter.md)
 - [open](../../../../functions/src/external_album/open.md)

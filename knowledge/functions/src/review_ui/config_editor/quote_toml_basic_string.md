@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: quote_toml_basic_string
-resource: src/review_ui/config_editor.rs#L344-L347
+resource: src/review_ui/config_editor.rs#L344-L346
 visibility: private
 generated:
   by: okf-rs/0.4.0

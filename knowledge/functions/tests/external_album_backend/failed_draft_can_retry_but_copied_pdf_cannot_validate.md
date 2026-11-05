@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: failed_draft_can_retry_but_copied_pdf_cannot_validate
-resource: tests/external_album_backend.rs#L298-L317
+resource: tests/external_album_backend.rs#L300-L319
 visibility: private
 generated:
   by: okf-rs/0.4.0

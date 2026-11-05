@@ -7,9 +7,6 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -28,7 +25,6 @@ relationships:
 
 # Calls
 
-- [parse](../../../../functions/src/external_album/parser/parse.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [parse_stamp_from_title_and_description](../../../../functions/src/us1847/collector/parse_stamp_from_title_and_description.md)
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_stampworld_pdf_content
-resource: src/review_ui/pdf_parser/extraction.rs#L106-L112
+resource: src/review_ui/pdf_parser/extraction.rs#L108-L114
 generated:
   by: okf-rs/0.4.0
 relationships:

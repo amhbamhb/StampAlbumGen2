@@ -9,9 +9,6 @@ relationships:
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/review_ui/views/compare/html
     resolved_by: tree-sitter
     confidence: exact
@@ -73,7 +70,6 @@ relationships:
 # Calls
 
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
-- [parse](../../../../functions/src/external_album/parser/parse.md)
 - [html](../../../../functions/src/review_ui/views/compare/html.md)
 - [dedupe_details](../../../../functions/src/stampworld/parser/dedupe_details.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)

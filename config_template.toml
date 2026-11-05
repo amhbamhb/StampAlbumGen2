@@ -1235,9 +1235,9 @@ vertical_padding_mm = 1.0
 arms_mm = 5.0
 colour = "black"
 
-# Optional corner-PNG decorative border; definition commands override this explicit
+# Optional corner/edge-PNG decorative border; definition commands override this explicit
 # omitted-command policy. Relative paths resolve beside this config, then PNGs
-# beside the definition. Edge ornaments are not supported in this slice.
+# beside the definition. Edge padding is signed and applies to its orientation.
 [native_pdf.decorative_border]
 enabled = false
 definition_file = ""
@@ -1252,4 +1252,6 @@ line_padding_h_mm = 0.0
 line_padding_v_mm = 0.0
 end_offset_h_mm = 0.0
 end_offset_v_mm = 0.0
+edge_padding_h_mm = 0.0
+edge_padding_v_mm = 0.0
 colour = "black"

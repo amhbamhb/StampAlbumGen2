@@ -1,9 +1,7 @@
 ---
 type: Rust Module
 title: http_handlers
-
-resource: src/review_ui/http_handlers.rs#L1-L2912
-
+resource: src/review_ui/http_handlers.rs#L1-L2932
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -14,10 +12,10 @@ relationships:
   - target: external/crate-review-ui-db-query-best-effort-prepare-images-for-pdf
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/crate-review-ui-ui-state-bootstraphandlersstate-reviewhandlersstate
+  - target: external/crate-review-ui-pdf-generation-review-pdf-error
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/crate-review-ui-pdf-generation-review-pdf-error
+  - target: external/crate-review-ui-ui-state-bootstraphandlersstate-reviewhandlersstate
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -38,10 +36,7 @@ relationships:
 - [ReviewHandlersStateRequests](../../../classes/src/review_ui/http_handlers/ReviewHandlersStateRequests.md)
 - [serve_review_requests](../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [review_input](../../../functions/src/review_ui/http_handlers/review_input.md)
-<<<<<<< HEAD
 - [stampworld_file_import_route_reports_invalid_requests_in_both_loops](../../../functions/src/review_ui/http_handlers/stampworld_file_import_route_reports_invalid_requests_in_both_loops.md)
-=======
->>>>>>> fix/complex-stamp-db-type
 - [review_pdf_filters_routes_validate_requests_and_report_empty_selection](../../../functions/src/review_ui/http_handlers/review_pdf_filters_routes_validate_requests_and_report_empty_selection.md)
 - [country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings](../../../functions/src/review_ui/http_handlers/country_url_routes_reject_bad_input_on_both_pull_screens_without_writing_mappings.md)
 - [site_accounts_routes_return_json_in_bootstrap_and_review_modes](../../../functions/src/review_ui/http_handlers/site_accounts_routes_return_json_in_bootstrap_and_review_modes.md)
@@ -50,8 +45,8 @@ relationships:
 
 - `super::*`
 - `crate::review_ui::db_query::best_effort_prepare_images_for_pdf`
-- `crate::review_ui::ui_state::{BootstrapHandlersState, ReviewHandlersState}`
 - `crate::review_ui::pdf_generation::review_pdf_error`
+- `crate::review_ui::ui_state::{BootstrapHandlersState, ReviewHandlersState}`
 
 # Member of
 

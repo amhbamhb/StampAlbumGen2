@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: build_config_editor_data
-resource: src/review_ui/config_editor.rs#L512-L610
+resource: src/review_ui/config_editor.rs#L519-L617
 generated:
   by: okf-rs/0.4.0
 relationships:

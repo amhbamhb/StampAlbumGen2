@@ -41,6 +41,7 @@ overrides the root `color_album_border` value.
 | `[native_pdf.decorative_border].line_outer_mm`, `.line_inner1_mm`, `.line_inner2_mm`, `.line_spacing_mm` | Omitted `BORDER_LINES` policy | Nonnegative mm; templates all 0; disabled slots retain fixed centreline spacing, not cumulative widths |
 | `[native_pdf.decorative_border].line_padding_h_mm`, `.line_padding_v_mm` | Omitted `BORDER_PAD` policy | Signed mm; templates 0/0; positive moves lines outward |
 | `[native_pdf.decorative_border].end_offset_h_mm`, `.end_offset_v_mm` | Omitted `BORDER_END_OFFSETS` policy | Nonnegative mm; templates 0/0; endpoints measured from original margin corners |
+| `[native_pdf.decorative_border].edge_padding_h_mm`, `.edge_padding_v_mm` | Omitted `IMAGE_EDGE_PAD` policy | Signed mm; templates 0/0; horizontal padding affects left/right edges, vertical padding affects top/bottom edges |
 | `[native_pdf.decorative_border].colour` | Native decorative-line colour | Opaque named colour; template black, independent of numeric border; does not recolour PNG artwork |
 | `[native_pdf.title].enabled` | Native title extension | Required boolean when title table exists; template false |
 | `[native_pdf.title].text` | `ALBUM_PAGES_TITLE` | Required nonempty WinAnsi string; template "Stamp Album"; explicit newlines supported |

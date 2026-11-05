@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_runtime_bootstrap_albums_root_path
-resource: src/review_ui.rs#L879-L881
+resource: src/review_ui.rs#L877-L879
 visibility: private
 generated:
   by: okf-rs/0.4.0

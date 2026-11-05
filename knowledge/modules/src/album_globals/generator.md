@@ -6,9 +6,6 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   imports:
-  - target: external/crate-album-globals-generator-new-helpers-rowspacingmode
-    resolved_by: tree-sitter
-    confidence: exact
   - target: external/super-constants-month-names
     resolved_by: tree-sitter
     confidence: exact
@@ -19,6 +16,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/super-structs-stamp
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/crate-album-globals-generator-new-helpers-rowspacingmode
     resolved_by: tree-sitter
     confidence: exact
   - target: external/crate-album-globals-generator-new-layout
@@ -99,7 +99,6 @@ relationships:
 
 # Imports
 
-- `crate::album_globals::generator_new::helpers::RowSpacingMode`
 - `super::constants::MONTH_NAMES`
 - `super::globals::{compute_usable_height, write_globals}`
 - `super::helpers::{
@@ -108,6 +107,7 @@ relationships:
     build_watermark_page_text_centre_template,
 }`
 - `super::structs::Stamp`
+- `crate::album_globals::generator_new::helpers::RowSpacingMode`
 - `crate::album_globals::generator_new::layout`
 - `crate::album_utils::clean_text`
 - `crate::config::load_effective_config`

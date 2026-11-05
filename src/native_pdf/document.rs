@@ -453,7 +453,7 @@ impl PageSettings {
             decorative_border: self
                 .decorative_border
                 .as_ref()
-                .map(|border| border.layout(margin_bounds))
+                .map(|border| border.layout(margin_bounds, self.size.height_mm()))
                 .transpose()?,
             crop_marks: self
                 .crop_marks

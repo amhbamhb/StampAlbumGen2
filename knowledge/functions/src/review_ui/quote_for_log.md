@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: quote_for_log
-resource: src/review_ui.rs#L596-L602
+resource: src/review_ui.rs#L594-L600
 visibility: private
 generated:
   by: okf-rs/0.4.0

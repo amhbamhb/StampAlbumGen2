@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: skip
-resource: src/external_album/parser.rs#L256-L270
+resource: src/external_album/parser.rs#L271-L285
 visibility: private
 generated:
   by: okf-rs/0.4.0

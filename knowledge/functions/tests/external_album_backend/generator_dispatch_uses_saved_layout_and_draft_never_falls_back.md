@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generator_dispatch_uses_saved_layout_and_draft_never_falls_back
-resource: tests/external_album_backend.rs#L528-L563
+resource: tests/external_album_backend.rs#L530-L565
 visibility: private
 generated:
   by: okf-rs/0.4.0

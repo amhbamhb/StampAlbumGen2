@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: placement_identities
-resource: tests/external_album_backend.rs#L719-L737
+resource: tests/external_album_backend.rs#L721-L739
 visibility: private
 generated:
   by: okf-rs/0.4.0

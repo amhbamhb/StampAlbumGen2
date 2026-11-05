@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: globals_are_editable_at_zero_and_page_placement_identities_survive_saves
-resource: tests/external_album_backend.rs#L741-L821
+resource: tests/external_album_backend.rs#L743-L823
 visibility: private
 generated:
   by: okf-rs/0.4.0

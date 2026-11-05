@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: runtime_log_buffer
-resource: src/review_ui.rs#L51-L53
+resource: src/review_ui.rs#L49-L51
 visibility: private
 generated:
   by: okf-rs/0.4.0

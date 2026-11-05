@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: image_exists
-resource: src/file_utils.rs#L80-L88
+resource: src/file_utils.rs#L83-L91
 generated:
   by: okf-rs/0.4.0
 relationships:

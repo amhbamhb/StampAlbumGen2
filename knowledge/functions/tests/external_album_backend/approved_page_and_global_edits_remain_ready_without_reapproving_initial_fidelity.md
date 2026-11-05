@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: approved_page_and_global_edits_remain_ready_without_reapproving_initial_fidelity
-resource: tests/external_album_backend.rs#L1069-L1142
+resource: tests/external_album_backend.rs#L1076-L1165
 visibility: private
 generated:
   by: okf-rs/0.4.0

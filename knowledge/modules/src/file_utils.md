@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: file_utils
-resource: src/file_utils.rs#L1-L114
+resource: src/file_utils.rs#L1-L121
 generated:
   by: okf-rs/0.4.0
 relationships:
