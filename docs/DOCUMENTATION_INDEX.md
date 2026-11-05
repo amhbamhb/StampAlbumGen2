@@ -15,6 +15,8 @@ after the documentation reorganization.
 
 ## Status and Fix Reports
 
+- [Stamp physical-sizing requirements and preserved accuracy analysis](reports/STAMP_PHYSICAL_SIZING_ANALYSIS.md)
+- [Native PDF implementation roadmap](reports/NATIVE_PDF_IMPLEMENTATION_PLAN.md)
 - `reports/BUILD_SUMMARY.md`
 - `reports/CROSS_PLATFORM_STATUS.md`
 - `reports/SESSION_SUMMARY.md`

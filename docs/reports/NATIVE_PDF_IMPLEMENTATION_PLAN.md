@@ -2,11 +2,78 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-04
-**Revision:** 26
-**Status:** Native decorative PNG corners, edges, and connecting lines verified with explicit asset/default policies and unchanged content geometry; production backend not integrated
+**Revision:** 29
+**Status:** Native decorative PNG corners, edges, and connecting lines are verified; a proof-only stamp-image box with measured heading/caption is implemented; production backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Shared physical-sizing evidence and layout requirements
+
+The [stamp physical-sizing analysis](STAMP_PHYSICAL_SIZING_ANALYSIS.md) is the
+preserved project-wide baseline for sizing, mounting spaces, and future layout
+work, not only the native proof. Its complete
+[per-record results](../testing/us-sizing-20261105T031956Z.csv) and
+[machine-readable breakdown](../testing/us-sizing-20261105T031956Z.json) are
+versionable project artifacts. Read and reuse them before further T005 sizing
+or row-layout work; do not repeat the completed experiment unless inputs,
+configuration, estimator, or validation scope changes.
+
+Agreed requirements: known sizes include outer perforation tips; preserve
+physical mounting dimensions independently of illustration scaling, text,
+and configurable frame clearance. Move items to the next row when remaining
+space is insufficient, without warning for normal wrapping. Infer unknown
+sizes automatically from comparable items and reference samples; fine-tuning
+follows viewing/printing. Same-series references are preferred, but single,
+pair, block, pane, and booklet identity must be distinguished.
+
+The US held-out comparison covers 248 known-size records. Hierarchical peers
+predict 229, with 196 within 1 mm on both dimensions; excluding the entire
+target series gives 127 within 1 mm out of 187 predictions. These are
+conditional experimental results, not approved mounting tolerances. Recorded
+risks include stale pixel dimensions, annotated images, single/block ambiguity,
+and sparse metadata. No production estimator was changed or approved.
+
+#### Native stamp-image box proof (T005 slice)
+
+Added `write_stamp_image_proof` as a diagnostic-only extension of the native
+renderer. It places one PNG/JPEG in explicit millimetre bounds, preserves its
+aspect ratio, applies caller-supplied padding and source point-per-pixel scale,
+and does not enlarge the source. Measured heading and caption lines are placed
+above and below the box; the configured page border and content guide remain
+unchanged. Asset, geometry, and text validation happens before output is
+written, so an invalid/missing image does not create or truncate the PDF.
+
+The image geometry now has a focused comparison against two image footprints
+measured in the Great Britain AlbumEasy PDF: 398x473 px renders at about
+17.67x21 mm, and 117x140 px at about 17.55x21 mm, each inside a 24x27 mm
+`STAMP_ADD_IMG` box. The regression test uses synthetic images with those
+raster dimensions, derives scale from the embedded 120x140 reference image at
+25x30 mm, and applies 3 mm of padding per side; both results match the
+measured footprints within 0.01 mm. This validates the proof geometry for
+these sample cases, not a universal AlbumEasy padding policy or real-world
+stamp-size accuracy. Text placement still requires reference-renderer
+comparison before production wiring. This is one image, not row packing; it
+does not add CLI/UI/config integration or alter PDF import.
+
+The read-only Great Britain database check found 1,317 stamp rows: 1,077
+nonempty image paths (all resolve), 240 rows with pixel-dimension pairs but no
+image path, and 20 rows with Colnect physical-dimension pairs; none has both
+dimension pairs.
+
+Validation: the focused image geometry tests, both stamp-image integration
+tests, 20 neighboring config/page/title/border tests, and all 11 decorative
+renderer comparisons (including the `mutool` raster/trace checks) pass.
+Targeted Clippy reports no new warnings; existing application/PDF-parser
+warnings remain. The Windows GNU library check succeeds, but `winres` is not
+available in this environment, so Windows resource embedding/runtime and
+physical printing remain unverified.
+
+Validated on `feature/native-stamp-image-layout`, based on `d422da10`.
+Next bounded slice: physical-versus-presentation box geometry for known sizes
+(T007), keeping clearance independent from image scale before row packing.
+The experimental unknown-size estimator remains unapproved; full T005,
+including physical print verification, remains partial. No merge or push.
 
 #### Decorative edge ornaments (#76)
 

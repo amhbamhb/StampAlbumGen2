@@ -1,12 +1,12 @@
 use super::{
     colour::NamedColour, document::PageSettings, proof::GeometryProofSettings,
-    text::PositionedTextLine, units::mm_to_points, Result,
+    stamp_image::StampImageProofSettings, text::PositionedTextLine, units::mm_to_points, Result,
 };
 use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
 
-/// Isolated proof: configured border and optional configured content-area guide.
-/// Optional measured title/header/footer text is supported; stamp rows are pending.
+/// Isolated geometry proof. Stamp-image content is available through
+/// `write_stamp_image_proof`; production row layout is not wired up.
 pub fn write_page_geometry_proof(
     settings: &PageSettings,
     proof: &GeometryProofSettings,
@@ -24,6 +24,35 @@ pub fn write_page_geometry_proof_with_date(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<()> {
+    write_proof(settings, proof, output, generation_date, None)
+}
+
+/// Writes a one-page diagnostic proof with one explicitly sized stamp image.
+pub fn write_stamp_image_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    stamp: &StampImageProofSettings,
+    output: &Path,
+) -> Result<()> {
+    if proof.page_count != 1 {
+        return Err("native_pdf.stamp_image proof requires exactly one page".into());
+    }
+    write_proof(
+        settings,
+        proof,
+        output,
+        settings.capture_generation_date(),
+        Some(stamp),
+    )
+}
+
+fn write_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    output: &Path,
+    generation_date: Option<chrono::NaiveDate>,
+    stamp: Option<&StampImageProofSettings>,
+) -> Result<()> {
     proof.validate()?;
     let layouts = (1..=proof.page_count)
         .map(|number| {
@@ -34,6 +63,7 @@ pub fn write_page_geometry_proof_with_date(
             Ok(layout)
         })
         .collect::<Result<Vec<_>>>()?;
+    let stamp = stamp.map(|stamp| stamp.prepare(&layouts[0])).transpose()?;
     let mut document = Document::new();
     for (index, layout) in layouts.into_iter().enumerate() {
         let mut page = Page::new(
@@ -202,6 +232,33 @@ pub fn write_page_geometry_proof_with_date(
                 title.lines,
                 "title",
             )?;
+        }
+        if let Some(stamp) = &stamp {
+            page.add_image("native_stamp_image", stamp.image.clone());
+            let bounds = stamp.image_bounds;
+            page.draw_image(
+                "native_stamp_image",
+                mm_to_points(bounds.left),
+                mm_to_points(bounds.bottom),
+                mm_to_points(bounds.right - bounds.left),
+                mm_to_points(bounds.top - bounds.bottom),
+            )
+            .map_err(|error| format!("Cannot draw native stamp image: {error}"))?;
+            for (text, kind) in [
+                (stamp.heading.as_ref(), "stamp heading"),
+                (stamp.caption.as_ref(), "stamp caption"),
+            ] {
+                if let Some(text) = text {
+                    draw_text_lines(
+                        &mut page,
+                        text.font.clone(),
+                        text.size_pt,
+                        text.colour,
+                        text.lines.clone(),
+                        kind,
+                    )?;
+                }
+            }
         }
 
         document.add_page(page);
