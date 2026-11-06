@@ -27,6 +27,9 @@ relationships:
   - target: functions/tests/release_publication_shell/success
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/image_utils/get_image_dimensions
     resolved_by: tree-sitter
     confidence: exact
@@ -45,4 +48,5 @@ relationships:
 - [calc_mm_per_pixel_embedded](../../../../functions/src/image_utils/calc_mm_per_pixel_embedded.md)
 - [args](../../../../functions/tests/native_pdf_page_settings/args.md)
 - [success](../../../../functions/tests/release_publication_shell/success.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [get_image_dimensions](../../../../functions/src/image_utils/get_image_dimensions.md)

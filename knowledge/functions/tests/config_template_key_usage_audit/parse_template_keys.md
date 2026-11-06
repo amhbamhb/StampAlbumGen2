@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/tests/config_template_key_usage_audit/config_template_key_usage_audit
     resolved_by: tree-sitter
@@ -15,6 +19,10 @@ relationships:
 # Signature
 
 `fn parse_template_keys(template: &str) -> Vec<TemplateKey>`
+
+# Calls
+
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

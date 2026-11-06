@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/err
     resolved_by: tree-sitter
     confidence: exact
@@ -40,6 +43,7 @@ relationships:
 
 # Calls
 
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [err](../../../functions/src/external_album/err.md)
 - [relative](../../../functions/src/external_album/relative.md)
 - [no_links](../../../functions/src/external_album/no_links.md)

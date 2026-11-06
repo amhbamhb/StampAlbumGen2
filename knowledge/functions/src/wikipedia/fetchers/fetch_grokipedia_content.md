@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/wikipedia/parsers/parse_grokipedia_html
     resolved_by: tree-sitter
     confidence: exact
@@ -21,6 +24,7 @@ relationships:
 
 # Calls
 
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [parse_grokipedia_html](../../../../functions/src/wikipedia/parsers/parse_grokipedia_html.md)
 
 # Called by

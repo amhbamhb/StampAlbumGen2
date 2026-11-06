@@ -15,6 +15,9 @@ relationships:
   - target: functions/src/config/load_effective_config
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/cache_country_info
     resolved_by: tree-sitter
     confidence: exact
@@ -48,6 +51,7 @@ relationships:
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [try_rasterize_svg_to_png](../../../functions/src/flagdb/try_rasterize_svg_to_png.md)
 - [load_effective_config](../../../functions/src/config/load_effective_config.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [cache_country_info](../../../functions/src/flagdb/cache_country_info.md)
 - [extract_coa_from_nexperts_html](../../../functions/src/flagdb/extract_coa_from_nexperts_html.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)

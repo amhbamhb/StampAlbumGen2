@@ -84,6 +84,11 @@
 - [PageSettings](../classes/src/native_pdf/document/PageSettings.md) — Rust Struct
 - [PageNumbering](../classes/src/native_pdf/numbering/PageNumbering.md) — Rust Struct
 - [GeometryProofSettings](../classes/src/native_pdf/proof/GeometryProofSettings.md) — Rust Struct
+- [StampBoxGeometry](../classes/src/native_pdf/stamp_box/StampBoxGeometry.md) — Rust Struct
+- [PreparedStampImage](../classes/src/native_pdf/stamp_image/PreparedStampImage.md) — Rust Struct
+- [PreparedStampText](../classes/src/native_pdf/stamp_image/PreparedStampText.md) — Rust Struct
+- [StampImageProofSettings](../classes/src/native_pdf/stamp_image/StampImageProofSettings.md) — Rust Struct
+- [StampTextProofSettings](../classes/src/native_pdf/stamp_image/StampTextProofSettings.md) — Rust Struct
 - [MeasuredLine](../classes/src/native_pdf/text/MeasuredLine.md) — Rust Struct
 - [MeasuredText](../classes/src/native_pdf/text/MeasuredText.md) — Rust Struct
 - [PositionedTextLine](../classes/src/native_pdf/text/PositionedTextLine.md) — Rust Struct

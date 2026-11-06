@@ -25,7 +25,13 @@ relationships:
   - target: functions/src/image_downloader/normalize_album_images_for_pdf
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/native_pdf/renderer/write_page_geometry_proof_with_date
+  - target: functions/src/native_pdf/renderer/write_proof
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/natural_size_image_is_centered_in_padded_box_without_upscaling
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/embedded_reference_scale_matches_great_britain_albumeasy_footprints
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/placeholder_image/generate_placeholder_for_stamp_with_bg
@@ -58,6 +64,12 @@ relationships:
   - target: functions/tests/native_pdf_decorative_border/missing_corrupt_and_non_alpha_png_assets_fail_before_output
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/make_stamp_image
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -75,7 +87,9 @@ relationships:
 - [ensure_coat_of_arms_with_fetcher](../../../../../functions/src/flagdb/ensure_coat_of_arms_with_fetcher.md)
 - [try_rasterize_svg_to_png](../../../../../functions/src/flagdb/try_rasterize_svg_to_png.md)
 - [normalize_album_images_for_pdf](../../../../../functions/src/image_downloader/normalize_album_images_for_pdf.md)
-- [write_page_geometry_proof_with_date](../../../../../functions/src/native_pdf/renderer/write_page_geometry_proof_with_date.md)
+- [write_proof](../../../../../functions/src/native_pdf/renderer/write_proof.md)
+- [natural_size_image_is_centered_in_padded_box_without_upscaling](../../../../../functions/src/native_pdf/stamp_image/natural_size_image_is_centered_in_padded_box_without_upscaling.md)
+- [embedded_reference_scale_matches_great_britain_albumeasy_footprints](../../../../../functions/src/native_pdf/stamp_image/embedded_reference_scale_matches_great_britain_albumeasy_footprints.md)
 - [generate_placeholder_for_stamp_with_bg](../../../../../functions/src/placeholder_image/generate_placeholder_for_stamp_with_bg.md)
 - [generate_transparent_spacer](../../../../../functions/src/placeholder_image/generate_transparent_spacer.md)
 - [generate_placeholder_image_with_options](../../../../../functions/src/placeholder_image/generate_placeholder_image_with_options.md)
@@ -86,3 +100,5 @@ relationships:
 - [backfill_image_dimensions_persists_to_db](../../../../../functions/tests/backfill_image_dims/backfill_image_dimensions_persists_to_db.md)
 - [unmapped_country_can_reuse_a_valid_album_local_flag_without_network](../../../../../functions/tests/flagdb/unmapped_country_can_reuse_a_valid_album_local_flag_without_network.md)
 - [missing_corrupt_and_non_alpha_png_assets_fail_before_output](../../../../../functions/tests/native_pdf_decorative_border/missing_corrupt_and_non_alpha_png_assets_fail_before_output.md)
+- [make_stamp_image](../../../../../functions/tests/native_pdf_stamp_image/make_stamp_image.md)
+- [illustration_scale_changes_pdf_image_but_not_known_size_or_frame](../../../../../functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame.md)

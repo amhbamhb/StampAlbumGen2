@@ -21,6 +21,9 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -34,3 +37,4 @@ relationships:
 - [scan_inventory](../../../functions/src/external_album/scan_inventory.md)
 - [asset_errors](../../../functions/src/external_album/asset_errors.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)

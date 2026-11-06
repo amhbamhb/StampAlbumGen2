@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/catalog/infer_catalog_type_for_number
     resolved_by: tree-sitter
     confidence: exact
@@ -25,6 +28,7 @@ relationships:
 
 # Calls
 
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [infer_catalog_type_for_number](../../../functions/src/catalog/infer_catalog_type_for_number.md)
 - [normalize_catalog_type](../../../functions/src/catalog/normalize_catalog_type.md)
 

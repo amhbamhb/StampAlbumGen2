@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/crates/stamp_album_db/src/insert_stamp_from_struct
     resolved_by: tree-sitter
@@ -15,6 +19,10 @@ relationships:
 # Signature
 
 `fn is_placeholder_image_path(path: &str) -> bool`
+
+# Calls
+
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

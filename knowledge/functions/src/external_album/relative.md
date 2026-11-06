@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/external_album/entry_relative
     resolved_by: tree-sitter
@@ -36,6 +40,10 @@ relationships:
 # Signature
 
 `fn relative(value: &str) -> Result<PathBuf>`
+
+# Calls
+
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/external_album/sql_integer
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/err
     resolved_by: tree-sitter
     confidence: exact
@@ -17,6 +20,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/sql_usize
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -35,9 +41,11 @@ relationships:
 # Calls
 
 - [sql_integer](../../../functions/src/external_album/sql_integer.md)
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [err](../../../functions/src/external_album/err.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [sql_usize](../../../functions/src/external_album/sql_usize.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

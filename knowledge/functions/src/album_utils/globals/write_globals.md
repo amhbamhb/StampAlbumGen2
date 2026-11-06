@@ -33,6 +33,9 @@ relationships:
   - target: functions/src/flagdb/copy_coa_for_album
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
@@ -62,6 +65,7 @@ relationships:
 - [copy_flag_for_album](../../../../functions/src/flagdb/copy_flag_for_album.md)
 - [cover_image_reference](../../../../functions/src/album_utils/globals/cover_image_reference.md)
 - [copy_coa_for_album](../../../../functions/src/flagdb/copy_coa_for_album.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [write_page_vspace](../../../../functions/src/album_globals/generator_new/layout/write_page_vspace.md)
 - [emit_image_only](../../../../functions/src/album_globals/generator_new/emit/emit_image_only.md)

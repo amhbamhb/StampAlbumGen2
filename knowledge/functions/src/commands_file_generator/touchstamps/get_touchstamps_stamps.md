@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/review_ui/views/compare/html
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/commands_file_generator/touchstamps/get_touchstamps_image
     resolved_by: tree-sitter
     confidence: exact
@@ -28,5 +31,6 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [html](../../../../functions/src/review_ui/views/compare/html.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [get_touchstamps_image](../../../../functions/src/commands_file_generator/touchstamps/get_touchstamps_image.md)
 - [get_image](../../../../functions/src/commands_file_generator/image_utils/get_image.md)

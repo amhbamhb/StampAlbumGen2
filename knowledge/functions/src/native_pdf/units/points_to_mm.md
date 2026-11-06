@@ -15,6 +15,9 @@ relationships:
   - target: functions/src/native_pdf/commands/page/album_pages_title/AlbumPagesTitle/layout
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/native_pdf/text/MeasuredText/new_with_font
     resolved_by: tree-sitter
     confidence: exact
@@ -60,6 +63,9 @@ relationships:
   - target: functions/tests/native_pdf_page_settings/rendered_paths_match_margin_and_spacing_fixtures
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -71,6 +77,7 @@ relationships:
 - [image_dimensions_mm](../../../../functions/src/native_pdf/commands/page/album_pages_decorative_border/image_dimensions_mm.md)
 - [layout](../../../../functions/src/native_pdf/commands/page/album_pages_footer/AlbumPagesFooter/layout.md)
 - [layout](../../../../functions/src/native_pdf/commands/page/album_pages_title/AlbumPagesTitle/layout.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [new_with_font](../../../../functions/src/native_pdf/text/MeasuredText/new_with_font.md)
 - [rendered_colours_match_reference_and_guide_stays_black](../../../../functions/tests/native_pdf_border_colour/rendered_colours_match_reference_and_guide_stays_black.md)
 - [frozen_reference_hashes_and_media_sizes](../../../../functions/tests/native_pdf_crop_marks/frozen_reference_hashes_and_media_sizes.md)
@@ -86,3 +93,4 @@ relationships:
 - [spacing_state_matches_reference_content_anchors_and_gaps](../../../../functions/tests/native_pdf_page_settings/spacing_state_matches_reference_content_anchors_and_gaps.md)
 - [invalid_commands_geometry_and_output_fail_explicitly](../../../../functions/tests/native_pdf_page_settings/invalid_commands_geometry_and_output_fail_explicitly.md)
 - [rendered_paths_match_margin_and_spacing_fixtures](../../../../functions/tests/native_pdf_page_settings/rendered_paths_match_margin_and_spacing_fixtures.md)
+- [illustration_scale_changes_pdf_image_but_not_known_size_or_frame](../../../../functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame.md)

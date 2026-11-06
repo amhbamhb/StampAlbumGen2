@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: actual_decorative_pixels_and_transparency_match
-resource: tests/native_pdf_decorative_border.rs#L559-L663
+resource: tests/native_pdf_decorative_border.rs#L559-L667
 visibility: private
 generated:
   by: okf-rs/0.4.0

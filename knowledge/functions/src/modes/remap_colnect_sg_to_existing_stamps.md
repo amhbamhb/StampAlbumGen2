@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/modes/extract_year
     resolved_by: tree-sitter
     confidence: exact
@@ -28,6 +31,7 @@ relationships:
 
 # Calls
 
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [extract_year](../../../functions/src/modes/extract_year.md)
 - [numeric_tokens](../../../functions/src/modes/numeric_tokens.md)
 - [score_candidate](../../../functions/src/modes/score_candidate.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: nums
-resource: tests/native_pdf_decorative_border.rs#L674-L679
+resource: tests/native_pdf_decorative_border.rs#L678-L683
 visibility: private
 generated:
   by: okf-rs/0.4.0

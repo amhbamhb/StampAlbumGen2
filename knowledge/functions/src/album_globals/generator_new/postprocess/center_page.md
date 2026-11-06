@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/album_globals/selection/count
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/generator_new/postprocess/compute_page_used_height
     resolved_by: tree-sitter
     confidence: exact
@@ -32,6 +35,7 @@ relationships:
 # Calls
 
 - [count](../../../../../functions/src/album_globals/selection/count.md)
+- [contains](../../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [compute_page_used_height](../../../../../functions/src/album_globals/generator_new/postprocess/compute_page_used_height.md)
 - [format_page_vspace_mm](../../../../../functions/src/album_globals/generator_new/layout/format_page_vspace_mm.md)
 

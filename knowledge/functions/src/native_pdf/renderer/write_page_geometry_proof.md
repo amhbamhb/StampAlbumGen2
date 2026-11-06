@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: write_page_geometry_proof
-resource: src/native_pdf/renderer.rs#L10-L17
+resource: src/native_pdf/renderer.rs#L11-L18
 generated:
   by: okf-rs/0.4.0
 relationships:

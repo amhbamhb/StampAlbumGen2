@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/config/load_effective_config
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/config/Config/with_defaults
     resolved_by: tree-sitter
     confidence: exact
@@ -148,6 +151,7 @@ relationships:
 # Calls
 
 - [load_effective_config](../../../../functions/src/config/load_effective_config.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [with_defaults](../../../../functions/src/config/Config/with_defaults.md)
 - [calc_mm_per_pixel_embedded](../../../../functions/src/image_utils/calc_mm_per_pixel_embedded.md)
 - [resolve_album_dir](../../../../functions/src/file_utils/resolve_album_dir.md)

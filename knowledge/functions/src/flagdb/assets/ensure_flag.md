@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/flagdb/assets/valid_file
     resolved_by: tree-sitter
     confidence: exact
@@ -53,6 +56,7 @@ relationships:
 
 - [valid_code](../../../../functions/src/flagdb/countries/valid_code.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [valid_file](../../../../functions/src/flagdb/assets/valid_file.md)
 - [rasterize](../../../../functions/src/flagdb/assets/rasterize.md)
 - [write_atomic](../../../../functions/src/flagdb/assets/write_atomic.md)

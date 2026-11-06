@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/us1847/collector/extract_design_size
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -29,6 +32,7 @@ relationships:
 # Calls
 
 - [extract_design_size](../../../../functions/src/us1847/collector/extract_design_size.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [insert_stamp_if_not_exists](../../../../functions/src/us1847/collector/insert_stamp_if_not_exists.md)
 

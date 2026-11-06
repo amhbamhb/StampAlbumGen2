@@ -12,6 +12,9 @@ relationships:
   - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
     resolved_by: tree-sitter
@@ -32,6 +35,7 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

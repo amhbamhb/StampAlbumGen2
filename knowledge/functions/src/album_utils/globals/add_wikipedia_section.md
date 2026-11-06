@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/album_globals/globals/compute_usable_height
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/wikipedia/database/get_cached_content
     resolved_by: tree-sitter
     confidence: exact
@@ -50,6 +53,7 @@ relationships:
 # Calls
 
 - [compute_usable_height](../../../../functions/src/album_globals/globals/compute_usable_height.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [get_cached_content](../../../../functions/src/wikipedia/database/get_cached_content.md)
 - [write_page_start](../../../../functions/src/album_globals/generator_new/layout/write_page_start.md)
 - [parse_content_into_sections](../../../../functions/src/album_utils/globals/parse_content_into_sections.md)

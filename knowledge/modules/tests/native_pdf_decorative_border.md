@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: native_pdf_decorative_border
-resource: tests/native_pdf_decorative_border.rs#L1-L820
+resource: tests/native_pdf_decorative_border.rs#L1-L824
 generated:
   by: okf-rs/0.4.0
 relationships:

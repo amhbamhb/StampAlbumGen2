@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/ext_from_data_url
     resolved_by: tree-sitter
     confidence: exact
@@ -34,6 +37,7 @@ relationships:
 
 # Calls
 
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [ext_from_data_url](../../../functions/src/review_ui/ext_from_data_url.md)
 - [format](../../../functions/src/native_pdf/date/DateFormat/format.md)
 - [safe_filename_token](../../../functions/src/review_ui/safe_filename_token.md)

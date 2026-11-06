@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: draw_text_lines
-resource: src/native_pdf/renderer.rs#L217-L235
+resource: src/native_pdf/renderer.rs#L317-L335
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,7 +11,7 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   called_by:
-  - target: functions/src/native_pdf/renderer/write_page_geometry_proof_with_date
+  - target: functions/src/native_pdf/renderer/write_proof
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -26,4 +26,4 @@ relationships:
 
 # Called by
 
-- [write_page_geometry_proof_with_date](../../../../functions/src/native_pdf/renderer/write_page_geometry_proof_with_date.md)
+- [write_proof](../../../../functions/src/native_pdf/renderer/write_proof.md)

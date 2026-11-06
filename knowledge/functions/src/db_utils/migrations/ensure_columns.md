@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/db_utils/migrations/table_column_name_set
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/db_utils/migrations/migration_001_stamps_schema_alignment
     resolved_by: tree-sitter
@@ -32,6 +35,7 @@ relationships:
 # Calls
 
 - [table_column_name_set](../../../../functions/src/db_utils/migrations/table_column_name_set.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

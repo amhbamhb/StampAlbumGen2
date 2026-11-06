@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: actual_native_strokes_images_alpha_and_content_match_references
-resource: tests/native_pdf_decorative_border.rs#L683-L820
+resource: tests/native_pdf_decorative_border.rs#L687-L824
 visibility: private
 generated:
   by: okf-rs/0.4.0

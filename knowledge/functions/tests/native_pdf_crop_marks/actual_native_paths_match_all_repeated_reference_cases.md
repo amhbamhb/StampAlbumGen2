@@ -22,6 +22,9 @@ relationships:
   - target: functions/src/native_pdf/document/PageSettings/set_border_colour
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/open
     resolved_by: tree-sitter
     confidence: exact
@@ -41,5 +44,6 @@ relationships:
 - [set_crop_marks](../../../functions/src/native_pdf/document/PageSettings/set_crop_marks.md)
 - [set_even_margins](../../../functions/src/native_pdf/document/PageSettings/set_even_margins.md)
 - [set_border_colour](../../../functions/src/native_pdf/document/PageSettings/set_border_colour.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [open](../../../functions/src/external_album/open.md)
 - [points_to_mm](../../../functions/src/native_pdf/units/points_to_mm.md)

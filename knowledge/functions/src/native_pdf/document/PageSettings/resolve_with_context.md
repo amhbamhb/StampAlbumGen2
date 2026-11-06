@@ -16,7 +16,7 @@ relationships:
   - target: functions/src/native_pdf/document/PageSettings/resolve_with_page_count
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/native_pdf/renderer/write_page_geometry_proof_with_date
+  - target: functions/src/native_pdf/renderer/write_proof
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/native_pdf_footer_date/header_and_footer_share_one_generation_date_with_independent_fixed_overrides
@@ -45,7 +45,7 @@ relationships:
 
 - [parse](../../../../../functions/src/native_pdf/config/NativePdfConfig/parse.md)
 - [resolve_with_page_count](../../../../../functions/src/native_pdf/document/PageSettings/resolve_with_page_count.md)
-- [write_page_geometry_proof_with_date](../../../../../functions/src/native_pdf/renderer/write_page_geometry_proof_with_date.md)
+- [write_proof](../../../../../functions/src/native_pdf/renderer/write_proof.md)
 - [header_and_footer_share_one_generation_date_with_independent_fixed_overrides](../../../../../functions/tests/native_pdf_footer_date/header_and_footer_share_one_generation_date_with_independent_fixed_overrides.md)
 - [defaults_enablement_snapshots_and_colour_precedence_are_explicit](../../../../../functions/tests/native_pdf_footer_date/defaults_enablement_snapshots_and_colour_precedence_are_explicit.md)
 - [generation_date_requires_one_explicit_document_context](../../../../../functions/tests/native_pdf_header_date/generation_date_requires_one_explicit_document_context.md)

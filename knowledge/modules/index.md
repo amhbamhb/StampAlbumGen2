@@ -97,6 +97,8 @@
 - [numbering](../modules/src/native_pdf/numbering.md) — Rust Module
 - [proof](../modules/src/native_pdf/proof.md) — Rust Module
 - [renderer](../modules/src/native_pdf/renderer.md) — Rust Module
+- [stamp_box](../modules/src/native_pdf/stamp_box.md) — Rust Module
+- [stamp_image](../modules/src/native_pdf/stamp_image.md) — Rust Module
 - [text](../modules/src/native_pdf/text.md) — Rust Module
 - [units](../modules/src/native_pdf/units.md) — Rust Module
 - [placeholder_image](../modules/src/placeholder_image.md) — Rust Module
@@ -217,6 +219,8 @@
 - [native_pdf_page_header](../modules/tests/native_pdf_page_header.md) — Rust Module
 - [native_pdf_page_settings](../modules/tests/native_pdf_page_settings.md) — Rust Module
 - [native_pdf_page_title](../modules/tests/native_pdf_page_title.md) — Rust Module
+- [native_pdf_stamp_box](../modules/tests/native_pdf_stamp_box.md) — Rust Module
+- [native_pdf_stamp_image](../modules/tests/native_pdf_stamp_image.md) — Rust Module
 - [page_break_overflow](../modules/tests/page_break_overflow.md) — Rust Module
 - [page_callback](../modules/tests/page_callback.md) — Rust Module
 - [page_fit_regression](../modules/tests/page_fit_regression.md) — Rust Module

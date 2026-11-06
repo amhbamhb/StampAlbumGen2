@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: trace
-resource: tests/native_pdf_decorative_border.rs#L665-L673
+resource: tests/native_pdf_decorative_border.rs#L669-L677
 visibility: private
 generated:
   by: okf-rs/0.4.0

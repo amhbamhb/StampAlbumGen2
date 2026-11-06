@@ -206,6 +206,12 @@ relationships:
   - target: functions/tests/native_pdf_page_title/title_pdf_positions_match_frozen_references_and_hint_controls_guide
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/stamp_image_heading_caption_and_page_border_render_with_physical_geometry
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/page_break_overflow/overflowing_row_moves_to_next_page_and_emits_row_start
     resolved_by: tree-sitter
     confidence: exact
@@ -316,6 +322,8 @@ relationships:
 - [serialized_headers_and_title_interactions_match_references](../../../functions/tests/native_pdf_page_header/serialized_headers_and_title_interactions_match_references.md)
 - [four_page_sizes_render_and_read_back](../../../functions/tests/native_pdf_page_settings/four_page_sizes_render_and_read_back.md)
 - [title_pdf_positions_match_frozen_references_and_hint_controls_guide](../../../functions/tests/native_pdf_page_title/title_pdf_positions_match_frozen_references_and_hint_controls_guide.md)
+- [stamp_image_heading_caption_and_page_border_render_with_physical_geometry](../../../functions/tests/native_pdf_stamp_image/stamp_image_heading_caption_and_page_border_render_with_physical_geometry.md)
+- [illustration_scale_changes_pdf_image_but_not_known_size_or_frame](../../../functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame.md)
 - [overflowing_row_moves_to_next_page_and_emits_row_start](../../../functions/tests/page_break_overflow/overflowing_row_moves_to_next_page_and_emits_row_start.md)
 - [page_fit_regression_for_conservative_buffer](../../../functions/tests/page_fit_regression/page_fit_regression_for_conservative_buffer.md)
 - [imports_real_pdfs_into_disk_database_and_skips_reimports](../../../functions/tests/pdf_import_tool/imports_real_pdfs_into_disk_database_and_skips_reimports.md)

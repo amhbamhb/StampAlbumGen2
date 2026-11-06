@@ -16,6 +16,9 @@ relationships:
   - target: functions/tests/release_publication_shell/success
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -27,3 +30,4 @@ relationships:
 - [ensure_config_and_template_files](../../../functions/src/config/ensure_config_and_template_files.md)
 - [args](../../../functions/tests/native_pdf_page_settings/args.md)
 - [success](../../../functions/tests/release_publication_shell/success.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)

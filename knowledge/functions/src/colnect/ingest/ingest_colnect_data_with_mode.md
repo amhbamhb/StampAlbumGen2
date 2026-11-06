@@ -6,6 +6,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/catalog/preferred_catalog_number
     resolved_by: tree-sitter
     confidence: exact
@@ -33,6 +36,7 @@ relationships:
 
 # Calls
 
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [preferred_catalog_number](../../../../functions/src/catalog/preferred_catalog_number.md)
 - [extract_colnect_code](../../../../functions/src/colnect/ingest/extract_colnect_code.md)
 

@@ -27,6 +27,9 @@ relationships:
   - target: functions/src/review_ui/config_editor/enrich_field_help
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/config_editor/friendly_config_section_title
     resolved_by: tree-sitter
     confidence: exact
@@ -52,6 +55,7 @@ relationships:
 - [load_current_config_values](../../../../functions/src/review_ui/config_editor/load_current_config_values.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [enrich_field_help](../../../../functions/src/review_ui/config_editor/enrich_field_help.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [friendly_config_section_title](../../../../functions/src/review_ui/config_editor/friendly_config_section_title.md)
 
 # Called by

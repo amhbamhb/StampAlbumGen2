@@ -79,6 +79,12 @@ relationships:
   - target: functions/src/native_pdf/numbering/PageNumbering/text
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/embedded_reference_scale_matches_great_britain_albumeasy_footprints
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/placeholder_image/draw_text
     resolved_by: tree-sitter
     confidence: exact
@@ -210,6 +216,8 @@ relationships:
 - [rgb](../../../../../functions/src/native_pdf/colour/NamedColour/rgb.md)
 - [image_dimensions_mm](../../../../../functions/src/native_pdf/commands/page/album_pages_decorative_border/image_dimensions_mm.md)
 - [text](../../../../../functions/src/native_pdf/numbering/PageNumbering/text.md)
+- [prepare](../../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
+- [embedded_reference_scale_matches_great_britain_albumeasy_footprints](../../../../../functions/src/native_pdf/stamp_image/embedded_reference_scale_matches_great_britain_albumeasy_footprints.md)
 - [draw_text](../../../../../functions/src/placeholder_image/draw_text.md)
 - [start_bootstrap_stampworld_job](../../../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
 - [log_startup](../../../../../functions/src/review_ui/log_startup.md)

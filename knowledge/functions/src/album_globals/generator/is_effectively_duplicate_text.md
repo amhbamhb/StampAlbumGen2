@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/album_globals/generator/normalize_for_text_dedupe
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_globals/generator/build_stamp_text
     resolved_by: tree-sitter
@@ -23,6 +26,7 @@ relationships:
 # Calls
 
 - [normalize_for_text_dedupe](../../../../functions/src/album_globals/generator/normalize_for_text_dedupe.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

@@ -64,6 +64,9 @@ relationships:
   - target: functions/tests/native_pdf_page_title/title_pdf_positions_match_frozen_references_and_hint_controls_guide
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -91,3 +94,4 @@ relationships:
 - [invalid_edits_roll_back_and_render_failure_saves_retryable_draft](../../../../functions/tests/external_album_backend/invalid_edits_roll_back_and_render_failure_saves_retryable_draft.md)
 - [database_write_failure_rolls_back_layout_and_render_artifacts](../../../../functions/tests/external_album_backend/database_write_failure_rolls_back_layout_and_render_artifacts.md)
 - [title_pdf_positions_match_frozen_references_and_hint_controls_guide](../../../../functions/tests/native_pdf_page_title/title_pdf_positions_match_frozen_references_and_hint_controls_guide.md)
+- [illustration_scale_changes_pdf_image_but_not_known_size_or_frame](../../../../functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame.md)

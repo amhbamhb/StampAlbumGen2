@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -27,3 +30,4 @@ relationships:
 - [args](../../../../functions/tests/native_pdf_page_settings/args.md)
 - [formatted_now](../../../../functions/src/time_utils/formatted_now.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)

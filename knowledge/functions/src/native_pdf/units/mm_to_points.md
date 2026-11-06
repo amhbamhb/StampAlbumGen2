@@ -48,10 +48,22 @@ relationships:
   - target: functions/src/native_pdf/proof/GeometryProofSettings/validate
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/native_pdf/renderer/write_page_geometry_proof_with_date
+  - target: functions/src/native_pdf/renderer/write_proof
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/native_pdf/renderer/draw_text_lines
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_box/StampBoxGeometry/from_total_additions
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_box/validate_bounds
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/validate_numbers
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/native_pdf/text/MeasuredText/new_with_font
@@ -61,6 +73,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/tests/native_pdf_page_settings/rendered_paths_match_margin_and_spacing_fixtures
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -85,8 +100,13 @@ relationships:
 - [parse](../../../../functions/src/native_pdf/commands/page/album_pages_size/PageSize/parse.md)
 - [new](../../../../functions/src/native_pdf/commands/page/album_pages_title/AlbumPagesTitle/new.md)
 - [validate](../../../../functions/src/native_pdf/proof/GeometryProofSettings/validate.md)
-- [write_page_geometry_proof_with_date](../../../../functions/src/native_pdf/renderer/write_page_geometry_proof_with_date.md)
+- [write_proof](../../../../functions/src/native_pdf/renderer/write_proof.md)
 - [draw_text_lines](../../../../functions/src/native_pdf/renderer/draw_text_lines.md)
+- [from_total_additions](../../../../functions/src/native_pdf/stamp_box/StampBoxGeometry/from_total_additions.md)
+- [validate_bounds](../../../../functions/src/native_pdf/stamp_box/validate_bounds.md)
+- [validate_numbers](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/validate_numbers.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [new_with_font](../../../../functions/src/native_pdf/text/MeasuredText/new_with_font.md)
 - [invalid_commands_geometry_and_output_fail_explicitly](../../../../functions/tests/native_pdf_page_settings/invalid_commands_geometry_and_output_fail_explicitly.md)
 - [rendered_paths_match_margin_and_spacing_fixtures](../../../../functions/tests/native_pdf_page_settings/rendered_paths_match_margin_and_spacing_fixtures.md)
+- [illustration_scale_changes_pdf_image_but_not_known_size_or_frame](../../../../functions/tests/native_pdf_stamp_image/illustration_scale_changes_pdf_image_but_not_known_size_or_frame.md)

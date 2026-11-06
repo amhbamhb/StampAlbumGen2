@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: native_pdf
-resource: src/native_pdf/mod.rs#L1-L14
+resource: src/native_pdf/mod.rs#L1-L16
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/native_pdf/config/NativePdfConfig/from_toml_in
     resolved_by: tree-sitter
     confidence: exact
@@ -24,6 +27,7 @@ relationships:
 
 # Calls
 
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [from_toml_in](../../../functions/src/native_pdf/config/NativePdfConfig/from_toml_in.md)
 - [err](../../../functions/src/external_album/err.md)
 - [from_toml](../../../functions/src/native_pdf/config/NativePdfConfig/from_toml.md)
