@@ -11,6 +11,14 @@ use super::{
 use oxidize_pdf::Image;
 use std::path::PathBuf;
 
+/// Image input for a complete text/frame row item; physical size comes from the stamp.
+#[derive(Clone, Debug)]
+pub struct StampImageRowItem {
+    pub stamp: super::stamp_text::StampTextItem,
+    pub image_path: PathBuf,
+    pub image_scale_pt_per_pixel: f64,
+}
+
 #[derive(Clone, Debug)]
 pub struct StampTextProofSettings {
     pub text: String,

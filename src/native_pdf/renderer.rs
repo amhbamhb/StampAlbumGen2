@@ -3,7 +3,7 @@ use super::{
     document::PageSettings,
     proof::GeometryProofSettings,
     stamp_box::StampBoxGeometry,
-    stamp_image::StampImageProofSettings,
+    stamp_image::{StampImageProofSettings, StampImageRowItem},
     stamp_rows::fit_known_size_rows,
     stamp_text::{fit_text_rows, PositionedStampItem, StampTextItem, StampTextPolicy},
     text::PositionedTextLine,
@@ -32,7 +32,7 @@ pub fn write_page_geometry_proof_with_date(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<()> {
-    write_proof(settings, proof, output, generation_date, None, &[], &[])
+    write_proof(settings, proof, output, generation_date, &[], &[], &[])
 }
 
 /// Writes a one-page diagnostic proof with one explicitly sized stamp image.
@@ -50,7 +50,7 @@ pub fn write_stamp_image_proof(
         proof,
         output,
         settings.capture_generation_date(),
-        Some(stamp),
+        std::slice::from_ref(stamp),
         &[],
         &[],
     )
@@ -74,7 +74,7 @@ pub fn write_stamp_box_geometry_proof(
         proof,
         output,
         settings.capture_generation_date(),
-        Some(&stamp),
+        std::slice::from_ref(&stamp),
         std::slice::from_ref(geometry),
         &[],
     )
@@ -99,7 +99,7 @@ pub fn write_stamp_rows_geometry_proof(
         proof,
         output,
         generation_date,
-        None,
+        &[],
         &geometries,
         &[],
     )
@@ -126,9 +126,54 @@ pub fn write_stamp_text_geometry_proof(
         proof,
         output,
         generation_date,
-        None,
+        &[],
         &geometries,
         &items,
+    )
+}
+
+/// Combined single-page image/text proof. All assets are validated before output writes.
+pub fn write_stamp_items_geometry_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    items: &[StampImageRowItem],
+    policy: &StampTextPolicy,
+    output: &Path,
+) -> Result<()> {
+    if proof.page_count != 1 {
+        return Err("native_pdf.stamp_items proof requires exactly one page".into());
+    }
+    let generation_date = settings.capture_generation_date();
+    let layout = settings.resolve_with_context(1, 1, generation_date)?;
+    let stamps: Vec<_> = items.iter().map(|item| item.stamp.clone()).collect();
+    let rows = fit_text_rows(layout.content_bounds, &stamps, settings.spacing(), policy)?;
+    let text_items: Vec<_> = rows.into_iter().flatten().collect();
+    let geometries: Vec<_> = text_items.iter().map(|item| item.geometry).collect();
+    let images: Vec<_> = items
+        .iter()
+        .zip(&geometries)
+        .map(|(item, geometry)| {
+            StampImageProofSettings {
+                image_path: item.image_path.clone(),
+                box_bounds: geometry.frame_bounds(),
+                image_scale_pt_per_pixel: item.image_scale_pt_per_pixel,
+                image_padding_horizontal_mm: 0.0,
+                image_padding_vertical_mm: 0.0,
+                text_gap_mm: 0.0,
+                heading: None,
+                caption: None,
+            }
+            .with_stamp_box(geometry)
+        })
+        .collect();
+    write_proof(
+        settings,
+        proof,
+        output,
+        generation_date,
+        &images,
+        &geometries,
+        &text_items,
     )
 }
 
@@ -137,7 +182,7 @@ fn write_proof(
     proof: &GeometryProofSettings,
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
-    stamp: Option<&StampImageProofSettings>,
+    stamps: &[StampImageProofSettings],
     geometries: &[StampBoxGeometry],
     text_items: &[PositionedStampItem],
 ) -> Result<()> {
@@ -151,7 +196,15 @@ fn write_proof(
             Ok(layout)
         })
         .collect::<Result<Vec<_>>>()?;
-    let stamp = stamp.map(|stamp| stamp.prepare(&layouts[0])).transpose()?;
+    let stamps = stamps
+        .iter()
+        .enumerate()
+        .map(|(index, stamp)| {
+            stamp
+                .prepare(&layouts[0])
+                .map_err(|error| format!("Native PDF stamp image {}: {error}", index + 1))
+        })
+        .collect::<Result<Vec<_>>>()?;
     let mut document = Document::new();
     for (index, layout) in layouts.into_iter().enumerate() {
         let mut page = Page::new(
@@ -321,11 +374,16 @@ fn write_proof(
                 "title",
             )?;
         }
-        if let Some(stamp) = &stamp {
-            page.add_image("native_stamp_image", stamp.image.clone());
+        for (image_index, stamp) in stamps.iter().enumerate() {
+            let name = if stamps.len() == 1 {
+                "native_stamp_image".to_string()
+            } else {
+                format!("native_stamp_image_{image_index}")
+            };
+            page.add_image(&name, stamp.image.clone());
             let bounds = stamp.image_bounds;
             page.draw_image(
-                "native_stamp_image",
+                &name,
                 mm_to_points(bounds.left),
                 mm_to_points(bounds.bottom),
                 mm_to_points(bounds.right - bounds.left),

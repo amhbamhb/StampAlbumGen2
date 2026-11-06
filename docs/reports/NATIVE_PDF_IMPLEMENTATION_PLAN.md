@@ -2,11 +2,45 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-04
-**Revision:** 32
-**Status:** Both native stamp-text width policies and measured footprints implemented with detailed TOML/UI help; production backend/export not integrated
+**Revision:** 33
+**Status:** Complete native image/text row proofs implemented using independent physical/image/text geometry; production backend/export not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Combined stamp images and measured text rows (#80)
+
+After #79 was committed as `47530168`, the maintainer selected image/text rows
+before pagination. `StampImageRowItem` supplies an existing known-size/text
+item, portable image path and explicit image scale. The diagnostic renderer
+uses the shared text-footprint fitter and existing image preparation without
+recalculating physical sizes. Images fit proportionally inside physical bounds
+using frame clearance, remain centered, and never upscale. Wrapped/expanded
+text affects reserved row footprints only, not image or mounting dimensions.
+
+All images are prepared before PDF output; missing/corrupt last-item assets
+or invalid scales fail without creating/truncating output. Each placement has
+a unique image resource in multi-image proofs; the historical single-image
+resource name stays unchanged. The slice remains explicitly single-page.
+
+[Letter PDF/TXT proofs](../../tests/fixtures/albumeasy/stamp-items-v1/README.md)
+show eight items per policy, with small and fitted portrait/landscape images
+and two rows. Three tests check actual multi-image PDF matrices/resource
+names and safe failure behavior. Independent MuPDF traces verify all sixteen
+image dimensions/positions/aspects, all footprint/frame/physical outlines,
+every text line/position, 10 pt fonts and 3 mm gaps. Both pages were visually
+inspected. Synthetic assets avoid modifying any real album/image/database.
+Validation: 117 native tests pass, 20 ignored; explicit fixture regeneration
+passes. Clippy/format checks pass with existing warnings. Windows GNU library
+check passes with the existing missing `winres` warning; Windows runtime and
+physical printing remain unverified.
+TXT companions explicitly preserve images/text in adapted separate blocks;
+native-position/page parity and reference rendering are not claimed.
+
+Branch `issue/80-native-images-text-rows`, based on `47530168`; maintainer
+approved this slice for commit, nothing pushed. No OKF regeneration. Next bounded
+layout step: automatic row-to-page overflow with resolved header/footer and
+even-page reservations, without shrinking stamps or dropping text.
 
 #### Native stamp-text policies and UI-ready configuration help (#79)
 
