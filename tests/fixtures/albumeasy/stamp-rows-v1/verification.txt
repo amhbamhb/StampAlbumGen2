@@ -1,0 +1,8 @@
+Independent MuPDF trace verification of four native frame-only Letter row proofs.
+Bounds tolerance: 0.004 mm; gap tolerance: 0.006 mm (three rounded PDF operands).
+PASS standard-wrap: 7 items, rows [6, 1]; Letter, frame/physical bounds, 3 mm horizontal gaps, 4 mm vertical gaps, top alignment and 10 pt legend.
+PASS mixed-heights: 6 items, rows [4, 1, 1]; Letter, frame/physical bounds, 3 mm horizontal gaps, 4 mm vertical gaps, top alignment and 10 pt legend.
+PASS large-wrap: 4 items, rows [2, 2]; Letter, frame/physical bounds, 3 mm horizontal gaps, 4 mm vertical gaps, top alignment and 10 pt legend.
+PASS zero-clearance: 3 items, rows [2, 1]; Letter, frame/physical bounds, 3 mm horizontal gaps, 4 mm vertical gaps, top alignment and 10 pt legend.
+4/4 pass. AlbumEasy TXT files are unrendered comparison inputs, not verified position/text parity.
+No per-stamp text, images, production row integration, automatic page breaks or physical print confirmation claimed.

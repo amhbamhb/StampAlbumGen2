@@ -1,7 +1,7 @@
 use super::{
     colour::NamedColour, document::PageSettings, proof::GeometryProofSettings,
-    stamp_box::StampBoxGeometry, stamp_image::StampImageProofSettings, text::PositionedTextLine,
-    units::mm_to_points, Result,
+    stamp_box::StampBoxGeometry, stamp_image::StampImageProofSettings,
+    stamp_rows::fit_known_size_rows, text::PositionedTextLine, units::mm_to_points, Result,
 };
 use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
@@ -25,7 +25,7 @@ pub fn write_page_geometry_proof_with_date(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<()> {
-    write_proof(settings, proof, output, generation_date, None, None)
+    write_proof(settings, proof, output, generation_date, None, &[])
 }
 
 /// Writes a one-page diagnostic proof with one explicitly sized stamp image.
@@ -44,7 +44,7 @@ pub fn write_stamp_image_proof(
         output,
         settings.capture_generation_date(),
         Some(stamp),
-        None,
+        &[],
     )
 }
 
@@ -67,8 +67,25 @@ pub fn write_stamp_box_geometry_proof(
         output,
         settings.capture_generation_date(),
         Some(&stamp),
-        Some(geometry),
+        std::slice::from_ref(geometry),
     )
+}
+
+/// Single-page frame-only diagnostic. Text and illustration footprints are excluded.
+pub fn write_stamp_rows_geometry_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    stamps: &[StampBoxGeometry],
+    output: &Path,
+) -> Result<()> {
+    if proof.page_count != 1 {
+        return Err("native_pdf.stamp_rows proof requires exactly one page".into());
+    }
+    let generation_date = settings.capture_generation_date();
+    let layout = settings.resolve_with_context(1, 1, generation_date)?;
+    let rows = fit_known_size_rows(layout.content_bounds, stamps, settings.spacing())?;
+    let geometries: Vec<_> = rows.into_iter().flatten().collect();
+    write_proof(settings, proof, output, generation_date, None, &geometries)
 }
 
 fn write_proof(
@@ -77,7 +94,7 @@ fn write_proof(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
     stamp: Option<&StampImageProofSettings>,
-    geometry: Option<&StampBoxGeometry>,
+    geometries: &[StampBoxGeometry],
 ) -> Result<()> {
     proof.validate()?;
     let layouts = (1..=proof.page_count)
@@ -286,7 +303,7 @@ fn write_proof(
                 }
             }
         }
-        if let Some(geometry) = geometry {
+        for geometry in geometries {
             for (bounds, colour) in [
                 (geometry.frame_bounds(), Color::rgb(0.0, 0.0, 0.0)),
                 (geometry.physical_bounds(), Color::rgb(0.0, 0.3, 0.9)),

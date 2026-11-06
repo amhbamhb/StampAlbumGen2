@@ -10,6 +10,7 @@ pub mod proof;
 pub mod renderer;
 pub mod stamp_box;
 pub mod stamp_image;
+pub mod stamp_rows;
 pub mod text;
 pub mod units;
 

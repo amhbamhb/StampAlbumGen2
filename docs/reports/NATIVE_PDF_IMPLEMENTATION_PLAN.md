@@ -2,11 +2,48 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-04
-**Revision:** 30
-**Status:** Known physical stamp bounds and independent frame clearance are verified in the stamp-image proof; production sizing/backend not integrated
+**Revision:** 31
+**Status:** Frame-only known-size row fitting and Letter proof fixtures implemented; production sizing/backend not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Frame-only known-size row fitting (#78, bounded T009 slice)
+
+The maintainer selected geometry-only fitting first, deferring per-stamp text
+footprints. `fit_known_size_rows` preserves input order and physical/frame
+dimensions, places frames left-to-right, and wraps to the next row without a
+warning or scaling. This proof uses left-aligned rows and top-aligned frames;
+each row advances below its tallest frame by the configured vertical gap.
+There is no trailing gap requirement at the content edge.
+
+The fitter uses resolved content bounds, not raw paper dimensions, so existing
+title/header/footer reservations remain respected. Empty input returns no rows;
+invalid bounds, an overwide frame or insufficient single-page height fail
+explicitly. Automatic pagination, images and per-stamp text are not included.
+The shared diagnostic renderer accepts the placed geometries without changing
+existing image/page proofs. Validation errors occur before creating/truncating
+output files.
+
+Six row-fitting tests cover exact width/height fits, gap accounting, ordered
+wrapping, mixed heights, fractional/zero clearance, invalid/oversized input,
+unchanged physical sizes and actual Letter PDF rectangle coordinates.
+[Four PDF/TXT proof pairs](../../tests/fixtures/albumeasy/stamp-rows-v1/README.md)
+and a combined PDF cover ordinary wrapping, mixed heights, large items and
+zero clearance. Independent MuPDF traces confirm coordinates, alignment and
+gaps; pages 1 and 2 were visually inspected. The explicit fixture-regeneration
+test lives under `tests/`; regular tests do not overwrite saved proofs.
+Validation: 104 native integration tests pass, 18 ignored (including opt-in
+fixture regeneration); the explicit generator passes separately. Focused
+Clippy/format checks pass with existing warnings. Windows GNU library check
+passes with the pre-existing missing `winres` warning; Windows runtime and
+revised physical printing are not verified. No OKF regeneration was performed
+for this slice.
+
+Branch `issue/78-native-known-size-row-fitting`, based on committed #77
+(`f5e3ffcf`). Maintainer approved this slice for commit; nothing pushed.
+Full T009 remains partial. Next: decide and measure per-stamp text footprints
+before text-aware packing/pagination or production integration.
 
 #### Known-size physical bounds and frame clearance (#77, T007 slice)
 
