@@ -18,6 +18,7 @@ overrides the root `color_album_border` value.
 
 | Native input | Command | Policy |
 |---|---|---|
+| `[native_pdf.rows].alignment` | Native-only row policy | `left`, `center`, `right`, `justified`; new native default `center` distributes equal internal/outer spaces (retains configured minimum internal gap for nearly full rows). Left/right retain fixed gaps; justified spreads only internal gaps, with centered singleton. Applies to every row, final rows and continuations throughout each explicit section; sections begin new rows. Table optional, key required when present. Legacy generation unchanged; future last-row variants/compatibility mapping not implemented. |
 | `[native_pdf.stamp_text].enabled` | Native-only text-footprint proof opt-in | Optional table; false in templates; all fields validated if present; production generator/export unchanged |
 | `[native_pdf.stamp_text].width_policy` | Native-only text layout | `wrap_to_frame` wraps to mounting-frame width; `expand_footprint` allows wider text up to its configured cap, then wraps; both preserve explicit newlines and reserve all measured height, with no fixed line-count limit; wrapping normalizes repeated spaces/splits long words without scaling; AlbumEasy compatibility is not certified |
 | `[native_pdf.stamp_text].expanded_width_limit` | Native-only expanded text cap unit | Required `percent` or `mm` when table exists; template `percent`; cap applies before padding and is ignored for frame-wrapping, but always validated |

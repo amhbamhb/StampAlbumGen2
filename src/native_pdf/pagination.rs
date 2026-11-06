@@ -3,7 +3,7 @@
 use super::{
     document::{Bounds, PageLayout, PageSettings},
     stamp_box::StampBoxGeometry,
-    stamp_rows::row_prefix_len,
+    stamp_rows::{row_prefix_len, RowAlignment},
     stamp_text::{
         fit_text_rows, height, position, PositionedStampText, StampTextItem, StampTextPolicy,
     },
@@ -26,6 +26,14 @@ pub struct StampItemPage {
     pub items: Vec<StampPageFragment>,
 }
 
+/// Consecutive items sharing one alignment. A section starts a new row, not
+/// necessarily a new page. Counts must exactly cover the input item list.
+#[derive(Clone, Copy, Debug)]
+pub struct StampRowSection {
+    pub item_count: usize,
+    pub alignment: RowAlignment,
+}
+
 /// Final-count-sensitive layout is rerun until stable. Frames are never split,
 /// scaled or repeated; oversized text continues before/after its frame in order.
 pub fn paginate_stamp_items(
@@ -34,13 +42,45 @@ pub fn paginate_stamp_items(
     policy: &StampTextPolicy,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<Vec<StampItemPage>> {
+    let sections = if items.is_empty() {
+        Vec::new()
+    } else {
+        vec![StampRowSection {
+            item_count: items.len(),
+            alignment: settings.row_alignment(),
+        }]
+    };
+    paginate_stamp_sections(settings, items, &sections, policy, generation_date)
+}
+
+pub fn paginate_stamp_sections(
+    settings: &PageSettings,
+    items: &[StampTextItem],
+    sections: &[StampRowSection],
+    policy: &StampTextPolicy,
+    generation_date: Option<chrono::NaiveDate>,
+) -> Result<Vec<StampItemPage>> {
+    let mut end = 0usize;
+    let mut boundaries = Vec::new();
+    for section in sections {
+        if section.item_count == 0 {
+            return Err("native_pdf.rows sections must contain at least one item".into());
+        }
+        end = end
+            .checked_add(section.item_count)
+            .ok_or("native_pdf.rows section counts overflow")?;
+        boundaries.push((end, section.alignment));
+    }
+    if end != items.len() {
+        return Err("native_pdf.rows section counts must exactly cover the input items".into());
+    }
     let mut total = 1;
     let mut seen = std::collections::HashSet::new();
     for _ in 0..32 {
         if !seen.insert(total) {
             return Err("native_pdf.pagination final-count layout does not converge".into());
         }
-        let pages = paginate_pass(settings, items, policy, generation_date, total)?;
+        let pages = paginate_pass(settings, items, &boundaries, policy, generation_date, total)?;
         if pages.len() == total {
             return Ok(pages);
         }
@@ -66,6 +106,7 @@ fn new_page(
 fn paginate_pass(
     settings: &PageSettings,
     items: &[StampTextItem],
+    boundaries: &[(usize, RowAlignment)],
     policy: &StampTextPolicy,
     date: Option<chrono::NaiveDate>,
     total: usize,
@@ -83,7 +124,12 @@ fn paginate_pass(
     let mut page = new_page(settings, 1, total, date)?;
     let mut top = page.layout.content_bounds.top;
     let mut index = 0;
+    let mut section_index = 0;
     while index < items.len() {
+        while index >= boundaries[section_index].0 {
+            section_index += 1;
+        }
+        let (section_end, alignment) = boundaries[section_index];
         let content = page.layout.content_bounds;
         let (_, _, width, item_height) = &measured[index];
         if *width > content.right - content.left {
@@ -108,7 +154,7 @@ fn paginate_pass(
                 if *width > content.right - content.left {
                     return Err(format!("native_pdf.pagination item {} continuation width exceeds page {} content width", index + 1, pages.len() + 1));
                 }
-                let fragment = split_fragment(
+                let mut fragment = split_fragment(
                     index,
                     &items[index],
                     heading,
@@ -117,6 +163,12 @@ fn paginate_pass(
                     content,
                     policy,
                     &mut cursor,
+                )?;
+                align_fragments(
+                    std::slice::from_mut(&mut fragment),
+                    content,
+                    alignment,
+                    settings.spacing().horizontal_mm(),
                 )?;
                 top = settings.spacing().next_top(fragment.footprint.bottom)?;
                 page.items.push(fragment);
@@ -129,7 +181,9 @@ fn paginate_pass(
             index += 1;
             continue;
         }
-        let candidates = measured[index..].iter().take_while(|m| m.3 <= fresh_height);
+        let candidates = measured[index..section_end]
+            .iter()
+            .take_while(|m| m.3 <= fresh_height);
         let count = row_prefix_len(
             content.right - content.left,
             candidates.map(|m| m.2),
@@ -158,8 +212,9 @@ fn paginate_pass(
             settings.spacing(),
             policy,
         )?;
+        let mut fragments = Vec::new();
         for (offset, placed) in rows.into_iter().flatten().enumerate() {
-            page.items.push(StampPageFragment {
+            fragments.push(StampPageFragment {
                 source_index: index + offset,
                 footprint: placed.footprint,
                 geometry: Some(placed.geometry),
@@ -167,8 +222,50 @@ fn paginate_pass(
                 caption: placed.caption,
             });
         }
+        align_fragments(
+            &mut fragments,
+            content,
+            alignment,
+            settings.spacing().horizontal_mm(),
+        )?;
+        page.items.extend(fragments);
         top = settings.spacing().next_top(top - row_height)?;
         index += count;
+    }
+
+    fn align_fragments(
+        fragments: &mut [StampPageFragment],
+        content: Bounds,
+        alignment: RowAlignment,
+        minimum_gap: f64,
+    ) -> Result<()> {
+        let widths: Vec<_> = fragments
+            .iter()
+            .map(|f| f.footprint.right - f.footprint.left)
+            .collect();
+        let lefts = alignment.positions(content, &widths, minimum_gap)?;
+        for (fragment, left) in fragments.iter_mut().zip(lefts) {
+            let delta = left - fragment.footprint.left;
+            fragment.footprint.left += delta;
+            fragment.footprint.right += delta;
+            if let Some(geometry) = fragment.geometry {
+                let frame = geometry.frame_bounds();
+                fragment.geometry =
+                    Some(geometry.at_frame_top_left(frame.left + delta, frame.top)?);
+            }
+            for text in fragment
+                .heading
+                .iter_mut()
+                .chain(fragment.caption.iter_mut())
+            {
+                text.bounds.left += delta;
+                text.bounds.right += delta;
+                for line in &mut text.lines {
+                    line.left_mm += delta;
+                }
+            }
+        }
+        Ok(())
     }
     pages.push(page);
     Ok(pages)

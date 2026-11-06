@@ -1256,6 +1256,27 @@ edge_padding_h_mm = 0.0
 edge_padding_v_mm = 0.0
 colour = "black"
 
+[native_pdf.rows]
+# Native proof/layout only: existing AlbumEasy generation is unchanged.
+# Applies to every row in the section, including the last row and text-only
+# continuations. A new section can select another alignment and starts a new row.
+# left/right: anchor the complete row at that usable-page edge; keep the configured
+# horizontal gap unchanged. Alignment uses full text/frame footprints, not images.
+# center (NEW NATIVE DEFAULT): distribute items with equal internal and outer gaps.
+# Example: usable width 180 mm, three 40 mm footprints => four equal 15 mm gaps.
+# If equal gaps would be smaller than album_pages_spacing_h, preserve that minimum
+# internal gap and divide the remaining space equally between the two outer edges.
+# justified: first/last footprints touch usable-page edges; spread spare width
+# equally between items, including on the last row. A singleton is centered.
+# Single-item rows/text continuations are centered in both center and justified.
+# Never stretches frames, stamp images, glyphs or text; vertical layout is unchanged.
+# If this optional table is absent, native rows still use center. If present,
+# alignment is required; invalid/unknown values fail rather than silently default.
+# TXT EXPORT CONTRACT: this is not an AlbumEasy command; do not emit it into TXT.
+# Future last-row-left/last-row-center variants need new native commands and an
+# explicit compatibility mapping to the three main AlbumEasy modes; not implemented.
+alignment = "center"
+
 # Native stamp text layout; this table is NOT an AlbumEasy command section.
 # Template comments are also field help in the existing configuration UI.
 [native_pdf.stamp_text]

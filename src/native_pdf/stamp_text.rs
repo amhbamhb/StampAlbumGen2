@@ -5,7 +5,7 @@ use super::{
     document::Bounds,
     stamp_box::StampBoxGeometry,
     stamp_image::StampTextProofSettings,
-    stamp_rows::fit_known_size_rows,
+    stamp_rows::{fit_known_size_rows_with_alignment, RowAlignment},
     text::{MeasuredText, PositionedTextLine},
     units::mm_to_points,
     Result,
@@ -253,6 +253,16 @@ pub fn fit_text_rows(
     spacing: Spacing,
     policy: &StampTextPolicy,
 ) -> Result<Vec<Vec<PositionedStampItem>>> {
+    fit_text_rows_with_alignment(content, items, spacing, policy, RowAlignment::Left)
+}
+
+pub fn fit_text_rows_with_alignment(
+    content: Bounds,
+    items: &[StampTextItem],
+    spacing: Spacing,
+    policy: &StampTextPolicy,
+    alignment: RowAlignment,
+) -> Result<Vec<Vec<PositionedStampItem>>> {
     let mut measurements = Vec::new();
     let mut footprints = Vec::new();
     for (index, item) in items.iter().enumerate() {
@@ -283,7 +293,7 @@ pub fn fit_text_rows(
         );
         measurements.push((heading, caption, above));
     }
-    let rows = fit_known_size_rows(content, &footprints, spacing)?;
+    let rows = fit_known_size_rows_with_alignment(content, &footprints, spacing, alignment)?;
     let mut source = items.iter().zip(measurements);
     rows.into_iter()
         .map(|row| {

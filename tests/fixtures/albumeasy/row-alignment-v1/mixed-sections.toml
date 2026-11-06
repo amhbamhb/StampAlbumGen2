@@ -1,0 +1,7 @@
+# Native override fragment; merge into a copy of config_template.toml.
+# Section-specific alignment shown below is fixture/API metadata, not imported commands.
+[native_pdf.rows]
+alignment = "center"
+# Section: 2 consecutive items, Justified
+# Section: 2 consecutive items, Left
+# Section: 1 consecutive items, Right

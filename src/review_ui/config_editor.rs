@@ -954,6 +954,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn native_row_alignment_help_reaches_editor_and_matches_example() {
+        let template = parse_template_config_sections(include_str!("../../config_template.toml"));
+        let example =
+            parse_template_config_sections(include_str!("../../config_full_example.toml"));
+        let field = |sections: Vec<ConfigEditorSection>| {
+            sections
+                .into_iter()
+                .find(|s| s.id == "native_pdf.rows")
+                .expect("rows section")
+                .fields
+                .into_iter()
+                .find(|f| f.key == "alignment")
+                .expect("alignment field")
+        };
+        let a = field(template);
+        let b = field(example);
+        assert_eq!(a.comments, b.comments);
+        assert_eq!(a.template_value, b.template_value);
+        for required in [
+            "NEW NATIVE DEFAULT",
+            "including the last row",
+            "minimum",
+            "singleton",
+            "TXT EXPORT CONTRACT",
+            "not implemented",
+        ] {
+            assert!(
+                a.comments.iter().any(|c| c.contains(required)),
+                "missing help: {required}"
+            );
+        }
+    }
+
+    #[test]
     fn native_stamp_text_template_help_reaches_each_editor_field() {
         let sections = parse_template_config_sections(include_str!("../../config_template.toml"));
         let section = sections

@@ -1,0 +1,5 @@
+# Native override fragment; merge into a copy of config_template.toml.
+# Section-specific alignment shown below is fixture/API metadata, not imported commands.
+[native_pdf.rows]
+alignment = "left"
+# Section: 5 consecutive items, Left

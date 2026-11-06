@@ -5,10 +5,13 @@ use stamp_album_gen2::native_pdf::{
     commands::page::album_pages_title::AlbumPagesTitle,
     config::NativePdfConfig,
     document::Bounds,
-    pagination::StampItemPage,
-    renderer::write_paginated_stamp_items_geometry_proof,
+    pagination::{StampItemPage, StampRowSection},
+    renderer::{
+        write_paginated_stamp_items_geometry_proof, write_paginated_stamp_sections_geometry_proof,
+    },
     stamp_box::StampBoxGeometry,
     stamp_image::{StampImageRowItem, StampTextProofSettings},
+    stamp_rows::RowAlignment,
     stamp_text::{ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy},
     units::{mm_to_points, points_to_mm},
 };
@@ -80,6 +83,9 @@ fn config(name: &str) -> Result<NativePdfConfig> {
     source["footer"]["album_pages_footer_number_size"] = toml::Value::Float(10.0);
     source["native_pdf"]["footer_number"]["enabled"] = toml::Value::Boolean(true);
     let mut config = NativePdfConfig::from_toml(&toml::to_string(&source)?)?;
+    config
+        .page_settings
+        .set_row_alignment(stamp_album_gen2::native_pdf::stamp_rows::RowAlignment::Left);
     config.proof.guide_enabled = false;
     config.page_settings.set_title(AlbumPagesTitle::new("HN", 10.0,
         &format!("{name}: real US stamps / recorded Colnect sizes\nBlue = physical / black = mounting frame / green = text footprint\nUS Letter / print Actual size 100% / no Fit / frame adds 6 mm total"),
@@ -320,6 +326,7 @@ fn regenerate_real_letter_pagination_proofs() -> Result<()> {
                     .join("\n")
             ));
         }
+
         let pages = write_paginated_stamp_items_geometry_proof(
             &config.page_settings,
             &config.proof,
@@ -350,6 +357,171 @@ fn regenerate_real_letter_pagination_proofs() -> Result<()> {
         serde_json::to_string_pretty(&serde_json::json!({
             "reference":"Native calculated geometry; TXT is an unrendered compatibility adaptation",
             "page_size_mm":[215.9,279.4],"tolerance_mm":0.004,"cases":cases
+        }))? + "\n",
+    )?;
+    Ok(())
+}
+
+#[test]
+fn all_alignment_modes_render_images_and_text_at_their_resolved_positions() -> Result<()> {
+    let temp = tempfile::tempdir()?;
+    let all = inputs(&sources()?)?;
+    for mode in [
+        RowAlignment::Left,
+        RowAlignment::Center,
+        RowAlignment::Right,
+        RowAlignment::Justified,
+    ] {
+        let mut config = config("Alignment regression")?;
+        config.page_settings.set_row_alignment(mode);
+        let output = temp.path().join(format!("{mode:?}.pdf"));
+        let pages = write_paginated_stamp_items_geometry_proof(
+            &config.page_settings,
+            &config.proof,
+            &all[..5],
+            &policy(TextWidthPolicy::ExpandFootprint)?,
+            &output,
+        )?;
+        let pdf = PdfDocument::open(&output)?;
+        let extracted = pdf.extract_text()?;
+        for (page_index, planned) in pages.iter().enumerate() {
+            let page = pdf.get_page(u32::try_from(page_index)?)?;
+            let mut matrices = Vec::new();
+            for stream in pdf.get_page_content_streams(&page)? {
+                let content = std::str::from_utf8(&stream)?;
+                let tokens: Vec<_> = content.split_whitespace().collect();
+                for w in tokens.windows(9) {
+                    if w[6] == "cm" && w[7].starts_with("/native_stamp_image") && w[8] == "Do" {
+                        matrices.push(
+                            w[..6]
+                                .iter()
+                                .map(|n| n.parse::<f64>())
+                                .collect::<std::result::Result<Vec<_>, _>>()?,
+                        );
+                    }
+                }
+            }
+            assert_eq!(matrices.len(), planned.items.len());
+            for (matrix, fragment) in matrices.iter().zip(&planned.items) {
+                let expected = image_bounds(
+                    &all[fragment.source_index],
+                    fragment.geometry.ok_or("geometry")?.physical_bounds(),
+                )?;
+                for (value, correct) in [
+                    (matrix[0], expected.right - expected.left),
+                    (matrix[3], expected.top - expected.bottom),
+                    (matrix[4], expected.left),
+                    (matrix[5], expected.bottom),
+                ] {
+                    assert!((points_to_mm(value) - correct).abs() < 0.002);
+                }
+                for text in fragment.heading.iter().chain(&fragment.caption) {
+                    for line in &text.lines {
+                        assert!(extracted[page_index].text.contains(&line.text));
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "Regenerates real US Letter row-alignment PDF/TXT proofs; run explicitly"]
+fn regenerate_real_letter_alignment_proofs() -> Result<()> {
+    let output =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/row-alignment-v1");
+    fs::create_dir_all(&output)?;
+    let sources = sources()?;
+    let all = inputs(&sources)?;
+    let mut cases = Vec::new();
+    for (name, mode) in [
+        ("left", RowAlignment::Left),
+        ("center", RowAlignment::Center),
+        ("right", RowAlignment::Right),
+        ("justified", RowAlignment::Justified),
+        ("mixed-sections", RowAlignment::Center),
+        ("center-continuation", RowAlignment::Center),
+    ] {
+        let mut config = config(name)?;
+        config.page_settings.set_row_alignment(mode);
+        let mut items = all[..5].to_vec();
+        let sections = if name == "mixed-sections" {
+            vec![
+                StampRowSection {
+                    item_count: 2,
+                    alignment: RowAlignment::Justified,
+                },
+                StampRowSection {
+                    item_count: 2,
+                    alignment: RowAlignment::Left,
+                },
+                StampRowSection {
+                    item_count: 1,
+                    alignment: RowAlignment::Right,
+                },
+            ]
+        } else if name == "center-continuation" {
+            items.truncate(1);
+            let caption = items[0].stamp.caption.as_mut().ok_or("caption")?;
+            caption.text.push_str(&format!(
+                "\n{}",
+                (0..130)
+                    .map(|i| format!("Line {i:03}"))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            ));
+            vec![StampRowSection {
+                item_count: 1,
+                alignment: mode,
+            }]
+        } else {
+            vec![StampRowSection {
+                item_count: items.len(),
+                alignment: mode,
+            }]
+        };
+        let pages = write_paginated_stamp_sections_geometry_proof(
+            &config.page_settings,
+            &config.proof,
+            &items,
+            &sections,
+            &policy(TextWidthPolicy::ExpandFootprint)?,
+            &output.join(format!("{name}.pdf")),
+        )?;
+        let mut txt=String::from("# COMPATIBILITY ADAPTATION: full images/text retained in separate blocks; NOT native row/page/position parity.\n# Native alignment and section settings are in companion TOML; not AlbumEasy commands.\nALBUM_PAGES_SIZE (215.9 279.4)\nALBUM_PAGES_MARGINS (12 12 12 12)\nALBUM_PAGES_SPACING (3 3)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nSTAMP_BOXES_SIZE_ADJUST (0)\n");
+        for (i, item) in items.iter().enumerate() {
+            let record = &sources.records[i];
+            txt.push_str(&format!("PAGE_START\n# DB ID {} / SG {}\nROW_START_ES (HN 10 0.1)\nSTAMP_ADD_IMG ({} {} \"../stamp-pagination-v1/{}\" \"\" \"\" \"\")\n",
+                        record.record_id,record.sg_number,record.width_mm+6.0,record.height_mm+6.0,record.image_file));
+            for block in item.stamp.heading.iter().chain(&item.stamp.caption) {
+                let escaped = block
+                    .text
+                    .replace('\\', "\\\\")
+                    .replace('"', "\\\"")
+                    .replace('\n', "\\n");
+                txt.push_str(&format!("PAGE_TEXT (HN 10 \"{escaped}\" 2)\n"));
+            }
+        }
+        fs::write(output.join(format!("{name}.txt")), txt)?;
+        let mut toml=format!("# Native override fragment; merge into a copy of config_template.toml.\n# Section-specific alignment shown below is fixture/API metadata, not imported commands.\n[native_pdf.rows]\nalignment = \"{}\"\n",if name.starts_with("center") || name=="mixed-sections" {"center"} else {name});
+        for section in &sections {
+            toml.push_str(&format!(
+                "# Section: {} consecutive items, {:?}\n",
+                section.item_count, section.alignment
+            ));
+        }
+        fs::write(output.join(format!("{name}.toml")), toml)?;
+        cases.push(serde_json::json!({"name":name,"page_count":pages.len(),
+                    "sections":sections.iter().map(|s|serde_json::json!({"item_count":s.item_count,"alignment":format!("{:?}",s.alignment)})).collect::<Vec<_>>(),
+                    "pages":ledger(&pages,&items,&sources)?}));
+    }
+    fs::write(
+        output.join("expected.json"),
+        serde_json::to_string_pretty(&serde_json::json!({
+            "page_size_mm":[215.9,279.4],"tolerance_mm":0.004,
+            "source_manifest":"../stamp-pagination-v1/source-records.json",
+            "image_base":"../stamp-pagination-v1","cases":cases
         }))? + "\n",
     )?;
     Ok(())

@@ -1,12 +1,14 @@
 use super::{
     colour::NamedColour,
     document::{PageLayout, PageSettings},
-    pagination::{paginate_stamp_items, StampItemPage, StampPageFragment},
+    pagination::{paginate_stamp_sections, StampItemPage, StampPageFragment, StampRowSection},
     proof::GeometryProofSettings,
     stamp_box::StampBoxGeometry,
     stamp_image::{PreparedStampImage, StampImageProofSettings, StampImageRowItem},
-    stamp_rows::fit_known_size_rows,
-    stamp_text::{fit_text_rows, PositionedStampItem, StampTextItem, StampTextPolicy},
+    stamp_rows::fit_known_size_rows_with_alignment,
+    stamp_text::{
+        fit_text_rows_with_alignment, PositionedStampItem, StampTextItem, StampTextPolicy,
+    },
     text::PositionedTextLine,
     units::mm_to_points,
     Result,
@@ -93,7 +95,12 @@ pub fn write_stamp_rows_geometry_proof(
     }
     let generation_date = settings.capture_generation_date();
     let layout = settings.resolve_with_context(1, 1, generation_date)?;
-    let rows = fit_known_size_rows(layout.content_bounds, stamps, settings.spacing())?;
+    let rows = fit_known_size_rows_with_alignment(
+        layout.content_bounds,
+        stamps,
+        settings.spacing(),
+        settings.row_alignment(),
+    )?;
     let geometries: Vec<_> = rows.into_iter().flatten().collect();
     write_proof(
         settings,
@@ -119,7 +126,13 @@ pub fn write_stamp_text_geometry_proof(
     }
     let generation_date = settings.capture_generation_date();
     let layout = settings.resolve_with_context(1, 1, generation_date)?;
-    let rows = fit_text_rows(layout.content_bounds, items, settings.spacing(), policy)?;
+    let rows = fit_text_rows_with_alignment(
+        layout.content_bounds,
+        items,
+        settings.spacing(),
+        policy,
+        settings.row_alignment(),
+    )?;
     let items: Vec<_> = rows.into_iter().flatten().collect();
     let geometries: Vec<_> = items.iter().map(|item| item.geometry).collect();
     write_proof(
@@ -147,7 +160,13 @@ pub fn write_stamp_items_geometry_proof(
     let generation_date = settings.capture_generation_date();
     let layout = settings.resolve_with_context(1, 1, generation_date)?;
     let stamps: Vec<_> = items.iter().map(|item| item.stamp.clone()).collect();
-    let rows = fit_text_rows(layout.content_bounds, &stamps, settings.spacing(), policy)?;
+    let rows = fit_text_rows_with_alignment(
+        layout.content_bounds,
+        &stamps,
+        settings.spacing(),
+        policy,
+        settings.row_alignment(),
+    )?;
     let text_items: Vec<_> = rows.into_iter().flatten().collect();
     let geometries: Vec<_> = text_items.iter().map(|item| item.geometry).collect();
     let images: Vec<_> = items
@@ -188,10 +207,30 @@ pub fn write_paginated_stamp_items_geometry_proof(
     policy: &StampTextPolicy,
     output: &Path,
 ) -> Result<Vec<StampItemPage>> {
+    let sections = if items.is_empty() {
+        Vec::new()
+    } else {
+        vec![StampRowSection {
+            item_count: items.len(),
+            alignment: settings.row_alignment(),
+        }]
+    };
+    write_paginated_stamp_sections_geometry_proof(settings, proof, items, &sections, policy, output)
+}
+
+pub fn write_paginated_stamp_sections_geometry_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    items: &[StampImageRowItem],
+    sections: &[StampRowSection],
+    policy: &StampTextPolicy,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
     let stamps: Vec<_> = items.iter().map(|i| i.stamp.clone()).collect();
-    let pages = paginate_stamp_items(
+    let pages = paginate_stamp_sections(
         settings,
         &stamps,
+        sections,
         policy,
         settings.capture_generation_date(),
     )?;

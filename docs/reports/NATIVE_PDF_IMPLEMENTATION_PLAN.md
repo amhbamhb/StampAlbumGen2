@@ -2,11 +2,60 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-05
-**Revision:** 34
-**Status:** Complete native paginated real-stamp image/text proofs implemented using independent physical/image/text geometry and line-boundary text continuation; production backend/export not integrated
+**Revision:** 35
+**Status:** Native section row alignment and paginated real-stamp proofs implemented; production backend/export not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Section row alignment and new native centered default (#82)
+
+After pagination commits `3f48f945` and `73a0f882`, the maintainer selected row
+alignment. Native `left`/`right` keep configured internal gaps and anchor the
+complete row at the respective usable-page edge. `justified` spreads spare width
+between items, with no outside gaps. The approved NEW NATIVE DEFAULT, `center`,
+distributes equal internal and outside gaps, rather than centering a compact
+fixed-gap row. If those equal gaps would fall below the configured minimum
+internal spacing, retain the minimum and split only the remaining width at the
+two outer edges. Both center and justified center a singleton.
+
+Alignment applies to complete text/frame footprints, not image rectangles;
+physical sizes, mounting clearance, text metrics and vertical layout do not change.
+Each explicit `StampRowSection` starts a new row and applies its alignment to
+all rows, including short final rows and text-only continuations. A later section
+can change policy on the same page. Page parity, final-count reservations,
+asset validation and image fitting remain shared with the existing paginator.
+Historical low-level left-fitting APIs stay available; settings-based native
+proof writers use the new centered default. Existing proofs explicitly retain
+their original left policy so old ledgers and reproducible fixture generation
+do not change silently.
+
+Optional `[native_pdf.rows].alignment` is validated by the native adapter;
+absent table means the approved center default, while an invalid/missing key in
+a present table is an error. Both templates contain matching detailed per-key
+UI help, checked through the existing config-editor parser. Legacy production
+AlbumEasy generation and global config behavior are unchanged.
+
+[Real Letter PDF/TXT/TOML examples](../../tests/fixtures/albumeasy/row-alignment-v1/README.md)
+reuse five known-size US records/images without database writes or asset copies.
+Four mode proofs, mixed sections and a three-page centered caption continuation
+have independently verified image transforms, all physical/frame/footprint bounds
+and every text baseline using MuPDF. No AlbumEasy parity is claimed for adapted TXT.
+
+**Future native commands (planning only):** justified with last-row-left,
+justified with last-row-center, and justified-all-rows. Do not overload current
+`justified` with an automatic last-row exception. When compatibility export is
+implemented, explicitly project these enhancements to the three main AlbumEasy
+modes, with divergence findings. Exact names/mappings remain to be designed;
+no unsupported commands are emitted now.
+
+Branch `issue/82-native-stamp-row-alignment`, based on `73a0f882`. No OKF
+regeneration, production backend switch, commit or push in this slice.
+Final native regression: 131 passed, 0 failed, 22 ignored across 22 suites;
+four config-editor tests pass. Clippy, formatting and Windows GNU library
+checks pass with pre-existing warnings. Physical printing and Windows execution
+remain unverified.
+T009/T014/T015 remain partial outside the bounded alignment work.
 
 #### Paginated real-stamp image/text proofs with line-boundary continuation (#81)
 

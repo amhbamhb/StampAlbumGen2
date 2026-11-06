@@ -1,0 +1,37 @@
+# COMPATIBILITY ADAPTATION: full images/text retained in separate blocks; NOT native row/page/position parity.
+# Native alignment and section settings are in companion TOML; not AlbumEasy commands.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (12 12 12 12)
+ALBUM_PAGES_SPACING (3 3)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+STAMP_BOXES_SIZE_ADJUST (0)
+PAGE_START
+# DB ID 150 / SG 1125a
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1125a" 2)
+PAGE_TEXT (HN 10 "DB ID 150\nPhysical 52 x 29 mm\nFrame 58 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# DB ID 151 / SG 1137a
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1137a" 2)
+PAGE_TEXT (HN 10 "DB ID 151\nPhysical 26 x 29 mm\nFrame 32 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# DB ID 152 / SG 1137b
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1137b" 2)
+PAGE_TEXT (HN 10 "DB ID 152\nPhysical 26 x 29 mm\nFrame 32 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# DB ID 156 / SG 1148a
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1960 / SG 1148a" 2)
+PAGE_TEXT (HN 10 "DB ID 156\nPhysical 52 x 29 mm\nFrame 58 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# DB ID 157 / SG 1151a
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (32 62 "../stamp-pagination-v1/us-157.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1960 / SG 1151a" 2)
+PAGE_TEXT (HN 10 "DB ID 157\nPhysical 26 x 56 mm\nFrame 32 x 62 mm\n3 mm clearance each edge" 2)

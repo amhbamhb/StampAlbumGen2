@@ -5,6 +5,70 @@ use super::{
     Result,
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RowAlignment {
+    Left,
+    Center,
+    Right,
+    Justified,
+}
+
+impl RowAlignment {
+    pub fn parse(value: &str) -> Result<Self> {
+        match value {
+            "left" => Ok(Self::Left),
+            "center" => Ok(Self::Center),
+            "right" => Ok(Self::Right),
+            "justified" => Ok(Self::Justified),
+            _ => Err("native_pdf.rows.alignment must be left, center, right or justified".into()),
+        }
+    }
+
+    pub(crate) fn positions(
+        self,
+        content: Bounds,
+        widths: &[f64],
+        minimum_gap: f64,
+    ) -> Result<Vec<f64>> {
+        if widths.is_empty() {
+            return Ok(Vec::new());
+        }
+        let count = widths.len();
+        let sum: f64 = widths.iter().sum();
+        let available = content.right - content.left;
+        let used = sum + minimum_gap * (count - 1) as f64;
+        if !used.is_finite() || used > available + 1e-9 {
+            return Err("native_pdf.rows aligned row exceeds usable width".into());
+        }
+        let spare = (available - used).max(0.0);
+        let (offset, gap) = match self {
+            Self::Left => (0.0, minimum_gap),
+            Self::Right => (spare, minimum_gap),
+            Self::Justified if count > 1 => (0.0, minimum_gap + spare / (count - 1) as f64),
+            Self::Justified => (spare / 2.0, minimum_gap),
+            Self::Center => {
+                let even = (available - sum) / (count + 1) as f64;
+                if count == 1 || even >= minimum_gap {
+                    (even, even)
+                } else {
+                    // Nearly full rows retain minimum internal gaps; only the
+                    // remaining width can be shared by the two outer edges.
+                    (spare / 2.0, minimum_gap)
+                }
+            }
+        };
+        let mut left = content.left + offset;
+        Ok(widths
+            .iter()
+            .map(|width| {
+                let result = left;
+                left += width + gap;
+                result
+            })
+            .collect())
+    }
+}
+
 pub(crate) fn row_prefix_len(
     width: f64,
     widths: impl Iterator<Item = f64>,
@@ -34,6 +98,15 @@ pub fn fit_known_size_rows(
     content: Bounds,
     stamps: &[StampBoxGeometry],
     spacing: Spacing,
+) -> Result<Vec<Vec<StampBoxGeometry>>> {
+    fit_known_size_rows_with_alignment(content, stamps, spacing, RowAlignment::Left)
+}
+
+pub fn fit_known_size_rows_with_alignment(
+    content: Bounds,
+    stamps: &[StampBoxGeometry],
+    spacing: Spacing,
+    alignment: RowAlignment,
 ) -> Result<Vec<Vec<StampBoxGeometry>>> {
     StampBoxGeometry::from_total_additions(content, 0.0, 0.0, 0.0)
         .map_err(|error| format!("native_pdf.stamp_rows content bounds: {error}"))?;
@@ -83,6 +156,19 @@ pub fn fit_known_size_rows(
     }
     if !row.is_empty() {
         rows.push(row);
+    }
+    for row in &mut rows {
+        let widths: Vec<_> = row
+            .iter()
+            .map(|g| {
+                let b = g.frame_bounds();
+                b.right - b.left
+            })
+            .collect();
+        let positions = alignment.positions(content, &widths, spacing.horizontal_mm())?;
+        for (geometry, left) in row.iter_mut().zip(positions) {
+            *geometry = geometry.at_frame_top_left(left, geometry.frame_bounds().top)?;
+        }
     }
     Ok(rows)
 }

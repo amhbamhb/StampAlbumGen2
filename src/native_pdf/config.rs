@@ -118,6 +118,18 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        if native.contains_key("rows") {
+            let mut rows = table(&mut native, "rows", "native_pdf.")?;
+            let alignment = super::stamp_rows::RowAlignment::parse(&string(
+                &mut rows,
+                "alignment",
+                "native_pdf.rows.",
+            )?)?;
+            page_settings.set_row_alignment(alignment);
+            if !rows.is_empty() {
+                native.insert("rows".into(), Value::Table(rows));
+            }
+        }
         let mut stamp_text = None;
         if native.contains_key("stamp_text") {
             let prefix = "native_pdf.stamp_text.";

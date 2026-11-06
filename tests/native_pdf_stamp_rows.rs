@@ -147,13 +147,14 @@ fn rendered_letter_rows_match_positions_and_overflow_preserves_output(
         renderer::write_stamp_rows_geometry_proof,
         units::points_to_mm,
     };
-    let settings = PageSettings::new(
+    let mut settings = PageSettings::new(
         PageSize::parse(&[215.9, 279.4])?,
         Margins::parse(&[12.0; 4])?,
         Spacing::parse(&[3.0, 4.0])?,
         PageBorder::parse(&[0.2, 0.0, 0.0, 0.0])?,
         AlbumBorderColour::parse(&["black"])?,
     );
+    settings.set_row_alignment(stamp_album_gen2::native_pdf::stamp_rows::RowAlignment::Left);
     let proof = GeometryProofSettings {
         page_count: 1,
         guide_enabled: false,
@@ -281,6 +282,7 @@ fn regenerate_letter_row_fixtures() -> Result<(), Box<dyn std::error::Error>> {
             PageBorder::parse(&[0.2, 0.0, 0.0, 0.0])?,
             AlbumBorderColour::parse(&["black"])?,
         );
+        settings.set_row_alignment(stamp_album_gen2::native_pdf::stamp_rows::RowAlignment::Left);
         settings.set_title(AlbumPagesTitle::new(
             "HN", 10.0,
             &format!("{name} - frame-only rows\nBlack: frame; blue: physical; input order left to right\nLetter / Actual size 100% / no Fit"),

@@ -86,6 +86,7 @@ pub struct PageSettings {
     margins: Margins,
     even_margins: Option<EvenMargins>,
     spacing: Spacing,
+    row_alignment: super::stamp_rows::RowAlignment,
     border: PageBorder,
     border_colour: AlbumBorderColour,
     border_line_colours: [AlbumBorderColour; 3],
@@ -113,6 +114,7 @@ impl PageSettings {
             margins,
             even_margins: None,
             spacing,
+            row_alignment: super::stamp_rows::RowAlignment::Center,
             border,
             border_colour,
             border_line_colours: [border_colour; 3],
@@ -185,6 +187,14 @@ impl PageSettings {
 
     pub fn spacing(&self) -> Spacing {
         self.spacing
+    }
+
+    pub fn row_alignment(&self) -> super::stamp_rows::RowAlignment {
+        self.row_alignment
+    }
+
+    pub fn set_row_alignment(&mut self, alignment: super::stamp_rows::RowAlignment) {
+        self.row_alignment = alignment;
     }
 
     pub fn set_border(&mut self, border: PageBorder) {

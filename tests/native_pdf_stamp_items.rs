@@ -20,6 +20,9 @@ fn config() -> Result<NativePdfConfig> {
     source["page"]["album_page_width_mm"] = toml::Value::Float(215.9);
     source["page"]["album_page_height_mm"] = toml::Value::Float(279.4);
     let mut config = NativePdfConfig::from_toml(&toml::to_string(&source)?)?;
+    config
+        .page_settings
+        .set_row_alignment(stamp_album_gen2::native_pdf::stamp_rows::RowAlignment::Left);
     config.proof.page_count = 1;
     config.proof.guide_enabled = false;
     Ok(config)

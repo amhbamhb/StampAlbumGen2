@@ -498,6 +498,9 @@ fn regenerate_letter_text_fixtures() -> Result<(), Box<dyn std::error::Error>> {
         source["native_pdf"]["stamp_text"]["horizontal_padding_mm"] = toml::Value::Float(2.0);
         source["native_pdf"]["stamp_text"]["vertical_padding_mm"] = toml::Value::Float(1.0);
         let mut config = NativePdfConfig::from_toml(&toml::to_string(&source)?)?;
+        config
+            .page_settings
+            .set_row_alignment(stamp_album_gen2::native_pdf::stamp_rows::RowAlignment::Left);
         config.proof.page_count = 1;
         config.proof.guide_enabled = false;
         config.page_settings.set_title(AlbumPagesTitle::new(
