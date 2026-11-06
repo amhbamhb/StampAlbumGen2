@@ -976,11 +976,15 @@ mod tests {
                 .find(|field| field.key == key)
                 .expect("field");
             assert!(
-                field.comments.iter().any(|comment| comment.contains(required)),
+                field
+                    .comments
+                    .iter()
+                    .any(|comment| comment.contains(required)),
                 "missing help for {key}: {required}"
             );
         }
-        let example = parse_template_config_sections(include_str!("../../config_full_example.toml"));
+        let example =
+            parse_template_config_sections(include_str!("../../config_full_example.toml"));
         let example = example
             .iter()
             .find(|section| section.id == "native_pdf.stamp_text")
