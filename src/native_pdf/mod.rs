@@ -6,6 +6,7 @@ pub mod config;
 pub mod date;
 pub mod document;
 mod numbering;
+pub mod pagination;
 pub mod proof;
 pub mod renderer;
 pub mod stamp_box;

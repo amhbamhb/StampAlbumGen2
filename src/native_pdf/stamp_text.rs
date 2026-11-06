@@ -129,7 +129,7 @@ pub struct PositionedStampItem {
     pub caption: Option<PositionedStampText>,
 }
 
-fn measure(
+pub(crate) fn measure(
     settings: &Option<StampTextProofSettings>,
     width: f64,
     policy: &StampTextPolicy,
@@ -154,11 +154,11 @@ fn measure(
         .map_err(|error| format!("native_pdf.stamp_text: {error}"))
 }
 
-fn height(text: &MeasuredText) -> f64 {
+pub(crate) fn height(text: &MeasuredText) -> f64 {
     text.ascent_mm + text.descent_mm + (text.lines.len() - 1) as f64 * text.line_advance_mm
 }
 
-fn position(
+pub(crate) fn position(
     measured: Option<MeasuredText>,
     settings: &Option<StampTextProofSettings>,
     centre: f64,
@@ -196,6 +196,56 @@ fn position(
     })
 }
 
+impl StampTextPolicy {
+    pub(crate) fn padding(&self) -> (f64, f64) {
+        (self.horizontal_padding_mm, self.vertical_padding_mm)
+    }
+
+    pub(crate) fn gap(&self) -> f64 {
+        self.text_gap_mm
+    }
+
+    pub(crate) fn measure_item(
+        &self,
+        item: &StampTextItem,
+    ) -> Result<(Option<MeasuredText>, Option<MeasuredText>, f64, f64)> {
+        let frame = item.geometry.frame_bounds();
+        let frame_width = frame.right - frame.left;
+        if self.width_policy == TextWidthPolicy::ExpandFootprint {
+            self.expanded_width.text_width(frame_width)?;
+        }
+        let heading = measure(&item.heading, frame_width, self)?;
+        let caption = measure(&item.caption, frame_width, self)?;
+        let width = heading
+            .iter()
+            .chain(caption.iter())
+            .flat_map(|text| text.lines.iter())
+            .map(|line| line.width_mm)
+            .fold(frame_width, f64::max)
+            + 2.0 * self.horizontal_padding_mm;
+        let total_height = frame.top - frame.bottom
+            + heading
+                .as_ref()
+                .map_or(0.0, |t| height(t) + self.text_gap_mm)
+            + caption
+                .as_ref()
+                .map_or(0.0, |t| height(t) + self.text_gap_mm)
+            + 2.0 * self.vertical_padding_mm;
+        StampBoxGeometry::from_total_additions(
+            Bounds {
+                left: 0.0,
+                bottom: 0.0,
+                right: width,
+                top: total_height,
+            },
+            0.0,
+            0.0,
+            0.0,
+        )?;
+        Ok((heading, caption, width, total_height))
+    }
+}
+
 /// Fit complete text/frame footprints; mounting and physical sizes never change.
 pub fn fit_text_rows(
     content: Bounds,
@@ -206,28 +256,12 @@ pub fn fit_text_rows(
     let mut measurements = Vec::new();
     let mut footprints = Vec::new();
     for (index, item) in items.iter().enumerate() {
-        let frame = item.geometry.frame_bounds();
-        let frame_width = frame.right - frame.left;
-        if policy.width_policy == TextWidthPolicy::ExpandFootprint {
-            policy.expanded_width.text_width(frame_width)?;
-        }
-        let heading = measure(&item.heading, frame_width, policy)?;
-        let caption = measure(&item.caption, frame_width, policy)?;
+        let (heading, caption, width, total_height) = policy
+            .measure_item(item)
+            .map_err(|error| format!("native_pdf.stamp_text item {}: {error}", index + 1))?;
         let above = heading
             .as_ref()
             .map_or(0.0, |text| height(text) + policy.text_gap_mm);
-        let below = caption
-            .as_ref()
-            .map_or(0.0, |text| height(text) + policy.text_gap_mm);
-        let width = heading
-            .iter()
-            .chain(caption.iter())
-            .flat_map(|text| text.lines.iter())
-            .map(|line| line.width_mm)
-            .fold(frame_width, f64::max)
-            + 2.0 * policy.horizontal_padding_mm;
-        let total_height =
-            frame.top - frame.bottom + above + below + 2.0 * policy.vertical_padding_mm;
         footprints.push(
             StampBoxGeometry::from_total_additions(
                 Bounds {
@@ -260,24 +294,13 @@ pub fn fit_text_rows(
                         .ok_or("native_pdf.stamp_text internal item count mismatch")?;
                     let footprint = placed.frame_bounds();
                     let centre = (footprint.left + footprint.right) / 2.0;
-                    let physical = item.geometry.physical_bounds();
                     let frame_top = footprint.top - policy.vertical_padding_mm - above;
                     let frame_height =
                         item.geometry.frame_bounds().top - item.geometry.frame_bounds().bottom;
-                    let physical_width = physical.right - physical.left;
-                    let physical_height = physical.top - physical.bottom;
-                    let y = item.geometry.vertical_clearance_mm();
-                    let geometry = StampBoxGeometry::from_total_additions(
-                        Bounds {
-                            left: centre - physical_width / 2.0,
-                            right: centre + physical_width / 2.0,
-                            top: frame_top - y,
-                            bottom: frame_top - y - physical_height,
-                        },
-                        item.geometry.horizontal_clearance_mm() * 2.0,
-                        y * 2.0,
-                        0.0,
-                    )?;
+                    let frame = item.geometry.frame_bounds();
+                    let geometry = item
+                        .geometry
+                        .at_frame_top_left(centre - (frame.right - frame.left) / 2.0, frame_top)?;
                     let heading = position(
                         heading,
                         &item.heading,

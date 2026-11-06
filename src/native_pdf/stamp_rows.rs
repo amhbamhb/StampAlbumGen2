@@ -5,6 +5,29 @@ use super::{
     Result,
 };
 
+pub(crate) fn row_prefix_len(
+    width: f64,
+    widths: impl Iterator<Item = f64>,
+    spacing: Spacing,
+) -> usize {
+    let mut used = 0.0;
+    let mut count = 0;
+    for item_width in widths {
+        let next =
+            used + if count == 0 {
+                0.0
+            } else {
+                spacing.horizontal_mm()
+            } + item_width;
+        if next > width {
+            break;
+        }
+        used = next;
+        count += 1;
+    }
+    count
+}
+
 /// Left-aligned rows with top-aligned frames. No stamp is scaled or rotated.
 /// A frame wider than the content area, or a row below it, is an explicit error.
 pub fn fit_known_size_rows(
@@ -19,6 +42,7 @@ pub fn fit_known_size_rows(
     let mut left = content.left;
     let mut top = content.top;
     let mut row_height: f64 = 0.0;
+    let mut row_end = 0;
     for (index, stamp) in stamps.iter().enumerate() {
         let frame = stamp.frame_bounds();
         let width = frame.right - frame.left;
@@ -29,11 +53,22 @@ pub fn fit_known_size_rows(
                 index + 1
             ));
         }
-        if !row.is_empty() && width > content.right - left {
-            rows.push(std::mem::take(&mut row));
-            top = spacing.next_top(top - row_height)?;
-            left = content.left;
-            row_height = 0.0;
+        if index == row_end {
+            if !row.is_empty() {
+                rows.push(std::mem::take(&mut row));
+                top = spacing.next_top(top - row_height)?;
+                left = content.left;
+                row_height = 0.0;
+            }
+            row_end = index
+                + row_prefix_len(
+                    content.right - content.left,
+                    stamps[index..].iter().map(|s| {
+                        let b = s.frame_bounds();
+                        b.right - b.left
+                    }),
+                    spacing,
+                );
         }
         if height > top - content.bottom {
             return Err(format!(
@@ -41,20 +76,7 @@ pub fn fit_known_size_rows(
                 index + 1
             ));
         }
-        let physical = stamp.physical_bounds();
-        let x_clearance = stamp.horizontal_clearance_mm();
-        let y_clearance = stamp.vertical_clearance_mm();
-        let placed = StampBoxGeometry::from_total_additions(
-            Bounds {
-                left: left + x_clearance,
-                right: left + x_clearance + (physical.right - physical.left),
-                bottom: top - y_clearance - (physical.top - physical.bottom),
-                top: top - y_clearance,
-            },
-            x_clearance * 2.0,
-            y_clearance * 2.0,
-            0.0,
-        )?;
+        let placed = stamp.at_frame_top_left(left, top)?;
         left = placed.frame_bounds().right + spacing.horizontal_mm();
         row_height = row_height.max(height);
         row.push(placed);

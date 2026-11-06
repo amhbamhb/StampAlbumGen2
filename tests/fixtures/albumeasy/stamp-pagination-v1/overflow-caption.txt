@@ -1,0 +1,13 @@
+# COMPATIBILITY ADAPTATION: separate image/text blocks, NOT native position/page parity.
+# Full source text retained; native footprint/continuation policy is not an AlbumEasy command.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (12 12 12 12)
+ALBUM_PAGES_SPACING (3 3)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+STAMP_BOXES_SIZE_ADJUST (0)
+PAGE_START
+# US DB ID 150 / SG 1125a / recorded Colnect 52 x 29 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (58 35 "us-150.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1125a" 2)
+PAGE_TEXT (HN 10 "DB ID 150\nPhysical 52 x 29 mm\nFrame 58 x 35 mm\n3 mm clearance each edge\nLine 000\nLine 001\nLine 002\nLine 003\nLine 004\nLine 005\nLine 006\nLine 007\nLine 008\nLine 009\nLine 010\nLine 011\nLine 012\nLine 013\nLine 014\nLine 015\nLine 016\nLine 017\nLine 018\nLine 019\nLine 020\nLine 021\nLine 022\nLine 023\nLine 024\nLine 025\nLine 026\nLine 027\nLine 028\nLine 029\nLine 030\nLine 031\nLine 032\nLine 033\nLine 034\nLine 035\nLine 036\nLine 037\nLine 038\nLine 039\nLine 040\nLine 041\nLine 042\nLine 043\nLine 044\nLine 045\nLine 046\nLine 047\nLine 048\nLine 049\nLine 050\nLine 051\nLine 052\nLine 053\nLine 054\nLine 055\nLine 056\nLine 057\nLine 058\nLine 059\nLine 060\nLine 061\nLine 062\nLine 063\nLine 064\nLine 065\nLine 066\nLine 067\nLine 068\nLine 069\nLine 070\nLine 071\nLine 072\nLine 073\nLine 074\nLine 075\nLine 076\nLine 077\nLine 078\nLine 079\nLine 080\nLine 081\nLine 082\nLine 083\nLine 084\nLine 085\nLine 086\nLine 087\nLine 088\nLine 089\nLine 090\nLine 091\nLine 092\nLine 093\nLine 094\nLine 095\nLine 096\nLine 097\nLine 098\nLine 099\nLine 100\nLine 101\nLine 102\nLine 103\nLine 104\nLine 105\nLine 106\nLine 107\nLine 108\nLine 109\nLine 110\nLine 111\nLine 112\nLine 113\nLine 114\nLine 115\nLine 116\nLine 117\nLine 118\nLine 119\nLine 120\nLine 121\nLine 122\nLine 123\nLine 124\nLine 125\nLine 126\nLine 127\nLine 128\nLine 129\nLine 130\nLine 131\nLine 132\nLine 133\nLine 134\nLine 135\nLine 136\nLine 137\nLine 138\nLine 139\nLine 140\nLine 141\nLine 142\nLine 143\nLine 144\nLine 145\nLine 146\nLine 147\nLine 148\nLine 149\nLine 150\nLine 151\nLine 152\nLine 153\nLine 154\nLine 155\nLine 156\nLine 157\nLine 158\nLine 159\nLine 160\nLine 161\nLine 162\nLine 163\nLine 164\nLine 165\nLine 166\nLine 167\nLine 168\nLine 169\nLine 170\nLine 171\nLine 172\nLine 173\nLine 174\nLine 175\nLine 176\nLine 177\nLine 178\nLine 179" 2)

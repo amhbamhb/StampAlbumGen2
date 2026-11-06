@@ -1,9 +1,10 @@
 use super::{
     colour::NamedColour,
-    document::PageSettings,
+    document::{PageLayout, PageSettings},
+    pagination::{paginate_stamp_items, StampItemPage, StampPageFragment},
     proof::GeometryProofSettings,
     stamp_box::StampBoxGeometry,
-    stamp_image::{StampImageProofSettings, StampImageRowItem},
+    stamp_image::{PreparedStampImage, StampImageProofSettings, StampImageRowItem},
     stamp_rows::fit_known_size_rows,
     stamp_text::{fit_text_rows, PositionedStampItem, StampTextItem, StampTextPolicy},
     text::PositionedTextLine,
@@ -177,6 +178,73 @@ pub fn write_stamp_items_geometry_proof(
     )
 }
 
+/// Automatic-page-count diagnostic with real images and text continuation.
+/// The configured proof page_count is replaced by the actual resolved count.
+/// All page layouts/assets are prepared before creating or truncating output.
+pub fn write_paginated_stamp_items_geometry_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    items: &[StampImageRowItem],
+    policy: &StampTextPolicy,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
+    let stamps: Vec<_> = items.iter().map(|i| i.stamp.clone()).collect();
+    let pages = paginate_stamp_items(
+        settings,
+        &stamps,
+        policy,
+        settings.capture_generation_date(),
+    )?;
+    let mut proof = proof.clone();
+    proof.page_count = pages.len();
+    proof.validate()?;
+    let prepared = pages
+        .iter()
+        .map(|page| {
+            proof.validate_layout(&page.layout)?;
+            let mut images = Vec::new();
+            let mut geometries = Vec::new();
+            for fragment in &page.items {
+                if let Some(geometry) = fragment.geometry {
+                    let item = &items[fragment.source_index];
+                    let image = StampImageProofSettings {
+                        image_path: item.image_path.clone(),
+                        box_bounds: geometry.frame_bounds(),
+                        image_scale_pt_per_pixel: item.image_scale_pt_per_pixel,
+                        image_padding_horizontal_mm: 0.0,
+                        image_padding_vertical_mm: 0.0,
+                        text_gap_mm: 0.0,
+                        heading: None,
+                        caption: None,
+                    }
+                    .with_stamp_box(&geometry)
+                    .prepare(&page.layout)
+                    .map_err(|e| {
+                        format!("Native PDF stamp image {}: {e}", fragment.source_index + 1)
+                    })?;
+                    images.push(image);
+                    geometries.push(geometry);
+                }
+            }
+            Ok(PreparedProofPage {
+                layout: page.layout.clone(),
+                stamps: images,
+                geometries,
+                text_items: page.items.clone(),
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    save_proof(settings, &proof, output, prepared)?;
+    Ok(pages)
+}
+
+struct PreparedProofPage {
+    layout: PageLayout,
+    stamps: Vec<PreparedStampImage>,
+    geometries: Vec<StampBoxGeometry>,
+    text_items: Vec<StampPageFragment>,
+}
+
 fn write_proof(
     settings: &PageSettings,
     proof: &GeometryProofSettings,
@@ -196,17 +264,56 @@ fn write_proof(
             Ok(layout)
         })
         .collect::<Result<Vec<_>>>()?;
-    let stamps = stamps
-        .iter()
-        .enumerate()
-        .map(|(index, stamp)| {
-            stamp
-                .prepare(&layouts[0])
-                .map_err(|error| format!("Native PDF stamp image {}: {error}", index + 1))
+    let pages = layouts
+        .into_iter()
+        .map(|layout| {
+            let stamps = stamps
+                .iter()
+                .enumerate()
+                .map(|(index, stamp)| {
+                    stamp
+                        .prepare(&layout)
+                        .map_err(|error| format!("Native PDF stamp image {}: {error}", index + 1))
+                })
+                .collect::<Result<Vec<_>>>()?;
+            Ok(PreparedProofPage {
+                layout,
+                stamps,
+                geometries: geometries.to_vec(),
+                text_items: text_items
+                    .iter()
+                    .enumerate()
+                    .map(|(index, item)| StampPageFragment {
+                        source_index: index,
+                        footprint: item.footprint,
+                        geometry: Some(item.geometry),
+                        heading: item.heading.clone(),
+                        caption: item.caption.clone(),
+                    })
+                    .collect(),
+            })
         })
         .collect::<Result<Vec<_>>>()?;
+    save_proof(settings, proof, output, pages)
+}
+
+fn save_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    output: &Path,
+    pages: Vec<PreparedProofPage>,
+) -> Result<()> {
     let mut document = Document::new();
-    for (index, layout) in layouts.into_iter().enumerate() {
+    for (
+        index,
+        PreparedProofPage {
+            layout,
+            stamps,
+            geometries,
+            text_items,
+        },
+    ) in pages.into_iter().enumerate()
+    {
         let mut page = Page::new(
             mm_to_points(layout.size.width_mm()),
             mm_to_points(layout.size.height_mm()),

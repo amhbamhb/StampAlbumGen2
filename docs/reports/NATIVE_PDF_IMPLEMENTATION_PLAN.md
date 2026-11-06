@@ -1,12 +1,47 @@
 # Native PDF generation with AlbumEasy TXT export
 
 **Created:** 2026-11-01  
-**Last updated:** 2026-11-04
-**Revision:** 33
-**Status:** Complete native image/text row proofs implemented using independent physical/image/text geometry; production backend/export not integrated
+**Last updated:** 2026-11-05
+**Revision:** 34
+**Status:** Complete native paginated real-stamp image/text proofs implemented using independent physical/image/text geometry and line-boundary text continuation; production backend/export not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Paginated real-stamp image/text proofs with line-boundary continuation (#81)
+
+After #80, pagination was implemented for complete stamp/image/text footprints
+using per-page resolved content bounds (including odd/even margins, title/header/footer
+reservations and final page count). Pending items are repacked on each new page
+with preserved input order; no scaling or geometry mutation is used to force fit.
+Frames are indivisible and appear once. When a complete item footprint exceeds a
+fresh page, heading/caption text continues at measured line boundaries across pages
+without dropping/reordering lines, while the stamp frame remains on the first page
+where enough vertical space exists.
+
+Final page-count dependent layout is resolved iteratively until converged, then
+rendered from prevalidated page plans. All page layouts and every image asset are
+prepared before writing output, so failures on later pages do not truncate/overwrite
+existing files. Existing single-page proof APIs remain unchanged.
+
+Real source proofs now use 24 pre-1978 US records with positive recorded
+`colnect_width`/`colnect_height` and existing local PNG assets. Selection is
+read-only from `/home/ray/AlbumGen2/Albums/United-States/United-States.db`,
+with source checksum unchanged before/after
+`0e06f8b7f5ec92d8e220a6324018459e31679341360fbf203893e44f7c663e55`.
+Provenance and checksums for each selected record/image are stored in
+[source-records.json](../../tests/fixtures/albumeasy/stamp-pagination-v1/source-records.json).
+
+[Letter PDF/TXT proofs](../../tests/fixtures/albumeasy/stamp-pagination-v1/README.md)
+cover wrapped, expanded and overflow-caption continuation cases. Independent matrix
+tests verify every image appears once on the correct page with expected bounds; footer
+numbering matches final page count; long captions continue exactly once per line.
+MuPDF confirms Letter mediaboxes and expected page counts.
+
+Validation: pagination+proof suites pass; neighboring native row/text/image suites
+pass; Windows GNU compile check passes with existing warnings. No OKF regeneration.
+Branch `issue/81-native-stamp-row-pagination`, based on `10af27c8`; maintainer
+selected repack-on-new-page and overflow text continuation.
 
 #### Combined stamp images and measured text rows (#80)
 

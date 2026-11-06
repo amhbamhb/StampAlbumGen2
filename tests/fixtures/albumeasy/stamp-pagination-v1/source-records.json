@@ -1,0 +1,497 @@
+{
+  "source_database": "/home/ray/AlbumGen2/Albums/United-States/United-States.db",
+  "source_database_sha256_before": "0e06f8b7f5ec92d8e220a6324018459e31679341360fbf203893e44f7c663e55",
+  "source_database_sha256_after": "0e06f8b7f5ec92d8e220a6324018459e31679341360fbf203893e44f7c663e55",
+  "selection": "24 ordered pre-1978 US designs; recorded positive Colnect width/height; available PNG; aspect difference <= 5%",
+  "sizing_columns": [
+    "stamps.colnect_width",
+    "stamps.colnect_height"
+  ],
+  "database_impact": {
+    "inserted": 0,
+    "updated": 0,
+    "deleted": 0
+  },
+  "records": [
+    {
+      "record_id": 150,
+      "year": 1959,
+      "sg_number": "1125a",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/700029",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/700029",
+      "colnect_width": "52",
+      "colnect_height": "29",
+      "width_mm": 52.0,
+      "height_mm": 29.0,
+      "image_file": "us-150.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp700029_20261001002436.png",
+      "image_sha256": "7aeaeb83f4b392d6c2c014ec2e969547070ba25cd62d2f796146f179e73ce66f",
+      "image_pixels": [
+        1024,
+        555
+      ],
+      "aspect_difference_fraction": 0.028967428967428877
+    },
+    {
+      "record_id": 151,
+      "year": 1959,
+      "sg_number": "1137a",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/700273",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/700273",
+      "colnect_width": "26",
+      "colnect_height": "29",
+      "width_mm": 26.0,
+      "height_mm": 29.0,
+      "image_file": "us-151.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp700273_20261001002547.png",
+      "image_sha256": "394984daa03e373beeaa87de87cea4bc3265ab420692bacaed7490a28402f65d",
+      "image_pixels": [
+        486,
+        538
+      ],
+      "aspect_difference_fraction": 0.007577923934801278
+    },
+    {
+      "record_id": 152,
+      "year": 1959,
+      "sg_number": "1137b",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/700274",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/700274",
+      "colnect_width": "26",
+      "colnect_height": "29",
+      "width_mm": 26.0,
+      "height_mm": 29.0,
+      "image_file": "us-152.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp700274_20261001002706.png",
+      "image_sha256": "44625396b71541ffd23d414d07909cd71f56f78844d06c272287f3644ea80e24",
+      "image_pixels": [
+        500,
+        550
+      ],
+      "aspect_difference_fraction": 0.013986013986013957
+    },
+    {
+      "record_id": 156,
+      "year": 1960,
+      "sg_number": "1148a",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/700272",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/700272",
+      "colnect_width": "52",
+      "colnect_height": "29",
+      "width_mm": 52.0,
+      "height_mm": 29.0,
+      "image_file": "us-156.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp700272_20261001003116.png",
+      "image_sha256": "885aa98f62def5106302f52aa7778e4bab6642e8d6e4a4619b3ae7b75c8b3610",
+      "image_pixels": [
+        1026,
+        564
+      ],
+      "aspect_difference_fraction": 0.014525368248772486
+    },
+    {
+      "record_id": 157,
+      "year": 1960,
+      "sg_number": "1151a",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92466",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92466",
+      "colnect_width": "26",
+      "colnect_height": "56",
+      "width_mm": 26.0,
+      "height_mm": 56.0,
+      "image_file": "us-157.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_1151a_20261001004038.png",
+      "image_sha256": "b38e578aaf4e703a3889f2d72c78bf1daba691efac6152030bcfdf0c618f9114",
+      "image_pixels": [
+        337,
+        741
+      ],
+      "aspect_difference_fraction": 0.02045053462057511
+    },
+    {
+      "record_id": 287,
+      "year": 1970,
+      "sg_number": "1391",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92832",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92832",
+      "colnect_width": "40",
+      "colnect_height": "26",
+      "width_mm": 40.0,
+      "height_mm": 26.0,
+      "image_file": "us-287.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92832_20261011033718.png",
+      "image_sha256": "1aa5159ba152ca48b439d7eed328fe1db1cb08e92cb123e8bc8bbe5cdf90d9fb",
+      "image_pixels": [
+        784,
+        506
+      ],
+      "aspect_difference_fraction": 0.007114624505928813
+    },
+    {
+      "record_id": 288,
+      "year": 1970,
+      "sg_number": "1422a",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92896",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92896",
+      "colnect_width": "50",
+      "colnect_height": "40",
+      "width_mm": 50.0,
+      "height_mm": 40.0,
+      "image_file": "us-288.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92896_20261011034418.png",
+      "image_sha256": "ad7e489c32b7edf3bb0954f94bc2962a74b7a2351073328554b612910dbe8e8f",
+      "image_pixels": [
+        659,
+        534
+      ],
+      "aspect_difference_fraction": 0.012734082397003688
+    },
+    {
+      "record_id": 289,
+      "year": 1970,
+      "sg_number": "1420a",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92893",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92893",
+      "colnect_width": "25",
+      "colnect_height": "40",
+      "width_mm": 25.0,
+      "height_mm": 40.0,
+      "image_file": "us-289.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92893_20261011034548.png",
+      "image_sha256": "ae851d4f8cca6ccebe43753fdbedded84629970e64717f69cd6f81938dee946e",
+      "image_pixels": [
+        451,
+        740
+      ],
+      "aspect_difference_fraction": 0.024864864864864833
+    },
+    {
+      "record_id": 290,
+      "year": 1970,
+      "sg_number": "1410",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92866",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92866",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-290.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92866_20261011034710.png",
+      "image_sha256": "6b86a91b14aaf18e327a99165a95883866acdc4d9b01cb6cf728c74ce1e9d73e",
+      "image_pixels": [
+        773,
+        495
+      ],
+      "aspect_difference_fraction": 0.023989898989899006
+    },
+    {
+      "record_id": 291,
+      "year": 1970,
+      "sg_number": "1411",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92867",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92867",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-291.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92867_20261011034757.png",
+      "image_sha256": "8daabc74e85697d58c990f7a480d09d5ae15fe562d974431288560484a4dc3ec",
+      "image_pixels": [
+        763,
+        492
+      ],
+      "aspect_difference_fraction": 0.030741869918699205
+    },
+    {
+      "record_id": 292,
+      "year": 1970,
+      "sg_number": "1412",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92868",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92868",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-292.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92868_20261011034859.png",
+      "image_sha256": "73947ecbc8a4604e846371552bf595aff284e266260ed0e809b6e3ef725922ec",
+      "image_pixels": [
+        766,
+        496
+      ],
+      "aspect_difference_fraction": 0.034778225806451624
+    },
+    {
+      "record_id": 293,
+      "year": 1970,
+      "sg_number": "1413",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92869",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92869",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-293.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92869_20261011034942.png",
+      "image_sha256": "71c61cdb698a292a7d6f84715031172ad473d0854a71877e04aa429eacb33d0e",
+      "image_pixels": [
+        788,
+        506
+      ],
+      "aspect_difference_fraction": 0.02667984189723327
+    },
+    {
+      "record_id": 294,
+      "year": 1970,
+      "sg_number": "1414b",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701246",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701246",
+      "colnect_width": "25",
+      "colnect_height": "40",
+      "width_mm": 25.0,
+      "height_mm": 40.0,
+      "image_file": "us-294.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701246_20261011035444.png",
+      "image_sha256": "7c1537b248e912fded7dee051df92159a825b65d16d51f74b02b351b60f5860e",
+      "image_pixels": [
+        478,
+        742
+      ],
+      "aspect_difference_fraction": 0.030727762803234526
+    },
+    {
+      "record_id": 295,
+      "year": 1970,
+      "sg_number": "1415",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92875",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92875",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-295.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92875_20261011035647.png",
+      "image_sha256": "d7bd3b72b0992410ca189e69ba593bc742a4c2e0ecbfd405def0d86ab927dec8",
+      "image_pixels": [
+        835,
+        544
+      ],
+      "aspect_difference_fraction": 0.04067095588235303
+    },
+    {
+      "record_id": 296,
+      "year": 1970,
+      "sg_number": "1415b",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701249",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701249",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-296.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701249_20261011040059.png",
+      "image_sha256": "59197713d3957563c3ef552e10ec6a57c30dc9fae032eca539adb59dde587375",
+      "image_pixels": [
+        1018,
+        649
+      ],
+      "aspect_difference_fraction": 0.019645608628659494
+    },
+    {
+      "record_id": 297,
+      "year": 1970,
+      "sg_number": "1416",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92878",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92878",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-297.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92878_20261011040258.png",
+      "image_sha256": "4877cc12e28f37b163db8656c1ed78975305603470e63f743c33c38460d56ed0",
+      "image_pixels": [
+        835,
+        541
+      ],
+      "aspect_difference_fraction": 0.035351201478743155
+    },
+    {
+      "record_id": 298,
+      "year": 1970,
+      "sg_number": "1416b",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701250",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701250",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-298.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701250_20261011040336.png",
+      "image_sha256": "e431ac7d6c350cb0f926be6d9fb35766bb8481d8d2df9521b12e59b27568ced9",
+      "image_pixels": [
+        1015,
+        637
+      ],
+      "aspect_difference_fraction": 0.004120879120879217
+    },
+    {
+      "record_id": 299,
+      "year": 1970,
+      "sg_number": "1417",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92882",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92882",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-299.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92882_20261011040413.png",
+      "image_sha256": "919bd40161fe94b8884dbfb7a7d1b4807f93fd764f571e7bdcd3d89f4389abd8",
+      "image_pixels": [
+        832,
+        531
+      ],
+      "aspect_difference_fraction": 0.020715630885122516
+    },
+    {
+      "record_id": 300,
+      "year": 1970,
+      "sg_number": "1417b",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701252",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701252",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-300.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701252_20261011040457.png",
+      "image_sha256": "317aef3d92b87018400d7bb946a6e73f99dd0ef64a303db4f1a6a5278943bd39",
+      "image_pixels": [
+        1011,
+        638
+      ],
+      "aspect_difference_fraction": 0.009600313479623757
+    },
+    {
+      "record_id": 301,
+      "year": 1970,
+      "sg_number": "1418",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/92885",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/92885",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-301.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp92885_20261011040533.png",
+      "image_sha256": "ea58206c7727fb6ea9f893c093ccfa78306d09c50a8af6337eefc5aab3dfaca9",
+      "image_pixels": [
+        838,
+        533
+      ],
+      "aspect_difference_fraction": 0.017354596622889407
+    },
+    {
+      "record_id": 302,
+      "year": 1970,
+      "sg_number": "1418d",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701253",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701253",
+      "colnect_width": "40",
+      "colnect_height": "25",
+      "width_mm": 40.0,
+      "height_mm": 25.0,
+      "image_file": "us-302.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701253_20261011040606.png",
+      "image_sha256": "85600a8ec5823226d879c45445f47117b10577d31902ff835ebc963a3439c614",
+      "image_pixels": [
+        1018,
+        641
+      ],
+      "aspect_difference_fraction": 0.007410296411856532
+    },
+    {
+      "record_id": 303,
+      "year": 1970,
+      "sg_number": "1414d",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701247",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701247",
+      "colnect_width": "75",
+      "colnect_height": "40",
+      "width_mm": 75.0,
+      "height_mm": 40.0,
+      "image_file": "us-303.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701247_20261011040858.png",
+      "image_sha256": "f1a3e176e93ee6fcdd4d1260879901197c4a27639485aa8ba67186211b1c2a72",
+      "image_pixels": [
+        573,
+        319
+      ],
+      "aspect_difference_fraction": 0.04200626959247655
+    },
+    {
+      "record_id": 305,
+      "year": 1970,
+      "sg_number": "1418e",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701254",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701254",
+      "colnect_width": "80",
+      "colnect_height": "50",
+      "width_mm": 80.0,
+      "height_mm": 50.0,
+      "image_file": "us-305.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701254_20261011041319.png",
+      "image_sha256": "bedb08f883b4eac5f6ff33126aaa192855ef6da9514a8a4140fe813ed6d25981",
+      "image_pixels": [
+        848,
+        536
+      ],
+      "aspect_difference_fraction": 0.011194029850746356
+    },
+    {
+      "record_id": 306,
+      "year": 1970,
+      "sg_number": "1418f",
+      "country": "United States of America",
+      "colnect_id": "https://colnect.com/stamps/stamp/701255",
+      "colnect_page_url": "https://colnect.com/stamps/stamp/701255",
+      "colnect_width": "80",
+      "colnect_height": "50",
+      "width_mm": 80.0,
+      "height_mm": 50.0,
+      "image_file": "us-306.png",
+      "original_image_path": "/home/ray/AlbumGen2/Albums/United-States/images/colnect_httpscolnectcomstampsstamp701255_20261011041404.png",
+      "image_sha256": "97cf186b51b8b1eae2269992d7eaeec31cf44fd42eb97da417dbd64a5bf27d4c",
+      "image_pixels": [
+        857,
+        534
+      ],
+      "aspect_difference_fraction": 0.003043071161048738
+    }
+  ]
+}

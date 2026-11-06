@@ -76,6 +76,23 @@ impl StampBoxGeometry {
     pub fn vertical_clearance_mm(&self) -> f64 {
         self.vertical_clearance_mm
     }
+
+    pub(crate) fn at_frame_top_left(&self, left: f64, top: f64) -> Result<Self> {
+        let physical = self.physical_bounds;
+        let x = self.horizontal_clearance_mm;
+        let y = self.vertical_clearance_mm;
+        Self::from_total_additions(
+            Bounds {
+                left: left + x,
+                right: left + x + physical.right - physical.left,
+                top: top - y,
+                bottom: top - y - (physical.top - physical.bottom),
+            },
+            2.0 * x,
+            2.0 * y,
+            0.0,
+        )
+    }
 }
 
 fn validate_bounds(bounds: Bounds) -> Result<()> {

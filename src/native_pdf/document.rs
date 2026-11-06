@@ -259,6 +259,26 @@ impl PageSettings {
         self.resolve_page(page_number, Some(total_pages), generation_date)
     }
 
+    pub(crate) fn resolve_for_pagination(
+        &self,
+        page_number: usize,
+        provisional_total: usize,
+        generation_date: Option<chrono::NaiveDate>,
+    ) -> Result<PageLayout> {
+        if page_number == 0
+            || provisional_total == 0
+            || u32::try_from(page_number).is_err()
+            || u32::try_from(provisional_total).is_err()
+        {
+            return Err("Native PDF pagination exceeds the positive PDF page-count range".into());
+        }
+        self.resolve_page(
+            page_number,
+            Some(provisional_total.max(page_number)),
+            generation_date,
+        )
+    }
+
     fn resolve_page(
         &self,
         page_number: usize,
