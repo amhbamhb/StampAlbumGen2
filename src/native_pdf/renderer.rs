@@ -1,7 +1,14 @@
 use super::{
-    colour::NamedColour, document::PageSettings, proof::GeometryProofSettings,
-    stamp_box::StampBoxGeometry, stamp_image::StampImageProofSettings,
-    stamp_rows::fit_known_size_rows, text::PositionedTextLine, units::mm_to_points, Result,
+    colour::NamedColour,
+    document::PageSettings,
+    proof::GeometryProofSettings,
+    stamp_box::StampBoxGeometry,
+    stamp_image::StampImageProofSettings,
+    stamp_rows::fit_known_size_rows,
+    stamp_text::{fit_text_rows, PositionedStampItem, StampTextItem, StampTextPolicy},
+    text::PositionedTextLine,
+    units::mm_to_points,
+    Result,
 };
 use oxidize_pdf::{Color, Document, Page};
 use std::path::Path;
@@ -25,7 +32,7 @@ pub fn write_page_geometry_proof_with_date(
     output: &Path,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<()> {
-    write_proof(settings, proof, output, generation_date, None, &[])
+    write_proof(settings, proof, output, generation_date, None, &[], &[])
 }
 
 /// Writes a one-page diagnostic proof with one explicitly sized stamp image.
@@ -44,6 +51,7 @@ pub fn write_stamp_image_proof(
         output,
         settings.capture_generation_date(),
         Some(stamp),
+        &[],
         &[],
     )
 }
@@ -68,6 +76,7 @@ pub fn write_stamp_box_geometry_proof(
         settings.capture_generation_date(),
         Some(&stamp),
         std::slice::from_ref(geometry),
+        &[],
     )
 }
 
@@ -85,7 +94,42 @@ pub fn write_stamp_rows_geometry_proof(
     let layout = settings.resolve_with_context(1, 1, generation_date)?;
     let rows = fit_known_size_rows(layout.content_bounds, stamps, settings.spacing())?;
     let geometries: Vec<_> = rows.into_iter().flatten().collect();
-    write_proof(settings, proof, output, generation_date, None, &geometries)
+    write_proof(
+        settings,
+        proof,
+        output,
+        generation_date,
+        None,
+        &geometries,
+        &[],
+    )
+}
+
+/// Text-footprint proof only: no production export/backend is selected.
+pub fn write_stamp_text_geometry_proof(
+    settings: &PageSettings,
+    proof: &GeometryProofSettings,
+    items: &[StampTextItem],
+    policy: &StampTextPolicy,
+    output: &Path,
+) -> Result<()> {
+    if proof.page_count != 1 {
+        return Err("native_pdf.stamp_text proof requires exactly one page".into());
+    }
+    let generation_date = settings.capture_generation_date();
+    let layout = settings.resolve_with_context(1, 1, generation_date)?;
+    let rows = fit_text_rows(layout.content_bounds, items, settings.spacing(), policy)?;
+    let items: Vec<_> = rows.into_iter().flatten().collect();
+    let geometries: Vec<_> = items.iter().map(|item| item.geometry).collect();
+    write_proof(
+        settings,
+        proof,
+        output,
+        generation_date,
+        None,
+        &geometries,
+        &items,
+    )
 }
 
 fn write_proof(
@@ -95,6 +139,7 @@ fn write_proof(
     generation_date: Option<chrono::NaiveDate>,
     stamp: Option<&StampImageProofSettings>,
     geometries: &[StampBoxGeometry],
+    text_items: &[PositionedStampItem],
 ) -> Result<()> {
     proof.validate()?;
     let layouts = (1..=proof.page_count)
@@ -301,6 +346,32 @@ fn write_proof(
                         kind,
                     )?;
                 }
+            }
+        }
+        for item in text_items {
+            let bounds = item.footprint;
+            page.graphics()
+                .set_stroke_color(Color::rgb(0.0, 0.6, 0.2))
+                .set_line_width(mm_to_points(0.1))
+                .rect(
+                    mm_to_points(bounds.left),
+                    mm_to_points(bounds.bottom),
+                    mm_to_points(bounds.right - bounds.left),
+                    mm_to_points(bounds.top - bounds.bottom),
+                )
+                .stroke();
+            for text in [item.heading.as_ref(), item.caption.as_ref()]
+                .into_iter()
+                .flatten()
+            {
+                draw_text_lines(
+                    &mut page,
+                    text.measured.font.clone(),
+                    text.measured.size_pt,
+                    text.colour,
+                    text.lines.clone(),
+                    "stamp text footprint",
+                )?;
             }
         }
         for geometry in geometries {

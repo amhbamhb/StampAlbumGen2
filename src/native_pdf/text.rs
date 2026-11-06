@@ -131,6 +131,47 @@ impl MeasuredText {
         Self::new_with_font(self.font.clone(), self.size_pt, text)
     }
 
+    /// Word wrapping preserves explicit lines; repeated spaces are normalized.
+    /// An overlong word breaks at character boundaries, never by reducing font size.
+    pub fn wrapped_to_width(&self, width_mm: f64) -> Result<Self> {
+        if !width_mm.is_finite() || width_mm <= 0.0 {
+            return Err("Text wrap width must be finite and positive".into());
+        }
+        let mut lines = Vec::new();
+        for source in &self.lines {
+            let mut line = String::new();
+            for word in source.text.split_whitespace() {
+                let candidate = if line.is_empty() {
+                    word.to_string()
+                } else {
+                    format!("{line} {word}")
+                };
+                if self.with_text(&candidate)?.lines[0].width_mm <= width_mm {
+                    line = candidate;
+                    continue;
+                }
+                if !line.is_empty() {
+                    lines.push(std::mem::take(&mut line));
+                }
+                for character in word.chars() {
+                    let candidate = format!("{line}{character}");
+                    if self.with_text(&candidate)?.lines[0].width_mm > width_mm {
+                        if line.is_empty() {
+                            return Err("Text wrap width is narrower than a single glyph".into());
+                        }
+                        lines.push(std::mem::take(&mut line));
+                        if self.with_text(&character.to_string())?.lines[0].width_mm > width_mm {
+                            return Err("Text wrap width is narrower than a single glyph".into());
+                        }
+                    }
+                    line.push(character);
+                }
+            }
+            lines.push(line);
+        }
+        self.with_text(&lines.join("\n"))
+    }
+
     fn new_with_font(font: Font, size_pt: f64, text: &str) -> Result<Self> {
         if !size_pt.is_finite() || size_pt <= 0.0 {
             return Err("Text size must be finite and positive points".into());

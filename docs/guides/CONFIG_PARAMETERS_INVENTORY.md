@@ -18,6 +18,13 @@ overrides the root `color_album_border` value.
 
 | Native input | Command | Policy |
 |---|---|---|
+| `[native_pdf.stamp_text].enabled` | Native-only text-footprint proof opt-in | Optional table; false in templates; all fields validated if present; production generator/export unchanged |
+| `[native_pdf.stamp_text].width_policy` | Native-only text layout | `wrap_to_frame` wraps to mounting-frame width; `expand_footprint` allows wider text up to its configured cap, then wraps; both preserve explicit newlines and reserve all measured height, with no fixed line-count limit; wrapping normalizes repeated spaces/splits long words without scaling; AlbumEasy compatibility is not certified |
+| `[native_pdf.stamp_text].expanded_width_limit` | Native-only expanded text cap unit | Required `percent` or `mm` when table exists; template `percent`; cap applies before padding and is ignored for frame-wrapping, but always validated |
+| `[native_pdf.stamp_text].expanded_width_value` | Native-only expanded text cap | Required finite percent >= 100 (120 = 20% wider than mounting frame), or positive absolute mm (30 = 30 mm text width); expanded-mode mm cap below an item's frame is an explicit error; complete footprint also includes per-side padding; template 120 |
+| `[native_pdf.stamp_text].horizontal_padding_mm` | Native-only reserved space | Finite nonnegative per-side mm; footprint width = max(frame, text width) + twice padding; independent of physical clearance, page margins and row gaps |
+| `[native_pdf.stamp_text].vertical_padding_mm` | Native-only reserved space | Finite nonnegative per-edge mm; footprint includes measured heading/caption heights and gaps plus twice padding; applies to both modes |
+| `[native_pdf.stamp_text].text_gap_mm` | Native-only frame/text separation | Finite nonnegative mm between frame and each present text block; absent text adds no gap; template 3 mm |
 | `album_page_width_mm`, `album_page_height_mm` | `ALBUM_PAGES_SIZE` | Both required, finite positive mm |
 | `page_left_margin_mm`, `page_right_margin_mm`, `page_top_margin_mm`, `page_bottom_margin_mm` | `ALBUM_PAGES_MARGINS` | All required, finite nonnegative mm |
 | `album_pages_spacing_h`, `album_pages_spacing_v` | `ALBUM_PAGES_SPACING` | Both required; within-page gaps, not between-sheet spacing |

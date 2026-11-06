@@ -398,3 +398,82 @@ end_offset_v_mm = 0.0
 edge_padding_h_mm = 0.0
 edge_padding_v_mm = 0.0
 colour = "black"
+
+# Native stamp text layout; this table is NOT an AlbumEasy command section.
+# Template comments are also field help in the existing configuration UI.
+[native_pdf.stamp_text]
+# Opt in to the measured stamp-text proof/layout policy below.
+# CURRENT SCOPE: native text-layout proofs only; the production album generator
+# and legacy AlbumEasy renderer do not use this table yet. No backend is switched.
+# false leaves this policy inactive; all supplied fields are still validated.
+# Older configs may omit this entire table. If present, supply every field.
+enabled = false
+# Choose exactly "wrap_to_frame" or "expand_footprint".
+# wrap_to_frame: wrap headings/captions to the MOUNTING FRAME width, not the
+# picture width. Preserve explicit newlines; normalize repeated spaces while
+# wrapping; split overlong words at character boundaries. Never reduce font size.
+# A glyph wider than the frame is an error. Reserve all resulting text height.
+# This is the compatibility-oriented choice, NOT certified AlbumEasy parity:
+# line wrapping/fonts/row positions must still be compared with AlbumEasy.
+# expand_footprint: preserve explicit newlines; wrap lines that exceed the
+# expanded_width_limit/expanded_width_value cap specified below.
+# The item width is max(frame width, widest heading/caption) plus horizontal
+# padding on BOTH sides. Long text may move this item or following items to
+# another row. Its measured text height is ALSO reserved, with vertical padding.
+# This native enhancement may change row/page breaks compared with AlbumEasy.
+# BOTH modes leave physical perforation-tip size, mounting frame and image
+# scale unchanged. A footprint is reserved layout space, NOT a larger stamp.
+# TXT EXPORT CONTRACT: never write this setting as an AlbumEasy command.
+# Keep actual text. Any export adaptation must be explicit in TXT comments
+# and compatibility findings; native settings remain saved in TOML.
+# Existing production TXT export is unchanged and does not apply this policy.
+width_policy = "wrap_to_frame"
+# Expanded-mode text width cap: choose exactly "percent" or "mm".
+# percent uses the MOUNTING FRAME width, including mounting clearance:
+# expanded_width_value = 120 means up to 20% wider than the frame.
+# mm uses an absolute text width: expanded_width_value = 30 means 30 mm.
+# The cap is a maximum, NOT a forced width; shorter text keeps a smaller footprint.
+# It applies BEFORE horizontal footprint padding; that padding is added outside.
+# Lines longer than the cap wrap without reducing font size; explicit newlines
+# and blank lines remain. Overlong words split at character boundaries.
+# No fixed line-count limit: reserve ALL measured lines and their full height.
+# The single-page proof still errors if the total footprint cannot fit; it
+# never truncates text, silently caps line count, or automatically paginates.
+# wrap_to_frame ignores this cap and wraps to frame width instead, but both
+# cap settings must still be syntactically valid even when inactive/disabled.
+# This is native-only; do not emit these keys as AlbumEasy commands.
+expanded_width_limit = "percent"
+# Value for expanded_width_limit: finite percent >= 100, or finite positive mm.
+# 120 percent on a 28 mm frame => 33.6 mm text cap; with 2 mm padding per
+# side, the complete footprint is at most 37.6 mm wide (not a larger frame).
+# 30 mm on that frame => up to 34 mm footprint with the same padding.
+# In expanded mode an mm cap BELOW an item's mounting-frame width is an error,
+# even if that item has no text. Raise the cap or choose percent for mixed sizes.
+# Changing this value may wrap more lines, increase height and change row breaks.
+# Physical stamp size, mounting frame and font size remain unchanged.
+expanded_width_value = 120.0
+# Extra reserved space PER SIDE, outside the union of frame and text, in mm.
+# Total item width = max(frame width, measured text width) + 2 * this value.
+# In wrap_to_frame mode the wrap limit remains frame width; this padding does
+# NOT narrow the text area, enlarge the mounting frame, or alter page margins.
+# Horizontal row spacing is additional, between complete item footprints.
+# Example: 28 mm frame, 40 mm text, padding 2 => 44 mm expand-mode footprint.
+# Finite nonnegative mm; 0 means no extra horizontal footprint padding.
+horizontal_padding_mm = 0.0
+# Extra reserved space PER EDGE above/below the complete frame/text union.
+# Total height = frame height + heading height/gap (if present) + caption
+# height/gap (if present) + 2 * this value. Multiline height uses font metrics
+# and line spacing, not just the font size. Applies to BOTH width policies.
+# This is NOT physical mounting clearance and does not change the page margin.
+# Vertical row spacing is additional, below the tallest complete item footprint.
+# Finite nonnegative mm; 0 means no extra vertical footprint padding.
+vertical_padding_mm = 0.0
+# Distance in mm from frame top to heading bottom, and frame bottom to caption
+# top. Add one gap for each text block present; absent text adds no gap.
+# Separate from mounting clearance, footprint padding and inter-row spacing.
+# Example: 31 mm frame + 5 mm heading + 3 mm gap + 8 mm caption + 3 mm gap
+# + 1 mm vertical padding at each edge => 52 mm total item height.
+# Text/frame overflow is an explicit error in the single-page proof; automatic
+# pagination and production text-aware row integration are not implemented yet.
+# Finite nonnegative mm. A zero gap permits touching, not overlapping.
+text_gap_mm = 3.0

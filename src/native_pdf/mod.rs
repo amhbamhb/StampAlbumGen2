@@ -11,6 +11,7 @@ pub mod renderer;
 pub mod stamp_box;
 pub mod stamp_image;
 pub mod stamp_rows;
+pub mod stamp_text;
 pub mod text;
 pub mod units;
 

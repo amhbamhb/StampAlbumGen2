@@ -17,6 +17,8 @@ use std::process::Command;
 #[cfg(feature = "rfd")]
 use rfd::{FileDialog, MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 
+// Native-only layout settings are validated by native_pdf::config, not legacy generation.
+// Keep their per-key template comments: the config editor displays them as field help.
 const EMBEDDED_CONFIG_TEMPLATE: &str = include_str!("../config_template.toml");
 const EMBEDDED_PDF_HELP: &[u8] = include_bytes!("../StampAlbumGenerator2HelpManual.pdf");
 

@@ -22,6 +22,7 @@ use super::{
     date::{DateFormat, DateSource},
     document::PageSettings,
     proof::GeometryProofSettings,
+    stamp_text::{ExpandedWidthLimit, StampTextPolicy, TextWidthPolicy},
     text::TextPosition,
     Result,
 };
@@ -48,6 +49,7 @@ const BORDER: [&str; 4] = [
 pub struct NativePdfConfig {
     pub page_settings: PageSettings,
     pub proof: GeometryProofSettings,
+    pub stamp_text: Option<StampTextPolicy>,
     pub unapplied_keys: Vec<String>,
     pub overridden_keys: Vec<String>,
 }
@@ -116,6 +118,39 @@ impl NativePdfConfig {
             .map_err(|error| format!("color_album_border: {error}"))?;
         let mut page_settings = PageSettings::new(size, margins, spacing, border, border_colour);
         let mut native = table(&mut root, "native_pdf", "")?;
+        let mut stamp_text = None;
+        if native.contains_key("stamp_text") {
+            let prefix = "native_pdf.stamp_text.";
+            let mut settings = table(&mut native, "stamp_text", "native_pdf.")?;
+            let enabled = boolean(&mut settings, "enabled", prefix)?;
+            let mode = TextWidthPolicy::parse(&string(&mut settings, "width_policy", prefix)?)?;
+            let policy = StampTextPolicy::new(
+                mode,
+                ExpandedWidthLimit::new(
+                    &string(&mut settings, "expanded_width_limit", prefix)?,
+                    number(
+                        &mut settings,
+                        "expanded_width_value",
+                        prefix,
+                        "percent or millimetres",
+                    )?,
+                )?,
+                number(
+                    &mut settings,
+                    "horizontal_padding_mm",
+                    prefix,
+                    "millimetres",
+                )?,
+                number(&mut settings, "vertical_padding_mm", prefix, "millimetres")?,
+                number(&mut settings, "text_gap_mm", prefix, "millimetres")?,
+            )?;
+            if enabled {
+                stamp_text = Some(policy);
+            }
+            if !settings.is_empty() {
+                native.insert("stamp_text".into(), Value::Table(settings));
+            }
+        }
         if native.contains_key("decorative_border") {
             let prefix = "native_pdf.decorative_border.";
             let mut settings = table(&mut native, "decorative_border", "native_pdf.")?;
@@ -608,6 +643,7 @@ impl NativePdfConfig {
         unapplied_keys.sort();
         overridden_keys.sort();
         Ok(Self {
+            stamp_text,
             page_settings,
             proof,
             unapplied_keys,

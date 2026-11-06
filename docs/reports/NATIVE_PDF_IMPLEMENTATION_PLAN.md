@@ -2,11 +2,70 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-04
-**Revision:** 31
-**Status:** Frame-only known-size row fitting and Letter proof fixtures implemented; production sizing/backend not integrated
+**Revision:** 32
+**Status:** Both native stamp-text width policies and measured footprints implemented with detailed TOML/UI help; production backend/export not integrated
 **Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
 
 ### Current implementation checkpoint — verify and implement together
+
+#### Native stamp-text policies and UI-ready configuration help (#79)
+
+Approved approach: extend the existing native TOML mechanism, not a second
+configuration system. Optional `[native_pdf.stamp_text]` explicitly opts in
+through `enabled` and requires `width_policy`, `horizontal_padding_mm`,
+`vertical_padding_mm` and `text_gap_mm` when present. Both templates keep it
+disabled and supply the same detailed comments immediately before each key.
+The existing config editor uses those comments as field help; a regression
+test checks per-key delivery and agreement between both template files.
+The settings remain proof/layout-only, not a production backend switch.
+
+`wrap_to_frame` measures and wraps heading/caption text to mounting-frame width,
+preserving explicit newlines and blank lines, normalizing repeated spaces
+and splitting overlong words without reducing fonts. A glyph wider than the
+frame fails explicitly. This is compatibility-oriented, not certified
+AlbumEasy parity. `expand_footprint` allows wider text up to the explicit
+`expanded_width_limit`/`expanded_width_value` cap, then wraps while preserving
+explicit newlines. The cap is either percent of mounting-frame width
+(120 = 20% wider) or absolute mm (30 = 30 mm), before padding. A cap below
+the frame or overflowing PDF units is an error, never a request to shrink.
+Both reserve complete measured multiline height without a fixed line-count
+limit; single-page overflow remains explicit, not truncation/pagination.
+Footprint width is max(frame width, widest text line) plus twice horizontal
+padding. Height includes frame, each present text block/gap and twice vertical
+padding. Padding is per edge, independent of physical clearance/page margins;
+inter-item/row gaps apply outside the complete footprint. Physical stamps,
+mounting frames and illustration scale are unchanged.
+
+The shared frame fitter packs these complete footprints, preserving order;
+frames are centered horizontally within them. Footprints, not frame tops,
+are top-aligned. Text baselines use the same verified standard-font metrics
+as drawing. Existing single-stamp/page proofs are unchanged. Invalid settings,
+overwide footprints and single-page height overflow fail before output writes.
+No automatic pagination or production image/text-aware generation is claimed.
+
+Compatibility contract: native policy keys must never be emitted as unknown
+AlbumEasy commands. Preserve actual text; identify every adaptation in TXT
+comments and compatibility findings. Keep authoritative native settings in TOML,
+not only comments. Production TXT export is unchanged. Current
+[Letter comparison proofs](../../tests/fixtures/albumeasy/stamp-text-v1/README.md)
+contain native PDF/TOML fragments plus deliberately adapted TXT inputs
+that retain all text as separate page-text blocks without claiming matching
+native positions or enlargement of mounting frames.
+
+Validation: ten text tests pass; three config-editor tests pass (including
+help delivery). The commit-gate native regression passed 114 tests with 19
+ignored; all ten text tests pass. Explicit fixture generation passes separately.
+Independent MuPDF verification confirms all physical/frame/footprint bounds,
+every stamp text line/baseline/left position, 10 pt fonts and row gaps on all four
+Letter pages. Wrap mode has rows 5+1, expanded mode at a 200% cap has rows 3+3
+for the same six stamps. Two additional pages exercise four-line long text at
+120% and 30 mm caps; regression coverage verifies 30 lines without a line cap
+and distinct measurable percentage/mm wrap boundaries.
+Clippy and Windows GNU library checks pass with existing warnings; Windows
+runtime, physical printing and AlbumEasy reference rendering remain unverified.
+No OKF regeneration. Branch `issue/79-native-stamp-text-footprints`; approved
+for commit, nothing pushed. T008/T009 and production compatibility export
+remain partial.
 
 #### Frame-only known-size row fitting (#78, bounded T009 slice)
 

@@ -954,6 +954,49 @@ mod tests {
     use super::*;
 
     #[test]
+    fn native_stamp_text_template_help_reaches_each_editor_field() {
+        let sections = parse_template_config_sections(include_str!("../../config_template.toml"));
+        let section = sections
+            .iter()
+            .find(|section| section.id == "native_pdf.stamp_text")
+            .expect("native stamp text section");
+        for (key, required) in [
+            ("enabled", "production album generator"),
+            ("width_policy", "expand_footprint"),
+            ("width_policy", "TXT EXPORT CONTRACT"),
+            ("expanded_width_limit", "No fixed line-count limit"),
+            ("expanded_width_value", "33.6 mm text cap"),
+            ("horizontal_padding_mm", "PER SIDE"),
+            ("vertical_padding_mm", "PER EDGE"),
+            ("text_gap_mm", "absent text adds no gap"),
+        ] {
+            let field = section
+                .fields
+                .iter()
+                .find(|field| field.key == key)
+                .expect("field");
+            assert!(
+                field.comments.iter().any(|comment| comment.contains(required)),
+                "missing help for {key}: {required}"
+            );
+        }
+        let example = parse_template_config_sections(include_str!("../../config_full_example.toml"));
+        let example = example
+            .iter()
+            .find(|section| section.id == "native_pdf.stamp_text")
+            .expect("example section");
+        for field in &section.fields {
+            let other = example
+                .fields
+                .iter()
+                .find(|other| other.key == field.key)
+                .expect("example field");
+            assert_eq!(field.comments, other.comments);
+            assert_eq!(field.template_value, other.template_value);
+        }
+    }
+
+    #[test]
     fn normalizes_windows_paths_and_preserves_valid_toml_strings() {
         let template = "\"\"".to_string();
         let windows = r"C:\Program Files (x86)\AlbumEasy\AlbumEasy.exe";
