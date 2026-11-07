@@ -80,6 +80,8 @@ fn supported(name: &str) -> bool {
             | "COLOR_STAMP_BORDER"
             | "COLOR_STAMP_TEXT"
             | "COLOR_STAMP_HEADING"
+            | "COLOR_STAMP_BACKGROUND"
+            | "COLOUR_STAMP_BACKGROUND"
             | "STAMP_BOXES_SIZE_ADJUST"
             | "STAMP_BORDER_STYLE"
             | "ALBUM_STAMP_IMG_NEW_SETTING"
@@ -159,6 +161,7 @@ struct Item {
     captions: Vec<Option<MeasuredText>>,
     heading: Option<MeasuredText>,
     frame: bool,
+    background: Option<NamedColour>,
     border_colour: NamedColour,
     text_colour: NamedColour,
     heading_colour: NamedColour,
@@ -288,6 +291,9 @@ fn flush(
         });
         if item.frame && row.border > 0.0 {
             page.frames.push((bounds, row.border, item.border_colour));
+        }
+        if let Some(colour) = item.background {
+            page.backgrounds.push((bounds, colour));
         }
         if let Some(heading) = item.heading {
             page.text.push(positioned(
@@ -466,6 +472,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         visible: true,
     };
     let mut frame = true;
+    let mut background = None;
     let mut stamp_colour = NamedColour::parse("black")?;
     let mut text_colour = stamp_colour;
     let mut heading_colour = stamp_colour;
@@ -484,6 +491,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         images: Vec::new(),
                         text: Vec::new(),
                         frames: Vec::new(),
+                        backgrounds: Vec::new(),
                     });
                 }
                 "ROW_ALIGN_TOP" => {
@@ -497,6 +505,13 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         "COLOR_STAMP_TEXT" => text_colour = colour,
                         _ => heading_colour = colour,
                     }
+                }
+                "COLOR_STAMP_BACKGROUND" | "COLOUR_STAMP_BACKGROUND" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err("Stamp background requires an unquoted named colour".into());
+                    }
+                    background = Some(NamedColour::parse(&c.args[0].value)?);
                 }
                 "STAMP_BOXES_SIZE_ADJUST" => {
                     count(c, 1, 1)?;
@@ -621,6 +636,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         captions,
                         heading: None,
                         frame: frame && c.args.len() != 7,
+                        background: if c.args.len() == 7 { None } else { background },
                         border_colour: stamp_colour,
                         text_colour,
                         heading_colour,

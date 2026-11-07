@@ -1,0 +1,40 @@
+# Native rendition of the accepted AlbumEasy background-colour reference.
+STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_PAGE_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 5)
+NATIVE_PAGE_HEADER (HN 9 C "1959-1960  |  STAMP BACKGROUND COLOURS" 0 0)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.1 black 6)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+# The 3 mm mounting clearance is already reserved by the native frame geometry.
+# Zero additional image padding matches AlbumEasy's 3 mm padding inside that frame.
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm\nDefault background")
+NATIVE_STAMP_BACKGROUND (black)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nExplicit black")
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nBlack persists")
+NATIVE_ROW_BREAK ()
+
+NATIVE_STAMP_BACKGROUND (lightblue)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nLightblue / framed")
+# NO_FRAME equivalent: disable background and outline independently.
+NATIVE_STAMP_BACKGROUND (none)
+NATIVE_STAMP_OUTLINE (hide)
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nLightblue / NO_FRAME")
+# BLANK equivalent: keep the background with the outline hidden.
+NATIVE_STAMP_BACKGROUND (lightblue)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nLightblue / BLANK")
+NATIVE_ROW_BREAK ()
+
+NATIVE_STAMP_OUTLINE (show)
+NATIVE_STAMP_BACKGROUND (black)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour hide)
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nHidden image / black")
+NATIVE_STAMP_BACKGROUND (white)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm\nWhite reset / shown")

@@ -18,6 +18,13 @@ pub struct StampImageRowItem {
     pub image_path: PathBuf,
     pub image_scale_pt_per_pixel: f64,
     pub options: StampImageOptions,
+    pub frame_style: Option<StampFrameStyle>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StampFrameStyle {
+    pub outline: bool,
+    pub background: Option<NamedColour>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

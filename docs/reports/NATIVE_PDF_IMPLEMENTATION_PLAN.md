@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 40
+**Revision:** 41
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -188,6 +188,54 @@ acceptance remain pending. No production integration, OKF regeneration or PR
 is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
+
+**Next item started (#86): stamp background colours.** Branch
+`issue/86-stamp-background-colours` begins from `47b35606`.
+The [AlbumEasy-only first-pass fixture](../../tests/fixtures/albumeasy/stamp-background-colours-v1/README.md)
+renders one exact Letter page with eight real-stamp placements (seven visible
+images), three rows, border/title and readable measured-size captions.
+It covers default/black/persistent/lightblue/white backgrounds, both colour
+spellings, `NO_FRAME`, `BLANK` and hidden images. AlbumEasy 4.5.0 rendered it
+successfully; the maintainer accepted this first pass before implementation.
+Actual-size print review and native-pass acceptance remain pending.
+
+Important observed mapping distinction: `NO_FRAME` suppresses both fill and
+outline, while `STAMP_BORDER_STYLE (BLANK)` suppresses the outline **but keeps
+the fill**. Hidden images also retain their filled frame. The current native
+no-outline boolean conflated the first two; the new imported-page background
+state preserves their distinct behavior. Native documents now support
+`NATIVE_STAMP_BACKGROUND (colour|none)` and independent
+`NATIVE_STAMP_OUTLINE (show|hide)`, captured per item without changing physical
+geometry or existing default no-fill behavior. Fill painting precedes images
+and outlines/text remain visible.
+
+All three standalone inputs now pass the background fixture: one exact Letter
+page, seven visible images, six backgrounds and six outlines plus page border.
+Tests assert exact colour/persistence order and paint layering; TXT/raw
+content streams and 1400-pixel rasters are identical. Native visible image
+widths/heights match the TXT native route within 0.02 points. The native frame
+already reserves mounting clearance, so the fixture uses zero **additional**
+image padding rather than doubling that clearance.
+
+The new [Denmark v2 derivative](../../tests/fixtures/albumeasy/denmark-background-native-v2/README.md)
+restores all three background occurrences and renders 16 pages/41 images
+from each compatibility input. It retains five commented occurrences:
+footer colour, margin-text colour, footer numbering and save/restore.
+The eight-deferral table above is the historical #84 checkpoint; its
+background row is now implemented for these rectangular image-box cases.
+The other five occurrences remain active follow-up work. No arbitrary-shape,
+rotated-box or CORNER behavior is certified by this bounded slice.
+
+Validation: 80 focused tests passed, 12 ignored; Denmark v2 opt-in passed
+separately. All-target type-check and focused Clippy passed with existing
+warnings. Background tests additionally verify invalid colours preserve
+output. Reference/native screen comparison records earlier native row/title
+placement, omitted native-language section headings and other spacing
+differences rather than claiming exact parity. Human native visual/print
+acceptance and Windows runtime verification remain pending. Existing v1
+fixtures, production routing and the OKF bundle remain untouched. The
+maintainer requested commit/push after this checkpoint; PR creation remains
+deferred until native PDF work is complete.
 
 For future paired examples, keep both passes in an inspectable fixture bundle
 under `tests/fixtures/`. First render and review the AlbumEasy-only `.txt` and

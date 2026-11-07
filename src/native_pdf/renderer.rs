@@ -364,6 +364,8 @@ fn write_paginated_stamp_sections(
             }
             let mut images = Vec::new();
             let mut geometries = Vec::new();
+            let mut frame_styles = Vec::new();
+            let mut frame_backgrounds = Vec::new();
             for fragment in &page.items {
                 if let Some(geometry) = fragment.geometry {
                     let item = &items[fragment.source_index];
@@ -385,6 +387,17 @@ fn write_paginated_stamp_sections(
                     })?;
                     images.push(image);
                     geometries.push(geometry);
+                    if let Some((width, colour)) = mode.native_frame {
+                        let bounds = geometry.frame_bounds();
+                        if item.frame_style.is_none_or(|style| style.outline) {
+                            frame_styles.push((bounds, width, colour));
+                        }
+                        if let Some(background) =
+                            item.frame_style.and_then(|style| style.background)
+                        {
+                            frame_backgrounds.push((bounds, background));
+                        }
+                    }
                 }
             }
             let background_image = mode
@@ -399,17 +412,12 @@ fn write_paginated_stamp_sections(
                 text_items: page.items.clone(),
                 diagnostic_overlays: mode.diagnostic_overlays,
                 additional_text: Vec::new(),
-                frame_styles: Vec::new(),
+                frame_styles,
+                frame_backgrounds,
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    save_pdf(
-        settings,
-        proof.as_ref(),
-        mode.native_frame,
-        output,
-        prepared,
-    )?;
+    save_pdf(settings, proof.as_ref(), output, prepared)?;
     Ok(pages)
 }
 
@@ -430,6 +438,7 @@ struct PreparedPdfPage {
     diagnostic_overlays: bool,
     additional_text: Vec<super::stamp_text::PositionedStampText>,
     frame_styles: Vec<(super::document::Bounds, f64, NamedColour)>,
+    frame_backgrounds: Vec<(super::document::Bounds, NamedColour)>,
 }
 
 fn write_proof(
@@ -482,16 +491,16 @@ fn write_proof(
                 diagnostic_overlays: true,
                 additional_text: Vec::new(),
                 frame_styles: Vec::new(),
+                frame_backgrounds: Vec::new(),
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    save_pdf(settings, Some(proof), None, output, pages)
+    save_pdf(settings, Some(proof), output, pages)
 }
 
 fn save_pdf(
     settings: &PageSettings,
     proof: Option<&GeometryProofSettings>,
-    native_frame: Option<(f64, NamedColour)>,
     output: &Path,
     pages: Vec<PreparedPdfPage>,
 ) -> Result<()> {
@@ -507,6 +516,7 @@ fn save_pdf(
             diagnostic_overlays,
             additional_text,
             frame_styles,
+            frame_backgrounds,
         },
     ) in pages.into_iter().enumerate()
     {
@@ -689,6 +699,18 @@ fn save_pdf(
                 "title",
             )?;
         }
+        for (bounds, colour) in frame_backgrounds {
+            let [red, green, blue] = colour.rgb();
+            page.graphics()
+                .set_fill_color(Color::rgb(red, green, blue))
+                .rect(
+                    mm_to_points(bounds.left),
+                    mm_to_points(bounds.bottom),
+                    mm_to_points(bounds.right - bounds.left),
+                    mm_to_points(bounds.top - bounds.bottom),
+                )
+                .fill();
+        }
         for (image_index, stamp) in stamps.iter().enumerate() {
             let name = if stamps.len() == 1 {
                 "native_stamp_image".to_string()
@@ -775,23 +797,6 @@ fn save_pdf(
                 .stroke();
         }
         for geometry in geometries {
-            if let Some((width_mm, colour)) = native_frame {
-                let bounds = geometry.frame_bounds();
-                page.graphics()
-                    .set_stroke_color(Color::rgb(
-                        colour.rgb()[0],
-                        colour.rgb()[1],
-                        colour.rgb()[2],
-                    ))
-                    .set_line_width(mm_to_points(width_mm))
-                    .rect(
-                        mm_to_points(bounds.left),
-                        mm_to_points(bounds.bottom),
-                        mm_to_points(bounds.right - bounds.left),
-                        mm_to_points(bounds.top - bounds.bottom),
-                    )
-                    .stroke();
-            }
             if diagnostic_overlays {
                 for (bounds, colour) in [
                     (geometry.frame_bounds(), Color::rgb(0.0, 0.0, 0.0)),
@@ -844,6 +849,7 @@ pub(crate) struct ImportedPdfPage {
     pub images: Vec<StampImageSettings>,
     pub text: Vec<super::stamp_text::PositionedStampText>,
     pub frames: Vec<(super::document::Bounds, f64, NamedColour)>,
+    pub backgrounds: Vec<(super::document::Bounds, NamedColour)>,
 }
 
 pub(crate) fn write_imported_album_pdf(
@@ -872,8 +878,9 @@ pub(crate) fn write_imported_album_pdf(
                 diagnostic_overlays: false,
                 additional_text: page.text,
                 frame_styles: page.frames,
+                frame_backgrounds: page.backgrounds,
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    save_pdf(settings, None, None, output, prepared)
+    save_pdf(settings, None, output, prepared)
 }

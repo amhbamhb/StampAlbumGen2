@@ -57,6 +57,7 @@ fn items(directory: &Path) -> Result<Vec<StampImageRowItem>> {
         )
         .save(&path)?;
         items.push(StampImageRowItem {
+            frame_style: None,
             stamp: StampTextItem {
                 geometry: StampBoxGeometry::from_total_additions(
                     Bounds {

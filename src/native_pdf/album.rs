@@ -17,8 +17,8 @@ use super::{
     renderer,
     stamp_box::StampBoxGeometry,
     stamp_image::{
-        ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampImageOptions,
-        StampImageRowItem, StampTextSettings,
+        ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampFrameStyle,
+        StampImageOptions, StampImageRowItem, StampTextSettings,
     },
     stamp_rows::RowAlignment,
     stamp_text::{ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy},
@@ -73,6 +73,7 @@ impl NativeAlbum {
         let mut frame_addition_mm = 0.0;
         let mut text_policy = None;
         let mut image_options = StampImageOptions::default();
+        let mut frame_style = None;
         let mut page_background = None;
         let mut image_specs = Vec::new();
         let mut section_start = 0;
@@ -275,6 +276,32 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                     set_once(&mut text_policy, policy, &name).map_err(&fail)?;
                 }
+                "NATIVE_STAMP_BACKGROUND" => {
+                    let colour = words(&name, &args, 1).map_err(&fail)?;
+                    let background = if colour[0] == "none" {
+                        None
+                    } else {
+                        Some(NamedColour::parse(&colour[0]).map_err(&fail)?)
+                    };
+                    let style = frame_style.get_or_insert(StampFrameStyle {
+                        outline: true,
+                        background: None,
+                    });
+                    style.background = background;
+                }
+                "NATIVE_STAMP_OUTLINE" => {
+                    let values = words(&name, &args, 1).map_err(&fail)?;
+                    let outline = match values[0].as_str() {
+                        "show" => true,
+                        "hide" => false,
+                        _ => return Err(fail(format!("{name} requires show or hide"))),
+                    };
+                    let style = frame_style.get_or_insert(StampFrameStyle {
+                        outline: true,
+                        background: None,
+                    });
+                    style.outline = outline;
+                }
                 "NATIVE_STAMP_IMAGE_POLICY" => {
                     if args.len() != 7 {
                         return Err(fail(format!(
@@ -419,6 +446,7 @@ impl NativeAlbum {
                         mm_to_points(scale_mm_per_pixel),
                         image_options,
                         caption,
+                        frame_style,
                     ));
                 }
                 _ => return Err(fail(format!("Unsupported native command {name}"))),
@@ -466,7 +494,14 @@ impl NativeAlbum {
         let items = image_specs
             .into_iter()
             .map(
-                |(image_path, geometry, image_scale_pt_per_pixel, options, caption)| {
+                |(
+                    image_path,
+                    geometry,
+                    image_scale_pt_per_pixel,
+                    options,
+                    caption,
+                    frame_style,
+                )| {
                     StampImageRowItem {
                         stamp: StampTextItem {
                             geometry,
@@ -476,6 +511,7 @@ impl NativeAlbum {
                         image_path,
                         image_scale_pt_per_pixel,
                         options,
+                        frame_style,
                     }
                 },
             )

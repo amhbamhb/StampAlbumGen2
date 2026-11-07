@@ -53,6 +53,20 @@ The untouched original TXT still fails explicitly on these commands.
 Standalone coverage here supplements, rather than upgrades, the conservative
 production-support labels in the historical tables below.
 
+**Background update (#86):** After acceptance of the
+[AlbumEasy reference page](../../tests/fixtures/albumeasy/stamp-background-colours-v1/README.md),
+the standalone interpreter maps `COLOR_STAMP_BACKGROUND` and
+`COLOUR_STAMP_BACKGROUND` for the currently supported rectangular image boxes.
+Colours persist per item, hidden images retain fills, `NO_FRAME` suppresses
+fill/outline, and `BLANK` retains fill without outline. Native-language
+background and outline controls remain independent. All three input paths
+have colour, layering and physical-image-size regressions. The
+[Denmark v2 proof](../../tests/fixtures/albumeasy/denmark-background-native-v2/README.md)
+restores three background lines, leaving five other deferrals. The preceding
+eight-deferral description records the historical v1 slice; backgrounds are
+no longer deferred for the validated v2 rectangular cases. Shapes, rotated
+boxes and CORNER styles remain outside this implementation boundary.
+
 ## 1. Purpose and scope
 
 This is the first bounded command-family pass for the command-mapping work.
