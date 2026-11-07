@@ -1,0 +1,16 @@
+# StampAlbumGen2 native album format, version 1.
+# This file is plain text and may be edited with any text editor.
+STAMPALBUM 1
+
+# Page and border settings are explicit; this format does not supply defaults.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (3 4)
+ALBUM_PAGES_BORDER (0 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 120 2 1 3)
+
+# Image scale is millimetres per source pixel.
+STAMP_IMAGE ("../../albumeasy/stamp-image-overloads-v1/assets/synthetic-asymmetric.png" 42 34 0.5)

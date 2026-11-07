@@ -20,14 +20,14 @@ pub struct StampImageRowItem {
 }
 
 #[derive(Clone, Debug)]
-pub struct StampTextProofSettings {
+pub struct StampTextSettings {
     pub text: String,
     pub font: String,
     pub size_pt: f64,
     pub colour: NamedColour,
 }
 
-impl StampTextProofSettings {
+impl StampTextSettings {
     pub fn new(
         text: impl Into<String>,
         font: impl Into<String>,
@@ -43,24 +43,27 @@ impl StampTextProofSettings {
     }
 }
 
-/// Explicit geometry and image policy for the isolated native stamp proof.
+/// Backwards-compatible name for proof callers.
+pub type StampTextProofSettings = StampTextSettings;
+
+/// Explicit geometry and image policy for rendering one native stamp image.
 ///
 /// The source is measured at `image_scale_pt_per_pixel`; images are never
 /// enlarged and are proportionally reduced only when needed to fit the padded
-/// box. This proof policy is not yet a production AlbumEasy command mapping.
+/// box.
 #[derive(Clone, Debug)]
-pub struct StampImageProofSettings {
+pub struct StampImageSettings {
     pub image_path: PathBuf,
     pub box_bounds: Bounds,
     pub image_scale_pt_per_pixel: f64,
     pub image_padding_horizontal_mm: f64,
     pub image_padding_vertical_mm: f64,
     pub text_gap_mm: f64,
-    pub heading: Option<StampTextProofSettings>,
-    pub caption: Option<StampTextProofSettings>,
+    pub heading: Option<StampTextSettings>,
+    pub caption: Option<StampTextSettings>,
 }
 
-impl StampImageProofSettings {
+impl StampImageSettings {
     /// Uses the mounting frame for text anchors while fitting the illustration
     /// inside the physical stamp area. The source image scale is unchanged.
     pub fn with_stamp_box(mut self, geometry: &StampBoxGeometry) -> Self {
@@ -181,6 +184,9 @@ impl StampImageProofSettings {
     }
 }
 
+/// Backwards-compatible name for existing geometry-proof callers.
+pub type StampImageProofSettings = StampImageSettings;
+
 pub(crate) struct PreparedStampImage {
     pub image: Image,
     pub image_bounds: Bounds,
@@ -203,7 +209,7 @@ fn contains(outer: Bounds, inner: Bounds) -> bool {
 }
 
 fn position_text(
-    settings: &StampTextProofSettings,
+    settings: &StampTextSettings,
     bounds: Bounds,
     gap_mm: f64,
     above: bool,
@@ -311,13 +317,13 @@ mod tests {
             image_padding_horizontal_mm: 2.0,
             image_padding_vertical_mm: 2.0,
             text_gap_mm: 2.0,
-            heading: Some(StampTextProofSettings::new(
+            heading: Some(StampTextSettings::new(
                 "HEADING",
                 "HB",
                 8.0,
                 NamedColour::parse("black")?,
             )),
-            caption: Some(StampTextProofSettings::new(
+            caption: Some(StampTextSettings::new(
                 "CAPTION",
                 "HN",
                 6.0,

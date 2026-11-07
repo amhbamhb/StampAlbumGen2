@@ -1,0 +1,22 @@
+# StampAlbumGen2 native album document, version 1.
+# The paired AlbumEasy 4.5.0 input is album.txt; these outputs are separate renderings.
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (3 4)
+ALBUM_PAGES_BORDER (0 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)
+
+# Image scale is millimetres per source pixel; Colnect size is the physical box.
+# DB ID 150 / SG 1125a / Colnect 700029 / 52 x 29 mm / 1024 x 555 px
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125)
+# DB ID 151 / SG 1137a / Colnect 700273 / 26 x 29 mm / 486 x 538 px
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424)
+# DB ID 152 / SG 1137b / Colnect 700274 / 26 x 29 mm / 500 x 550 px
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052)
+# DB ID 156 / SG 1148a / Colnect 700272 / 52 x 29 mm / 1026 x 564 px
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612)

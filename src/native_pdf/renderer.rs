@@ -4,7 +4,9 @@ use super::{
     pagination::{paginate_stamp_sections, StampItemPage, StampPageFragment, StampRowSection},
     proof::GeometryProofSettings,
     stamp_box::StampBoxGeometry,
-    stamp_image::{PreparedStampImage, StampImageProofSettings, StampImageRowItem},
+    stamp_image::{
+        PreparedStampImage, StampImageProofSettings, StampImageRowItem, StampImageSettings,
+    },
     stamp_rows::fit_known_size_rows_with_alignment,
     stamp_text::{
         fit_text_rows_with_alignment, PositionedStampItem, StampTextItem, StampTextPolicy,
@@ -173,7 +175,7 @@ pub fn write_stamp_items_geometry_proof(
         .iter()
         .zip(&geometries)
         .map(|(item, geometry)| {
-            StampImageProofSettings {
+            StampImageSettings {
                 image_path: item.image_path.clone(),
                 box_bounds: geometry.frame_bounds(),
                 image_scale_pt_per_pixel: item.image_scale_pt_per_pixel,
@@ -226,6 +228,66 @@ pub fn write_paginated_stamp_sections_geometry_proof(
     policy: &StampTextPolicy,
     output: &Path,
 ) -> Result<Vec<StampItemPage>> {
+    write_paginated_stamp_sections(
+        settings,
+        RenderMode {
+            proof: Some(proof),
+            diagnostic_overlays: true,
+            native_frame: None,
+        },
+        items,
+        sections,
+        policy,
+        output,
+    )
+}
+
+/// Writes a native album PDF directly from resolved native layout inputs.
+/// This path does not draw diagnostic guides or require proof settings.
+pub fn write_native_album_pdf(
+    settings: &PageSettings,
+    items: &[StampImageRowItem],
+    policy: &StampTextPolicy,
+    frame_width_mm: f64,
+    frame_colour: NamedColour,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
+    if !frame_width_mm.is_finite()
+        || frame_width_mm <= 0.0
+        || !mm_to_points(frame_width_mm).is_finite()
+    {
+        return Err("Native stamp frame width must be finite and positive".into());
+    }
+    let sections = if items.is_empty() {
+        Vec::new()
+    } else {
+        vec![StampRowSection {
+            item_count: items.len(),
+            alignment: settings.row_alignment(),
+        }]
+    };
+    write_paginated_stamp_sections(
+        settings,
+        RenderMode {
+            proof: None,
+            diagnostic_overlays: false,
+            native_frame: Some((frame_width_mm, frame_colour)),
+        },
+        items,
+        &sections,
+        policy,
+        output,
+    )
+}
+
+fn write_paginated_stamp_sections(
+    settings: &PageSettings,
+    mode: RenderMode<'_>,
+    items: &[StampImageRowItem],
+    sections: &[StampRowSection],
+    policy: &StampTextPolicy,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
     let stamps: Vec<_> = items.iter().map(|i| i.stamp.clone()).collect();
     let pages = paginate_stamp_sections(
         settings,
@@ -234,19 +296,27 @@ pub fn write_paginated_stamp_sections_geometry_proof(
         policy,
         settings.capture_generation_date(),
     )?;
-    let mut proof = proof.clone();
-    proof.page_count = pages.len();
-    proof.validate()?;
+    let proof = mode
+        .proof
+        .cloned()
+        .map(|mut proof| {
+            proof.page_count = pages.len();
+            proof.validate()?;
+            Ok::<GeometryProofSettings, String>(proof)
+        })
+        .transpose()?;
     let prepared = pages
         .iter()
         .map(|page| {
-            proof.validate_layout(&page.layout)?;
+            if let Some(proof) = &proof {
+                proof.validate_layout(&page.layout)?;
+            }
             let mut images = Vec::new();
             let mut geometries = Vec::new();
             for fragment in &page.items {
                 if let Some(geometry) = fragment.geometry {
                     let item = &items[fragment.source_index];
-                    let image = StampImageProofSettings {
+                    let image = StampImageSettings {
                         image_path: item.image_path.clone(),
                         box_bounds: geometry.frame_bounds(),
                         image_scale_pt_per_pixel: item.image_scale_pt_per_pixel,
@@ -265,23 +335,38 @@ pub fn write_paginated_stamp_sections_geometry_proof(
                     geometries.push(geometry);
                 }
             }
-            Ok(PreparedProofPage {
+            Ok(PreparedPdfPage {
                 layout: page.layout.clone(),
                 stamps: images,
                 geometries,
                 text_items: page.items.clone(),
+                diagnostic_overlays: mode.diagnostic_overlays,
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    save_proof(settings, &proof, output, prepared)?;
+    save_pdf(
+        settings,
+        proof.as_ref(),
+        mode.native_frame,
+        output,
+        prepared,
+    )?;
     Ok(pages)
 }
 
-struct PreparedProofPage {
+#[derive(Clone, Copy)]
+struct RenderMode<'a> {
+    proof: Option<&'a GeometryProofSettings>,
+    diagnostic_overlays: bool,
+    native_frame: Option<(f64, NamedColour)>,
+}
+
+struct PreparedPdfPage {
     layout: PageLayout,
     stamps: Vec<PreparedStampImage>,
     geometries: Vec<StampBoxGeometry>,
     text_items: Vec<StampPageFragment>,
+    diagnostic_overlays: bool,
 }
 
 fn write_proof(
@@ -315,7 +400,7 @@ fn write_proof(
                         .map_err(|error| format!("Native PDF stamp image {}: {error}", index + 1))
                 })
                 .collect::<Result<Vec<_>>>()?;
-            Ok(PreparedProofPage {
+            Ok(PreparedPdfPage {
                 layout,
                 stamps,
                 geometries: geometries.to_vec(),
@@ -330,26 +415,29 @@ fn write_proof(
                         caption: item.caption.clone(),
                     })
                     .collect(),
+                diagnostic_overlays: true,
             })
         })
         .collect::<Result<Vec<_>>>()?;
-    save_proof(settings, proof, output, pages)
+    save_pdf(settings, Some(proof), None, output, pages)
 }
 
-fn save_proof(
+fn save_pdf(
     settings: &PageSettings,
-    proof: &GeometryProofSettings,
+    proof: Option<&GeometryProofSettings>,
+    native_frame: Option<(f64, NamedColour)>,
     output: &Path,
-    pages: Vec<PreparedProofPage>,
+    pages: Vec<PreparedPdfPage>,
 ) -> Result<()> {
     let mut document = Document::new();
     for (
         index,
-        PreparedProofPage {
+        PreparedPdfPage {
             layout,
             stamps,
             geometries,
             text_items,
+            diagnostic_overlays,
         },
     ) in pages.into_iter().enumerate()
     {
@@ -369,7 +457,7 @@ fn save_proof(
                 )
             })
             .collect();
-        if proof.guide_enabled {
+        if let Some(proof) = proof.filter(|proof| proof.guide_enabled) {
             strokes.push((
                 layout.content_bounds,
                 proof.guide_width_mm,
@@ -554,16 +642,18 @@ fn save_proof(
         }
         for item in text_items {
             let bounds = item.footprint;
-            page.graphics()
-                .set_stroke_color(Color::rgb(0.0, 0.6, 0.2))
-                .set_line_width(mm_to_points(0.1))
-                .rect(
-                    mm_to_points(bounds.left),
-                    mm_to_points(bounds.bottom),
-                    mm_to_points(bounds.right - bounds.left),
-                    mm_to_points(bounds.top - bounds.bottom),
-                )
-                .stroke();
+            if diagnostic_overlays {
+                page.graphics()
+                    .set_stroke_color(Color::rgb(0.0, 0.6, 0.2))
+                    .set_line_width(mm_to_points(0.1))
+                    .rect(
+                        mm_to_points(bounds.left),
+                        mm_to_points(bounds.bottom),
+                        mm_to_points(bounds.right - bounds.left),
+                        mm_to_points(bounds.top - bounds.bottom),
+                    )
+                    .stroke();
+            }
             for text in [item.heading.as_ref(), item.caption.as_ref()]
                 .into_iter()
                 .flatten()
@@ -579,13 +669,15 @@ fn save_proof(
             }
         }
         for geometry in geometries {
-            for (bounds, colour) in [
-                (geometry.frame_bounds(), Color::rgb(0.0, 0.0, 0.0)),
-                (geometry.physical_bounds(), Color::rgb(0.0, 0.3, 0.9)),
-            ] {
+            if let Some((width_mm, colour)) = native_frame {
+                let bounds = geometry.frame_bounds();
                 page.graphics()
-                    .set_stroke_color(colour)
-                    .set_line_width(mm_to_points(0.1))
+                    .set_stroke_color(Color::rgb(
+                        colour.rgb()[0],
+                        colour.rgb()[1],
+                        colour.rgb()[2],
+                    ))
+                    .set_line_width(mm_to_points(width_mm))
                     .rect(
                         mm_to_points(bounds.left),
                         mm_to_points(bounds.bottom),
@@ -594,16 +686,30 @@ fn save_proof(
                     )
                     .stroke();
             }
+            if diagnostic_overlays {
+                for (bounds, colour) in [
+                    (geometry.frame_bounds(), Color::rgb(0.0, 0.0, 0.0)),
+                    (geometry.physical_bounds(), Color::rgb(0.0, 0.3, 0.9)),
+                ] {
+                    page.graphics()
+                        .set_stroke_color(colour)
+                        .set_line_width(mm_to_points(0.1))
+                        .rect(
+                            mm_to_points(bounds.left),
+                            mm_to_points(bounds.bottom),
+                            mm_to_points(bounds.right - bounds.left),
+                            mm_to_points(bounds.top - bounds.bottom),
+                        )
+                        .stroke();
+                }
+            }
         }
 
         document.add_page(page);
     }
-    document.save(output).map_err(|error| {
-        format!(
-            "Cannot write native PDF proof {}: {error}",
-            output.display()
-        )
-    })
+    document
+        .save(output)
+        .map_err(|error| format!("Cannot write native PDF {}: {error}", output.display()))
 }
 
 fn draw_text_lines(

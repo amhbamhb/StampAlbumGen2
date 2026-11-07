@@ -1,10 +1,81 @@
 # Native PDF generation with AlbumEasy TXT export
 
 **Created:** 2026-11-01  
-**Last updated:** 2026-11-05
-**Revision:** 35
-**Status:** Native section row alignment and paginated real-stamp proofs implemented; production backend/export not integrated
-**Scope:** Enhanced native-first PDF creation, compatibility-aware AlbumEasy export, and eventual complete AlbumEasy import/edit/render support without the external executable. AlbumEasy is retained as a transitional backend and optional comparison tool, not a permanent import dependency.
+**Last updated:** 2026-11-07
+**Revision:** 38
+**Status:** Native section row alignment and paginated real-stamp proof PDFs implemented; the native document, complete renderer, and compatibility exporters remain active implementation work; production application routing is not integrated.
+**Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
+
+### Canonical document and output contract
+
+The program's own album document is authoritative; neither AlbumEasy TXT nor
+the current database representation is assumed to define every capability of
+the new format. Ordinary album creation builds this document and resolves its
+layout once. The native PDF renderer and AlbumEasy TXT exporter consume that
+same resolved document independently; native PDF generation must not depend on
+running AlbumEasy or on first producing TXT.
+
+Existing AlbumEasy `.txt` files remain importable through the existing
+external-album workflow and are progressively mapped into the native document.
+Native-only and expanded commands belong to the program's document model and
+its own serializable text format, not to AlbumEasy-compatible TXT. Export must
+classify every feature as exact, approximated, omitted, or blocked and report
+losses explicitly; it must never silently claim that a divergent export is
+equivalent.
+
+**Native file extension:** `.stampalbum` is approved by the maintainer for the
+program-owned text document. Version 1 has a UTF-8 command-line format and
+`STAMPALBUM 1` header. Keep `.txt` for imported AlbumEasy input and
+AlbumEasy-compatible output.
+
+**Execution order clarified:** The canonical native document and direct native
+PDF path come first. AlbumEasy-compatible TXT is a separate projection from
+that document and follows the native path; it is not an intermediate input to
+PDF generation. The historical phase/task IDs below are retained for
+traceability and must not reverse this implementation order. Existing
+commented header-command examples in the application are a reference for the
+later header-command slice, not a requirement for the initial format.
+
+The first standalone code slice is implemented in
+[`src/native_pdf/album.rs`](../../src/native_pdf/album.rs), with the
+`render_stampalbum` example and a fixture under
+[`tests/fixtures/native_pdf/stampalbum-v1`](../../tests/fixtures/native_pdf/stampalbum-v1/README.md).
+It parses explicit page/border/row/text-policy commands and `STAMP_IMAGE`,
+resolves relative raster paths from the `.stampalbum` file, and writes a real
+native PDF directly without AlbumEasy or diagnostic proof overlays. It does
+not yet import AlbumEasy TXT, export compatible TXT, render captions or other
+stamp shapes, or connect to application generation. The existing commented
+header-command examples in the application are a future reference when header
+support is mapped; header support is not part of this slice.
+
+The [real-stamp comparison fixture](../../tests/fixtures/albumeasy/native-real-stamps-v1/README.md)
+pairs an AlbumEasy 4.5.0 `.txt`/PDF with a native `.stampalbum`/PDF using four
+real US stamps with verified Colnect dimensions. Its native test checks the
+recorded physical bounds and the one-page Letter output. Printing and
+maintainer visual acceptance remain pending; this example does not claim
+renderer parity.
+
+### Future native visual-fixture and print-review requirements
+
+For future native command examples, keep a paired, inspectable fixture bundle
+under `tests/fixtures/`: the AlbumEasy `.txt` input and its reference `.pdf`,
+plus the program-owned `.stampalbum` input and the PDF rendered from it. The
+older TOML fragments in existing fixture sets predate the approved native file
+format; use `.stampalbum` for new native documents rather than treating TOML as
+the native album language.
+
+Use real stamp images with positive recorded Colnect physical dimensions,
+preferably records and associated images already available in the local
+`Album` databases. Keep source record IDs, measured dimensions, and asset
+provenance with the fixture, and read source databases without modifying them.
+Automated checks should verify the document and rendered geometry, but they do
+not replace the human review: print each native PDF at actual size, inspect the
+page and stamp appearance, and record the maintainer's visual acceptance before
+considering the example complete.
+
+Website-ready galleries showing command text alongside rendered output are a
+later, separate work item. Do not expand the current renderer slice to build
+that gallery.
 
 ### Current implementation checkpoint — verify and implement together
 
@@ -1629,9 +1700,9 @@ native document can regenerate the enhanced PDF even after a lossy TXT export.
 **Plan P8.1:** Implement a versioned command language, not an allowlist of names (REQ-011).
 **Plan P8.2:** Complete command-to-document/render/editor/export support (REQ-005, REQ-011, REQ-013).
 
-- [ ] T036 [Plan:8.1] Extend the coverage matrix to installed 4.5.0 using `docs/guides/ALBUMEASY_4_5_0_REFERENCE_UPDATE.md` and exact installed-help grammar; preserve `docs/guides/ALBUMEASY_4_2_1_COMMAND_INVENTORY.md` as the legacy 92-name/12-alias baseline. Reconcile renamed/obsolete names, additions and overloads; add per-command units, defaults, scope/state, interactions, parse/validation/edit/render/export evidence and conformance fixtures. Planning portion is pulled forward before Phase 2; implementation remains deferred.
-- [ ] T037 [Plan:8.1] Replace placeholder validation in `src/external_album/parser.rs` with documented argument rules and precise source diagnostics. Implement documented quoting/escapes, comments, ordering, includes/dependencies and command state semantics where present; reject unknown commands without silently ignoring them.
-- [ ] T038 [Plan:8.2] Implement command families incrementally across `src/external_album/parser.rs`, `src/external_album/reflow.rs`, shared document/layout and native rendering: page/global settings, text/fonts, rows/alignment, stamp/blank/image placements, borders/colors/decorations, and every additional family discovered by inventory.
+- [ ] T036 [Plan:8.1] Extend the coverage matrix to installed 4.5.0 using `docs/guides/ALBUMEASY_4_5_0_REFERENCE_UPDATE.md` and exact installed-help grammar; preserve `docs/guides/ALBUMEASY_4_2_1_COMMAND_INVENTORY.md` as the legacy 92-name/12-alias baseline. Reconcile renamed/obsolete names, additions and overloads; add per-command units, defaults, scope/state, interactions, parse/validation/edit/render/export evidence and conformance fixtures. Use verified contracts to build a standalone native document and renderer while separately deciding exact/lossy/blocked AlbumEasy export behavior; production application routing remains gated on mapping and compatibility review.
+- [ ] T037 [Plan:8.1] Keep the AlbumEasy `.txt` importer as a compatibility adapter into the canonical native document. Replace placeholder validation in `src/external_album/parser.rs` with documented argument rules and precise source diagnostics. Implement documented quoting/escapes, comments, ordering, includes/dependencies and command state semantics where present; reject unknown commands without silently ignoring them.
+- [ ] T038 [Plan:8.2] Implement command families incrementally across the canonical document/layout and native renderer: page/global settings, text/fonts, rows/alignment, stamp/blank/image placements, borders/colors/decorations, and every additional native command discovered by inventory. Do not require AlbumEasy TXT as an intermediate for native PDF generation.
 - [ ] T039 [Plan:8.2] Extend `src/review_ui/views/external_album.html` and owning API for typed editing of every documented supported command/item, preserving order, identity, scope, revisions and source provenance. Recognition or raw-text passthrough alone does not count as application support.
 - [ ] T040 [Plan:8.1,8.2] Add per-command and interaction conformance fixtures under `tests/` and `samples/`; validate import -> edit -> native render -> TXT export -> reimport. Include defaults, aliases, legacy units, invalid arguments and page-spanning state.
 
