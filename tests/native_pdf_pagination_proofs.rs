@@ -71,6 +71,7 @@ fn inputs(sources: &Sources) -> Result<Vec<StampImageRowItem>> {
             image_scale_pt_per_pixel: mm_to_points(
                 (record.width_mm / f64::from(pw)).max(record.height_mm / f64::from(ph)),
             ),
+            options: Default::default(),
         });
     }
     Ok(result)

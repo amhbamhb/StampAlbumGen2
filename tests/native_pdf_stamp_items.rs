@@ -84,6 +84,7 @@ fn items(directory: &Path) -> Result<Vec<StampImageRowItem>> {
             },
             image_path: path,
             image_scale_pt_per_pixel: mm_to_points(scale),
+            options: Default::default(),
         });
     }
     Ok(items)

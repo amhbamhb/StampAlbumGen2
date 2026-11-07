@@ -5,7 +5,8 @@ use super::{
     proof::GeometryProofSettings,
     stamp_box::StampBoxGeometry,
     stamp_image::{
-        PreparedStampImage, StampImageProofSettings, StampImageRowItem, StampImageSettings,
+        NativePageBackgroundImage, PreparedStampImage, StampImageProofSettings, StampImageRowItem,
+        StampImageSettings,
     },
     stamp_rows::fit_known_size_rows_with_alignment,
     stamp_text::{
@@ -15,7 +16,7 @@ use super::{
     units::mm_to_points,
     Result,
 };
-use oxidize_pdf::{Color, Document, Page};
+use oxidize_pdf::{Color, Document, Image, Page};
 use std::path::Path;
 
 /// Isolated geometry proof. Stamp-image content is available through
@@ -179,6 +180,7 @@ pub fn write_stamp_items_geometry_proof(
                 image_path: item.image_path.clone(),
                 box_bounds: geometry.frame_bounds(),
                 image_scale_pt_per_pixel: item.image_scale_pt_per_pixel,
+                options: item.options,
                 image_padding_horizontal_mm: 0.0,
                 image_padding_vertical_mm: 0.0,
                 text_gap_mm: 0.0,
@@ -234,6 +236,7 @@ pub fn write_paginated_stamp_sections_geometry_proof(
             proof: Some(proof),
             diagnostic_overlays: true,
             native_frame: None,
+            page_background: None,
         },
         items,
         sections,
@@ -250,14 +253,9 @@ pub fn write_native_album_pdf(
     policy: &StampTextPolicy,
     frame_width_mm: f64,
     frame_colour: NamedColour,
+    page_background: Option<&NativePageBackgroundImage>,
     output: &Path,
 ) -> Result<Vec<StampItemPage>> {
-    if !frame_width_mm.is_finite()
-        || frame_width_mm <= 0.0
-        || !mm_to_points(frame_width_mm).is_finite()
-    {
-        return Err("Native stamp frame width must be finite and positive".into());
-    }
     let sections = if items.is_empty() {
         Vec::new()
     } else {
@@ -266,18 +264,71 @@ pub fn write_native_album_pdf(
             alignment: settings.row_alignment(),
         }]
     };
+    write_native_album_pdf_with_sections(
+        settings,
+        items,
+        &sections,
+        policy,
+        frame_width_mm,
+        frame_colour,
+        page_background,
+        output,
+    )
+}
+
+pub fn write_native_album_pdf_with_sections(
+    settings: &PageSettings,
+    items: &[StampImageRowItem],
+    sections: &[StampRowSection],
+    policy: &StampTextPolicy,
+    frame_width_mm: f64,
+    frame_colour: NamedColour,
+    page_background: Option<&NativePageBackgroundImage>,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
+    if !frame_width_mm.is_finite()
+        || frame_width_mm <= 0.0
+        || !mm_to_points(frame_width_mm).is_finite()
+    {
+        return Err("Native stamp frame width must be finite and positive".into());
+    }
     write_paginated_stamp_sections(
         settings,
         RenderMode {
             proof: None,
             diagnostic_overlays: false,
             native_frame: Some((frame_width_mm, frame_colour)),
+            page_background,
         },
         items,
-        &sections,
+        sections,
         policy,
         output,
     )
+}
+
+fn prepare_page_background(
+    background: &NativePageBackgroundImage,
+    layout: &PageLayout,
+) -> Result<(Image, super::document::Bounds)> {
+    let bounds = background.bounds;
+    bounds
+        .inset(0.0, 0.0)
+        .map_err(|error| format!("Native page background bounds: {error}"))?;
+    if bounds.left < 0.0
+        || bounds.bottom < 0.0
+        || bounds.right > layout.size.width_mm()
+        || bounds.top > layout.size.height_mm()
+    {
+        return Err("Native page background image must fit within the physical page".into());
+    }
+    let image = Image::from_file(&background.image_path).map_err(|error| {
+        format!(
+            "Cannot load native page background image {}: {error}",
+            background.image_path.display()
+        )
+    })?;
+    Ok((image, bounds))
 }
 
 fn write_paginated_stamp_sections(
@@ -320,6 +371,7 @@ fn write_paginated_stamp_sections(
                         image_path: item.image_path.clone(),
                         box_bounds: geometry.frame_bounds(),
                         image_scale_pt_per_pixel: item.image_scale_pt_per_pixel,
+                        options: item.options,
                         image_padding_horizontal_mm: 0.0,
                         image_padding_vertical_mm: 0.0,
                         text_gap_mm: 0.0,
@@ -335,12 +387,19 @@ fn write_paginated_stamp_sections(
                     geometries.push(geometry);
                 }
             }
+            let background_image = mode
+                .page_background
+                .map(|background| prepare_page_background(background, &page.layout))
+                .transpose()?;
             Ok(PreparedPdfPage {
                 layout: page.layout.clone(),
                 stamps: images,
+                background_image,
                 geometries,
                 text_items: page.items.clone(),
                 diagnostic_overlays: mode.diagnostic_overlays,
+                additional_text: Vec::new(),
+                frame_styles: Vec::new(),
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -359,14 +418,18 @@ struct RenderMode<'a> {
     proof: Option<&'a GeometryProofSettings>,
     diagnostic_overlays: bool,
     native_frame: Option<(f64, NamedColour)>,
+    page_background: Option<&'a NativePageBackgroundImage>,
 }
 
 struct PreparedPdfPage {
     layout: PageLayout,
     stamps: Vec<PreparedStampImage>,
+    background_image: Option<(Image, super::document::Bounds)>,
     geometries: Vec<StampBoxGeometry>,
     text_items: Vec<StampPageFragment>,
     diagnostic_overlays: bool,
+    additional_text: Vec<super::stamp_text::PositionedStampText>,
+    frame_styles: Vec<(super::document::Bounds, f64, NamedColour)>,
 }
 
 fn write_proof(
@@ -403,6 +466,7 @@ fn write_proof(
             Ok(PreparedPdfPage {
                 layout,
                 stamps,
+                background_image: None,
                 geometries: geometries.to_vec(),
                 text_items: text_items
                     .iter()
@@ -416,6 +480,8 @@ fn write_proof(
                     })
                     .collect(),
                 diagnostic_overlays: true,
+                additional_text: Vec::new(),
+                frame_styles: Vec::new(),
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -435,9 +501,12 @@ fn save_pdf(
         PreparedPdfPage {
             layout,
             stamps,
+            background_image,
             geometries,
             text_items,
             diagnostic_overlays,
+            additional_text,
+            frame_styles,
         },
     ) in pages.into_iter().enumerate()
     {
@@ -445,6 +514,18 @@ fn save_pdf(
             mm_to_points(layout.size.width_mm()),
             mm_to_points(layout.size.height_mm()),
         );
+        if let Some((image, bounds)) = background_image {
+            let name = format!("native_page_background_{index}");
+            page.add_image(&name, image);
+            page.draw_image(
+                &name,
+                mm_to_points(bounds.left),
+                mm_to_points(bounds.bottom),
+                mm_to_points(bounds.right - bounds.left),
+                mm_to_points(bounds.top - bounds.bottom),
+            )
+            .map_err(|error| format!("Cannot draw native page background image: {error}"))?;
+        }
         let mut strokes: Vec<_> = settings
             .border()
             .strokes(layout.margin_bounds)?
@@ -614,16 +695,18 @@ fn save_pdf(
             } else {
                 format!("native_stamp_image_{image_index}")
             };
-            page.add_image(&name, stamp.image.clone());
-            let bounds = stamp.image_bounds;
-            page.draw_image(
-                &name,
-                mm_to_points(bounds.left),
-                mm_to_points(bounds.bottom),
-                mm_to_points(bounds.right - bounds.left),
-                mm_to_points(bounds.top - bounds.bottom),
-            )
-            .map_err(|error| format!("Cannot draw native stamp image: {error}"))?;
+            if let Some(image) = &stamp.image {
+                page.add_image(&name, image.clone());
+                let bounds = stamp.image_bounds;
+                page.draw_image(
+                    &name,
+                    mm_to_points(bounds.left),
+                    mm_to_points(bounds.bottom),
+                    mm_to_points(bounds.right - bounds.left),
+                    mm_to_points(bounds.top - bounds.bottom),
+                )
+                .map_err(|error| format!("Cannot draw native stamp image: {error}"))?;
+            }
             for (text, kind) in [
                 (stamp.heading.as_ref(), "stamp heading"),
                 (stamp.caption.as_ref(), "stamp caption"),
@@ -667,6 +750,29 @@ fn save_pdf(
                     "stamp text footprint",
                 )?;
             }
+        }
+        for text in additional_text {
+            draw_text_lines(
+                &mut page,
+                text.measured.font.clone(),
+                text.measured.size_pt,
+                text.colour,
+                text.lines,
+                "imported AlbumEasy text",
+            )?;
+        }
+        for (bounds, width_mm, colour) in frame_styles {
+            let [red, green, blue] = colour.rgb();
+            page.graphics()
+                .set_stroke_color(Color::rgb(red, green, blue))
+                .set_line_width(mm_to_points(width_mm))
+                .rect(
+                    mm_to_points(bounds.left),
+                    mm_to_points(bounds.bottom),
+                    mm_to_points(bounds.right - bounds.left),
+                    mm_to_points(bounds.top - bounds.bottom),
+                )
+                .stroke();
         }
         for geometry in geometries {
             if let Some((width_mm, colour)) = native_frame {
@@ -729,5 +835,45 @@ fn draw_text_lines(
             .write(&line.text)
             .map_err(|error| format!("Cannot draw native page {kind}: {error}"))?;
     }
+
     Ok(())
+}
+
+pub(crate) struct ImportedPdfPage {
+    pub layout: PageLayout,
+    pub images: Vec<StampImageSettings>,
+    pub text: Vec<super::stamp_text::PositionedStampText>,
+    pub frames: Vec<(super::document::Bounds, f64, NamedColour)>,
+}
+
+pub(crate) fn write_imported_album_pdf(
+    settings: &PageSettings,
+    pages: Vec<ImportedPdfPage>,
+    output: &Path,
+) -> Result<()> {
+    let prepared = pages
+        .into_iter()
+        .map(|page| {
+            let stamps = page
+                .images
+                .iter()
+                .map(|image| {
+                    image.prepare(&page.layout).map_err(|error| {
+                        format!("Imported image {}: {error}", image.image_path.display())
+                    })
+                })
+                .collect::<Result<Vec<_>>>()?;
+            Ok(PreparedPdfPage {
+                layout: page.layout,
+                stamps,
+                background_image: None,
+                geometries: Vec::new(),
+                text_items: Vec::new(),
+                diagnostic_overlays: false,
+                additional_text: page.text,
+                frame_styles: page.frames,
+            })
+        })
+        .collect::<Result<Vec<_>>>()?;
+    save_pdf(settings, None, None, output, prepared)
 }

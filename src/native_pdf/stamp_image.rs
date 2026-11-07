@@ -17,6 +17,50 @@ pub struct StampImageRowItem {
     pub stamp: super::stamp_text::StampTextItem,
     pub image_path: PathBuf,
     pub image_scale_pt_per_pixel: f64,
+    pub options: StampImageOptions,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImagePaddingUnit {
+    Millimetres,
+    Percent,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ImageAspectRatio {
+    Preserve,
+    Fit,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct StampImageOptions {
+    pub padding_unit: ImagePaddingUnit,
+    pub padding_horizontal: f64,
+    pub padding_vertical: f64,
+    pub stretch_small: bool,
+    pub aspect_ratio: ImageAspectRatio,
+    pub grayscale: bool,
+    pub visible: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct NativePageBackgroundImage {
+    pub image_path: PathBuf,
+    pub bounds: Bounds,
+}
+
+impl Default for StampImageOptions {
+    fn default() -> Self {
+        Self {
+            padding_unit: ImagePaddingUnit::Millimetres,
+            padding_horizontal: 0.0,
+            padding_vertical: 0.0,
+            stretch_small: false,
+            aspect_ratio: ImageAspectRatio::Preserve,
+            grayscale: false,
+            visible: true,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -48,14 +92,14 @@ pub type StampTextProofSettings = StampTextSettings;
 
 /// Explicit geometry and image policy for rendering one native stamp image.
 ///
-/// The source is measured at `image_scale_pt_per_pixel`; images are never
-/// enlarged and are proportionally reduced only when needed to fit the padded
-/// box.
+/// The source is measured at `image_scale_pt_per_pixel`; image policy controls
+/// padding, enlargement, aspect ratio, grayscale, and visibility.
 #[derive(Clone, Debug)]
 pub struct StampImageSettings {
     pub image_path: PathBuf,
     pub box_bounds: Bounds,
     pub image_scale_pt_per_pixel: f64,
+    pub options: StampImageOptions,
     pub image_padding_horizontal_mm: f64,
     pub image_padding_vertical_mm: f64,
     pub text_gap_mm: f64,
@@ -98,6 +142,20 @@ impl StampImageSettings {
                 return Err(format!("{key} must be finite and nonnegative"));
             }
         }
+        for (key, value) in [
+            (
+                "native_pdf.stamp_image.options.padding_horizontal",
+                self.options.padding_horizontal,
+            ),
+            (
+                "native_pdf.stamp_image.options.padding_vertical",
+                self.options.padding_vertical,
+            ),
+        ] {
+            if !value.is_finite() || value < 0.0 {
+                return Err(format!("{key} must be finite and nonnegative"));
+            }
+        }
         self.box_bounds
             .inset(0.0, 0.0)
             .map_err(|error| format!("native_pdf.stamp_image.box_bounds: {error}"))?;
@@ -126,18 +184,73 @@ impl StampImageSettings {
                 )
             }
         }
-        let image = Image::from_file(&self.image_path).map_err(|error| {
-            format!(
-                "Cannot load native stamp image {}: {error}",
-                self.image_path.display()
+        let image = if self.options.grayscale {
+            let decoded = image::open(&self.image_path).map_err(|error| {
+                format!(
+                    "Cannot load native stamp image {}: {error}",
+                    self.image_path.display()
+                )
+            })?;
+            let grayscale = decoded.to_luma8();
+            Image::from_gray_data(grayscale.into_raw(), decoded.width(), decoded.height()).map_err(
+                |error| {
+                    format!(
+                        "Cannot prepare grayscale native stamp image {}: {error}",
+                        self.image_path.display()
+                    )
+                },
+            )?
+        } else if self
+            .image_path
+            .extension()
+            .and_then(|extension| extension.to_str())
+            .is_some_and(|extension| extension.eq_ignore_ascii_case("png"))
+        {
+            // Decode palette/low-bit-depth PNGs before handing pixels to the PDF backend.
+            let decoded = image::open(&self.image_path).map_err(|error| {
+                format!(
+                    "Cannot load native stamp image {}: {error}",
+                    self.image_path.display()
+                )
+            })?;
+            Image::from_rgba_data(
+                decoded.to_rgba8().into_raw(),
+                decoded.width(),
+                decoded.height(),
             )
-        })?;
+            .map_err(|error| {
+                format!(
+                    "Cannot prepare native stamp image {}: {error}",
+                    self.image_path.display()
+                )
+            })?
+        } else {
+            Image::from_file(&self.image_path).map_err(|error| {
+                format!(
+                    "Cannot load native stamp image {}: {error}",
+                    self.image_path.display()
+                )
+            })?
+        };
 
+        let box_width = self.box_bounds.right - self.box_bounds.left;
+        let box_height = self.box_bounds.top - self.box_bounds.bottom;
+        let (option_padding_horizontal_mm, option_padding_vertical_mm) =
+            match self.options.padding_unit {
+                ImagePaddingUnit::Millimetres => (
+                    self.options.padding_horizontal,
+                    self.options.padding_vertical,
+                ),
+                ImagePaddingUnit::Percent => (
+                    box_width * self.options.padding_horizontal / 100.0,
+                    box_height * self.options.padding_vertical / 100.0,
+                ),
+            };
         let image_area = self
             .box_bounds
             .inset(
-                self.image_padding_horizontal_mm,
-                self.image_padding_vertical_mm,
+                self.image_padding_horizontal_mm + option_padding_horizontal_mm,
+                self.image_padding_vertical_mm + option_padding_vertical_mm,
             )
             .map_err(|error| format!("native_pdf.stamp_image padding: {error}"))?;
         let natural_width_mm =
@@ -150,14 +263,35 @@ impl StampImageSettings {
         {
             return Err("native_pdf.stamp_image source dimensions overflow PDF coordinates".into());
         }
-        let scale = ((image_area.right - image_area.left) / natural_width_mm)
-            .min((image_area.top - image_area.bottom) / natural_height_mm)
-            .min(1.0);
-        if !scale.is_finite() || scale <= 0.0 {
+        let available_width_mm = image_area.right - image_area.left;
+        let available_height_mm = image_area.top - image_area.bottom;
+        let image_is_small =
+            natural_width_mm <= available_width_mm && natural_height_mm <= available_height_mm;
+        let (image_width_mm, image_height_mm) = match self.options.aspect_ratio {
+            ImageAspectRatio::Preserve => {
+                let fit_scale = (available_width_mm / natural_width_mm)
+                    .min(available_height_mm / natural_height_mm);
+                let scale = if image_is_small && !self.options.stretch_small {
+                    1.0
+                } else {
+                    fit_scale
+                };
+                (natural_width_mm * scale, natural_height_mm * scale)
+            }
+            ImageAspectRatio::Fit if image_is_small && !self.options.stretch_small => {
+                (natural_width_mm, natural_height_mm)
+            }
+            ImageAspectRatio::Fit => (available_width_mm, available_height_mm),
+        };
+        if !image_width_mm.is_finite()
+            || !image_height_mm.is_finite()
+            || image_width_mm <= 0.0
+            || image_height_mm <= 0.0
+            || image_width_mm > available_width_mm + 1e-9
+            || image_height_mm > available_height_mm + 1e-9
+        {
             return Err("native_pdf.stamp_image cannot fit the image into its box".into());
         }
-        let image_width_mm = natural_width_mm * scale;
-        let image_height_mm = natural_height_mm * scale;
         let image_bounds = Bounds {
             left: (image_area.left + image_area.right - image_width_mm) / 2.0,
             right: (image_area.left + image_area.right + image_width_mm) / 2.0,
@@ -176,7 +310,7 @@ impl StampImageSettings {
             .transpose()?;
 
         Ok(PreparedStampImage {
-            image,
+            image: self.options.visible.then_some(image),
             image_bounds,
             heading,
             caption,
@@ -188,7 +322,7 @@ impl StampImageSettings {
 pub type StampImageProofSettings = StampImageSettings;
 
 pub(crate) struct PreparedStampImage {
-    pub image: Image,
+    pub image: Option<Image>,
     pub image_bounds: Bounds,
     pub heading: Option<PreparedStampText>,
     pub caption: Option<PreparedStampText>,
@@ -314,6 +448,7 @@ mod tests {
                 top: 176.0,
             },
             image_scale_pt_per_pixel: 1.0,
+            options: StampImageOptions::default(),
             image_padding_horizontal_mm: 2.0,
             image_padding_vertical_mm: 2.0,
             text_gap_mm: 2.0,
@@ -399,6 +534,7 @@ mod tests {
                 image_path: path,
                 box_bounds,
                 image_scale_pt_per_pixel,
+                options: StampImageOptions::default(),
                 image_padding_horizontal_mm: 3.0,
                 image_padding_vertical_mm: 3.0,
                 text_gap_mm: 2.0,
@@ -412,6 +548,84 @@ mod tests {
             assert!((width_mm - expected_width_mm).abs() < 0.01);
             assert!((height_mm - 21.0).abs() < 0.01);
         }
+        Ok(())
+    }
+
+    #[test]
+    fn image_options_control_padding_fit_grayscale_and_visibility() -> Result<()> {
+        let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let path = temporary.path().join("stamp.png");
+        image::RgbImage::from_pixel(100, 50, image::Rgb([40, 80, 120]))
+            .save(&path)
+            .map_err(|error| error.to_string())?;
+        let make_settings = |options| StampImageSettings {
+            image_path: path.clone(),
+            box_bounds: Bounds {
+                left: 80.0,
+                bottom: 100.0,
+                right: 130.0,
+                top: 140.0,
+            },
+            image_scale_pt_per_pixel: mm_to_points(0.1),
+            options,
+            image_padding_horizontal_mm: 0.0,
+            image_padding_vertical_mm: 0.0,
+            text_gap_mm: 0.0,
+            heading: None,
+            caption: None,
+        };
+        let mut options = StampImageOptions {
+            padding_unit: ImagePaddingUnit::Percent,
+            padding_horizontal: 10.0,
+            padding_vertical: 10.0,
+            ..StampImageOptions::default()
+        };
+
+        let natural = make_settings(options).prepare(&page_layout()?)?;
+        assert!((natural.image_bounds.right - natural.image_bounds.left - 10.0).abs() < 0.001);
+        assert!((natural.image_bounds.top - natural.image_bounds.bottom - 5.0).abs() < 0.001);
+        assert_eq!(
+            natural
+                .image
+                .as_ref()
+                .ok_or("visible source image missing")?
+                .data()
+                .len(),
+            15_000
+        );
+
+        options.stretch_small = true;
+        let stretched = make_settings(options).prepare(&page_layout()?)?;
+        assert!((stretched.image_bounds.right - stretched.image_bounds.left - 40.0).abs() < 0.001);
+        assert!((stretched.image_bounds.top - stretched.image_bounds.bottom - 20.0).abs() < 0.001);
+
+        options.aspect_ratio = ImageAspectRatio::Fit;
+        let fitted = make_settings(options).prepare(&page_layout()?)?;
+        assert!((fitted.image_bounds.right - fitted.image_bounds.left - 40.0).abs() < 0.001);
+        assert!((fitted.image_bounds.top - fitted.image_bounds.bottom - 32.0).abs() < 0.001);
+
+        options.padding_unit = ImagePaddingUnit::Millimetres;
+        options.padding_horizontal = 2.0;
+        options.padding_vertical = 3.0;
+        let padded = make_settings(options).prepare(&page_layout()?)?;
+        assert!((padded.image_bounds.right - padded.image_bounds.left - 46.0).abs() < 0.001);
+        assert!((padded.image_bounds.top - padded.image_bounds.bottom - 34.0).abs() < 0.001);
+
+        options.grayscale = true;
+        let grayscale = make_settings(options).prepare(&page_layout()?)?;
+        assert_eq!(
+            grayscale
+                .image
+                .as_ref()
+                .ok_or("visible grayscale image missing")?
+                .data()
+                .len(),
+            5_000
+        );
+
+        options.visible = false;
+        let hidden = make_settings(options).prepare(&page_layout()?)?;
+        assert!(hidden.image.is_none());
         Ok(())
     }
 }

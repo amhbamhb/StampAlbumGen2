@@ -53,6 +53,54 @@ fn make_stamp_image(path: &Path) -> Result<()> {
 }
 
 #[test]
+fn indexed_png_and_rgba_transparency_render_without_backend_png_decode() -> Result<()> {
+    let temporary = tempfile::tempdir()?;
+    let indexed = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/albumeasy/denmark-txt-native-v1/images/flag_placeholder.png");
+    let bytes = fs::read(&indexed)?;
+    assert_eq!(
+        (bytes[24], bytes[25]),
+        (4, 3),
+        "4-bit indexed PNG regression"
+    );
+    let rgba = temporary.path().join("transparent.png");
+    image::RgbaImage::from_fn(16, 16, |x, _| {
+        image::Rgba([30, 50, 120, if x < 8 { 0 } else { 255 }])
+    })
+    .save(&rgba)?;
+    for (index, image_path) in [indexed, rgba].into_iter().enumerate() {
+        let output = temporary.path().join(format!("png-{index}.pdf"));
+        write_stamp_image_proof(
+            &settings()?,
+            &proof()?,
+            &StampImageProofSettings {
+                image_path,
+                box_bounds: Bounds {
+                    left: 80.0,
+                    right: 130.0,
+                    bottom: 116.0,
+                    top: 176.0,
+                },
+                image_scale_pt_per_pixel: 1.0,
+                options: Default::default(),
+                image_padding_horizontal_mm: 2.0,
+                image_padding_vertical_mm: 2.0,
+                text_gap_mm: 2.0,
+                heading: None,
+                caption: None,
+            },
+            &output,
+        )?;
+        let pdf = PdfDocument::open(&output)?;
+        assert_eq!(pdf.page_count()?, 1);
+        if index == 1 {
+            assert!(String::from_utf8_lossy(&fs::read(output)?).contains("/SMask"));
+        }
+    }
+    Ok(())
+}
+
+#[test]
 fn stamp_image_heading_caption_and_page_border_render_with_physical_geometry() -> Result<()> {
     let temporary = tempfile::tempdir()?;
     let image_path = temporary.path().join("proof-stamp.png");
@@ -68,6 +116,7 @@ fn stamp_image_heading_caption_and_page_border_render_with_physical_geometry() -
             top: 176.0,
         },
         image_scale_pt_per_pixel: 1.0,
+        options: Default::default(),
         image_padding_horizontal_mm: 2.0,
         image_padding_vertical_mm: 2.0,
         text_gap_mm: 2.0,
@@ -119,6 +168,7 @@ fn invalid_image_does_not_create_or_truncate_the_output() -> Result<()> {
             top: 176.0,
         },
         image_scale_pt_per_pixel: 1.0,
+        options: Default::default(),
         image_padding_horizontal_mm: 2.0,
         image_padding_vertical_mm: 2.0,
         text_gap_mm: 2.0,
@@ -158,6 +208,7 @@ fn illustration_scale_changes_pdf_image_but_not_known_size_or_frame() -> Result<
             image_path: image_path.clone(),
             box_bounds: geometry.physical_bounds(),
             image_scale_pt_per_pixel: mm_to_points(mm_per_pixel),
+            options: Default::default(),
             image_padding_horizontal_mm: 0.0,
             image_padding_vertical_mm: 0.0,
             text_gap_mm: 2.0,

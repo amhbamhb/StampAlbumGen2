@@ -1,6 +1,7 @@
 //! Incremental native layout primitives. Not yet an application PDF backend.
 
 pub mod album;
+pub mod albumeasy;
 pub mod colour;
 pub mod commands;
 pub mod config;

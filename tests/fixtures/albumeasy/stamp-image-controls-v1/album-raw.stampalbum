@@ -1,0 +1,51 @@
+# AlbumEasy 4.5.0 only. This is a complete album page, not a command fragment.
+# Real stamp records, Colnect sizes and image provenance are in README.md.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 5)
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "1959-1960  |  STAMP IMAGE CONTROLS" 5)
+
+# DB ID 150 / SG 1125a / Colnect 700029 / 52 x 29 mm.
+# Omit image settings to exercise AlbumEasy's documented default.
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm\nAlbumEasy default" "")
+
+# DB ID 151 / SG 1137a / Colnect 700273 / 26 x 29 mm.
+ALBUM_STAMP_IMG_NEW_SETTING (2 2 false)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\n2 mm padding" "")
+
+PAGE_TEXT_CENTRE (HN 9 "PERCENT PADDING  |  SMALL-IMAGE STRETCH" 5)
+
+# DB ID 152 / SG 1137b / Colnect 700274 / 26 x 29 mm.
+# Omitted vertical padding copies horizontal; omitted stretch is false.
+ROW_START_ES (HN 8 0.1)
+ALBUM_STAMP_IMG_NEW_SETTING_PCNT (10)
+STAMP_ADD_IMG (32 35 "us-152-small.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nSmall / no stretch" "")
+
+# Same low-resolution derivative and frame; only the small-image stretch flag changes.
+ALBUM_STAMP_IMG_NEW_SETTING_PCNT (10 10 true)
+STAMP_ADD_IMG (32 35 "us-152-small.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nSmall / stretch" "")
+
+PAGE_TEXT_CENTRE (HN 9 "ASPECT RATIO  |  COLOUR  |  VISIBILITY" 5)
+
+# DB ID 156 / SG 1148a / Colnect 700272 / 52 x 29 mm.
+ROW_START_ES (HN 8 0.1)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+ALBUM_STAMP_IMG_GREYSCALE_ON
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm\nAspect / grayscale" "")
+
+# DB ID 151 / SG 1137a / Colnect 700273 / 26 x 29 mm.
+ALBUM_STAMP_IMG_HIDE
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\nImage hidden" "")
+
+# DB ID 152 / SG 1137b / Colnect 700274 / 26 x 29 mm.
+# Restore the regular image presentation for the final item.
+ALBUM_STAMP_IMG_GRAYSCALE_OFF
+ALBUM_STAMP_IMG_SHOW
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nColour / show" "")

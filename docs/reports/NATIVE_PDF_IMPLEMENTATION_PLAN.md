@@ -2,8 +2,8 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 38
-**Status:** Native section row alignment and paginated real-stamp proof PDFs implemented; the native document, complete renderer, and compatibility exporters remain active implementation work; production application routing is not integrated.
+**Revision:** 40
+**Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
 ### Canonical document and output contract
@@ -23,30 +23,60 @@ classify every feature as exact, approximated, omitted, or blocked and report
 losses explicitly; it must never silently claim that a divergent export is
 equivalent.
 
+### One native PDF path for both input formats
+
+The long-term goal is that users can provide either a program-owned
+`.stampalbum` document or an AlbumEasy `.txt` album, together with its referenced
+images, and generate the PDF entirely within StampAlbumGen2. Both inputs must
+converge on the same canonical in-memory album model and the same native PDF
+renderer: `.stampalbum` is parsed directly, while `.txt` is parsed and mapped
+from AlbumEasy commands into that model. Import must preserve command ordering,
+state changes, image references, and the observable layout semantics of every
+mapped command; it must not invoke AlbumEasy to interpret or render the file.
+
+The target for AlbumEasy compatibility is complete coverage of the documented
+command language and supported legacy spellings in the agreed version scope,
+including stamp shapes, image overloads, captions, frame settings, and
+state/save-restore behavior. “Raw AlbumEasy codes work” means the original
+AlbumEasy commands in an imported `.txt` are interpreted and rendered natively,
+not copied into `.stampalbum` or passed through an AlbumEasy executable.
+Unmapped or unsupported input must be reported explicitly rather than silently
+ignored or rendered with success-shaped defaults. AlbumEasy remains useful as
+a pinned reference renderer for mapping and visual conformance, but must not be
+a runtime dependency of PDF generation.
+
+This is the compatibility destination, not a claim about current support. The
+command matrix, reference fixtures, command mapping, and conformance tests must
+be completed incrementally before imported `.txt` files can be certified for
+native rendering. Production integration remains deferred until that mapping
+and review are complete. Native-only features continue to use `.stampalbum`;
+AlbumEasy reference `.txt` files remain free of application-specific commands.
+
 **Native file extension:** `.stampalbum` is approved by the maintainer for the
 program-owned text document. Version 1 has a UTF-8 command-line format and
 `STAMPALBUM 1` header. Keep `.txt` for imported AlbumEasy input and
 AlbumEasy-compatible output.
 
 **Execution order clarified:** The canonical native document and direct native
-PDF path come first. AlbumEasy-compatible TXT is a separate projection from
-that document and follows the native path; it is not an intermediate input to
-PDF generation. The historical phase/task IDs below are retained for
-traceability and must not reverse this implementation order. Existing
-commented header-command examples in the application are a reference for the
-later header-command slice, not a requirement for the initial format.
+PDF path come first. AlbumEasy-compatible TXT export is a separate projection
+from that document; importing user-authored AlbumEasy TXT is a distinct
+parse-and-map path into the same canonical model. Neither PDF path may depend
+on first producing another text format or invoking AlbumEasy. The historical
+phase/task IDs below are retained for traceability and must not reverse this
+implementation order.
 
-The first standalone code slice is implemented in
+The standalone code slice is implemented in
 [`src/native_pdf/album.rs`](../../src/native_pdf/album.rs), with the
 `render_stampalbum` example and a fixture under
 [`tests/fixtures/native_pdf/stampalbum-v1`](../../tests/fixtures/native_pdf/stampalbum-v1/README.md).
 It parses explicit page/border/row/text-policy commands and `STAMP_IMAGE`,
 resolves relative raster paths from the `.stampalbum` file, and writes a real
-native PDF directly without AlbumEasy or diagnostic proof overlays. It does
-not yet import AlbumEasy TXT, export compatible TXT, render captions or other
-stamp shapes, or connect to application generation. The existing commented
-header-command examples in the application are a future reference when header
-support is mapped; header support is not part of this slice.
+native PDF directly without AlbumEasy or diagnostic proof overlays. Current
+version-1 support includes stamp-image policies, multiline captions, page
+titles and headers, explicit row breaks, and total-addition frame sizing.
+It does not itself parse AlbumEasy commands. The separate bounded interpreter
+described below shares its native PDF writer; compatible TXT export, other
+stamp shapes, and application generation are not connected.
 
 The [real-stamp comparison fixture](../../tests/fixtures/albumeasy/native-real-stamps-v1/README.md)
 pairs an AlbumEasy 4.5.0 `.txt`/PDF with a native `.stampalbum`/PDF using four
@@ -55,14 +85,117 @@ recorded physical bounds and the one-page Letter output. Printing and
 maintainer visual acceptance remain pending; this example does not claim
 renderer parity.
 
+The AlbumEasy-first image-control fixture is documented in
+[`stamp-image-controls-v1`](../../tests/fixtures/albumeasy/stamp-image-controls-v1/README.md).
+Its AlbumEasy-only `.txt` now renders a complete bordered Letter page with real
+measured stamps, spacing, frame sizing and readable captions. AlbumEasy 4.5.0
+was the only renderer used for that first pass, which the maintainer accepted
+before the native pass began. The separate `.stampalbum` now renders directly
+to `album-native.pdf`; a screen-level comparison records the layout and image
+fit differences. Native-pass and actual-size print acceptance are still
+pending. Page-background-image behavior is deferred to a separate realistic
+fixture.
+
+### Standalone TXT and raw-AlbumEasy checkpoint (#84)
+
+The [standalone example](../../examples/render_stampalbum.rs) now dispatches
+by the first nonblank, noncomment source line:
+
+- `STAMPALBUM ...`: the existing native-language loader, retaining version
+  checks and the `.stampalbum` extension requirement.
+- Otherwise: the [bounded AlbumEasy interpreter](../../src/native_pdf/albumeasy.rs),
+  accepting `.txt` or a `.stampalbum` containing only AlbumEasy commands.
+
+Neither path launches AlbumEasy. Both use the shared native PDF writer, but
+the compatibility path currently builds positioned imported-page scenes,
+not the final unified canonical document. This is experimental standalone
+support, not a change to the production external-album importer, which still
+uses AlbumEasy.
+
+The accepted image-controls reference TXT renders **without edits**. Its TXT
+and byte-identical raw-AlbumEasy `.stampalbum` each produce one Letter page
+with six visible images; their extracted text and 1200-pixel page raster are
+identical. The native-language `.stampalbum` also renders one Letter page,
+with its previously recorded layout differences.
+
+The [Denmark 1989 fixture](../../tests/fixtures/albumeasy/denmark-txt-native-v1/README.md)
+preserves the supplied album's explicit 16 page boundaries and 41 image
+placements. All 41 referenced images are copied with checksums, so both its
+prepared TXT and identical raw `.stampalbum` render from the fixture directory.
+The original TXT, images, database, and historical PDF are not modified.
+The original TXT **does not yet pass unchanged**: the eight occurrences below
+are commented only in the clearly named supported test copy. The historical
+PDF is a comparison aid, not newly generated AlbumEasy 4.5.0 conformance proof.
+
+#### Required Denmark mappings still deferred
+
+| Command | Original lines | Occurrences | Required follow-up |
+|---|---|---:|---|
+| `COLOR_ALBUM_FOOTER` | 42 | 1 | Map footer colour into native footer rendering. |
+| `COLOR_ALBUM_MARGIN_TXT` | 45 | 1 | Map margin-text colour together with margin text commands. |
+| `COLOR_STAMP_BACKGROUND` | 49, 72, 79 | 3 | Add stateful stamp background fills; preserve image/frame layering. |
+| `ALBUM_PAGES_FOOTER_NUMBER` | 52 | 1 | Map positioned page numbering, prefix/suffix and `$PAGES$`. |
+| `ALBUM_STAMP_SETTINGS_SAVE` | 68 | 1 | Capture the complete documented stamp-settings state. |
+| `ALBUM_STAMP_SETTINGS_RESTORE` | 83 | 1 | Restore that state; verify reference save/restore semantics first. |
+
+Normal rendering rejects unsupported commands; it never auto-comments them.
+`commented_test_source` explicitly prepares a test copy and returns a
+line/name/source loss inventory. It checks supported **names**, not every
+overload: unsupported variants or malformed arguments still fail rendering
+and must not be described as compatible.
+
+#### Current bounded behavior and remaining risks
+
+- Supported families: explicit page size/margins/spacing/border, title/header,
+  selected colours, top-aligned ES/FS rows, centered page text/vertical space,
+  basic image stamps/`NO_FRAME`, three-argument `STAMP_HEADING_VA`, frame size
+  adjustment, solid/blank frames, and image padding/stretch/aspect/grayscale/
+  visibility controls. See the interpreter for exact accepted arguments.
+- Page settings must precede `PAGE_START`; mid-document changes fail.
+  Required geometry is explicit in the input. Reference-language image
+  defaults are distinct from native-language TOML settings.
+- Source page breaks are preserved. Oversize rows error rather than
+  silently reflowing. Mixed-height row reservation uses each item's own
+  frame-plus-caption footprint, not the tallest frame plus another caption.
+- Indexed/low-bit PNGs are decoded with the existing image crate; RGBA
+  transparency is retained. Image-fit comparisons allow only `1e-9` mm
+  floating-point roundoff. Missing images remain explicit errors and
+  preserve existing output files.
+- Text uses AFM metrics. Caption widths/wrapping, baseline placement, default
+  row-alignment semantics, image DPI metadata, advanced image overloads,
+  shapes, state/save-restore and exact visual parity remain open.
+  The compatibility image scale is currently one point per pixel (72 dpi).
+- Denmark's source width is **216.0 mm**, not 215.9 mm. Its 216.0 x 279.4 mm
+  geometry is preserved; the image-controls proofs are exact US Letter.
+  Explicit TXT frame dimensions are not independently verified physical
+  Colnect stamp measurements.
+- The supplied Denmark PDF differs from the current TXT/native output:
+  black backgrounds and the numbered footer are absent in the adapted
+  native proof, while the native proof includes the TXT's page border/header.
+  Dense captions also need human review. Do not certify visual parity.
+- Each Denmark native PDF is approximately 44.7 MB; compression/asset
+  optimization is a later task, not grounds for changing source images.
+- Switzerland fixture selection remains separate. The earlier two candidate
+  rows had identity/measurement concerns; do not use them as authoritative
+  early-to-modern Colnect examples without verification.
+
+Validation: 77 focused tests passed, 11 ignored; the opt-in Denmark test
+passed separately. Five real standalone invocations covered the three
+image-controls inputs and the two Denmark inputs. See the fixture README for
+commands, image/source checks, failed attempts and filesystem/database impact.
+Linux was exercised; Windows execution and human actual-size print/visual
+acceptance remain pending. No production integration, OKF regeneration or PR
+is authorized by this checkpoint.
+
 ### Future native visual-fixture and print-review requirements
 
-For future native command examples, keep a paired, inspectable fixture bundle
-under `tests/fixtures/`: the AlbumEasy `.txt` input and its reference `.pdf`,
-plus the program-owned `.stampalbum` input and the PDF rendered from it. The
-older TOML fragments in existing fixture sets predate the approved native file
-format; use `.stampalbum` for new native documents rather than treating TOML as
-the native album language.
+For future paired examples, keep both passes in an inspectable fixture bundle
+under `tests/fixtures/`. First render and review the AlbumEasy-only `.txt` and
+its reference `.pdf` on a complete realistic album page. Only after that page
+is accepted, create the program-owned `.stampalbum` and directly rendered
+native `.pdf` for comparison. The older TOML fragments in existing fixture sets
+predate the approved native file format; use `.stampalbum` for new native
+documents rather than treating TOML as the native album language.
 
 Use real stamp images with positive recorded Colnect physical dimensions,
 preferably records and associated images already available in the local

@@ -3,15 +3,23 @@ use super::{
     commands::{
         colour::colour_album_border::AlbumBorderColour,
         page::{
-            album_pages_border::PageBorder, album_pages_margins::Margins,
-            album_pages_size::PageSize, album_pages_spacing::Spacing,
+            album_pages_border::PageBorder,
+            album_pages_header::{AlbumPagesHeader, HeaderPosition},
+            album_pages_header_pad::HeaderPadding,
+            album_pages_margins::Margins,
+            album_pages_size::PageSize,
+            album_pages_spacing::Spacing,
+            album_pages_title::AlbumPagesTitle,
         },
     },
     document::{Bounds, PageSettings},
-    pagination::StampItemPage,
+    pagination::{StampItemPage, StampRowSection},
     renderer,
     stamp_box::StampBoxGeometry,
-    stamp_image::StampImageRowItem,
+    stamp_image::{
+        ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampImageOptions,
+        StampImageRowItem, StampTextSettings,
+    },
     stamp_rows::RowAlignment,
     stamp_text::{ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy},
     units::mm_to_points,
@@ -29,7 +37,9 @@ pub struct NativeAlbum {
     stamp_text_policy: StampTextPolicy,
     frame_width_mm: f64,
     frame_colour: NamedColour,
+    page_background: Option<NativePageBackgroundImage>,
     items: Vec<StampImageRowItem>,
+    sections: Vec<StampRowSection>,
 }
 
 impl NativeAlbum {
@@ -56,10 +66,17 @@ impl NativeAlbum {
         let mut spacing = None;
         let mut border = None;
         let mut border_colour = None;
+        let mut page_title = None;
+        let mut page_header = None;
         let mut alignment = None;
         let mut stamp_frame = None;
+        let mut frame_addition_mm = 0.0;
         let mut text_policy = None;
+        let mut image_options = StampImageOptions::default();
+        let mut page_background = None;
         let mut image_specs = Vec::new();
+        let mut section_start = 0;
+        let mut section_counts = Vec::new();
 
         for (index, line) in source.lines().enumerate() {
             let line_number = index + 1;
@@ -133,6 +150,63 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
+                "NATIVE_PAGE_TITLE" => {
+                    if args.len() != 4 {
+                        return Err(fail(format!(
+                            "{name} requires font, size in points, quoted text, and following space in millimetres"
+                        )));
+                    }
+                    let font = unquoted(&args[0], &name).map_err(&fail)?;
+                    let size = number(&args[1], &name, 2).map_err(&fail)?;
+                    let text = quoted(&args[2], &name).map_err(&fail)?;
+                    let following_space = number(&args[3], &name, 4).map_err(&fail)?;
+                    set_once(
+                        &mut page_title,
+                        AlbumPagesTitle::new(
+                            &font,
+                            size,
+                            &text,
+                            following_space,
+                            0.0,
+                            NamedColour::parse("black").map_err(&fail)?,
+                        )
+                        .map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "NATIVE_PAGE_HEADER" => {
+                    if args.len() != 6 {
+                        return Err(fail(format!(
+                            "{name} requires font, size in points, position, quoted text, margin padding, and minimum height"
+                        )));
+                    }
+                    let font = unquoted(&args[0], &name).map_err(&fail)?;
+                    let size = number(&args[1], &name, 2).map_err(&fail)?;
+                    let position = HeaderPosition::parse_for(
+                        &unquoted(&args[2], &name).map_err(&fail)?,
+                        "native page header position",
+                    )
+                    .map_err(&fail)?;
+                    let text = quoted(&args[3], &name).map_err(&fail)?;
+                    let padding_mm = number(&args[4], &name, 5).map_err(&fail)?;
+                    let minimum_height_mm = number(&args[5], &name, 6).map_err(&fail)?;
+                    set_once(
+                        &mut page_header,
+                        AlbumPagesHeader::new(
+                            &font,
+                            size,
+                            position,
+                            &text,
+                            HeaderPadding::parse(&[padding_mm]).map_err(&fail)?,
+                            minimum_height_mm,
+                            NamedColour::parse("black").map_err(&fail)?,
+                        )
+                        .map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
                 "NATIVE_ROW_ALIGNMENT" => {
                     let value = words(&name, &args, 1)
                         .map_err(&fail)?
@@ -147,9 +221,9 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                 }
                 "NATIVE_STAMP_FRAME" => {
-                    if args.len() != 2 {
+                    if !matches!(args.len(), 2 | 3) {
                         return Err(fail(format!(
-                            "{name} requires a positive line width in millimetres and a named colour"
+                            "{name} requires line width, named colour, and optional total frame additions in millimetres"
                         )));
                     }
                     let width = number(&args[0], &name, 1).map_err(&fail)?;
@@ -158,11 +232,19 @@ impl NativeAlbum {
                             "{name} line width must be finite and positive"
                         )));
                     }
-                    let colour = words(&name, &args[1..], 1)
+                    let colour = words(&name, std::slice::from_ref(&args[1]), 1)
                         .map_err(&fail)?
                         .into_iter()
                         .next()
                         .ok_or_else(|| fail(format!("{name} requires a named colour")))?;
+                    if let Some(addition) = args.get(2) {
+                        frame_addition_mm = number(addition, &name, 3).map_err(&fail)?;
+                        if frame_addition_mm < 0.0 || !mm_to_points(frame_addition_mm).is_finite() {
+                            return Err(fail(format!(
+                                "{name} total frame additions must be finite and nonnegative"
+                            )));
+                        }
+                    }
                     set_once(
                         &mut stamp_frame,
                         (width, NamedColour::parse(&colour).map_err(&fail)?),
@@ -193,10 +275,111 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                     set_once(&mut text_policy, policy, &name).map_err(&fail)?;
                 }
-                "STAMP_IMAGE" => {
-                    if args.len() != 4 {
+                "NATIVE_STAMP_IMAGE_POLICY" => {
+                    if args.len() != 7 {
                         return Err(fail(format!(
-                            "{name} requires image path, physical width, physical height, and image scale in millimetres per pixel"
+                            "{name} requires seven arguments: padding unit, horizontal padding, vertical padding, stretch-small, aspect ratio, colour mode, and visibility"
+                        )));
+                    }
+                    let padding_unit = unquoted(&args[0], &name).map_err(&fail)?;
+                    let padding_unit = match padding_unit.as_str() {
+                        "millimetres" => ImagePaddingUnit::Millimetres,
+                        "percent" => ImagePaddingUnit::Percent,
+                        _ => {
+                            return Err(fail(format!(
+                                "{name} padding unit must be millimetres or percent"
+                            )))
+                        }
+                    };
+                    let padding_horizontal = number(&args[1], &name, 2).map_err(&fail)?;
+                    let padding_vertical = number(&args[2], &name, 3).map_err(&fail)?;
+                    if padding_horizontal < 0.0 || padding_vertical < 0.0 {
+                        return Err(fail(format!("{name} padding values must be nonnegative")));
+                    }
+                    let stretch_small = boolean(&args[3], &name, 4).map_err(&fail)?;
+                    let aspect_ratio = match unquoted(&args[4], &name).map_err(&fail)?.as_str() {
+                        "preserve" => ImageAspectRatio::Preserve,
+                        "fit" => ImageAspectRatio::Fit,
+                        _ => {
+                            return Err(fail(format!(
+                                "{name} aspect ratio must be preserve or fit"
+                            )))
+                        }
+                    };
+                    let grayscale = match unquoted(&args[5], &name).map_err(&fail)?.as_str() {
+                        "colour" => false,
+                        "grayscale" => true,
+                        _ => {
+                            return Err(fail(format!(
+                                "{name} colour mode must be colour or grayscale"
+                            )))
+                        }
+                    };
+                    let visible = match unquoted(&args[6], &name).map_err(&fail)?.as_str() {
+                        "show" => true,
+                        "hide" => false,
+                        _ => return Err(fail(format!("{name} visibility must be show or hide"))),
+                    };
+                    image_options = StampImageOptions {
+                        padding_unit,
+                        padding_horizontal,
+                        padding_vertical,
+                        stretch_small,
+                        aspect_ratio,
+                        grayscale,
+                        visible,
+                    };
+                }
+                "NATIVE_PAGE_BACKGROUND_IMAGE" => {
+                    if args.len() != 5 {
+                        return Err(fail(format!(
+                            "{name} requires a quoted image path and x, y, width, and height in millimetres"
+                        )));
+                    }
+                    let image_path = PathBuf::from(quoted(&args[0], &name).map_err(&fail)?);
+                    let [x, y, width, height] = numbers(&name, &args[1..], 4)
+                        .map_err(&fail)?
+                        .try_into()
+                        .map_err(|_| fail(format!("{name} requires four numeric bounds")))?;
+                    if width <= 0.0 || height <= 0.0 {
+                        return Err(fail(format!("{name} width and height must be positive")));
+                    }
+                    let bounds = Bounds {
+                        left: x,
+                        bottom: y,
+                        right: x + width,
+                        top: y + height,
+                    };
+                    bounds
+                        .inset(0.0, 0.0)
+                        .map_err(|error| fail(format!("{name} bounds: {error}")))?;
+                    set_once(
+                        &mut page_background,
+                        NativePageBackgroundImage {
+                            image_path: asset_root.join(image_path),
+                            bounds,
+                        },
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "NATIVE_ROW_BREAK" => {
+                    if !args.is_empty() {
+                        return Err(fail(format!("{name} takes no arguments")));
+                    }
+                    let count = image_specs.len().saturating_sub(section_start);
+                    if count == 0 {
+                        return Err(fail(format!(
+                            "{name} must follow a row containing at least one STAMP_IMAGE"
+                        )));
+                    }
+                    section_counts.push(count);
+                    section_start = image_specs.len();
+                }
+                "STAMP_IMAGE" => {
+                    if !matches!(args.len(), 4 | 7) {
+                        return Err(fail(format!(
+                            "{name} requires image path, physical width, physical height, image scale, and optional caption font, size, and text"
                         )));
                     }
                     let image_path = PathBuf::from(quoted(&args[0], &name).map_err(&fail)?);
@@ -208,6 +391,16 @@ impl NativeAlbum {
                             "{name} physical dimensions and image scale must be positive"
                         )));
                     }
+                    let caption = if args.len() == 7 {
+                        Some(StampTextSettings::new(
+                            quoted(&args[6], &name).map_err(&fail)?,
+                            unquoted(&args[4], &name).map_err(&fail)?,
+                            number(&args[5], &name, 6).map_err(&fail)?,
+                            NamedColour::parse("black").map_err(&fail)?,
+                        ))
+                    } else {
+                        None
+                    };
                     let geometry = StampBoxGeometry::from_total_additions(
                         Bounds {
                             left: 0.0,
@@ -215,8 +408,8 @@ impl NativeAlbum {
                             right: width,
                             top: height,
                         },
-                        0.0,
-                        0.0,
+                        frame_addition_mm,
+                        frame_addition_mm,
                         0.0,
                     )
                     .map_err(&fail)?;
@@ -224,6 +417,8 @@ impl NativeAlbum {
                         asset_root.join(image_path),
                         geometry,
                         mm_to_points(scale_mm_per_pixel),
+                        image_options,
+                        caption,
                     ));
                 }
                 _ => return Err(fail(format!("Unsupported native command {name}"))),
@@ -246,21 +441,42 @@ impl NativeAlbum {
         if image_specs.is_empty() {
             return Err("At least one STAMP_IMAGE command is required".into());
         }
+        let remaining_items = image_specs.len().saturating_sub(section_start);
+        if remaining_items == 0 {
+            return Err("NATIVE_ROW_BREAK must not follow the final STAMP_IMAGE".into());
+        }
+        section_counts.push(remaining_items);
 
         let mut page_settings =
             PageSettings::new(page_size, margins, spacing, border, border_colour);
         page_settings.set_row_alignment(alignment);
+        if let Some(title) = page_title {
+            page_settings.set_title(title);
+        }
+        if let Some(header) = page_header {
+            page_settings.set_header(header);
+        }
+        let sections = section_counts
+            .into_iter()
+            .map(|item_count| StampRowSection {
+                item_count,
+                alignment,
+            })
+            .collect();
         let items = image_specs
             .into_iter()
             .map(
-                |(image_path, geometry, image_scale_pt_per_pixel)| StampImageRowItem {
-                    stamp: StampTextItem {
-                        geometry,
-                        heading: None,
-                        caption: None,
-                    },
-                    image_path,
-                    image_scale_pt_per_pixel,
+                |(image_path, geometry, image_scale_pt_per_pixel, options, caption)| {
+                    StampImageRowItem {
+                        stamp: StampTextItem {
+                            geometry,
+                            heading: None,
+                            caption,
+                        },
+                        image_path,
+                        image_scale_pt_per_pixel,
+                        options,
+                    }
                 },
             )
             .collect();
@@ -270,30 +486,34 @@ impl NativeAlbum {
             stamp_text_policy,
             frame_width_mm,
             frame_colour,
+            page_background,
             items,
+            sections,
         })
     }
 
     /// Generates a native PDF directly without launching AlbumEasy or exporting TXT.
     pub fn write_pdf(&self, output: &Path) -> Result<Vec<StampItemPage>> {
-        renderer::write_native_album_pdf(
+        renderer::write_native_album_pdf_with_sections(
             &self.page_settings,
             &self.items,
+            &self.sections,
             &self.stamp_text_policy,
             self.frame_width_mm,
             self.frame_colour,
+            self.page_background.as_ref(),
             output,
         )
     }
 }
 
 #[derive(Debug)]
-struct Argument {
-    value: String,
-    quoted: bool,
+pub(super) struct Argument {
+    pub value: String,
+    pub quoted: bool,
 }
 
-fn strip_comment(line: &str) -> &str {
+pub(super) fn strip_comment(line: &str) -> &str {
     let mut quoted = false;
     let mut escaped = false;
     for (index, character) in line.char_indices() {
@@ -311,7 +531,7 @@ fn strip_comment(line: &str) -> &str {
     line
 }
 
-fn parse_command(line: &str) -> Result<(String, Vec<Argument>)> {
+pub(super) fn parse_command(line: &str) -> Result<(String, Vec<Argument>)> {
     let open = line
         .find('(')
         .ok_or("Expected a command followed by parenthesized arguments")?;
@@ -351,6 +571,7 @@ fn parse_arguments(name: &str, body: &str) -> Result<Vec<Argument>> {
                     '\\' => match chars.next() {
                         Some('"') => value.push('"'),
                         Some('\\') => value.push('\\'),
+                        Some('n') => value.push('\n'),
                         Some(other) => {
                             return Err(format!(
                                 "{name} contains unsupported string escape `\\{other}`"
@@ -406,7 +627,7 @@ fn numbers(name: &str, arguments: &[Argument], count: usize) -> Result<Vec<f64>>
         .collect()
 }
 
-fn number(argument: &Argument, name: &str, index: usize) -> Result<f64> {
+pub(super) fn number(argument: &Argument, name: &str, index: usize) -> Result<f64> {
     if argument.quoted {
         return Err(format!(
             "{name} argument {index} must be numeric, not quoted"
@@ -420,6 +641,17 @@ fn number(argument: &Argument, name: &str, index: usize) -> Result<f64> {
         return Err(format!("{name} argument {index} must be finite"));
     }
     Ok(value)
+}
+
+fn boolean(argument: &Argument, name: &str, index: usize) -> Result<bool> {
+    if argument.quoted {
+        return Err(format!("{name} argument {index} must be true or false"));
+    }
+    match argument.value.as_str() {
+        "true" => Ok(true),
+        "false" => Ok(false),
+        _ => Err(format!("{name} argument {index} must be true or false")),
+    }
 }
 
 fn words(name: &str, arguments: &[Argument], count: usize) -> Result<Vec<String>> {

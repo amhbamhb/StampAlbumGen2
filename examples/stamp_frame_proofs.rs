@@ -106,6 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             image_path: image_path.clone(),
             box_bounds: geometry.frame_bounds(),
             image_scale_pt_per_pixel: mm_to_points(mm_per_pixel),
+            options: Default::default(),
             image_padding_horizontal_mm: 0.0,
             image_padding_vertical_mm: 0.0,
             text_gap_mm: 3.0,

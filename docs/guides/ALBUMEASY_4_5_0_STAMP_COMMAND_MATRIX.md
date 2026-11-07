@@ -5,8 +5,53 @@
 **Status:** Stamp-family syntax and documented behavior verified against the
 installed AlbumEasy 4.5.0 command help. Application support and runtime
 conformance remain unverified; this is not a compatibility certification.
-**Implementation boundary:** Documentation/audit only. Do not integrate or
-switch production native-PDF generation on the basis of this document.
+**Implementation boundary:** Documentation/audit and compatibility planning
+only. This matrix does not certify native import/render support and does not
+authorize switching production PDF generation.
+
+## 0. Long-term native-rendering goal
+
+The target workflow accepts either a native `.stampalbum` document or an
+AlbumEasy `.txt` document with its referenced images, then creates the PDF
+using StampAlbumGen2's native renderer. A `.stampalbum` is parsed directly;
+an imported `.txt` is parsed as AlbumEasy commands and mapped into the same
+canonical in-memory album model. The original AlbumEasy command text must not
+need to be rewritten by hand or executed by AlbumEasy to produce the native
+PDF.
+
+Compatibility means that every command in the agreed AlbumEasy version scope,
+including raw commands, overloads, state changes, and supported legacy
+spellings, receives its mapped native meaning. It does not mean embedding
+AlbumEasy syntax as native-only `.stampalbum` commands. Until an input command
+has a verified mapping and conformance coverage, report it as unsupported or
+unresolved; never silently drop it, guess its effect, or claim full-file
+compatibility. AlbumEasy remains a reference tool for verifying behavior, not
+a runtime renderer/dependency for the future native PDF workflow.
+
+This is the intended destination, not current capability. The command matrix
+records evidence and gaps; production integration and certification remain
+deferred until the full language mapping and review are complete. Preserve
+image references and resolve them relative to the source album (or its
+explicitly managed asset set) while mapping the document.
+
+### Current standalone compatibility slice
+
+The [bounded native interpreter](../../src/native_pdf/albumeasy.rs) and
+[standalone example](../../examples/render_stampalbum.rs) now render the
+accepted image-controls AlbumEasy TXT and its identical raw-command
+`.stampalbum` without AlbumEasy. Basic image stamps, captions, top-aligned
+ES/FS rows, solid/blank frames and selected image controls have runnable
+coverage. This does not certify all variants, state semantics, default row
+alignment or full-file compatibility, and does not switch production routing.
+
+The [Denmark supported test copy](../../tests/fixtures/albumeasy/denmark-txt-native-v1/README.md)
+renders 16 pages and 41 images after eight explicitly documented occurrences
+of six unsupported commands are commented. Background fills, footer/margin
+colours, footer numbering and stamp-settings save/restore remain deferred;
+see the [long-running plan](../reports/NATIVE_PDF_IMPLEMENTATION_PLAN.md#required-denmark-mappings-still-deferred).
+The untouched original TXT still fails explicitly on these commands.
+Standalone coverage here supplements, rather than upgrades, the conservative
+production-support labels in the historical tables below.
 
 ## 1. Purpose and scope
 
@@ -193,7 +238,7 @@ These are reference runs, not approved native-PDF golden baselines.
 |---|---|
 | `stamp-shapes-v1` | Reference-rendered. Covers the documented shape types, representative polygon orientations, flattened triangle apexes, a blank box, empty text fields, and modern/legacy `STAMP_ADD` forms. Every shape type appears, but not every right-triangle selector combination or multiline text. |
 | `stamp-image-overloads-v1` | Reference-rendered. Covers basic PNG/JPEG forms, a basic `NO_FRAME` case, combined inside text, signed vertical offsets, the optional horizontal-offset pair, and representative framed/unframed cases. It does not cover the full independent optional-argument cross-product or missing/invalid assets. |
-| `stamp-image-controls-v1` | Planned. Millimetre/percent settings, omitted defaults, small-image stretch, fixed/fit aspect ratio, grayscale spellings and hide/show; include a page-background image control case. |
+| `stamp-image-controls-v1` | AlbumEasy 4.5.0 first pass rendered from AlbumEasy-only commands on a complete bordered US Letter page. Covers omitted defaults, millimetre/percent padding, small-image stretch, aspect ratio, grayscale, and hide/show. Native rendering/comparison is gated on maintainer acceptance; page-background image is deferred to a separate realistic case. See the fixture README. |
 | `stamp-frame-state-v1` | Outer/inner styles, all style values, `CORNER` and `SIDES` selectors, style interaction/persistence, and rectangular/non-rectangular restrictions. |
 | `stamp-headings-captions-v1` | Both heading variants, immediate association, optional offsets, multiline text, padding resets, footer alignment aliases and footer padding. |
 | `stamp-settings-save-restore-v1` | Each documented saved setting plus repeated, unmatched and nested save/restore probes; keep unspecified outcomes open until measured. |
@@ -222,10 +267,10 @@ created, rendered, and inspected against the installed AlbumEasy 4.5.0
 reference. This is representative v1 evidence; the uncovered cases in section
 8 remain open. No production integration was performed.
 
-**Next action:** Continue the remaining stamp coverage and command families
-with isolated reference fixtures, starting with `stamp-image-controls-v1`.
-Keep renderer-specific unknowns, especially save/restore nesting, explicit
-until measured.
+**Next action:** Complete actual-size human review of the AlbumEasy
+`stamp-image-controls-v1` first pass. Only after acceptance, create the
+matching native rendition and compare it. Keep renderer-specific unknowns,
+especially save/restore nesting, explicit until measured.
 
 This stamp-family pass is complete only when:
 

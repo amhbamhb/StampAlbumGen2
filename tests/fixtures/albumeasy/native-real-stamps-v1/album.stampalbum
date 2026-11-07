@@ -10,6 +10,7 @@ COLOUR_ALBUM_BORDER (black)
 NATIVE_ROW_ALIGNMENT (center)
 NATIVE_STAMP_FRAME (0.25 black)
 NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
 
 # Image scale is millimetres per source pixel; Colnect size is the physical box.
 # DB ID 150 / SG 1125a / Colnect 700029 / 52 x 29 mm / 1024 x 555 px

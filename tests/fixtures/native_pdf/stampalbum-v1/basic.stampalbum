@@ -11,6 +11,7 @@ COLOUR_ALBUM_BORDER (black)
 NATIVE_ROW_ALIGNMENT (center)
 NATIVE_STAMP_FRAME (0.25 black)
 NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 120 2 1 3)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
 
 # Image scale is millimetres per source pixel.
 STAMP_IMAGE ("../../albumeasy/stamp-image-overloads-v1/assets/synthetic-asymmetric.png" 42 34 0.5)
