@@ -10,6 +10,7 @@ use super::{
         album_pages_header::{AlbumPagesHeader, HeaderLayout},
         album_pages_header_date::AlbumPagesHeaderDate,
         album_pages_header_number::AlbumPagesHeaderNumber,
+        album_pages_margin_txt::{AlbumPagesMarginText, MarginTextLayout},
         album_pages_margins::Margins,
         album_pages_marginse::EvenMargins,
         album_pages_size::PageSize,
@@ -76,6 +77,7 @@ pub struct PageLayout {
     pub footer: Option<FooterLayout>,
     pub footer_number: Option<FooterLayout>,
     pub footer_date: Option<FooterLayout>,
+    pub margin_text: Vec<MarginTextLayout>,
 }
 
 #[derive(Clone, Debug)]
@@ -97,6 +99,7 @@ pub struct PageSettings {
     footer: Option<AlbumPagesFooter>,
     footer_number: Option<AlbumPagesFooterNumber>,
     footer_date: Option<AlbumPagesFooterDate>,
+    margin_text: Vec<AlbumPagesMarginText>,
 }
 
 impl PageSettings {
@@ -125,6 +128,7 @@ impl PageSettings {
             footer: None,
             footer_number: None,
             footer_date: None,
+            margin_text: Vec::new(),
         }
     }
 
@@ -183,6 +187,14 @@ impl PageSettings {
 
     pub fn set_footer_date(&mut self, date: AlbumPagesFooterDate) {
         self.footer_date = Some(date);
+    }
+
+    pub fn add_margin_text(&mut self, text: AlbumPagesMarginText) -> Result<()> {
+        if self.margin_text.len() == 2 {
+            return Err("ALBUM_PAGES_MARGIN_TXT supports at most two definitions; extra definitions are not silently ignored".into());
+        }
+        self.margin_text.push(text);
+        Ok(())
     }
 
     pub fn spacing(&self) -> Spacing {
@@ -478,6 +490,26 @@ impl PageSettings {
             content_bounds.top = title.next_content_top_mm;
             content_bounds.validate()?;
         }
+        let margin_text = self
+            .margin_text
+            .iter()
+            .map(|text| text.layout(margin_bounds, physical_page, page_number))
+            .collect::<Result<Vec<_>>>()?;
+        if margin_text.len() == 2 {
+            for first in &margin_text[0].lines {
+                for second in &margin_text[1].lines {
+                    if !first.text.trim().is_empty()
+                        && !second.text.trim().is_empty()
+                        && first.bounds.left < second.bounds.right
+                        && second.bounds.left < first.bounds.right
+                        && first.bounds.bottom < second.bounds.top
+                        && second.bounds.bottom < first.bounds.top
+                    {
+                        return Err(format!("ALBUM_PAGES_MARGIN_TXT definitions overlap on physical page {page_number}"));
+                    }
+                }
+            }
+        }
         Ok(PageLayout {
             size: self.size,
             decorative_border: self
@@ -498,6 +530,7 @@ impl PageSettings {
             footer,
             footer_number,
             footer_date,
+            margin_text,
         })
     }
 }

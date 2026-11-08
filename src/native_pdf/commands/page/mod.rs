@@ -9,6 +9,7 @@ pub mod album_pages_header;
 pub mod album_pages_header_date;
 pub mod album_pages_header_number;
 pub mod album_pages_header_pad;
+pub mod album_pages_margin_txt;
 pub mod album_pages_margins;
 pub mod album_pages_marginse;
 pub mod album_pages_size;

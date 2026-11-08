@@ -85,6 +85,30 @@ numbering is separately deferred under #88 without changing `$PAGES$`.
 
 ## 1. Purpose and scope
 
+**Bounded margin-text checkpoint (#90):** The accepted
+[margin-text references](../../tests/fixtures/albumeasy/margin-text-v1/README.md)
+exercise `ALBUM_PAGES_MARGIN_TXT`, signed `ALBUM_PAGES_MARGIN_TXT_PAD` and
+both margin-colour spellings on complete two-page albums. Default L/R,
+TOP/CENTRE/BOTTOM, UP/DOWN, multiline and LR/RL alternation have AlbumEasy
+first-pass evidence and shared native implementation. All three input routes
+retain two Letter pages/12 images, frames and footers. Actual rotated PDF
+transforms match the reference within 0.01 pt; TXT/raw page rasters are
+identical. `NATIVE_PAGE_MARGIN_TEXT` requires eight explicit arguments;
+its gap is total border-to-text gap, not additional AlbumEasy padding.
+Final pre-page colour/padding is global; mid-document changes fail.
+Native rejects a third definition (AlbumEasy warns/ignores it), actual
+overlap and overflow rather than silently losing content. These strict
+boundaries are not full-language conformance.
+
+The [Denmark v5 proof](../../tests/fixtures/albumeasy/denmark-margin-native-v5/README.md)
+restores the last margin-colour line: 16 pages/41 images/all footers and
+**zero commented deferrals**. Its source has no margin-text definition;
+visible text is certified only for the new margin fixtures. Earlier v1-v4
+deferral counts above remain historical checkpoints. Focused regressions:
+108 passed/17 ignored/zero failed; Denmark generator passed separately.
+Whole-page parity, Windows execution, native human print acceptance and
+production integration remain open.
+
 This is the first bounded command-family pass for the command-mapping work.
 It captures stamp construction, stamp-image handling, stamp state, captions,
 and border/frame state, plus a static spot-check of current TXT generation,

@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 45
+**Revision:** 47
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -129,6 +129,13 @@ PDF is a comparison aid, not newly generated AlbumEasy 4.5.0 conformance proof.
 
 #### Required Denmark mappings still deferred
 
+**Historical v1 inventory:** All eight occurrences below have now been
+restored in the [v5 derivative](../../tests/fixtures/albumeasy/denmark-margin-native-v5/README.md).
+Current progression is v1=8, v2=5, v3=3, v4=1, **v5=0** commented deferrals.
+The v1 descriptions/risks below record that earlier checkpoint, not current
+v5 capability. Zero deferrals means this managed-asset command sequence
+passes; full language/default/overload/state mapping remains incomplete.
+
 | Command | Original lines | Occurrences | Required follow-up |
 |---|---|---:|---|
 | `COLOR_ALBUM_FOOTER` | 42 | 1 | Map footer colour into native footer rendering. |
@@ -188,6 +195,57 @@ acceptance remain pending. No production integration, OKF regeneration or PR
 is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
+
+**Native checkpoint (#90): vertical margin text, padding and colour.**
+Branch `issue/90-margin-text` begins from `773747f9`. The
+[AlbumEasy-only first pass](../../tests/fixtures/albumeasy/margin-text-v1/README.md)
+has three two-page Letter references, each with 12 verified real images,
+complete borders, frame clearance, row spacing, captions and numbered footer.
+Cases: default L/R centred/UP darkblue; multiline TOP/DOWN and BOTTOM/UP
+darkred with +2 mm padding/COLOUR spelling; alternating LR/RL darkgreen
+with -1 mm padding on physical odd/even pages. AlbumEasy 4.5.0 rendered all
+three successfully; complete-page rasters were inspected. The maintainer's
+"continue" was interpreted and announced as reference acceptance.
+
+Shared typed layout/writing now maps `ALBUM_PAGES_MARGIN_TXT`, signed padding
+and both colour spellings. Explicit native `NATIVE_PAGE_MARGIN_TEXT` takes
+eight arguments: font, point size, quoted text, L/R/LR/RL position,
+TOP/CENTRE/BOTTOM alignment, UP/DOWN direction, total border-to-text
+baseline-model gap mm and named colour. Native gap is not additional
+AlbumEasy padding; compatibility uses the observed 2 mm base plus padding.
+Native settings are explicit; no TOML/default keys changed.
+
+Measured multiline columns move outward, parity uses physical page index
+even with printed start 10, and final pre-page colour/padding applies
+globally. Physical-page/vertical-margin overflow, overlap and mid-document
+changes fail with preserved output. Native rejects a third definition;
+the AlbumEasy duplicate-position probe warns/ignores it and creates a PDF
+with exit 0. This strict deviation is documented, not exact conformance.
+
+Nine persistent native PDFs cover TXT/raw/native inputs for all three cases.
+Actual rotated reference/native transforms on both pages match within
+0.01 pt. All retain 12 images/12 frames/two borders/every footer; physical
+image dimensions agree across native-language/TXT routes within 0.02 pt.
+Every TXT/raw page raster at 1200 pixels is byte-identical. Overall native
+row/title/caption differences are not erased by these margin checks.
+
+The [Denmark v5 proof](../../tests/fixtures/albumeasy/denmark-margin-native-v5/README.md)
+restores only original line 45 `COLOR_ALBUM_MARGIN_TXT`: 16 pages/41 images/
+all footers and zero commented deferrals. Denmark has no active margin text;
+visible coverage belongs to the three new cases, not this colour-only line.
+All v1-v4 bundles stay immutable. Zero deferrals does not certify full
+language support, unprepared paths or historical PDF visual parity.
+
+Validation: 108 passed/17 ignored/zero failed in the focused regression gate;
+final strengthened margin tests 5 passed/1 ignored; Denmark generator 1
+passed. All-target checking, focused Clippy, format/whitespace pass with
+existing warnings. Two early assertions were corrected for the backend's
+two-decimal graphics-transform serialization; no runtime workaround.
+Exact commands, output table, filesystem/no-DB impact, error inventory and
+continuation risks are in the fixture README. Linux execution is verified;
+Windows runtime and native human visual/Actual-size Letter print acceptance
+remain pending. No commit/push, production integration, PR or OKF regeneration
+is included in this checkpoint.
 
 **Next item started (#89): stamp-settings save/restore.** Branch
 `issue/89-stamp-settings-save-restore` begins from `e090368e`.
@@ -2234,3 +2292,4 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 8: margins-only conformance (#59) | Verified left/right/top/bottom order, asymmetric/fractional margins, explicit even-page override and two failure diagnostics. Measured eight page borders and repeated four renders; traced config mapping and border half-stroke inset. No renderer/application changes. | Preserve margins-v1 and stop for review. Generalized fixture automation, native implementation and full command/config contracts remain open. |
 | 2026-11-03 | Revision 9: spacing-only conformance (#60) | Verified zero/fractional independent horizontal/vertical spacing with 16 frames and eight text anchors, four repeat renders and two failure cases. Documented misleading config descriptions, differing defaults and width-accounting risks. No application changes. | Preserve spacing-v1 and stop for review; generalized fixture runner and full command/config contracts remain open. |
 | 2026-11-03 | Revision 10: compiled page-settings slice (#61) | Approved one-command-per-file vertical slices. Added four typed command modules, explicit shared settings/f64 mm geometry and oxidize-pdf geometry proof/example. Six native tests plus six core tests pass, including actual PDF path checks. Windows GNU cross-check passed. | Review native proof; next implement another command with reference and native comparisons together. No production integration/full TXT parser or full task completion claimed. |
+| 2026-11-07 | Revision 47: bounded margin-text mapping (#90) | Accepted three AlbumEasy references; nine native PDFs across TXT/raw/native routes. Rotated transforms within 0.01 pt, TXT/raw rasters identical, image dimensions retained. 108 scoped tests passed/17 ignored; Denmark v5 has zero deferrals. Strict third-definition rejection documented. | Review native proofs/Actual-size print. Retain immutable fixtures and three-input gates; no production integration, PR or OKF. Commit/push awaits instruction. |

@@ -9,6 +9,9 @@ use super::{
             album_pages_footer_pad::FooterPadding,
             album_pages_header::{AlbumPagesHeader, HeaderPosition},
             album_pages_header_pad::HeaderPadding,
+            album_pages_margin_txt::{
+                AlbumPagesMarginText, MarginAlignment, MarginDirection, MarginPosition,
+            },
             album_pages_margins::Margins,
             album_pages_size::PageSize,
             album_pages_spacing::Spacing,
@@ -25,6 +28,7 @@ use super::{
     },
     stamp_rows::RowAlignment,
     stamp_text::{ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy},
+    text::MeasuredText,
     units::mm_to_points,
     Result,
 };
@@ -72,6 +76,7 @@ impl NativeAlbum {
         let mut page_title = None;
         let mut page_header = None;
         let mut footer_number = None;
+        let mut margin_text = Vec::new();
         let mut alignment = None;
         let mut stamp_frame = None;
         let mut frame_addition_mm = 0.0;
@@ -244,6 +249,38 @@ impl NativeAlbum {
                         &name,
                     )
                     .map_err(&fail)?;
+                }
+                "NATIVE_PAGE_MARGIN_TEXT" => {
+                    if args.len() != 8 {
+                        return Err(fail(format!("{name} requires font, size, quoted text, position, alignment, direction, explicit border gap mm and colour")));
+                    }
+                    for index in [0, 3, 4, 5, 7] {
+                        if args[index].quoted {
+                            return Err(fail(format!(
+                                "{name} argument {} must be unquoted",
+                                index + 1
+                            )));
+                        }
+                    }
+                    if margin_text.len() == 2 {
+                        return Err(fail(format!("{name} supports at most two definitions")));
+                    }
+                    margin_text.push(
+                        AlbumPagesMarginText::new(
+                            MeasuredText::new(
+                                &args[0].value,
+                                number(&args[1], &name, 2).map_err(&fail)?,
+                                &quoted(&args[2], &name).map_err(&fail)?,
+                            )
+                            .map_err(&fail)?,
+                            MarginPosition::parse(&args[3].value).map_err(&fail)?,
+                            MarginAlignment::parse(&args[4].value).map_err(&fail)?,
+                            MarginDirection::parse(&args[5].value).map_err(&fail)?,
+                            number(&args[6], &name, 7).map_err(&fail)?,
+                            NamedColour::parse(&args[7].value).map_err(&fail)?,
+                        )
+                        .map_err(&fail)?,
+                    );
                 }
                 "NATIVE_ROW_ALIGNMENT" => {
                     let value = words(&name, &args, 1)
@@ -537,6 +574,9 @@ impl NativeAlbum {
         }
         if let Some(number) = footer_number {
             page_settings.set_footer_number(number);
+        }
+        for text in margin_text {
+            page_settings.add_margin_text(text)?;
         }
         let sections = section_counts
             .into_iter()

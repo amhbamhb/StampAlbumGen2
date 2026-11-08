@@ -15,6 +15,9 @@ use super::{
             album_pages_footer_pad::FooterPadding,
             album_pages_header::{AlbumPagesHeader, HeaderPosition},
             album_pages_header_pad::HeaderPadding,
+            album_pages_margin_txt::{
+                AlbumPagesMarginText, MarginAlignment, MarginDirection, MarginPosition,
+            },
             album_pages_margins::Margins,
             album_pages_size::PageSize,
             album_pages_spacing::Spacing,
@@ -82,6 +85,10 @@ fn supported(name: &str) -> bool {
             | "ALBUM_PAGES_FOOTER_NUMBER"
             | "COLOR_ALBUM_FOOTER"
             | "COLOUR_ALBUM_FOOTER"
+            | "ALBUM_PAGES_MARGIN_TXT"
+            | "ALBUM_PAGES_MARGIN_TXT_PAD"
+            | "COLOR_ALBUM_MARGIN_TXT"
+            | "COLOUR_ALBUM_MARGIN_TXT"
             | "COLOR_ALBUM_BORDER"
             | "COLOUR_ALBUM_BORDER"
             | "COLOR_ALBUM_HEADER"
@@ -372,11 +379,14 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut title = None;
     let mut header = None;
     let mut footer_number = None;
+    let mut margin_text = Vec::new();
+    let mut margin_padding = 0.0;
     let mut border_colour = NamedColour::parse("black")?;
     let mut border_colour_name = "black".to_string();
     let mut header_colour = border_colour;
     let mut title_colour = border_colour;
     let mut footer_colour = border_colour;
+    let mut margin_colour = border_colour;
     for c in commands.iter().take_while(|c| c.name != "PAGE_START") {
         let result = (|| -> Result<()> {
             match c.name.as_str() {
@@ -421,6 +431,41 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         return Err("Footer colour requires an unquoted named colour".into());
                     }
                     footer_colour = NamedColour::parse(&c.args[0].value)?;
+                }
+                "COLOR_ALBUM_MARGIN_TXT" | "COLOUR_ALBUM_MARGIN_TXT" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err("Margin colour must be an unquoted named colour".into());
+                    }
+                    margin_colour = NamedColour::parse(&c.args[0].value)?;
+                }
+                "ALBUM_PAGES_MARGIN_TXT_PAD" => {
+                    count(c, 1, 1)?;
+                    margin_padding = n(c, 0)?;
+                }
+                "ALBUM_PAGES_MARGIN_TXT" => {
+                    count(c, 4, 6)?;
+                    if [0, 3, 4, 5]
+                        .iter()
+                        .any(|index| c.args.get(*index).is_some_and(|a| a.quoted))
+                    {
+                        return Err(
+                            "Margin font, position, alignment and direction must be unquoted"
+                                .into(),
+                        );
+                    }
+                    if margin_text.len() == 2 {
+                        return Err("ALBUM_PAGES_MARGIN_TXT supports at most two definitions; extra definitions are not silently ignored".into());
+                    }
+                    margin_text.push((
+                        c.line,
+                        MeasuredText::new(&c.args[0].value, n(c, 1)?, text(c, 2)?)?,
+                        MarginPosition::parse(&c.args[3].value)?,
+                        MarginAlignment::parse(
+                            c.args.get(4).map_or("CENTRE", |a| a.value.as_str()),
+                        )?,
+                        MarginDirection::parse(c.args.get(5).map_or("UP", |a| a.value.as_str()))?,
+                    ));
                 }
                 "ALBUM_PAGES_FOOTER_NUMBER" => {
                     count(c, 3, 6)?;
@@ -516,6 +561,21 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         })()
         .map_err(|error| format!("Line {line}: ALBUM_PAGES_FOOTER_NUMBER: {error}"))?;
         settings.set_footer_number(footer);
+    }
+    for (line, text, position, alignment, direction) in margin_text {
+        settings
+            .add_margin_text(
+                AlbumPagesMarginText::new(
+                    text,
+                    position,
+                    alignment,
+                    direction,
+                    2.0 + margin_padding,
+                    margin_colour,
+                )
+                .map_err(|e| format!("Line {line}: ALBUM_PAGES_MARGIN_TXT: {e}"))?,
+            )
+            .map_err(|e| format!("Line {line}: {e}"))?;
     }
     let total = commands.iter().filter(|c| c.name == "PAGE_START").count();
     if total == 0 {
@@ -780,7 +840,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     || c.name.starts_with("COLOR_ALBUM_")
                     || matches!(
                         c.name.as_str(),
-                        "COLOUR_ALBUM_BORDER" | "COLOUR_ALBUM_FOOTER"
+                        "COLOUR_ALBUM_BORDER" | "COLOUR_ALBUM_FOOTER" | "COLOUR_ALBUM_MARGIN_TXT"
                     ) =>
                 {
                     if !pages.is_empty() {

@@ -629,6 +629,33 @@ fn save_pdf(
                     .stroke();
             }
         }
+        for margin in &layout.margin_text {
+            let [red, green, blue] = margin.colour.rgb();
+            let up = matches!(
+                margin.direction,
+                super::commands::page::album_pages_margin_txt::MarginDirection::Up
+            );
+            for line in &margin.lines {
+                page.graphics().save_state().transform(
+                    0.0,
+                    if up { 1.0 } else { -1.0 },
+                    if up { -1.0 } else { 1.0 },
+                    0.0,
+                    mm_to_points(line.x_mm),
+                    mm_to_points(line.y_mm),
+                );
+                let result = page
+                    .text()
+                    .set_font(margin.font.clone(), margin.size_pt)
+                    .set_fill_color(Color::rgb(red, green, blue))
+                    .at(0.0, 0.0)
+                    .write(&line.text)
+                    .map(|_| ())
+                    .map_err(|error| format!("Cannot draw native margin text: {error}"));
+                page.graphics().restore_state();
+                result?;
+            }
+        }
         if let Some(number) = layout.header_number {
             draw_text_lines(
                 &mut page,
