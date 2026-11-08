@@ -86,6 +86,18 @@ numbering is separately deferred under #88 without changing `$PAGES$`.
 
 ## 1. Purpose and scope
 
+**Next reference slice (#93):** The
+[heading references](../../tests/fixtures/albumeasy/stamp-headings-v1/README.md)
+compare `STAMP_HEADING`/`STAMP_HEADING_VA`, multiline headings, optional
+signed offsets, `STAMP_HEADING_PADDING` and saved/restored padding/colour
+with real mixed-height stamps. Two complete Letter albums have two pages/
+12 images each; final rasters and physical frame/caption bounds checked.
+Local/VA modes differ in reserved row footprint, not only final text y.
+TOP/MIDDLE/BOTTOM interactions are reference evidence; MIDDLE/BOTTOM
+are now mapped in standalone compatibility and native routes (`#93`) with
+new heading regression tests and approved-reference derivative fixtures.
+No production routing change.
+
 **Bounded border-style checkpoint (#92):** The accepted
 [border-style reference pairs](../../tests/fixtures/albumeasy/stamp-border-styles-v1/README.md)
 cover ordinary outer styles, outer/inner CORNER selectors, independent
@@ -283,9 +295,9 @@ their own mapping/proof coverage.
 | `STAMP_INNER_BORDER` | `(padding border)` | Adds an inner frame until cancelled with `(0.0 0.0)`. Applies only to rectangular boxes with borders and has no effect on rotated boxes. | Not accepted by imported parser. |
 | `STAMP_INNER_BORDER_STYLE` | `(style [options...])` | Sets inner-frame style using the same documented style family. | Not accepted by imported parser. |
 | `STAMP_BOXES_SIZE_ADJUST` | `(adjust)` | Signed size adjustment applies to succeeding stamp boxes; positive increases and negative decreases their size. | Observed in generated TXT; parser accepts one numeric argument; reflow reads only the final global adjustment, not ordered state. |
-| `STAMP_HEADING` | `(font fontsize text [offset])` | Attach immediately after a stamp-add command. Aligns each heading vertically relative to its own stamp top; offset shifts it horizontally from the centered position. | Ordinary generator emits `STAMP_HEADING_VA` instead; neither is accepted by imported parser. |
-| `STAMP_HEADING_VA` | `(font fontsize text [offset])` | Aligns headings vertically with one another; accepts the same optional horizontal offset. | Observed in ordinary TXT generation; not accepted by imported parser. |
-| `STAMP_HEADING_PADDING` | `(padding)` | Signed adjustment to heading/frame gap for succeeding boxes; zero restores the default. | Not accepted by imported parser. |
+| `STAMP_HEADING` | `(font fontsize text [offset])` | Attach immediately after a stamp-add command. Aligns each heading vertically relative to its own stamp top; offset shifts it horizontally from the centered position. | Mapped in standalone compatibility parser (#93) with explicit source-line errors and save/restore coverage; imported parser support remains pending. |
+| `STAMP_HEADING_VA` | `(font fontsize text [offset])` | Aligns headings vertically with one another; accepts the same optional horizontal offset. | Mapped in standalone compatibility parser (#93), including TOP/MIDDLE/BOTTOM row interactions; imported parser support remains pending. |
+| `STAMP_HEADING_PADDING` | `(padding)` | Signed adjustment to heading/frame gap for succeeding boxes; zero restores the default. | Mapped in standalone compatibility parser (#93) and included in save/restore heading-colour state tests; imported parser support remains pending. |
 | `STAMP_FOOTER_TXT_ALIGN` | `(align)` | `ALIGN` (default) places left/right text at the corresponding box corners. `CENTRE` left/right-aligns the first row and centers later rows under it; `CNR_CENTRE` centers later rows under the corresponding box corners. US aliases `CENTER` and `CNR_CENTER` are accepted. | Not accepted by imported parser. |
 | `STAMP_FOOTER_TXT_PAD` | `(padding)` | Signed adjustment to gap between frame and first caption line; zero restores default. Subsequent-line spacing uses `TEXT_LINE_LEADING`. | Not accepted by imported parser. |
 

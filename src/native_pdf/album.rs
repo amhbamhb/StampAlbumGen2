@@ -22,6 +22,7 @@ use super::{
     pagination::{StampItemPage, StampRowSection},
     renderer,
     stamp_box::StampBoxGeometry,
+    stamp_heading::{self, HeadingMode, NativeHeadingItem, StampHeading, VerticalAlignment},
     stamp_image::{
         ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampFrameStyle,
         StampImageOptions, StampImageRowItem, StampTextSettings,
@@ -48,6 +49,7 @@ pub struct NativeAlbum {
     page_background: Option<NativePageBackgroundImage>,
     items: Vec<StampImageRowItem>,
     sections: Vec<StampRowSection>,
+    headings: Vec<NativeHeadingItem>,
 }
 
 impl NativeAlbum {
@@ -89,6 +91,10 @@ impl NativeAlbum {
         let mut image_specs = Vec::new();
         let mut section_start = 0;
         let mut section_counts = Vec::new();
+        let mut headings: Vec<NativeHeadingItem> = Vec::new();
+        let mut vertical = VerticalAlignment::Top;
+        let mut heading_padding = None;
+        let mut previous_command = String::new();
 
         for (index, line) in source.lines().enumerate() {
             let line_number = index + 1;
@@ -355,14 +361,14 @@ impl NativeAlbum {
                     words(&name, &args, 0).map_err(&fail)?;
                     save_stamp_settings(
                         &mut saved_stamp_settings,
-                        (image_options, frame_style),
+                        (image_options, frame_style, heading_padding),
                         &name,
                     )
                     .map_err(&fail)?;
                 }
                 "NATIVE_STAMP_SETTINGS_RESTORE" => {
                     words(&name, &args, 0).map_err(&fail)?;
-                    (image_options, frame_style) =
+                    (image_options, frame_style, heading_padding) =
                         restore_stamp_settings(&mut saved_stamp_settings, &name).map_err(&fail)?;
                 }
                 "NATIVE_STAMP_BACKGROUND" => {
@@ -559,6 +565,50 @@ impl NativeAlbum {
                     section_counts.push(count);
                     section_start = image_specs.len();
                 }
+                "NATIVE_ROW_VERTICAL_ALIGNMENT" => {
+                    let values = words(&name, &args, 1).map_err(&fail)?;
+                    if args[0].quoted {
+                        return Err(fail(format!("{name} requires an unquoted alignment")));
+                    }
+                    vertical = VerticalAlignment::parse(&values[0]).map_err(&fail)?;
+                }
+                "NATIVE_STAMP_HEADING_PADDING" => {
+                    let values = numbers(&name, &args, 1).map_err(&fail)?;
+                    heading_padding =
+                        Some(stamp_heading::signed_mm(values[0], &name).map_err(&fail)?);
+                }
+                "NATIVE_STAMP_HEADING" => {
+                    if args.len() != 7 {
+                        return Err(fail(format!("{name} requires mode, font, size, quoted text, offset mm, baseline gap mm and colour")));
+                    }
+                    if previous_command != "STAMP_IMAGE" {
+                        return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
+                    }
+                    if [0, 1, 6].iter().any(|&index| args[index].quoted) {
+                        return Err(fail(format!("{name} mode/font/colour must be unquoted")));
+                    }
+                    let padding = heading_padding.ok_or_else(|| {
+                        fail("Missing explicit NATIVE_STAMP_HEADING_PADDING".into())
+                    })?;
+                    let measured = MeasuredText::new(
+                        &args[1].value,
+                        number(&args[2], &name, 3).map_err(&fail)?,
+                        &quoted(&args[3], &name).map_err(&fail)?,
+                    )
+                    .map_err(&fail)?;
+                    let heading = StampHeading::new(
+                        measured,
+                        HeadingMode::parse(&args[0].value).map_err(&fail)?,
+                        number(&args[4], &name, 5).map_err(&fail)?,
+                        number(&args[5], &name, 6).map_err(&fail)? + padding,
+                        NamedColour::parse(&args[6].value).map_err(&fail)?,
+                    )
+                    .map_err(&fail)?;
+                    headings
+                        .last_mut()
+                        .ok_or_else(|| fail("Heading has no preceding stamp".into()))?
+                        .heading = Some(heading);
+                }
                 "STAMP_IMAGE" => {
                     if !matches!(args.len(), 4 | 7) {
                         return Err(fail(format!(
@@ -604,9 +654,14 @@ impl NativeAlbum {
                         caption,
                         frame_style,
                     ));
+                    headings.push(NativeHeadingItem {
+                        heading: None,
+                        vertical,
+                    });
                 }
                 _ => return Err(fail(format!("Unsupported native command {name}"))),
             }
+            previous_command = name;
         }
 
         if !header_seen {
@@ -687,11 +742,33 @@ impl NativeAlbum {
             page_background,
             items,
             sections,
+            headings,
         })
     }
 
     /// Generates a native PDF directly without launching AlbumEasy or exporting TXT.
     pub fn write_pdf(&self, output: &Path) -> Result<Vec<StampItemPage>> {
+        if self
+            .headings
+            .iter()
+            .any(|item| item.heading.is_some() || item.vertical != VerticalAlignment::Top)
+        {
+            let pages = stamp_heading::paginate_native(
+                &self.page_settings,
+                &self.items,
+                &self.headings,
+                &self.sections,
+                &self.stamp_text_policy,
+            )?;
+            return renderer::write_native_heading_album_pdf(
+                &self.page_settings,
+                &self.items,
+                pages,
+                (self.frame_width_mm, self.frame_colour),
+                self.page_background.as_ref(),
+                output,
+            );
+        }
         renderer::write_native_album_pdf_with_sections(
             &self.page_settings,
             &self.items,

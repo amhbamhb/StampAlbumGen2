@@ -347,6 +347,38 @@ fn write_paginated_stamp_sections(
         policy,
         settings.capture_generation_date(),
     )?;
+    write_stamp_pages(settings, mode, items, pages, output)
+}
+
+pub(crate) fn write_native_heading_album_pdf(
+    settings: &PageSettings,
+    items: &[StampImageRowItem],
+    pages: Vec<StampItemPage>,
+    frame: (f64, NamedColour),
+    background: Option<&NativePageBackgroundImage>,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
+    write_stamp_pages(
+        settings,
+        RenderMode {
+            proof: None,
+            diagnostic_overlays: false,
+            native_frame: Some(frame),
+            page_background: background,
+        },
+        items,
+        pages,
+        output,
+    )
+}
+
+fn write_stamp_pages(
+    settings: &PageSettings,
+    mode: RenderMode<'_>,
+    items: &[StampImageRowItem],
+    pages: Vec<StampItemPage>,
+    output: &Path,
+) -> Result<Vec<StampItemPage>> {
     let proof = mode
         .proof
         .cloned()

@@ -240,7 +240,7 @@ fn heading_colour_is_restored_and_unsupported_saved_controls_remain_explicit() -
     );
     for control in [
         "STAMP_INNER_BORDER_STYLE (UNMAPPED)",
-        "STAMP_HEADING_PADDING (2)",
+        "STAMP_FOOTER_TXT (HN 8 \"Unmapped footer\")",
         "STAMP_FOOTER_TXT_PAD (2)",
     ] {
         let error = albumeasy::render(&format!("{source}\n{control}\n"), &fixture(), &output)

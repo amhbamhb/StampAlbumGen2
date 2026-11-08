@@ -26,6 +26,7 @@ use super::{
     },
     document::{Bounds, PageSettings},
     renderer::{write_imported_album_pdf, ImportedPdfPage},
+    stamp_heading::{self, HeadingMode, HeadingRowItem, StampHeading, VerticalAlignment},
     stamp_image::{ImageAspectRatio, ImagePaddingUnit, StampImageOptions, StampImageSettings},
     stamp_inner_border::{BorderStyleState, InnerBorderStyle, StampInnerBorder},
     stamp_text::PositionedStampText,
@@ -97,6 +98,7 @@ fn supported(name: &str) -> bool {
             | "COLOR_STAMP_BORDER"
             | "COLOR_STAMP_TEXT"
             | "COLOR_STAMP_HEADING"
+            | "COLOUR_STAMP_HEADING"
             | "COLOR_STAMP_BACKGROUND"
             | "COLOUR_STAMP_BACKGROUND"
             | "STAMP_BOXES_SIZE_ADJUST"
@@ -122,8 +124,12 @@ fn supported(name: &str) -> bool {
             | "ROW_START_ES"
             | "ROW_START_FS"
             | "ROW_ALIGN_TOP"
+            | "ROW_ALIGN_MIDDLE"
+            | "ROW_ALIGN_BOTTOM"
             | "STAMP_ADD_IMG"
             | "STAMP_HEADING_VA"
+            | "STAMP_HEADING"
+            | "STAMP_HEADING_PADDING"
     )
 }
 
@@ -182,13 +188,12 @@ struct Item {
     image: std::path::PathBuf,
     options: StampImageOptions,
     captions: Vec<Option<MeasuredText>>,
-    heading: Option<MeasuredText>,
+    heading: Option<StampHeading>,
     frame: bool,
     outer_style: BorderStyleState,
     background: Option<NamedColour>,
     border_colour: NamedColour,
     text_colour: NamedColour,
-    heading_colour: NamedColour,
     inner_border: Option<StampInnerBorder>,
 }
 
@@ -239,6 +244,7 @@ struct Row {
     border: f64,
     gap: Option<f64>,
     items: Vec<Item>,
+    vertical: VerticalAlignment,
 }
 
 fn flush(
@@ -263,13 +269,7 @@ fn flush(
             "Imported AlbumEasy row exceeds the page width; split the row explicitly".into(),
         );
     }
-    let above = row
-        .items
-        .iter()
-        .filter_map(|i| i.heading.as_ref())
-        .map(height)
-        .fold(0.0, f64::max);
-    let below_frame = row
+    let row_items = row
         .items
         .iter()
         .map(|item| {
@@ -279,30 +279,41 @@ fn flush(
                 .flatten()
                 .map(height)
                 .fold(0.0, f64::max);
-            item.height
-                + if caption_height > 0.0 {
+            HeadingRowItem {
+                width_mm: item.width,
+                height_mm: item.height,
+                heading: item.heading.as_ref(),
+                below_mm: if caption_height > 0.0 {
                     0.5 + caption_height
                 } else {
                     0.0
-                }
+                },
+            }
         })
-        .fold(0.0, f64::max);
-    let heading_gap = if above > 0.0 { 1.0 } else { 0.0 };
-    let bottom = *top - above - heading_gap - below_frame;
-    if bottom < page.layout.content_bounds.bottom {
-        return Err(
-            "Imported AlbumEasy row exceeds the page height; add PAGE_START before this row".into(),
-        );
-    }
+        .collect::<Vec<_>>();
     let mut left = page.layout.content_bounds.left + (available - used) / 2.0;
-    let frame_top = *top - above - heading_gap;
-    for item in row.items {
-        let bounds = Bounds {
-            left,
-            right: left + item.width,
-            top: frame_top,
-            bottom: frame_top - item.height,
-        };
+    let lefts = row
+        .items
+        .iter()
+        .map(|item| {
+            let position = left;
+            left += item.width + gap;
+            position
+        })
+        .collect::<Vec<_>>();
+    let layout = stamp_heading::layout_row(
+        page.layout.content_bounds,
+        *top,
+        &row_items,
+        &lefts,
+        row.vertical,
+    )
+    .map_err(|error| {
+        format!("Imported AlbumEasy row: {error}; add PAGE_START or correct heading/row settings")
+    })?;
+    for (item, placed) in row.items.into_iter().zip(layout.items) {
+        let bounds = placed.frame;
+        let left = bounds.left;
         page.images.push(StampImageSettings {
             image_path: item.image,
             box_bounds: bounds,
@@ -333,15 +344,8 @@ fn flush(
         if let Some(colour) = item.background {
             page.backgrounds.push((bounds, colour));
         }
-        if let Some(heading) = item.heading {
-            page.text.push(positioned(
-                heading,
-                left,
-                *top,
-                item.width,
-                1,
-                item.heading_colour,
-            ));
+        if let Some(heading) = placed.heading {
+            page.text.push(heading);
         }
         for (align, caption) in item.captions.into_iter().enumerate() {
             if let Some(caption) = caption {
@@ -355,9 +359,8 @@ fn flush(
                 ));
             }
         }
-        left += item.width + gap;
     }
-    *top = bottom - spacing;
+    *top = layout.bottom_mm - spacing;
     Ok(())
 }
 
@@ -624,7 +627,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut inner_style = BorderStyleState::new(InnerBorderStyle::Solid);
     let mut outer_style = BorderStyleState::new(InnerBorderStyle::Solid);
     let mut inner_colour = stamp_colour;
-    for c in &commands {
+    let mut heading_padding = 0.0;
+    let mut vertical = VerticalAlignment::Top;
+    for (command_index, c) in commands.iter().enumerate() {
         let result = (|| -> Result<()> {
             match c.name.as_str() {
                 "PAGE_START" => {
@@ -643,8 +648,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         inner_borders: Vec::new(),
                     });
                 }
-                "ROW_ALIGN_TOP" => {
+                "ROW_ALIGN_TOP" | "ROW_ALIGN_MIDDLE" | "ROW_ALIGN_BOTTOM" => {
                     count(c, 0, 0)?;
+                    if let Some(page) = pages.last_mut() {
+                        flush(&mut row, page, &mut top, settings.spacing().vertical_mm())?;
+                    }
+                    vertical = VerticalAlignment::parse(c.name.trim_start_matches("ROW_ALIGN_"))?;
                 }
                 "ALBUM_STAMP_SETTINGS_SAVE" => {
                     count(c, 0, 0)?;
@@ -662,6 +671,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             inner_style,
                             inner_colour,
                             outer_style,
+                            heading_padding,
                         ),
                         &c.name,
                     )?;
@@ -680,9 +690,13 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         inner_style,
                         inner_colour,
                         outer_style,
+                        heading_padding,
                     ) = restore_stamp_settings(&mut saved_stamp_settings, &c.name)?;
                 }
-                "COLOR_STAMP_BORDER" | "COLOR_STAMP_TEXT" | "COLOR_STAMP_HEADING" => {
+                "COLOR_STAMP_BORDER"
+                | "COLOR_STAMP_TEXT"
+                | "COLOR_STAMP_HEADING"
+                | "COLOUR_STAMP_HEADING" => {
                     count(c, 1, 1)?;
                     let colour = NamedColour::parse(&c.args[0].value)?;
                     match c.name.as_str() {
@@ -804,6 +818,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         border,
                         gap,
                         items: Vec::new(),
+                        vertical,
                     });
                 }
                 "STAMP_ADD_IMG" => {
@@ -846,7 +861,6 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         background: if c.args.len() == 7 { None } else { background },
                         border_colour: stamp_colour,
                         text_colour,
-                        heading_colour,
                         inner_border: if c.args.len() == 7 {
                             None
                         } else {
@@ -861,15 +875,36 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         },
                     });
                 }
-                "STAMP_HEADING_VA" => {
-                    count(c, 3, 3)?;
+                "STAMP_HEADING_PADDING" => {
+                    count(c, 1, 1)?;
+                    heading_padding = stamp_heading::signed_mm(n(c, 0)?, &c.name)?;
+                }
+                "STAMP_HEADING" | "STAMP_HEADING_VA" => {
+                    count(c, 3, 4)?;
+                    if command_index == 0 || commands[command_index - 1].name != "STAMP_ADD_IMG" {
+                        return Err(format!("{} must immediately follow STAMP_ADD_IMG", c.name));
+                    }
                     let item = row
                         .as_mut()
                         .and_then(|r| r.items.last_mut())
                         .ok_or("STAMP_HEADING_VA must follow a stamp")?;
-                    item.heading =
-                        Some(MeasuredText::new(&c.args[0].value, n(c, 1)?, text(c, 2)?)?);
-                    item.heading_colour = heading_colour;
+                    if c.args[0].quoted {
+                        return Err("Heading font must be unquoted".into());
+                    }
+                    let measured = MeasuredText::new(&c.args[0].value, n(c, 1)?, text(c, 2)?)?;
+                    // AlbumEasy's heading gap is one font-size unit to the last baseline.
+                    let gap = super::units::points_to_mm(measured.size_pt) + heading_padding;
+                    item.heading = Some(StampHeading::new(
+                        measured,
+                        if c.name == "STAMP_HEADING" {
+                            HeadingMode::Local
+                        } else {
+                            HeadingMode::Aligned
+                        },
+                        if c.args.len() == 4 { n(c, 3)? } else { 0.0 },
+                        gap,
+                        heading_colour,
+                    )?);
                 }
                 "PAGE_VSPACE" | "PAGE_TEXT_CENTRE" => {
                     let page = pages.last_mut().ok_or("Page content requires PAGE_START")?;

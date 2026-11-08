@@ -1,8 +1,8 @@
 # Native PDF generation with AlbumEasy TXT export
 
 **Created:** 2026-11-01  
-**Last updated:** 2026-11-07
-**Revision:** 51
+**Last updated:** 2026-11-08
+**Revision:** 53
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -195,6 +195,28 @@ acceptance remain pending. No production integration, OKF regeneration or PR
 is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
+
+**Next reference slice (#93): stamp headings, offsets and padding.**
+Branch `issue/93-stamp-headings` starts from pushed #92 commit `41cba21a`.
+The [AlbumEasy-only heading references](../../tests/fixtures/albumeasy/stamp-headings-v1/README.md)
+contain two complete two-page Letter albums, each with 12 real images.
+Unequal measured 40 x 26 / 50 x 40 mm stamps retain 6 mm total frame
+additions. `alignment` compares local/VA headings with TOP/MIDDLE/BOTTOM
+rows and unequal line counts; `padding-state` covers omitted/zero/signed
+offsets, signed padding and saved/restored heading colour/padding.
+All four final pages inspected and actual frame/caption bounds checked.
+First attempts overflowed despite successful renders; corrected only
+fixture furniture, not physical sizes. README records attempts/commands.
+
+Key findings: local/VA headings change the row's reserved heading
+footprint; even TOP rows can have different bare frame tops with local
+headings of different line counts. Padding affects heading/frame footprint;
+offsets are per heading and do not persist. Save/restore returns the
+measured gap and colour. Native #93 mapping now covers standalone
+compatibility input (`.txt` and raw-command `.stampalbum`) and explicit
+native derivatives with a dedicated heading regression suite. Imported
+parser and production routing remain out of scope. The two future ideas
+recorded below remain backlog only.
 
 **Native checkpoint (#92): outer/inner border styles, CORNER and SIDES.**
 Branch `issue/92-stamp-border-styles` starts from pushed #91 commit `f5ef92bc`.
@@ -2294,6 +2316,25 @@ impacts and discovered logic risks in `docs/testing/`.
 - Export loss approval/report format: **Proposed strict default; design pending**
 - Other native enhancement ideas: **Backlog only; not approved**
 
+### Future ideas recorded 2026-11-08 — no implementation authorized
+
+1. **Text beside stamp images/frames:** In addition to the existing
+   above/below and inside/outside-frame text positions, consider an option
+   for text on the left, right, or both sides of an image/frame. This is
+   an idea only, not an approved command mapping or layout change.
+   Exact placement relative to the image versus frame, inside/outside
+   behavior, spacing, wrapping and alignment remain undecided.
+2. **Country Review UI preview:** Consider showing a preview while
+   reviewing a country. Whether this should show a single stamp/image,
+   the current album page, or offer both remains undecided. This records
+   the idea only; feasibility, preview source, interaction and scope
+   have not been investigated or approved.
+
+Do not implement, create execution tasks, or change production behavior
+for either idea without a subsequent maintainer request. Neither idea
+changes the current reference-first command-mapping work or authorizes
+production native-PDF integration.
+
 ## 8. Requirement mapping
 
 | Requirement | Plan items | Completion evidence |
@@ -2376,3 +2417,6 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-07 | Revision 49: accepted bounded inner-border mapping (#91) | Three native input routes, actual translated path/dash/colour checks and immutable reference. Zero probe verifies PDF hairlines. 114 scoped tests passed/18 ignored; Denmark v5 rerenders without source changes. | Review native proofs/Actual-size print; remaining CORNER/SIDES/shape/rotation and broader language mappings stay open. No commit/push, production integration, PR or OKF. |
 | 2026-11-07 | Revision 50: outer/inner styles reference pass (#92) | #91 committed/pushed as f5ef92bc after 16 passing affected precommit tests. Two complete AlbumEasy-only reference pairs prove ordinary outer styles, corner selectors, persistent independent side masks and save/restore; four page rasters/actual strokes inspected. | Stop for reference acceptance before native implementation; preserve earlier fixtures and TXT/raw/native gates. No production integration, PR or OKF. |
 | 2026-11-07 | Revision 51: approved bounded border-style mapping (#92) | Shared outer/inner style/selector state and paths; six native main proofs plus unequal-width/hairline and duplicate-selector probes. Image-centred path geometry within 0.02 pt, all side/corner masks, strict errors, saved state and inherited native inner styles verified. Broad regression gate and final affected gate recorded in fixture README; Denmark v5 source remains unchanged. | Review native proofs/Actual-size print; retain immutable references and deferred shape/rotation/text-only and broader language mappings. No commit/push, production integration, PR or OKF. |
+| 2026-11-08 | Revision 52: future ideas only | Recorded optional text left/right/both beside stamp images/frames and a country Review UI preview (single image versus current page undecided). | No implementation/tasks authorized; preserve current mapping scope. |
+| 2026-11-08 | Revision 53: heading reference pass (#93) | #92 committed/pushed as 41cba21a after 120 passing precommit tests. Two AlbumEasy-only two-page/12-image references cover local/VA headings, row alignment, multiline, signed offsets/padding and saved colour/padding. Corrected first-attempt overflow without changing physical sizes; all four final rasters and bounds checked. | Stop for reference acceptance before native code. MIDDLE/BOTTOM rows are a coupled prerequisite; preserve deferred ideas and prior fixtures. No production integration, PR or OKF. |
+| 2026-11-08 | Revision 54: standalone heading mapping completed (#93) | Added shared heading-row layout geometry and standalone mapping for `STAMP_HEADING`, `STAMP_HEADING_VA`, `STAMP_HEADING_PADDING`, `ROW_ALIGN_MIDDLE`, and `ROW_ALIGN_BOTTOM` in compatibility and native routes. Added approved-reference derivatives (`alignment*.stampalbum`, `padding-state*.stampalbum`) and new [native heading regression suite](../../tests/native_pdf_stamp_headings.rs). Focused gate (`native_pdf_album`, `native_pdf_albumeasy`, `native_pdf_stamp_settings`, `native_pdf_stamp_headings`) and retained broad native gate both passed. | Review native heading proofs and decide whether to commit/push. Imported parser, production integration, PR, and OKF remain pending. |

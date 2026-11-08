@@ -12,6 +12,7 @@ pub mod pagination;
 pub mod proof;
 pub mod renderer;
 pub mod stamp_box;
+pub mod stamp_heading;
 pub mod stamp_image;
 pub mod stamp_inner_border;
 pub mod stamp_rows;
