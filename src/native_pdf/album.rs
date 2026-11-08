@@ -376,6 +376,8 @@ impl NativeAlbum {
                         outline: true,
                         background: None,
                         inner_border: None,
+                        outer_style: None,
+                        inner_style: None,
                     });
                     style.background = background;
                 }
@@ -390,6 +392,8 @@ impl NativeAlbum {
                         outline: true,
                         background: None,
                         inner_border: None,
+                        outer_style: None,
+                        inner_style: None,
                     });
                     style.outline = outline;
                 }
@@ -403,18 +407,56 @@ impl NativeAlbum {
                         number(&args[0], &name, 1).map_err(&fail)?,
                         number(&args[1], &name, 2).map_err(&fail)?,
                         InnerBorderStyle::parse(&unquoted(&args[2], &name).map_err(&fail)?)
-                            .map_err(&fail)?,
+                            .map_err(|error| fail(format!("{name}: {error}")))?,
                         NamedColour::parse(&unquoted(&args[3], &name).map_err(&fail)?)
                             .map_err(&fail)?,
                     )
                     .map_err(&fail)?;
-                    frame_style
-                        .get_or_insert(StampFrameStyle {
-                            outline: true,
-                            background: None,
-                            inner_border: None,
-                        })
-                        .inner_border = Some(inner);
+                    let style = frame_style.get_or_insert(StampFrameStyle {
+                        outline: true,
+                        background: None,
+                        inner_border: None,
+                        outer_style: None,
+                        inner_style: None,
+                    });
+                    if let Some(state) = &mut style.inner_style {
+                        state.style = inner.state.style;
+                    }
+                    style.inner_border = Some(inner);
+                }
+                "NATIVE_STAMP_BORDER_STYLE" | "NATIVE_STAMP_INNER_BORDER_STYLE" => {
+                    if args.iter().any(|arg| arg.quoted) {
+                        return Err(fail(format!("{name} requires unquoted styles/selectors")));
+                    }
+                    let values = args
+                        .iter()
+                        .map(|arg| unquoted(arg, &name))
+                        .collect::<Result<Vec<_>>>()
+                        .map_err(&fail)?;
+                    let style = frame_style.get_or_insert(StampFrameStyle {
+                        outline: true,
+                        background: None,
+                        inner_border: None,
+                        outer_style: None,
+                        inner_style: None,
+                    });
+                    let initial =
+                        super::stamp_inner_border::BorderStyleState::new(InnerBorderStyle::Solid);
+                    let (target, inherited) = if name == "NATIVE_STAMP_BORDER_STYLE" {
+                        (&mut style.outer_style, initial)
+                    } else {
+                        (
+                            &mut style.inner_style,
+                            style
+                                .inner_border
+                                .map(|inner| inner.state)
+                                .unwrap_or(initial),
+                        )
+                    };
+                    target
+                        .get_or_insert(inherited)
+                        .apply(&values.iter().map(String::as_str).collect::<Vec<_>>())
+                        .map_err(&fail)?;
                 }
                 "NATIVE_STAMP_IMAGE_POLICY" => {
                     if args.len() != 7 {

@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 49
+**Revision:** 51
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -195,6 +195,43 @@ acceptance remain pending. No production integration, OKF regeneration or PR
 is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
+
+**Native checkpoint (#92): outer/inner border styles, CORNER and SIDES.**
+Branch `issue/92-stamp-border-styles` starts from pushed #91 commit `f5ef92bc`.
+The [AlbumEasy-only references](../../tests/fixtures/albumeasy/stamp-border-styles-v1/README.md)
+contain two realistic two-page Letter albums, each with 12 verified real
+images, physical frame clearance, borders, readable captions, margin text
+and numbered footer. Outer ordinary styles/CORNER selectors/SIDES persistence
+are covered in `album`; inner selectors and independent outer/inner
+mask/style save/restore in `inner-state`. AlbumEasy renders both successfully;
+all four reference page rasters inspected. Maintainer approved continuation
+on 2026-11-07. Six native PDFs now cover both albums through TXT, identical
+raw-command `.stampalbum` and explicit native-language `.stampalbum`.
+
+Measured evidence: SIDES masks survive ordinary-style changes; CORNER ignores
+empty masks; outer/inner masks are independent and restore with styles/colour.
+Corners are joined two-leg 2 mm paths, not two separately stroked sides.
+Corners use the same edge-gap centreline inset as ordinary inner borders,
+but joined vertices do not use the full-side half-thickness endpoint
+extensions. Unequal-width/hairline reference probes verify this distinction.
+Actual paths are compared relative to each real image centre within 0.02 pt;
+physical image sizes, dash arrays, colours, selectors and restored state
+match both references. Trace stroke totals including page border: 23/11 for
+`album`, 37/29 for `inner-state`. Exact commands, no-DB/filesystem impact,
+tool warnings and follow-up risks are in the fixture README. Duplicate
+selectors are idempotent, confirmed by a supplemental AlbumEasy reference;
+unknown/malformed selectors fail with source lines before saving output.
+Final scoped regression gate: 120 passed/19 ignored/zero failed; affected
+gate: 22 passed/4 ignored/zero failed. All-target check, focused Clippy,
+format/whitespace checks and six actual standalone dispatch runs passed.
+Native-only proofs explicitly reserve omitted row-label space in a
+22.175 mm vertical gap, keeping two pages/six images per page without
+changing physical frames/images. TXT/raw retain the original 14 mm spacing
+and all row labels; their four page rasters are identical. Whole-page
+native/AlbumEasy layout parity, nonrectangular/rotated/text-only frames,
+tiny-corner boxes, Windows execution and human native print acceptance
+remain unverified. No production routing, PR or OKF regeneration.
+Commit/push awaits explicit instruction.
 
 **Native checkpoint (#91): stamp inner borders, ordinary styles and colour.**
 Branch `issue/91-stamp-inner-borders` starts from pushed #90 commit `697eb0d3`.
@@ -2337,3 +2374,5 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-07 | Revision 47: bounded margin-text mapping (#90) | Accepted three AlbumEasy references; nine native PDFs across TXT/raw/native routes. Rotated transforms within 0.01 pt, TXT/raw rasters identical, image dimensions retained. 108 scoped tests passed/17 ignored; Denmark v5 has zero deferrals. Strict third-definition rejection documented. | Review native proofs/Actual-size print. Retain immutable fixtures and three-input gates; no production integration, PR or OKF. Commit/push awaits instruction. |
 | 2026-11-07 | Revision 48: inner-border reference pass (#91) | #90 committed/pushed as 697eb0d3 after 108 passing precommit tests. New AlbumEasy-only two-page/12-image reference covers ordinary inner styles, colours, save/restore and cancellation. NO_FRAME removes both borders; outer BLANK retains inner. Actual dash/side geometry recorded. | Stop for reference acceptance before native implementation; no production integration, PR or OKF. |
 | 2026-11-07 | Revision 49: accepted bounded inner-border mapping (#91) | Three native input routes, actual translated path/dash/colour checks and immutable reference. Zero probe verifies PDF hairlines. 114 scoped tests passed/18 ignored; Denmark v5 rerenders without source changes. | Review native proofs/Actual-size print; remaining CORNER/SIDES/shape/rotation and broader language mappings stay open. No commit/push, production integration, PR or OKF. |
+| 2026-11-07 | Revision 50: outer/inner styles reference pass (#92) | #91 committed/pushed as f5ef92bc after 16 passing affected precommit tests. Two complete AlbumEasy-only reference pairs prove ordinary outer styles, corner selectors, persistent independent side masks and save/restore; four page rasters/actual strokes inspected. | Stop for reference acceptance before native implementation; preserve earlier fixtures and TXT/raw/native gates. No production integration, PR or OKF. |
+| 2026-11-07 | Revision 51: approved bounded border-style mapping (#92) | Shared outer/inner style/selector state and paths; six native main proofs plus unequal-width/hairline and duplicate-selector probes. Image-centred path geometry within 0.02 pt, all side/corner masks, strict errors, saved state and inherited native inner styles verified. Broad regression gate and final affected gate recorded in fixture README; Denmark v5 source remains unchanged. | Review native proofs/Actual-size print; retain immutable references and deferred shape/rotation/text-only and broader language mappings. No commit/push, production integration, PR or OKF. |

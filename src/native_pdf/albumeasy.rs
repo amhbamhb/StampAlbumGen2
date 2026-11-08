@@ -27,7 +27,7 @@ use super::{
     document::{Bounds, PageSettings},
     renderer::{write_imported_album_pdf, ImportedPdfPage},
     stamp_image::{ImageAspectRatio, ImagePaddingUnit, StampImageOptions, StampImageSettings},
-    stamp_inner_border::{InnerBorderStyle, StampInnerBorder},
+    stamp_inner_border::{BorderStyleState, InnerBorderStyle, StampInnerBorder},
     stamp_text::PositionedStampText,
     text::{MeasuredText, PositionedTextLine},
     Result,
@@ -184,6 +184,7 @@ struct Item {
     captions: Vec<Option<MeasuredText>>,
     heading: Option<MeasuredText>,
     frame: bool,
+    outer_style: BorderStyleState,
     background: Option<NamedColour>,
     border_colour: NamedColour,
     text_colour: NamedColour,
@@ -314,7 +315,15 @@ fn flush(
             caption: None,
         });
         if item.frame && row.border > 0.0 {
-            page.frames.push((bounds, row.border, item.border_colour));
+            if item.outer_style.uses_legacy_rectangle() {
+                page.frames.push((bounds, row.border, item.border_colour));
+            } else {
+                page.inner_borders.push(item.outer_style.outer_paths(
+                    bounds,
+                    row.border,
+                    item.border_colour,
+                )?);
+            }
         }
         if let Some(inner) = item.inner_border {
             if let Some(paths) = inner.layout(bounds, row.border)? {
@@ -612,7 +621,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut heading_colour = stamp_colour;
     let mut saved_stamp_settings = None;
     let mut inner_dimensions = (0.0, 0.0);
-    let mut inner_style = InnerBorderStyle::Solid;
+    let mut inner_style = BorderStyleState::new(InnerBorderStyle::Solid);
+    let mut outer_style = BorderStyleState::new(InnerBorderStyle::Solid);
     let mut inner_colour = stamp_colour;
     for c in &commands {
         let result = (|| -> Result<()> {
@@ -651,6 +661,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             inner_dimensions,
                             inner_style,
                             inner_colour,
+                            outer_style,
                         ),
                         &c.name,
                     )?;
@@ -668,6 +679,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         inner_dimensions,
                         inner_style,
                         inner_colour,
+                        outer_style,
                     ) = restore_stamp_settings(&mut saved_stamp_settings, &c.name)?;
                 }
                 "COLOR_STAMP_BORDER" | "COLOR_STAMP_TEXT" | "COLOR_STAMP_HEADING" => {
@@ -690,31 +702,32 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     count(c, 1, 1)?;
                     adjust = n(c, 0)?;
                 }
-                "STAMP_BORDER_STYLE" => {
-                    count(c, 1, 1)?;
-                    frame = match c.args[0].value.as_str() {
-                        "SOLID" => true,
-                        "BLANK" => false,
-                        _ => {
-                            return Err(
-                                "Only SOLID and BLANK stamp borders are currently implemented"
-                                    .into(),
-                            )
-                        }
-                    };
+                "STAMP_BORDER_STYLE" | "STAMP_INNER_BORDER_STYLE" => {
+                    if c.args.iter().any(|arg| arg.quoted) {
+                        return Err("Border styles/selectors must be unquoted".into());
+                    }
+                    let values = c
+                        .args
+                        .iter()
+                        .map(|arg| arg.value.as_str())
+                        .collect::<Vec<_>>();
+                    if c.name == "STAMP_BORDER_STYLE" {
+                        outer_style.apply(&values)?;
+                        frame = !matches!(outer_style.style, InnerBorderStyle::Blank);
+                    } else {
+                        inner_style.apply(&values)?;
+                    }
                 }
                 "STAMP_INNER_BORDER" => {
                     count(c, 2, 2)?;
                     let dimensions = (n(c, 0)?, n(c, 1)?);
-                    StampInnerBorder::new(dimensions.0, dimensions.1, inner_style, inner_colour)?;
+                    StampInnerBorder::new(
+                        dimensions.0,
+                        dimensions.1,
+                        inner_style.style,
+                        inner_colour,
+                    )?;
                     inner_dimensions = dimensions;
-                }
-                "STAMP_INNER_BORDER_STYLE" => {
-                    count(c, 1, 1)?;
-                    if c.args[0].quoted {
-                        return Err("Inner style must be unquoted".into());
-                    }
-                    inner_style = InnerBorderStyle::parse(&c.args[0].value)?;
                 }
                 "COLOR_STAMP_INNER_BORDER" | "COLOUR_STAMP_INNER_BORDER" => {
                     count(c, 1, 1)?;
@@ -829,6 +842,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         captions,
                         heading: None,
                         frame: frame && c.args.len() != 7,
+                        outer_style,
                         background: if c.args.len() == 7 { None } else { background },
                         border_colour: stamp_colour,
                         text_colour,
@@ -836,12 +850,14 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         inner_border: if c.args.len() == 7 {
                             None
                         } else {
-                            Some(StampInnerBorder::new(
+                            let mut inner = StampInnerBorder::new(
                                 inner_dimensions.0,
                                 inner_dimensions.1,
-                                inner_style,
+                                inner_style.style,
                                 inner_colour,
-                            )?)
+                            )?;
+                            inner.state = inner_style;
+                            Some(inner)
                         },
                     });
                 }

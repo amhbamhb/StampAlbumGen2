@@ -65,7 +65,8 @@ have colour, layering and physical-image-size regressions. The
 restores three background lines, leaving five other deferrals. The preceding
 eight-deferral description records the historical v1 slice; backgrounds are
 no longer deferred for the validated v2 rectangular cases. Shapes, rotated
-boxes and CORNER styles remain outside this implementation boundary.
+boxes remain outside this implementation boundary. Rectangular border
+styles/selectors are now covered by the later #92 slice below.
 
 **Footer update (#87):** After acceptance of the normal
 [AlbumEasy footer reference](../../tests/fixtures/albumeasy/footer-numbering-import-v1/README.md),
@@ -84,6 +85,25 @@ production routing remain outside this bounded slice. Year/section-local
 numbering is separately deferred under #88 without changing `$PAGES$`.
 
 ## 1. Purpose and scope
+
+**Bounded border-style checkpoint (#92):** The accepted
+[border-style reference pairs](../../tests/fixtures/albumeasy/stamp-border-styles-v1/README.md)
+cover ordinary outer styles, outer/inner CORNER selectors, independent
+persistent SIDES masks and save/restore on complete two-page Letter albums
+with 12 real images each. Reference paths confirm joined 2 mm corner legs
+and inner joined vertices without the full-side half-thickness extensions.
+Masks survive ordinary-style changes; CORNER ignores them. Both albums now
+have TXT/raw/native-language proofs and actual image-centred path/dash/colour
+comparisons within 0.02 pt. Independent masks/styles restore with colour;
+duplicates are idempotent as verified against AlbumEasy. All 16 masks have
+model tests, and malformed/quoted/unknown selectors fail with source lines.
+The new explicit `NATIVE_STAMP_BORDER_STYLE` and
+`NATIVE_STAMP_INNER_BORDER_STYLE` commands accept the same modes/selectors.
+`NATIVE_STAMP_INNER_BORDER` retains its four-argument form (including bare
+CORNER for all corners); its dimension/colour updates retain the side mask.
+Shape/rotation, text-only frames, tiny boxes, Windows runtime, human native
+print acceptance and whole-page layout parity remain unverified. No
+production routing change, PR or OKF regeneration.
 
 **Bounded inner-border checkpoint (#91):** The accepted
 [inner-border reference](../../tests/fixtures/albumeasy/stamp-inner-borders-v1/README.md)

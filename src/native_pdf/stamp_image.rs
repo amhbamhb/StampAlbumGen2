@@ -26,6 +26,8 @@ pub struct StampFrameStyle {
     pub outline: bool,
     pub background: Option<NamedColour>,
     pub inner_border: Option<super::stamp_inner_border::StampInnerBorder>,
+    pub outer_style: Option<super::stamp_inner_border::BorderStyleState>,
+    pub inner_style: Option<super::stamp_inner_border::BorderStyleState>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

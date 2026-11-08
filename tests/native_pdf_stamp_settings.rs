@@ -239,7 +239,7 @@ fn heading_colour_is_restored_and_unsupported_saved_controls_remain_explicit() -
         ]
     );
     for control in [
-        "STAMP_INNER_BORDER_STYLE (CORNER)",
+        "STAMP_INNER_BORDER_STYLE (UNMAPPED)",
         "STAMP_HEADING_PADDING (2)",
         "STAMP_FOOTER_TXT_PAD (2)",
     ] {
@@ -248,7 +248,7 @@ fn heading_colour_is_restored_and_unsupported_saved_controls_remain_explicit() -
         assert!(
             error.contains("Unsupported")
                 || error.contains("unsupported")
-                || error.contains("not yet mapped"),
+                || error.contains("Border style"),
             "{error}"
         );
     }

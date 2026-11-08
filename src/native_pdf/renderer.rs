@@ -390,7 +390,14 @@ fn write_paginated_stamp_sections(
                     geometries.push(geometry);
                     if let Some((width, colour)) = mode.native_frame {
                         let bounds = geometry.frame_bounds();
-                        if let Some(inner) = item.frame_style.and_then(|style| style.inner_border) {
+                        if let Some(mut inner) =
+                            item.frame_style.and_then(|style| style.inner_border)
+                        {
+                            if let Some(state) =
+                                item.frame_style.and_then(|style| style.inner_style)
+                            {
+                                inner.state = state;
+                            }
                             if let Some(paths) = inner.layout(bounds, width).map_err(|error| {
                                 format!(
                                     "Native PDF stamp inner border {}: {error}",
@@ -401,7 +408,15 @@ fn write_paginated_stamp_sections(
                             }
                         }
                         if item.frame_style.is_none_or(|style| style.outline) {
-                            frame_styles.push((bounds, width, colour));
+                            if let Some(state) = item
+                                .frame_style
+                                .and_then(|style| style.outer_style)
+                                .filter(|state| !state.uses_legacy_rectangle())
+                            {
+                                inner_borders.push(state.outer_paths(bounds, width, colour)?);
+                            } else {
+                                frame_styles.push((bounds, width, colour));
+                            }
                         }
                         if let Some(background) =
                             item.frame_style.and_then(|style| style.background)
@@ -849,11 +864,14 @@ fn save_pdf(
                     inner.style.dash_points(),
                     0.0,
                 ));
-            for (x1, y1, x2, y2) in inner.segments {
-                graphics
-                    .move_to(mm_to_points(x1), mm_to_points(y1))
-                    .line_to(mm_to_points(x2), mm_to_points(y2))
-                    .stroke();
+            for path in inner.stroke_paths() {
+                if let Some(&(x, y)) = path.first() {
+                    graphics.move_to(mm_to_points(x), mm_to_points(y));
+                    for &(x, y) in &path[1..] {
+                        graphics.line_to(mm_to_points(x), mm_to_points(y));
+                    }
+                    graphics.stroke();
+                }
             }
             graphics.restore_state();
         }

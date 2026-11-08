@@ -250,7 +250,7 @@ fn invalid_and_oversized_inner_borders_preserve_output_and_line_errors() -> Resu
         ("STAMP_INNER_BORDER (2 0.2)", "STAMP_INNER_BORDER (2)"),
         (
             "STAMP_INNER_BORDER_STYLE (SOLID)",
-            "STAMP_INNER_BORDER_STYLE (CORNER)",
+            "STAMP_INNER_BORDER_STYLE (UNMAPPED)",
         ),
         (
             "STAMP_INNER_BORDER_STYLE (SOLID)",

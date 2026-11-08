@@ -1,0 +1,72 @@
+# Explicit native border-style proof; see README for layout differences.
+STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+# Explicit native gap includes 14 mm plus a 9 pt row label and its 5 mm pad.
+ALBUM_PAGES_SPACING (4 22.175)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+NATIVE_PAGE_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 5)
+NATIVE_PAGE_HEADER (HN 9 C "INNER BORDER STYLES / SAVED STATE" 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_PAGE_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$" 0 0 darkblue)
+NATIVE_PAGE_MARGIN_TEXT (HN 9 "INNER STYLES - SAVED STATE" L CENTRE UP 2 darkblue)
+NATIVE_STAMP_BORDER_STYLE (SIDES L R T B)
+NATIVE_STAMP_BORDER_STYLE (SOLID)
+NATIVE_STAMP_INNER_BORDER (2 0.2 SOLID black)
+NATIVE_STAMP_INNER_BORDER_STYLE (SOLID)
+NATIVE_STAMP_INNER_BORDER (2 0.2 SOLID darkred)
+NATIVE_STAMP_INNER_BORDER_STYLE (SOLID)
+NATIVE_STAMP_INNER_BORDER_STYLE (SIDES L R T B)
+NATIVE_STAMP_INNER_BORDER_STYLE (CORNER)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.2 black 6)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+# Reference PAGE_START: native pagination is footprint-driven.
+# Reference row label HN 9 "INNER CORNERS - OUTER FRAME REMAINS SOLID" 5; cases remain in native stamp captions.
+# Reference row label HN 9 "ALL INNER CORNERS LEFT / TL AND BR RIGHT" 5; cases remain in native stamp captions.
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm\nAll inner corner markers")
+NATIVE_STAMP_INNER_BORDER_STYLE (CORNER TL BR)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nInner top-left / bottom-right")
+# Reference row label HN 9 "INNER TOP / BOTTOM LEFT - MASK PERSISTS WITH DASHED RIGHT" 5; cases remain in native stamp captions.
+NATIVE_STAMP_INNER_BORDER_STYLE (SOLID)
+NATIVE_STAMP_INNER_BORDER_STYLE (SIDES T B)
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nInner top / bottom only")
+NATIVE_STAMP_INNER_BORDER_STYLE (DASHED)
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm\nDashed inner top / bottom")
+# Reference row label HN 9 "EMPTY INNER SIDES LEFT / CORNERS IGNORE MASK RIGHT" 5; cases remain in native stamp captions.
+NATIVE_STAMP_INNER_BORDER_STYLE (SIDES)
+NATIVE_STAMP_INNER_BORDER_STYLE (SOLID)
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nNo inner sides")
+NATIVE_STAMP_INNER_BORDER_STYLE (CORNER TR BL)
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nInner top-right / bottom-left")
+NATIVE_STAMP_BORDER_STYLE (SIDES L R)
+NATIVE_STAMP_BORDER_STYLE (DOTTED)
+NATIVE_STAMP_INNER_BORDER_STYLE (SIDES T B)
+NATIVE_STAMP_INNER_BORDER_STYLE (DASHED)
+NATIVE_STAMP_INNER_BORDER (2 0.2 DASHED darkblue)
+NATIVE_STAMP_INNER_BORDER_STYLE (DASHED)
+# Reference PAGE_START: native pagination is footprint-driven.
+# Reference row label HN 9 "SAVE / RESTORE INDEPENDENT OUTER AND INNER STYLE STATE" 5; cases remain in native stamp captions.
+# Reference row label HN 9 "BASELINE: OUTER DOTTED L/R - INNER DASHED T/B" 5; cases remain in native stamp captions.
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm\nSaved baseline wide design")
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nSaved baseline portrait")
+# Reference row label HN 9 "TEMPORARY ALL OUTER SIDES / SELECTED INNER CORNERS" 5; cases remain in native stamp captions.
+NATIVE_STAMP_SETTINGS_SAVE ()
+NATIVE_STAMP_BORDER_STYLE (SIDES L R T B)
+NATIVE_STAMP_BORDER_STYLE (SOLID)
+NATIVE_STAMP_INNER_BORDER_STYLE (SIDES)
+NATIVE_STAMP_INNER_BORDER_STYLE (CORNER TL BR)
+NATIVE_STAMP_INNER_BORDER (2 0.2 CORNER darkgreen)
+NATIVE_STAMP_INNER_BORDER_STYLE (CORNER TL BR)
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nTemporary green inner corners")
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm\nTemporary full outer frame")
+# Reference row label HN 9 "RESTORED: OUTER DOTTED L/R - INNER BLUE DASHED T/B" 5; cases remain in native stamp captions.
+NATIVE_STAMP_SETTINGS_RESTORE ()
+NATIVE_ROW_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nRestored independent masks")
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nRestored styles and colour")
