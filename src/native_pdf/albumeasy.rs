@@ -27,6 +27,7 @@ use super::{
     document::{Bounds, PageSettings},
     renderer::{write_imported_album_pdf, ImportedPdfPage},
     stamp_image::{ImageAspectRatio, ImagePaddingUnit, StampImageOptions, StampImageSettings},
+    stamp_inner_border::{InnerBorderStyle, StampInnerBorder},
     stamp_text::PositionedStampText,
     text::{MeasuredText, PositionedTextLine},
     Result,
@@ -100,6 +101,10 @@ fn supported(name: &str) -> bool {
             | "COLOUR_STAMP_BACKGROUND"
             | "STAMP_BOXES_SIZE_ADJUST"
             | "STAMP_BORDER_STYLE"
+            | "STAMP_INNER_BORDER"
+            | "STAMP_INNER_BORDER_STYLE"
+            | "COLOR_STAMP_INNER_BORDER"
+            | "COLOUR_STAMP_INNER_BORDER"
             | "ALBUM_STAMP_IMG_NEW_SETTING"
             | "ALBUM_STAMP_IMG_NEW_SETTING_PCNT"
             | "ALBUM_STAMP_IMG_ASPECT_RATIO"
@@ -183,6 +188,7 @@ struct Item {
     border_colour: NamedColour,
     text_colour: NamedColour,
     heading_colour: NamedColour,
+    inner_border: Option<StampInnerBorder>,
 }
 
 fn height(t: &MeasuredText) -> f64 {
@@ -309,6 +315,11 @@ fn flush(
         });
         if item.frame && row.border > 0.0 {
             page.frames.push((bounds, row.border, item.border_colour));
+        }
+        if let Some(inner) = item.inner_border {
+            if let Some(paths) = inner.layout(bounds, row.border)? {
+                page.inner_borders.push(paths);
+            }
         }
         if let Some(colour) = item.background {
             page.backgrounds.push((bounds, colour));
@@ -600,6 +611,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut text_colour = stamp_colour;
     let mut heading_colour = stamp_colour;
     let mut saved_stamp_settings = None;
+    let mut inner_dimensions = (0.0, 0.0);
+    let mut inner_style = InnerBorderStyle::Solid;
+    let mut inner_colour = stamp_colour;
     for c in &commands {
         let result = (|| -> Result<()> {
             match c.name.as_str() {
@@ -616,6 +630,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         text: Vec::new(),
                         frames: Vec::new(),
                         backgrounds: Vec::new(),
+                        inner_borders: Vec::new(),
                     });
                 }
                 "ROW_ALIGN_TOP" => {
@@ -633,6 +648,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             stamp_colour,
                             text_colour,
                             heading_colour,
+                            inner_dimensions,
+                            inner_style,
+                            inner_colour,
                         ),
                         &c.name,
                     )?;
@@ -647,6 +665,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         stamp_colour,
                         text_colour,
                         heading_colour,
+                        inner_dimensions,
+                        inner_style,
+                        inner_colour,
                     ) = restore_stamp_settings(&mut saved_stamp_settings, &c.name)?;
                 }
                 "COLOR_STAMP_BORDER" | "COLOR_STAMP_TEXT" | "COLOR_STAMP_HEADING" => {
@@ -681,6 +702,26 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             )
                         }
                     };
+                }
+                "STAMP_INNER_BORDER" => {
+                    count(c, 2, 2)?;
+                    let dimensions = (n(c, 0)?, n(c, 1)?);
+                    StampInnerBorder::new(dimensions.0, dimensions.1, inner_style, inner_colour)?;
+                    inner_dimensions = dimensions;
+                }
+                "STAMP_INNER_BORDER_STYLE" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err("Inner style must be unquoted".into());
+                    }
+                    inner_style = InnerBorderStyle::parse(&c.args[0].value)?;
+                }
+                "COLOR_STAMP_INNER_BORDER" | "COLOUR_STAMP_INNER_BORDER" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err("Inner colour must be unquoted".into());
+                    }
+                    inner_colour = NamedColour::parse(&c.args[0].value)?;
                 }
                 "ALBUM_STAMP_IMG_NEW_SETTING" | "ALBUM_STAMP_IMG_NEW_SETTING_PCNT" => {
                     count(c, 1, 3)?;
@@ -792,6 +833,16 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         border_colour: stamp_colour,
                         text_colour,
                         heading_colour,
+                        inner_border: if c.args.len() == 7 {
+                            None
+                        } else {
+                            Some(StampInnerBorder::new(
+                                inner_dimensions.0,
+                                inner_dimensions.1,
+                                inner_style,
+                                inner_colour,
+                            )?)
+                        },
                     });
                 }
                 "STAMP_HEADING_VA" => {

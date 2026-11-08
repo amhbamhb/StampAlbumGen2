@@ -85,6 +85,23 @@ numbering is separately deferred under #88 without changing `$PAGES$`.
 
 ## 1. Purpose and scope
 
+**Bounded inner-border checkpoint (#91):** The accepted
+[inner-border reference](../../tests/fixtures/albumeasy/stamp-inner-borders-v1/README.md)
+covers padding/thickness, ordinary inner styles, both colour spellings,
+save/restore, cancellation and outer-border visibility interactions on two
+complete Letter pages/12 real images. AlbumEasy's outer BLANK retains an
+inner frame, unlike `NO_FRAME`; both native paths preserve this distinction.
+Actual dash arrays and thickness-adjusted side geometry now have all-three-
+input coverage (translated coordinates within 0.02 pt). Saved inner
+dimensions/style/colour are restored without changing earlier stamps.
+The four-argument native command supplies explicit padding/thickness/style/
+colour. Supplemental zero-value reference verifies a hairline at positive
+padding/zero thickness, cancellation only at `(0 0)`.
+Scoped gate: 114 passed/18 ignored/zero failed, including non-mutating
+Denmark v5 regression. TXT/raw rasters match; absolute layout, Windows
+runtime, native print acceptance and production integration remain open.
+CORNER/SIDES and shape/rotation interactions are not certified by this pass.
+
 **Bounded margin-text checkpoint (#90):** The accepted
 [margin-text references](../../tests/fixtures/albumeasy/margin-text-v1/README.md)
 exercise `ALBUM_PAGES_MARGIN_TXT`, signed `ALBUM_PAGES_MARGIN_TXT_PAD` and

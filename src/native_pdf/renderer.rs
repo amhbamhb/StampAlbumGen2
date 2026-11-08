@@ -366,6 +366,7 @@ fn write_paginated_stamp_sections(
             let mut geometries = Vec::new();
             let mut frame_styles = Vec::new();
             let mut frame_backgrounds = Vec::new();
+            let mut inner_borders = Vec::new();
             for fragment in &page.items {
                 if let Some(geometry) = fragment.geometry {
                     let item = &items[fragment.source_index];
@@ -389,6 +390,16 @@ fn write_paginated_stamp_sections(
                     geometries.push(geometry);
                     if let Some((width, colour)) = mode.native_frame {
                         let bounds = geometry.frame_bounds();
+                        if let Some(inner) = item.frame_style.and_then(|style| style.inner_border) {
+                            if let Some(paths) = inner.layout(bounds, width).map_err(|error| {
+                                format!(
+                                    "Native PDF stamp inner border {}: {error}",
+                                    fragment.source_index + 1
+                                )
+                            })? {
+                                inner_borders.push(paths);
+                            }
+                        }
                         if item.frame_style.is_none_or(|style| style.outline) {
                             frame_styles.push((bounds, width, colour));
                         }
@@ -414,6 +425,7 @@ fn write_paginated_stamp_sections(
                 additional_text: Vec::new(),
                 frame_styles,
                 frame_backgrounds,
+                inner_borders,
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -439,6 +451,7 @@ struct PreparedPdfPage {
     additional_text: Vec<super::stamp_text::PositionedStampText>,
     frame_styles: Vec<(super::document::Bounds, f64, NamedColour)>,
     frame_backgrounds: Vec<(super::document::Bounds, NamedColour)>,
+    inner_borders: Vec<super::stamp_inner_border::InnerBorderPaths>,
 }
 
 fn write_proof(
@@ -492,6 +505,7 @@ fn write_proof(
                 additional_text: Vec::new(),
                 frame_styles: Vec::new(),
                 frame_backgrounds: Vec::new(),
+                inner_borders: Vec::new(),
             })
         })
         .collect::<Result<Vec<_>>>()?;
@@ -517,6 +531,7 @@ fn save_pdf(
             additional_text,
             frame_styles,
             frame_backgrounds,
+            inner_borders,
         },
     ) in pages.into_iter().enumerate()
     {
@@ -823,6 +838,25 @@ fn save_pdf(
                 )
                 .stroke();
         }
+        for inner in inner_borders {
+            let [red, green, blue] = inner.colour.rgb();
+            let graphics = page.graphics();
+            graphics
+                .save_state()
+                .set_stroke_color(Color::rgb(red, green, blue))
+                .set_line_width(mm_to_points(inner.thickness_mm))
+                .set_line_dash_pattern(oxidize_pdf::graphics::LineDashPattern::new(
+                    inner.style.dash_points(),
+                    0.0,
+                ));
+            for (x1, y1, x2, y2) in inner.segments {
+                graphics
+                    .move_to(mm_to_points(x1), mm_to_points(y1))
+                    .line_to(mm_to_points(x2), mm_to_points(y2))
+                    .stroke();
+            }
+            graphics.restore_state();
+        }
         for geometry in geometries {
             if diagnostic_overlays {
                 for (bounds, colour) in [
@@ -877,6 +911,7 @@ pub(crate) struct ImportedPdfPage {
     pub text: Vec<super::stamp_text::PositionedStampText>,
     pub frames: Vec<(super::document::Bounds, f64, NamedColour)>,
     pub backgrounds: Vec<(super::document::Bounds, NamedColour)>,
+    pub inner_borders: Vec<super::stamp_inner_border::InnerBorderPaths>,
 }
 
 pub(crate) fn write_imported_album_pdf(
@@ -906,6 +941,7 @@ pub(crate) fn write_imported_album_pdf(
                 additional_text: page.text,
                 frame_styles: page.frames,
                 frame_backgrounds: page.backgrounds,
+                inner_borders: page.inner_borders,
             })
         })
         .collect::<Result<Vec<_>>>()?;

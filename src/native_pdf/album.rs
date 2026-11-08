@@ -26,6 +26,7 @@ use super::{
         ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampFrameStyle,
         StampImageOptions, StampImageRowItem, StampTextSettings,
     },
+    stamp_inner_border::{InnerBorderStyle, StampInnerBorder},
     stamp_rows::RowAlignment,
     stamp_text::{ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy},
     text::MeasuredText,
@@ -374,6 +375,7 @@ impl NativeAlbum {
                     let style = frame_style.get_or_insert(StampFrameStyle {
                         outline: true,
                         background: None,
+                        inner_border: None,
                     });
                     style.background = background;
                 }
@@ -387,8 +389,32 @@ impl NativeAlbum {
                     let style = frame_style.get_or_insert(StampFrameStyle {
                         outline: true,
                         background: None,
+                        inner_border: None,
                     });
                     style.outline = outline;
+                }
+                "NATIVE_STAMP_INNER_BORDER" => {
+                    if args.len() != 4 {
+                        return Err(fail(format!(
+                            "{name} requires padding mm, thickness mm, style and colour"
+                        )));
+                    }
+                    let inner = StampInnerBorder::new(
+                        number(&args[0], &name, 1).map_err(&fail)?,
+                        number(&args[1], &name, 2).map_err(&fail)?,
+                        InnerBorderStyle::parse(&unquoted(&args[2], &name).map_err(&fail)?)
+                            .map_err(&fail)?,
+                        NamedColour::parse(&unquoted(&args[3], &name).map_err(&fail)?)
+                            .map_err(&fail)?,
+                    )
+                    .map_err(&fail)?;
+                    frame_style
+                        .get_or_insert(StampFrameStyle {
+                            outline: true,
+                            background: None,
+                            inner_border: None,
+                        })
+                        .inner_border = Some(inner);
                 }
                 "NATIVE_STAMP_IMAGE_POLICY" => {
                     if args.len() != 7 {

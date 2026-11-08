@@ -25,6 +25,7 @@ pub struct StampImageRowItem {
 pub struct StampFrameStyle {
     pub outline: bool,
     pub background: Option<NamedColour>,
+    pub inner_border: Option<super::stamp_inner_border::StampInnerBorder>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

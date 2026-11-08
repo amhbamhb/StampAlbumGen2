@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 47
+**Revision:** 49
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -195,6 +195,48 @@ acceptance remain pending. No production integration, OKF regeneration or PR
 is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
+
+**Native checkpoint (#91): stamp inner borders, ordinary styles and colour.**
+Branch `issue/91-stamp-inner-borders` starts from pushed #90 commit `697eb0d3`.
+The [AlbumEasy-only reference](../../tests/fixtures/albumeasy/stamp-inner-borders-v1/README.md)
+has two complete Letter pages/12 real images, borders, physical frame sizes,
+readable captions, footer and visible margin text. It covers 2 mm/0.2 mm
+inner borders, SOLID/DOTTED/DASHED/DOT_DASH/BLANK, both colour spellings,
+persistence, temporary 1 mm/0.35 mm settings, save/restore and cancellation.
+The maintainer approved: "yes approved. continue with the process".
+Shared typed inner state/layout and ordinary styles/colours now work through
+TXT/raw/native inputs. Explicit four-argument
+`NATIVE_STAMP_INNER_BORDER (padding-mm thickness-mm style colour)` captures
+per-item state; both save/restore paths include inner dimensions/style/colour.
+No new TOML keys or silent native numeric defaults are introduced.
+
+Reference boundary evidence: `NO_FRAME` suppresses both frames, but outer
+BLANK retains the inner frame. Actual inner sides have half-thickness
+endpoint offsets; do not assume a naive inset rectangle. Trace confirms
+20/16 coloured side strokes and six images on pages 1/2. Ordinary dash
+arrays are measured in points. CORNER/SIDES, nonrectangular and rotated
+interactions remain later obligations. Three persistent native main PDFs
+retain all images, margins, footer and per-item inner strokes. Actual
+reference/native side geometry agrees after translation within 0.02 pt,
+thickness within 0.01 pt, colours within 0.001 RGB and identical dash arrays.
+TXT/raw page rasters are identical; physical image dimensions across
+native-language/TXT agree within 0.02 pt. Absolute row/title/caption placement
+still differs; do not claim whole-page conformance.
+
+A separate one-page/four-image zero probe establishes `(0 positive)` as a
+zero-gap frame and `(positive 0)` as a PDF hairline; only `(0 0)` cancels.
+The native model/writer preserves these meanings, with strict negative/
+nonfinite/overflow and unmapped-style errors rather than silent omission.
+Six new tests include saved-style restoration, output preservation and
+non-mutating Denmark v5 rerenders (16 pages/41 images/all footers/no deferrals).
+The expanded scoped gate passed 114 tests/18 ignored/zero failed; final
+affected-suite rerun passed 16/3 ignored. All-target checking passed;
+final focused lint/format/whitespace evidence is in the fixture README.
+Accepted references and earlier fixtures remain immutable. Exact commands,
+tool warning, geometry risks, development errors/fixes and filesystem/no-DB
+report are in the README. Native visual/Actual-size print and Windows runtime
+remain unverified.
+No commit/push, production integration, PR or OKF regeneration in this pass.
 
 **Native checkpoint (#90): vertical margin text, padding and colour.**
 Branch `issue/90-margin-text` begins from `773747f9`. The
@@ -2293,3 +2335,5 @@ impacts and discovered logic risks in `docs/testing/`.
 | 2026-11-03 | Revision 9: spacing-only conformance (#60) | Verified zero/fractional independent horizontal/vertical spacing with 16 frames and eight text anchors, four repeat renders and two failure cases. Documented misleading config descriptions, differing defaults and width-accounting risks. No application changes. | Preserve spacing-v1 and stop for review; generalized fixture runner and full command/config contracts remain open. |
 | 2026-11-03 | Revision 10: compiled page-settings slice (#61) | Approved one-command-per-file vertical slices. Added four typed command modules, explicit shared settings/f64 mm geometry and oxidize-pdf geometry proof/example. Six native tests plus six core tests pass, including actual PDF path checks. Windows GNU cross-check passed. | Review native proof; next implement another command with reference and native comparisons together. No production integration/full TXT parser or full task completion claimed. |
 | 2026-11-07 | Revision 47: bounded margin-text mapping (#90) | Accepted three AlbumEasy references; nine native PDFs across TXT/raw/native routes. Rotated transforms within 0.01 pt, TXT/raw rasters identical, image dimensions retained. 108 scoped tests passed/17 ignored; Denmark v5 has zero deferrals. Strict third-definition rejection documented. | Review native proofs/Actual-size print. Retain immutable fixtures and three-input gates; no production integration, PR or OKF. Commit/push awaits instruction. |
+| 2026-11-07 | Revision 48: inner-border reference pass (#91) | #90 committed/pushed as 697eb0d3 after 108 passing precommit tests. New AlbumEasy-only two-page/12-image reference covers ordinary inner styles, colours, save/restore and cancellation. NO_FRAME removes both borders; outer BLANK retains inner. Actual dash/side geometry recorded. | Stop for reference acceptance before native implementation; no production integration, PR or OKF. |
+| 2026-11-07 | Revision 49: accepted bounded inner-border mapping (#91) | Three native input routes, actual translated path/dash/colour checks and immutable reference. Zero probe verifies PDF hairlines. 114 scoped tests passed/18 ignored; Denmark v5 rerenders without source changes. | Review native proofs/Actual-size print; remaining CORNER/SIDES/shape/rotation and broader language mappings stay open. No commit/push, production integration, PR or OKF. |
