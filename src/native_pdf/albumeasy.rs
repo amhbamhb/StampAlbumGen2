@@ -1,12 +1,15 @@
 //! Standalone, bounded AlbumEasy compatibility input for the native renderer.
 
 use super::{
-    album::{number, parse_command, strip_comment, Argument},
+    album::{integer, number, parse_command, strip_comment, Argument},
     colour::NamedColour,
     commands::{
         colour::colour_album_border::AlbumBorderColour,
         page::{
             album_pages_border::PageBorder,
+            album_pages_footer::AlbumPagesFooter,
+            album_pages_footer_number::AlbumPagesFooterNumber,
+            album_pages_footer_pad::FooterPadding,
             album_pages_header::{AlbumPagesHeader, HeaderPosition},
             album_pages_header_pad::HeaderPadding,
             album_pages_margins::Margins,
@@ -73,6 +76,9 @@ fn supported(name: &str) -> bool {
             | "ALBUM_PAGES_BORDER"
             | "ALBUM_PAGES_TITLE"
             | "ALBUM_PAGES_HEADER"
+            | "ALBUM_PAGES_FOOTER_NUMBER"
+            | "COLOR_ALBUM_FOOTER"
+            | "COLOUR_ALBUM_FOOTER"
             | "COLOR_ALBUM_BORDER"
             | "COLOUR_ALBUM_BORDER"
             | "COLOR_ALBUM_HEADER"
@@ -360,10 +366,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut border = None;
     let mut title = None;
     let mut header = None;
+    let mut footer_number = None;
     let mut border_colour = NamedColour::parse("black")?;
     let mut border_colour_name = "black".to_string();
     let mut header_colour = border_colour;
     let mut title_colour = border_colour;
+    let mut footer_colour = border_colour;
     for c in commands.iter().take_while(|c| c.name != "PAGE_START") {
         let result = (|| -> Result<()> {
             match c.name.as_str() {
@@ -401,6 +409,40 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 "COLOR_ALBUM_TITLE" => {
                     count(c, 1, 1)?;
                     title_colour = NamedColour::parse(&c.args[0].value)?;
+                }
+                "COLOR_ALBUM_FOOTER" | "COLOUR_ALBUM_FOOTER" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err("Footer colour requires an unquoted named colour".into());
+                    }
+                    footer_colour = NamedColour::parse(&c.args[0].value)?;
+                }
+                "ALBUM_PAGES_FOOTER_NUMBER" => {
+                    count(c, 3, 6)?;
+                    if c.args[0].quoted || c.args[2].quoted {
+                        return Err("Footer font and position must be unquoted".into());
+                    }
+                    footer_number = Some((
+                        c.line,
+                        c.args[0].value.clone(),
+                        n(c, 1)?,
+                        HeaderPosition::parse(&c.args[2].value)?,
+                        if c.args.len() > 3 {
+                            integer(&c.args[3], &c.name, 4)?
+                        } else {
+                            1
+                        },
+                        if c.args.len() > 4 {
+                            text(c, 4)?.to_string()
+                        } else {
+                            String::new()
+                        },
+                        if c.args.len() > 5 {
+                            text(c, 5)?.to_string()
+                        } else {
+                            String::new()
+                        },
+                    ));
                 }
                 "ALBUM_PAGES_TITLE" => {
                     count(c, 3, 4)?;
@@ -453,6 +495,22 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
             0.0,
             header_colour,
         )?);
+    }
+    if let Some((line, font, size, position, start, before, after)) = footer_number {
+        let footer = (|| -> Result<AlbumPagesFooterNumber> {
+            let style = AlbumPagesFooter::new(
+                &font,
+                size,
+                position,
+                "1",
+                FooterPadding::parse(&[0.0])?,
+                0.0,
+                footer_colour,
+            )?;
+            AlbumPagesFooterNumber::new(style, start, &before, &after)
+        })()
+        .map_err(|error| format!("Line {line}: ALBUM_PAGES_FOOTER_NUMBER: {error}"))?;
+        settings.set_footer_number(footer);
     }
     let total = commands.iter().filter(|c| c.name == "PAGE_START").count();
     if total == 0 {
@@ -686,7 +744,10 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 }
                 _ if c.name.starts_with("ALBUM_PAGES_")
                     || c.name.starts_with("COLOR_ALBUM_")
-                    || c.name == "COLOUR_ALBUM_BORDER" =>
+                    || matches!(
+                        c.name.as_str(),
+                        "COLOUR_ALBUM_BORDER" | "COLOUR_ALBUM_FOOTER"
+                    ) =>
                 {
                     if !pages.is_empty() {
                         return Err(

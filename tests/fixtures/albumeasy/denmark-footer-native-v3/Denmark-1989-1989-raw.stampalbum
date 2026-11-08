@@ -1,0 +1,547 @@
+################################################################################
+# Denmark
+################################################################################
+# Generated: UTC: 2026-11-07 17:21:33 localtime : 2026-11-07 11:21:33
+# User: ray@localhost
+# OS: linux
+# Architecture: x86_64
+# Working Directory: /media/ray/2026-01-11/Rust/Rust/StampAlbumGen2
+# Command Line: No arguments
+# Config: print_flag_cover=true
+# Config: include_design=true
+# Config: include_engraving=true
+# Config: include_watermark=true
+# Config: include_perforation=true
+# Config: include_catalog_numbers=true
+# Config: include_series=true
+# Config: include_country=true
+# Config: include_date=true
+# Config: include_wikipedia_content=false
+# Config: row_start_es_enabled=true
+# Config: allow_single_large_stamp=true
+# Config: preserve_aspect=true
+# Config: emit_placeholder_diagnostics=false
+# Config: detailed_page_fit=false
+# Config: stamp_heading_in_row_height=false
+# Config: pages_vspace_in_row_height=false
+# Config_SAFETY: packing_horizontal_safety_mm=Some(8.0) packing_vertical_safety_mm=Some(1.0)
+
+ALBUM_PAGES_SIZE  (216.0 279.4) # Page size in mm (width height)
+
+ALBUM_PAGES_MARGINS  (10.0 10.0 10.0 10.0 )
+
+ALBUM_PAGES_BORDER (0.10 0.50 0.10 1.00)    #outer inner1 inner2 spacing
+#ALBUM_PAGES_BORDER3  (0.1 0.0 0.0 3.0) #single line border
+
+ALBUM_PAGES_HEADER (HN 10 C "Denmark 1989")
+
+ALBUM_PAGES_SPACING (3.0 3.0)
+
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+COLOR_ALBUM_BORDER(darkblue)
+COLOR_ALBUM_FOOTER(darkblue)
+COLOR_ALBUM_HEADER(darkblue)
+COLOR_ALBUM_TITLE(darkblue)
+# NATIVE-TODO: COLOR_ALBUM_MARGIN_TXT(darkblue)
+COLOR_STAMP_BORDER(black)
+COLOR_STAMP_HEADING(black)
+COLOR_STAMP_TEXT(black)
+COLOR_STAMP_BACKGROUND(black)
+
+#ALBUM_PAGES_NUMBER (TN 10 R)
+ALBUM_PAGES_FOOTER_NUMBER (HN 8 C 1 "Page " " of $PAGES$")
+
+ALBUM_STAMP_IMG_NEW_SETTING (3.0 3.0 true)
+
+ROW_ALIGN_TOP
+
+# The stamp boxes in this album are sized approximately
+# 4mm larger than the actual stamps giving a 2mm border
+# To have the boxes drawn the actual stamp size use
+#STAMP_BOXES_SIZE_ADJUST(-4.0)
+# To increase the border, e.g by 1mm use STAMP_BOXES_SIZE_ADJUST(2.0)
+STAMP_BOXES_SIZE_ADJUST (0.0)
+################################################################################
+### Page 1 ###
+### Denmark Flag ###
+PAGE_START
+# NATIVE-TODO: ALBUM_STAMP_SETTINGS_SAVE
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+PAGE_VSPACE (20)
+ROW_START_FS (HN 6 0.1 6.0)
+COLOR_STAMP_BACKGROUND(black)
+# Coat of arms for album (if available)
+STAMP_ADD_IMG (80.0 80.0 "../denmark-txt-native-v1/images/coat_of_arms.png" "" "" "" NO_FRAME)
+PAGE_VSPACE (6)
+ROW_START_FS (HN 6 0.1 6.0)
+# Cover flag image for album
+STAMP_ADD_IMG (160.0 80.0 "../denmark-txt-native-v1/images/flag_placeholder.png" "" "" "" NO_FRAME)
+COLOR_STAMP_BACKGROUND(black)
+PAGE_VSPACE (12)
+ROW_START_FS (HN 6 0.1 6.0)
+PAGE_TEXT_CENTRE (TB 32 "Denmark" 1.0)
+# NATIVE-TODO: ALBUM_STAMP_SETTINGS_RESTORE
+################################################################################
+### Page 2 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# STAMP_DIAG sg="873" source="colnect" est_w_mm="41.00" est_h_mm="24.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43347_20261107162338.png"
+# STAMP_DIAG sg="874" source="colnect" est_w_mm="31.00" est_h_mm="24.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43344_20261107162444.png"
+# STAMP_DIAG sg="875" source="colnect" est_w_mm="41.00" est_h_mm="24.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43353_20261107162612.png"
+# STAMP_DIAG sg="876" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43356_20261107162729.png"
+# STAMP_DIAG sg="880" source="colnect" est_w_mm="24.00" est_h_mm="41.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43368_20261107162809.png"
+# STAMP_DIAG sg="943MH" source="colnect" est_w_mm="126.00" est_h_mm="50.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743412_20261107162850.png"
+# STAMP_DIAG sg="945MH" source="colnect" est_w_mm="96.00" est_h_mm="124.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743410_20261107162929.png"
+# STAMP_DIAG sg="953MH" source="colnect" est_w_mm="170.00" est_h_mm="100.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743411_20261107163000.png"
+# STAMP_DIAG sg="960MH" source="colnect" est_w_mm="96.00" est_h_mm="164.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743409_20261107163036.png"
+# STAMP_DIAG sg="DK 865" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_865_20261107160656.png"
+# STAMP_DIAG sg="DK 866" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_866_20261107160731.png"
+# STAMP_DIAG sg="DK 867" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_867_20261107160800.png"
+# STAMP_DIAG sg="DK B74" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_b74_20261107160534.png"
+# PAGE_FIT series="Anniversaries and Events 1989" need="155.49" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Anniversaries and Events 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Bonfils" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="4" row_w="173.00" usable="191.30" extra="18.30" left_offset="9.15"
+# ROW_HEIGHT mm=147.2000
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="873" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (44.0 27.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43347_20261107162338.png" "3.20\ndkr. -\nDanish\nkrone" "22,550,000\n\n\n\n\nCentenary of Danish\nAgricultural Museums\nCatalog: Mi:DK 953, Sn:DK 873,\nYt:DK 956, Sg:DK 887, AFA:DK 942,\nUn:DK 956;\nThemes: Vehicles,Tractors,Agriculture,Museums,Agricultural Machinery;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Bo\nBonfils;\nColors: Carmine red;\nIssued: 1989-06-15;\nSize: 41 x 24 mm;\nFace value: 3.20 dkr. - Danish\nkrone;\nScore: 4.56 (Accuracy: Very High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 873 \n Tractor, 1917 \n Perforation: 12¾")
+# HEADING_DIAG sg="874" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (34.0 27.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43344_20261107162444.png" "3.40\ndkr.\n-\nDanish\nkrone" "3,725,000\n\n\n\n\n\nDiagram of Folketing\n(Parliament) Chamber\nCentenary of\nInterparliamentary Union\nCatalog: Mi:DK 954, Sn:DK\n874, Yt:DK 957, Sg:DK 888,\nAFA:DK 941, Un:DK 957;\nThemes: Parliaments,Organizations,Anniversaries and\nJubilees;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Dissing+Weitling A/S;\nColors: Red,Black;\nIssued: 1989-06-15;\nSize: 31 x 24 mm;\nFace value: 3.40 dkr. -\nDanish krone;\nScore: 47.88 (Accuracy: Very\nHigh)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 874 \n Diagram of \n Folketing \n (Parliament) \n Chamber \n Perforation: \n 12¾")
+# HEADING_DIAG sg="875" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (44.0 27.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43353_20261107162612.png" "3.20\ndkr. -\nDanish\nkrone" "10,800,000\n\n\n\n\nCentenary of Danish\nFishery and Marine\nResearch Institute\nCatalog: Mi:DK 955, Sn:DK 875,\nYt:DK 958, Sg:DK 889, AFA:DK 944,\nUn:DK 958;\nThemes: Cartography,Fishery,Maps,Anniversaries and\nJubilees;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Remi\nMosko;\nColors: Multicolor;\nIssued: 1989-08-24;\nSize: 41 x 24 mm;\nFace value: 3.20 dkr. - Danish\nkrone;\nScore: 8.7 (Accuracy: Very High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 875 \n Chart & Boat \n Identity No. \n Perforation: 12¾")
+# HEADING_DIAG sg="876" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43356_20261107162729.png" "7.70\ndkr.\n-\nDanish\nkrone" "5,000,000\n\n\n\n\n\n'Ingemann' (after\nJ.V.Gertner) Birth\nBicentary of Bernhard\nSeverin Ingemann (poet)\nCatalog: Mi:DK 956,\nSn:DK 876, Yt:DK\n959, Sg:DK 890,\nAFA:DK 945, Un:DK\n959;\nThemes: Authors,Drawings,Literature,Art,Men,Literary People\n(Poets and\nWriters),Anniversaries\nand Jubilees;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Commemorative;\nPaper: Fluorescent paper;\nDesigners: Arne Kühlmann\n(E),Carl Vang\nPetersen;\nColors: Black green;\nIssued: 1989-08-24;\nSize: 24 x 31 mm;\nFace value: 7.70 dkr.\n- Danish krone;\nScore: 34.3 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 876 \n 'Ingemann' \n (after \n J.V.Gertner) \n Perforation: \n 12¾")
+
+################################################################################
+### Page 3 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Anniversaries and Events 1989" need="148.06" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Anniversaries and Events 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Bonfils" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="2" row_w="164.00" usable="191.30" extra="27.30" left_offset="13.65"
+# ROW_HEIGHT mm=139.7667
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="880" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (27.0 44.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43368_20261107162809.png" "3.20\ndkr.\n-\nDanish\nkrone" "18,100,000\n\n\n\n\n\n50th Anniversary of Stamp\nDay\nCatalog: Mi:DK 960,\nSn:DK 880, Yt:DK\n963, Sg:DK 894,\nAFA:DK 951, Un:DK\n963;\nThemes: Stamps,Philately,Stamp Day;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Ole\nZøfting-Larsen;\nColors: Multicolor;\nIssued: 1989-11-10;\nSize: 24 x 41 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 6.49 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 880 \n Stamps \n Perforation: \n 12¾")
+# HEADING_DIAG sg="943MH" catalog_code="mi" label="Michel" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (129.0 53.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743412_20261107162850.png" "32 dkr. - Danish\nkrone" "\n\nIssue DK HS49 (538 500)\nCatalog: Mi:DK 943MH, Yt:DK C947, Sg:DK SB129, AFA:DK S49, Fac:DK HS49, Un:DK L947;\nThemes: Sculptures,Tourism,Statues,Nudes,Anniversaries and Jubilees;\nPrinting type: Recess;\nFormat: Booklet;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Lisbeth Gasparski,Eli Ponsaing (P);\nColors: Multicolor;\nIssued: 1989-02-16;\nSize: 126 x 50 mm;\nFace value: 32 dkr. - Danish krone;\nScore: 78.43 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : 943MH \n Danish Tourist Association - Centenary \n Perforation: 12¾")
+
+################################################################################
+### Page 4 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Anniversaries and Events 1989" need="197.64" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Anniversaries and Events 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Bonfils" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="1" row_w="99.00" usable="191.30" extra="92.30" left_offset="46.15"
+# ROW_HEIGHT mm=189.3500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="945MH" catalog_code="mi" label="Michel" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (99.0 127.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743410_20261107162929.png" "32 dkr. -\nDanish krone" "\n\nIssue DK HS50 (313 500)\nCatalog: Mi:DK 945MH, Yt:DK C948, Sg:DK SB130,\nAFA:DK S50, Fac:DK HS50, Un:DK L948;\nThemes: Sports,Football (Soccer),Anniversaries and\nJubilees;\nPrinting type: Offset lithography;\nFormat: Booklet;\nEmission: Commemorative;\nDesigners: Morten Stürup;\nColors: Multicolor;\nIssued: 1989-03-16;\nSize: 96 x 124 mm;\nFace value: 32 dkr. - Danish krone;\nScore: 79.79 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : 945MH \n Danish Football Association - Centenary \n Perforation: 12¾")
+
+################################################################################
+### Page 5 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Anniversaries and Events 1989" need="163.24" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Anniversaries and Events 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Bonfils" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="1" row_w="173.00" usable="191.30" extra="18.30" left_offset="9.15"
+# ROW_HEIGHT mm=154.9500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="953MH" catalog_code="mi" label="Michel" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (173.0 103.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743411_20261107163000.png" "32 dkr. - Danish krone" "Issue DK HS51 (324 000)\nCatalog: Mi:DK 953MH, Yt:DK C956, Sg:DK SB131, AFA:DK S51, Fac:DK HS51, Un:DK L956;\nThemes: Tractors,Agriculture,Museums,Agricultural Machinery;\nPrinting type: Recess;\nFormat: Booklet;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Bo Bonfils;\nColors: Multicolor;\nIssued: 1989-06-15;\nSize: 170 x 100 mm;\nFace value: 32 dkr. - Danish krone;\nScore: 77.61 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : 953MH \n Danish Agricultural Museum - Centenary \n Perforation: 12¾")
+
+################################################################################
+### Page 6 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (3.3)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Anniversaries and Events 1989" need="235.04" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Anniversaries and Events 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Bonfils" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="3" row_w="165.20" usable="191.30" extra="26.10" left_offset="13.05"
+# ROW_HEIGHT mm=226.7500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="960MH" catalog_code="mi" label="Michel" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (99.0 167.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp743409_20261107163036.png" "32 dkr. -\nDanish krone" "\n\nIssue DK HS52 (279 000)\nCatalog: Mi:DK 960MH, Yt:DK C963, Sg:DK SB132,\nAFA:DK S52, Fac:DK HS52, Un:DK L963;\nThemes: Stamps,Stamp Day,Stylized Objects;\nPrinting type: Offset lithography and Recess;\nFormat: Booklet;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Ole Zøfting-Larsen;\nColors: Multicolor;\nIssued: 1989-11-10;\nSize: 96 x 164 mm;\nFace value: 32 dkr. - Danish krone;\nScore: 77.81 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : 960MH \n 50th Anniversary of Stamp Day \n Perforation: 12¾")
+# HEADING_DIAG sg="865" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_865_20261107160656.png" "3.20Kr" "56,000,000\n\n\n'The Little Mermaid'\n(statue, Edvard Eriksen),\nCopenhagen Danish Tourist\nAssociation - Centenary\nCatalog: Mi:DK 943,\nSn:DK 865, Yt:DK\n947, Sg:DK 878,\nAFA:DK 932, Un:DK\n947;\nThemes: Sculptures,Tourism,Statues,Nudes,Anniversaries and\nJubilees;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Lisbeth\nGasparski,Eli\nPonsaing (P);\nColors: Black blue\ngreen;\nIssued: 1989-02-16;\nSize: 20.2 x 23.6 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 3.74 (Accuracy:\nVery High)\ngreen" "0.84\n0.28")
+STAMP_HEADING_VA(HN 6 "Scott : 865 \n 'The Little \n Mermaid' statue, \n Copenhagen \n Perforation: \n 12¾")
+# HEADING_DIAG sg="866" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_dk_866_20261107160731.png" "3.20Kr" "14,600,000\n\n\nCentenary of Danish\nFootball Association\nCatalog: Mi:DK 945,\nSn:DK 866, Yt:DK\n948, Sg:DK 880,\nAFA:DK 935, Un:DK\n948;\nThemes: Sports,Football (Soccer),Anniversaries\nand Jubilees;\nPrinting type: Offset lithography;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Morten Stürup;\nColors: Multicolor;\nIssued: 1989-03-16;\nSize: 24 x 31 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 7.72 (Accuracy:\nVery High)\nred/black" "1.12\n0.28")
+STAMP_HEADING_VA(HN 6 "Scott : 866 \n Soccer Player - \n Michael Laudrup \n Perforation: \n 12¾")
+
+################################################################################
+### Page 7 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Anniversaries and Events 1989" need="134.69" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Anniversaries and Events 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Bonfils" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="2" row_w="62.00" usable="191.30" extra="129.30" left_offset="64.65"
+# ROW_HEIGHT mm=126.4000
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="867" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_dk_867_20261107160800.png" "4.40Kr" "5,800,000\n\n\nN.A.T.O. -\n40th.Anniversary\nCatalog: Mi:DK 946,\nSn:DK 867, Yt:DK\n949, Sg:DK 881,\nAFA:DK 934, Un:DK\n949;\nThemes: N.A.T.O.,Seals (Emblems),Anniversaries\nand Jubilees;\nPrinting type: Offset lithography;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Ole Bering;\nColors: Multicolor;\nIssued: 1989-03-16;\nSize: 24 x 31 mm;\nFace value: 4.40 dkr.\n- Danish krone;\nScore: 18.7 (Accuracy:\nVery High)\nmulticoloured" "1.12\n0.84")
+STAMP_HEADING_VA(HN 6 "Scott : 867 \n Emblem - North \n Atlantic Treaty \n Organization \n (N.A.T.O.) \n Perforation: \n 12¾")
+# HEADING_DIAG sg="B74" catalog_code="sn" label="Scott" series="Anniversaries and Events 1989"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_dk_b74_20261107160534.png" "3.20+50\nKr" "546,432\n\n\n102nd.Anniversary of\nSalvation Army in Denmark\nCatalog: Mi:DK 944,\nSn:DK B74, Yt:DK\n946, Sg:DK 879,\nAFA:DK 933, Un:DK\n946;\nThemes: Music,Musical Instruments,Uniforms,Salvation\nArmy,Anniversaries\nand Jubilees;\nPrinting type: Offset lithography;\nFormat: Stamp;\nEmission: Semi-Postal;\nDesigners: Palle Pio;\nColors: Multicolor;\nIssued: 1989-02-16;\nSize: 24 x 31 mm;\nFace value: 3.20+0.50 dkr.\n- Danish krone;\nScore: 55.53 (Accuracy:\nVery High)\nmulticoloured" "2.24\n2.24")
+STAMP_HEADING_VA(HN 6 "Scott : B74 \n Salvation Army \n members in \n public house \n Perforation: \n 12¾")
+# STAMP_DIAG sg="877" source="colnect" est_w_mm="28.84" est_h_mm="33.44" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43359_20261107163123.png"
+# STAMP_DIAG sg="878" source="colnect" est_w_mm="28.84" est_h_mm="33.44" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43360_20261107163213.png"
+# STAMP_DIAG sg="879" source="colnect" est_w_mm="28.84" est_h_mm="33.44" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43361_20261107163246.png"
+# PAGE_FIT series="Danish Film Industry" need="142.33" current="144.69" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 8 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Danish Film Industry" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 13" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Keith Bassford" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="3" row_w="111.52" usable="191.30" extra="79.78" left_offset="39.89"
+# ROW_HEIGHT mm=134.0400
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="877" catalog_code="sn" label="Scott" series="Danish Film Industry"
+STAMP_ADD_IMG (31.8 36.4 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43359_20261107163123.png" "3\ndkr.\n-\nDanish\nkrone" "4,960,000\n\n\n\n\n\nScene from 'They Caught\nthe Ferry' 50th.Anniv. of\nDanish Government Film\nOffice\nCatalog: Mi:DK 957,\nSn:DK 877, Yt:DK 960,\nSg:DK 891, AFA:DK 946,\nUn:DK 960;\nThemes: Movies,Actors,Anniversaries and\nJubilees,Motorcycles;\nPrinting type: Offset lithography;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Keith Bassford;\nColors: Multicolor;\nIssued: 1989-09-28;\nSize: 28.84 x 33.44 mm;\nFace value: 3 dkr. -\nDanish krone;\nScore: 37.46 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 877 \n Scene from 'They \n Caught the \n Ferry' \n Perforation: 13")
+# HEADING_DIAG sg="878" catalog_code="sn" label="Scott" series="Danish Film Industry"
+STAMP_ADD_IMG (31.8 36.4 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43360_20261107163213.png" "3.20\ndkr.\n-\nDanish\nkrone" "5,900,000\n\n\n\n\n\nScene from 'The Golden\nSmile' (birth century of\nBodil Ipsen, actress).\n50th.Anniv. of Danish\nGovernment Film Office\nCatalog: Mi:DK 958,\nSn:DK 878, Yt:DK 961,\nSg:DK 892, AFA:DK 947,\nUn:DK 961;\nThemes: Movies,Actors,Women,Anniversaries and\nJubilees;\nPrinting type: Offset lithography;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Keith Bassford;\nColors: Multicolor;\nIssued: 1989-09-28;\nSize: 28.84 x 33.44 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 20.4 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 878 \n Scene from 'The \n Golden Smile' \n Perforation: 13")
+# HEADING_DIAG sg="879" catalog_code="sn" label="Scott" series="Danish Film Industry"
+STAMP_ADD_IMG (31.8 36.4 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43361_20261107163246.png" "4.40\ndkr.\n-\nDanish\nkrone" "5,660,000\n\n\n\n\n\nCarl Th. Dreyer (director,\nbirth cent.) 50th.Anniv.\nof Danish Government Film\nOffice\nCatalog: Mi:DK 959,\nSn:DK 879, Yt:DK 962,\nSg:DK 893, AFA:DK 948,\nUn:DK 962;\nThemes: Famous People,Movies,Directors,Anniversaries\nand Jubilees;\nPrinting type: Offset lithography;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Keith Bassford;\nColors: Multicolor;\nIssued: 1989-09-28;\nSize: 28.84 x 33.44 mm;\nFace value: 4.40 dkr.\n- Danish krone;\nScore: 22.16 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 879 \n Carl Th. Dreyer \n (1889-1968), \n Screenwriter and \n Director \n Perforation: 13")
+# STAMP_DIAG sg="871" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43337_20261107163322.png"
+# STAMP_DIAG sg="872" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43338_20261107163355.png"
+# PAGE_FIT series="Europa (C.E.P.T.) 1989 - Children's Games" need="143.26" current="152.33" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 9 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Europa (C.E.P.T.) 1989 - Children's Games" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Bo Linnemann,Ole Woldbye (P)" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="2" row_w="62.00" usable="191.30" extra="129.30" left_offset="64.65"
+# ROW_HEIGHT mm=134.9667
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="871" catalog_code="sn" label="Scott" series="Europa (C.E.P.T.) 1989 - Children's Games"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43337_20261107163322.png" "3.20\ndkr.\n-\nDanish\nkrone" "17,250,000\n\n\n\n\n\nLego bricks Europa.\nChildren's Toys\nCatalog: Mi:DK 950,\nSn:DK 871, Yt:DK\n953, Sg:DK 885,\nAFA:DK 938, Un:DK\n953;\nThemes: Toys,Children's Play,C.E.P.T.\n- Europa;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Bo Linnemann,Ole\nWoldbye (P);\nColors: Multicolor;\nIssued: 1989-05-11;\nSize: 24 x 31 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 7.75 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 871 \n Lego Bricks \n Perforation: \n 12¾")
+# HEADING_DIAG sg="872" catalog_code="sn" label="Scott" series="Europa (C.E.P.T.) 1989 - Children's Games"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43338_20261107163355.png" "4.40\ndkr.\n-\nDanish\nkrone" "8,250,000\n\n\n\n\n\nWooden guardsmen - by Kay\nBojesen\nCatalog: Mi:DK 951,\nSn:DK 872, Yt:DK\n954, Sg:DK 886,\nAFA:DK 939, Un:DK\n954;\nThemes: Flags,Musical Instruments,Uniforms,Toys,Children's\nPlay,C.E.P.T. -\nEuropa;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Bo Linnemann,Ole\nWoldbye (P);\nColors: Multicolor;\nIssued: 1989-05-11;\nSize: 24 x 31 mm;\nFace value: 4.40 dkr.\n- Danish krone;\nScore: 19.26 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 872 \n Wooden Guardsmen \n Perforation: \n 12¾")
+# STAMP_DIAG sg="881" source="colnect" est_w_mm="53.00" est_h_mm="45.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43364_20261107163436.png"
+# STAMP_DIAG sg="882" source="colnect" est_w_mm="53.00" est_h_mm="45.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43365_20261107163509.png"
+# PAGE_FIT series="Paintings 1989" need="138.67" current="153.26" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 10 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (7.2)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Paintings 1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 1/2 x 13" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Lisbeth Gasparski" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="2" row_w="120.00" usable="191.30" extra="71.30" left_offset="35.65"
+# ROW_HEIGHT mm=130.3833
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="881" catalog_code="sn" label="Scott" series="Paintings 1989"
+STAMP_ADD_IMG (56.0 48.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43364_20261107163436.png" "4.40\ndkr. -\nDanish\nkrone" "2,580,000\n\n\n\n\nDetail of painting in\nNational Gallery of\nDenmark,Copenhagen\nCatalog: Mi:DK 961, Sn:DK 881, Yt:DK\n964, Sg:DK 895, AFA:DK 949, Un:DK 964;\nThemes: Paintings,Bridges,Art;\nPrinting type: Offset lithography and\nRecess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Lisbeth\nGasparski;\nColors: Multicolor;\nIssued: 1989-11-10;\nSize: 53 x 45 mm;\nFace value: 4.40 dkr. - Danish krone;\nScore: 44.05 (Accuracy: Very High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 881 \n Northern Citadel \n Bridge' by Christen \n Købke \n Perforation: 12½ x 13")
+# HEADING_DIAG sg="882" catalog_code="sn" label="Scott" series="Paintings 1989"
+STAMP_ADD_IMG (56.0 48.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43365_20261107163509.png" "10 dkr.\n- Danish\nkrone" "1,345,520\n\n\n\n'A Little Girl, Elise\nKobke, With Cup' by\nConstantin Hansen\nCatalog: Mi:DK 962, Sn:DK 882, Yt:DK\n965, Sg:DK 896, AFA:DK 950, Un:DK 965;\nThemes: Paintings,Art;\nPrinting type: Offset lithography and\nRecess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann (E),Lisbeth\nGasparski;\nColors: Multicolor;\nIssued: 1989-11-10;\nSize: 53 x 45 mm;\nFace value: 10 dkr. - Danish krone;\nScore: 47.51 (Accuracy: Very High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 882 \n 'A Little Girl, Elise \n Kobke, With Cup' by \n Constantin Hansen \n Perforation: 12½ x 13")
+# STAMP_DIAG sg="MH39" source="colnect" est_w_mm="120.00" est_h_mm="20.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp795098_20261107161200.png"
+# PAGE_FIT series="Queen Margarethe II.Wavy Lines" need="84.62" current="148.67" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Queen Margarethe II.Wavy Lines" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+# HEADER_HEIGHT mm=11.4667
+PAGE_VSPACE (2)
+# ROW_META stamps="1" row_w="123.00" usable="191.30" extra="68.30" left_offset="34.15"
+# ROW_HEIGHT mm=74.1500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="MH39" catalog_code="mi" label="Michel" series="Queen Margarethe II.Wavy Lines"
+STAMP_ADD_IMG (123.0 23.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp795098_20261107161200.png" "10 dkr. - Danish\nkrone" "615,000\n\n\nContain ing panes HB33 and HB34\nCatalog: Mi:DK MH39, Sg:DK SB127S, Fac:DK HA22;\nThemes: Heads of State,Royalty,Queens,Women;\nPrinting type: Recess;\nFormat: Booklet;\nEmission: Definitive;\nColors: Multicolor;\nIssued: 1989-01-26;\nSize: 120 x 20 mm;\nFace value: 10 dkr. - Danish krone;\nScore: 81.05 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : MH39 \n Queen Margarethe II, Wavy Lines \n Perforation: 12¾")
+# STAMP_DIAG sg="DK 798" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_798_20261107164035.png"
+# STAMP_DIAG sg="DK 799" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_799_20261107164201.png"
+# STAMP_DIAG sg="DK 802" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_802_20261107164300.png"
+# STAMP_DIAG sg="DK 803" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_803_20261107164440.png"
+# STAMP_DIAG sg="H32" source="colnect" est_w_mm="132.00" est_h_mm="50.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp744791_20261107164515.png"
+# STAMP_DIAG sg="HB33" source="colnect" est_w_mm="80.00" est_h_mm="24.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp1013914_20261107163632.png"
+# STAMP_DIAG sg="HB35" source="colnect" est_w_mm="66.00" est_h_mm="50.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp1013916_20261107163834.png"
+# STAMP_DIAG sg="MH40" source="colnect" est_w_mm="132.00" est_h_mm="50.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp744790_20261107164555.png"
+# PAGE_FIT series="Queen Margrethe II serie 2" need="137.92" current="237.29" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 11 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Queen Margrethe II serie 2" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Watermark: None" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Engraving: Arne K hlmann" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Lisbeth Gasparski" 1.0)
+# HEADER_HEIGHT mm=22.9333
+PAGE_VSPACE (2)
+# ROW_META stamps="4" row_w="116.80" usable="191.30" extra="74.50" left_offset="37.25"
+# ROW_HEIGHT mm=121.9833
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="798" catalog_code="sn" label="Scott" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_798_20261107164035.png" "3.20Kr" "43,000,000\n\n\nQueen Margrethe II\nCatalog: Mi:DK 935,\nSn:DK 798, Yt:DK\n942, Sg:DK 727a,\nAFA:DK 924, Un:DK\n938;\nThemes: Heads of\nState,Royalty,Famous\nPeople,Queens,Women;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nDesigners: Arne Kühlmann\n(E),Lisbeth\nGasparski;\nColors: Brownish carmine;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 7.03 (Accuracy:\nVery High)\nred" "0.84\n0.28")
+STAMP_HEADING_VA(HN 6 "Scott : 798 \n Queen Margrethe \n II \n Perforation: \n 12¾")
+# HEADING_DIAG sg="799" catalog_code="sn" label="Scott" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_799_20261107164201.png" "3.40Kr" "11,000,000\n\n\nQueen Margrethe II\nCatalog: Mi:DK 936,\nSn:DK 799, Yt:DK\n943, Sg:DK 729,\nAFA:DK 925, Un:DK\n939;\nThemes: Heads of\nState,Royalty,Famous\nPeople,Queens,Women;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nDesigners: Arne Kühlmann\n(E),Lisbeth\nGasparski;\nColors: Black olive\ngreen;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 3.40 dkr.\n- Danish krone;\nScore: 59.99 (Accuracy:\nVery High)\ngreen" "2.24\n2.24")
+STAMP_HEADING_VA(HN 6 "Scott : 799 \n Queen Margrethe \n II \n Perforation: \n 12¾")
+# HEADING_DIAG sg="802" catalog_code="sn" label="Scott" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_802_20261107164300.png" "4.20Kr" "10,000,000\n\n\nQueen Margrethe II\nCatalog: Mi:DK 937,\nSn:DK 802, Yt:DK\n944, Sg:DK 736,\nAFA:DK 926, Un:DK\n940;\nThemes: Heads of\nState,Royalty,Famous\nPeople,Queens,Women;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nDesigners: Arne Kühlmann\n(E),Lisbeth\nGasparski;\nColors: Purple violet;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 4.20 dkr.\n- Danish krone;\nScore: 37.27 (Accuracy:\nVery High)\nviolet" "2.24\n1.68")
+STAMP_HEADING_VA(HN 6 "Scott : 802 \n Queen Margrethe \n II \n Perforation: \n 12¾")
+# HEADING_DIAG sg="803" catalog_code="sn" label="Scott" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_803_20261107164440.png" "4.40Kr" "16,000,000\n\n\nQueen Margrethe II\nCatalog: Mi:DK 938,\nSn:DK 803, Yt:DK\n945, Sg:DK 737,\nAFA:DK 927, Un:DK\n941;\nThemes: Heads of\nState,Royalty,Famous\nPeople,Queens,Women;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nDesigners: Arne Kühlmann\n(E),Lisbeth\nGasparski;\nColors: Black violet\nultramarine;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 4.40 dkr.\n- Danish krone;\nScore: 10.41 (Accuracy:\nVery High)\nblue" "1.12\n0.28")
+STAMP_HEADING_VA(HN 6 "Scott : 803 \n Queen Margrethe \n II \n Perforation: \n 12¾")
+
+################################################################################
+### Page 12 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Queen Margrethe II serie 2" need="139.08" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Queen Margrethe II serie 2" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Watermark: None" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Engraving: Arne K hlmann" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Lisbeth Gasparski" 1.0)
+# HEADER_HEIGHT mm=22.9333
+PAGE_VSPACE (2)
+# ROW_META stamps="1" row_w="135.00" usable="191.30" extra="56.30" left_offset="28.15"
+# ROW_HEIGHT mm=123.1500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="H32" catalog_code="afa" label="AFA" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (135.0 53.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp744791_20261107164515.png" "20 dkr. - Danish\nkrone" "\n\nN.B. There are 4*10ore and 2*40ore\nstamps missing from the image -\nthey are behind the other stamps.\nThe face value therefor shows 20Kr\nThe cover on the inside is\ndifferent on the H54A - H54B\nCatalog: AFA:DK H32, Fac:DK HS54A;\nThemes: Heads of State,Royalty,Stylized Animals,Heraldic Animals,Queens,Numbers,Crowns and\nCoronets;\nPrinting type: Recess;\nFormat: Booklet;\nEmission: Definitive;\nColors: Multicolor;\nIssued: 1989-01-26;\nSize: 132 x 50 mm;\nFace value: 20 dkr. - Danish krone;\nScore: 78.05 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "AFA : H32 \n Queen Margrethe II serie 2 \n Perforation: 12¾")
+
+################################################################################
+### Page 13 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (0.5)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+# PAGE_FIT series="Queen Margrethe II serie 2" need="133.88" current="0.00" usable="253.70" will_fit="true"
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Queen Margrethe II serie 2" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Watermark: None" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Engraving: Arne K hlmann" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Lisbeth Gasparski" 1.0)
+# HEADER_HEIGHT mm=22.9333
+PAGE_VSPACE (2)
+# ROW_META stamps="2" row_w="160.00" usable="191.30" extra="31.30" left_offset="15.65"
+# ROW_HEIGHT mm=117.9500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="HB33" catalog_code="mi" label="Michel" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (83.0 27.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp1013914_20261107163632.png" "8.40 dkr. -\nDanish krone" "615,000\n\n\nStamp from booklet MH39\nCatalog: Mi:DK HB33, Sg:DK 276da;\nThemes: Heads of State,Royalty,Famous\nPeople,Queens,Numbers;\nPrinting type: Recess;\nFormat: Booklet Pane;\nEmission: Definitive;\nGum: Ordinary;\nColors: Multicolor;\nIssued: 1989-01-26;\nSize: 80 x 24 mm;\nFace value: 8.40 dkr. - Danish krone;\nScore: 72.5 (Accuracy: Very Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : HB33 \n Queen Margrethe II serie 2 \n Perforation: 12¾")
+# HEADING_DIAG sg="HB35" catalog_code="mi" label="Michel" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (69.0 53.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp1013916_20261107163834.png" "16.80 dkr.\n- Danish\nkrone" "226,000\n\n\n\nStamp from booklet MH40\nCatalog: Mi:DK HB35, Sg:DK 276db;\nThemes: Heads of State,Royalty,Famous\nPeople,Queens,Numbers;\nPrinting type: Recess;\nFormat: Booklet Pane;\nEmission: Definitive;\nGum: Ordinary;\nColors: Multicolor;\nIssued: 1989-01-26;\nSize: 66 x 50 mm;\nFace value: 16.80 dkr. - Danish krone;\nScore: 71.71 (Accuracy: Very Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : HB35 \n Queen Margrethe II serie 2 \n Perforation: 12¾")
+# ROW_META stamps="1" row_w="135.00" usable="191.30" extra="56.30" left_offset="28.15"
+# ROW_HEIGHT mm=106.7500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="MH40" catalog_code="mi" label="Michel" series="Queen Margrethe II serie 2"
+STAMP_ADD_IMG (135.0 53.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp744790_20261107164555.png" "20 dkr. - Danish\nkrone" "226,000\n\n\nContaining panes HB35 and HB36\nCatalog: Mi:DK MH40, Sg:DK SB128, AFA:DK H33, Fac:DK H54B;\nThemes: Heads of State,Royalty,Stylized Animals,Heraldic Animals,Queens,Numbers,Crowns and\nCoronets;\nPrinting type: Recess;\nFormat: Booklet;\nEmission: Definitive;\nColors: Multicolor;\nIssued: 1989-01-26;\nSize: 132 x 50 mm;\nFace value: 20 dkr. - Danish krone;\nScore: 77.66 (Accuracy: Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : MH40 \n Queen Margrethe II serie 2 \n Perforation: 12¾")
+# STAMP_DIAG sg="DK 808" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_808_20261107161855.png"
+# STAMP_DIAG sg="DK 809" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_809_20261107162023.png"
+# STAMP_DIAG sg="DK 810" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_810_20261107162121.png"
+# STAMP_DIAG sg="DK 815" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="72x94" img="../denmark-txt-native-v1/images/colnect_dk_815_20261107162220.png"
+# PAGE_FIT series="Small Coat of Arms" need="135.70" current="250.63" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 14 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Small Coat of Arms" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Watermark: None" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Engraving: Johannes Oppenheuser" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Primus Nielsen,Johannes Oppenheuser (E)" 1.0)
+# HEADER_HEIGHT mm=22.9333
+PAGE_VSPACE (2)
+# ROW_META stamps="4" row_w="116.80" usable="191.30" extra="74.50" left_offset="37.25"
+# ROW_HEIGHT mm=119.7667
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="808" catalog_code="sn" label="Scott" series="Small Coat of Arms"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_808_20261107161855.png" "7.30Kr" "7,050,000\n\n\nCoat of Arms\nCatalog: Mi:DK 939,\nSn:DK 808, Yt:DK\n938, Sg:DK 348g,\nAFA:DK 928, Un:DK\n942;\nThemes: Stylized Animals,Heraldic\nAnimals,Coats of\nArms,Crowns and\nCoronets;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nPaper: fluorescent;\nDesigners: Primus Nielsen,Johannes\nOppenheuser (E);\nColors: Emerald;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 7.30 dkr.\n- Danish krone;\nScore: 61.11 (Accuracy:\nVery High)\ngreen" "3.36\n3.36")
+STAMP_HEADING_VA(HN 6 "Scott : 808 \n Coat of Arms \n Perforation: \n 12¾")
+# HEADING_DIAG sg="809" catalog_code="sn" label="Scott" series="Small Coat of Arms"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_809_20261107162023.png" "7.70Kr" "11,450,000\n\n\nCoat of Arms\nCatalog: Mi:DK 940,\nSn:DK 809, Yt:DK\n939, Sg:DK 348i,\nAFA:DK 929, Un:DK\n943;\nThemes: Stylized Animals,Heraldic\nAnimals,Coats of\nArms,Crowns and\nCoronets;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nPaper: fluorescent;\nDesigners: Primus Nielsen,Johannes\nOppenheuser (E);\nColors: Dark lilac;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 7.70 dkr.\n- Danish krone;\nScore: 33.29 (Accuracy:\nVery High)\ndark purple" "2.80\n1.12")
+STAMP_HEADING_VA(HN 6 "Scott : 809 \n Coat of Arms \n Perforation: \n 12¾")
+# HEADING_DIAG sg="810" catalog_code="sn" label="Scott" series="Small Coat of Arms"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_810_20261107162121.png" "11Kr" "7,800,000\n\n\nCoat of Arms\nCatalog: Mi:DK 941,\nSn:DK 810, Yt:DK\n940, Sg:DK 348m,\nAFA:DK 930, Un:DK\n944;\nThemes: Stylized Animals,Heraldic\nAnimals,Coats of\nArms,Crowns and\nCoronets;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nPaper: fluorescent;\nDesigners: Primus Nielsen,Johannes\nOppenheuser (E);\nColors: Brown;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 11 dkr.\n- Danish krone;\nScore: 54.05 (Accuracy:\nVery High)\nbrown" "4.48\n2.24")
+STAMP_HEADING_VA(HN 6 "Scott : 810 \n Coat of Arms \n Perforation: \n 12¾")
+# HEADING_DIAG sg="815" catalog_code="sn" label="Scott" series="Small Coat of Arms"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_815_20261107162220.png" "26Kr" "7,100,000\n\n\nCoat of Arms\nCatalog: Mi:DK 942,\nSn:DK 815, Yt:DK\n941, Sg:DK 348x,\nAFA:DK 931, Un:DK\n945;\nThemes: Stylized Animals,Heraldic\nAnimals,Coats of\nArms,Crowns and\nCoronets;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nPaper: fluorescent;\nDesigners: Primus Nielsen,Johannes\nOppenheuser (E);\nColors: Black olive;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 26 dkr.\n- Danish krone;\nScore: 33.8 (Accuracy:\nVery High)\ngreenish black" "11.21\n1.68")
+STAMP_HEADING_VA(HN 6 "Scott : 815 \n Coat of Arms \n Perforation: \n 12¾")
+# STAMP_DIAG sg="868" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43333_20261107164629.png"
+# STAMP_DIAG sg="869" source="colnect" est_w_mm="24.00" est_h_mm="31.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43334_20261107164726.png"
+# PAGE_FIT series="Traditional Costumes" need="151.06" current="145.70" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 15 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (10)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Traditional Costumes" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Arne K hlmann (E),Birgit Forchhammer" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="2" row_w="62.00" usable="191.30" extra="129.30" left_offset="64.65"
+# ROW_HEIGHT mm=142.7667
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="868" catalog_code="sn" label="Scott" series="Traditional Costumes"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43333_20261107164629.png" "3.20\ndkr.\n-\nDanish\nkrone" "11,125,000\n\n\n\n\n\nNORDEN - Nordic Countries'\nPostal Co-operation\nTraditional Dress - Valby\nWoman. Engravings by\nChristoffer Wilhelm\nEckersberg (1783-1853)\nCatalog: Mi:DK 947,\nSn:DK 868, Yt:DK\n950, Sg:DK 882,\nAFA:DK 936, Un:DK\n950;\nThemes: Postal Unions,Folklore,Markets,Norden,Trade,Women,Suits\nand Costumes;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Birgit\nForchhammer;\nColors: Multicolor;\nIssued: 1989-04-20;\nSize: 24 x 31 mm;\nFace value: 3.20 dkr.\n- Danish krone;\nScore: 8.5 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 868 \n 'Valby Woman' \n Perforation: \n 12¾")
+# HEADING_DIAG sg="869" catalog_code="sn" label="Scott" series="Traditional Costumes"
+STAMP_ADD_IMG (27.0 34.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43334_20261107164726.png" "4.40\ndkr.\n-\nDanish\nkrone" "5,875,000\n\n\n\n\n\nNORDEN - Nordic Countries'\nPostal Co-operation\nTraditional Dress - Pork\nbutcher. Engravings by\nChristoffer Wilhelm\nEckersberg (1783-1853)\nCatalog: Mi:DK 948,\nSn:DK 869, Yt:DK\n951, Sg:DK 883,\nAFA:DK 937, Un:DK\n951;\nThemes: Postal Unions,Folklore,Shops,Food,Norden,Trade,Suits\nand Costumes;\nPrinting type: Offset lithography\nand Recess;\nFormat: Stamp;\nEmission: Commemorative;\nDesigners: Arne Kühlmann\n(E),Birgit\nForchhammer;\nColors: Multicolor;\nIssued: 1989-04-20;\nSize: 24 x 31 mm;\nFace value: 4.40 dkr.\n- Danish krone;\nScore: 22.47 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 869 \n Pork Butcher \n Perforation: \n 12¾")
+# STAMP_DIAG sg="793" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43350_20261107161504.png"
+# STAMP_DIAG sg="DK 795" source="colnect" est_w_mm="20.20" est_h_mm="23.60" px="0x0" img="../denmark-txt-native-v1/images/colnect_dk_795_20261107160958.png"
+# STAMP_DIAG sg="HB34" source="colnect" est_w_mm="100.00" est_h_mm="24.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp1013915_20261107161549.png"
+# STAMP_DIAG sg="HB36" source="colnect" est_w_mm="100.00" est_h_mm="48.00" px="0x0" img="../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp964461_20261107161629.png"
+# PAGE_FIT series="Wavy Lines (NO Hearts / LINED Background)" need="132.87" current="161.06" usable="253.70" will_fit="false"
+
+################################################################################
+### Page 16 - Stamps ###
+PAGE_START
+# PAGE_CENTERING
+PAGE_VSPACE (2)
+ROW_START_FS (HN 6 0.1 6.0)
+################################################################################
+PAGE_VSPACE (1)
+PAGE_TEXT_CENTRE (HN 8 "Wavy Lines (NO Hearts / LINED Background)" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "1989" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Perforation: 12 3/4" 1.0)
+PAGE_TEXT_CENTRE (TN 8 "Design: Johannes Britze (E),Julius M ller Therchilsen" 1.0)
+# HEADER_HEIGHT mm=15.2889
+PAGE_VSPACE (2)
+# ROW_META stamps="3" row_w="165.40" usable="191.30" extra="25.90" left_offset="12.95"
+# ROW_HEIGHT mm=124.5833
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="793" catalog_code="sn" label="Scott" series="Wavy Lines (NO Hearts / LINED Background)"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp43350_20261107161504.png" "5 re\n-\nDanish\nre" "10,800,000\n\n\n\n\nFigure 'wave'- type\nCatalog: Mi:DK 952,\nSn:DK 793, Yt:DK\n955, Sg:DK 268d,\nAFA:DK 943, Un:DK\n955;\nThemes: Stylized Animals,Heraldic\nAnimals,Numbers,Crowns\nand Coronets;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nDesigners: Johannes Britze\n(E),Julius Møller\nTherchilsen;\nColors: Dark red\norange;\nIssued: 1989-06-15;\nSize: 20.2 x 23.6 mm;\nFace value: 5 øre -\nDanish øre;\nScore: 13.68 (Accuracy:\nVery High)" "\n")
+STAMP_HEADING_VA(HN 6 "Scott : 793 \n Figure 'wave'- \n type \n Perforation: \n 12¾")
+# HEADING_DIAG sg="795" catalog_code="sn" label="Scott" series="Wavy Lines (NO Hearts / LINED Background)"
+STAMP_ADD_IMG (23.2 26.6 "../denmark-txt-native-v1/images/colnect_dk_795_20261107160958.png" "300\nre" "19,150,000\n\n\nFigure 'wave'- type\nCatalog: Mi:DK 934,\nSn:DK 795, Yt:DK\n937, Sg:DK 276h,\nAFA:DK 923, Un:DK\n937;\nThemes: Stylized Animals,Heraldic\nAnimals,Numbers,Crowns\nand Coronets;\nPrinting type: Recess;\nFormat: Stamp;\nEmission: Definitive;\nDesigners: Arne Kühlmann\n(E),Johannes Britze\n(E),Julius Møller\nTherchilsen;\nColors: Yellow green;\nIssued: 1989-01-26;\nSize: 20.2 x 23.6 mm;\nFace value: 300 øre\n- Danish øre;\nScore: 29.34 (Accuracy:\nVery High)\nlight green" "0.84\n0.28")
+STAMP_HEADING_VA(HN 6 "Scott : 795 \n Figure 'wave'- \n type \n Perforation: \n 12¾")
+# HEADING_DIAG sg="HB34" catalog_code="mi" label="Michel" series="Wavy Lines (NO Hearts / LINED Background)"
+STAMP_ADD_IMG (103.0 27.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp1013915_20261107161549.png" "1.60 dkr. -\nDanish krone" "615,000\n\n\nStamp from booklet MH39\nCatalog: Mi:DK HB34, Sg:DK 271dj;\nThemes: Numbers;\nPrinting type: Recess;\nFormat: Booklet Pane;\nEmission: Definitive;\nGum: Ordinary;\nColors: Multicolor;\nIssued: 1989-01-26;\nSize: 100 x 24 mm;\nFace value: 1.60 dkr. - Danish krone;\nScore: 70.71 (Accuracy: Very Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : HB34 \n Numerals and Wavy Lines \n Perforation: 12¾")
+# ROW_META stamps="1" row_w="103.00" usable="191.30" extra="88.30" left_offset="44.15"
+# ROW_HEIGHT mm=104.7500
+ROW_START_FS (HN 6 0.1 6.0)
+# HEADING_DIAG sg="HB36" catalog_code="mi" label="Michel" series="Wavy Lines (NO Hearts / LINED Background)"
+STAMP_ADD_IMG (103.0 51.0 "../denmark-txt-native-v1/images/colnect_httpscolnectcomstampsstamp964461_20261107161629.png" "320 re - Danish\nre" "226,000\n\n\nStamp from booklet MH40\nCatalog: Mi:DK HB36, Sg:DK 271dk, AFA:DK HS12II;\nThemes: Stylized Animals,Heraldic Animals,Numbers,Crowns and Coronets;\nPrinting type: Recess;\nFormat: Booklet Pane;\nEmission: Definitive;\nGum: Ordinary;\nColors: Multicolor;\nIssued: 1989-01-06;\nSize: 100 x 48 mm;\nFace value: 320 øre - Danish øre;\nScore: 72.79 (Accuracy: Very Low)" "\n")
+STAMP_HEADING_VA(HN 6 "Michel : HB36 \n Bookletstripe \n Perforation: 12¾")

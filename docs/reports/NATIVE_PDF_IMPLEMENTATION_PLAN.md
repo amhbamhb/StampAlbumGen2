@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 41
+**Revision:** 43
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -189,6 +189,70 @@ is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
 
+**Next item started (#87): footer numbering and footer colour.** Branch
+`issue/87-footer-numbering` begins from `4c94e22e`.
+The [new AlbumEasy-only reference](../../tests/fixtures/albumeasy/footer-numbering-import-v1/README.md)
+contains two complete Letter pages, 12 real-stamp images, borders, measured
+frames and captions. AlbumEasy 4.5.0 rendered both explicit/default variants:
+the main footer reads `Page 7 of 2` then `Page 8 of 2`; the default form
+numbers pages 1 and 2. COLOR/COLOUR footer spellings are exercised in separate
+variants. The maintainer accepted the subsequently added normal reference:
+"Accept reference; proceed with native mapping." Actual-size print and
+native visual acceptance remain pending.
+
+**Native checkpoint (#87):** The bounded interpreter now maps
+`ALBUM_PAGES_FOOTER_NUMBER` with its 3-6 arguments/defaults and both
+`COLOR_ALBUM_FOOTER`/`COLOUR_ALBUM_FOOTER` spellings. Pre-page colour is
+captured globally; changes after `PAGE_START` fail explicitly.
+Native `NATIVE_PAGE_FOOTER_NUMBER` supplies all nine settings explicitly:
+font, size, position, signed start, quoted prefix/suffix, padding,
+minimum height and colour. Existing typed footer/numbering primitives
+resolve `$PAGES$` from final pagination, independently of displayed start.
+No new TOML settings, production routing or AlbumEasy subprocess is used.
+
+Normal/custom-start/default compatibility inputs and native-language
+counterparts produce two exact Letter pages and 12 images. Tests cover
+footer colour/position/labels, borders, physical image-size equivalence,
+optional arguments and alternating positions, invalid settings/duplicates,
+overflow and output preservation. TXT/raw rasters are identical; measured
+normal footer text bounds match AlbumEasy within 0.003 points.
+Native sections paginate 8/4 images versus TXT's 6/6 explicit pages;
+earlier rows, title repetition and native section-heading omissions remain
+documented differences. Do not claim overall visual parity.
+
+The [Denmark v3 derivative](../../tests/fixtures/albumeasy/denmark-footer-native-v3/README.md)
+restores the two footer occurrences, preserving 16 pages/41 images and
+`Page N of 16` on every page. Three occurrences remain deferred:
+margin-text colour (line 45), settings save (68) and restore (83).
+The preceding eight-deferral table and subsequent five-deferral v2 report
+are historical evidence, not the current count. Previous bundles stay
+immutable. Focused validation: 99 passed, 15 ignored; Denmark opt-in 1 passed;
+all-target check and focused Clippy passed with pre-existing warnings.
+Exact commands, failure fixes and filesystem/database impact are in the
+footer fixture README. Windows runtime and human native print review remain
+unverified. The maintainer subsequently requested commit/push of this
+checkpoint; precommit validation passed (33 tests, 4 ignored), formatting
+and whitespace checks passed. PR creation and OKF regeneration remain
+deferred until the native PDF work is complete.
+
+During #87 reference review the maintainer requested retaining `Page 7 of 2`
+as an import edge case and adding a normal `Page 1 of 2`/`Page 2 of 2`
+collector-facing reference. Keep that distinction explicit: AlbumEasy's
+optional start number does not change the actual `$PAGES$` document length.
+
+**Separate future item (#88): native year/section-local numbering.**
+The maintainer chose to record this separately rather than expand #87.
+Proposed TOML policy selects document versus year/section scope; each section
+normally restarts at 1, with an optional custom start such as 10.
+Section counts reflect actual section length, not final displayed number:
+ten pages beginning at 10 are numbered 10–19. Define distinct displayed-number,
+section-ordinal, section-count and document-count token semantics, explicit
+section boundaries for native/imported documents, and pagination-dependent
+updates before coding. Do not alter AlbumEasy import semantics or guess year
+boundaries from captions. When implemented, explain native-only numbering in
+comments immediately preceding template TOML keys, matching full-example help
+and configuration inventory. Add no speculative configuration keys now.
+
 **Next item started (#86): stamp background colours.** Branch
 `issue/86-stamp-background-colours` begins from `47b35606`.
 The [AlbumEasy-only first-pass fixture](../../tests/fixtures/albumeasy/stamp-background-colours-v1/README.md)
@@ -223,7 +287,8 @@ from each compatibility input. It retains five commented occurrences:
 footer colour, margin-text colour, footer numbering and save/restore.
 The eight-deferral table above is the historical #84 checkpoint; its
 background row is now implemented for these rectangular image-box cases.
-The other five occurrences remain active follow-up work. No arbitrary-shape,
+At the #86 checkpoint those five occurrences remained follow-up work; #87
+above restores the two footer occurrences, leaving three. No arbitrary-shape,
 rotated-box or CORNER behavior is certified by this bounded slice.
 
 Validation: 80 focused tests passed, 12 ignored; Denmark v2 opt-in passed

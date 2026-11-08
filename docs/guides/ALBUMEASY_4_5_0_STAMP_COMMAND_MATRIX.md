@@ -67,6 +67,22 @@ eight-deferral description records the historical v1 slice; backgrounds are
 no longer deferred for the validated v2 rectangular cases. Shapes, rotated
 boxes and CORNER styles remain outside this implementation boundary.
 
+**Footer update (#87):** After acceptance of the normal
+[AlbumEasy footer reference](../../tests/fixtures/albumeasy/footer-numbering-import-v1/README.md),
+the standalone interpreter maps `ALBUM_PAGES_FOOTER_NUMBER` (3-6 arguments,
+default start 1/empty prefix/suffix) and both footer-colour spellings.
+Printed start and final `$PAGES$` count remain independent. Pre-page global
+colour is captured; mid-document footer changes fail explicitly. All three
+input routes have two-page/12-image proofs, strict-error/overflow tests and
+native footer positioning coverage. TXT/raw rasters are identical; normal
+footer text bounds match AlbumEasy within 0.003 points. Overall native row/
+title layout differences and human visual/print acceptance remain open.
+The [Denmark v3 proof](../../tests/fixtures/albumeasy/denmark-footer-native-v3/README.md)
+restores footer colour/numbering and leaves three occurrences: margin-text
+colour and stamp-settings save/restore. Full overload/state conformance and
+production routing remain outside this bounded slice. Year/section-local
+numbering is separately deferred under #88 without changing `$PAGES$`.
+
 ## 1. Purpose and scope
 
 This is the first bounded command-family pass for the command-mapping work.

@@ -4,6 +4,9 @@ use super::{
         colour::colour_album_border::AlbumBorderColour,
         page::{
             album_pages_border::PageBorder,
+            album_pages_footer::AlbumPagesFooter,
+            album_pages_footer_number::AlbumPagesFooterNumber,
+            album_pages_footer_pad::FooterPadding,
             album_pages_header::{AlbumPagesHeader, HeaderPosition},
             album_pages_header_pad::HeaderPadding,
             album_pages_margins::Margins,
@@ -68,6 +71,7 @@ impl NativeAlbum {
         let mut border_colour = None;
         let mut page_title = None;
         let mut page_header = None;
+        let mut footer_number = None;
         let mut alignment = None;
         let mut stamp_frame = None;
         let mut frame_addition_mm = 0.0;
@@ -202,6 +206,38 @@ impl NativeAlbum {
                             HeaderPadding::parse(&[padding_mm]).map_err(&fail)?,
                             minimum_height_mm,
                             NamedColour::parse("black").map_err(&fail)?,
+                        )
+                        .map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "NATIVE_PAGE_FOOTER_NUMBER" => {
+                    if args.len() != 9 {
+                        return Err(fail(format!(
+                            "{name} requires font, point size, position, integer start, quoted prefix, quoted suffix, padding mm, minimum height mm, and colour"
+                        )));
+                    }
+                    let style = AlbumPagesFooter::new(
+                        &unquoted(&args[0], &name).map_err(&fail)?,
+                        number(&args[1], &name, 2).map_err(&fail)?,
+                        HeaderPosition::parse(&unquoted(&args[2], &name).map_err(&fail)?)
+                            .map_err(&fail)?,
+                        "1",
+                        FooterPadding::parse(&[number(&args[6], &name, 7).map_err(&fail)?])
+                            .map_err(&fail)?,
+                        number(&args[7], &name, 8).map_err(&fail)?,
+                        NamedColour::parse(&unquoted(&args[8], &name).map_err(&fail)?)
+                            .map_err(&fail)?,
+                    )
+                    .map_err(&fail)?;
+                    set_once(
+                        &mut footer_number,
+                        AlbumPagesFooterNumber::new(
+                            style,
+                            integer(&args[3], &name, 4).map_err(&fail)?,
+                            &quoted(&args[4], &name).map_err(&fail)?,
+                            &quoted(&args[5], &name).map_err(&fail)?,
                         )
                         .map_err(&fail)?,
                         &name,
@@ -484,6 +520,9 @@ impl NativeAlbum {
         if let Some(header) = page_header {
             page_settings.set_header(header);
         }
+        if let Some(number) = footer_number {
+            page_settings.set_footer_number(number);
+        }
         let sections = section_counts
             .into_iter()
             .map(|item_count| StampRowSection {
@@ -661,6 +700,18 @@ fn numbers(name: &str, arguments: &[Argument], count: usize) -> Result<Vec<f64>>
         .enumerate()
         .map(|(index, argument)| number(argument, name, index + 1))
         .collect()
+}
+
+pub(super) fn integer(argument: &Argument, name: &str, index: usize) -> Result<i32> {
+    if argument.quoted {
+        return Err(format!(
+            "{name} argument {index} must be an unquoted integer"
+        ));
+    }
+    argument
+        .value
+        .parse::<i32>()
+        .map_err(|_| format!("{name} argument {index} must be a signed 32-bit integer"))
 }
 
 pub(super) fn number(argument: &Argument, name: &str, index: usize) -> Result<f64> {
