@@ -78,6 +78,7 @@ impl NativeAlbum {
         let mut text_policy = None;
         let mut image_options = StampImageOptions::default();
         let mut frame_style = None;
+        let mut saved_stamp_settings = None;
         let mut page_background = None;
         let mut image_specs = Vec::new();
         let mut section_start = 0;
@@ -311,6 +312,20 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                     set_once(&mut text_policy, policy, &name).map_err(&fail)?;
+                }
+                "NATIVE_STAMP_SETTINGS_SAVE" => {
+                    words(&name, &args, 0).map_err(&fail)?;
+                    save_stamp_settings(
+                        &mut saved_stamp_settings,
+                        (image_options, frame_style),
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "NATIVE_STAMP_SETTINGS_RESTORE" => {
+                    words(&name, &args, 0).map_err(&fail)?;
+                    (image_options, frame_style) =
+                        restore_stamp_settings(&mut saved_stamp_settings, &name).map_err(&fail)?;
                 }
                 "NATIVE_STAMP_BACKGROUND" => {
                     let colour = words(&name, &args, 1).map_err(&fail)?;
@@ -702,6 +717,22 @@ fn numbers(name: &str, arguments: &[Argument], count: usize) -> Result<Vec<f64>>
         .collect()
 }
 
+pub(super) fn save_stamp_settings<T>(saved: &mut Option<T>, settings: T, name: &str) -> Result<()> {
+    if saved.is_some() {
+        return Err(format!(
+            "{name}: stamp settings have already been saved; restore before saving again"
+        ));
+    }
+    *saved = Some(settings);
+    Ok(())
+}
+
+pub(super) fn restore_stamp_settings<T>(saved: &mut Option<T>, name: &str) -> Result<T> {
+    saved
+        .take()
+        .ok_or_else(|| format!("{name}: stamp settings have not been saved; save before restoring"))
+}
+
 pub(super) fn integer(argument: &Argument, name: &str, index: usize) -> Result<i32> {
     if argument.quoted {
         return Err(format!(
@@ -776,4 +807,57 @@ fn set_once<T>(slot: &mut Option<T>, value: T, command: &str) -> Result<()> {
     }
     *slot = Some(value);
     Ok(())
+}
+
+#[cfg(test)]
+mod stamp_settings_tests {
+    use super::*;
+
+    #[test]
+    fn native_snapshot_captures_options_and_style_per_item() -> Result<()> {
+        let source = include_str!(
+            "../../tests/fixtures/albumeasy/stamp-settings-save-restore-v1/album.stampalbum"
+        );
+        let album = NativeAlbum::parse(source, Path::new("."))?;
+        assert_eq!(album.items.len(), 12);
+        for (first, restored) in album.items[..2].iter().zip(&album.items[4..6]) {
+            assert_eq!(first.options, restored.options);
+            assert_eq!(
+                first
+                    .frame_style
+                    .ok_or("Missing baseline frame style")?
+                    .background
+                    .map(NamedColour::rgb),
+                restored
+                    .frame_style
+                    .ok_or("Missing restored frame style")?
+                    .background
+                    .map(NamedColour::rgb)
+            );
+        }
+        assert!(album.items[0].options.grayscale);
+        assert!(!album.items[2].options.grayscale);
+        assert!(!album.items[6].options.visible);
+        assert!(album.items[8].options.visible);
+        assert!(!album.items[10].options.visible);
+        assert!(
+            !album.items[6]
+                .frame_style
+                .ok_or("Missing hidden outline")?
+                .outline
+        );
+        assert!(
+            album.items[8]
+                .frame_style
+                .ok_or("Missing temporary outline")?
+                .outline
+        );
+        assert!(
+            !album.items[10]
+                .frame_style
+                .ok_or("Missing restored outline")?
+                .outline
+        );
+        Ok(())
+    }
 }

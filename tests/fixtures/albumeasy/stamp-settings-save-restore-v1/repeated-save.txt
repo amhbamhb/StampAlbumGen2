@@ -1,0 +1,30 @@
+# AlbumEasy 4.5.0 reference probe; do not infer stack semantics.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - SAVE DEPTH PROBE" 5)
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "SAVE A (BLUE), SAVE B (RED), THEN CHANGE TO C (WHITE)" 5)
+COLOR_STAMP_BACKGROUND (lightblue)
+ALBUM_STAMP_SETTINGS_SAVE
+COLOR_STAMP_BACKGROUND (red)
+ALBUM_STAMP_SETTINGS_SAVE
+COLOR_STAMP_BACKGROUND (white)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm\nC / before restore" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nC / white" "")
+ALBUM_STAMP_SETTINGS_RESTORE
+PAGE_TEXT_CENTRE (HN 9 "FIRST RESTORE  |  OBSERVE FILL, DO NOT ASSUME" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "Same DB 150 image\nFirst restore\nRed B or blue A?" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "Same DB 152 image\nFirst restore\nInspect fill" "")
+ALBUM_STAMP_SETTINGS_RESTORE
+PAGE_TEXT_CENTRE (HN 9 "SECOND RESTORE  |  STACK OR REUSABLE SINGLE SNAPSHOT?" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "Same DB 150 image\nSecond restore\nCompare previous row" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "Same DB 152 image\nSecond restore\nInspect fill" "")

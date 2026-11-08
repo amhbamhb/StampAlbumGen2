@@ -196,6 +196,24 @@ footer-text padding/alignment; and stamp border, inner-border, heading, text,
 and background colors. The reference does not say whether saving is nested or
 single-level; do not infer that from the example.
 
+**AlbumEasy runtime evidence (#89):** The
+[save/restore reference](../../tests/fixtures/albumeasy/stamp-settings-save-restore-v1/README.md)
+now verifies two sequential save/restore cycles. Its negative probe rejects
+a second save before restoration and a restore without saved state:
+single outstanding snapshot, consumed by restore, not a nested stack.
+AlbumEasy reports these errors and produces no PDF despite launcher exit 0.
+After maintainer acceptance, both commands now have bounded standalone
+TXT/raw native mappings: image options, size adjustment, outline/background,
+border/text/heading colours are captured per stamp and restored from a
+consumed single snapshot. Native-language commands capture its mutable
+image/outline/background policies; global frame/text styling stays fixed.
+All three input routes have complete-page proofs and failure preservation.
+Denmark v4 restores both commands, leaving margin-text colour deferred.
+This does not update the conservative production-support labels above or
+certify native-format frame/caption parity with the reference.
+Inner-border/heading/footer controls in the saved-state checklist still need
+their own mapping/proof coverage.
+
 ## 5. Stamp border, heading, and footer controls
 
 | Command | 4.5.0 grammar | Documented behavior | Application audit |

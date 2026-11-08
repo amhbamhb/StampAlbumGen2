@@ -1,0 +1,71 @@
+# AlbumEasy 4.5.0 reference only; no native commands.
+# Real stamp measurements/assets reuse stamp-pagination-v1/source-records.json.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 5)
+COLOR_ALBUM_FOOTER (darkblue)
+ALBUM_PAGES_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$")
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+COLOR_STAMP_BORDER (darkblue)
+COLOR_STAMP_TEXT (darkblue)
+COLOR_STAMP_BACKGROUND (lightblue)
+ALBUM_STAMP_IMG_GREYSCALE_ON
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "1959-1960  |  STAMP SETTINGS SAVE AND RESTORE" 5)
+PAGE_TEXT_CENTRE (HN 9 "BASELINE  |  BLUE FRAME / FILL  |  GREYSCALE" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm\nBaseline / 3 mm clearance" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nBaseline / greyscale" "")
+ALBUM_STAMP_SETTINGS_SAVE
+
+PAGE_TEXT_CENTRE (HN 9 "TEMPORARY  |  RED / WHITE  |  COLOUR  |  BOX +2 MM" 5)
+STAMP_BOXES_SIZE_ADJUST (2)
+ALBUM_STAMP_IMG_NEW_SETTING_PCNT (15 15 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (false)
+COLOR_STAMP_BORDER (red)
+COLOR_STAMP_TEXT (red)
+COLOR_STAMP_BACKGROUND (white)
+ALBUM_STAMP_IMG_GREYSCALE_OFF
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "Same DB 150 image\nTemporary box 60 x 37 mm\nPercentage padding / colour" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "Same DB 152 image\nTemporary box 34 x 37 mm\nTemporary red caption" "")
+
+ALBUM_STAMP_SETTINGS_RESTORE
+PAGE_TEXT_CENTRE (HN 9 "RESTORED  |  MATCH BASELINE FRAME / FIT / COLOUR" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm\nRestored / 3 mm clearance" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nRestored / greyscale" "")
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "VISIBILITY SNAPSHOT  |  EMPTY BOXES ARE INTENTIONAL" 5)
+ALBUM_STAMP_IMG_HIDE
+STAMP_BORDER_STYLE (BLANK)
+COLOR_STAMP_BACKGROUND (lightblue)
+PAGE_TEXT_CENTRE (HN 9 "BASELINE  |  HIDDEN IMAGES / BLANK OUTLINE / BLUE FILL" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm\nSaved hidden wide image" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\nSaved hidden portrait" "")
+ALBUM_STAMP_SETTINGS_SAVE
+
+PAGE_TEXT_CENTRE (HN 9 "TEMPORARY  |  SHOWN IMAGES / SOLID RED OUTLINE" 5)
+ALBUM_STAMP_IMG_SHOW
+ALBUM_STAMP_IMG_GREYSCALE_OFF
+STAMP_BORDER_STYLE (SOLID)
+COLOR_STAMP_BORDER (red)
+COLOR_STAMP_TEXT (red)
+COLOR_STAMP_BACKGROUND (white)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "Same DB 156 image\nTemporary shown image\nRed outline / colour" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "Same DB 151 image\nTemporary shown image\nRed outline / colour" "")
+
+ALBUM_STAMP_SETTINGS_RESTORE
+PAGE_TEXT_CENTRE (HN 9 "RESTORED  |  HIDDEN AGAIN / BLANK OUTLINE / BLUE FILL" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm\nRestored hidden wide image" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\nRestored hidden portrait" "")

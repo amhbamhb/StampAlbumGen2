@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-07
-**Revision:** 43
+**Revision:** 45
 **Status:** Native layouts and a bounded standalone AlbumEasy TXT/raw-command renderer are implemented; full AlbumEasy compatibility, TXT export, and production application routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -188,6 +188,62 @@ acceptance remain pending. No production integration, OKF regeneration or PR
 is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
+
+**Next item started (#89): stamp-settings save/restore.** Branch
+`issue/89-stamp-settings-save-restore` begins from `e090368e`.
+The [AlbumEasy-only reference](../../tests/fixtures/albumeasy/stamp-settings-save-restore-v1/README.md)
+renders two complete Letter pages, 12 measured stamp placements/eight visible
+images, borders/spacing/captions and numbered footers. Baseline/temporary/
+restored rows exercise size adjustment, image mm/percentage padding, aspect
+ratio, grayscale, visibility, solid/blank borders and border/text/background
+colours. This first pass was rendered only with AlbumEasy 4.5.0; the
+maintainer accepted it: "Accept reference; proceed with native mapping."
+
+Important new reference evidence: AlbumEasy rejects saving while a snapshot
+already exists and restoring without a saved snapshot. The repeated-save
+probe reports both errors, creates no PDF, but returns exit 0. Use semantic
+output/diagnostics validation, not exit status alone. Save/restore is a single
+outstanding snapshot consumed by restoration, not a nested stack.
+The pinned help's full saved-state checklist also includes inner borders,
+heading/footer padding/alignment and related colours; these remain additional
+mapping/proof obligations rather than silently omitted supported behavior.
+**Native checkpoint (#89):** Both compatibility commands now capture/restore
+all currently mapped stamp drawing state (image options, adjustment, outline,
+background and border/text/heading colours). Shared single-snapshot helpers
+reject repeated saves or restores without a snapshot, with source-line
+diagnostics; nonempty arguments fail. Per-item captured values are preserved.
+Native `NATIVE_STAMP_SETTINGS_SAVE/RESTORE ()` capture its mutable image and
+outline/background policies. Document-global frame/text policies remain
+fixed; no speculative native style controls are added.
+
+All three standalone routes render two Letter pages, 12 placements and eight
+visible images. TXT/raw rasters are identical. Tests verify actual 58 x 35 /
+32 x 35 mm baseline/restored frames and 60 x 37 / 34 x 37 mm temporary frames
+within 0.02 points, restored image dimensions within 0.01 points, colours/
+heading state, hidden-image behavior and lifecycle/error preservation.
+The native-format fixture intentionally retains fixed darkblue frames,
+black captions and 6 mm additions; it does not reproduce TXT's temporary
+red frame/caption or +2 mm addition. Its temporary percentage padding is
+additional to reserved geometry clearance, so temporary image sizes differ.
+Keep these style/geometry capability gaps explicit rather than claiming
+native-format/reference parity. General page-text colour coupling, row/
+title/caption placement differences and complete inner-border/heading/footer
+saved-state coverage remain future obligations.
+
+The [Denmark v4 derivative](../../tests/fixtures/albumeasy/denmark-settings-native-v4/README.md)
+restores save/restore, renders 16 pages/41 images/every footer and leaves
+only margin-text colour (original line 45) deferred. All v1-v3 proofs remain
+unchanged. Final focused gate: 103 passed, 16 ignored, 0 failed; inline
+native captured-state test 1 passed; Denmark opt-in 1 passed. All-target
+check, focused Clippy, formatting and whitespace checks passed (existing
+library warnings). A stale unknown-command regression used newly supported
+SAVE; changed only that test sentinel to still-unmapped inner-border syntax.
+Fixture README records exact commands, development error fixes and no
+database/source-image impact. Native human visual/print and Windows runtime
+acceptance remain pending. The maintainer subsequently requested commit/push
+on `issue/89-stamp-settings-save-restore`: precommit checks passed (unit 1,
+integration 26 passed/4 ignored, formatting and whitespace checks exit 0).
+Production integration, PR creation and OKF regeneration remain deferred.
 
 **Next item started (#87): footer numbering and footer colour.** Branch
 `issue/87-footer-numbering` begins from `4c94e22e`.

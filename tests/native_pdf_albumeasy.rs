@@ -74,20 +74,20 @@ fn raw_albumeasy_stampalbum_uses_the_same_rendering_path() -> Result<(), String>
 #[test]
 fn unknown_commands_require_an_explicit_commented_test_copy() -> Result<(), String> {
     let source = fs::read_to_string(fixture().join("album.txt")).map_err(|e| e.to_string())?;
-    let source = format!("{source}\nSTAMP_BOXES_SIZE_ADJUST (0) \nALBUM_STAMP_SETTINGS_SAVE\n");
+    let source = format!("{source}\nSTAMP_BOXES_SIZE_ADJUST (0) \nSTAMP_INNER_BORDER (1 0.1)\n");
     let dir = tempfile::tempdir().map_err(|e| e.to_string())?;
     let output = dir.path().join("preserved.pdf");
     fs::write(&output, b"existing output").map_err(|e| e.to_string())?;
     let error = albumeasy::render(&source, &fixture(), &output).expect_err("unsupported command");
-    assert!(error.contains("Unsupported AlbumEasy command ALBUM_STAMP_SETTINGS_SAVE"));
+    assert!(error.contains("Unsupported AlbumEasy command STAMP_INNER_BORDER"));
     assert_eq!(
         fs::read(&output).map_err(|e| e.to_string())?,
         b"existing output"
     );
     let (prepared, losses) = albumeasy::commented_test_source(&source)?;
     assert_eq!(losses.len(), 1);
-    assert_eq!(losses[0].name, "ALBUM_STAMP_SETTINGS_SAVE");
-    assert!(prepared.contains("# NATIVE-TODO: ALBUM_STAMP_SETTINGS_SAVE"));
+    assert_eq!(losses[0].name, "STAMP_INNER_BORDER");
+    assert!(prepared.contains("# NATIVE-TODO: STAMP_INNER_BORDER"));
     assert!(prepared.contains("STAMP_BOXES_SIZE_ADJUST (0)\n"));
     assert_eq!(albumeasy::render(&prepared, &fixture(), &output)?, 1);
     Ok(())

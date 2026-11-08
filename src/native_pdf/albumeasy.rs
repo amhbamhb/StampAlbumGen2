@@ -1,7 +1,10 @@
 //! Standalone, bounded AlbumEasy compatibility input for the native renderer.
 
 use super::{
-    album::{integer, number, parse_command, strip_comment, Argument},
+    album::{
+        integer, number, parse_command, restore_stamp_settings, save_stamp_settings, strip_comment,
+        Argument,
+    },
     colour::NamedColour,
     commands::{
         colour::colour_album_border::AlbumBorderColour,
@@ -99,6 +102,8 @@ fn supported(name: &str) -> bool {
             | "ALBUM_STAMP_IMG_GRAYSCALE_ON"
             | "ALBUM_STAMP_IMG_HIDE"
             | "ALBUM_STAMP_IMG_SHOW"
+            | "ALBUM_STAMP_SETTINGS_SAVE"
+            | "ALBUM_STAMP_SETTINGS_RESTORE"
             | "PAGE_START"
             | "PAGE_VSPACE"
             | "PAGE_TEXT_CENTRE"
@@ -534,6 +539,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut stamp_colour = NamedColour::parse("black")?;
     let mut text_colour = stamp_colour;
     let mut heading_colour = stamp_colour;
+    let mut saved_stamp_settings = None;
     for c in &commands {
         let result = (|| -> Result<()> {
             match c.name.as_str() {
@@ -554,6 +560,34 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 }
                 "ROW_ALIGN_TOP" => {
                     count(c, 0, 0)?;
+                }
+                "ALBUM_STAMP_SETTINGS_SAVE" => {
+                    count(c, 0, 0)?;
+                    save_stamp_settings(
+                        &mut saved_stamp_settings,
+                        (
+                            adjust,
+                            options,
+                            frame,
+                            background,
+                            stamp_colour,
+                            text_colour,
+                            heading_colour,
+                        ),
+                        &c.name,
+                    )?;
+                }
+                "ALBUM_STAMP_SETTINGS_RESTORE" => {
+                    count(c, 0, 0)?;
+                    (
+                        adjust,
+                        options,
+                        frame,
+                        background,
+                        stamp_colour,
+                        text_colour,
+                        heading_colour,
+                    ) = restore_stamp_settings(&mut saved_stamp_settings, &c.name)?;
                 }
                 "COLOR_STAMP_BORDER" | "COLOR_STAMP_TEXT" | "COLOR_STAMP_HEADING" => {
                     count(c, 1, 1)?;
