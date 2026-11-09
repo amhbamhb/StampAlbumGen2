@@ -11,6 +11,8 @@ use super::{
 use oxidize_pdf::Image;
 use std::path::PathBuf;
 
+const STAMP_IMAGE_LABEL_GAP_MM: f64 = 1.0;
+
 /// Image input for a complete text/frame row item; physical size comes from the stamp.
 #[derive(Clone, Debug)]
 pub struct StampImageRowItem {
@@ -19,6 +21,7 @@ pub struct StampImageRowItem {
     pub image_scale_pt_per_pixel: f64,
     pub options: StampImageOptions,
     pub frame_style: Option<StampFrameStyle>,
+    pub labels: Option<StampImageLabels>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -51,6 +54,12 @@ pub struct StampImageOptions {
     pub aspect_ratio: ImageAspectRatio,
     pub grayscale: bool,
     pub visible: bool,
+}
+
+#[derive(Clone, Debug)]
+pub struct StampImageLabels {
+    pub above: Option<StampTextSettings>,
+    pub below: Option<StampTextSettings>,
 }
 
 #[derive(Clone, Debug)]
@@ -115,6 +124,7 @@ pub struct StampImageSettings {
     pub text_gap_mm: f64,
     pub heading: Option<StampTextSettings>,
     pub caption: Option<StampTextSettings>,
+    pub labels: Option<StampImageLabels>,
 }
 
 impl StampImageSettings {
@@ -318,12 +328,53 @@ impl StampImageSettings {
             .as_ref()
             .map(|text| position_text(text, self.box_bounds, self.text_gap_mm, false, page))
             .transpose()?;
+        let labels = self
+            .labels
+            .as_ref()
+            .map(|labels| {
+                let above = labels
+                    .above
+                    .as_ref()
+                    .map(|text| {
+                        position_image_label(
+                            text,
+                            Bounds {
+                                left: image_area.left,
+                                bottom: image_bounds.top + STAMP_IMAGE_LABEL_GAP_MM,
+                                right: image_area.right,
+                                top: image_area.top,
+                            },
+                            page,
+                        )
+                    })
+                    .transpose()?;
+                let below = labels
+                    .below
+                    .as_ref()
+                    .map(|text| {
+                        position_image_label(
+                            text,
+                            Bounds {
+                                left: image_area.left,
+                                bottom: image_area.bottom,
+                                right: image_area.right,
+                                top: image_bounds.bottom - STAMP_IMAGE_LABEL_GAP_MM,
+                            },
+                            page,
+                        )
+                    })
+                    .transpose()?;
+                Ok::<_, String>([above, below].into_iter().flatten().collect())
+            })
+            .transpose()?
+            .unwrap_or_default();
 
         Ok(PreparedStampImage {
             image: self.options.visible.then_some(image),
             image_bounds,
             heading,
             caption,
+            labels,
         })
     }
 }
@@ -336,6 +387,7 @@ pub(crate) struct PreparedStampImage {
     pub image_bounds: Bounds,
     pub heading: Option<PreparedStampText>,
     pub caption: Option<PreparedStampText>,
+    pub labels: Vec<PreparedStampText>,
 }
 
 pub(crate) struct PreparedStampText {
@@ -417,6 +469,58 @@ fn position_text(
     })
 }
 
+fn position_image_label(
+    settings: &StampTextSettings,
+    slot: Bounds,
+    page: &PageLayout,
+) -> Result<PreparedStampText> {
+    let text = MeasuredText::new(&settings.font, settings.size_pt, &settings.text)
+        .map_err(|error| format!("native_pdf.stamp_image label: {error}"))?;
+    let width_mm = text
+        .lines
+        .iter()
+        .map(|line| line.width_mm)
+        .fold(0.0, f64::max);
+    let height_mm =
+        text.ascent_mm + text.descent_mm + (text.lines.len() - 1) as f64 * text.line_advance_mm;
+    let slot_width = slot.right - slot.left;
+    let slot_height = slot.top - slot.bottom;
+    if width_mm > slot_width || height_mm > slot_height {
+        return Err(
+            "native_pdf.stamp_image label does not fit in the whitespace beside the image".into(),
+        );
+    }
+
+    let center = (slot.left + slot.right) / 2.0;
+    let top = slot.top - (slot_height - height_mm) / 2.0;
+    let lines = text
+        .lines
+        .iter()
+        .enumerate()
+        .map(|(index, line)| PositionedTextLine {
+            text: line.text.clone(),
+            left_mm: center - line.width_mm / 2.0,
+            baseline_mm: top - text.ascent_mm - index as f64 * text.line_advance_mm,
+            width_mm: line.width_mm,
+        })
+        .collect();
+    let bounds = Bounds {
+        left: center - width_mm / 2.0,
+        right: center + width_mm / 2.0,
+        top,
+        bottom: top - height_mm,
+    };
+    if !contains(slot, bounds) || !contains(page.content_bounds, bounds) {
+        return Err("native_pdf.stamp_image label exceeds its available frame area".into());
+    }
+    Ok(PreparedStampText {
+        font: text.font,
+        size_pt: text.size_pt,
+        colour: settings.colour,
+        lines,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -474,6 +578,7 @@ mod tests {
                 6.0,
                 NamedColour::parse("black")?,
             )),
+            labels: None,
         };
 
         let prepared = settings.prepare(&page_layout()?)?;
@@ -550,6 +655,7 @@ mod tests {
                 text_gap_mm: 2.0,
                 heading: None,
                 caption: None,
+                labels: None,
             };
 
             let prepared = settings.prepare(&page_layout()?)?;
@@ -583,6 +689,7 @@ mod tests {
             text_gap_mm: 0.0,
             heading: None,
             caption: None,
+            labels: None,
         };
         let mut options = StampImageOptions {
             padding_unit: ImagePaddingUnit::Percent,
@@ -636,6 +743,113 @@ mod tests {
         options.visible = false;
         let hidden = make_settings(options).prepare(&page_layout()?)?;
         assert!(hidden.image.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn image_labels_are_centered_in_whitespace_without_overlapping_the_image() -> Result<()> {
+        let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let path = temporary.path().join("stamp.png");
+        image::RgbImage::from_pixel(100, 50, image::Rgb([40, 80, 120]))
+            .save(&path)
+            .map_err(|error| error.to_string())?;
+        let settings = StampImageSettings {
+            image_path: path,
+            box_bounds: Bounds {
+                left: 80.0,
+                bottom: 100.0,
+                right: 130.0,
+                top: 140.0,
+            },
+            image_scale_pt_per_pixel: mm_to_points(0.1),
+            options: StampImageOptions::default(),
+            image_padding_horizontal_mm: 0.0,
+            image_padding_vertical_mm: 0.0,
+            text_gap_mm: 0.0,
+            heading: None,
+            caption: None,
+            labels: Some(StampImageLabels {
+                above: Some(StampTextSettings::new(
+                    "SG 1137b",
+                    "HN",
+                    4.0,
+                    NamedColour::parse("black")?,
+                )),
+                below: Some(StampTextSettings::new(
+                    "SG 1137b",
+                    "HN",
+                    4.0,
+                    NamedColour::parse("black")?,
+                )),
+            }),
+        };
+
+        let prepared = settings.prepare(&page_layout()?)?;
+        assert_eq!(prepared.labels.len(), 2);
+        let label_metrics = MeasuredText::new("HN", 4.0, "SG 1137b")?;
+        assert!(
+            prepared.labels[0].lines[0].baseline_mm
+                - label_metrics.descent_mm
+                - prepared.image_bounds.top
+                >= STAMP_IMAGE_LABEL_GAP_MM
+        );
+        assert!(
+            prepared.image_bounds.bottom
+                - prepared.labels[1].lines[0].baseline_mm
+                - label_metrics.ascent_mm
+                >= STAMP_IMAGE_LABEL_GAP_MM
+        );
+        assert!(prepared.labels.iter().all(|label| {
+            label.lines.iter().all(|line| {
+                line.left_mm >= settings.box_bounds.left
+                    && line.left_mm + line.width_mm <= settings.box_bounds.right
+            })
+        }));
+        Ok(())
+    }
+
+    #[test]
+    fn image_labels_fail_when_the_image_leaves_no_room_inside_the_frame() -> Result<()> {
+        let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let path = temporary.path().join("stamp.png");
+        image::RgbImage::from_pixel(100, 50, image::Rgb([40, 80, 120]))
+            .save(&path)
+            .map_err(|error| error.to_string())?;
+        let settings = StampImageSettings {
+            image_path: path,
+            box_bounds: Bounds {
+                left: 80.0,
+                bottom: 100.0,
+                right: 130.0,
+                top: 140.0,
+            },
+            image_scale_pt_per_pixel: mm_to_points(0.1),
+            options: StampImageOptions {
+                stretch_small: true,
+                aspect_ratio: ImageAspectRatio::Fit,
+                ..StampImageOptions::default()
+            },
+            image_padding_horizontal_mm: 0.0,
+            image_padding_vertical_mm: 0.0,
+            text_gap_mm: 0.0,
+            heading: None,
+            caption: None,
+            labels: Some(StampImageLabels {
+                above: Some(StampTextSettings::new(
+                    "SG 1137b",
+                    "HN",
+                    4.0,
+                    NamedColour::parse("black")?,
+                )),
+                below: None,
+            }),
+        };
+
+        let error = settings
+            .prepare(&page_layout()?)
+            .err()
+            .ok_or("label overlapped a full-frame image")?;
+        assert!(error.contains("does not fit in the whitespace beside the image"));
         Ok(())
     }
 }

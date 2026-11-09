@@ -1,4 +1,4 @@
-                     1959-1960 | STAMP IMAGE CONTROLS
+                          1959-1960 | STAMP IMAGE CONTROLS
 
 
 
@@ -8,21 +8,31 @@
 
 
 
-           DB 150 / SG 1125a                              DB 151 / SG 1137a
-              52 x 29 mm                                     26 x 29 mm
-           AlbumEasy default                                2 mm padding
+           DB 150 / SG 1125a                                   DB 151 / SG 1137a
+              52 x 29 mm                                          26 x 29 mm
+           AlbumEasy default                                     2 mm padding
 
 
 
 
-        DB 152 / SG 1137b                           DB 152 / SG 1137b
-           26 x 29 mm                                  26 x 29 mm
-         Small / no stretch                           Small / stretch
+               SG 1137b
 
 
 
 
-DB 156 / SG 1148a                    DB 151 / SG 1137a              DB 152 / SG 1137b
-   52 x 29 mm                           26 x 29 mm                     26 x 29 mm
-Aspect / grayscale                     Image hidden                   Colour / show
+               SG 1137b
+
+
+
+
+        DB 152 / SG 1137b                                DB 152 / SG 1137b
+           26 x 29 mm                                       26 x 29 mm
+         Small / no stretch                                Small / stretch
+
+
+
+
+DB 156 / SG 1148a                         DB 151 / SG 1137a              DB 152 / SG 1137b
+   52 x 29 mm                                26 x 29 mm                     26 x 29 mm
+Aspect / grayscale                          Image hidden                   Colour / show
 

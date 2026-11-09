@@ -88,6 +88,7 @@ fn indexed_png_and_rgba_transparency_render_without_backend_png_decode() -> Resu
                 text_gap_mm: 2.0,
                 heading: None,
                 caption: None,
+                labels: None,
             },
             &output,
         )?;
@@ -132,6 +133,7 @@ fn stamp_image_heading_caption_and_page_border_render_with_physical_geometry() -
             6.0,
             black,
         )),
+        labels: None,
     };
 
     write_stamp_image_proof(&settings()?, &proof()?, &stamp, &output)?;
@@ -174,6 +176,7 @@ fn invalid_image_does_not_create_or_truncate_the_output() -> Result<()> {
         text_gap_mm: 2.0,
         heading: None,
         caption: None,
+        labels: None,
     };
     let output = temporary.path().join("stamp-proof.pdf");
     assert!(write_stamp_image_proof(&settings()?, &proof()?, &stamp, &output).is_err());
@@ -214,6 +217,7 @@ fn illustration_scale_changes_pdf_image_but_not_known_size_or_frame() -> Result<
             text_gap_mm: 2.0,
             heading: None,
             caption: None,
+            labels: None,
         }
         .with_stamp_box(&geometry);
         assert_eq!(stamp.image_scale_pt_per_pixel, mm_to_points(mm_per_pixel));

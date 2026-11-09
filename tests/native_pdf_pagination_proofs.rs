@@ -58,6 +58,7 @@ fn inputs(sources: &Sources) -> Result<Vec<StampImageRowItem>> {
         let black = NamedColour::parse("black")?;
         result.push(StampImageRowItem {
             frame_style: None,
+            labels: None,
             stamp: StampTextItem {
                 geometry: StampBoxGeometry::from_total_additions(
                     Bounds { left: 0.0, bottom: 0.0, right: record.width_mm, top: record.height_mm },

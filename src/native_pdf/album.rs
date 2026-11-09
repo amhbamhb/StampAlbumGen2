@@ -27,7 +27,7 @@ use super::{
     stamp_heading::{self, HeadingMode, NativeHeadingItem, StampHeading, VerticalAlignment},
     stamp_image::{
         ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampFrameStyle,
-        StampImageOptions, StampImageRowItem, StampTextSettings,
+        StampImageLabels, StampImageOptions, StampImageRowItem, StampTextSettings,
     },
     stamp_inner_border::{InnerBorderStyle, StampInnerBorder},
     stamp_rows::RowAlignment,
@@ -51,6 +51,7 @@ type NativeImageSpec = (
     StampImageOptions,
     Option<StampTextSettings>,
     Option<StampFrameStyle>,
+    Option<StampImageLabels>,
 );
 
 /// A parsed native album. Settings and asset paths come only from the file.
@@ -728,6 +729,46 @@ impl NativeAlbum {
                         padding_mm,
                     });
                 }
+                "NATIVE_STAMP_IMAGE_LABEL" => {
+                    if args.len() != 5 {
+                        return Err(fail(format!(
+                            "{name} requires font, size, colour, and quoted above/below text"
+                        )));
+                    }
+                    if previous_command != "STAMP_IMAGE" {
+                        return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
+                    }
+                    if args[0].quoted || args[2].quoted {
+                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    }
+                    if !args[3].quoted || !args[4].quoted {
+                        return Err(fail(format!("{name} above and below text must be quoted")));
+                    }
+                    let font = args[0].value.clone();
+                    let size = number(&args[1], &name, 2).map_err(&fail)?;
+                    let colour = NamedColour::parse(&args[2].value).map_err(&fail)?;
+                    let make_text = |argument: &Argument| -> Result<_> {
+                        let text = quoted_text(argument, &name)?;
+                        if text.trim().is_empty() {
+                            Ok(None)
+                        } else {
+                            MeasuredText::new(&font, size, &text)?;
+                            Ok(Some(StampTextSettings::new(text, &font, size, colour)))
+                        }
+                    };
+                    let above = make_text(&args[3]).map_err(&fail)?;
+                    let below = make_text(&args[4]).map_err(&fail)?;
+                    if above.is_none() && below.is_none() {
+                        return Err(fail(format!("{name} requires at least one visible label")));
+                    }
+                    let labels = image_specs
+                        .last_mut()
+                        .ok_or_else(|| fail("Image label has no preceding stamp".into()))?;
+                    if labels.6.is_some() {
+                        return Err(fail(format!("{name} may be attached only once per stamp")));
+                    }
+                    labels.6 = Some(StampImageLabels { above, below });
+                }
                 "STAMP_IMAGE" => {
                     if !matches!(args.len(), 4 | 7) {
                         return Err(fail(format!(
@@ -772,6 +813,7 @@ impl NativeAlbum {
                         image_options,
                         caption,
                         frame_style,
+                        None,
                     ));
                     headings.push(NativeHeadingItem {
                         heading: None,
@@ -844,6 +886,7 @@ impl NativeAlbum {
                     options,
                     caption,
                     frame_style,
+                    labels,
                 )| {
                     StampImageRowItem {
                         stamp: StampTextItem {
@@ -855,6 +898,7 @@ impl NativeAlbum {
                         image_scale_pt_per_pixel,
                         options,
                         frame_style,
+                        labels,
                     }
                 },
             )

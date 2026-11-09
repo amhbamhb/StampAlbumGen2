@@ -326,6 +326,7 @@ fn flush(
             text_gap_mm: 0.0,
             heading: None,
             caption: None,
+            labels: None,
         });
         if item.frame && row.border > 0.0 {
             if item.outer_style.uses_legacy_rectangle() {

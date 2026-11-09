@@ -186,6 +186,7 @@ pub fn write_stamp_items_geometry_proof(
                 text_gap_mm: 0.0,
                 heading: None,
                 caption: None,
+                labels: item.labels.clone(),
             }
             .with_stamp_box(geometry)
         })
@@ -412,6 +413,7 @@ fn write_stamp_pages(
                         text_gap_mm: 0.0,
                         heading: None,
                         caption: None,
+                        labels: item.labels.clone(),
                     }
                     .with_stamp_box(&geometry)
                     .prepare(&page.layout)
@@ -833,6 +835,16 @@ fn save_pdf(
                         kind,
                     )?;
                 }
+            }
+            for label in &stamp.labels {
+                draw_text_lines(
+                    &mut page,
+                    label.font.clone(),
+                    label.size_pt,
+                    label.colour,
+                    label.lines.clone(),
+                    "stamp image label",
+                )?;
             }
         }
         for item in text_items {

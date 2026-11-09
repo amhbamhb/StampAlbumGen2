@@ -27,7 +27,8 @@ NATIVE_ROW_BREAK ()
 # Percent padding is relative to the frame; the low-resolution image is kept
 # small first, then stretched in the next item.
 NATIVE_STAMP_IMAGE_POLICY (percent 10 10 false fit colour show)
-STAMP_IMAGE ("us-152-small.png" 26 29 0.3527777778 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nSmall / no stretch")
+STAMP_IMAGE ("us-152-small.png" 26 29 0.3 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nSmall / no stretch")
+NATIVE_STAMP_IMAGE_LABEL (HN 3.5 black "SG 1137b" "SG 1137b")
 NATIVE_STAMP_IMAGE_POLICY (percent 10 10 true fit colour show)
 STAMP_IMAGE ("us-152-small.png" 26 29 0.3527777778 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nSmall / stretch")
 NATIVE_ROW_BREAK ()

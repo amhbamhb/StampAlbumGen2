@@ -46,8 +46,27 @@ The seven stamp frames cover:
 - Millimetre padding.
 - Percentage padding with omitted optional arguments.
 - Small-image stretch off/on using the same reduced real-stamp image.
+- Native-only, small-font labels above and below the small no-stretch image.
 - Aspect-ratio preservation and grayscale.
 - Hide/show and grayscale reset behavior.
+
+The native `.stampalbum` adds `SG 1137b` in the open space above and below the
+small/no-stretch image. The labels are inside the frame and do not cover the
+stamp image or replace the descriptive caption below the frame. This behavior
+is native-only; the AlbumEasy reference input and PDF remain unchanged. The
+native small/no-stretch image uses a 0.3 mm-per-pixel scale to leave readable
+space around the two labels while retaining the no-stretch behavior.
+
+The native command is attached immediately after its `STAMP_IMAGE`:
+
+```text
+NATIVE_STAMP_IMAGE_LABEL (HN 3.5 black "SG 1137b" "SG 1137b")
+```
+
+Its arguments are font, point size, colour, above-image text and below-image
+text. Leave either quoted string empty to omit that side. Labels are centered
+in the available whitespace with at least 1 mm clearance from the image.
+Rendering fails if they cannot fit while preserving that clearance.
 
 The reduced `us-152-small.png` (50 x 55 pixels, 72 dpi) is derived at the
 original image's aspect ratio from the genuine record-152 stamp image solely

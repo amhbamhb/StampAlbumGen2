@@ -120,6 +120,7 @@ fn native_image_controls_keep_page_background_independent_of_hidden_stamps() -> 
         .join("\n");
     assert_eq!(content.matches(" Do").count(), 7);
     assert!(content.contains("native_page_background_0 Do"));
+    assert_eq!(content.matches("SG 1137b").count(), 5);
     Ok(())
 }
 

@@ -122,6 +122,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 10.0,
                 NamedColour::parse("black")?,
             )),
+            labels: None,
         };
         write_stamp_box_geometry_proof(
             &settings,
