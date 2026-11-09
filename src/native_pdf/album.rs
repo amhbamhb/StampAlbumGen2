@@ -31,7 +31,10 @@ use super::{
     },
     stamp_inner_border::{InnerBorderStyle, StampInnerBorder},
     stamp_rows::RowAlignment,
-    stamp_text::{ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy},
+    stamp_text::{
+        ExpandedWidthLimit, FooterTextAlignment, StampFooterText, StampTextItem, StampTextPolicy,
+        TextWidthPolicy,
+    },
     text::MeasuredText,
     units::mm_to_points,
     Result,
@@ -40,6 +43,15 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
+
+type NativeImageSpec = (
+    PathBuf,
+    StampBoxGeometry,
+    f64,
+    StampImageOptions,
+    Option<StampTextSettings>,
+    Option<StampFrameStyle>,
+);
 
 /// A parsed native album. Settings and asset paths come only from the file.
 #[derive(Debug)]
@@ -91,13 +103,15 @@ impl NativeAlbum {
         let mut frame_style = None;
         let mut saved_stamp_settings = None;
         let mut page_background = None;
-        let mut image_specs = Vec::new();
+        let mut image_specs: Vec<NativeImageSpec> = Vec::new();
         let mut section_start = 0;
         let mut section_counts = Vec::new();
         let mut numbering_section_starts = Vec::new();
         let mut headings: Vec<NativeHeadingItem> = Vec::new();
         let mut vertical = VerticalAlignment::Top;
         let mut heading_padding = None;
+        let mut footer_text_alignment = None;
+        let mut footer_text_padding = None;
         let mut previous_command = String::new();
 
         for (index, line) in source.lines().enumerate() {
@@ -365,15 +379,26 @@ impl NativeAlbum {
                     words(&name, &args, 0).map_err(&fail)?;
                     save_stamp_settings(
                         &mut saved_stamp_settings,
-                        (image_options, frame_style, heading_padding),
+                        (
+                            image_options,
+                            frame_style,
+                            heading_padding,
+                            footer_text_alignment,
+                            footer_text_padding,
+                        ),
                         &name,
                     )
                     .map_err(&fail)?;
                 }
                 "NATIVE_STAMP_SETTINGS_RESTORE" => {
                     words(&name, &args, 0).map_err(&fail)?;
-                    (image_options, frame_style, heading_padding) =
-                        restore_stamp_settings(&mut saved_stamp_settings, &name).map_err(&fail)?;
+                    (
+                        image_options,
+                        frame_style,
+                        heading_padding,
+                        footer_text_alignment,
+                        footer_text_padding,
+                    ) = restore_stamp_settings(&mut saved_stamp_settings, &name).map_err(&fail)?;
                 }
                 "NATIVE_STAMP_BACKGROUND" => {
                     let colour = words(&name, &args, 1).map_err(&fail)?;
@@ -595,11 +620,26 @@ impl NativeAlbum {
                     heading_padding =
                         Some(stamp_heading::signed_mm(values[0], &name).map_err(&fail)?);
                 }
+                "NATIVE_STAMP_FOOTER_TEXT_ALIGN" => {
+                    if args.len() != 1 || args[0].quoted {
+                        return Err(fail(format!("{name} requires one unquoted alignment")));
+                    }
+                    footer_text_alignment =
+                        Some(FooterTextAlignment::parse(&args[0].value).map_err(&fail)?);
+                }
+                "NATIVE_STAMP_FOOTER_TEXT_PAD" => {
+                    let values = numbers(&name, &args, 1).map_err(&fail)?;
+                    footer_text_padding =
+                        Some(stamp_heading::signed_mm(values[0], &name).map_err(&fail)?);
+                }
                 "NATIVE_STAMP_HEADING" => {
                     if args.len() != 7 {
                         return Err(fail(format!("{name} requires mode, font, size, quoted text, offset mm, baseline gap mm and colour")));
                     }
-                    if previous_command != "STAMP_IMAGE" {
+                    if !matches!(
+                        previous_command.as_str(),
+                        "STAMP_IMAGE" | "NATIVE_STAMP_FOOTER_TEXT"
+                    ) {
                         return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
                     }
                     if [0, 1, 6].iter().any(|&index| args[index].quoted) {
@@ -626,6 +666,67 @@ impl NativeAlbum {
                         .last_mut()
                         .ok_or_else(|| fail("Heading has no preceding stamp".into()))?
                         .heading = Some(heading);
+                }
+                "NATIVE_STAMP_FOOTER_TEXT" => {
+                    if args.len() != 6 {
+                        return Err(fail(format!(
+                            "{name} requires font, size, colour, and quoted left, centre, and right text"
+                        )));
+                    }
+                    if !matches!(
+                        previous_command.as_str(),
+                        "STAMP_IMAGE" | "NATIVE_STAMP_HEADING"
+                    ) {
+                        return Err(fail(format!(
+                            "{name} must immediately follow STAMP_IMAGE or NATIVE_STAMP_HEADING"
+                        )));
+                    }
+                    if args[0].quoted || args[2].quoted {
+                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    }
+                    let alignment = footer_text_alignment.ok_or_else(|| {
+                        fail("Missing explicit NATIVE_STAMP_FOOTER_TEXT_ALIGN".into())
+                    })?;
+                    let padding_mm = footer_text_padding.ok_or_else(|| {
+                        fail("Missing explicit NATIVE_STAMP_FOOTER_TEXT_PAD".into())
+                    })?;
+                    if image_specs.last().is_some_and(|image| image.4.is_some()) {
+                        return Err(fail(format!(
+                            "{name} cannot be combined with STAMP_IMAGE's single caption"
+                        )));
+                    }
+                    let font = args[0].value.clone();
+                    let size = number(&args[1], &name, 2).map_err(&fail)?;
+                    let colour = NamedColour::parse(&args[2].value).map_err(&fail)?;
+                    let make_text = |argument: &Argument| -> Result<_> {
+                        let text = quoted_text(argument, &name)?;
+                        if text.trim().is_empty() {
+                            Ok(None)
+                        } else {
+                            Ok(Some(StampTextSettings::new(text, &font, size, colour)))
+                        }
+                    };
+                    let left = make_text(&args[3]).map_err(&fail)?;
+                    let centre = make_text(&args[4]).map_err(&fail)?;
+                    let right = make_text(&args[5]).map_err(&fail)?;
+                    if left.is_none() && centre.is_none() && right.is_none() {
+                        return Err(fail(format!(
+                            "{name} requires at least one visible caption"
+                        )));
+                    }
+                    let item = headings
+                        .last_mut()
+                        .ok_or_else(|| fail("Footer text has no preceding stamp".into()))?;
+                    if item.footer_text.is_some() {
+                        return Err(fail(format!("{name} may be attached only once per stamp")));
+                    }
+                    item.footer_text = Some(StampFooterText {
+                        left,
+                        centre,
+                        right,
+                        alignment,
+                        padding_mm,
+                    });
                 }
                 "STAMP_IMAGE" => {
                     if !matches!(args.len(), 4 | 7) {
@@ -674,6 +775,7 @@ impl NativeAlbum {
                     ));
                     headings.push(NativeHeadingItem {
                         heading: None,
+                        footer_text: None,
                         vertical,
                     });
                 }
@@ -809,11 +911,11 @@ impl NativeAlbum {
         if numbering.is_some() {
             page_settings.enable_native_numbering_tokens();
         }
-        let mut pages = if self
-            .headings
-            .iter()
-            .any(|item| item.heading.is_some() || item.vertical != VerticalAlignment::Top)
-        {
+        let mut pages = if self.headings.iter().any(|item| {
+            item.heading.is_some()
+                || item.footer_text.is_some()
+                || item.vertical != VerticalAlignment::Top
+        }) {
             stamp_heading::paginate_native(
                 &page_settings,
                 &self.items,
@@ -1054,6 +1156,13 @@ fn quoted(argument: &Argument, name: &str) -> Result<String> {
         return Err(format!(
             "{name} image path must be a non-empty quoted string"
         ));
+    }
+    Ok(argument.value.clone())
+}
+
+fn quoted_text(argument: &Argument, name: &str) -> Result<String> {
+    if !argument.quoted {
+        return Err(format!("{name} caption text must be quoted"));
     }
     Ok(argument.value.clone())
 }

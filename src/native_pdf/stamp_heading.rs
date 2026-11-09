@@ -3,7 +3,7 @@
 use super::{
     colour::NamedColour,
     document::Bounds,
-    stamp_text::PositionedStampText,
+    stamp_text::{PositionedStampText, StampFooterText},
     text::{MeasuredText, PositionedTextLine},
     units::mm_to_points,
     Result,
@@ -122,6 +122,7 @@ pub struct HeadingRowLayout {
 #[derive(Clone, Debug)]
 pub struct NativeHeadingItem {
     pub heading: Option<StampHeading>,
+    pub footer_text: Option<StampFooterText>,
     pub vertical: VerticalAlignment,
 }
 
@@ -277,25 +278,58 @@ pub fn paginate_native(
                 .iter()
                 .map(|item| policy.measure_item(&item.stamp))
                 .collect::<Result<Vec<_>>>()?;
+            let measured_footer = metadata
+                .iter()
+                .zip(items[start..end].iter())
+                .map(|(metadata, item)| {
+                    metadata
+                        .footer_text
+                        .as_ref()
+                        .map(|footer| {
+                            let frame = item.stamp.geometry.frame_bounds();
+                            footer.measure(frame.right - frame.left, policy)
+                        })
+                        .transpose()
+                })
+                .collect::<Result<Vec<_>>>()?;
             let (_, pad_y) = policy.padding();
             let row_items = items[start..end]
                 .iter()
                 .zip(metadata)
-                .zip(&measured)
-                .map(|((item, metadata), (_, caption, _, _))| {
+                .zip(measured.iter().zip(&measured_footer))
+                .map(|((item, metadata), ((_, caption, _, _), footer))| {
                     let frame = item.stamp.geometry.frame_bounds();
+                    let caption_below = caption
+                        .as_ref()
+                        .map_or(0.0, |text| stamp_text::height(text) + policy.gap());
+                    let footer_below = metadata
+                        .footer_text
+                        .as_ref()
+                        .zip(footer.as_ref())
+                        .map_or(0.0, |(settings, measured)| {
+                            settings.below_mm(measured, policy.gap())
+                        });
                     HeadingRowItem {
                         width_mm: frame.right - frame.left,
                         height_mm: frame.top - frame.bottom,
-                        below_mm: caption
-                            .as_ref()
-                            .map_or(0.0, |text| stamp_text::height(text) + policy.gap())
-                            + pad_y,
+                        below_mm: caption_below.max(footer_below) + pad_y,
                         heading: metadata.heading.as_ref(),
                     }
                 })
                 .collect::<Vec<_>>();
-            let widths = measured.iter().map(|m| m.2).collect::<Vec<_>>();
+            let (pad_x, _) = policy.padding();
+            let widths = measured
+                .iter()
+                .zip(&measured_footer)
+                .zip(&row_items)
+                .map(|((m, footer), row_item)| {
+                    let footer_width = footer.as_ref().map_or(0.0, |text| text.width());
+                    m.2.max(
+                        row_item.width_mm
+                            + 2.0 * (footer_width + pad_x - row_item.width_mm).max(0.0),
+                    )
+                })
+                .collect::<Vec<_>>();
             let place = |page: &StampItemPage, top: f64| -> Result<HeadingRowLayout> {
                 let content = page.layout.content_bounds;
                 let footprint_lefts = section.alignment.positions(
@@ -343,11 +377,26 @@ pub fn paginate_native(
                     (placed.frame.left + placed.frame.right) / 2.0,
                     placed.frame.bottom - policy.gap(),
                 );
+                let footer_text = match (
+                    metadata[offset].footer_text.as_ref(),
+                    measured_footer[offset].clone(),
+                ) {
+                    (Some(footer), Some(measured)) => Some(footer.position(
+                        measured,
+                        placed.frame,
+                        stamp_text::footer_caption_top(
+                            placed.frame.bottom,
+                            policy.gap(),
+                            footer.padding_mm,
+                        )?,
+                    )?),
+                    _ => None,
+                };
                 let geometry = item
                     .stamp
                     .geometry
                     .at_frame_top_left(placed.frame.left, placed.frame.top)?;
-                let footprint = Bounds {
+                let mut footprint = Bounds {
                     left: placed.frame.left,
                     right: placed.frame.right,
                     top: placed
@@ -358,11 +407,29 @@ pub fn paginate_native(
                         .as_ref()
                         .map_or(placed.frame.bottom, |text| text.bounds.bottom),
                 };
+                for text in footer_text.iter() {
+                    let bounds = text.bounds(placed.frame);
+                    footprint.left = footprint.left.min(bounds.left);
+                    footprint.right = footprint.right.max(bounds.right);
+                    footprint.top = footprint.top.max(bounds.top);
+                    footprint.bottom = footprint.bottom.min(bounds.bottom);
+                    if bounds.left < page.layout.content_bounds.left
+                        || bounds.right > page.layout.content_bounds.right
+                        || bounds.top > page.layout.content_bounds.top
+                        || bounds.bottom < page.layout.content_bounds.bottom
+                    {
+                        return Err(format!(
+                            "Native footer text for stamp {} exceeds usable page bounds",
+                            start + offset + 1
+                        ));
+                    }
+                }
                 page.items.push(StampPageFragment {
                     source_index: start + offset,
                     geometry: Some(geometry),
                     heading: placed.heading,
                     caption,
+                    footer_text,
                     footprint,
                 });
             }

@@ -7,6 +7,11 @@ fn fixture() -> std::path::PathBuf {
         .join("tests/fixtures/native_pdf/stampalbum-v1/basic.stampalbum")
 }
 
+fn footer_fixture() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/native_pdf/stamp-footer-text-v1/footer-text.stampalbum")
+}
+
 #[test]
 fn real_stamp_album_file_renders_letter_pdf() -> Result<(), String> {
     let album_path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -225,4 +230,204 @@ fn native_files_require_the_stampalbum_extension() {
     path.set_extension("txt");
     let error = NativeAlbum::load(&path).unwrap_err();
     assert!(error.contains("must use the .stampalbum extension"));
+}
+
+#[test]
+fn native_footer_alignment_padding_and_saved_state_are_applied() -> Result<(), String> {
+    let path = fixture();
+    let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let source = source.replace(
+        "STAMP_IMAGE (",
+        "NATIVE_STAMP_FOOTER_TEXT_ALIGN (ALIGN)\n\
+         NATIVE_STAMP_FOOTER_TEXT_PAD (0)\n\
+         STAMP_IMAGE (",
+    );
+    let image = source
+        .lines()
+        .find(|line| line.starts_with("STAMP_IMAGE"))
+        .ok_or("basic fixture has no STAMP_IMAGE")?;
+    let footer =
+        r#"NATIVE_STAMP_FOOTER_TEXT (HN 8 black "Anchor\nSecond" "Centre\nShort" "Right\nSecond")"#;
+    let source = format!(
+        "{source}\n{footer}\n\
+         NATIVE_STAMP_SETTINGS_SAVE ()\n\
+         NATIVE_STAMP_FOOTER_TEXT_ALIGN (CENTRE)\n\
+         NATIVE_STAMP_FOOTER_TEXT_PAD (6)\n\
+         {image}\n{footer}\n\
+         NATIVE_STAMP_SETTINGS_RESTORE ()\n\
+         {image}\n{footer}\n"
+    );
+    let album = NativeAlbum::parse(
+        &source,
+        path.parent().ok_or("fixture has no parent directory")?,
+    )?;
+    let output_dir = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let pages = album.write_pdf(&output_dir.path().join("footer-text.pdf"))?;
+    let items = pages
+        .iter()
+        .flat_map(|page| &page.items)
+        .collect::<Vec<_>>();
+    assert_eq!(items.len(), 3);
+
+    let footer = items[0]
+        .footer_text
+        .as_ref()
+        .ok_or("first item is missing footer text")?;
+    let left = footer
+        .left
+        .as_ref()
+        .ok_or("first item is missing its left caption")?;
+    let frame = items[0]
+        .geometry
+        .ok_or("first item is missing frame geometry")?
+        .frame_bounds();
+    assert!((left.lines[0].left_mm - frame.left).abs() < 0.001);
+    assert!((left.lines[1].left_mm - frame.left).abs() < 0.001);
+
+    let temporary = items[1]
+        .footer_text
+        .as_ref()
+        .and_then(|text| text.left.as_ref())
+        .ok_or("second item is missing its left caption")?;
+    let second_frame = items[1]
+        .geometry
+        .ok_or("second item is missing frame geometry")?
+        .frame_bounds();
+    assert!((temporary.lines[0].left_mm - second_frame.left).abs() < 0.001);
+    assert!(
+        (temporary.lines[1].left_mm + temporary.lines[1].width_mm / 2.0
+            - temporary.lines[0].left_mm
+            - temporary.lines[0].width_mm / 2.0)
+            .abs()
+            < 0.001
+    );
+    assert!((left.bounds.top - temporary.bounds.top - 6.0).abs() < 0.001);
+
+    let restored = items[2]
+        .footer_text
+        .as_ref()
+        .and_then(|text| text.left.as_ref())
+        .ok_or("third item is missing its left caption")?;
+    let third_frame = items[2]
+        .geometry
+        .ok_or("third item is missing frame geometry")?
+        .frame_bounds();
+    assert!((restored.lines[1].left_mm - third_frame.left).abs() < 0.001);
+    assert!((restored.bounds.top - left.bounds.top).abs() < 0.001);
+    Ok(())
+}
+
+#[test]
+fn native_footer_requires_explicit_state_and_rejects_empty_or_conflicting_text(
+) -> Result<(), String> {
+    let path = fixture();
+    let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let source = format!("{source}\nNATIVE_STAMP_FOOTER_TEXT (HN 8 black \"left\" \"\" \"\")\n");
+    let error = NativeAlbum::parse(
+        &source,
+        path.parent().ok_or("fixture has no parent directory")?,
+    )
+    .unwrap_err();
+    assert!(
+        error.contains("Missing explicit NATIVE_STAMP_FOOTER_TEXT_ALIGN"),
+        "{error}"
+    );
+
+    let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let source = source.replace(
+        "STAMP_IMAGE (",
+        "NATIVE_STAMP_FOOTER_TEXT_ALIGN (ALIGN)\nSTAMP_IMAGE (",
+    );
+    let source = format!("{source}\nNATIVE_STAMP_FOOTER_TEXT (HN 8 black \"left\" \"\" \"\")\n");
+    let error = NativeAlbum::parse(
+        &source,
+        path.parent().ok_or("fixture has no parent directory")?,
+    )
+    .unwrap_err();
+    assert!(
+        error.contains("Missing explicit NATIVE_STAMP_FOOTER_TEXT_PAD"),
+        "{error}"
+    );
+
+    let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let source = source.replace(
+        "STAMP_IMAGE (",
+        "NATIVE_STAMP_FOOTER_TEXT_ALIGN (ALIGN)\n\
+         NATIVE_STAMP_FOOTER_TEXT_PAD (0)\n\
+         STAMP_IMAGE (",
+    );
+    let source = format!("{source}\nNATIVE_STAMP_FOOTER_TEXT (HN 8 black \"\" \"\" \"\")\n");
+    let error = NativeAlbum::parse(
+        &source,
+        path.parent().ok_or("fixture has no parent directory")?,
+    )
+    .unwrap_err();
+    assert!(
+        error.contains("requires at least one visible caption"),
+        "{error}"
+    );
+
+    let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
+    let source = source.replace(
+        "STAMP_IMAGE (",
+        "NATIVE_STAMP_FOOTER_TEXT_ALIGN (ALIGN)\n\
+         NATIVE_STAMP_FOOTER_TEXT_PAD (0)\n\
+         STAMP_IMAGE (",
+    );
+    let source = source.replace("0.5)", "0.5 HN 8 \"existing caption\")");
+    let source = format!("{source}\nNATIVE_STAMP_FOOTER_TEXT (HN 8 black \"left\" \"\" \"\")\n");
+    let error = NativeAlbum::parse(
+        &source,
+        path.parent().ok_or("fixture has no parent directory")?,
+    )
+    .unwrap_err();
+    assert!(
+        error.contains("cannot be combined with STAMP_IMAGE's single caption"),
+        "{error}"
+    );
+    Ok(())
+}
+
+#[test]
+fn explicit_native_footer_fixture_renders_with_heading() -> Result<(), String> {
+    let path = footer_fixture();
+    let album = NativeAlbum::load(&path)?;
+    let output_dir = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let output = output_dir.path().join("footer-text.pdf");
+    let pages = album.write_pdf(&output)?;
+    assert_eq!(pages.len(), 1);
+    assert_eq!(pages[0].items.len(), 1);
+    let item = &pages[0].items[0];
+    assert!(item.heading.is_some());
+    assert!(item.footer_text.is_some());
+
+    let document = PdfDocument::open(&output).map_err(|error| error.to_string())?;
+    assert_eq!(document.page_count().map_err(|error| error.to_string())?, 1);
+    let page = document.get_page(0).map_err(|error| error.to_string())?;
+    assert!((page.media_box[2] - 612.0).abs() < 0.01);
+    assert!((page.media_box[3] - 792.0).abs() < 0.01);
+    let streams = document
+        .get_page_content_streams(&page)
+        .map_err(|error| error.to_string())?;
+    let content = streams
+        .iter()
+        .map(|stream| String::from_utf8_lossy(stream))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_eq!(content.matches(" Do").count(), 1);
+    assert!(content.contains("NATIVE STAMP HEADING"));
+    assert!(content.contains("Left anchor"));
+    assert!(content.contains("Second line"));
+    Ok(())
+}
+
+#[test]
+#[ignore = "Regenerate the checked-in native footer review PDF"]
+fn generate_native_footer_review_pdf() -> Result<(), String> {
+    let path = footer_fixture();
+    let album = NativeAlbum::load(&path)?;
+    let output = path.with_file_name("footer-text-native.pdf");
+    let pages = album.write_pdf(&output)?;
+    assert_eq!(pages.len(), 1);
+    Ok(())
 }

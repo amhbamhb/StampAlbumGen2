@@ -29,7 +29,9 @@ use super::{
     stamp_heading::{self, HeadingMode, HeadingRowItem, StampHeading, VerticalAlignment},
     stamp_image::{ImageAspectRatio, ImagePaddingUnit, StampImageOptions, StampImageSettings},
     stamp_inner_border::{BorderStyleState, InnerBorderStyle, StampInnerBorder},
-    stamp_text::PositionedStampText,
+    stamp_text::{
+        position_footer_caption, FooterTextAlignment, FooterTextSide, PositionedStampText,
+    },
     text::{MeasuredText, PositionedTextLine},
     Result,
 };
@@ -130,6 +132,9 @@ fn supported(name: &str) -> bool {
             | "STAMP_HEADING_VA"
             | "STAMP_HEADING"
             | "STAMP_HEADING_PADDING"
+            | "STAMP_FOOTER_TXT_ALIGN"
+            | "STAMP_FOOTER_TXT_PAD"
+            | "TEXT_LINE_LEADING"
     )
 }
 
@@ -188,6 +193,8 @@ struct Item {
     image: std::path::PathBuf,
     options: StampImageOptions,
     captions: Vec<Option<MeasuredText>>,
+    footer_alignment: FooterTextAlignment,
+    footer_padding_mm: f64,
     heading: Option<StampHeading>,
     frame: bool,
     outer_style: BorderStyleState,
@@ -273,21 +280,17 @@ fn flush(
         .items
         .iter()
         .map(|item| {
-            let caption_height = item
+            let caption_below = item
                 .captions
                 .iter()
                 .flatten()
-                .map(height)
+                .map(|caption| (height(caption) + 0.5 + item.footer_padding_mm).max(0.0))
                 .fold(0.0, f64::max);
             HeadingRowItem {
                 width_mm: item.width,
                 height_mm: item.height,
                 heading: item.heading.as_ref(),
-                below_mm: if caption_height > 0.0 {
-                    0.5 + caption_height
-                } else {
-                    0.0
-                },
+                below_mm: caption_below,
             }
         })
         .collect::<Vec<_>>();
@@ -313,7 +316,6 @@ fn flush(
     })?;
     for (item, placed) in row.items.into_iter().zip(layout.items) {
         let bounds = placed.frame;
-        let left = bounds.left;
         page.images.push(StampImageSettings {
             image_path: item.image,
             box_bounds: bounds,
@@ -349,14 +351,23 @@ fn flush(
         }
         for (align, caption) in item.captions.into_iter().enumerate() {
             if let Some(caption) = caption {
-                page.text.push(positioned(
+                let side = match align {
+                    0 => FooterTextSide::Left,
+                    1 => FooterTextSide::Centre,
+                    _ => FooterTextSide::Right,
+                };
+                page.text.push(position_footer_caption(
                     caption,
-                    left,
-                    bounds.bottom - 0.5,
-                    item.width,
-                    align,
+                    bounds,
+                    super::stamp_text::footer_caption_top(
+                        bounds.bottom,
+                        0.5,
+                        item.footer_padding_mm,
+                    )?,
+                    side,
+                    item.footer_alignment,
                     item.text_colour,
-                ));
+                )?);
             }
         }
     }
@@ -628,6 +639,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut outer_style = BorderStyleState::new(InnerBorderStyle::Solid);
     let mut inner_colour = stamp_colour;
     let mut heading_padding = 0.0;
+    let mut footer_alignment = FooterTextAlignment::Align;
+    let mut footer_padding_mm = 0.0;
     let mut vertical = VerticalAlignment::Top;
     for (command_index, c) in commands.iter().enumerate() {
         let result = (|| -> Result<()> {
@@ -672,6 +685,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             inner_colour,
                             outer_style,
                             heading_padding,
+                            footer_alignment,
+                            footer_padding_mm,
                         ),
                         &c.name,
                     )?;
@@ -691,6 +706,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         inner_colour,
                         outer_style,
                         heading_padding,
+                        footer_alignment,
+                        footer_padding_mm,
                     ) = restore_stamp_settings(&mut saved_stamp_settings, &c.name)?;
                 }
                 "COLOR_STAMP_BORDER"
@@ -855,6 +872,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         image: assets.join(path),
                         options,
                         captions,
+                        footer_alignment,
+                        footer_padding_mm,
                         heading: None,
                         frame: frame && c.args.len() != 7,
                         outer_style,
@@ -878,6 +897,26 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 "STAMP_HEADING_PADDING" => {
                     count(c, 1, 1)?;
                     heading_padding = stamp_heading::signed_mm(n(c, 0)?, &c.name)?;
+                }
+                "STAMP_FOOTER_TXT_ALIGN" => {
+                    count(c, 1, 1)?;
+                    if c.args[0].quoted {
+                        return Err("Footer text alignment must be unquoted".into());
+                    }
+                    footer_alignment = FooterTextAlignment::parse(&c.args[0].value)?;
+                }
+                "STAMP_FOOTER_TXT_PAD" => {
+                    count(c, 1, 1)?;
+                    footer_padding_mm = stamp_heading::signed_mm(n(c, 0)?, &c.name)?;
+                }
+                "TEXT_LINE_LEADING" => {
+                    count(c, 1, 1)?;
+                    if n(c, 0)? != 0.0 {
+                        return Err(
+                            "Only TEXT_LINE_LEADING (0) is currently supported; nonzero leading is not ignored"
+                                .into(),
+                        );
+                    }
                 }
                 "STAMP_HEADING" | "STAMP_HEADING_VA" => {
                     count(c, 3, 4)?;

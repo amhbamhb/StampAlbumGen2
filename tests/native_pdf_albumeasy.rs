@@ -25,6 +25,26 @@ fn check_pdf(path: &Path, pages: u32, images: usize) -> Result<(), String> {
     Ok(())
 }
 
+fn check_footer_pdf(path: &Path) -> Result<(), String> {
+    let pdf = PdfDocument::open(path).map_err(|error| error.to_string())?;
+    assert_eq!(pdf.page_count().map_err(|error| error.to_string())?, 2);
+    let mut image_count = 0;
+    for index in 0..2 {
+        let page = pdf.get_page(index).map_err(|error| error.to_string())?;
+        assert!((page.media_box[2] - 612.0).abs() < 0.01);
+        assert!((page.media_box[3] - 792.0).abs() < 0.01);
+        let streams = pdf
+            .get_page_content_streams(&page)
+            .map_err(|error| error.to_string())?;
+        image_count += streams
+            .iter()
+            .map(|stream| String::from_utf8_lossy(stream).matches(" Do").count())
+            .sum::<usize>();
+    }
+    assert_eq!(image_count, 12);
+    Ok(())
+}
+
 #[test]
 fn original_albumeasy_txt_renders_natively() -> Result<(), String> {
     let dir = tempfile::tempdir().map_err(|e| e.to_string())?;
@@ -72,22 +92,65 @@ fn raw_albumeasy_stampalbum_uses_the_same_rendering_path() -> Result<(), String>
 }
 
 #[test]
+fn footer_alignment_and_padding_fixtures_render_from_txt_and_raw_stampalbum() -> Result<(), String>
+{
+    let footer_fixture =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/stamp-footer-text-v1");
+    let dir = tempfile::tempdir().map_err(|error| error.to_string())?;
+    for file in ["alignment.txt", "padding-state.txt"] {
+        let output = dir.path().join(format!("{file}.pdf"));
+        albumeasy::render_file(&footer_fixture.join(file), &output)?;
+        check_footer_pdf(&output)?;
+    }
+
+    let source = fs::read_to_string(footer_fixture.join("alignment.txt"))
+        .map_err(|error| error.to_string())?;
+    let asset_dir = footer_fixture
+        .parent()
+        .ok_or("Missing footer fixture parent")?
+        .join("stamp-pagination-v1");
+    let source = source.replace(
+        "../stamp-pagination-v1/",
+        &format!("{}/", asset_dir.to_string_lossy().replace('\\', "/")),
+    );
+    let raw = dir.path().join("alignment.stampalbum");
+    fs::write(&raw, source).map_err(|error| error.to_string())?;
+    let output = dir.path().join("alignment-raw.pdf");
+    albumeasy::render_file(&raw, &output)?;
+    check_footer_pdf(&output)
+}
+
+#[test]
+#[ignore = "Regenerate the checked-in native compatibility footer proof PDFs"]
+fn generate_native_footer_compatibility_proof_pdfs() -> Result<(), String> {
+    let footer_fixture =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/stamp-footer-text-v1");
+    for stem in ["alignment", "padding-state"] {
+        let output = footer_fixture.join(format!("native-{stem}.pdf"));
+        let input = footer_fixture.join(format!("{stem}.txt"));
+        albumeasy::render_file(&input, &output)?;
+        check_footer_pdf(&output)?;
+    }
+    Ok(())
+}
+
+#[test]
 fn unknown_commands_require_an_explicit_commented_test_copy() -> Result<(), String> {
     let source = fs::read_to_string(fixture().join("album.txt")).map_err(|e| e.to_string())?;
-    let source = format!("{source}\nSTAMP_BOXES_SIZE_ADJUST (0) \nSTAMP_FOOTER_TXT_PAD (1)\n");
+    let source = format!("{source}\nSTAMP_BOXES_SIZE_ADJUST (0) \nFUTURE_STAMP_SETTING (1)\n");
     let dir = tempfile::tempdir().map_err(|e| e.to_string())?;
     let output = dir.path().join("preserved.pdf");
     fs::write(&output, b"existing output").map_err(|e| e.to_string())?;
     let error = albumeasy::render(&source, &fixture(), &output).expect_err("unsupported command");
-    assert!(error.contains("Unsupported AlbumEasy command STAMP_FOOTER_TXT_PAD"));
+    assert!(error.contains("Unsupported AlbumEasy command FUTURE_STAMP_SETTING"));
     assert_eq!(
         fs::read(&output).map_err(|e| e.to_string())?,
         b"existing output"
     );
     let (prepared, losses) = albumeasy::commented_test_source(&source)?;
     assert_eq!(losses.len(), 1);
-    assert_eq!(losses[0].name, "STAMP_FOOTER_TXT_PAD");
-    assert!(prepared.contains("# NATIVE-TODO: STAMP_FOOTER_TXT_PAD"));
+    assert_eq!(losses[0].name, "FUTURE_STAMP_SETTING");
+    assert!(prepared.contains("# NATIVE-TODO: FUTURE_STAMP_SETTING"));
     assert!(prepared.contains("STAMP_BOXES_SIZE_ADJUST (0)\n"));
     assert_eq!(albumeasy::render(&prepared, &fixture(), &output)?, 1);
     Ok(())
@@ -137,6 +200,10 @@ fn invalid_arguments_are_errors_not_silently_commented_commands() -> Result<(), 
         "ROW_START_FS (HN 8 -1 4)",
         "STAMP_BORDER_STYLE (DASH)",
         "ALBUM_PAGES_SIZE (215.9 279.4)",
+        "STAMP_FOOTER_TXT_ALIGN (INVALID)",
+        "STAMP_FOOTER_TXT_PAD (NaN)",
+        "STAMP_FOOTER_TXT_PAD (\"1\")",
+        "TEXT_LINE_LEADING (1)",
     ] {
         let input = format!("{source}\n{extra}\n");
         let (_, losses) = albumeasy::commented_test_source(&input)?;
@@ -144,6 +211,9 @@ fn invalid_arguments_are_errors_not_silently_commented_commands() -> Result<(), 
         let error = albumeasy::render(&input, &fixture(), &output).expect_err(extra);
         assert!(error.contains("Line "));
         assert!(!output.exists());
+        if extra == "TEXT_LINE_LEADING (1)" {
+            assert!(error.contains("Only TEXT_LINE_LEADING (0) is currently supported"));
+        }
     }
     assert!(albumeasy::commented_test_source("STAMP_ADD_IMG (\"unterminated)\n").is_err());
     Ok(())

@@ -1,0 +1,19 @@
+# Explicit native version-1 representation of heading and stamp-footer text.
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 8)
+ALBUM_PAGES_BORDER (0 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 150 2 1 3)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+NATIVE_STAMP_HEADING_PADDING (0)
+NATIVE_STAMP_FOOTER_TEXT_ALIGN (CENTRE)
+NATIVE_STAMP_FOOTER_TEXT_PAD (2)
+
+STAMP_IMAGE ("../../albumeasy/stamp-image-overloads-v1/assets/synthetic-asymmetric.png" 42 34 0.5)
+NATIVE_STAMP_HEADING (LOCAL HN 8 "NATIVE STAMP HEADING" 0 2 black)
+NATIVE_STAMP_FOOTER_TEXT (HN 8 black "Left anchor\nSecond line" "Centered\nShort" "Right anchor\nSecond line")

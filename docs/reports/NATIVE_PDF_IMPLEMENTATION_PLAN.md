@@ -196,8 +196,8 @@ is authorized by this checkpoint.
 
 ### Future native visual-fixture and print-review requirements
 
-**Next reference slice (#93): stamp headings, offsets and padding.**
-Branch `issue/93-stamp-headings` starts from pushed #92 commit `41cba21a`.
+**Completed reference and native slice (#93): stamp headings, offsets and padding.**
+Branch `issue/93-stamp-headings` started from pushed #92 commit `41cba21a`.
 The [AlbumEasy-only heading references](../../tests/fixtures/albumeasy/stamp-headings-v1/README.md)
 contain two complete two-page Letter albums, each with 12 real images.
 Unequal measured 40 x 26 / 50 x 40 mm stamps retain 6 mm total frame
@@ -217,6 +217,24 @@ compatibility input (`.txt` and raw-command `.stampalbum`) and explicit
 native derivatives with a dedicated heading regression suite. Imported
 parser and production routing remain out of scope. The two future ideas
 recorded below remain backlog only.
+
+**Current implementation slice (#94): stamp footer text alignment and padding.**
+Branch `issue/94-footer-text-alignment-padding` contains the accepted
+AlbumEasy reference pass and its standalone native implementation. The
+[reference fixture](../../tests/fixtures/albumeasy/stamp-footer-text-v1/README.md)
+records AlbumEasy PDFs and native compatibility-renderer proofs; the explicit
+native-format input and proof are in
+[stamp-footer-text-v1](../../tests/fixtures/native_pdf/stamp-footer-text-v1/).
+Coverage includes `ALIGN`, `CENTRE`, `CNR_CENTRE`, US aliases, signed padding,
+multiline captions, save/restore, `.txt`, raw-command `.stampalbum`, and an
+explicit `STAMPALBUM 1` footer attachment that coexists with a heading.
+`TEXT_LINE_LEADING (0)` is accepted as the default reset required by the
+reference examples; nonzero leading remains an explicit unsupported case.
+
+The implementation and proof generation are standalone. Do not route normal
+application imports through this renderer until the full required AlbumEasy
+stamp-command mapping is complete. Windows execution and actual-size print
+review are still outstanding.
 
 **Native checkpoint (#92): outer/inner border styles, CORNER and SIDES.**
 Branch `issue/92-stamp-border-styles` starts from pushed #91 commit `f5ef92bc`.

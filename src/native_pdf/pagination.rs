@@ -5,7 +5,8 @@ use super::{
     stamp_box::StampBoxGeometry,
     stamp_rows::{row_prefix_len, RowAlignment},
     stamp_text::{
-        fit_text_rows, height, position, PositionedStampText, StampTextItem, StampTextPolicy,
+        fit_text_rows, height, position, PositionedFooterText, PositionedStampText, StampTextItem,
+        StampTextPolicy,
     },
     text::MeasuredText,
     Result,
@@ -18,6 +19,7 @@ pub struct StampPageFragment {
     pub geometry: Option<StampBoxGeometry>,
     pub heading: Option<PositionedStampText>,
     pub caption: Option<PositionedStampText>,
+    pub footer_text: Option<PositionedFooterText>,
 }
 
 #[derive(Clone, Debug)]
@@ -220,6 +222,7 @@ fn paginate_pass(
                 geometry: Some(placed.geometry),
                 heading: placed.heading,
                 caption: placed.caption,
+                footer_text: None,
             });
         }
         align_fragments(
@@ -393,5 +396,6 @@ fn split_fragment(
         geometry,
         heading: position(heading_part, &item.heading, centre, content.top - pad_y),
         caption: position(caption_part, &item.caption, centre, caption_top),
+        footer_text: None,
     })
 }

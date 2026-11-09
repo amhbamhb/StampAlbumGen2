@@ -546,6 +546,7 @@ fn write_proof(
                         geometry: Some(item.geometry),
                         heading: item.heading.clone(),
                         caption: item.caption.clone(),
+                        footer_text: item.footer_text.clone(),
                     })
                     .collect(),
                 diagnostic_overlays: true,
@@ -851,6 +852,12 @@ fn save_pdf(
             for text in [item.heading.as_ref(), item.caption.as_ref()]
                 .into_iter()
                 .flatten()
+                .chain(
+                    item.footer_text
+                        .iter()
+                        .flat_map(|footer| [&footer.left, &footer.centre, &footer.right])
+                        .flatten(),
+                )
             {
                 draw_text_lines(
                     &mut page,
