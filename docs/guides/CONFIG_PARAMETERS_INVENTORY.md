@@ -26,6 +26,11 @@ overrides the root `color_album_border` value.
 | `[native_pdf.stamp_text].horizontal_padding_mm` | Native-only reserved space | Finite nonnegative per-side mm; footprint width = max(frame, text width) + twice padding; independent of physical clearance, page margins and row gaps |
 | `[native_pdf.stamp_text].vertical_padding_mm` | Native-only reserved space | Finite nonnegative per-edge mm; footprint includes measured heading/caption heights and gaps plus twice padding; applies to both modes |
 | `[native_pdf.stamp_text].text_gap_mm` | Native-only frame/text separation | Finite nonnegative mm between frame and each present text block; absent text adds no gap; template 3 mm |
+| `[native_pdf.stamp_image_side_labels].font_size_pt` | Native-only side-label font-size default | Positive finite point size used when the command omits its size; an explicit per-item command size overrides it; template 3.5 pt |
+| `[native_pdf.stamp_image_side_labels].wrap_width_mm` | Native-only side-label wrapping default | Per-side maximum line width; template 20 mm; explicit newlines preserved and longer text word-wraps |
+| `[native_pdf.stamp_image_side_labels].minimum_wrap_width_mm`, `.maximum_wrap_width_mm` | Native-only per-item override limits | Required finite positive mm with `minimum <= default <= maximum`; template range 5–40 mm |
+| `[native_pdf.stamp_image_side_labels].max_lines` | Native-only side-label line-count default | Positive integer; template 4 lines; all wrapped-line height is reserved, including when it exceeds frame height |
+| `[native_pdf.stamp_image_side_labels].minimum_max_lines`, `.maximum_max_lines` | Native-only per-item override limits | Positive integer range with `minimum <= default <= maximum`; template range 1–8 lines |
 | `album_page_width_mm`, `album_page_height_mm` | `ALBUM_PAGES_SIZE` | Both required, finite positive mm |
 | `page_left_margin_mm`, `page_right_margin_mm`, `page_top_margin_mm`, `page_bottom_margin_mm` | `ALBUM_PAGES_MARGINS` | All required, finite nonnegative mm |
 | `album_pages_spacing_h`, `album_pages_spacing_v` | `ALBUM_PAGES_SPACING` | Both required; within-page gaps, not between-sheet spacing |

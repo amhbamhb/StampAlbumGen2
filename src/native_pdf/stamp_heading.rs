@@ -106,6 +106,10 @@ pub struct HeadingRowItem<'a> {
     pub width_mm: f64,
     pub height_mm: f64,
     pub below_mm: f64,
+    pub left_overhang_mm: f64,
+    pub right_overhang_mm: f64,
+    pub top_overhang_mm: f64,
+    pub bottom_overhang_mm: f64,
     pub heading: Option<&'a StampHeading>,
 }
 
@@ -137,7 +141,10 @@ pub fn layout_row(
     if items.is_empty() || items.len() != lefts.len() {
         return Err("Heading row requires matching nonempty items and positions".into());
     }
-    let max_height = items.iter().map(|item| item.height_mm).fold(0.0, f64::max);
+    let max_height = items
+        .iter()
+        .map(|item| item.height_mm + item.top_overhang_mm + item.bottom_overhang_mm)
+        .fold(0.0, f64::max);
     let max_above = items
         .iter()
         .filter_map(|item| item.heading)
@@ -146,15 +153,33 @@ pub fn layout_row(
     let mut result = Vec::new();
     let mut bottom = top;
     for (item, &left) in items.iter().zip(lefts) {
-        for value in [item.width_mm, item.height_mm, item.below_mm, left, top] {
+        for value in [
+            item.width_mm,
+            item.height_mm,
+            item.below_mm,
+            item.left_overhang_mm,
+            item.right_overhang_mm,
+            item.top_overhang_mm,
+            item.bottom_overhang_mm,
+            left,
+            top,
+        ] {
             signed_mm(value, "Heading row geometry")?;
         }
-        if item.width_mm <= 0.0 || item.height_mm <= 0.0 || item.below_mm < 0.0 {
+        if item.width_mm <= 0.0
+            || item.height_mm <= 0.0
+            || item.below_mm < 0.0
+            || item.left_overhang_mm < 0.0
+            || item.right_overhang_mm < 0.0
+            || item.top_overhang_mm < 0.0
+            || item.bottom_overhang_mm < 0.0
+        {
             return Err(
                 "Heading row dimensions must be positive with nonnegative caption height".into(),
             );
         }
-        let shift = (max_height - item.height_mm) * alignment.factor();
+        let item_height = item.height_mm + item.top_overhang_mm + item.bottom_overhang_mm;
+        let shift = (max_height - item_height) * alignment.factor();
         let above = match item.heading {
             Some(heading) if heading.mode == HeadingMode::Local => heading.above_mm(),
             _ => max_above,
@@ -162,8 +187,8 @@ pub fn layout_row(
         let frame = Bounds {
             left,
             right: left + item.width_mm,
-            top: top - above - shift,
-            bottom: top - above - shift - item.height_mm,
+            top: top - above - shift - item.top_overhang_mm,
+            bottom: top - above - shift - item.top_overhang_mm - item.height_mm,
         };
         let heading = item.heading.map(|heading| {
             let measured = heading.measured.clone();
@@ -209,7 +234,10 @@ pub fn layout_row(
             }
         });
         frame.inset(0.0, 0.0)?;
-        if frame.left < content.left || frame.right > content.right || frame.top > content.top {
+        if frame.left - item.left_overhang_mm < content.left
+            || frame.right + item.right_overhang_mm > content.right
+            || frame.top + item.top_overhang_mm > content.top
+        {
             return Err("Heading/frame row exceeds usable page bounds".into());
         }
         if let Some(text) = &heading {
@@ -222,7 +250,7 @@ pub fn layout_row(
             }
             bottom = bottom.min(text.bounds.bottom);
         }
-        bottom = bottom.min(frame.bottom - item.below_mm);
+        bottom = bottom.min(frame.bottom - item.bottom_overhang_mm - item.below_mm);
         result.push(HeadingPlacement { frame, heading });
     }
     if !bottom.is_finite() || bottom < content.bottom {
@@ -292,43 +320,98 @@ pub fn paginate_native(
                         .transpose()
                 })
                 .collect::<Result<Vec<_>>>()?;
-            let (_, pad_y) = policy.padding();
+            let side_overhangs = items[start..end]
+                .iter()
+                .map(|item| {
+                    let measure =
+                        |label: Option<&super::stamp_image::StampSideLabelSettings>| -> Result<_> {
+                            label
+                                .map(|label| {
+                                    let size_pt = label.size_pt.ok_or(
+                                        "native side-label font size was not resolved from TOML",
+                                    )?;
+                                    MeasuredText::new(&label.font, size_pt, &label.text).map(
+                                        |text| {
+                                            let width = text
+                                                .lines
+                                                .iter()
+                                                .map(|line| line.width_mm)
+                                                .fold(0.0, f64::max);
+                                            let height = stamp_text::height(&text);
+                                            (width, height)
+                                        },
+                                    )
+                                })
+                                .transpose()
+                        };
+                    let left =
+                        measure(item.labels.as_ref().and_then(|labels| labels.left.as_ref()))?;
+                    let right = measure(
+                        item.labels
+                            .as_ref()
+                            .and_then(|labels| labels.right.as_ref()),
+                    )?;
+                    let frame = item.stamp.geometry.frame_bounds();
+                    let frame_height = frame.top - frame.bottom;
+                    let label_height = left
+                        .map(|(_, height)| height)
+                        .into_iter()
+                        .chain(right.map(|(_, height)| height))
+                        .fold(frame_height, f64::max);
+                    let vertical_overhang = ((label_height - frame_height) / 2.0).max(0.0);
+                    Ok::<_, String>((
+                        left.map_or(0.0, |(width, _)| {
+                            width + super::stamp_image::STAMP_IMAGE_LABEL_GAP_MM
+                        }),
+                        right.map_or(0.0, |(width, _)| {
+                            width + super::stamp_image::STAMP_IMAGE_LABEL_GAP_MM
+                        }),
+                        vertical_overhang,
+                        vertical_overhang,
+                    ))
+                })
+                .collect::<Result<Vec<_>>>()?;
+            let (pad_x, pad_y) = policy.padding();
             let row_items = items[start..end]
                 .iter()
                 .zip(metadata)
-                .zip(measured.iter().zip(&measured_footer))
-                .map(|((item, metadata), ((_, caption, _, _), footer))| {
-                    let frame = item.stamp.geometry.frame_bounds();
-                    let caption_below = caption
-                        .as_ref()
-                        .map_or(0.0, |text| stamp_text::height(text) + policy.gap());
-                    let footer_below = metadata
-                        .footer_text
-                        .as_ref()
-                        .zip(footer.as_ref())
-                        .map_or(0.0, |(settings, measured)| {
-                            settings.below_mm(measured, policy.gap())
-                        });
-                    HeadingRowItem {
-                        width_mm: frame.right - frame.left,
-                        height_mm: frame.top - frame.bottom,
-                        below_mm: caption_below.max(footer_below) + pad_y,
-                        heading: metadata.heading.as_ref(),
-                    }
-                })
+                .zip(measured.iter().zip(&measured_footer).zip(&side_overhangs))
+                .map(
+                    |((item, metadata), ((measurement, footer), &side_overhangs))| {
+                        let (side_left, side_right, side_top, side_bottom) = side_overhangs;
+                        let frame = item.stamp.geometry.frame_bounds();
+                        let frame_width = frame.right - frame.left;
+                        let caption_below = measurement
+                            .1
+                            .as_ref()
+                            .map_or(0.0, |text| stamp_text::height(text) + policy.gap());
+                        let footer_below = metadata
+                            .footer_text
+                            .as_ref()
+                            .zip(footer.as_ref())
+                            .map_or(0.0, |(settings, measured)| {
+                                settings.below_mm(measured, policy.gap())
+                            });
+                        let text_overhang = ((measurement.2 - frame_width) / 2.0).max(0.0);
+                        let footer_overhang = footer
+                            .as_ref()
+                            .map_or(0.0, |text| (text.width() + pad_x - frame_width).max(0.0));
+                        HeadingRowItem {
+                            width_mm: frame_width,
+                            height_mm: frame.top - frame.bottom,
+                            below_mm: caption_below.max(footer_below) + pad_y,
+                            left_overhang_mm: side_left.max(text_overhang).max(footer_overhang),
+                            right_overhang_mm: side_right.max(text_overhang).max(footer_overhang),
+                            top_overhang_mm: side_top,
+                            bottom_overhang_mm: side_bottom,
+                            heading: metadata.heading.as_ref(),
+                        }
+                    },
+                )
                 .collect::<Vec<_>>();
-            let (pad_x, _) = policy.padding();
-            let widths = measured
+            let widths = row_items
                 .iter()
-                .zip(&measured_footer)
-                .zip(&row_items)
-                .map(|((m, footer), row_item)| {
-                    let footer_width = footer.as_ref().map_or(0.0, |text| text.width());
-                    m.2.max(
-                        row_item.width_mm
-                            + 2.0 * (footer_width + pad_x - row_item.width_mm).max(0.0),
-                    )
-                })
+                .map(|item| item.width_mm + item.left_overhang_mm + item.right_overhang_mm)
                 .collect::<Vec<_>>();
             let place = |page: &StampItemPage, top: f64| -> Result<HeadingRowLayout> {
                 let content = page.layout.content_bounds;
@@ -340,8 +423,7 @@ pub fn paginate_native(
                 let lefts = footprint_lefts
                     .iter()
                     .zip(&row_items)
-                    .zip(&widths)
-                    .map(|((&left, item), &width)| left + (width - item.width_mm) / 2.0)
+                    .map(|(&left, item)| left + item.left_overhang_mm)
                     .collect::<Vec<_>>();
                 layout_row(
                     content,
@@ -371,11 +453,12 @@ pub fn paginate_native(
             };
             for (offset, placed) in layout.items.into_iter().enumerate() {
                 let item = &items[start + offset];
+                let side_bottom = row_items[offset].bottom_overhang_mm;
                 let caption = stamp_text::position(
                     measured[offset].1.clone(),
                     &item.stamp.caption,
                     (placed.frame.left + placed.frame.right) / 2.0,
-                    placed.frame.bottom - policy.gap(),
+                    placed.frame.bottom - side_bottom - policy.gap(),
                 );
                 let footer_text = match (
                     metadata[offset].footer_text.as_ref(),
@@ -385,7 +468,7 @@ pub fn paginate_native(
                         measured,
                         placed.frame,
                         stamp_text::footer_caption_top(
-                            placed.frame.bottom,
+                            placed.frame.bottom - side_bottom,
                             policy.gap(),
                             footer.padding_mm,
                         )?,
@@ -399,14 +482,17 @@ pub fn paginate_native(
                 let mut footprint = Bounds {
                     left: placed.frame.left,
                     right: placed.frame.right,
-                    top: placed
-                        .heading
-                        .as_ref()
-                        .map_or(placed.frame.top, |text| text.bounds.top),
+                    top: placed.heading.as_ref().map_or(
+                        placed.frame.top + row_items[offset].top_overhang_mm,
+                        |text| text.bounds.top,
+                    ),
                     bottom: caption
                         .as_ref()
-                        .map_or(placed.frame.bottom, |text| text.bounds.bottom),
+                        .map_or(placed.frame.bottom - side_bottom, |text| text.bounds.bottom),
                 };
+                let (side_left, side_right, _, _) = side_overhangs[offset];
+                footprint.left -= side_left;
+                footprint.right += side_right;
                 for text in footer_text.iter() {
                     let bounds = text.bounds(placed.frame);
                     footprint.left = footprint.left.min(bounds.left);

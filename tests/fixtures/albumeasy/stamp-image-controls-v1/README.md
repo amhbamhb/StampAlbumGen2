@@ -46,16 +46,23 @@ The seven stamp frames cover:
 - Millimetre padding.
 - Percentage padding with omitted optional arguments.
 - Small-image stretch off/on using the same reduced real-stamp image.
-- Native-only, small-font labels above and below the small no-stretch image.
+- Native-only, small-font labels above and below, plus left and right of the
+  small no-stretch image.
 - Aspect-ratio preservation and grayscale.
 - Hide/show and grayscale reset behavior.
 
 The native `.stampalbum` adds `SG 1137b` in the open space above and below the
-small/no-stretch image. The labels are inside the frame and do not cover the
-stamp image or replace the descriptive caption below the frame. This behavior
-is native-only; the AlbumEasy reference input and PDF remain unchanged. The
-native small/no-stretch image uses a 0.3 mm-per-pixel scale to leave readable
-space around the two labels while retaining the no-stretch behavior.
+small/no-stretch image, and outside both vertical sides of its frame. The
+above/below labels are inside the frame; side labels are vertically centered,
+remain 1 mm clear of the frame, and are included in row and page-bound checks.
+The side-label proof uses longer description-style text to exercise automatic
+wrapping and per-item width/line overrides. When a wrapped label is taller than
+the frame, the row reserves its full height and following rows move down.
+None of the labels cover the stamp image or replace the descriptive caption
+below the frame. This behavior is native-only; the AlbumEasy reference input
+and PDF remain unchanged. The native small/no-stretch image uses a
+0.3 mm-per-pixel scale to leave readable space around the existing
+above/below labels while retaining the no-stretch behavior.
 
 The native command is attached immediately after its `STAMP_IMAGE`:
 
@@ -67,6 +74,30 @@ Its arguments are font, point size, colour, above-image text and below-image
 text. Leave either quoted string empty to omit that side. Labels are centered
 in the available whitespace with at least 1 mm clearance from the image.
 Rendering fails if they cannot fit while preserving that clearance.
+
+The side-label command can follow `STAMP_IMAGE` or the above/below label
+command:
+
+```text
+NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 3.5 black 18 4 "SG 1137b - Description text demonstrates wrapping beside the frame." "SG 1137b - Colour, issue type, and emission notes fit in wrapped lines.")
+```
+
+The command takes font, an optional point-size override, colour, optional
+per-item wrap width and maximum line count, then left-side and right-side text.
+Omit the size to use `font_size_pt` from `[native_pdf.stamp_image_side_labels]`
+in the supplied TOML file; an explicit size overrides that default. The older
+five-argument form omits per-item width/line values and uses the configured
+wrap defaults. Leave either quoted string empty to omit that side. Width and
+line overrides must stay within the TOML-configured ranges. Side labels sit
+outside the frame, vertically centered, with at least 1 mm clearance. Their
+complete wrapped footprint moves neighboring items/rows; rendering fails if
+configured limits or page bounds cannot be satisfied.
+
+This fixture omits the per-item size and uses the configured 3.5 pt default:
+
+```text
+NATIVE_STAMP_IMAGE_SIDE_LABEL (HN black 18 4 "SG 1137b - Description text demonstrates wrapping beside the frame." "SG 1137b - Colour, issue type, and emission notes fit in wrapped lines.")
+```
 
 The reduced `us-152-small.png` (50 x 55 pixels, 72 dpi) is derived at the
 original image's aspect ratio from the genuine record-152 stamp image solely
@@ -128,7 +159,8 @@ Render the native pass directly from the repository root:
 ```sh
 cargo run --example render_stampalbum -- \
   tests/fixtures/albumeasy/stamp-image-controls-v1/album.stampalbum \
-  tests/fixtures/albumeasy/stamp-image-controls-v1/album-native.pdf
+  tests/fixtures/albumeasy/stamp-image-controls-v1/album-native.pdf \
+  config_template.toml
 ```
 
 The native renderer produced one US Letter page with seven frames and six
@@ -190,8 +222,11 @@ for the shared test commands and failure inventory.
 - AlbumEasy PDF: one US Letter page; screen-level layout/control inspection
   complete; actual-size print review pending.
 - Native `.stampalbum` and PDF: rendered directly; one US Letter page;
-  screen-level comparison complete; acceptance and actual-size print review
-  pending.
+  screen-level comparison complete, including the updated wrapped side labels;
+  maintainer acceptance and actual-size print review pending. The native
+  library and seven affected integration suites passed 150 tests (0 failed, 4
+  ignored); the saved native PDF, preview and text extract were regenerated
+  with `config_template.toml`.
 - TXT and raw-command `.stampalbum` native PDFs: standalone paths pass;
   matching native raster/text verified; human acceptance and print review
   pending. These were created only after the reference first pass was accepted.

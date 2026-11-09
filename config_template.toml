@@ -1359,3 +1359,22 @@ vertical_padding_mm = 0.0
 # pagination and production text-aware row integration are not implemented yet.
 # Finite nonnegative mm. A zero gap permits touching, not overlapping.
 text_gap_mm = 3.0
+
+# Native-only side labels beside stamp frames; these settings are used only by
+# NATIVE_STAMP_IMAGE_SIDE_LABEL and are not AlbumEasy TXT settings.
+# The command uses these TOML values unless it supplies per-item size, width,
+# or line overrides. Keep the stamp/frame physical size unchanged; wrapped label
+# footprints move neighboring stamps and rows. A page-boundary conflict fails.
+[native_pdf.stamp_image_side_labels]
+# Default font size in points; per-item command sizes override this value.
+font_size_pt = 3.5
+# Default maximum width of each wrapped side label, in mm.
+wrap_width_mm = 20.0
+# Allowed lower/upper wrap width for per-item overrides, in mm.
+minimum_wrap_width_mm = 5.0
+maximum_wrap_width_mm = 40.0
+# Default maximum wrapped lines per side label.
+max_lines = 4
+# Allowed lower/upper maximum-line count for per-item overrides.
+minimum_max_lines = 1
+maximum_max_lines = 8

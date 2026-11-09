@@ -291,6 +291,10 @@ fn flush(
                 height_mm: item.height,
                 heading: item.heading.as_ref(),
                 below_mm: caption_below,
+                left_overhang_mm: 0.0,
+                right_overhang_mm: 0.0,
+                top_overhang_mm: 0.0,
+                bottom_overhang_mm: 0.0,
             }
         })
         .collect::<Vec<_>>();

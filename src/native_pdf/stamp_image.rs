@@ -11,7 +11,7 @@ use super::{
 use oxidize_pdf::Image;
 use std::path::PathBuf;
 
-const STAMP_IMAGE_LABEL_GAP_MM: f64 = 1.0;
+pub(super) const STAMP_IMAGE_LABEL_GAP_MM: f64 = 1.0;
 
 /// Image input for a complete text/frame row item; physical size comes from the stamp.
 #[derive(Clone, Debug)]
@@ -56,10 +56,14 @@ pub struct StampImageOptions {
     pub visible: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct StampImageLabels {
     pub above: Option<StampTextSettings>,
     pub below: Option<StampTextSettings>,
+    pub left: Option<StampSideLabelSettings>,
+    pub right: Option<StampSideLabelSettings>,
+    pub wrap_width_mm: Option<f64>,
+    pub max_lines: Option<usize>,
 }
 
 #[derive(Clone, Debug)]
@@ -88,6 +92,30 @@ pub struct StampTextSettings {
     pub font: String,
     pub size_pt: f64,
     pub colour: NamedColour,
+}
+
+#[derive(Clone, Debug)]
+pub struct StampSideLabelSettings {
+    pub text: String,
+    pub font: String,
+    pub size_pt: Option<f64>,
+    pub colour: NamedColour,
+}
+
+impl StampSideLabelSettings {
+    pub fn new(
+        text: impl Into<String>,
+        font: impl Into<String>,
+        size_pt: Option<f64>,
+        colour: NamedColour,
+    ) -> Self {
+        Self {
+            text: text.into(),
+            font: font.into(),
+            size_pt,
+            colour,
+        }
+    }
 }
 
 impl StampTextSettings {
@@ -364,7 +392,17 @@ impl StampImageSettings {
                         )
                     })
                     .transpose()?;
-                Ok::<_, String>([above, below].into_iter().flatten().collect())
+                let left = labels
+                    .left
+                    .as_ref()
+                    .map(|text| position_side_image_label(text, self.box_bounds, page, true))
+                    .transpose()?;
+                let right = labels
+                    .right
+                    .as_ref()
+                    .map(|text| position_side_image_label(text, self.box_bounds, page, false))
+                    .transpose()?;
+                Ok::<_, String>([above, below, left, right].into_iter().flatten().collect())
             })
             .transpose()?
             .unwrap_or_default();
@@ -512,6 +550,63 @@ fn position_image_label(
     };
     if !contains(slot, bounds) || !contains(page.content_bounds, bounds) {
         return Err("native_pdf.stamp_image label exceeds its available frame area".into());
+    }
+    Ok(PreparedStampText {
+        font: text.font,
+        size_pt: text.size_pt,
+        colour: settings.colour,
+        lines,
+    })
+}
+
+fn position_side_image_label(
+    settings: &StampSideLabelSettings,
+    frame: Bounds,
+    page: &PageLayout,
+    left_side: bool,
+) -> Result<PreparedStampText> {
+    let size_pt = settings
+        .size_pt
+        .ok_or("native_pdf.stamp_image side-label font size was not resolved from TOML")?;
+    let text = MeasuredText::new(&settings.font, size_pt, &settings.text)
+        .map_err(|error| format!("native_pdf.stamp_image side label: {error}"))?;
+    let width_mm = text
+        .lines
+        .iter()
+        .map(|line| line.width_mm)
+        .fold(0.0, f64::max);
+    let height_mm =
+        text.ascent_mm + text.descent_mm + (text.lines.len() - 1) as f64 * text.line_advance_mm;
+    let frame_height = frame.top - frame.bottom;
+    let anchor = if left_side {
+        frame.left - STAMP_IMAGE_LABEL_GAP_MM
+    } else {
+        frame.right + STAMP_IMAGE_LABEL_GAP_MM
+    };
+    let top = frame.top - (frame_height - height_mm) / 2.0;
+    let lines: Vec<_> = text
+        .lines
+        .iter()
+        .enumerate()
+        .map(|(index, line)| PositionedTextLine {
+            text: line.text.clone(),
+            left_mm: if left_side {
+                anchor - line.width_mm
+            } else {
+                anchor
+            },
+            baseline_mm: top - text.ascent_mm - index as f64 * text.line_advance_mm,
+            width_mm: line.width_mm,
+        })
+        .collect();
+    let bounds = Bounds {
+        left: if left_side { anchor - width_mm } else { anchor },
+        right: if left_side { anchor } else { anchor + width_mm },
+        top,
+        bottom: top - height_mm,
+    };
+    if !contains(page.content_bounds, bounds) {
+        return Err("native_pdf.stamp_image side label exceeds page content bounds".into());
     }
     Ok(PreparedStampText {
         font: text.font,
@@ -781,6 +876,9 @@ mod tests {
                     4.0,
                     NamedColour::parse("black")?,
                 )),
+                left: None,
+                right: None,
+                ..StampImageLabels::default()
             }),
         };
 
@@ -842,6 +940,9 @@ mod tests {
                     NamedColour::parse("black")?,
                 )),
                 below: None,
+                left: None,
+                right: None,
+                ..StampImageLabels::default()
             }),
         };
 
@@ -850,6 +951,112 @@ mod tests {
             .err()
             .ok_or("label overlapped a full-frame image")?;
         assert!(error.contains("does not fit in the whitespace beside the image"));
+        Ok(())
+    }
+
+    #[test]
+    fn side_image_labels_are_centered_outside_the_frame() -> Result<()> {
+        let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let path = temporary.path().join("stamp.png");
+        image::RgbImage::from_pixel(100, 50, image::Rgb([40, 80, 120]))
+            .save(&path)
+            .map_err(|error| error.to_string())?;
+        let frame = Bounds {
+            left: 80.0,
+            bottom: 100.0,
+            right: 130.0,
+            top: 140.0,
+        };
+        let settings = StampImageSettings {
+            image_path: path,
+            box_bounds: frame,
+            image_scale_pt_per_pixel: mm_to_points(0.1),
+            options: StampImageOptions::default(),
+            image_padding_horizontal_mm: 0.0,
+            image_padding_vertical_mm: 0.0,
+            text_gap_mm: 0.0,
+            heading: None,
+            caption: None,
+            labels: Some(StampImageLabels {
+                above: None,
+                below: None,
+                left: Some(StampSideLabelSettings::new(
+                    "SG 1137b",
+                    "HN",
+                    Some(4.0),
+                    NamedColour::parse("black")?,
+                )),
+                right: Some(StampSideLabelSettings::new(
+                    "SG 1137b",
+                    "HN",
+                    Some(4.0),
+                    NamedColour::parse("black")?,
+                )),
+                ..StampImageLabels::default()
+            }),
+        };
+
+        let prepared = settings.prepare(&page_layout()?)?;
+        assert_eq!(prepared.labels.len(), 2);
+        let text = MeasuredText::new("HN", 4.0, "SG 1137b")?;
+        let left = &prepared.labels[0].lines[0];
+        let right = &prepared.labels[1].lines[0];
+        assert!(
+            (left.left_mm + left.width_mm + STAMP_IMAGE_LABEL_GAP_MM - frame.left).abs() < 0.001
+        );
+        assert!((right.left_mm - frame.right - STAMP_IMAGE_LABEL_GAP_MM).abs() < 0.001);
+        for label in &prepared.labels {
+            let baseline = label.lines[0].baseline_mm;
+            assert!(
+                (baseline
+                    - text.descent_mm
+                    - frame.bottom
+                    - (frame.top - frame.bottom - text.ascent_mm - text.descent_mm) / 2.0)
+                    .abs()
+                    < 0.001
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn side_image_label_fails_when_it_exceeds_page_content() -> Result<()> {
+        let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+        let path = temporary.path().join("stamp.png");
+        image::RgbImage::from_pixel(100, 50, image::Rgb([40, 80, 120]))
+            .save(&path)
+            .map_err(|error| error.to_string())?;
+        let settings = StampImageSettings {
+            image_path: path,
+            box_bounds: Bounds {
+                left: 20.0,
+                bottom: 100.0,
+                right: 70.0,
+                top: 140.0,
+            },
+            image_scale_pt_per_pixel: mm_to_points(0.1),
+            options: StampImageOptions::default(),
+            image_padding_horizontal_mm: 0.0,
+            image_padding_vertical_mm: 0.0,
+            text_gap_mm: 0.0,
+            heading: None,
+            caption: None,
+            labels: Some(StampImageLabels {
+                left: Some(StampSideLabelSettings::new(
+                    "SG 1137b",
+                    "HN",
+                    Some(4.0),
+                    NamedColour::parse("black")?,
+                )),
+                ..StampImageLabels::default()
+            }),
+        };
+
+        let error = settings
+            .prepare(&page_layout()?)
+            .err()
+            .ok_or("side label outside the page content was accepted")?;
+        assert!(error.contains("side label exceeds page content bounds"));
         Ok(())
     }
 }

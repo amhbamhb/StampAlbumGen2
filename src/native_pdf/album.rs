@@ -27,7 +27,8 @@ use super::{
     stamp_heading::{self, HeadingMode, NativeHeadingItem, StampHeading, VerticalAlignment},
     stamp_image::{
         ImageAspectRatio, ImagePaddingUnit, NativePageBackgroundImage, StampFrameStyle,
-        StampImageLabels, StampImageOptions, StampImageRowItem, StampTextSettings,
+        StampImageLabels, StampImageOptions, StampImageRowItem, StampSideLabelSettings,
+        StampTextSettings,
     },
     stamp_inner_border::{InnerBorderStyle, StampInnerBorder},
     stamp_rows::RowAlignment,
@@ -735,7 +736,10 @@ impl NativeAlbum {
                             "{name} requires font, size, colour, and quoted above/below text"
                         )));
                     }
-                    if previous_command != "STAMP_IMAGE" {
+                    if !matches!(
+                        previous_command.as_str(),
+                        "STAMP_IMAGE" | "NATIVE_STAMP_IMAGE_SIDE_LABEL"
+                    ) {
                         return Err(fail(format!("{name} must immediately follow STAMP_IMAGE")));
                     }
                     if args[0].quoted || args[2].quoted {
@@ -764,10 +768,103 @@ impl NativeAlbum {
                     let labels = image_specs
                         .last_mut()
                         .ok_or_else(|| fail("Image label has no preceding stamp".into()))?;
-                    if labels.6.is_some() {
+                    if labels
+                        .6
+                        .as_ref()
+                        .is_some_and(|labels| labels.above.is_some() || labels.below.is_some())
+                    {
                         return Err(fail(format!("{name} may be attached only once per stamp")));
                     }
-                    labels.6 = Some(StampImageLabels { above, below });
+                    let labels = labels.6.get_or_insert_with(StampImageLabels::default);
+                    labels.above = above;
+                    labels.below = below;
+                }
+                "NATIVE_STAMP_IMAGE_SIDE_LABEL" => {
+                    if !matches!(args.len(), 4..=7) {
+                        return Err(fail(format!(
+                            "{name} requires font, optional size, colour, optional wrap width and maximum lines, and quoted left/right text"
+                        )));
+                    }
+                    if !matches!(
+                        previous_command.as_str(),
+                        "STAMP_IMAGE" | "NATIVE_STAMP_IMAGE_LABEL"
+                    ) {
+                        return Err(fail(format!(
+                            "{name} must immediately follow STAMP_IMAGE or NATIVE_STAMP_IMAGE_LABEL"
+                        )));
+                    }
+                    let has_size = matches!(args.len(), 5 | 7);
+                    let has_wrap_settings = matches!(args.len(), 6 | 7);
+                    let colour_index = if has_size { 2 } else { 1 };
+                    if args[0].quoted || args[colour_index].quoted {
+                        return Err(fail(format!("{name} font and colour must be unquoted")));
+                    }
+                    let (wrap_width_mm, max_lines, left_index, right_index) = if has_wrap_settings {
+                        let width_index = colour_index + 1;
+                        let lines_index = colour_index + 2;
+                        let width =
+                            number(&args[width_index], &name, width_index + 1).map_err(&fail)?;
+                        let lines =
+                            integer(&args[lines_index], &name, lines_index + 1).map_err(&fail)?;
+                        if width <= 0.0 || lines <= 0 {
+                            return Err(fail(format!(
+                                "{name} wrap width and maximum lines must be positive"
+                            )));
+                        }
+                        (
+                            Some(width),
+                            Some(usize::try_from(lines).map_err(|_| {
+                                fail(format!("{name} maximum lines is out of range"))
+                            })?),
+                            lines_index + 1,
+                            lines_index + 2,
+                        )
+                    } else {
+                        (None, None, colour_index + 1, colour_index + 2)
+                    };
+                    if !args[left_index].quoted || !args[right_index].quoted {
+                        return Err(fail(format!("{name} left and right text must be quoted")));
+                    }
+                    let font = args[0].value.clone();
+                    let size = if has_size {
+                        Some(number(&args[1], &name, 2).map_err(&fail)?)
+                    } else {
+                        None
+                    };
+                    let colour = NamedColour::parse(&args[colour_index].value).map_err(&fail)?;
+                    let make_text = |argument: &Argument| -> Result<_> {
+                        let text = quoted_text(argument, &name)?;
+                        if text.trim().is_empty() {
+                            Ok(None)
+                        } else {
+                            if let Some(size) = size {
+                                MeasuredText::new(&font, size, &text)?;
+                            }
+                            Ok(Some(StampSideLabelSettings::new(text, &font, size, colour)))
+                        }
+                    };
+                    let left = make_text(&args[left_index]).map_err(&fail)?;
+                    let right = make_text(&args[right_index]).map_err(&fail)?;
+                    if left.is_none() && right.is_none() {
+                        return Err(fail(format!(
+                            "{name} requires at least one visible side label"
+                        )));
+                    }
+                    let labels = image_specs
+                        .last_mut()
+                        .ok_or_else(|| fail("Side label has no preceding stamp".into()))?;
+                    if labels
+                        .6
+                        .as_ref()
+                        .is_some_and(|labels| labels.left.is_some() || labels.right.is_some())
+                    {
+                        return Err(fail(format!("{name} may be attached only once per stamp")));
+                    }
+                    let labels = labels.6.get_or_insert_with(StampImageLabels::default);
+                    labels.left = left;
+                    labels.right = right;
+                    labels.wrap_width_mm = wrap_width_mm;
+                    labels.max_lines = max_lines;
                 }
                 "STAMP_IMAGE" => {
                     if !matches!(args.len(), 4 | 7) {
@@ -919,21 +1016,26 @@ impl NativeAlbum {
 
     /// Generates a native PDF directly without launching AlbumEasy or exporting TXT.
     pub fn write_pdf(&self, output: &Path) -> Result<Vec<StampItemPage>> {
-        self.write_pdf_with_numbering(None, output)
+        self.write_pdf_with_numbering(None, None, output)
     }
 
-    /// Generates a native PDF using the explicitly supplied TOML numbering policy.
+    /// Generates a native PDF using explicitly supplied TOML layout policies.
     pub fn write_pdf_with_config(
         &self,
         config: &NativePdfConfig,
         output: &Path,
     ) -> Result<Vec<StampItemPage>> {
-        self.write_pdf_with_numbering(config.footer_numbering, output)
+        self.write_pdf_with_numbering(
+            config.footer_numbering,
+            config.stamp_image_side_labels,
+            output,
+        )
     }
 
     fn write_pdf_with_numbering(
         &self,
         numbering: Option<NativeFooterNumberingConfig>,
+        side_label_config: Option<super::config::StampImageSideLabelConfig>,
         output: &Path,
     ) -> Result<Vec<StampItemPage>> {
         let numbering = numbering.filter(|policy| policy.enabled);
@@ -951,6 +1053,59 @@ impl NativeAlbum {
             );
         }
 
+        let mut items = self.items.clone();
+        for (index, item) in items.iter_mut().enumerate() {
+            let Some(labels) = item.labels.as_mut() else {
+                continue;
+            };
+            if labels.left.is_none() && labels.right.is_none() {
+                continue;
+            }
+            let config = side_label_config.ok_or(
+                "NATIVE_STAMP_IMAGE_SIDE_LABEL requires native_pdf.stamp_image_side_labels in the supplied TOML config",
+            )?;
+            let (wrap_width_mm, max_lines) =
+                config.resolve(labels.wrap_width_mm, labels.max_lines)?;
+            for (side, label) in [
+                ("left", labels.left.as_mut()),
+                ("right", labels.right.as_mut()),
+            ] {
+                let Some(label) = label else {
+                    continue;
+                };
+                let size_pt = config.resolve_font_size(label.size_pt)?;
+                label.size_pt = Some(size_pt);
+                let measured =
+                    MeasuredText::new(&label.font, size_pt, &label.text).map_err(|error| {
+                        format!(
+                            "Side label for native stamp {} ({side}): {error}",
+                            index + 1
+                        )
+                    })?;
+                let wrapped = measured.wrapped_to_width(wrap_width_mm).map_err(|error| {
+                    format!(
+                        "Side label for native stamp {} ({side}): {error}",
+                        index + 1
+                    )
+                })?;
+                if wrapped.lines.len() > max_lines {
+                    return Err(format!(
+                        "Side label for native stamp {} ({side}) uses {} lines; configured limit is {max_lines}",
+                        index + 1,
+                        wrapped.lines.len()
+                    ));
+                }
+                label.text = wrapped
+                    .lines
+                    .iter()
+                    .map(|line| line.text.as_str())
+                    .collect::<Vec<_>>()
+                    .join("\n");
+            }
+            labels.wrap_width_mm = Some(wrap_width_mm);
+            labels.max_lines = Some(max_lines);
+        }
+
         let mut page_settings = self.page_settings.clone();
         if numbering.is_some() {
             page_settings.enable_native_numbering_tokens();
@@ -959,10 +1114,14 @@ impl NativeAlbum {
             item.heading.is_some()
                 || item.footer_text.is_some()
                 || item.vertical != VerticalAlignment::Top
+        }) || items.iter().any(|item| {
+            item.labels
+                .as_ref()
+                .is_some_and(|labels| labels.left.is_some() || labels.right.is_some())
         }) {
             stamp_heading::paginate_native(
                 &page_settings,
-                &self.items,
+                &items,
                 &self.headings,
                 &self.sections,
                 &self.stamp_text_policy,
@@ -991,7 +1150,7 @@ impl NativeAlbum {
         }
         renderer::write_native_heading_album_pdf(
             &page_settings,
-            &self.items,
+            &items,
             pages,
             (self.frame_width_mm, self.frame_colour),
             self.page_background.as_ref(),

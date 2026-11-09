@@ -24,6 +24,7 @@ use super::{
     proof::GeometryProofSettings,
     stamp_text::{ExpandedWidthLimit, StampTextPolicy, TextWidthPolicy},
     text::TextPosition,
+    units::mm_to_points,
     Result,
 };
 use std::{fs, path::Path};
@@ -50,6 +51,7 @@ pub struct NativePdfConfig {
     pub page_settings: PageSettings,
     pub proof: GeometryProofSettings,
     pub stamp_text: Option<StampTextPolicy>,
+    pub stamp_image_side_labels: Option<StampImageSideLabelConfig>,
     pub footer_numbering: Option<NativeFooterNumberingConfig>,
     pub unapplied_keys: Vec<String>,
     pub overridden_keys: Vec<String>,
@@ -66,6 +68,103 @@ pub struct NativeFooterNumberingConfig {
     pub enabled: bool,
     pub scope: NativePageNumberingScope,
     pub section_start: Option<i32>,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct StampImageSideLabelConfig {
+    pub default_font_size_pt: f64,
+    pub default_wrap_width_mm: f64,
+    pub minimum_wrap_width_mm: f64,
+    pub maximum_wrap_width_mm: f64,
+    pub default_max_lines: usize,
+    pub minimum_max_lines: usize,
+    pub maximum_max_lines: usize,
+}
+
+impl StampImageSideLabelConfig {
+    fn new(
+        default_font_size_pt: f64,
+        default_wrap_width_mm: f64,
+        minimum_wrap_width_mm: f64,
+        maximum_wrap_width_mm: f64,
+        default_max_lines: usize,
+        minimum_max_lines: usize,
+        maximum_max_lines: usize,
+    ) -> Result<Self> {
+        if !default_font_size_pt.is_finite() || default_font_size_pt <= 0.0 {
+            return Err(
+                "native_pdf.stamp_image_side_labels.font_size_pt must be finite and positive"
+                    .into(),
+            );
+        }
+        if ![
+            default_wrap_width_mm,
+            minimum_wrap_width_mm,
+            maximum_wrap_width_mm,
+        ]
+        .iter()
+        .all(|value| value.is_finite() && *value > 0.0 && mm_to_points(*value).is_finite())
+            || minimum_wrap_width_mm > default_wrap_width_mm
+            || default_wrap_width_mm > maximum_wrap_width_mm
+        {
+            return Err(
+                "native_pdf.stamp_image_side_labels wrap widths must satisfy 0 < minimum <= default <= maximum"
+                    .into(),
+            );
+        }
+        if minimum_max_lines == 0
+            || minimum_max_lines > default_max_lines
+            || default_max_lines > maximum_max_lines
+        {
+            return Err(
+                "native_pdf.stamp_image_side_labels line limits must satisfy 1 <= minimum <= default <= maximum"
+                    .into(),
+            );
+        }
+        Ok(Self {
+            default_font_size_pt,
+            default_wrap_width_mm,
+            minimum_wrap_width_mm,
+            maximum_wrap_width_mm,
+            default_max_lines,
+            minimum_max_lines,
+            maximum_max_lines,
+        })
+    }
+
+    pub fn resolve_font_size(self, size_pt: Option<f64>) -> Result<f64> {
+        let size = size_pt.unwrap_or(self.default_font_size_pt);
+        if !size.is_finite() || size <= 0.0 {
+            return Err("Side-label font size must be finite and positive (points)".into());
+        }
+        Ok(size)
+    }
+
+    pub fn resolve(
+        self,
+        wrap_width_mm: Option<f64>,
+        max_lines: Option<usize>,
+    ) -> Result<(f64, usize)> {
+        let width = wrap_width_mm.unwrap_or(self.default_wrap_width_mm);
+        let lines = max_lines.unwrap_or(self.default_max_lines);
+        if !width.is_finite()
+            || !mm_to_points(width).is_finite()
+            || width < self.minimum_wrap_width_mm
+            || width > self.maximum_wrap_width_mm
+        {
+            return Err(format!(
+                "Side-label wrap width must be between {} and {} mm",
+                self.minimum_wrap_width_mm, self.maximum_wrap_width_mm
+            ));
+        }
+        if lines < self.minimum_max_lines || lines > self.maximum_max_lines {
+            return Err(format!(
+                "Side-label maximum lines must be between {} and {}",
+                self.minimum_max_lines, self.maximum_max_lines
+            ));
+        }
+        Ok((width, lines))
+    }
 }
 
 impl NativePdfConfig {
@@ -175,6 +274,34 @@ impl NativePdfConfig {
             }
             if !settings.is_empty() {
                 native.insert("stamp_text".into(), Value::Table(settings));
+            }
+        }
+        let mut stamp_image_side_labels = None;
+        if native.contains_key("stamp_image_side_labels") {
+            let prefix = "native_pdf.stamp_image_side_labels.";
+            let mut settings = table(&mut native, "stamp_image_side_labels", "native_pdf.")?;
+            let config = StampImageSideLabelConfig::new(
+                number(&mut settings, "font_size_pt", prefix, "points")?,
+                number(&mut settings, "wrap_width_mm", prefix, "millimetres")?,
+                number(
+                    &mut settings,
+                    "minimum_wrap_width_mm",
+                    prefix,
+                    "millimetres",
+                )?,
+                number(
+                    &mut settings,
+                    "maximum_wrap_width_mm",
+                    prefix,
+                    "millimetres",
+                )?,
+                positive_integer(&mut settings, "max_lines", prefix)?,
+                positive_integer(&mut settings, "minimum_max_lines", prefix)?,
+                positive_integer(&mut settings, "maximum_max_lines", prefix)?,
+            )?;
+            stamp_image_side_labels = Some(config);
+            if !settings.is_empty() {
+                native.insert("stamp_image_side_labels".into(), Value::Table(settings));
             }
         }
         if native.contains_key("decorative_border") {
@@ -715,6 +842,7 @@ impl NativePdfConfig {
         overridden_keys.sort();
         Ok(Self {
             stamp_text,
+            stamp_image_side_labels,
             page_settings,
             proof,
             footer_numbering,
@@ -764,6 +892,18 @@ fn number(table: &mut Table, key: &str, prefix: &str, unit: &str) -> Result<f64>
         Value::Integer(value) => Ok(value as f64),
         _ => Err(format!(
             "Native PDF setting {prefix}{key} must be a number in {unit}"
+        )),
+    }
+}
+
+fn positive_integer(table: &mut Table, key: &str, prefix: &str) -> Result<usize> {
+    match table.remove(key) {
+        Some(Value::Integer(value)) => usize::try_from(value)
+            .ok()
+            .filter(|value| *value > 0)
+            .ok_or_else(|| format!("{prefix}{key} must be a positive integer")),
+        _ => Err(format!(
+            "Missing or invalid native PDF setting {prefix}{key}; expected a positive integer"
         )),
     }
 }

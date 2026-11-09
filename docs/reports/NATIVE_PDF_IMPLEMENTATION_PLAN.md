@@ -1,8 +1,8 @@
 # Native PDF generation with AlbumEasy TXT export
 
 **Created:** 2026-11-01  
-**Last updated:** 2026-11-08
-**Revision:** 55
+**Last updated:** 2026-11-09
+**Revision:** 60
 **Status:** Bounded standalone renderer and command-family slices are implemented. Against the 46 roadmap tasks, 19 are partially evidenced, 27 remain unsatisfied, and none yet meets its full task acceptance criteria. Full AlbumEasy compatibility, canonical application integration, export and production routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -2342,24 +2342,34 @@ impacts and discovered logic risks in `docs/testing/`.
 - Export loss approval/report format: **Proposed strict default; design pending**
 - Other native enhancement ideas: **Backlog only; not approved**
 
-### Future ideas recorded 2026-11-08 — no implementation authorized
+### Native-only side labels — issue #97
 
-1. **Text beside stamp images/frames:** In addition to the existing
-   above/below and inside/outside-frame text positions, consider an option
-   for text on the left, right, or both sides of an image/frame. This is
-   an idea only, not an approved command mapping or layout change.
-   Exact placement relative to the image versus frame, inside/outside
-   behavior, spacing, wrapping and alignment remain undecided.
-2. **Country Review UI preview:** Consider showing a preview while
-   reviewing a country. Whether this should show a single stamp/image,
-   the current album page, or offer both remains undecided. This records
-   the idea only; feasibility, preview source, interaction and scope
-   have not been investigated or approved.
+`NATIVE_STAMP_IMAGE_SIDE_LABEL` maps left, right, or both text labels beside a
+stamp frame. Labels are outside the frame, vertically centered, and separated
+from it by at least 1 mm; native row layout reserves their width and rendering
+rejects labels that exceed the page content area. TOML config defines the
+default font size, wrap width and line limits; optional per-item values can
+override them. Wrapped labels reserve their complete footprint, so labels
+taller than a frame expand the row and reposition later items without resizing
+the stamp. The saved US-Letter proof uses the TOML font-size default for its
+longer description-style labels on both sides of the no-stretch example in
+`tests/fixtures/albumeasy/stamp-image-controls-v1/`. The native library suite
+and seven affected integration suites passed 150 tests (0 failed, 4 ignored);
+maintainer and actual-size print acceptance remain pending. This is a
+native-only capability slice, not an AlbumEasy command mapping or production
+integration; it does not change any numbered roadmap task's completion status.
 
-Do not implement, create execution tasks, or change production behavior
-for either idea without a subsequent maintainer request. Neither idea
-changes the current reference-first command-mapping work or authorizes
-production native-PDF integration.
+### Future idea recorded 2026-11-08 — no implementation authorized
+
+**Country Review UI preview:** Consider showing a preview while reviewing a
+country. Whether this should show a single stamp/image, the current album
+page, or offer both remains undecided. Feasibility, preview source,
+interaction and scope have not been investigated or approved.
+
+Do not implement the Review UI idea or change production behavior without a
+subsequent maintainer request. This idea does not change the current
+reference-first command-mapping work or authorize production native-PDF
+integration.
 
 ## 8. Requirement mapping
 
@@ -2456,3 +2466,6 @@ task markers whenever implementation scope changes.
 | 2026-11-08 | Revision 55: roadmap status reconciled | Audited all 46 numbered roadmap tasks against their full acceptance criteria and recorded complete/partial/remaining markers. Totals: 0 fully complete, 19 partially evidenced, 27 remaining. Recent #86–#93 slice status remains 7 complete / 1 deferred (#88); these issue counts are not project-task completion counts. | Update task markers and phase totals after every material slice; do not treat partial evidence as full task completion. |
 | 2026-11-08 | Revision 56: bounded native section numbering (#88) | Added explicit native `.stampalbum` section boundaries, section-local footer numbering and count tokens while preserving `$PAGES$` as the document total and leaving AlbumEasy TXT/raw behavior unchanged. Config/help and standalone renderer updated. The affected regression gate passed 73 tests (0 failed, 7 ignored); Clippy and example build passed with pre-existing warnings. Follow-up specifically rendered both default start 1 and custom start 10 across changed pagination: section suite 5 passed, and the standalone example produced a two-page PDF when passed TOML. `git diff --check` passed. Broader roadmap totals remain 0 complete / 19 partial / 27 remaining; the #86–#93 bounded slices are now 8 complete. | Keep production routing, full AlbumEasy language support and roadmap task completion separate; do not infer year boundaries from captions. |
 | 2026-11-08 | Revision 57: review PDFs for #88 | Added a reusable 36-stamp native `.stampalbum` fixture and minimal TOML configs for section starts 1 and 10; generated two five-page exact-Letter PDFs. `pdfinfo`/`pdftotext` verified page sizes and all per-page document/section labels; `pdfimages` verified 36 placements per PDF. Representative pages were rasterized and visually checked. The focused section suite passed 5/5. Actual-size print and maintainer acceptance remain pending. | Review both fixture PDFs side by side before closing #88; retain explicit no-inferred-year and mid-page-boundary behavior. |
+| 2026-11-09 | Revision 58: native-only side labels (#97) | Added `NATIVE_STAMP_IMAGE_SIDE_LABEL` with independent left/right selection, outside-frame placement, 1 mm clearance, row-width reservation and page-content validation. Updated the native image-controls proof and its saved Letter PDF, preview and text extract; AlbumEasy reference files remain unchanged. Two focused unit tests and 13 native-album tests passed (12 passed, 1 ignored). | Review the native proof before commit; production routing/integration and numbered roadmap completion remain out of scope. |
+| 2026-11-09 | Revision 59: wrapped native side labels (#97) | Added TOML defaults/ranges and per-item wrap overrides (5–40 mm; 1–8 lines), multiline side wrapping, and row-footprint expansion/repositioning while preserving stamp/frame dimensions. Regenerated the one-page Letter native proof, preview and text extract; visually checked long left/right labels and verified text extraction. Config, album and five layout-regression suites passed 44 tests (0 failed, 4 ignored); `cargo fmt --all` and `git diff --check` passed. | Maintainer review and actual-size print acceptance remain pending; AlbumEasy inputs and PDF are unchanged. Production integration and numbered roadmap completion remain out of scope. |
+| 2026-11-09 | Revision 60: TOML side-label font-size default (#97) | Added `font_size_pt = 3.5` to the TOML defaults; omitted command sizes use it and existing numeric per-item sizes remain overrides. Updated the native proof to exercise the default and tested that config changes affect layout while explicit overrides remain stable. Native library plus seven affected integration suites passed 150 tests (0 failed, 4 ignored); formatting and diff checks passed. | Maintainer review and actual-size print acceptance remain pending; AlbumEasy inputs/PDF and production integration remain untouched. |

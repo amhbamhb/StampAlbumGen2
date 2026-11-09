@@ -44,6 +44,33 @@ fn near(actual: f64, expected: f64) {
 }
 
 #[test]
+fn side_label_wrap_settings_use_template_defaults_and_limits() -> Result<()> {
+    let loaded = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
+    let settings = loaded
+        .stamp_image_side_labels
+        .ok_or("side-label settings missing from template")?;
+    assert_eq!(settings.default_font_size_pt, 3.5);
+    assert_eq!(settings.resolve_font_size(None)?, 3.5);
+    assert_eq!(settings.resolve_font_size(Some(5.0))?, 5.0);
+    assert_eq!(settings.resolve(None, None)?, (20.0, 4));
+    assert_eq!(settings.resolve(Some(40.0), Some(8))?, (40.0, 8));
+    assert!(settings.resolve(Some(4.9), None).is_err());
+    assert!(settings.resolve(None, Some(9)).is_err());
+
+    let invalid = include_str!("../config_template.toml")
+        .replace("wrap_width_mm = 20.0", "wrap_width_mm = 41.0");
+    assert!(NativePdfConfig::from_toml(&invalid)
+        .err()
+        .is_some_and(|error| error.contains("wrap widths")));
+    let invalid =
+        include_str!("../config_template.toml").replace("font_size_pt = 3.5", "font_size_pt = 0.0");
+    assert!(NativePdfConfig::from_toml(&invalid)
+        .err()
+        .is_some_and(|error| error.contains("font_size_pt")));
+    Ok(())
+}
+
+#[test]
 fn copied_template_values_reach_every_existing_command() -> Result<()> {
     let loaded = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
     let settings = &loaded.page_settings;

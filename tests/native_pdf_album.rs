@@ -1,5 +1,5 @@
 use oxidize_pdf::parser::PdfDocument;
-use stamp_album_gen2::native_pdf::album::NativeAlbum;
+use stamp_album_gen2::native_pdf::{album::NativeAlbum, config::NativePdfConfig};
 use std::{fs, path::Path};
 
 fn fixture() -> std::path::PathBuf {
@@ -67,7 +67,8 @@ fn native_image_controls_keep_page_background_independent_of_hidden_stamps() -> 
     )?;
     let output_dir = tempfile::tempdir().map_err(|error| error.to_string())?;
     let output = output_dir.path().join("image-controls.pdf");
-    let pages = album.write_pdf(&output)?;
+    let config = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
+    let pages = album.write_pdf_with_config(&config, &output)?;
 
     assert_eq!(pages.len(), 1);
     assert_eq!(pages[0].items.len(), 7);
@@ -91,6 +92,14 @@ fn native_image_controls_keep_page_background_independent_of_hidden_stamps() -> 
         assert!(((frame.right - frame.left) - width - 6.0).abs() < 0.001);
         assert!(((frame.top - frame.bottom) - height - 6.0).abs() < 0.001);
     }
+    let labelled = &pages[0].items[2];
+    let frame = labelled
+        .geometry
+        .ok_or("labelled image fixture item is missing physical geometry")?
+        .frame_bounds();
+    assert!(labelled.footprint.left < frame.left);
+    assert!(labelled.footprint.right > frame.right);
+    assert!(labelled.footprint.right + 4.0 <= pages[0].items[3].footprint.left + 0.001);
     let frame_tops = pages[0]
         .items
         .iter()
@@ -120,7 +129,163 @@ fn native_image_controls_keep_page_background_independent_of_hidden_stamps() -> 
         .join("\n");
     assert_eq!(content.matches(" Do").count(), 7);
     assert!(content.contains("native_page_background_0 Do"));
-    assert_eq!(content.matches("SG 1137b").count(), 5);
+    assert_eq!(content.matches("SG 1137b").count(), 7);
+    Ok(())
+}
+
+#[test]
+fn native_side_label_command_supports_left_right_and_both() -> Result<(), String> {
+    let album_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/albumeasy/stamp-image-controls-v1/album.stampalbum");
+    let template = fs::read_to_string(&album_path).map_err(|error| error.to_string())?;
+    let command = r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN black 18 4 "SG 1137b - Description text demonstrates wrapping beside the frame." "SG 1137b - Colour, issue type, and emission notes fit in wrapped lines.")"#;
+    let temporary = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let configured_defaults_required = NativeAlbum::parse(
+        &template,
+        album_path
+            .parent()
+            .ok_or("fixture has no parent directory")?,
+    )?
+    .write_pdf(&temporary.path().join("missing-config.pdf"))
+    .err()
+    .ok_or("side labels rendered without their required TOML defaults")?;
+    assert!(configured_defaults_required.contains("requires native_pdf.stamp_image_side_labels"));
+
+    for (replacement, expect_left, expect_right) in [
+        (
+            r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 3.5 black 18 4 "SG 1137b" "")"#,
+            true,
+            false,
+        ),
+        (
+            r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 3.5 black 18 4 "" "SG 1137b")"#,
+            false,
+            true,
+        ),
+        (command, true, true),
+    ] {
+        let source = template.replace(command, replacement);
+        let album = NativeAlbum::parse(
+            &source,
+            album_path
+                .parent()
+                .ok_or("fixture has no parent directory")?,
+        )?;
+        let output = temporary
+            .path()
+            .join(format!("side-label-{}-{}.pdf", expect_left, expect_right));
+        let config = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
+        let pages = album.write_pdf_with_config(&config, &output)?;
+        let labelled = &pages[0].items[2];
+        let frame = labelled
+            .geometry
+            .ok_or("labelled image fixture item is missing physical geometry")?
+            .frame_bounds();
+
+        assert_eq!(labelled.footprint.left < frame.left, expect_left);
+        assert_eq!(labelled.footprint.right > frame.right, expect_right);
+    }
+
+    let invalid = template.replace(
+        command,
+        r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 3.5 black 18 4 "" "")"#,
+    );
+    let error = NativeAlbum::parse(
+        &invalid,
+        album_path
+            .parent()
+            .ok_or("fixture has no parent directory")?,
+    )
+    .err()
+    .ok_or("side-label command accepted two empty labels")?;
+    assert!(error.contains("requires at least one visible side label"));
+    Ok(())
+}
+
+#[test]
+fn native_side_label_font_size_uses_toml_default_and_allows_command_override() -> Result<(), String>
+{
+    let album_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/albumeasy/stamp-image-controls-v1/album.stampalbum");
+    let template = fs::read_to_string(&album_path).map_err(|error| error.to_string())?;
+    let default_command = r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN black 40 8 "SG" "Text")"#;
+    let override_command = r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 3.5 black 40 8 "SG" "Text")"#;
+    let default_config = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
+    let larger_font_config = NativePdfConfig::from_toml(
+        &include_str!("../config_template.toml")
+            .replace("font_size_pt = 3.5", "font_size_pt = 8.0"),
+    )?;
+    let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let asset_root = album_path
+        .parent()
+        .ok_or("fixture has no parent directory")?;
+
+    let render_item = |source: &str, config: &NativePdfConfig, name: &str| {
+        let album = NativeAlbum::parse(source, asset_root)?;
+        let pages = album.write_pdf_with_config(config, &directory.path().join(name))?;
+        Ok::<_, String>(pages[0].items[2].footprint)
+    };
+
+    let default_source = template.replace(
+        r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN black 18 4 "SG 1137b - Description text demonstrates wrapping beside the frame." "SG 1137b - Colour, issue type, and emission notes fit in wrapped lines.")"#,
+        default_command,
+    );
+    let default_size = render_item(&default_source, &default_config, "default.pdf")?;
+    let configured_size = render_item(&default_source, &larger_font_config, "configured.pdf")?;
+    assert!(configured_size.left < default_size.left);
+
+    let override_source = default_source.replace(default_command, override_command);
+    let explicit_override = render_item(&override_source, &larger_font_config, "override.pdf")?;
+    assert_eq!(explicit_override.left, default_size.left);
+    assert_eq!(explicit_override.right, default_size.right);
+    assert_eq!(explicit_override.top, default_size.top);
+    assert_eq!(explicit_override.bottom, default_size.bottom);
+    Ok(())
+}
+
+#[test]
+fn multiline_side_labels_wrap_and_expand_the_row_footprint() -> Result<(), String> {
+    let album_path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures/albumeasy/stamp-image-controls-v1/album.stampalbum");
+    let template = fs::read_to_string(&album_path).map_err(|error| error.to_string())?;
+    let command = r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN black 18 4 "SG 1137b - Description text demonstrates wrapping beside the frame." "SG 1137b - Colour, issue type, and emission notes fit in wrapped lines.")"#;
+    let long_command = r#"NATIVE_STAMP_IMAGE_SIDE_LABEL (HN 14 black 18 8 "SG\nText\nLong\nwrap\nColor\nIssue\nEmit\nNotes" "SG\nText\nLong\nwrap\nColor\nIssue\nEmit\nNotes")"#;
+    let config = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
+    let directory = tempfile::tempdir().map_err(|error| error.to_string())?;
+
+    let baseline_source = template.replace(command, "");
+    let baseline = NativeAlbum::parse(
+        &baseline_source,
+        album_path
+            .parent()
+            .ok_or("fixture has no parent directory")?,
+    )?;
+    let baseline_pages =
+        baseline.write_pdf_with_config(&config, &directory.path().join("baseline.pdf"))?;
+    let long_source = template.replace(command, long_command);
+    let long_album = NativeAlbum::parse(
+        &long_source,
+        album_path
+            .parent()
+            .ok_or("fixture has no parent directory")?,
+    )?;
+    let long_pages =
+        long_album.write_pdf_with_config(&config, &directory.path().join("long.pdf"))?;
+    let long_item = &long_pages[0].items[2];
+    let frame = long_item
+        .geometry
+        .ok_or("long-label fixture item is missing physical geometry")?
+        .frame_bounds();
+
+    assert!(long_item.footprint.top > frame.top);
+    assert!(long_item.footprint.bottom < frame.bottom);
+    let lower_frame_top = |pages: &[stamp_album_gen2::native_pdf::pagination::StampItemPage]| {
+        pages[0].items[4]
+            .geometry
+            .map(|geometry| geometry.frame_bounds().top)
+            .ok_or("lower-row fixture item is missing physical geometry".to_string())
+    };
+    assert!(lower_frame_top(&long_pages)? < lower_frame_top(&baseline_pages)?);
     Ok(())
 }
 
@@ -142,7 +307,8 @@ fn native_stamp_images_without_policy_keep_version_one_defaults() -> Result<(), 
     )?;
     let output_dir = tempfile::tempdir().map_err(|error| error.to_string())?;
     let output = output_dir.path().join("default-image-policy.pdf");
-    let pages = album.write_pdf(&output)?;
+    let config = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
+    let pages = album.write_pdf_with_config(&config, &output)?;
 
     assert_eq!(pages.len(), 1);
     let document = PdfDocument::open(&output).map_err(|error| error.to_string())?;
