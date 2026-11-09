@@ -72,11 +72,13 @@ overrides the root `color_album_border` value.
 | `[native_pdf.footer].padding_mm` | `ALBUM_PAGES_FOOTER_PAD` | Finite signed mm; template 0.0; positive lowers footer away from border |
 | `[native_pdf.footer].minimum_height_mm` | Native reservation hint | Finite nonnegative mm; template 0.0 = automatic; positive extends reservation above footer |
 | `[native_pdf.footer_number].enabled` | Native numbering opt-in | Required boolean when table exists; template false; also requires existing footer-number enablement |
+| `[native_pdf.footer_number].scope` | Native `.stampalbum` numbering scope | `document` (default/legacy sequence) or `section`; section mode requires explicit `NATIVE_PAGE_NUMBER_SECTION` boundaries; a page containing a boundary stays in the preceding section |
+| `[native_pdf.footer_number].section_start` | Native section numbering | Signed 32-bit integer; template 1; first displayed number for each new section; used only when scope is `section` |
 | `[footer].album_pages_footer_number_enabled` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | Required boolean when native number table exists; template true; section overrides root |
 | `[footer].album_pages_footer_number_font`, `.album_pages_footer_number_size` or root keys | `ALBUM_PAGES_FOOTER_NUMBER` | Independent built-in font/positive point size; templates HN/8 |
 | `[footer].album_pages_footer_number_position` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | L/C/R/LR/RL using physical parity, not printed label; template C |
 | `[footer].album_pages_footer_number_start` or root key | `ALBUM_PAGES_FOOTER_NUMBER` | Signed 32-bit integer; template 1; checked arithmetic; zero/negative labels supported |
-| `[footer].album_pages_footer_number_before`, `.album_pages_footer_number_after` or root keys | `ALBUM_PAGES_FOOTER_NUMBER` | Explicit WinAnsi strings, empty allowed; templates "Page " / " of $PAGES$"; every exact `$PAGES$` expands to actual count |
+| `[footer].album_pages_footer_number_before`, `.album_pages_footer_number_after` or root keys | `ALBUM_PAGES_FOOTER_NUMBER` | Explicit WinAnsi strings, empty allowed; templates "Page " / " of $PAGES$"; `$PAGES$` and `$DOCUMENT_PAGES$` are document count; native section mode also supports `$SECTION_PAGE$` and `$SECTION_PAGES$`; imported routes retain literal handling of section tokens |
 | `[native_pdf.header_number].enabled` | Native header numbering opt-in | Required boolean when table exists; template false |
 | `[native_pdf.header_number].font`, `.size_pt` | `ALBUM_PAGES_HEADER_NUMBER` | Independent built-in font/positive point size; templates HN/8 |
 | `[native_pdf.header_number].position` | `ALBUM_PAGES_HEADER_NUMBER` | L/C/R/LR/RL using physical parity; template R; independent of plain header/footer |

@@ -18,7 +18,9 @@ use super::{
             album_pages_title::AlbumPagesTitle,
         },
     },
+    config::{NativeFooterNumberingConfig, NativePageNumberingScope, NativePdfConfig},
     document::{Bounds, PageSettings},
+    numbering::NumberingContext,
     pagination::{StampItemPage, StampRowSection},
     renderer,
     stamp_box::StampBoxGeometry,
@@ -49,6 +51,7 @@ pub struct NativeAlbum {
     page_background: Option<NativePageBackgroundImage>,
     items: Vec<StampImageRowItem>,
     sections: Vec<StampRowSection>,
+    numbering_section_starts: Vec<usize>,
     headings: Vec<NativeHeadingItem>,
 }
 
@@ -91,6 +94,7 @@ impl NativeAlbum {
         let mut image_specs = Vec::new();
         let mut section_start = 0;
         let mut section_counts = Vec::new();
+        let mut numbering_section_starts = Vec::new();
         let mut headings: Vec<NativeHeadingItem> = Vec::new();
         let mut vertical = VerticalAlignment::Top;
         let mut heading_padding = None;
@@ -565,6 +569,20 @@ impl NativeAlbum {
                     section_counts.push(count);
                     section_start = image_specs.len();
                 }
+                "NATIVE_PAGE_NUMBER_SECTION" => {
+                    if !args.is_empty() {
+                        return Err(fail(format!("{name} takes no arguments")));
+                    }
+                    let item_count = image_specs.len();
+                    if item_count == 0
+                        || numbering_section_starts.last().copied() == Some(item_count)
+                    {
+                        return Err(fail(format!(
+                            "{name} must follow at least one stamp and not duplicate a section boundary"
+                        )));
+                    }
+                    numbering_section_starts.push(item_count);
+                }
                 "NATIVE_ROW_VERTICAL_ALIGNMENT" => {
                     let values = words(&name, &args, 1).map_err(&fail)?;
                     if args[0].quoted {
@@ -680,6 +698,12 @@ impl NativeAlbum {
         if image_specs.is_empty() {
             return Err("At least one STAMP_IMAGE command is required".into());
         }
+        if numbering_section_starts
+            .last()
+            .is_some_and(|start| *start >= image_specs.len())
+        {
+            return Err("NATIVE_PAGE_NUMBER_SECTION must be followed by a STAMP_IMAGE".into());
+        }
         let remaining_items = image_specs.len().saturating_sub(section_start);
         if remaining_items == 0 {
             return Err("NATIVE_ROW_BREAK must not follow the final STAMP_IMAGE".into());
@@ -742,40 +766,88 @@ impl NativeAlbum {
             page_background,
             items,
             sections,
+            numbering_section_starts,
             headings,
         })
     }
 
     /// Generates a native PDF directly without launching AlbumEasy or exporting TXT.
     pub fn write_pdf(&self, output: &Path) -> Result<Vec<StampItemPage>> {
-        if self
+        self.write_pdf_with_numbering(None, output)
+    }
+
+    /// Generates a native PDF using the explicitly supplied TOML numbering policy.
+    pub fn write_pdf_with_config(
+        &self,
+        config: &NativePdfConfig,
+        output: &Path,
+    ) -> Result<Vec<StampItemPage>> {
+        self.write_pdf_with_numbering(config.footer_numbering, output)
+    }
+
+    fn write_pdf_with_numbering(
+        &self,
+        numbering: Option<NativeFooterNumberingConfig>,
+        output: &Path,
+    ) -> Result<Vec<StampItemPage>> {
+        let numbering = numbering.filter(|policy| policy.enabled);
+        match (self.numbering_section_starts.is_empty(), numbering) {
+            (false, Some(policy)) if policy.scope == NativePageNumberingScope::Section => {}
+            (false, _) => {
+                return Err("NATIVE_PAGE_NUMBER_SECTION requires enabled native_pdf.footer_number.scope = \"section\"".into());
+            }
+            (true, Some(policy)) if policy.scope == NativePageNumberingScope::Section => {}
+            _ => {}
+        }
+        if numbering.is_some() && !self.page_settings.has_footer_number() {
+            return Err(
+                "Native footer numbering configuration requires NATIVE_PAGE_FOOTER_NUMBER".into(),
+            );
+        }
+
+        let mut page_settings = self.page_settings.clone();
+        if numbering.is_some() {
+            page_settings.enable_native_numbering_tokens();
+        }
+        let mut pages = if self
             .headings
             .iter()
             .any(|item| item.heading.is_some() || item.vertical != VerticalAlignment::Top)
         {
-            let pages = stamp_heading::paginate_native(
-                &self.page_settings,
+            stamp_heading::paginate_native(
+                &page_settings,
                 &self.items,
                 &self.headings,
                 &self.sections,
                 &self.stamp_text_policy,
+            )?
+        } else {
+            let stamps = self
+                .items
+                .iter()
+                .map(|item| item.stamp.clone())
+                .collect::<Vec<_>>();
+            super::pagination::paginate_stamp_sections(
+                &page_settings,
+                &stamps,
+                &self.sections,
+                &self.stamp_text_policy,
+                page_settings.capture_generation_date(),
+            )?
+        };
+        if let Some(policy) = numbering {
+            apply_footer_numbering(
+                &page_settings,
+                &mut pages,
+                &self.numbering_section_starts,
+                policy,
             )?;
-            return renderer::write_native_heading_album_pdf(
-                &self.page_settings,
-                &self.items,
-                pages,
-                (self.frame_width_mm, self.frame_colour),
-                self.page_background.as_ref(),
-                output,
-            );
         }
-        renderer::write_native_album_pdf_with_sections(
-            &self.page_settings,
+        renderer::write_native_heading_album_pdf(
+            &page_settings,
             &self.items,
-            &self.sections,
-            &self.stamp_text_policy,
-            self.frame_width_mm,
-            self.frame_colour,
+            pages,
+            (self.frame_width_mm, self.frame_colour),
             self.page_background.as_ref(),
             output,
         )
@@ -992,6 +1064,80 @@ fn set_once<T>(slot: &mut Option<T>, value: T, command: &str) -> Result<()> {
     }
     *slot = Some(value);
     Ok(())
+}
+
+fn apply_footer_numbering(
+    settings: &PageSettings,
+    pages: &mut [StampItemPage],
+    section_starts: &[usize],
+    policy: NativeFooterNumberingConfig,
+) -> Result<()> {
+    let document_pages = pages.len();
+    if document_pages == 0 {
+        return Err("Native page numbering requires at least one rendered page".into());
+    }
+
+    let mut page_sections = Vec::with_capacity(document_pages);
+    let mut current_section = 0usize;
+    for page in pages.iter() {
+        if let Some(first_item) = page.items.iter().map(|item| item.source_index).min() {
+            current_section = section_starts.partition_point(|start| *start <= first_item);
+        }
+        page_sections.push(current_section);
+    }
+
+    let mut section_pages = vec![0usize; section_starts.len() + 1];
+    for section in &page_sections {
+        section_pages[*section] = section_pages[*section]
+            .checked_add(1)
+            .ok_or("Native numbering section page count overflow")?;
+    }
+
+    let generation_date = settings.capture_generation_date();
+    let mut section_ordinals = vec![0usize; section_pages.len()];
+    for (index, (page, section)) in pages.iter_mut().zip(page_sections).enumerate() {
+        let ordinal = section_ordinals[section]
+            .checked_add(1)
+            .ok_or("Native numbering section ordinal overflow")?;
+        section_ordinals[section] = ordinal;
+        let section_scope = policy.scope == NativePageNumberingScope::Section;
+        let context = NumberingContext {
+            section_ordinal: if section_scope { ordinal } else { index + 1 },
+            section_pages: if section_scope {
+                section_pages[section]
+            } else {
+                document_pages
+            },
+            document_pages,
+            start: if section_scope {
+                policy.section_start
+            } else {
+                None
+            },
+        };
+        let layout = settings
+            .resolve_with_numbering_context(index + 1, document_pages, generation_date, context)
+            .map_err(|error| format!("Native PDF page {}: {error}", index + 1))?;
+        if !same_bounds(layout.content_bounds, page.layout.content_bounds) {
+            return Err(format!(
+                "Native PDF page {}: section numbering changed content bounds after pagination",
+                index + 1
+            ));
+        }
+        page.layout = layout;
+    }
+    Ok(())
+}
+
+fn same_bounds(left: super::document::Bounds, right: super::document::Bounds) -> bool {
+    [
+        (left.left, right.left),
+        (left.bottom, right.bottom),
+        (left.right, right.right),
+        (left.top, right.top),
+    ]
+    .iter()
+    .all(|(left, right)| (left - right).abs() <= 1e-9)
 }
 
 #[cfg(test)]

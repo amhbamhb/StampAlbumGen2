@@ -5,6 +5,20 @@ It can also render an optional repeating page title with measured space reservat
 There is **no native-PDF application CLI option yet**. Sections 1–5 below generate
 external AlbumEasy comparisons; the isolated Rust proof runs separately.
 
+The standalone `render_stampalbum` example can optionally receive a TOML file
+when its input is a native `.stampalbum` document. This supports the bounded
+native-only section-numbering setting; it does not add application routing or
+change AlbumEasy TXT/raw import behavior:
+
+```bash
+cargo run --example render_stampalbum -- input.stampalbum output.pdf config.toml
+```
+
+The optional config argument is rejected for AlbumEasy TXT or raw-command
+input. Section numbering requires `[native_pdf.footer_number].enabled = true`,
+`scope = "section"`, the existing footer-number enablement, and an explicit
+`NATIVE_PAGE_NUMBER_SECTION` command in the native document.
+
 ## Native Rust page-settings proof
 
 This example uses `oxidize-pdf` directly, without AlbumEasy or external tools:
@@ -344,6 +358,8 @@ Both templates and local `config-pdf.toml` add:
 ```toml
 [native_pdf.footer_number]
 enabled = false
+scope = "document"
+section_start = 1
 ```
 
 To enable native numbering, set this to true **and** keep
@@ -373,6 +389,26 @@ Every exact `$PAGES$` occurrence in prefix/suffix expands to the actual total
 document pages. A three-page document starting at 8 reads "Page 8 of 3",
 "Page 9 of 3", "Page 10 of 3". This is a count, not the last printed label.
 Explicit multiline prefix/suffix uses the shared WinAnsi measurement policy.
+
+The optional `scope` and `section_start` settings affect only native
+`.stampalbum` input, never AlbumEasy TXT or raw AlbumEasy command input.
+`scope = "document"` preserves the single document-wide sequence. For
+`scope = "section"`, add `NATIVE_PAGE_NUMBER_SECTION` between stamp items to
+mark each next section. A marker may occur mid-page: that shared page remains
+part of the preceding section, and numbering restarts on the next page that
+begins with content from the new section. No years are inferred. The first
+section is implicit.
+
+In native section mode, `$SECTION_PAGE$` expands to the one-based page ordinal
+within that section, `$SECTION_PAGES$` to the number of pages assigned to the
+section, and `$DOCUMENT_PAGES$` to the document total. `$PAGES$` remains an
+alias for `$DOCUMENT_PAGES$`. The displayed number is still inserted between
+the configured prefix and suffix and is `section_start + section ordinal - 1`.
+Use the optional TOML path with the standalone renderer to enable native
+section numbering; imported AlbumEasy rendering does not consume that setting.
+Review the [default-start and custom-start native PDF samples](../../tests/fixtures/albumeasy/native-section-numbering-v1/README.md)
+side by side. They demonstrate the mid-page boundary rule, section counts,
+document total and repeated local starts with unchanged page layout.
 
 Colour comes from `[colors].color_album_footer`; padding/minimum height come
 from `[native_pdf.footer]`, which must exist even with its text disabled.

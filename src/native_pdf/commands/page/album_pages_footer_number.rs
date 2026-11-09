@@ -1,5 +1,9 @@
 use super::album_pages_footer::{AlbumPagesFooter, FooterLayout};
-use crate::native_pdf::{document::Bounds, numbering::PageNumbering, Result};
+use crate::native_pdf::{
+    document::Bounds,
+    numbering::{NumberingContext, PageNumbering},
+    Result,
+};
 
 /// ALBUM_PAGES_FOOTER_NUMBER uses an explicit style and final document count.
 #[derive(Clone, Debug)]
@@ -32,6 +36,31 @@ impl AlbumPagesFooterNumber {
             "ALBUM_PAGES_FOOTER_NUMBER",
             "album_pages_footer_number_start",
         )?;
+        self.layout_text(margin, physical_page, page_number, &text)
+    }
+
+    pub(crate) fn layout_with_numbering_context(
+        &self,
+        margin: Bounds,
+        physical_page: Bounds,
+        page_number: usize,
+        context: NumberingContext,
+    ) -> Result<FooterLayout> {
+        let text = self.numbering.text_with_context(
+            context,
+            "ALBUM_PAGES_FOOTER_NUMBER",
+            "album_pages_footer_number_start",
+        )?;
+        self.layout_text(margin, physical_page, page_number, &text)
+    }
+
+    fn layout_text(
+        &self,
+        margin: Bounds,
+        physical_page: Bounds,
+        page_number: usize,
+        text: &str,
+    ) -> Result<FooterLayout> {
         self.style.with_text(&text)
             .and_then(|footer| footer.layout(margin,physical_page,page_number))
             .map_err(|error| format!("ALBUM_PAGES_FOOTER_NUMBER (album_pages_footer_number_font/size/position/start/before/after): {error}"))

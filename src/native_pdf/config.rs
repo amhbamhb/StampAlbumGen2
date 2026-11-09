@@ -50,8 +50,22 @@ pub struct NativePdfConfig {
     pub page_settings: PageSettings,
     pub proof: GeometryProofSettings,
     pub stamp_text: Option<StampTextPolicy>,
+    pub footer_numbering: Option<NativeFooterNumberingConfig>,
     pub unapplied_keys: Vec<String>,
     pub overridden_keys: Vec<String>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum NativePageNumberingScope {
+    Document,
+    Section,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct NativeFooterNumberingConfig {
+    pub enabled: bool,
+    pub scope: NativePageNumberingScope,
+    pub section_start: Option<i32>,
 }
 
 impl NativePdfConfig {
@@ -312,9 +326,46 @@ impl NativePdfConfig {
             }
         }
         let mut numbering_enabled = false;
+        let mut footer_numbering = None;
         if native.contains_key("footer_number") {
             let mut settings = table(&mut native, "footer_number", "native_pdf.")?;
             let opt_in = boolean(&mut settings, "enabled", "native_pdf.footer_number.")?;
+            let scope = match settings.remove("scope") {
+                Some(Value::String(value)) if value == "document" => {
+                    NativePageNumberingScope::Document
+                }
+                Some(Value::String(value)) if value == "section" => {
+                    NativePageNumberingScope::Section
+                }
+                None => NativePageNumberingScope::Document,
+                _ => {
+                    return Err(
+                        "native_pdf.footer_number.scope must be `document` or `section`".into(),
+                    )
+                }
+            };
+            let section_start =
+                match settings.remove("section_start") {
+                    Some(Value::Integer(value)) => Some(i32::try_from(value).map_err(|_| {
+                        "native_pdf.footer_number.section_start must be a signed 32-bit integer"
+                    })?),
+                    Some(_) => return Err(
+                        "native_pdf.footer_number.section_start must be a signed 32-bit integer"
+                            .into(),
+                    ),
+                    None => None,
+                };
+            if scope == NativePageNumberingScope::Section && !opt_in {
+                return Err(
+                    "native_pdf.footer_number.enabled must be true when scope is `section`".into(),
+                );
+            }
+            if scope == NativePageNumberingScope::Section && section_start.is_none() {
+                return Err(
+                    "native_pdf.footer_number.section_start is required when scope is `section`"
+                        .into(),
+                );
+            }
             let mut footer = match root.remove("footer") {
                 Some(Value::Table(table)) => table,
                 Some(_) => return Err("Native PDF setting footer must be a table".into()),
@@ -336,6 +387,14 @@ impl NativePdfConfig {
                 }
             }
             let enabled = boolean(&mut root, "album_pages_footer_number_enabled", "")?;
+            if scope == NativePageNumberingScope::Section && !enabled {
+                return Err("footer.album_pages_footer_number_enabled must be true when native_pdf.footer_number.scope is `section`".into());
+            }
+            footer_numbering = Some(NativeFooterNumberingConfig {
+                enabled: opt_in && enabled,
+                scope,
+                section_start,
+            });
             let font = string(&mut root, "album_pages_footer_number_font", "")?;
             let size = number(&mut root, "album_pages_footer_number_size", "", "points")?;
             let position = TextPosition::parse_for(
@@ -658,6 +717,7 @@ impl NativePdfConfig {
             stamp_text,
             page_settings,
             proof,
+            footer_numbering,
             unapplied_keys,
             overridden_keys,
         })

@@ -1,14 +1,14 @@
-use stamp_album_gen2::native_pdf::album::NativeAlbum;
 use stamp_album_gen2::native_pdf::albumeasy;
+use stamp_album_gen2::native_pdf::{album::NativeAlbum, config::NativePdfConfig};
 use std::{env, fs, path::Path};
 
-const USAGE: &str =
-    "Usage: cargo run --example render_stampalbum -- <input.txt|input.stampalbum> <output.pdf>";
+const USAGE: &str = "Usage: cargo run --example render_stampalbum -- <input.txt|input.stampalbum> <output.pdf> [config.toml]";
 
 fn main() -> Result<(), String> {
     let mut args = env::args_os().skip(1);
     let input = args.next().ok_or(USAGE)?;
     let output = args.next().ok_or(USAGE)?;
+    let config_path = args.next();
     if args.next().is_some() {
         return Err(USAGE.into());
     }
@@ -22,8 +22,18 @@ fn main() -> Result<(), String> {
         .find(|line| !line.is_empty() && !line.starts_with('#'));
     let page_count = if first.is_some_and(|line| line.starts_with("STAMPALBUM")) {
         let album = NativeAlbum::load(input)?;
-        album.write_pdf(Path::new(&output))?.len()
+        if let Some(config_path) = config_path {
+            let config = NativePdfConfig::load(Path::new(&config_path))?;
+            album
+                .write_pdf_with_config(&config, Path::new(&output))?
+                .len()
+        } else {
+            album.write_pdf(Path::new(&output))?.len()
+        }
     } else {
+        if config_path.is_some() {
+            return Err("A TOML config may only be supplied for native STAMPALBUM input".into());
+        }
         albumeasy::render_file(input, Path::new(&output))?
     };
     println!(

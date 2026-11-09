@@ -34,24 +34,22 @@ deferred until the full language mapping and review are complete. Preserve
 image references and resolve them relative to the source album (or its
 explicitly managed asset set) while mapping the document.
 
-### Current standalone compatibility slice
+### Current standalone compatibility status
 
 The [bounded native interpreter](../../src/native_pdf/albumeasy.rs) and
 [standalone example](../../examples/render_stampalbum.rs) now render the
-accepted image-controls AlbumEasy TXT and its identical raw-command
-`.stampalbum` without AlbumEasy. Basic image stamps, captions, top-aligned
-ES/FS rows, solid/blank frames and selected image controls have runnable
-coverage. This does not certify all variants, state semantics, default row
-alignment or full-file compatibility, and does not switch production routing.
+AlbumEasy TXT and identical raw-command `.stampalbum` inputs without
+AlbumEasy. Bounded mappings now include image controls, background colours,
+footer numbering/colour, settings save/restore, margin text, inner/outer
+borders and selectors, headings, offsets/padding and TOP/MIDDLE/BOTTOM row
+alignment. These are isolated command-family slices, not complete language
+support, a unified application document/editor, or production routing.
 
-The [Denmark supported test copy](../../tests/fixtures/albumeasy/denmark-txt-native-v1/README.md)
-renders 16 pages and 41 images after eight explicitly documented occurrences
-of six unsupported commands are commented. Background fills, footer/margin
-colours, footer numbering and stamp-settings save/restore remain deferred;
-see the [long-running plan](../reports/NATIVE_PDF_IMPLEMENTATION_PLAN.md#required-denmark-mappings-still-deferred).
-The untouched original TXT still fails explicitly on these commands.
-Standalone coverage here supplements, rather than upgrades, the conservative
-production-support labels in the historical tables below.
+The [Denmark v1 supported test copy](../../tests/fixtures/albumeasy/denmark-txt-native-v1/README.md)
+is a historical checkpoint with eight comments. Later managed derivatives
+progressed through v5; the [latest v5 report](../../tests/fixtures/albumeasy/denmark-margin-native-v5/README.md)
+records zero documented deferrals across its three standalone routes. This
+does not certify full AlbumEasy language, overload or application support.
 
 **Background update (#86):** After acceptance of the
 [AlbumEasy reference page](../../tests/fixtures/albumeasy/stamp-background-colours-v1/README.md),
@@ -78,25 +76,36 @@ input routes have two-page/12-image proofs, strict-error/overflow tests and
 native footer positioning coverage. TXT/raw rasters are identical; normal
 footer text bounds match AlbumEasy within 0.003 points. Overall native row/
 title layout differences and human visual/print acceptance remain open.
-The [Denmark v3 proof](../../tests/fixtures/albumeasy/denmark-footer-native-v3/README.md)
-restores footer colour/numbering and leaves three occurrences: margin-text
-colour and stamp-settings save/restore. Full overload/state conformance and
-production routing remain outside this bounded slice. Year/section-local
-numbering is separately deferred under #88 without changing `$PAGES$`.
+The [Denmark v5 proof](../../tests/fixtures/albumeasy/denmark-margin-native-v5/README.md)
+now renders with zero documented deferrals across the three standalone input
+routes. Full language/overload conformance and production routing remain
+outside these bounded slices. Year/section-local numbering is separately
+implemented as a native-only extension under #88. Native `.stampalbum` files
+may opt into section numbering with explicit `NATIVE_PAGE_NUMBER_SECTION`
+boundaries and `[native_pdf.footer_number]` configuration. A page containing a
+boundary stays in the preceding section; the next page begins the new section.
+`$SECTION_PAGE$`, `$SECTION_PAGES$` and `$DOCUMENT_PAGES$` distinguish the
+section ordinal, section count and document count; `$PAGES$` remains the actual
+document page count. A configured section start of 10 numbers ten pages
+10–19. No year is inferred from captions. AlbumEasy TXT and raw-command routes
+retain their existing behavior, including literal handling of the new tokens;
+this mapping does not integrate the native renderer into the application.
+The [implementation plan](../reports/NATIVE_PDF_IMPLEMENTATION_PLAN.md)
+records the full boundary policy and validation status.
 
 ## 1. Purpose and scope
 
-**Next reference slice (#93):** The
+**Completed bounded mapping (#93):** The
 [heading references](../../tests/fixtures/albumeasy/stamp-headings-v1/README.md)
 compare `STAMP_HEADING`/`STAMP_HEADING_VA`, multiline headings, optional
 signed offsets, `STAMP_HEADING_PADDING` and saved/restored padding/colour
 with real mixed-height stamps. Two complete Letter albums have two pages/
 12 images each; final rasters and physical frame/caption bounds checked.
 Local/VA modes differ in reserved row footprint, not only final text y.
-TOP/MIDDLE/BOTTOM interactions are reference evidence; MIDDLE/BOTTOM
-are now mapped in standalone compatibility and native routes (`#93`) with
-new heading regression tests and approved-reference derivative fixtures.
-No production routing change.
+TOP/MIDDLE/BOTTOM interactions are mapped in standalone compatibility and
+native routes with regression tests and approved-reference derivative
+fixtures. Commit `04c8a093` is on `issue/93-stamp-headings`. Imported-album
+editor/parser integration and production routing remain out of scope.
 
 **Bounded border-style checkpoint (#92):** The accepted
 [border-style reference pairs](../../tests/fixtures/albumeasy/stamp-border-styles-v1/README.md)
@@ -260,7 +269,7 @@ images is not specified here and remains open for renderer tests.
 | `ALBUM_STAMP_IMG_GREYSCALE_ON` / `ALBUM_STAMP_IMG_GRAYSCALE_ON` | No arguments | Subsequent stamp images display in grayscale; US spelling is accepted. | No imported-parser support observed. |
 | `ALBUM_STAMP_IMG_GREYSCALE_OFF` / `ALBUM_STAMP_IMG_GRAYSCALE_OFF` | No arguments | Subsequent stamp images display in their original colors; default behavior. US spelling is accepted. | No imported-parser support observed. |
 | `ALBUM_STAMP_IMG_HIDE` / `ALBUM_STAMP_IMG_SHOW` | No arguments | Hide/show subsequent stamp-box images. Does not affect page-background images; images are shown by default. | No imported-parser support observed. |
-| `ALBUM_STAMP_SETTINGS_SAVE` / `ALBUM_STAMP_SETTINGS_RESTORE` | No arguments | Save/restore stamp drawing settings, e.g. to temporarily change image or box settings for a map. | Ordinary TXT generation emits these in one generated sequence. Imported parser does not accept them. Nesting/depth and unmatched-command behavior remain open. |
+| `ALBUM_STAMP_SETTINGS_SAVE` / `ALBUM_STAMP_SETTINGS_RESTORE` | No arguments | Save/restore stamp drawing settings, e.g. to temporarily change image or box settings for a map. | Bounded standalone compatibility/native mappings in #89 capture mapped image, frame, background, border and color controls; single-snapshot behavior is reference-tested. Full documented saved-setting coverage and the production imported-album editor remain open. |
 
 The help explicitly lists the saved values: both image-setting commands;
 aspect-ratio mode; image hide/show and grayscale on/off; stamp-box size
@@ -280,21 +289,20 @@ TXT/raw native mappings: image options, size adjustment, outline/background,
 border/text/heading colours are captured per stamp and restored from a
 consumed single snapshot. Native-language commands capture its mutable
 image/outline/background policies; global frame/text styling stays fixed.
-All three input routes have complete-page proofs and failure preservation.
-Denmark v4 restores both commands, leaving margin-text colour deferred.
-This does not update the conservative production-support labels above or
-certify native-format frame/caption parity with the reference.
-Inner-border/heading/footer controls in the saved-state checklist still need
-their own mapping/proof coverage.
+All three standalone routes have complete-page proofs and failure preservation
+for the mapped state subset. Later #90–#93 slices additionally map margin,
+border and heading settings; footer-text alignment/padding and the complete
+saved-setting checklist remain open. This does not certify production
+import/editor support or native-format frame/caption parity.
 
 ## 5. Stamp border, heading, and footer controls
 
 | Command | 4.5.0 grammar | Documented behavior | Application audit |
 |---|---|---|---|
-| `STAMP_BORDER_STYLE` | `(style [options...])` | Styles: `SOLID`, `DOTTED`, `DOT_DASH`, `DASHED`, `BLANK`, `CORNER`, `SIDES`. Default is `SOLID`; a style persists for succeeding boxes until changed. | Not accepted by imported parser. |
-| `STAMP_INNER_BORDER` | `(padding border)` | Adds an inner frame until cancelled with `(0.0 0.0)`. Applies only to rectangular boxes with borders and has no effect on rotated boxes. | Not accepted by imported parser. |
-| `STAMP_INNER_BORDER_STYLE` | `(style [options...])` | Sets inner-frame style using the same documented style family. | Not accepted by imported parser. |
-| `STAMP_BOXES_SIZE_ADJUST` | `(adjust)` | Signed size adjustment applies to succeeding stamp boxes; positive increases and negative decreases their size. | Observed in generated TXT; parser accepts one numeric argument; reflow reads only the final global adjustment, not ordered state. |
+| `STAMP_BORDER_STYLE` | `(style [options...])` | Styles: `SOLID`, `DOTTED`, `DOT_DASH`, `DASHED`, `BLANK`, `CORNER`, `SIDES`. Default is `SOLID`; a style persists for succeeding boxes until changed. | Bounded standalone compatibility/native mapping in #92 covers rectangular styles/selectors, path geometry, persistence and save/restore; application imported-album parser/editor remains pending. |
+| `STAMP_INNER_BORDER` | `(padding border)` | Adds an inner frame until cancelled with `(0.0 0.0)`. Applies only to rectangular boxes with borders and has no effect on rotated boxes. | Bounded standalone compatibility/native mapping in #91/#92 covers rectangular geometry, styles, selectors, cancellation and save/restore; application imported-album parser/editor remains pending. |
+| `STAMP_INNER_BORDER_STYLE` | `(style [options...])` | Sets inner-frame style using the same documented style family. | Bounded standalone compatibility/native mapping in #91/#92; application imported-album parser/editor remains pending. |
+| `STAMP_BOXES_SIZE_ADJUST` | `(adjust)` | Signed size adjustment applies to succeeding stamp boxes; positive increases and negative decreases their size. | Bounded standalone compatibility mapping captures ordered adjustment per stamp; complete shape/overload and application-editor semantics remain open. |
 | `STAMP_HEADING` | `(font fontsize text [offset])` | Attach immediately after a stamp-add command. Aligns each heading vertically relative to its own stamp top; offset shifts it horizontally from the centered position. | Mapped in standalone compatibility parser (#93) with explicit source-line errors and save/restore coverage; imported parser support remains pending. |
 | `STAMP_HEADING_VA` | `(font fontsize text [offset])` | Aligns headings vertically with one another; accepts the same optional horizontal offset. | Mapped in standalone compatibility parser (#93), including TOP/MIDDLE/BOTTOM row interactions; imported parser support remains pending. |
 | `STAMP_HEADING_PADDING` | `(padding)` | Signed adjustment to heading/frame gap for succeeding boxes; zero restores the default. | Mapped in standalone compatibility parser (#93) and included in save/restore heading-colour state tests; imported parser support remains pending. |
@@ -306,8 +314,10 @@ them draws all four corners. `SIDES` accepts optional `L`, `R`, `T`, and/or `B`;
 omitting them draws no sides (equivalent to `BLANK`), while naming all four
 restores the full border. `SIDES` is independent of ordinary border styles and
 is not reset when a new style is selected; it does not affect corner markers.
-`CORNER` and `SIDES` apply only to rectangular boxes. These rules are verified
-in the 4.5.0 help, but parser/reflow support is not established.
+`CORNER` and `SIDES` apply only to rectangular boxes. The bounded standalone
+compatibility/native mappings cover these selectors, masks, persistence and
+measured geometry for the fixtures cited above; all shape/rotation cases and
+production imported-album editor support remain open.
 
 ## 6. Legacy commands and version reconciliation
 

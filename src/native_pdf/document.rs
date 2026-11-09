@@ -18,6 +18,7 @@ use super::{
         album_pages_title::{AlbumPagesTitle, TitleLayout},
     },
     date::DateSource,
+    numbering::NumberingContext,
     text::text_lines_overlap,
     Result,
 };
@@ -100,6 +101,7 @@ pub struct PageSettings {
     footer_number: Option<AlbumPagesFooterNumber>,
     footer_date: Option<AlbumPagesFooterDate>,
     margin_text: Vec<AlbumPagesMarginText>,
+    native_numbering_tokens_enabled: bool,
 }
 
 impl PageSettings {
@@ -129,6 +131,7 @@ impl PageSettings {
             footer_number: None,
             footer_date: None,
             margin_text: Vec::new(),
+            native_numbering_tokens_enabled: false,
         }
     }
 
@@ -183,6 +186,14 @@ impl PageSettings {
 
     pub fn set_footer_number(&mut self, number: AlbumPagesFooterNumber) {
         self.footer_number = Some(number);
+    }
+
+    pub(crate) fn enable_native_numbering_tokens(&mut self) {
+        self.native_numbering_tokens_enabled = true;
+    }
+
+    pub(crate) fn has_footer_number(&self) -> bool {
+        self.footer_number.is_some()
     }
 
     pub fn set_footer_date(&mut self, date: AlbumPagesFooterDate) {
@@ -252,7 +263,7 @@ impl PageSettings {
         if self.header_number.is_some() {
             return Err("ALBUM_PAGES_HEADER_NUMBER requires the final page count; use resolve_with_page_count".into());
         }
-        self.resolve_page(page_number, None, None)
+        self.resolve_page(page_number, None, None, None)
     }
 
     pub fn resolve_with_page_count(
@@ -278,7 +289,31 @@ impl PageSettings {
                 "Native PDF physical page must be within a positive final PDF page count".into(),
             );
         }
-        self.resolve_page(page_number, Some(total_pages), generation_date)
+        self.resolve_page(page_number, Some(total_pages), generation_date, None)
+    }
+
+    pub(crate) fn resolve_with_numbering_context(
+        &self,
+        page_number: usize,
+        total_pages: usize,
+        generation_date: Option<chrono::NaiveDate>,
+        numbering: NumberingContext,
+    ) -> Result<PageLayout> {
+        if total_pages == 0
+            || u32::try_from(total_pages).is_err()
+            || page_number == 0
+            || page_number > total_pages
+        {
+            return Err(
+                "Native PDF physical page must be within a positive final PDF page count".into(),
+            );
+        }
+        self.resolve_page(
+            page_number,
+            Some(total_pages),
+            generation_date,
+            Some(numbering),
+        )
     }
 
     pub(crate) fn resolve_for_pagination(
@@ -294,11 +329,16 @@ impl PageSettings {
         {
             return Err("Native PDF pagination exceeds the positive PDF page-count range".into());
         }
-        self.resolve_page(
-            page_number,
-            Some(provisional_total.max(page_number)),
-            generation_date,
-        )
+        let total_pages = provisional_total.max(page_number);
+        let numbering = self
+            .native_numbering_tokens_enabled
+            .then_some(NumberingContext {
+                section_ordinal: page_number,
+                section_pages: total_pages,
+                document_pages: total_pages,
+                start: None,
+            });
+        self.resolve_page(page_number, Some(total_pages), generation_date, numbering)
     }
 
     fn resolve_page(
@@ -306,6 +346,7 @@ impl PageSettings {
         page_number: usize,
         total_pages: Option<usize>,
         generation_date: Option<chrono::NaiveDate>,
+        numbering_context: Option<NumberingContext>,
     ) -> Result<PageLayout> {
         if page_number == 0 {
             return Err("Native PDF page number must be one-based".into());
@@ -409,12 +450,26 @@ impl PageSettings {
             .footer_number
             .as_ref()
             .map(|number| {
-                number.layout(
-                    margin_bounds,
-                    physical_page,
-                    page_number,
-                    total_pages.ok_or("ALBUM_PAGES_FOOTER_NUMBER requires the final page count")?,
-                )
+                let total_pages =
+                    total_pages.ok_or("ALBUM_PAGES_FOOTER_NUMBER requires the final page count")?;
+                let context = numbering_context.or_else(|| {
+                    self.native_numbering_tokens_enabled
+                        .then_some(NumberingContext {
+                            section_ordinal: page_number,
+                            section_pages: total_pages,
+                            document_pages: total_pages,
+                            start: None,
+                        })
+                });
+                match context {
+                    Some(context) => number.layout_with_numbering_context(
+                        margin_bounds,
+                        physical_page,
+                        page_number,
+                        context,
+                    ),
+                    None => number.layout(margin_bounds, physical_page, page_number, total_pages),
+                }
             })
             .transpose()?;
         if let (Some(footer), Some(number)) = (&footer, &footer_number) {

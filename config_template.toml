@@ -1186,6 +1186,10 @@ minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the tex
 # and native footer padding/height plus [colors].color_album_footer.
 [native_pdf.footer_number]
 enabled = false
+# document preserves one sequence; section restarts after explicit native section markers.
+scope = "document"
+# First displayed number in section scope; use an integer such as 10 to customize it.
+section_start = 1
 
 # Independent header labels; share native header padding/height and header colour.
 [native_pdf.header_number]
