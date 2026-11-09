@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-09
-**Revision:** 60
+**Revision:** 63
 **Status:** Bounded standalone renderer and command-family slices are implemented. Against the 46 roadmap tasks, 19 are partially evidenced, 27 remain unsatisfied, and none yet meets its full task acceptance criteria. Full AlbumEasy compatibility, canonical application integration, export and production routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -2359,6 +2359,186 @@ maintainer and actual-size print acceptance remain pending. This is a
 native-only capability slice, not an AlbumEasy command mapping or production
 integration; it does not change any numbered roadmap task's completion status.
 
+### Australia comparison follow-up TODOs — issue #99
+
+Recorded from the [first-20-source-page comparison report](../../tests/fixtures/albumeasy/australia-first20-v1/README.md).
+The historical AlbumEasy reference and native compatibility proof each contain
+20 pages; the enhanced native proof contains 25 after reflow. All retain 190
+image placements. Eleven automated tests pass, but these counts do not certify
+visual parity or physical print acceptance. The items below refine existing
+T036-T040/T044 work; they do not add numbered roadmap tasks, mark any complete,
+or authorize production integration.
+
+#### Compatibility and native-language gaps
+
+- [ ] **AUS-01 — Four-argument `ROW_START_ES`** (T036-T038, T040):
+  verify the fourth argument's grammar, units, defaults and effect against
+  pinned AlbumEasy help and a fresh focused reference. The Australia source
+  contains 80 occurrences; today's compatibility copy explicitly removes
+  `6.0`, whose historical effect is unverified. Implement the verified mapping
+  and regression tests before removing those adaptations. Acceptance: the
+  original selected TXT renders unchanged with all 190 placements and verified
+  row behavior; preserve the historical adapted fixture as evidence.
+- [ ] **AUS-02 — Caption, baseline and row-spacing fidelity** (T038, T040,
+  T044): measure the compact/shifted compatibility layout and crowded captions
+  against comparable reference pages. Distinguish source crowding from native
+  regressions; add wrapping/footprint/position assertions for dense and
+  mixed-height rows. Do not resize mounting frames to make text fit. Acceptance:
+  unexplained layout differences are resolved or explicitly classified with
+  measured evidence and maintainer review.
+- [ ] **AUS-03 — Native free-standing page text and vertical spacing**
+  (T038, T040): define native equivalents for `PAGE_TEXT_CENTRE` and
+  `PAGE_VSPACE`, retaining order, font, positioning and source provenance.
+  The enhanced demonstration currently relocates 181 page-text entries into
+  captions and does not reproduce explicit vertical spaces. Acceptance:
+  reproduce representative source page-text/spacing behavior without using
+  stamp captions as a substitute, then retain all selected source metadata.
+- [ ] **AUS-04 — Explicit native page breaks and unified album pagination**
+  (T038, T040): add a deliberate source-page-break mapping so one native
+  document can represent the 20 source pages without 20 separate documents
+  and an external PDF merge. Define source-page versus physical-page numbering
+  under reflow, including global totals and source provenance. Acceptance:
+  test breaks, continuation pages and footers in one native render; no
+  AlbumEasy rendering dependency. The current local numbering is intentional
+  fixture behavior, not a compatibility-renderer numbering defect.
+- [ ] **AUS-05 — Compose headings with inside and side labels** (T038, T040):
+  remove the attachment-order limitation that currently moves each source
+  page's first stamp heading into its caption. Acceptance: one image/frame can
+  retain its heading plus above/below inside labels and left/right wrapped
+  labels, with their full measured footprint, no overlaps and unchanged frame
+  dimensions.
+
+#### Demonstration fidelity and acceptance
+
+- [ ] **AUS-06 — Separate fidelity proofs from enhanced presentation**
+  (T040, T044): retain the existing demonstration, but add a source-style native
+  comparison when the required mappings are ready. Account explicitly for
+  white rather than black frame interiors, black rather than dark-blue header,
+  stacked captions, 5 mm rather than 3 mm row spacing, isolated label rows and
+  60% demonstration illustrations. These are intentional fixture choices, not
+  established renderer defects. Acceptance: each remaining difference is
+  labelled exact/intentional/unresolved; no silent approximation or source
+  modification, and all 190 source frames/images remain traceable.
+- [ ] **AUS-07 — Full-size visual and physical print review** (T040, T044):
+  review all three PDFs, especially tiny 3.5 pt labels, dense captions and the
+  five enhanced continuation pages (source pages 2, 11, 15, 16 and 19). Confirm
+  wrapping limits, clearance and readability at Actual size on US Letter.
+  Preserve the source's 216.0 x 279.4 mm document geometry; do not silently
+  normalize its width or claim source frame sizes are certified physical stamp
+  dimensions. Acceptance: record maintainer visual/print decisions and any
+  resulting defects; automated counts/contact sheets are not approval.
+- [ ] **AUS-08 — Windows comparison validation** (T040, T044): run the Australia
+  integration tests and reproduction steps on Windows, checking relative
+  assets, source checksums, page/image counts and PDF combination tooling.
+  Acceptance: retain Windows results alongside the existing Linux evidence,
+  or document an explicit unresolved platform blocker.
+
+Keep the supplied historical PDF unchanged, including its `of 82` footer.
+Use fresh, separately named AlbumEasy references when investigating semantics;
+the historical PDF has not been freshly certified against the current TXT.
+Production integration remains deferred until command mapping and review are
+complete. This checklist records follow-up work only.
+
+### External Brazil comparison follow-up TODOs — issue #100
+
+The [Brazil first-20 proof report](../../tests/fixtures/albumeasy/brazil-first20-v1/README.md)
+adds externally authored source evidence: three 20-page renditions, each with
+84 image placements, from a supplied 136-page AlbumEasy 4.5.0 PDF. Its original
+TXT requires explicit test-copy adaptations; this is not unchanged-input
+compatibility certification. Add these cases to T036-T040/T044:
+
+- [ ] **BRA-01 — Legacy image padding units:** implement
+  `ALBUM_STAMP_IMG_SETTING` using documented 0.35 mm units, preserving stretch
+  and state behavior. The fixture explicitly converts `(13 13 False)` to
+  `ALBUM_STAMP_IMG_NEW_SETTING (4.55 4.55 False)`; do not treat it as a
+  name-only alias or interpret 13 as millimetres. Verify reference image bounds.
+- [ ] **BRA-02 — Legacy page numbering:** map `ALBUM_PAGES_NUMBER` with verified
+  obsolete-name semantics and unchanged arguments. Brazil starts at `BR 85`;
+  confirm pages 1-20 end at `BR 104`. The current supported copy substitutes
+  `ALBUM_PAGES_FOOTER_NUMBER`; the original spelling is still rejected.
+- [ ] **BRA-03 — Alternating margins in the compatibility interpreter:**
+  support `ALBUM_PAGES_MARGINSE` with physical-page parity. Brazil's odd margins
+  are `(20 10 10 10)` and even margins `(10 20 10 10)`. The compatibility proof
+  explicitly defers this command and uses odd margins throughout; the native
+  demonstration selects source parity separately for each input. Neither is
+  proof of automatic alternating-margin import under reflow.
+- [ ] **BRA-04 — Semicolon annotations:** verify source grammar against the
+  pinned reference and handle trailing `;` and `;date` annotations outside
+  quoted strings, without corrupting quoted punctuation. All 74 source page
+  text lines need explicit annotation removal in today's supported copy;
+  original annotations remain in the ledger. Add parser regression cases.
+- [ ] **BRA-05 — Automatic centered page-text wrapping:** verify the reference
+  wrapping width, word breaks, baseline and reserved height. Source page 9's
+  long Franciscan Province heading wraps in the historical PDF but is rejected
+  unchanged by the native compatibility renderer. Today's test copy inserts
+  an explicit newline using measured native content width. Fix the mapping,
+  not the source; link spacing/baseline work to AUS-02/AUS-03.
+- [ ] **BRA-06 — External-album acceptance:** review paired pages 1, 9 and 20
+  plus all-page sheets, measure fixed-spacing rows and legacy image-fit
+  differences, and run Actual-size US Letter print and Windows checks.
+  Preserve the source's **217 x 280 mm** document size, which is not exact
+  Letter; disclose printer nonprintable-area limits. Frame sizes are source
+  box dimensions, not independently measured stamps. Series text relocated
+  below frames, smaller label demonstrations and isolated rows are intentional
+  native presentation changes, not established compatibility defects.
+- [ ] **BRA-07 — Accurate empty-caption diagnostics:** the native seven-argument
+  `STAMP_IMAGE` form rejects an empty caption with an image-path error because
+  it reuses a nonempty quoted-string guard. Keep the four-argument caption-free
+  form supported; when this parser is next changed, report the correct field
+  and document whether an explicitly empty optional caption is valid. Add
+  separate invalid-path and empty-caption regression cases.
+
+These are follow-up TODOs only. Production integration, roadmap completion
+counts, and the original source files remain unchanged.
+
+### Christmas Island decorative-border follow-up TODOs — issue #101
+
+The maintainer approved a two-source-page **A4** test of existing support only:
+retain explicit border omissions in TXT/native-language proofs and add a separate
+lower-level native Classic border proof. See the
+[fixture report](../../tests/fixtures/albumeasy/christmas-island-first2-v1/README.md).
+The supplied folder lacks `Classic.txt`/`Classic.png`; the installed AlbumEasy
+assets are copied with hashes and checked against historical border geometry.
+This exception does not authorize production mapping or a new format.
+
+- [ ] **CIS-01 — Decorative border across both loaders** (T037-T040): map
+  `ALBUM_PAGES_DECORATIVE_BORDER` into the canonical document and native
+  `.stampalbum` representation. The lower-level renderer already supports Classic,
+  but the TXT interpreter and native document loader do not wire it through.
+  Acceptance: render both original source pages with all 21 stamps, four
+  correctly mirrored corners and eight connecting segments per page; do not
+  silently substitute an ordinary border or claim the separate border-only
+  proof establishes loader support.
+- [ ] **CIS-02 — Decorative dependency provenance** (T037, T040, T041): define
+  explicit resolution and packaging of named border definitions and referenced
+  PNGs when absent from the source directory. Verify installed Classic assets
+  against the supplied historical PDF before claiming a match; missing files
+  must produce actionable errors rather than an implicit system fallback.
+- [ ] **CIS-03 — Empty page-text spacers** (T036-T040): verify how
+  `PAGE_TEXT_CENTRE (HN 2 "")` reserves height and map that behavior without a
+  nonempty-text failure. Three occurrences currently need explicit approximate
+  2 pt `PAGE_VSPACE` replacements in the supported copy. Keep the approximation
+  disclosed until reference baseline/spacing measurements establish semantics.
+- [ ] **CIS-04 — Footer padding, case and empty affixes** (T036-T040):
+  verify `ALBUM_PAGES_FOOTER_PAD (3.0)`, legacy numbering with lowercase `c`,
+  mixed-case `ROW_ALIGN_top`, and native empty before/after strings. The loader
+  proof currently defers footer padding, normalizes command/position case and
+  uses nonempty native provenance affixes because empty affixes trigger a
+  misleading image-path diagnostic. Link the quoted-field diagnostic work to
+  BRA-07; test actual footer positions rather than just successful parsing.
+- [ ] **CIS-05 — Border conformance and print acceptance** (T040, T044):
+  preserve the original A4 reference; compare actual PDF ornament transforms,
+  opacity/masks, connecting-line endpoints/widths, and page-content clearance.
+  Explicitly distinguish the no-stamp border-only diagnostic from full album
+  proofs. Record maintainer visual approval and Windows validation; any future
+  Letter derivative must be separately named and must not overwrite A4 evidence.
+
+Brazil's BRA-01–BRA-07 entries above remain open. The later resolution check
+found no demonstrated JPEG pixel loss: the checked Brazil image retained its
+original byte stream and dimensions. Do not record a lower-resolution PDF
+defect without evidence; preview raster size and physical image scale are
+separate from embedded image quality.
+
 ### Future idea recorded 2026-11-08 — no implementation authorized
 
 **Country Review UI preview:** Consider showing a preview while reviewing a
@@ -2444,6 +2624,9 @@ task markers whenever implementation scope changes.
 
 | Date | Tasks / decision | Outcome / evidence | Next action |
 |------|------------------|--------------------|-------------|
+| 2026-11-09 | Revision 63: Christmas Island existing-support border test (#101) | Recorded CIS-01–CIS-05 for loader wiring, Classic asset provenance, empty spacers, footer/case/empty-affix semantics and border acceptance. Maintainer selected original A4 and a separate native border-only proof, not production implementation. Confirmed Brazil TODOs remain recorded; no demonstrated embedded-JPEG resolution loss. | Review two-page proofs and complete bounded mappings with reference evidence; no roadmap completion or production integration claimed. |
+| 2026-11-09 | Revision 62: externally authored Brazil comparison (#100) | Recorded BRA-01–BRA-07 for legacy image units/numbering, alternating margins, semicolon annotations, automatic page-text wrapping, external-album acceptance and accurate empty-caption diagnostics. Three 20-page proofs retain 84 image placements each; all adaptations are explicit test inputs. | Review PDFs, validate reference semantics and address bounded mappings. No production integration or full task completion claimed. |
+| 2026-11-09 | Revision 61: Australia comparison follow-up TODOs (#99) | Recorded AUS-01–AUS-08 for row overloads, layout fidelity, native page text/spacing/breaks, heading-label composition, intentional demonstration differences, print acceptance and Windows validation. Existing roadmap task IDs and completion counts remain unchanged. | Address each through bounded reference-first mapping and review; no production integration or new implementation authorized by this documentation update. |
 | 2026-11-01 | Plan created for options 1, 2 and 4 | Repository generation/import paths inspected; no rendering implementation changed. | Approve boundaries and start Phase 1. |
 | 2026-11-01 | Revision 2: expanded native-first scope | Added title icons, explicit export divergence, complete versioned AlbumEasy support and standalone import. T001–T029 retained; T030–T045 added. Previous permanent import exclusions superseded. | Pin target language/reference, create coverage matrix and approve compatibility-loss policy. |
 | 2026-11-03 | Revision 3: manual-first planning checkpoint | Repaired duplicated merge-conflict text; inventoried supplied 4.2.1 manual (92 canonical names, 12 additional spelling aliases); recorded unresolved grammar discrepancies and existing title-icon composition. No application changes or commits. | Review command/behavior matrix and remaining maintainer ideas before approving implementation order. |
