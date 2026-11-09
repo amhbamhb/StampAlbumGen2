@@ -24,12 +24,12 @@ before full TXT compatibility is claimed. Unmapped commands must be reported,
 not silently discarded. AlbumEasy remains a reference tool for mapping and
 checking behavior, not the future PDF runtime.
 
-| Pass | Input | Renderer output |
-|---|---|---|
-| AlbumEasy reference | [AlbumEasy `album.txt`](album.txt) | [AlbumEasy `album.pdf`](album.pdf) |
-| Native rendition | [Native `album.stampalbum`](album.stampalbum) | [Native `album-native.pdf`](album-native.pdf) |
-| Native interpretation of original TXT | [Unchanged `album.txt`](album.txt) | [Native `album-txt-native.pdf`](album-txt-native.pdf) |
-| Native interpretation of raw commands | [Raw `album-raw.stampalbum`](album-raw.stampalbum) | [Native `album-raw-native.pdf`](album-raw-native.pdf) |
+| Pass | Input | PDF | Saved preview | Extracted text |
+|---|---|---|---|---|
+| AlbumEasy reference | AlbumEasy [`album.txt`](album.txt) | [`album.pdf`](album.pdf) | [`album-preview.png`](album-preview.png) | [`album-pdf-text.txt`](album-pdf-text.txt) |
+| Native rendition | Native [`album.stampalbum`](album.stampalbum) | [`album-native.pdf`](album-native.pdf) | [`album-native-preview.png`](album-native-preview.png) | [`album-native-pdf-text.txt`](album-native-pdf-text.txt) |
+| Native interpretation of original TXT | Unchanged [`album.txt`](album.txt) | [`album-txt-native.pdf`](album-txt-native.pdf) | [`album-txt-native-preview.png`](album-txt-native-preview.png) | [`album-txt-native-pdf-text.txt`](album-txt-native-pdf-text.txt) |
+| Native interpretation of raw commands | Raw [`album-raw.stampalbum`](album-raw.stampalbum) | [`album-raw-native.pdf`](album-raw-native.pdf) | [`album-raw-native-preview.png`](album-raw-native-preview.png) | [`album-raw-native-pdf-text.txt`](album-raw-native-pdf-text.txt) |
 
 ## Page and command coverage
 
@@ -74,6 +74,22 @@ image was modified.
 
 ## Reproduction and review status
 
+Each retained PDF has a 1200-pixel-wide PNG page preview and a layout-preserving
+text extract beside it. These files are derived from the checked-in PDFs; they
+make screen review and text comparison possible without relying on temporary
+session files. Recreate them from the repository root with:
+
+```sh
+pdftoppm -f 1 -l 1 -scale-to 1200 -singlefile -png tests/fixtures/albumeasy/stamp-image-controls-v1/album.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-preview
+pdftotext -layout tests/fixtures/albumeasy/stamp-image-controls-v1/album.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-pdf-text.txt
+pdftoppm -f 1 -l 1 -scale-to 1200 -singlefile -png tests/fixtures/albumeasy/stamp-image-controls-v1/album-native.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-native-preview
+pdftotext -layout tests/fixtures/albumeasy/stamp-image-controls-v1/album-native.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-native-pdf-text.txt
+pdftoppm -f 1 -l 1 -scale-to 1200 -singlefile -png tests/fixtures/albumeasy/stamp-image-controls-v1/album-txt-native.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-txt-native-preview
+pdftotext -layout tests/fixtures/albumeasy/stamp-image-controls-v1/album-txt-native.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-txt-native-pdf-text.txt
+pdftoppm -f 1 -l 1 -scale-to 1200 -singlefile -png tests/fixtures/albumeasy/stamp-image-controls-v1/album-raw-native.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-raw-native-preview
+pdftotext -layout tests/fixtures/albumeasy/stamp-image-controls-v1/album-raw-native.pdf tests/fixtures/albumeasy/stamp-image-controls-v1/album-raw-native-pdf-text.txt
+```
+
 Run AlbumEasy 4.5.0 from this directory to reproduce the first pass:
 
 ```sh
@@ -97,17 +113,21 @@ cargo run --example render_stampalbum -- \
 ```
 
 The native renderer produced one US Letter page with seven frames and six
-visible stamp images. Its raster preview was compared with the accepted
-AlbumEasy preview. Both pages include the title, border, measured stamp boxes, real images, and
-item captions. The native page places its centered subtitle in the top margin
-and uses item captions to identify each control rather than repeating
-AlbumEasy's in-page subtitle and three section headings. Its first row also
-starts higher, with slight row-placement and image-fit differences. This is a
-visual comparison, not a claim of exact rendering parity.
+visible stamp images. Compare the saved
+[`album-preview.png`](album-preview.png) and
+[`album-native-preview.png`](album-native-preview.png). Both pages include the
+title, border, measured stamp boxes, real images, and item captions. The native
+`.stampalbum` page places its centered subtitle in the top margin and uses item
+captions to identify each control rather than repeating AlbumEasy's in-page
+subtitle and three section headings. Its first row also starts higher, with
+slight row-placement and image-fit differences. This is a visual comparison,
+not a claim of exact rendering parity.
 
-Print both PDFs on US Letter at **Actual size / 100%**, with Fit, Shrink, and
-other automatic scaling disabled. Physical print review of both renditions and
-native-pass acceptance remain pending.
+Print the AlbumEasy reference and the native `.stampalbum` PDF on US Letter at
+**Actual size / 100%**, with Fit, Shrink, and other automatic scaling disabled.
+The saved PNGs are screen previews, not substitutes for the printable PDFs.
+Physical print review of both renditions and native-pass acceptance remain
+pending.
 
 ## Input-path test results
 
