@@ -213,9 +213,17 @@ impl StampImageSettings {
     pub(crate) fn prepare(&self, page: &PageLayout) -> Result<PreparedStampImage> {
         self.validate_numbers()?;
         if !contains(page.content_bounds, self.box_bounds) {
-            return Err(
-                "native_pdf.stamp_image.box_bounds must fit within the page content area".into(),
-            );
+            return Err(format!(
+                "native_pdf.stamp_image.box_bounds ({:.3}, {:.3})-({:.3}, {:.3}) must fit within page content bounds ({:.3}, {:.3})-({:.3}, {:.3})",
+                self.box_bounds.left,
+                self.box_bounds.bottom,
+                self.box_bounds.right,
+                self.box_bounds.top,
+                page.content_bounds.left,
+                page.content_bounds.bottom,
+                page.content_bounds.right,
+                page.content_bounds.top,
+            ));
         }
 
         match self

@@ -33,6 +33,7 @@ use super::{
         position_footer_caption, FooterTextAlignment, FooterTextSide, PositionedStampText,
     },
     text::{MeasuredText, PositionedTextLine},
+    units::mm_to_points,
     Result,
 };
 use std::{fs, path::Path};
@@ -187,6 +188,63 @@ fn flag(c: &Command, index: usize) -> Result<bool> {
     }
 }
 
+struct StampImageOverload {
+    no_frame: bool,
+    inside_text: Option<String>,
+    image_horizontal_offset_mm: f64,
+    image_vertical_offset_mm: f64,
+    text_horizontal_offset_mm: f64,
+    text_vertical_offset_mm: f64,
+}
+
+fn stamp_image_overload(c: &Command) -> Result<StampImageOverload> {
+    let (combined, no_frame, horizontal_offsets) = match c.args.len() {
+        6 => (false, false, false),
+        7 => (false, true, false),
+        9 => (true, false, false),
+        10 => (true, true, false),
+        11 => (true, false, true),
+        12 => (true, true, true),
+        _ => {
+            return Err(
+                "STAMP_ADD_IMG expects the basic form or a documented combined overload".into(),
+            )
+        }
+    };
+    if no_frame {
+        let index = c.args.len() - 1;
+        if c.args[index].quoted || c.args[index].value != "NO_FRAME" {
+            return Err("Optional STAMP_ADD_IMG suffix must be unquoted NO_FRAME".into());
+        }
+    }
+    if !combined {
+        return Ok(StampImageOverload {
+            no_frame,
+            inside_text: None,
+            image_horizontal_offset_mm: 0.0,
+            image_vertical_offset_mm: 0.0,
+            text_horizontal_offset_mm: 0.0,
+            text_vertical_offset_mm: 0.0,
+        });
+    }
+    let inside_text = text(c, 6)?.to_string();
+    let image_vertical_offset_mm = n(c, 7)?;
+    let text_vertical_offset_mm = n(c, 8)?;
+    let (image_horizontal_offset_mm, text_horizontal_offset_mm) = if horizontal_offsets {
+        (n(c, 9)?, n(c, 10)?)
+    } else {
+        (0.0, 0.0)
+    };
+    Ok(StampImageOverload {
+        no_frame,
+        inside_text: Some(inside_text),
+        image_horizontal_offset_mm,
+        image_vertical_offset_mm,
+        text_horizontal_offset_mm,
+        text_vertical_offset_mm,
+    })
+}
+
 struct Item {
     width: f64,
     height: f64,
@@ -202,6 +260,11 @@ struct Item {
     border_colour: NamedColour,
     text_colour: NamedColour,
     inner_border: Option<StampInnerBorder>,
+    inside_text: Option<MeasuredText>,
+    image_horizontal_offset_mm: f64,
+    image_vertical_offset_mm: f64,
+    text_horizontal_offset_mm: f64,
+    text_vertical_offset_mm: f64,
 }
 
 fn height(t: &MeasuredText) -> f64 {
@@ -243,6 +306,71 @@ fn positioned(
         lines,
         bounds,
     }
+}
+
+fn position_inside_text(
+    measured: MeasuredText,
+    frame: Bounds,
+    horizontal_offset_mm: f64,
+    vertical_offset_mm: f64,
+    colour: NamedColour,
+) -> Result<PositionedStampText> {
+    let first = measured
+        .lines
+        .first()
+        .ok_or("Inside text has no measured lines")?;
+    let text_height = height(&measured);
+    let centre_x = (frame.left + frame.right) / 2.0 + horizontal_offset_mm;
+    let top = frame.top - vertical_offset_mm;
+    let first_left = centre_x - first.width_mm / 2.0;
+    let align_subsequent_to_first = horizontal_offset_mm != 0.0;
+    let lines = measured
+        .lines
+        .iter()
+        .enumerate()
+        .map(|(index, line)| PositionedTextLine {
+            text: line.text.clone(),
+            left_mm: if align_subsequent_to_first {
+                first_left
+            } else {
+                centre_x - line.width_mm / 2.0
+            },
+            baseline_mm: top - measured.ascent_mm - index as f64 * measured.line_advance_mm,
+            width_mm: line.width_mm,
+        })
+        .collect::<Vec<_>>();
+    let left = lines
+        .iter()
+        .map(|line| line.left_mm)
+        .fold(f64::INFINITY, f64::min);
+    let right = lines
+        .iter()
+        .map(|line| line.left_mm + line.width_mm)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let bottom = top - text_height;
+    if ![left, right, bottom, top]
+        .iter()
+        .all(|value| value.is_finite() && mm_to_points(*value).is_finite())
+        || lines.iter().any(|line| {
+            !line.baseline_mm.is_finite()
+                || !mm_to_points(line.baseline_mm).is_finite()
+                || !line.width_mm.is_finite()
+                || !mm_to_points(line.width_mm).is_finite()
+        })
+    {
+        return Err("STAMP_ADD_IMG inside-text offsets exceed native PDF coordinates".into());
+    }
+    Ok(PositionedStampText {
+        measured,
+        colour,
+        lines,
+        bounds: Bounds {
+            left,
+            right,
+            bottom,
+            top,
+        },
+    })
 }
 
 struct Row {
@@ -320,9 +448,15 @@ fn flush(
     })?;
     for (item, placed) in row.items.into_iter().zip(layout.items) {
         let bounds = placed.frame;
+        let image_bounds = Bounds {
+            left: bounds.left + item.image_horizontal_offset_mm,
+            right: bounds.right + item.image_horizontal_offset_mm,
+            bottom: bounds.bottom - item.image_vertical_offset_mm,
+            top: bounds.top - item.image_vertical_offset_mm,
+        };
         page.images.push(StampImageSettings {
             image_path: item.image,
-            box_bounds: bounds,
+            box_bounds: image_bounds,
             image_scale_pt_per_pixel: 1.0,
             options: item.options,
             image_padding_horizontal_mm: 0.0,
@@ -353,6 +487,15 @@ fn flush(
         }
         if let Some(heading) = placed.heading {
             page.text.push(heading);
+        }
+        if let Some(inside_text) = item.inside_text {
+            page.text.push(position_inside_text(
+                inside_text,
+                bounds,
+                item.text_horizontal_offset_mm,
+                item.text_vertical_offset_mm,
+                item.text_colour,
+            )?);
         }
         for (align, caption) in item.captions.into_iter().enumerate() {
             if let Some(caption) = caption {
@@ -844,8 +987,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     });
                 }
                 "STAMP_ADD_IMG" => {
-                    count(c, 6, 7)?;
+                    count(c, 6, 12)?;
                     let row = row.as_mut().ok_or("STAMP_ADD_IMG requires ROW_START")?;
+                    let overload = stamp_image_overload(c)?;
                     let width = n(c, 0)? + adjust;
                     let height = n(c, 1)? + adjust;
                     if width <= 0.0 || height <= 0.0 {
@@ -854,12 +998,6 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     let path = text(c, 2)?;
                     if path.is_empty() {
                         return Err("Stamp image path must not be empty".into());
-                    }
-                    if c.args.len() == 7 && c.args[6].value != "NO_FRAME" {
-                        return Err(
-                            "Only the basic STAMP_ADD_IMG and NO_FRAME overloads are implemented"
-                                .into(),
-                        );
                     }
                     let mut captions = Vec::new();
                     for i in 3..6 {
@@ -880,12 +1018,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         footer_alignment,
                         footer_padding_mm,
                         heading: None,
-                        frame: frame && c.args.len() != 7,
+                        frame: frame && !overload.no_frame,
                         outer_style,
-                        background: if c.args.len() == 7 { None } else { background },
+                        background: if overload.no_frame { None } else { background },
                         border_colour: stamp_colour,
                         text_colour,
-                        inner_border: if c.args.len() == 7 {
+                        inner_border: if overload.no_frame {
                             None
                         } else {
                             let mut inner = StampInnerBorder::new(
@@ -897,6 +1035,15 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             inner.state = inner_style;
                             Some(inner)
                         },
+                        inside_text: overload
+                            .inside_text
+                            .filter(|value| !value.trim().is_empty())
+                            .map(|value| MeasuredText::new(&row.font, row.size, &value))
+                            .transpose()?,
+                        image_horizontal_offset_mm: overload.image_horizontal_offset_mm,
+                        image_vertical_offset_mm: overload.image_vertical_offset_mm,
+                        text_horizontal_offset_mm: overload.text_horizontal_offset_mm,
+                        text_vertical_offset_mm: overload.text_vertical_offset_mm,
                     });
                 }
                 "STAMP_HEADING_PADDING" => {
@@ -1010,4 +1157,117 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let count = pages.len();
     write_imported_album_pdf(&settings, pages, output)?;
     Ok(count)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn parse_overload(source: &str) -> Result<StampImageOverload> {
+        stamp_image_overload(&command(source, 1)?)
+    }
+
+    fn close(actual: f64, expected: f64) {
+        assert!((actual - expected).abs() < 0.0001, "{actual} != {expected}");
+    }
+
+    #[test]
+    fn stamp_image_overloads_accept_documented_optional_argument_combinations() -> Result<()> {
+        let cases = [
+            (
+                r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "")"#,
+                false,
+                false,
+                0.0,
+                0.0,
+            ),
+            (
+                r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" NO_FRAME)"#,
+                false,
+                true,
+                0.0,
+                0.0,
+            ),
+            (
+                r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3)"#,
+                true,
+                false,
+                0.0,
+                0.0,
+            ),
+            (
+                r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3 NO_FRAME)"#,
+                true,
+                true,
+                0.0,
+                0.0,
+            ),
+            (
+                r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3 -2 5)"#,
+                true,
+                false,
+                -2.0,
+                5.0,
+            ),
+            (
+                r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3 -2 5 NO_FRAME)"#,
+                true,
+                true,
+                -2.0,
+                5.0,
+            ),
+        ];
+        for (source, combined, no_frame, image_x, text_x) in cases {
+            let parsed = parse_overload(source)?;
+            assert_eq!(parsed.inside_text.is_some(), combined, "{source}");
+            assert_eq!(parsed.no_frame, no_frame, "{source}");
+            close(parsed.image_horizontal_offset_mm, image_x);
+            close(parsed.text_horizontal_offset_mm, text_x);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn stamp_image_overloads_reject_incomplete_or_misplaced_optional_arguments() {
+        for source in [
+            r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4)"#,
+            r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3 -2)"#,
+            r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3 "NO_FRAME")"#,
+            r#"STAMP_ADD_IMG (42 34 "a.png" "" "" "" "inside" -4 3 -2 5 "NO_FRAME")"#,
+        ] {
+            assert!(parse_overload(source).is_err(), "{source}");
+        }
+    }
+
+    #[test]
+    fn inside_text_offsets_and_multiline_alignment_follow_the_reference_rules() -> Result<()> {
+        let frame = Bounds {
+            left: 10.0,
+            bottom: 20.0,
+            right: 50.0,
+            top: 60.0,
+        };
+        let text = MeasuredText::new("HN", 8.0, "LONG\nx")?;
+        let centred =
+            position_inside_text(text.clone(), frame, 0.0, 0.0, NamedColour::parse("black")?)?;
+        close(
+            centred.lines[0].left_mm + centred.lines[0].width_mm / 2.0,
+            30.0,
+        );
+        close(
+            centred.lines[1].left_mm + centred.lines[1].width_mm / 2.0,
+            30.0,
+        );
+        let offset = position_inside_text(text, frame, 3.0, 2.5, NamedColour::parse("black")?)?;
+        close(
+            offset.lines[0].left_mm + offset.lines[0].width_mm / 2.0,
+            33.0,
+        );
+        close(offset.lines[1].left_mm, offset.lines[0].left_mm);
+        close(
+            offset.lines[0].baseline_mm,
+            frame.top - 2.5 - offset.measured.ascent_mm,
+        );
+        Ok(())
+    }
 }

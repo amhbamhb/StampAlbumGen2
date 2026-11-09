@@ -244,10 +244,10 @@ millimetres; text sizes are in points.
 
 ### `STAMP_ADD_IMG` overloads
 
-| Form | 4.5.0 argument sequence | Documented behavior |
-|---|---|---|
-| Basic | `width height image left centre right [NO_FRAME]` | `NO_FRAME` is optional. |
-| Image plus inside text | `width height image left centre right inside-text img-vert-offset txt-vert-offset [img-horz-offset txt-horz-offset] [NO_FRAME]` | Horizontal offsets are an optional pair; `NO_FRAME` is independently optional after them. |
+| Form | 4.5.0 argument sequence | Documented behavior | Fixture coverage |
+|---|---|---|---|
+| Basic | `width height image left centre right [NO_FRAME]` | `NO_FRAME` is optional. | v1 covers basic PNG/JPEG and `NO_FRAME`. |
+| Image plus inside text | `width height image left centre right inside-text img-vert-offset txt-vert-offset [img-horz-offset txt-horz-offset] [NO_FRAME]` | Horizontal offsets are an optional pair; `NO_FRAME` is independently optional after them. | v1 covers the combined form with horizontal offsets plus `NO_FRAME`; v2 covers all four optional-argument combinations with multiline text. |
 
 The help says offsets may be positive or negative: positive moves down/right,
 negative moves up/left. The inside text is horizontally centred; when
@@ -256,6 +256,13 @@ Image paths are relative to the album text file. The help names PNG and JPEG
 as supported formats. `STAMP_BORDER_STYLE (BLANK)` is also documented as an
 alternative to `NO_FRAME`. Exact clipping/scaling behavior for oversized
 images is not specified here and remains open for renderer tests.
+
+The standalone native compatibility renderer now parses and renders both
+documented `STAMP_ADD_IMG` overloads, including independent `NO_FRAME`,
+signed image/text offsets, and multiline inside text. Its regression tests and
+native proof use the v2 matrix. This remains a bounded compatibility/proof
+path; it does not change the imported-album parser, Review UI, ordinary album
+generation, or production PDF routing.
 
 ## 4. Image controls and settings state
 
@@ -349,9 +356,9 @@ AlbumEasy runtime conformance testing.
 | Imported image assets | [`asset_errors` and `uploaded_image`](../../src/external_album.rs#L286) check referenced `STAMP_ADD_IMG` paths and recognize `imported-assets/` uploads. The UI/API accepts PNG/JPEG uploads with file-size and image-decode limits ([`external_album_api.rs`](../../src/review_ui/external_album_api.rs#L287)); the original referenced asset check is an existence/path check, not a complete format-conformance test. | Narrow image-path/upload support only. No evidence of image controls (fit/stretch, aspect ratio, grayscale, visibility) being applied by the application reflow/editor. |
 | Review UI editing | [`external_album.js`](../../src/review_ui/views/external_album.js#L230) renders existing command arguments as generic text fields. Its add controls provide only basic `STAMP_ADD_IMG`, centered text, and `ROW_START_FS` defaults ([`external_album.html`](../../src/review_ui/views/external_album.html#L86)). | Partial. It can edit retained arguments but exposes no typed shape/heading/style controls and cannot create the extended image overload from the add-stamp form. |
 | Imported serialization/export | [`export_layout`](../../src/external_album.rs#L1398) exports the saved command model and assets after validation; [`serialize`](../../src/external_album/parser.rs#L370) validates again and writes normalized commands. | This is not arbitrary AlbumEasy pass-through: unsupported commands are rejected by parsing/validation, and comments/formatting are not preserved. Exported TXT is not proof of semantic parity. |
-| Native PDF | Native stamp rendering accepts typed proof settings directly; [`StampImageProofSettings`](../../src/native_pdf/stamp_image.rs#L42) explicitly says its proof policy is not yet a production AlbumEasy command mapping. | Proof/layout capability only. Not an interpreter for these commands and not evidence for the corresponding command semantics. |
+| Native PDF | The standalone [`albumeasy` compatibility renderer](../../src/native_pdf/albumeasy.rs) now handles the basic and combined `STAMP_ADD_IMG` overloads; v1/v2 fixtures exercise parser output against AlbumEasy 4.5.0 reference PDFs. [`StampImageProofSettings`](../../src/native_pdf/stamp_image.rs#L42) still describes typed proof policy, not production command routing. | Bounded compatibility/proof support only. The imported-album parser/editor, ordinary album generation, and production PDF route remain unchanged pending completion and review of command mapping. |
 | Database stamp lookup | The attached [`get_stamps_by_country_series` API page](../functions/crates/stamp_album_db/src/get_stamps_by_country_series.html) documents retrieval of stamp records; the current implementation selects database rows ([`lib.rs`](../../crates/stamp_album_db/src/lib.rs#L1183)). | Upstream data access, not AlbumEasy command parsing, export, or native-rendering support. Keep the two evidence layers separate. |
-| Tests | The `emit.rs` unit test checks generated strings and `STAMP_HEADING_VA`; [`test_album_stamp_img_new_setting_affects_output`](../../tests/album_stamp_img_integration_test.rs#L13) currently runs `cargo run -- --help`, not an album generation. The related format/parameter tests inspect source strings ([`album_stamp_img_new_setting_usage.rs`](../../tests/album_stamp_img_new_setting_usage.rs#L12)). Imported-backend tests use a fake shell renderer that writes a synthetic PDF and appends the TXT ([`external_album_backend.rs`](../../tests/external_album_backend.rs#L53), [round-trip test](../../tests/external_album_backend.rs#L213)). | These tests cover code shape and imported workflow mechanics, not real AlbumEasy 4.5.0 rendering/conformance. No command-family external-renderer fixture was found in the inspected tests. |
+| Tests | The `emit.rs` unit test checks generated strings and `STAMP_HEADING_VA`; [`test_album_stamp_img_new_setting_affects_output`](../../tests/album_stamp_img_integration_test.rs#L13) currently runs `cargo run -- --help`, not an album generation. The related format/parameter tests inspect source strings ([`album_stamp_img_new_setting_usage.rs`](../../tests/album_stamp_img_new_setting_usage.rs#L12)). Imported-backend tests use a fake shell renderer that writes a synthetic PDF and appends the TXT ([`external_album_backend.rs`](../../tests/external_album_backend.rs#L53), [round-trip test](../../tests/external_album_backend.rs#L213)). The separate `native_pdf_albumeasy` suite tests bounded native compatibility rendering; `stamp-image-overloads-v1` and `stamp-image-overloads-v2` are external AlbumEasy 4.5.0 reference fixtures. | The external fixtures verify only their documented examples, and the native suite does not establish production imported-album or ordinary generation support. |
 
 The [4.2.1 application-gap report](../reports/ALBUMEASY_4_2_1_APPLICATION_GAPS.md)
 is useful historical context but predates this 4.5.0 help audit. Its old

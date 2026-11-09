@@ -91,8 +91,43 @@ The PDF hashes identify these particular outputs only; regenerated PDFs may
 differ because of metadata timestamps. The frozen TXT and raster-asset hashes
 identify the stable test inputs.
 
-No Rust test suite was run because this task only created and externally
-rendered reference fixtures; no Rust source or application behavior changed.
+At the time of the v1 fixture run, no Rust test suite was run because that
+task only created and externally rendered reference fixtures; no Rust source
+or application behavior changed.
 Production native-PDF integration remains deferred until the complete
 AlbumEasy command language and compatibility gaps have been mapped and
 reviewed.
+
+## Supplemental v2: combined `STAMP_ADD_IMG` overloads
+
+The v2 input exercises all four documented combinations of the optional
+horizontal-offset pair and `NO_FRAME`, with multiline inside text and signed
+vertical offsets. It reuses the synthetic asymmetric PNG from v1. The frozen
+v1 input and assets were not changed.
+
+The external AlbumEasy 4.5.0 reference run completed successfully:
+
+```sh
+(cd tests/fixtures/albumeasy/stamp-image-overloads-v2 && xvfb-run -a -s '-screen 0 1280x1024x24' env QT_QPA_PLATFORM=xcb timeout 60s /home/ray/work/AlbumEasy/AlbumEasy.sh -c album.txt)
+```
+
+`pdfinfo` confirmed one US Letter page (612 x 792 pt), and
+`pdftotext -layout` found each line of the four multiline inside-text labels.
+The [reference PDF](../../tests/fixtures/albumeasy/stamp-image-overloads-v2/album.pdf)
+and [rendered preview](../../tests/fixtures/albumeasy/stamp-image-overloads-v2/album-reference-preview.png)
+are checked in.
+
+The standalone native compatibility implementation is covered by:
+
+```sh
+cargo test --lib native_pdf::albumeasy::tests
+cargo test --test native_pdf_albumeasy combined_stamp_add_img_overloads_render_images_and_multiline_inside_text
+cargo test --test native_pdf_albumeasy generate_native_image_overload_v2_proof -- --ignored
+```
+
+All commands passed (3 unit tests, 1 integration test, and 1 proof-generation
+test). The [native PDF](../../tests/fixtures/albumeasy/stamp-image-overloads-v2/album-native.pdf)
+and [native preview](../../tests/fixtures/albumeasy/stamp-image-overloads-v2/album-native-preview.png)
+are available for visual review. This evidence does not establish pixel parity
+or production integration; the imported-album parser/UI and ordinary PDF
+routing remain unchanged.

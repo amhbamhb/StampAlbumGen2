@@ -6,6 +6,10 @@ fn fixture() -> std::path::PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/stamp-image-controls-v1")
 }
 
+fn image_overload_fixture() -> std::path::PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/stamp-image-overloads-v2")
+}
+
 fn check_pdf(path: &Path, pages: u32, images: usize) -> Result<(), String> {
     let pdf = PdfDocument::open(path).map_err(|e| e.to_string())?;
     assert_eq!(pdf.page_count().map_err(|e| e.to_string())?, pages);
@@ -167,6 +171,60 @@ fn explicit_page_starts_and_missing_images_are_not_ignored() -> Result<(), Strin
     let before = fs::read(&output).map_err(|e| e.to_string())?;
     assert!(albumeasy::render(&invalid, &fixture(), &output).is_err());
     assert_eq!(fs::read(&output).map_err(|e| e.to_string())?, before);
+    Ok(())
+}
+
+#[test]
+fn combined_stamp_add_img_overloads_render_images_and_multiline_inside_text() -> Result<(), String>
+{
+    let dir = tempfile::tempdir().map_err(|error| error.to_string())?;
+    let output = dir.path().join("combined-overloads.pdf");
+    let source = image_overload_fixture().join("album.txt");
+    assert_eq!(albumeasy::render_file(&source, &output)?, 1);
+    let pdf = PdfDocument::open(&output).map_err(|error| error.to_string())?;
+    assert_eq!(pdf.page_count().map_err(|error| error.to_string())?, 1);
+    let page = pdf.get_page(0).map_err(|error| error.to_string())?;
+    assert!((page.media_box[2] - 612.0).abs() < 0.01);
+    assert!((page.media_box[3] - 792.0).abs() < 0.01);
+    let streams = pdf
+        .get_page_content_streams(&page)
+        .map_err(|error| error.to_string())?;
+    let content = streams
+        .iter()
+        .map(|stream| String::from_utf8_lossy(stream))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert_eq!(content.matches(" Do").count(), 4);
+    for label in ["VERTICAL", "CENTRE", "NO FRAME", "HORIZONTAL", "OFFSETS"] {
+        assert!(content.contains(label), "missing inside-text line {label}");
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "Regenerate the checked-in native STAMP_ADD_IMG overload proof PDF"]
+fn generate_native_image_overload_v2_proof() -> Result<(), String> {
+    let fixture = image_overload_fixture();
+    let output = fixture.join("album-native.pdf");
+    assert_eq!(
+        albumeasy::render_file(&fixture.join("album.txt"), &output)?,
+        1
+    );
+    let pdf = PdfDocument::open(&output).map_err(|error| error.to_string())?;
+    assert_eq!(pdf.page_count().map_err(|error| error.to_string())?, 1);
+    let page = pdf.get_page(0).map_err(|error| error.to_string())?;
+    assert!((page.media_box[2] - 612.0).abs() < 0.01);
+    assert!((page.media_box[3] - 792.0).abs() < 0.01);
+    let streams = pdf
+        .get_page_content_streams(&page)
+        .map_err(|error| error.to_string())?;
+    assert_eq!(
+        streams
+            .iter()
+            .map(|stream| String::from_utf8_lossy(stream).matches(" Do").count())
+            .sum::<usize>(),
+        4
+    );
     Ok(())
 }
 

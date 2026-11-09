@@ -1,0 +1,7 @@
+            AlbumEasy stamp-image-overloads-v2
+           COMBINED IMAGE AND INSIDE-TEXT OVERLOADS
+                 VERTICAL                             HORIZONTAL
+                 NO FRAME                             NO FRAME
+VERTICAL                              HORIZONTAL
+ CENTRE                               OFFSETS
+
