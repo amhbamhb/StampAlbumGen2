@@ -4,6 +4,7 @@
 **References:** AlbumEasy **4.2.1** (legacy) and **4.5.0** (primary), not 4.3.
 **Purpose:** one working checkoff list; update it after each command slice.
 Production native-PDF integration remains deferred.
+**Restart handoff:** [current checkpoint and continuation instructions](../reports/ALBUMEASY_4_5_0_COMMAND_MAPPING_HANDOFF.md) (section 0).
 
 ### Command keyword case (#105)
 
@@ -334,6 +335,7 @@ requested work, **not additional accepted AlbumEasy spellings**.
 | [~] | Wrapped captions/side labels and continuation pagination | Existing native behavior; print/readability review and dense-row fidelity remain. |
 | [x] | Native explicit page-break command | #103 intentional empty pages/caption continuation; #104 optional H/V override, automatic inheritance and default reset. |
 | [ ] | Native free-standing page text and vertical-space commands | AUS-03; preserve order and source text without relocating it into stamp captions/headings. |
+| [ ] | Native page-frame item alignment: left / centre / right | Add an option to align items horizontally within the page frame, distinct from existing row distribution. Requested backlog only; scope, command syntax and implementation deferred. |
 | [ ] | Combined heading + inside + side-label attachment | AUS-05; preserve all footprints without resizing physical frames. |
 | [ ] | Left/right title-icon commands | Requested direction; detailed command design/implementation pending. |
 | [ ] | Country-review preview command/UI | Idea only; no command/API approved. |

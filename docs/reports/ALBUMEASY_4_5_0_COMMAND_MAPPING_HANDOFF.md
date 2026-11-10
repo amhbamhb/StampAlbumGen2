@@ -1,6 +1,146 @@
 # AlbumEasy 4.5.0 command-mapping handoff
 
 **Prepared:** 2026-11-06
+**Latest restart checkpoint:** 2026-11-09, after #105 and the page-frame
+alignment backlog request. Read section 0 first; later historical snapshots
+must not override it.
+
+## 0. Current restart checkpoint -- read first
+
+### Start here, without repeating completed investigation
+
+1. Read the [live command checklist](../guides/NATIVE_PDF_COMMAND_CHECKLIST.md)
+   for bounded command status and the working workflow.
+2. Read the [implementation plan](NATIVE_PDF_IMPLEMENTATION_PLAN.md)
+   (revision 67 at this checkpoint) for roadmap scope and country TODOs.
+3. Read the [PAGE_START_VAR evidence](../../tests/fixtures/albumeasy/page-start-var-v1/README.md)
+   for accepted references, exact commands, hashes, implementation semantics,
+   failures/corrections, comparison measurements and remaining gaps.
+4. Inspect the worktree and latest commits before changing anything. Do not
+   recreate issues, fixtures or proofs already present.
+
+**Verified repository snapshot at shutdown:**
+
+- Active checkout: `/media/ray/2026-01-11/Rust/Rust/StampAlbumGen2`.
+  Conversation/IDE links sometimes use `/media/ray/program/Rust/StampAlbumGen2`;
+  use the actual active checkout, not a second assumed copy.
+- Branch: `issue/105-case-insensitive-pdf-commands`, tracking its origin branch.
+- HEAD: `6bdf57f0` (#105 command-case handling).
+- Previous: `363f2158` (#104 PAGE_START_VAR), `6161402c` (#103 PAGE_START),
+  `0d47cf73` (command checklist).
+- These commits and tracked proof files were verified on disk. They appeared
+  after maintainer actions; this assistant did not commit or push them.
+- Before this handoff edit, the only modified file was the command checklist:
+  the new page-frame alignment backlog row. This handoff and its checklist
+  link are also local documentation changes. **No commit/push requested.**
+- No test/server process was intentionally left running.
+
+### Completed bounded work -- do not reinvent
+
+- **#102:** maintainable command checklist: 92 canonical 4.2.1 names plus
+  29 additions for 4.5.0; aliases counted separately. The actual agreed legacy
+  version is 4.2.1, not the conversational "4.3".
+- **#103:** ordinary PAGE_START, bounded pre-page group declaration and
+  quote-preserving $$1--$$9 substitution; native explicit page breaks,
+  leading/repeated/trailing intentional empty pages, numbering and continuation.
+  Corrected missing TXT title-following vertical gap. See
+  [page-start fixture](../../tests/fixtures/albumeasy/page-start-v1/README.md).
+- **#104:** PAGE_START_VAR consumes H/V before group arguments; supports zero,
+  first/only TXT VAR page, ordinary-start reset and previous-row flush with
+  previous page spacing. Global V positions the title; local V controls its
+  following content reservation and rows. Native
+  `NATIVE_PAGE_BREAK (horizontal vertical)` overrides the next page and its
+  automatic continuations; `()` resets defaults. Both paginators and numbering
+  re-resolution preserve local bounds. Native first-page override was
+  explicitly deferred, not forgotten.
+- **#105:** shared parser normalizes ASCII command keywords; TXT admission/
+  group delimiters, native version header and standalone CLI dispatch accept
+  lowercase/mixed case. Arguments, paths and visible text are not uppercased.
+  Existing per-match uppercase conversions are harmless but do not replace
+  normalization at admission/parsing. Unknown commands still fail.
+
+### Current proofs and validation
+
+The tracked [page-start-var-v1 fixture](../../tests/fixtures/albumeasy/page-start-var-v1/)
+contains immutable accepted AlbumEasy TXT/PDF, a reference-only horizontal
+PAGE_TEXT probe, byte-identical raw `.stampalbum`, genuine `STAMPALBUM 1`
+input, all three native PDFs and previews. Each comparison is four US Letter
+pages with 16 real-image placements. Shared image provenance is in the existing
+[pagination manifest](../../tests/fixtures/albumeasy/stamp-pagination-v1/source-records.json);
+do not reopen sizing/DB research without changed inputs.
+
+- #104 final regression run: 69 passed, 9 ignored; native library: 17 passed.
+- #105 targeted run: 41 passed, 6 ignored; final case-only rerun: 2 passed.
+  Decoded PDF content streams match uppercase baselines exactly.
+- Six actual CLI tests covered lowercase/mixed-case TXT, raw `.stampalbum`
+  and genuine native `.stampalbum`; each exited 0 and produced four pages.
+- Clippy/build, formatting and diff checks passed; existing unrelated lint
+  warnings remain. These counts are overlapping runs, not additive coverage.
+- Exact reproducible Cargo/CLI commands and impact reports are in the
+  [checklist case section](../guides/NATIVE_PDF_COMMAND_CHECKLIST.md#command-keyword-case-105)
+  and the fixture README. Tests use Cargo, not a separate test framework.
+- Linux verified; Windows execution and native actual-size print/screen
+  acceptance remain outstanding. Use US Letter at 100%, Fit/Shrink disabled.
+
+**Do not claim absolute visual parity:** local V changes/reset match within
+0.02 mm, but TXT/raw year top differs up to 0.059302 mm and inter-row caption
+separation up to 1.124533 mm. VAR-01 records a separate font/row-metric follow-up;
+VAR-02 keeps native free page text open; VAR-03 defers native first-page override;
+VAR-04 records human/platform acceptance. Attached native headings are not a
+replacement for faithfully mapped free-standing page text.
+
+### Last requests and next action
+
+- **New backlog only:** native page-frame item alignment **left / centre /
+  right**, distinct from row distribution. Added under checklist section 5.
+  No syntax, scope or implementation approved; do not implement on restart.
+- **Future output rule only:** app-generated album files should write
+  **command keywords in uppercase**, preserving values, paths, identifiers
+  and visible album text. User explicitly deferred output-generation changes.
+- **Shutdown requested:** preserve state and stop. No next implementation
+  item was selected. On restart, report this checkpoint, inspect current
+  changes, and let the maintainer select proof review, an open mapping, or
+  another bounded follow-up; do not assume authorization for integration.
+
+### Non-negotiable continuation boundaries
+
+- Production native PDF integration stays deferred until command mapping and
+  review are complete. Standalone example is the testing entry point.
+- AlbumEasy reference first, maintainer acceptance, then native mapping and
+  all applicable three-input comparisons. Accepted reference bytes stay frozen.
+- Native-only commands belong in native documents, never reference TXT.
+- Keep tracked command proofs under `tests/fixtures/albumeasy/`; country
+  experiments Australia/Brazil/Christmas Island and their process artifacts
+  remain intentionally local/ignored. Do not force-add or recreate absent
+  local country data; their findings remain in the implementation plan.
+- Do not rerun `okf-rs generate` without permission; it was previously declined.
+- Preserve maintainer edits, use portable paths, and do not commit/push without
+  a current request. Follow issue/branch and test gates for new implementation.
+
+**Optional same-machine evidence:** session logs live under
+`/home/ray/.copilot/session-state/a27359db-6a9e-4bfe-8b1f-d01a379ca719/files/`.
+Useful names: `page-start-var-resumed-regressions.log`,
+`page-start-var-resumed-units.log`, `page-start-var-resumed-clippy.log`,
+`page-start-var-measurements.log`, `command-case-tests.log`,
+`command-case-final.log`, `command-case-clippy.log`, `command-case-cli.log`.
+These logs are supplementary; repository documentation/tests carry the
+reproducible knowledge and must suffice on another machine.
+
+**Restart prompt:**
+
+> Read section 0 of docs/reports/ALBUMEASY_4_5_0_COMMAND_MAPPING_HANDOFF.md,
+> then the live command checklist and PAGE_START_VAR fixture README. Inspect
+> current git status/log before acting. #103--105 are completed bounded slices,
+> not production integration or full parity. Preserve the deferred page-frame
+> alignment and uppercase-output requests as backlog. Resume with the
+> maintainer's selected next task, reusing existing references/tests.
+
+---
+
+## Historical handoff (2026-11-06)
+
+The following records the earlier investigation. Its branch, worktree and
+"next action" descriptions are historical; section 0 supersedes them.
 
 **Purpose:** Preserve the current investigation, decisions, evidence, and exact
 next action so a future contributor or LLM can resume without reconstructing
