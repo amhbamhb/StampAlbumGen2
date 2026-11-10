@@ -6,6 +6,10 @@
 
 ## Purpose and required sequence
 
+Use the [command checkoff list](../guides/NATIVE_PDF_COMMAND_CHECKLIST.md)
+to pick and update a bounded AlbumEasy 4.2.1 / 4.5.0 mapping, native-only
+command or extra. It distinguishes loader mappings from lower-level proofs.
+
 ### Long-term input and rendering contract
 
 The end goal is to generate PDFs natively from either `.stampalbum` files or

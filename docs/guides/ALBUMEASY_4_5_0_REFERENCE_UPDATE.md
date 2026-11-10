@@ -4,6 +4,11 @@
 baseline renderer. Retain the [4.2.1 inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md)
 as a versioned legacy reference, not the complete current target.
 
+**Current command status:** the [unified checkoff list](NATIVE_PDF_COMMAND_CHECKLIST.md)
+now inventories both references, spelling aliases, bounded native mappings
+and remaining work. Gap statements below describe the original reference
+update, not the latest renderer implementation.
+
 ## Local help is available without printing
 
 The installed `AlbumEasy45.0.qch` is a Qt compiled-help SQLite database.

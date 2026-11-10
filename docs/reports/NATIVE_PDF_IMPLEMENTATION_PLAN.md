@@ -2,9 +2,14 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-09
-**Revision:** 63
+**Revision:** 64
 **Status:** Bounded standalone renderer and command-family slices are implemented. Against the 46 roadmap tasks, 19 are partially evidenced, 27 remain unsatisfied, and none yet meets its full task acceptance criteria. Full AlbumEasy compatibility, canonical application integration, export and production routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
+
+**Command-level checkoff:** [AlbumEasy 4.2.1 / 4.5.0, native-only and extras commands](../guides/NATIVE_PDF_COMMAND_CHECKLIST.md).
+Use that compact list for current command coverage; retain this plan for
+task acceptance, detailed gaps and history. Its checkmarks do not change the
+46-task acceptance counts above.
 
 ### Canonical document and output contract
 
