@@ -65,7 +65,7 @@ was tested against a running 4.2.1 renderer.
 | Check | AlbumEasy command | Native / remaining work | Evidence |
 |---|---|---|---|
 | [x] | `PAGE_START` | TXT explicit starts and bounded group arguments/substitutions work; native `NATIVE_PAGE_BREAK` preserves explicit breaks and intentional empty pages. Native free page text and full group-body language remain open. | [page-start tests](../../tests/native_pdf_page_start.rs), [accepted reference / native proofs](../../tests/fixtures/albumeasy/page-start-v1/) |
-| [ ] | `PAGE_START_VAR` | Per-page spacing and substitution not mapped. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
+| [x] | `PAGE_START_VAR` | #104: page-local nonnegative H/V, zero overrides, ordinary-start reset; two spacing arguments precede up to nine group values. Title retains global V; following content uses local V. Absolute font/row metrics and native acceptance remain open (VAR-01–04). | [reference / native proofs](../../tests/fixtures/albumeasy/page-start-var-v1/README.md) |
 | [ ] | `PAGE_COLUMN_START` | Column widths/padding and flow missing. | [version update](ALBUMEASY_4_5_0_REFERENCE_UPDATE.md) |
 | [ ] | `PAGE_COLUMN_NEXT` | Column flow missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_COLUMN_STOP` | Column flow missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
@@ -77,7 +77,7 @@ was tested against a running 4.2.1 renderer.
 | [ ] | `PAGE_RULE_H` | Rule geometry, color and spacing missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [~] | `PAGE_VSPACE` | Signed TXT cursor movement supported within bounds; native free-space mapping missing. | [compatibility code](../../src/native_pdf/albumeasy.rs) |
 | [x] | `PAGE_START_GROUP_BEGIN` | One pre-page group, existing supported body commands, quote-preserving single-pass `$$1`–`$$9`; no nested/recursive starts or unsupported-body approximation. Missing values fail. | [page-start proof](../../tests/fixtures/albumeasy/page-start-v1/) |
-| [x] | `PAGE_START_GROUP_END` | Validates matching close, declaration order and duplicate definitions. PAGE_START_VAR/INFO remain separate TODOs. | [page-start tests](../../tests/native_pdf_page_start.rs) |
+| [x] | `PAGE_START_GROUP_END` | Validates matching close, declaration order and duplicate definitions. PAGE_START_VAR shares bounded expansion; PAGE_START_INFO remains open. | [page-start tests](../../tests/native_pdf_page_start.rs) |
 | [~] | `PAGE_BACKGROUND_IMG` | Native explicit bounds via `NATIVE_PAGE_BACKGROUND_IMAGE`; TXT fit/scale/offset mapping missing. | [image-control tests](../../tests/native_pdf_stamp_image.rs) |
 | [ ] | `PAGE_TEXT_VSPACE` | Obsolete left-text alias missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_TEXT_CENTRE_VSPACE` | Obsolete centered-text alias missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
@@ -247,7 +247,7 @@ The five shared native spellings are `ALBUM_PAGES_SIZE`, `ALBUM_PAGES_MARGINS`,
 | [x] | `NATIVE_ROW_ALIGNMENT` | Native horizontal row distribution; distinct from vertical alignment. |
 | [x] | `NATIVE_ROW_VERTICAL_ALIGNMENT` | TOP/MIDDLE/BOTTOM. |
 | [x] | `NATIVE_ROW_BREAK` | End current row, not explicit page break. |
-| [x] | `NATIVE_PAGE_BREAK` | Zero arguments; flush row, preserve automatic overflow; leading/repeated/trailing breaks create empty content pages with normal decorations/numbering. |
+| [x] | `NATIVE_PAGE_BREAK` | `()` resets document spacing; `(horizontal vertical)` selects page-local spacing inherited by automatic continuations. Flushes rows; leading/repeated/trailing breaks preserve intentional empty pages and numbering. Native first-page override remains deferred. |
 | [x] | `NATIVE_PAGE_NUMBER_SECTION` | Explicit section boundary; TOML numbering scope required. |
 | [x] | `NATIVE_STAMP_FRAME` | Line/color/optional nonnegative total frame additions. |
 | [x] | `NATIVE_STAMP_TEXT_POLICY` | Wrap/expanded width, padding/gap and width limits. |
@@ -283,7 +283,7 @@ requested work, **not additional accepted AlbumEasy spellings**.
 | [x] | `$SECTION_PAGE$`, `$SECTION_PAGES$`, `$DOCUMENT_PAGES$` native tokens | Retain section/document distinction; not standalone commands or AlbumEasy tokens. |
 | [x] | TOML side-label font/wrap/line policies | Keep defaults explicit and test item overrides/errors; no new AlbumEasy command. |
 | [~] | Wrapped captions/side labels and continuation pagination | Existing native behavior; print/readability review and dense-row fidelity remain. |
-| [x] | Native explicit page-break command | `NATIVE_PAGE_BREAK ()`; #103 includes intentional empty pages and caption continuation. |
+| [x] | Native explicit page-break command | #103 intentional empty pages/caption continuation; #104 optional H/V override, automatic inheritance and default reset. |
 | [ ] | Native free-standing page text and vertical-space commands | AUS-03; preserve order and source text without relocating it into stamp captions/headings. |
 | [ ] | Combined heading + inside + side-label attachment | AUS-05; preserve all footprints without resizing physical frames. |
 | [ ] | Left/right title-icon commands | Requested direction; detailed command design/implementation pending. |

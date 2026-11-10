@@ -135,6 +135,7 @@ fn supported(name: &str) -> bool {
             | "ALBUM_STAMP_SETTINGS_SAVE"
             | "ALBUM_STAMP_SETTINGS_RESTORE"
             | "PAGE_START"
+            | "PAGE_START_VAR"
             | "PAGE_START_GROUP_BEGIN"
             | "PAGE_START_GROUP_END"
             | "PAGE_VSPACE"
@@ -216,7 +217,8 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
         if line.is_empty() {
             continue;
         }
-        let name = line.split('(').next().unwrap_or(line).trim();
+        let name = line.split('(').next().unwrap_or(line).trim().to_ascii_uppercase();
+        let name = name.as_str();
         if !supported(name) {
             return Err(format!("Line {line_number}: Unsupported AlbumEasy command {name}; record it in the plan and comment it out in a test copy"));
         }
@@ -241,9 +243,9 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
                 group_open = false;
             }
             _ if group_open => {
-                if name == "PAGE_START" {
+                if matches!(name, "PAGE_START" | "PAGE_START_VAR") {
                     return Err(format!(
-                        "Line {line_number}: PAGE_START is not allowed inside its own group"
+                        "Line {line_number}: {name} is not allowed inside its own group"
                     ));
                 }
                 group
@@ -253,15 +255,27 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
             }
             _ => {
                 let mut c = command(line, line_number)?;
-                if c.name == "PAGE_START" {
-                    count(&c, 0, 9).map_err(|error| format!("{}: {error}", c.location()))?;
-                    if group.is_none() && !c.args.is_empty() {
+                if matches!(
+                    c.name.to_uppercase().as_str(),
+                    "PAGE_START" | "PAGE_START_VAR"
+                ) {
+                    let spacing_count = if c.name == "PAGE_START_VAR" { 2 } else { 0 };
+                    count(&c, spacing_count, spacing_count + 9)
+                        .map_err(|error| format!("{}: {error}", c.location()))?;
+                    if spacing_count == 2 {
+                        let spacing = (|| Spacing::parse(&[n(&c, 0)?, n(&c, 1)?]))();
+                        spacing.map_err(|error| {
+                            format!("{} (PAGE_START_VAR): {error}", c.location())
+                        })?;
+                    }
+                    if group.is_none() && c.args.len() > spacing_count {
                         return Err(format!(
-                            "Line {line_number}: PAGE_START arguments require a PAGE_START group"
+                            "Line {line_number}: {} group arguments require a PAGE_START group",
+                            c.name
                         ));
                     }
                     page_seen = true;
-                    let args = std::mem::take(&mut c.args);
+                    let args = c.args.split_off(spacing_count);
                     commands.push(c);
                     if let Some(group) = &group {
                         for (origin, template) in group {
@@ -691,9 +705,14 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut title_colour = border_colour;
     let mut footer_colour = border_colour;
     let mut margin_colour = border_colour;
-    for c in commands.iter().take_while(|c| c.name != "PAGE_START") {
+    for c in commands.iter().take_while(|c| {
+        !matches!(
+            c.name.to_uppercase().as_str(),
+            "PAGE_START" | "PAGE_START_VAR"
+        )
+    }) {
         let result = (|| -> Result<()> {
-            match c.name.as_str() {
+            match c.name.to_uppercase().as_str() {
                 "ALBUM_PAGES_SIZE" => {
                     count(c, 2, 2)?;
                     size = Some(PageSize::parse(&[n(c, 0)?, n(c, 1)?])?);
@@ -881,9 +900,17 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
             )
             .map_err(|e| format!("Line {line}: {e}"))?;
     }
-    let total = commands.iter().filter(|c| c.name == "PAGE_START").count();
+    let total = commands
+        .iter()
+        .filter(|c| {
+            matches!(
+                c.name.to_uppercase().as_str(),
+                "PAGE_START" | "PAGE_START_VAR"
+            )
+        })
+        .count();
     if total == 0 {
-        return Err("AlbumEasy input requires PAGE_START".into());
+        return Err("AlbumEasy input requires PAGE_START or PAGE_START_VAR".into());
     }
     let mut pages: Vec<ImportedPdfPage> = Vec::new();
     let mut row = None;
@@ -912,15 +939,26 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut footer_alignment = FooterTextAlignment::Align;
     let mut footer_padding_mm = 0.0;
     let mut vertical = VerticalAlignment::Top;
+    let mut page_settings = settings.clone();
     for (command_index, c) in commands.iter().enumerate() {
         let result = (|| -> Result<()> {
-            match c.name.as_str() {
-                "PAGE_START" => {
-                    count(c, 0, 0)?;
+            match c.name.to_uppercase().as_str() {
+                "PAGE_START" | "PAGE_START_VAR" => {
                     if let Some(page) = pages.last_mut() {
-                        flush(&mut row, page, &mut top, settings.spacing().vertical_mm())?;
+                        flush(
+                            &mut row,
+                            page,
+                            &mut top,
+                            page_settings.spacing().vertical_mm(),
+                        )?;
                     }
-                    let layout = settings.resolve_with_context(pages.len() + 1, total, None)?;
+                    page_settings = settings.clone();
+                    if c.name == "PAGE_START_VAR" {
+                        page_settings
+                            .set_page_spacing(Some(Spacing::parse(&[n(c, 0)?, n(c, 1)?])?));
+                    }
+                    let layout =
+                        page_settings.resolve_with_context(pages.len() + 1, total, None)?;
                     top = layout.content_bounds.top;
                     pages.push(ImportedPdfPage {
                         layout,
@@ -934,7 +972,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 "ROW_ALIGN_TOP" | "ROW_ALIGN_MIDDLE" | "ROW_ALIGN_BOTTOM" => {
                     count(c, 0, 0)?;
                     if let Some(page) = pages.last_mut() {
-                        flush(&mut row, page, &mut top, settings.spacing().vertical_mm())?;
+                        flush(
+                            &mut row,
+                            page,
+                            &mut top,
+                            page_settings.spacing().vertical_mm(),
+                        )?;
                     }
                     vertical = VerticalAlignment::parse(c.name.trim_start_matches("ROW_ALIGN_"))?;
                 }
@@ -986,7 +1029,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 | "COLOUR_STAMP_HEADING" => {
                     count(c, 1, 1)?;
                     let colour = NamedColour::parse(&c.args[0].value)?;
-                    match c.name.as_str() {
+                    match c.name.to_uppercase().as_str() {
                         "COLOR_STAMP_BORDER" => stamp_colour = colour,
                         "COLOR_STAMP_TEXT" => text_colour = colour,
                         _ => heading_colour = colour,
@@ -1086,7 +1129,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                         if c.name.ends_with("FS") { 4 } else { 3 },
                     )?;
                     let page = pages.last_mut().ok_or("Row requires PAGE_START")?;
-                    flush(&mut row, page, &mut top, settings.spacing().vertical_mm())?;
+                    flush(
+                        &mut row,
+                        page,
+                        &mut top,
+                        page_settings.spacing().vertical_mm(),
+                    )?;
                     let font = c.args[0].value.clone();
                     let size = n(c, 1)?;
                     MeasuredText::new(&font, size, "Validate font")?;
@@ -1221,7 +1269,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 }
                 "PAGE_VSPACE" | "PAGE_TEXT_CENTRE" => {
                     let page = pages.last_mut().ok_or("Page content requires PAGE_START")?;
-                    flush(&mut row, page, &mut top, settings.spacing().vertical_mm())?;
+                    flush(
+                        &mut row,
+                        page,
+                        &mut top,
+                        page_settings.spacing().vertical_mm(),
+                    )?;
                     if c.name == "PAGE_VSPACE" {
                         count(c, 1, 1)?;
                         top -= n(c, 0)?;
@@ -1254,7 +1307,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 _ if c.name.starts_with("ALBUM_PAGES_")
                     || c.name.starts_with("COLOR_ALBUM_")
                     || matches!(
-                        c.name.as_str(),
+                        c.name.to_uppercase().as_str(),
                         "COLOUR_ALBUM_BORDER" | "COLOUR_ALBUM_FOOTER" | "COLOUR_ALBUM_MARGIN_TXT"
                     ) =>
                 {
@@ -1274,7 +1327,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         &mut row,
         pages.last_mut().ok_or("No pages")?,
         &mut top,
-        settings.spacing().vertical_mm(),
+        page_settings.spacing().vertical_mm(),
     )?;
     let count = pages.len();
     write_imported_album_pdf(&settings, pages, output)?;

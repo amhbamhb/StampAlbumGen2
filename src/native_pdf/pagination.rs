@@ -1,6 +1,7 @@
 //! Ordered page layout with whole frames and line-boundary text continuation.
 
 use super::{
+    commands::page::album_pages_spacing::Spacing,
     document::{Bounds, PageLayout, PageSettings},
     stamp_box::StampBoxGeometry,
     stamp_rows::{row_prefix_len, RowAlignment},
@@ -34,6 +35,12 @@ pub struct StampItemPage {
 pub struct StampRowSection {
     pub item_count: usize,
     pub alignment: RowAlignment,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct NativePageBreak {
+    pub item_index: usize,
+    pub spacing: Option<Spacing>,
 }
 
 /// Final-count-sensitive layout is rerun until stable. Frames are never split,
@@ -78,7 +85,7 @@ pub(crate) fn paginate_stamp_sections_with_page_breaks(
     sections: &[StampRowSection],
     policy: &StampTextPolicy,
     generation_date: Option<chrono::NaiveDate>,
-    page_breaks: &[usize],
+    page_breaks: &[NativePageBreak],
 ) -> Result<Vec<StampItemPage>> {
     let mut end = 0usize;
     let mut boundaries = Vec::new();
@@ -120,7 +127,7 @@ pub(crate) fn paginate_stamp_sections_with_page_breaks(
 
 pub(crate) fn validate_page_breaks(
     sections: &[StampRowSection],
-    page_breaks: &[usize],
+    page_breaks: &[NativePageBreak],
 ) -> Result<()> {
     let mut boundaries = std::collections::HashSet::from([0]);
     let mut end = 0usize;
@@ -130,8 +137,12 @@ pub(crate) fn validate_page_breaks(
             .ok_or("Native page-break section counts overflow")?;
         boundaries.insert(end);
     }
-    if page_breaks.windows(2).any(|pair| pair[0] > pair[1])
-        || page_breaks.iter().any(|index| !boundaries.contains(index))
+    if page_breaks
+        .windows(2)
+        .any(|pair| pair[0].item_index > pair[1].item_index)
+        || page_breaks
+            .iter()
+            .any(|entry| !boundaries.contains(&entry.item_index))
     {
         return Err("Native page breaks must be ordered row-section boundaries".into());
     }
@@ -171,7 +182,7 @@ fn paginate_pass(
     policy: &StampTextPolicy,
     date: Option<chrono::NaiveDate>,
     total: usize,
-    page_breaks: &[usize],
+    page_breaks: &[NativePageBreak],
 ) -> Result<Vec<StampItemPage>> {
     let measured = items
         .iter()
@@ -187,15 +198,18 @@ fn paginate_pass(
     let mut top = page.layout.content_bounds.top;
     let mut index = 0;
     let mut section_index = 0;
+    let mut active_settings = settings.clone();
     let mut breaks = page_breaks.iter().copied().peekable();
     loop {
-        while breaks.next_if_eq(&index).is_some() {
-            advance_page(settings, &mut pages, &mut page, total, date)?;
+        while let Some(entry) = breaks.next_if(|entry| entry.item_index == index) {
+            active_settings.set_page_spacing(entry.spacing);
+            advance_page(&active_settings, &mut pages, &mut page, total, date)?;
             top = page.layout.content_bounds.top;
         }
         if index == items.len() {
             break;
         }
+        let settings = &active_settings;
         while index >= boundaries[section_index].0 {
             section_index += 1;
         }

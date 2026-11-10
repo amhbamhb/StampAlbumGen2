@@ -20,7 +20,11 @@ fn main() -> Result<(), String> {
         .lines()
         .map(str::trim)
         .find(|line| !line.is_empty() && !line.starts_with('#'));
-    let page_count = if first.is_some_and(|line| line.starts_with("STAMPALBUM")) {
+    let page_count = if first.is_some_and(|line| {
+        line.split_whitespace()
+            .next()
+            .is_some_and(|name| name.eq_ignore_ascii_case("STAMPALBUM"))
+    }) {
         let album = NativeAlbum::load(input)?;
         if let Some(config_path) = config_path {
             let config = NativePdfConfig::load(Path::new(&config_path))?;

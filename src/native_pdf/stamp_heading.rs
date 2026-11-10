@@ -278,7 +278,7 @@ pub(crate) fn paginate_native_with_page_breaks(
     headings: &[NativeHeadingItem],
     sections: &[super::pagination::StampRowSection],
     policy: &super::stamp_text::StampTextPolicy,
-    page_breaks: &[usize],
+    page_breaks: &[super::pagination::NativePageBreak],
 ) -> Result<Vec<super::pagination::StampItemPage>> {
     use super::{
         pagination::{StampItemPage, StampPageFragment},
@@ -305,12 +305,21 @@ pub(crate) fn paginate_native_with_page_breaks(
         };
         let mut top = page.layout.content_bounds.top;
         let mut start = 0;
+        let mut active_settings = settings.clone();
         let mut breaks = page_breaks.iter().copied().peekable();
         for section in sections {
-            while breaks.next_if_eq(&start).is_some() {
-                super::pagination::advance_page(settings, &mut pages, &mut page, total, date)?;
+            while let Some(entry) = breaks.next_if(|entry| entry.item_index == start) {
+                active_settings.set_page_spacing(entry.spacing);
+                super::pagination::advance_page(
+                    &active_settings,
+                    &mut pages,
+                    &mut page,
+                    total,
+                    date,
+                )?;
                 top = page.layout.content_bounds.top;
             }
+            let settings = &active_settings;
             let end = start + section.item_count;
             let metadata = &headings[start..end];
             if metadata
@@ -539,8 +548,9 @@ pub(crate) fn paginate_native_with_page_breaks(
             top = settings.spacing().next_top(layout.bottom_mm)?;
             start = end;
         }
-        while breaks.next_if_eq(&items.len()).is_some() {
-            super::pagination::advance_page(settings, &mut pages, &mut page, total, date)?;
+        while let Some(entry) = breaks.next_if(|entry| entry.item_index == items.len()) {
+            active_settings.set_page_spacing(entry.spacing);
+            super::pagination::advance_page(&active_settings, &mut pages, &mut page, total, date)?;
         }
         if !page.items.is_empty() || !page_breaks.is_empty() {
             pages.push(page);

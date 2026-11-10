@@ -21,7 +21,7 @@ use super::{
     config::{NativeFooterNumberingConfig, NativePageNumberingScope, NativePdfConfig},
     document::{Bounds, PageSettings},
     numbering::NumberingContext,
-    pagination::{StampItemPage, StampRowSection},
+    pagination::{NativePageBreak, StampItemPage, StampRowSection},
     renderer,
     stamp_box::StampBoxGeometry,
     stamp_heading::{self, HeadingMode, NativeHeadingItem, StampHeading, VerticalAlignment},
@@ -65,7 +65,7 @@ pub struct NativeAlbum {
     page_background: Option<NativePageBackgroundImage>,
     items: Vec<StampImageRowItem>,
     sections: Vec<StampRowSection>,
-    page_breaks: Vec<usize>,
+    page_breaks: Vec<NativePageBreak>,
     numbering_section_starts: Vec<usize>,
     headings: Vec<NativeHeadingItem>,
 }
@@ -125,7 +125,7 @@ impl NativeAlbum {
                 continue;
             }
             if !header_seen {
-                if line != "STAMPALBUM 1" {
+                if !line.eq_ignore_ascii_case("STAMPALBUM 1") {
                     return Err(format!(
                         "Line {line_number}: expected the version header `STAMPALBUM 1`"
                     ));
@@ -586,15 +586,28 @@ impl NativeAlbum {
                     .map_err(&fail)?;
                 }
                 "NATIVE_PAGE_BREAK" => {
-                    if !args.is_empty() {
-                        return Err(fail(format!("{name} takes no arguments")));
+                    if !matches!(args.len(), 0 | 2) {
+                        return Err(fail(format!(
+                            "{name} takes no arguments or two spacing values"
+                        )));
                     }
+                    let spacing = if args.is_empty() {
+                        None
+                    } else {
+                        Some(
+                            Spacing::parse(&numbers(&name, &args, 2).map_err(&fail)?)
+                                .map_err(&fail)?,
+                        )
+                    };
                     let count = image_specs.len() - section_start;
                     if count > 0 {
                         section_counts.push(count);
                         section_start = image_specs.len();
                     }
-                    page_breaks.push(image_specs.len());
+                    page_breaks.push(NativePageBreak {
+                        item_index: image_specs.len(),
+                        spacing,
+                    });
                 }
                 "NATIVE_ROW_BREAK" => {
                     if !args.is_empty() {
@@ -959,7 +972,9 @@ impl NativeAlbum {
             return Err("NATIVE_PAGE_NUMBER_SECTION must be followed by a STAMP_IMAGE".into());
         }
         let remaining_items = image_specs.len().saturating_sub(section_start);
-        if remaining_items == 0 && page_breaks.last() != Some(&image_specs.len()) {
+        if remaining_items == 0
+            && page_breaks.last().map(|entry| entry.item_index) != Some(image_specs.len())
+        {
             return Err("NATIVE_ROW_BREAK must not follow the final STAMP_IMAGE".into());
         }
         if remaining_items > 0 {
@@ -1209,15 +1224,16 @@ pub(super) fn parse_command(line: &str) -> Result<(String, Vec<Argument>)> {
     if name.is_empty()
         || !name
             .bytes()
-            .all(|byte| byte.is_ascii_uppercase() || byte == b'_')
+            .all(|byte| byte.is_ascii_alphabetic() || byte == b'_')
     {
-        return Err("Command names must contain uppercase ASCII letters and underscores".into());
+        return Err("Command names must contain ASCII letters and underscores".into());
     }
     let remainder = line[open + 1..].trim();
     let body = remainder
         .strip_suffix(')')
         .ok_or("Command arguments must end with `)`")?;
-    parse_arguments(name, body).map(|args| (name.to_string(), args))
+    let name = name.to_ascii_uppercase();
+    parse_arguments(&name, body).map(|args| (name, args))
 }
 
 fn parse_arguments(name: &str, body: &str) -> Result<Vec<Argument>> {
@@ -1445,7 +1461,9 @@ fn apply_footer_numbering(
                 None
             },
         };
-        let layout = settings
+        let mut page_settings = settings.clone();
+        page_settings.set_page_spacing(page.layout.spacing_override);
+        let layout = page_settings
             .resolve_with_numbering_context(index + 1, document_pages, generation_date, context)
             .map_err(|error| format!("Native PDF page {}: {error}", index + 1))?;
         if !same_bounds(layout.content_bounds, page.layout.content_bounds) {

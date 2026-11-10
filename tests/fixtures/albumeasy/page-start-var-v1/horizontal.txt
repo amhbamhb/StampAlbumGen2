@@ -1,0 +1,28 @@
+# Reference-only horizontal-inset probe. PAGE_TEXT mapping is a separate task.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - HORIZONTAL INSET" 5)
+ALBUM_PAGES_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$")
+STAMP_BOXES_SIZE_ADJUST (0)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT (HN 10 $$1 5)
+PAGE_START_GROUP_END
+
+PAGE_START ("LEFT PROBE - DEFAULT H4 V14")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical" "")
+
+PAGE_START_VAR (12 6 "LEFT PROBE - OVERRIDE H12 V6")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical" "")
+
+PAGE_START ("LEFT PROBE - RESTORED H4 V14")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical" "")

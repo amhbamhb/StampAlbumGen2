@@ -66,6 +66,7 @@ impl Bounds {
 
 #[derive(Clone, Debug)]
 pub struct PageLayout {
+    pub(crate) spacing_override: Option<Spacing>,
     pub size: PageSize,
     pub crop_marks: Option<CropMarksLayout>,
     pub decorative_border: Option<DecorativeBorderLayout>,
@@ -89,6 +90,7 @@ pub struct PageSettings {
     margins: Margins,
     even_margins: Option<EvenMargins>,
     spacing: Spacing,
+    spacing_override: Option<Spacing>,
     row_alignment: super::stamp_rows::RowAlignment,
     border: PageBorder,
     border_colour: AlbumBorderColour,
@@ -119,6 +121,7 @@ impl PageSettings {
             margins,
             even_margins: None,
             spacing,
+            spacing_override: None,
             row_alignment: super::stamp_rows::RowAlignment::Center,
             border,
             border_colour,
@@ -209,7 +212,11 @@ impl PageSettings {
     }
 
     pub fn spacing(&self) -> Spacing {
-        self.spacing
+        self.spacing_override.unwrap_or(self.spacing)
+    }
+
+    pub(crate) fn set_page_spacing(&mut self, spacing: Option<Spacing>) {
+        self.spacing_override = spacing;
     }
 
     pub fn row_alignment(&self) -> super::stamp_rows::RowAlignment {
@@ -367,7 +374,7 @@ impl PageSettings {
         // Vertical spacing belongs between elements, not at page edges.
         let mut content_bounds = margin_bounds
             .inset(border_occupancy_mm, border_occupancy_mm)?
-            .inset(self.spacing.horizontal_mm(), 0.0)?;
+            .inset(self.spacing().horizontal_mm(), 0.0)?;
         let physical_page = Bounds {
             left: 0.0,
             bottom: 0.0,
@@ -520,11 +527,14 @@ impl PageSettings {
                 }
             }
         }
-        let title = self
+        let mut title = self
             .title
             .as_ref()
             .map(|title| title.layout(content_bounds, self.spacing.vertical_mm()))
             .transpose()?;
+        if let (Some(title), Some(spacing)) = (&mut title, self.spacing_override) {
+            title.next_content_top_mm -= spacing.vertical_mm() - self.spacing.vertical_mm();
+        }
         if let Some(title) = &title {
             if let Some(date) = &footer_date {
                 if text_lines_overlap(&date.lines, date.bounds, &title.lines, title.bounds)? {
@@ -566,6 +576,7 @@ impl PageSettings {
             }
         }
         Ok(PageLayout {
+            spacing_override: self.spacing_override,
             size: self.size,
             decorative_border: self
                 .decorative_border
