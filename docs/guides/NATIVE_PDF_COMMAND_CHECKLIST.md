@@ -25,6 +25,24 @@ Tests render lowercase and mixed-case variants and compare decoded PDF content
 streams exactly with uppercase baselines, including real lowercase image paths.
 No reference input/PDF is rewritten and no production import/UI route changes.
 
+**Alias follow-up (#106):** `COLOUR_ALBUM_HEADER`, `COLOUR_ALBUM_TITLE`,
+`COLOUR_STAMP_BORDER` and `COLOUR_STAMP_TEXT` now share their COLOR handlers,
+including page-settings ordering checks. No native-language commands were
+added. The alias test verifies that each color changes rendering, then compares
+decoded streams for COLOR versus uppercase/lowercase/mixed-case COLOUR.
+Missing/excess/invalid arguments fail without replacing an existing output.
+
+Alias validation (Linux, 2026-11-09):
+`cargo test --test native_pdf_command_case --test native_pdf_albumeasy`
+finished **11 passed, 3 ignored, 0 failed, exit 0**.
+`cargo clippy --lib --test native_pdf_command_case` exited 0 with existing
+unrelated warnings; formatting/diff checks passed. Initial test construction
+omitted the header position and failed with
+`album_pages_header_position must be L, C, R, LR or RL`; corrected the synthetic
+header to use `C` and reran successfully. Frozen references are unchanged.
+Temporary PDFs are auto-cleaned; no moved/deleted inputs or database access.
+Windows execution remains unverified; portable Rust APIs are used.
+
 Validation on Linux (2026-11-09), all commands exited 0:
 
 ```sh
@@ -184,15 +202,15 @@ was tested against a running 4.2.1 renderer.
 | [x] | `COLOUR_ALBUM_BORDER` | Both spellings in TXT; native uses COLOUR spelling. | [border color](../../tests/fixtures/albumeasy/border-colour-v1/) |
 | [~] L | `COLOUR_ALBUM_DECORATIVE_BORDER` | TOML/API line color; loader command missing; ornaments retain their pixels. | [decorative border tests](../../tests/native_pdf_decorative_border.rs) |
 | [x] | `COLOUR_ALBUM_FOOTER` | Both TXT spellings for numbered footer; native footer explicit color. | [footer import](../../tests/native_pdf_footer_import.rs) |
-| [~] | `COLOUR_ALBUM_HEADER` | TXT accepts **COLOR only**; COLOUR alias missing. Native header explicit color. | [interpreter](../../src/native_pdf/albumeasy.rs) |
-| [~] | `COLOUR_ALBUM_TITLE` | TXT accepts **COLOR only**; COLOUR alias missing. Native title currently black. | [interpreter](../../src/native_pdf/albumeasy.rs) |
+| [x] | `COLOUR_ALBUM_HEADER` | TXT/raw COLOUR and COLOR share the existing handler (#106). Native header explicit color. | [alias regression](../../tests/native_pdf_command_case.rs) |
+| [x] | `COLOUR_ALBUM_TITLE` | TXT/raw COLOUR and COLOR share the existing handler (#106). Native title currently black; no native grammar extension. | [alias regression](../../tests/native_pdf_command_case.rs) |
 | [ ] | `COLOUR_PAGE_RULE_H` | Both spellings unmapped with rules. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `COLOUR_PAGE_TEXT` | Both spellings unmapped; stamp text color is not this command. | [interpreter](../../src/native_pdf/albumeasy.rs) |
-| [~] | `COLOUR_STAMP_BORDER` | TXT accepts **COLOR only**; COLOUR alias missing. Native frame color supported. | [interpreter](../../src/native_pdf/albumeasy.rs) |
+| [x] | `COLOUR_STAMP_BORDER` | TXT/raw COLOUR and COLOR share stamp-border state (#106). Native frame color supported. | [alias regression](../../tests/native_pdf_command_case.rs) |
 | [x] | `COLOUR_STAMP_INNER_BORDER` | Both TXT spellings; native inner-border color. | [inner-border tests](../../tests/native_pdf_stamp_inner_border.rs) |
 | [x] | `COLOUR_STAMP_BACKGROUND` | Both spellings; native independent background/outline, rectangular restrictions. | [background](../../tests/fixtures/albumeasy/stamp-background-colours-v1/) |
 | [x] | `COLOUR_STAMP_HEADING` | Both spellings; native heading explicit color. | [headings](../../tests/fixtures/albumeasy/stamp-headings-v1/) |
-| [~] | `COLOUR_STAMP_TEXT` | TXT accepts **COLOR only**; COLOUR alias missing; native image caption defaults black. | [interpreter](../../src/native_pdf/albumeasy.rs) |
+| [x] | `COLOUR_STAMP_TEXT` | TXT/raw COLOUR and COLOR share text-color state (#106); native image caption defaults black. | [alias regression](../../tests/native_pdf_command_case.rs) |
 
 ### Border-definition language — 11
 
@@ -261,15 +279,15 @@ Every listed `COLOUR_` command has a documented `COLOR_` alias: 12 pairs in
 | [x] | `COLOR_ALBUM_BORDER` | Both versions; accepted. |
 | [ ] | `COLOR_ALBUM_DECORATIVE_BORDER` | Both; missing loader mapping. |
 | [x] | `COLOR_ALBUM_FOOTER` | Both; bounded numbered-footer support. |
-| [x] | `COLOR_ALBUM_HEADER` | Both; accepted (COLOUR counterpart still missing). |
-| [x] | `COLOR_ALBUM_TITLE` | Both; accepted (COLOUR counterpart still missing). |
+| [x] | `COLOR_ALBUM_HEADER` | Both; COLOR/COLOUR accepted, including lowercase/mixed-case keywords (#106). |
+| [x] | `COLOR_ALBUM_TITLE` | Both; COLOR/COLOUR accepted, including lowercase/mixed-case keywords (#106). |
 | [ ] | `COLOR_PAGE_RULE_H` | Both; missing. |
 | [ ] | `COLOR_PAGE_TEXT` | Both; missing. |
-| [x] | `COLOR_STAMP_BORDER` | Both; accepted (COLOUR counterpart still missing). |
+| [x] | `COLOR_STAMP_BORDER` | Both; COLOR/COLOUR accepted, including lowercase/mixed-case keywords (#106). |
 | [x] | `COLOR_STAMP_INNER_BORDER` | Both; accepted. |
 | [x] | `COLOR_STAMP_BACKGROUND` | Both; bounded rectangular images. |
 | [x] | `COLOR_STAMP_HEADING` | Both; accepted. |
-| [x] | `COLOR_STAMP_TEXT` | Both; accepted (COLOUR counterpart still missing). |
+| [x] | `COLOR_STAMP_TEXT` | Both; COLOR/COLOUR accepted, including lowercase/mixed-case keywords (#106). |
 | [x] | `COLOR_ALBUM_MARGIN_TXT` | 4.5 inventory addition; accepted. |
 | [ ] | `COLOR_PAGE_QUADRILLE` | 4.5 inventory addition; missing. |
 | [x] | `ALBUM_STAMP_IMG_GRAYSCALE_ON` | 4.5; accepted US spelling. |

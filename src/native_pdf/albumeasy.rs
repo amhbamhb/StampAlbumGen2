@@ -110,9 +110,13 @@ fn supported(name: &str) -> bool {
             | "COLOR_ALBUM_BORDER"
             | "COLOUR_ALBUM_BORDER"
             | "COLOR_ALBUM_HEADER"
+            | "COLOUR_ALBUM_HEADER"
             | "COLOR_ALBUM_TITLE"
+            | "COLOUR_ALBUM_TITLE"
             | "COLOR_STAMP_BORDER"
+            | "COLOUR_STAMP_BORDER"
             | "COLOR_STAMP_TEXT"
+            | "COLOUR_STAMP_TEXT"
             | "COLOR_STAMP_HEADING"
             | "COLOUR_STAMP_HEADING"
             | "COLOR_STAMP_BACKGROUND"
@@ -745,11 +749,11 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     border_colour = NamedColour::parse(&c.args[0].value)?;
                     border_colour_name = c.args[0].value.clone();
                 }
-                "COLOR_ALBUM_HEADER" => {
+                "COLOR_ALBUM_HEADER" | "COLOUR_ALBUM_HEADER" => {
                     count(c, 1, 1)?;
                     header_colour = NamedColour::parse(&c.args[0].value)?;
                 }
-                "COLOR_ALBUM_TITLE" => {
+                "COLOR_ALBUM_TITLE" | "COLOUR_ALBUM_TITLE" => {
                     count(c, 1, 1)?;
                     title_colour = NamedColour::parse(&c.args[0].value)?;
                 }
@@ -1029,14 +1033,16 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     ) = restore_stamp_settings(&mut saved_stamp_settings, &c.name)?;
                 }
                 "COLOR_STAMP_BORDER"
+                | "COLOUR_STAMP_BORDER"
                 | "COLOR_STAMP_TEXT"
+                | "COLOUR_STAMP_TEXT"
                 | "COLOR_STAMP_HEADING"
                 | "COLOUR_STAMP_HEADING" => {
                     count(c, 1, 1)?;
                     let colour = NamedColour::parse(&c.args[0].value)?;
                     match c.name.to_uppercase().as_str() {
-                        "COLOR_STAMP_BORDER" => stamp_colour = colour,
-                        "COLOR_STAMP_TEXT" => text_colour = colour,
+                        "COLOR_STAMP_BORDER" | "COLOUR_STAMP_BORDER" => stamp_colour = colour,
+                        "COLOR_STAMP_TEXT" | "COLOUR_STAMP_TEXT" => text_colour = colour,
                         _ => heading_colour = colour,
                     }
                 }
@@ -1313,7 +1319,11 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                     || c.name.starts_with("COLOR_ALBUM_")
                     || matches!(
                         c.name.to_uppercase().as_str(),
-                        "COLOUR_ALBUM_BORDER" | "COLOUR_ALBUM_FOOTER" | "COLOUR_ALBUM_MARGIN_TXT"
+                        "COLOUR_ALBUM_BORDER"
+                            | "COLOUR_ALBUM_FOOTER"
+                            | "COLOUR_ALBUM_MARGIN_TXT"
+                            | "COLOUR_ALBUM_HEADER"
+                            | "COLOUR_ALBUM_TITLE"
                     ) =>
                 {
                     if !pages.is_empty() {

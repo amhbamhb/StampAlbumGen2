@@ -7,6 +7,16 @@ must not override it.
 
 ## 0. Current restart checkpoint -- read first
 
+**Post-checkpoint follow-up (#106):** maintainer subsequently requested the four
+missing COLOUR aliases. Working branch is now
+`issue/106-colour-command-aliases`; #105 and the shutdown documentation were
+already committed by maintainer actions. TXT/raw support now maps
+`COLOUR_ALBUM_HEADER`, `COLOUR_ALBUM_TITLE`, `COLOUR_STAMP_BORDER` and
+`COLOUR_STAMP_TEXT` to their existing COLOR handlers. Both canonical and alias
+checklist rows are updated; native-language grammar and production routing
+are unchanged. Regression evidence is recorded in the live checklist.
+The branch/HEAD snapshot below remains historical; inspect git before resuming.
+
 ### Start here, without repeating completed investigation
 
 1. Read the [live command checklist](../guides/NATIVE_PDF_COMMAND_CHECKLIST.md)

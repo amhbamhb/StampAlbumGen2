@@ -99,3 +99,64 @@ fn native_keywords_and_header_accept_lower_and_mixed_case_without_changing_value
     }
     Ok(())
 }
+
+#[test]
+fn four_colour_aliases_match_color_rendering_and_validation() -> Result<(), String> {
+    let assets =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/page-start-var-v1");
+    let original = fs::read_to_string(assets.join("album.txt")).map_err(|e| e.to_string())?;
+    let original = original.replace(
+        "PAGE_START_GROUP_BEGIN",
+        "ALBUM_PAGES_HEADER (HN 8 C \"Mixed Case Header\")\nPAGE_START_GROUP_BEGIN",
+    );
+    let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let output = temp.path().join("aliases.pdf");
+    for (command, colour) in [
+        ("COLOR_ALBUM_HEADER", "red"),
+        ("COLOR_ALBUM_TITLE", "blue"),
+        ("COLOR_STAMP_BORDER", "green"),
+        ("COLOR_STAMP_TEXT", "red"),
+    ] {
+        let insertion = if command.starts_with("COLOR_ALBUM_") {
+            "PAGE_START_GROUP_BEGIN"
+        } else {
+            "ROW_START_ES (HN 8 0.1)"
+        };
+        let source = original.replacen(insertion, &format!("{command} ({colour})\n{insertion}"), 1);
+        albumeasy::render(&original, &assets, &output)?;
+        let uncoloured = streams(&output)?;
+        albumeasy::render(&source, &assets, &output)?;
+        let expected = streams(&output)?;
+        assert_ne!(expected, uncoloured, "{command} must affect rendering");
+        let alias = command.replacen("COLOR_", "COLOUR_", 1);
+        for keyword in [
+            alias.clone(),
+            alias.to_ascii_lowercase(),
+            change_keywords(&alias, true),
+        ] {
+            let variant = source.replace(command, &keyword);
+            let (_, unsupported) = albumeasy::commented_test_source(&variant)?;
+            assert!(unsupported.is_empty());
+            albumeasy::render(&variant, &assets, &output)?;
+            assert_eq!(streams(&output)?, expected, "{keyword}");
+        }
+        for spelling in [command, alias.as_str()] {
+            for args in ["", "red blue", "not_a_colour"] {
+                let invalid =
+                    original.replacen(insertion, &format!("{spelling} ({args})\n{insertion}"), 1);
+                fs::write(&output, b"preserve").map_err(|e| e.to_string())?;
+                assert!(albumeasy::render(&invalid, &assets, &output).is_err());
+                assert_eq!(fs::read(&output).map_err(|e| e.to_string())?, b"preserve");
+            }
+        }
+        if command.starts_with("COLOR_ALBUM_") {
+            let invalid = original.replacen(
+                "ROW_START_ES",
+                &format!("{alias} ({colour})\nROW_START_ES"),
+                1,
+            );
+            assert!(albumeasy::render(&invalid, &assets, &output).is_err());
+        }
+    }
+    Ok(())
+}
