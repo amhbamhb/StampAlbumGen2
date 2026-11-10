@@ -1,0 +1,24 @@
+STAMPALBUM 1
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+# Explicit native following gap = AlbumEasy vertical spacing 14 + title extra 5.
+NATIVE_PAGE_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 19)
+NATIVE_PAGE_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$" 0 0 black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.1 black 6)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+NATIVE_STAMP_HEADING_PADDING (0)
+
+# Native attached headings stand in for currently unmapped free page text.
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm physical size\nFirst-page wide design")
+NATIVE_STAMP_HEADING (LOCAL HN 11 "EXPLICIT PAGE START\nFIRST PAGE" 0 5 black)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm physical size\nFirst-page portrait design")
+
+NATIVE_PAGE_BREAK ()
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm physical size\nSecond-page portrait design")
+NATIVE_STAMP_HEADING (LOCAL HN 11 "EXPLICIT START\nSECOND PAGE" 0 5 black)
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm physical size\nSecond-page wide design")

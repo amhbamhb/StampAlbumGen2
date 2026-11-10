@@ -62,6 +62,24 @@ pub fn paginate_stamp_sections(
     policy: &StampTextPolicy,
     generation_date: Option<chrono::NaiveDate>,
 ) -> Result<Vec<StampItemPage>> {
+    paginate_stamp_sections_with_page_breaks(
+        settings,
+        items,
+        sections,
+        policy,
+        generation_date,
+        &[],
+    )
+}
+
+pub(crate) fn paginate_stamp_sections_with_page_breaks(
+    settings: &PageSettings,
+    items: &[StampTextItem],
+    sections: &[StampRowSection],
+    policy: &StampTextPolicy,
+    generation_date: Option<chrono::NaiveDate>,
+    page_breaks: &[usize],
+) -> Result<Vec<StampItemPage>> {
     let mut end = 0usize;
     let mut boundaries = Vec::new();
     for section in sections {
@@ -76,19 +94,60 @@ pub fn paginate_stamp_sections(
     if end != items.len() {
         return Err("native_pdf.rows section counts must exactly cover the input items".into());
     }
+    validate_page_breaks(sections, page_breaks)?;
     let mut total = 1;
     let mut seen = std::collections::HashSet::new();
     for _ in 0..32 {
         if !seen.insert(total) {
             return Err("native_pdf.pagination final-count layout does not converge".into());
         }
-        let pages = paginate_pass(settings, items, &boundaries, policy, generation_date, total)?;
+        let pages = paginate_pass(
+            settings,
+            items,
+            &boundaries,
+            policy,
+            generation_date,
+            total,
+            page_breaks,
+        )?;
         if pages.len() == total {
             return Ok(pages);
         }
         total = pages.len();
     }
     Err("native_pdf.pagination final-count layout exceeds 32 resolution passes".into())
+}
+
+pub(crate) fn validate_page_breaks(
+    sections: &[StampRowSection],
+    page_breaks: &[usize],
+) -> Result<()> {
+    let mut boundaries = std::collections::HashSet::from([0]);
+    let mut end = 0usize;
+    for section in sections {
+        end = end
+            .checked_add(section.item_count)
+            .ok_or("Native page-break section counts overflow")?;
+        boundaries.insert(end);
+    }
+    if page_breaks.windows(2).any(|pair| pair[0] > pair[1])
+        || page_breaks.iter().any(|index| !boundaries.contains(index))
+    {
+        return Err("Native page breaks must be ordered row-section boundaries".into());
+    }
+    Ok(())
+}
+
+pub(crate) fn advance_page(
+    settings: &PageSettings,
+    pages: &mut Vec<StampItemPage>,
+    page: &mut StampItemPage,
+    total: usize,
+    date: Option<chrono::NaiveDate>,
+) -> Result<()> {
+    let next = new_page(settings, pages.len() + 2, total, date)?;
+    pages.push(std::mem::replace(page, next));
+    Ok(())
 }
 
 fn new_page(
@@ -112,6 +171,7 @@ fn paginate_pass(
     policy: &StampTextPolicy,
     date: Option<chrono::NaiveDate>,
     total: usize,
+    page_breaks: &[usize],
 ) -> Result<Vec<StampItemPage>> {
     let measured = items
         .iter()
@@ -127,7 +187,15 @@ fn paginate_pass(
     let mut top = page.layout.content_bounds.top;
     let mut index = 0;
     let mut section_index = 0;
-    while index < items.len() {
+    let mut breaks = page_breaks.iter().copied().peekable();
+    loop {
+        while breaks.next_if_eq(&index).is_some() {
+            advance_page(settings, &mut pages, &mut page, total, date)?;
+            top = page.layout.content_bounds.top;
+        }
+        if index == items.len() {
+            break;
+        }
         while index >= boundaries[section_index].0 {
             section_index += 1;
         }

@@ -65,6 +65,7 @@ pub struct NativeAlbum {
     page_background: Option<NativePageBackgroundImage>,
     items: Vec<StampImageRowItem>,
     sections: Vec<StampRowSection>,
+    page_breaks: Vec<usize>,
     numbering_section_starts: Vec<usize>,
     headings: Vec<NativeHeadingItem>,
 }
@@ -108,6 +109,7 @@ impl NativeAlbum {
         let mut image_specs: Vec<NativeImageSpec> = Vec::new();
         let mut section_start = 0;
         let mut section_counts = Vec::new();
+        let mut page_breaks = Vec::new();
         let mut numbering_section_starts = Vec::new();
         let mut headings: Vec<NativeHeadingItem> = Vec::new();
         let mut vertical = VerticalAlignment::Top;
@@ -583,6 +585,17 @@ impl NativeAlbum {
                     )
                     .map_err(&fail)?;
                 }
+                "NATIVE_PAGE_BREAK" => {
+                    if !args.is_empty() {
+                        return Err(fail(format!("{name} takes no arguments")));
+                    }
+                    let count = image_specs.len() - section_start;
+                    if count > 0 {
+                        section_counts.push(count);
+                        section_start = image_specs.len();
+                    }
+                    page_breaks.push(image_specs.len());
+                }
                 "NATIVE_ROW_BREAK" => {
                     if !args.is_empty() {
                         return Err(fail(format!("{name} takes no arguments")));
@@ -936,7 +949,7 @@ impl NativeAlbum {
             stamp_frame.ok_or("Missing required NATIVE_STAMP_FRAME command")?;
         let stamp_text_policy =
             text_policy.ok_or("Missing required NATIVE_STAMP_TEXT_POLICY command")?;
-        if image_specs.is_empty() {
+        if image_specs.is_empty() && page_breaks.is_empty() {
             return Err("At least one STAMP_IMAGE command is required".into());
         }
         if numbering_section_starts
@@ -946,10 +959,12 @@ impl NativeAlbum {
             return Err("NATIVE_PAGE_NUMBER_SECTION must be followed by a STAMP_IMAGE".into());
         }
         let remaining_items = image_specs.len().saturating_sub(section_start);
-        if remaining_items == 0 {
+        if remaining_items == 0 && page_breaks.last() != Some(&image_specs.len()) {
             return Err("NATIVE_ROW_BREAK must not follow the final STAMP_IMAGE".into());
         }
-        section_counts.push(remaining_items);
+        if remaining_items > 0 {
+            section_counts.push(remaining_items);
+        }
 
         let mut page_settings =
             PageSettings::new(page_size, margins, spacing, border, border_colour);
@@ -1009,6 +1024,7 @@ impl NativeAlbum {
             page_background,
             items,
             sections,
+            page_breaks,
             numbering_section_starts,
             headings,
         })
@@ -1119,12 +1135,13 @@ impl NativeAlbum {
                 .as_ref()
                 .is_some_and(|labels| labels.left.is_some() || labels.right.is_some())
         }) {
-            stamp_heading::paginate_native(
+            stamp_heading::paginate_native_with_page_breaks(
                 &page_settings,
                 &items,
                 &self.headings,
                 &self.sections,
                 &self.stamp_text_policy,
+                &self.page_breaks,
             )?
         } else {
             let stamps = self
@@ -1132,12 +1149,13 @@ impl NativeAlbum {
                 .iter()
                 .map(|item| item.stamp.clone())
                 .collect::<Vec<_>>();
-            super::pagination::paginate_stamp_sections(
+            super::pagination::paginate_stamp_sections_with_page_breaks(
                 &page_settings,
                 &stamps,
                 &self.sections,
                 &self.stamp_text_policy,
                 page_settings.capture_generation_date(),
+                &self.page_breaks,
             )?
         };
         if let Some(policy) = numbering {

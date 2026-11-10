@@ -269,6 +269,17 @@ pub fn paginate_native(
     sections: &[super::pagination::StampRowSection],
     policy: &super::stamp_text::StampTextPolicy,
 ) -> Result<Vec<super::pagination::StampItemPage>> {
+    paginate_native_with_page_breaks(settings, items, headings, sections, policy, &[])
+}
+
+pub(crate) fn paginate_native_with_page_breaks(
+    settings: &super::document::PageSettings,
+    items: &[super::stamp_image::StampImageRowItem],
+    headings: &[NativeHeadingItem],
+    sections: &[super::pagination::StampRowSection],
+    policy: &super::stamp_text::StampTextPolicy,
+    page_breaks: &[usize],
+) -> Result<Vec<super::pagination::StampItemPage>> {
     use super::{
         pagination::{StampItemPage, StampPageFragment},
         stamp_text,
@@ -279,6 +290,7 @@ pub fn paginate_native(
     {
         return Err("Native heading sections must exactly cover nonempty stamp rows".into());
     }
+    super::pagination::validate_page_breaks(sections, page_breaks)?;
     let date = settings.capture_generation_date();
     let mut total = 1;
     let mut seen = std::collections::HashSet::new();
@@ -293,7 +305,12 @@ pub fn paginate_native(
         };
         let mut top = page.layout.content_bounds.top;
         let mut start = 0;
+        let mut breaks = page_breaks.iter().copied().peekable();
         for section in sections {
+            while breaks.next_if_eq(&start).is_some() {
+                super::pagination::advance_page(settings, &mut pages, &mut page, total, date)?;
+                top = page.layout.content_bounds.top;
+            }
             let end = start + section.item_count;
             let metadata = &headings[start..end];
             if metadata
@@ -522,7 +539,10 @@ pub fn paginate_native(
             top = settings.spacing().next_top(layout.bottom_mm)?;
             start = end;
         }
-        if !page.items.is_empty() {
+        while breaks.next_if_eq(&items.len()).is_some() {
+            super::pagination::advance_page(settings, &mut pages, &mut page, total, date)?;
+        }
+        if !page.items.is_empty() || !page_breaks.is_empty() {
             pages.push(page);
         }
         if pages.len() == total {

@@ -41,7 +41,7 @@ was tested against a running 4.2.1 renderer.
 | [x] | `ALBUM_PAGES_MARGINS` | Same native spelling. | [margins](../../tests/fixtures/albumeasy/margins-v1/) |
 | [~] L | `ALBUM_PAGES_MARGINSE` | API/TOML even margins; missing TXT/native-document mapping. BRA-03. | [page settings tests](../../tests/native_pdf_page_settings.rs) |
 | [x] | `ALBUM_PAGES_SPACING` | Same native spelling; remaining interaction parity. | [spacing](../../tests/fixtures/albumeasy/spacing-v1/) |
-| [x] | `ALBUM_PAGES_TITLE` | `NATIVE_PAGE_TITLE`; native title color/config parity remains bounded. | [title](../../tests/fixtures/albumeasy/title-v1/) |
+| [x] | `ALBUM_PAGES_TITLE` | `NATIVE_PAGE_TITLE`; TXT following gap includes vertical spacing plus title extra (#103); native explicit gap is the total. Color/config parity remains bounded. | [title](../../tests/fixtures/albumeasy/title-v1/), [page-start proof](../../tests/fixtures/albumeasy/page-start-v1/) |
 | [x] | `ALBUM_PAGES_BORDER` | Same native spelling; 3/4 numeric arguments. | [border](../../tests/fixtures/albumeasy/border-v1/) |
 | [~] L | `ALBUM_PAGES_DECORATIVE_BORDER` | Definition parser/API/TOML works; neither album loader wired. CIS-01/02. | [decorative border](../../tests/fixtures/albumeasy/decorative-border-v1/) |
 | [x] | `ALBUM_PAGES_HEADER` | `NATIVE_PAGE_HEADER`; full state/default grammar still needs reconciliation. | [header](../../tests/fixtures/albumeasy/header-v1/) |
@@ -64,7 +64,7 @@ was tested against a running 4.2.1 renderer.
 
 | Check | AlbumEasy command | Native / remaining work | Evidence |
 |---|---|---|---|
-| [~] | `PAGE_START` | TXT zero-argument explicit starts work; group arguments missing; native document explicit page break missing. | [compatibility tests](../../tests/native_pdf_albumeasy.rs) |
+| [x] | `PAGE_START` | TXT explicit starts and bounded group arguments/substitutions work; native `NATIVE_PAGE_BREAK` preserves explicit breaks and intentional empty pages. Native free page text and full group-body language remain open. | [page-start tests](../../tests/native_pdf_page_start.rs), [accepted reference / native proofs](../../tests/fixtures/albumeasy/page-start-v1/) |
 | [ ] | `PAGE_START_VAR` | Per-page spacing and substitution not mapped. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_COLUMN_START` | Column widths/padding and flow missing. | [version update](ALBUMEASY_4_5_0_REFERENCE_UPDATE.md) |
 | [ ] | `PAGE_COLUMN_NEXT` | Column flow missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
@@ -76,8 +76,8 @@ was tested against a running 4.2.1 renderer.
 | [ ] | `PAGE_TEXT_PARAGRAPH_END` | Paragraph mode missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_RULE_H` | Rule geometry, color and spacing missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [~] | `PAGE_VSPACE` | Signed TXT cursor movement supported within bounds; native free-space mapping missing. | [compatibility code](../../src/native_pdf/albumeasy.rs) |
-| [ ] | `PAGE_START_GROUP_BEGIN` | Repeated command block/substitutions missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
-| [ ] | `PAGE_START_GROUP_END` | Repeated command block/substitutions missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
+| [x] | `PAGE_START_GROUP_BEGIN` | One pre-page group, existing supported body commands, quote-preserving single-pass `$$1`–`$$9`; no nested/recursive starts or unsupported-body approximation. Missing values fail. | [page-start proof](../../tests/fixtures/albumeasy/page-start-v1/) |
+| [x] | `PAGE_START_GROUP_END` | Validates matching close, declaration order and duplicate definitions. PAGE_START_VAR/INFO remain separate TODOs. | [page-start tests](../../tests/native_pdf_page_start.rs) |
 | [~] | `PAGE_BACKGROUND_IMG` | Native explicit bounds via `NATIVE_PAGE_BACKGROUND_IMAGE`; TXT fit/scale/offset mapping missing. | [image-control tests](../../tests/native_pdf_stamp_image.rs) |
 | [ ] | `PAGE_TEXT_VSPACE` | Obsolete left-text alias missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_TEXT_CENTRE_VSPACE` | Obsolete centered-text alias missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
@@ -247,6 +247,7 @@ The five shared native spellings are `ALBUM_PAGES_SIZE`, `ALBUM_PAGES_MARGINS`,
 | [x] | `NATIVE_ROW_ALIGNMENT` | Native horizontal row distribution; distinct from vertical alignment. |
 | [x] | `NATIVE_ROW_VERTICAL_ALIGNMENT` | TOP/MIDDLE/BOTTOM. |
 | [x] | `NATIVE_ROW_BREAK` | End current row, not explicit page break. |
+| [x] | `NATIVE_PAGE_BREAK` | Zero arguments; flush row, preserve automatic overflow; leading/repeated/trailing breaks create empty content pages with normal decorations/numbering. |
 | [x] | `NATIVE_PAGE_NUMBER_SECTION` | Explicit section boundary; TOML numbering scope required. |
 | [x] | `NATIVE_STAMP_FRAME` | Line/color/optional nonnegative total frame additions. |
 | [x] | `NATIVE_STAMP_TEXT_POLICY` | Wrap/expanded width, padding/gap and width limits. |
@@ -282,7 +283,8 @@ requested work, **not additional accepted AlbumEasy spellings**.
 | [x] | `$SECTION_PAGE$`, `$SECTION_PAGES$`, `$DOCUMENT_PAGES$` native tokens | Retain section/document distinction; not standalone commands or AlbumEasy tokens. |
 | [x] | TOML side-label font/wrap/line policies | Keep defaults explicit and test item overrides/errors; no new AlbumEasy command. |
 | [~] | Wrapped captions/side labels and continuation pagination | Existing native behavior; print/readability review and dense-row fidelity remain. |
-| [ ] | Native explicit page break / free-standing page text and vertical-space commands | AUS-03/04; define syntax, preserve order, avoid one-file-per-page workaround. |
+| [x] | Native explicit page-break command | `NATIVE_PAGE_BREAK ()`; #103 includes intentional empty pages and caption continuation. |
+| [ ] | Native free-standing page text and vertical-space commands | AUS-03; preserve order and source text without relocating it into stamp captions/headings. |
 | [ ] | Combined heading + inside + side-label attachment | AUS-05; preserve all footprints without resizing physical frames. |
 | [ ] | Left/right title-icon commands | Requested direction; detailed command design/implementation pending. |
 | [ ] | Country-review preview command/UI | Idea only; no command/API approved. |

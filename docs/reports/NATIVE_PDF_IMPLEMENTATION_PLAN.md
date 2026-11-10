@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-09
-**Revision:** 64
+**Revision:** 65
 **Status:** Bounded standalone renderer and command-family slices are implemented. Against the 46 roadmap tasks, 19 are partially evidenced, 27 remain unsatisfied, and none yet meets its full task acceptance criteria. Full AlbumEasy compatibility, canonical application integration, export and production routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -78,7 +78,8 @@ It parses explicit page/border/row/text-policy commands and `STAMP_IMAGE`,
 resolves relative raster paths from the `.stampalbum` file, and writes a real
 native PDF directly without AlbumEasy or diagnostic proof overlays. Current
 version-1 support includes stamp-image policies, multiline captions, page
-titles and headers, explicit row breaks, and total-addition frame sizing.
+titles and headers, explicit row/page breaks (including intentional empty
+content pages), and total-addition frame sizing.
 It does not itself parse AlbumEasy commands. The separate bounded interpreter
 described below shares its native PDF writer; compatible TXT export, other
 stamp shapes, and application generation are not connected.
@@ -169,6 +170,10 @@ and must not be described as compatible.
 - Source page breaks are preserved. Oversize rows error rather than
   silently reflowing. Mixed-height row reservation uses each item's own
   frame-plus-caption footprint, not the tallest frame plus another caption.
+- #103 adds one pre-page start group with single-pass, quote-preserving
+  `$$1`–`$$9` arguments over supported body commands. Correct TXT title
+  reservation includes ordinary vertical spacing after the title as well as
+  its explicit extra gap. Native explicit title-gap semantics are unchanged.
 - Indexed/low-bit PNGs are decoded with the existing image crate; RGBA
   transparency is retained. Image-fit comparisons allow only `1e-9` mm
   floating-point roundoff. Missing images remain explicit errors and
@@ -2406,6 +2411,18 @@ or authorize production integration.
   test breaks, continuation pages and footers in one native render; no
   AlbumEasy rendering dependency. The current local numbering is intentional
   fixture behavior, not a compatibility-renderer numbering defect.
+  Bounded progress (#103): `NATIVE_PAGE_BREAK ()` now flushes rows, retains
+  automatic overflow/caption continuation and intentionally empty pages
+  (leading, repeated, trailing breaks). Page totals and numbering are tested.
+  The maintainer accepted the two AlbumEasy PAGE_START references and requested
+  intentional blank-page support. TXT groups support one pre-page definition
+  and quote-preserving `$$1`–`$$9` substitution over already supported body
+  commands. Reference probes also identified the omitted vertical gap after a
+  TXT page title; the compatibility reservation is corrected without changing
+  native explicit title-gap semantics. See the
+  [proofs and run evidence](../../tests/fixtures/albumeasy/page-start-v1/README.md).
+  Full Australian source-page provenance/reflow and free page-text fidelity
+  remain open; do not close this whole follow-up or its roadmap tasks.
 - [ ] **AUS-05 — Compose headings with inside and side labels** (T038, T040):
   remove the attachment-order limitation that currently moves each source
   page's first stamp heading into its caption. Acceptance: one image/frame can
@@ -2629,6 +2646,7 @@ task markers whenever implementation scope changes.
 
 | Date | Tasks / decision | Outcome / evidence | Next action |
 |------|------------------|--------------------|-------------|
+| 2026-11-09 | Revision 65: bounded PAGE_START groups and native breaks (#103) | Accepted reference first; added bounded TXT group expansion, explicit native breaks including intentional empty pages, and corrected the missing title-following vertical gap. Three native input paths and pagination/error/state regressions are exercised. | Review native proofs; retain full group-body language, PAGE_START_VAR/INFO, free native page text, production integration, Windows and actual-size print acceptance as open. No full roadmap completion. |
 | 2026-11-09 | Revision 63: Christmas Island existing-support border test (#101) | Recorded CIS-01–CIS-05 for loader wiring, Classic asset provenance, empty spacers, footer/case/empty-affix semantics and border acceptance. Maintainer selected original A4 and a separate native border-only proof, not production implementation. Confirmed Brazil TODOs remain recorded; no demonstrated embedded-JPEG resolution loss. | Review two-page proofs and complete bounded mappings with reference evidence; no roadmap completion or production integration claimed. |
 | 2026-11-09 | Revision 62: externally authored Brazil comparison (#100) | Recorded BRA-01–BRA-07 for legacy image units/numbering, alternating margins, semicolon annotations, automatic page-text wrapping, external-album acceptance and accurate empty-caption diagnostics. Three 20-page proofs retain 84 image placements each; all adaptations are explicit test inputs. | Review PDFs, validate reference semantics and address bounded mappings. No production integration or full task completion claimed. |
 | 2026-11-09 | Revision 61: Australia comparison follow-up TODOs (#99) | Recorded AUS-01–AUS-08 for row overloads, layout fidelity, native page text/spacing/breaks, heading-label composition, intentional demonstration differences, print acceptance and Windows validation. Existing roadmap task IDs and completion counts remain unchanged. | Address each through bounded reference-first mapping and review; no production integration or new implementation authorized by this documentation update. |

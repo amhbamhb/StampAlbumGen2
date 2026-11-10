@@ -43,6 +43,19 @@ struct Command {
     name: String,
     args: Vec<Argument>,
     line: usize,
+    invocation_line: Option<usize>,
+}
+
+impl Command {
+    fn location(&self) -> String {
+        match self.invocation_line {
+            Some(line) => format!(
+                "Line {} (page-start group invoked at line {line})",
+                self.line
+            ),
+            None => format!("Line {}", self.line),
+        }
+    }
 }
 
 /// An unsupported command is never omitted during rendering. A caller can
@@ -122,6 +135,8 @@ fn supported(name: &str) -> bool {
             | "ALBUM_STAMP_SETTINGS_SAVE"
             | "ALBUM_STAMP_SETTINGS_RESTORE"
             | "PAGE_START"
+            | "PAGE_START_GROUP_BEGIN"
+            | "PAGE_START_GROUP_END"
             | "PAGE_VSPACE"
             | "PAGE_TEXT_CENTRE"
             | "ROW_START_ES"
@@ -150,7 +165,125 @@ fn command(line: &str, source_line: usize) -> Result<Command> {
         name,
         args,
         line: source_line,
+        invocation_line: None,
     })
+}
+
+fn expand_group_line(template: &str, args: &[Argument]) -> Result<String> {
+    let mut expanded = String::new();
+    let mut rest = template;
+    while let Some(index) = rest.find("$$") {
+        expanded.push_str(&rest[..index]);
+        rest = &rest[index + 2..];
+        let digit = rest
+            .chars()
+            .next()
+            .ok_or("Incomplete page-start placeholder")?;
+        if !matches!(digit, '1'..='9') {
+            return Err("Page-start placeholders must be $$1 through $$9".into());
+        }
+        let arg = args
+            .get(digit as usize - '1' as usize)
+            .ok_or_else(|| format!("Missing PAGE_START argument for $${digit}"))?;
+        if arg.quoted {
+            expanded.push('"');
+            for character in arg.value.chars() {
+                match character {
+                    '"' => expanded.push_str("\\\""),
+                    '\\' => expanded.push_str("\\\\"),
+                    '\n' => expanded.push_str("\\n"),
+                    other => expanded.push(other),
+                }
+            }
+            expanded.push('"');
+        } else {
+            expanded.push_str(&arg.value);
+        }
+        rest = &rest[digit.len_utf8()..];
+    }
+    expanded.push_str(rest);
+    Ok(expanded)
+}
+
+fn input_commands(source: &str) -> Result<Vec<Command>> {
+    let mut commands = Vec::new();
+    let mut group: Option<Vec<(usize, String)>> = None;
+    let mut group_open = false;
+    let mut page_seen = false;
+    for (index, raw) in source.lines().enumerate() {
+        let line_number = index + 1;
+        let line = strip_comment(raw).trim().trim_end_matches(';').trim();
+        if line.is_empty() {
+            continue;
+        }
+        let name = line.split('(').next().unwrap_or(line).trim();
+        if !supported(name) {
+            return Err(format!("Line {line_number}: Unsupported AlbumEasy command {name}; record it in the plan and comment it out in a test copy"));
+        }
+        match name {
+            "PAGE_START_GROUP_BEGIN" => {
+                let c = command(line, line_number)?;
+                count(&c, 0, 0).map_err(|error| format!("{}: {error}", c.location()))?;
+                if group.is_some() || page_seen {
+                    return Err(format!("Line {line_number}: Define only one PAGE_START group, before all pages; nested groups are not supported"));
+                }
+                group = Some(Vec::new());
+                group_open = true;
+            }
+            "PAGE_START_GROUP_END" => {
+                let c = command(line, line_number)?;
+                count(&c, 0, 0).map_err(|error| format!("{}: {error}", c.location()))?;
+                if !group_open {
+                    return Err(format!(
+                        "Line {line_number}: PAGE_START_GROUP_END has no open group"
+                    ));
+                }
+                group_open = false;
+            }
+            _ if group_open => {
+                if name == "PAGE_START" {
+                    return Err(format!(
+                        "Line {line_number}: PAGE_START is not allowed inside its own group"
+                    ));
+                }
+                group
+                    .as_mut()
+                    .ok_or("Missing page-start group")?
+                    .push((line_number, line.to_string()));
+            }
+            _ => {
+                let mut c = command(line, line_number)?;
+                if c.name == "PAGE_START" {
+                    count(&c, 0, 9).map_err(|error| format!("{}: {error}", c.location()))?;
+                    if group.is_none() && !c.args.is_empty() {
+                        return Err(format!(
+                            "Line {line_number}: PAGE_START arguments require a PAGE_START group"
+                        ));
+                    }
+                    page_seen = true;
+                    let args = std::mem::take(&mut c.args);
+                    commands.push(c);
+                    if let Some(group) = &group {
+                        for (origin, template) in group {
+                            let context = |error| {
+                                format!("Line {origin} (page-start group invoked at line {line_number}): {error}")
+                            };
+                            let expanded = expand_group_line(template, &args).map_err(&context)?;
+                            let mut c = command(&expanded, *origin).map_err(&context)?;
+                            c.invocation_line = Some(line_number);
+                            commands.push(c);
+                        }
+                    }
+                } else {
+                    commands.push(c);
+                }
+            }
+        }
+    }
+    if group_open {
+        return Err("Unclosed PAGE_START_GROUP_BEGIN: expected PAGE_START_GROUP_END".into());
+    }
+    Ok(commands)
 }
 
 fn count(c: &Command, min: usize, max: usize) -> Result<()> {
@@ -542,18 +675,7 @@ pub fn render_file(input: &Path, output: &Path) -> Result<usize> {
 }
 
 pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
-    let mut commands = Vec::new();
-    for (index, raw) in source.lines().enumerate() {
-        let line = strip_comment(raw).trim().trim_end_matches(';').trim();
-        if line.is_empty() {
-            continue;
-        }
-        let c = command(line, index + 1)?;
-        if !supported(&c.name) {
-            return Err(format!("Line {}: Unsupported AlbumEasy command {}; record it in the plan and comment it out in a test copy", c.line, c.name));
-        }
-        commands.push(c);
-    }
+    let commands = input_commands(source)?;
     let mut size = None;
     let mut margins = None;
     let mut spacing = None;
@@ -698,7 +820,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
             }
             Ok(())
         })();
-        result.map_err(|e| format!("Line {}: {e}", c.line))?;
+        result.map_err(|e| format!("{}: {e}", c.location()))?;
     }
     let mut settings = PageSettings::new(
         size.ok_or("Missing ALBUM_PAGES_SIZE")?,
@@ -712,7 +834,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
             &font,
             size,
             &text,
-            gap,
+            gap + settings.spacing().vertical_mm(),
             0.0,
             title_colour,
         )?);
@@ -1146,7 +1268,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
             }
             Ok(())
         })();
-        result.map_err(|e| format!("Line {} ({}): {e}", c.line, c.name))?;
+        result.map_err(|e| format!("{} ({}): {e}", c.location(), c.name))?;
     }
     flush(
         &mut row,
@@ -1162,6 +1284,41 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn page_start_placeholders_preserve_quotes_and_are_expanded_once() -> Result<()> {
+        let (_, args) = parse_command(
+            r#"PAGE_START ("United States" 1959 "$$1" four five six seven eight "ninth \"value\"")"#,
+        )?;
+        let result = expand_group_line(r#"PAGE_TEXT_CENTRE (HN 9 $$1 5)"#, &args)?;
+        assert_eq!(text(&command(&result, 1)?, 2)?, "United States");
+        let result = expand_group_line(r#"PAGE_TEXT_CENTRE (HN 9 $$3)"#, &args)?;
+        assert_eq!(text(&command(&result, 1)?, 2)?, "$$1");
+        let result = expand_group_line(r#"PAGE_TEXT_CENTRE (HN 9 $$9)"#, &args)?;
+        assert_eq!(text(&command(&result, 1)?, 2)?, "ninth \"value\"");
+        let result = expand_group_line(
+            r#"PAGE_TEXT_CENTRE (HN 9 "$$2 $$4 $$5 $$6 $$7 $$8 / $$2")"#,
+            &args,
+        )?;
+        assert_eq!(
+            text(&command(&result, 1)?, 2)?,
+            "1959 four five six seven eight / 1959"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn group_syntax_and_argument_limits_fail_with_source_locations() {
+        for source in [
+            "PAGE_START_GROUP_BEGIN (1)",
+            "PAGE_START_GROUP_BEGIN\nPAGE_START_GROUP_END (1)",
+            "PAGE_START_GROUP_BEGIN\nPAGE_START_GROUP_END\nPAGE_START_GROUP_BEGIN",
+            "PAGE_START_GROUP_BEGIN\nPAGE_START_GROUP_END\nPAGE_START (1 2 3 4 5 6 7 8 9 10)",
+        ] {
+            let error = input_commands(source).expect_err(source);
+            assert!(error.contains("Line "), "{error}");
+        }
+    }
 
     fn parse_overload(source: &str) -> Result<StampImageOverload> {
         stamp_image_overload(&command(source, 1)?)
