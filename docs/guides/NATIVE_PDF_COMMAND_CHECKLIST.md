@@ -5,6 +5,55 @@
 **Purpose:** one working checkoff list; update it after each command slice.
 Production native-PDF integration remains deferred.
 
+### Command keyword case (#105)
+
+Standalone TXT, raw-command `.stampalbum` and native `STAMPALBUM 1` inputs
+accept uppercase, lowercase and mixed-case **command keywords**, including
+page-start group delimiters and the native version header. Normalize keywords
+at parsing, not entire lines: captions, titles, paths, font/style arguments and
+other values retain their original case and existing validation.
+Unsupported commands still fail; case tolerance does not add unmapped commands.
+The standalone example detects the native header case-insensitively.
+
+**Future output rule (not implemented):** when integrated with the main app,
+write command keywords in uppercase for consistency. Preserve all values,
+visible text, paths and identifiers; do not uppercase album content.
+
+Evidence: [case regression tests](../../tests/native_pdf_command_case.rs).
+Tests render lowercase and mixed-case variants and compare decoded PDF content
+streams exactly with uppercase baselines, including real lowercase image paths.
+No reference input/PDF is rewritten and no production import/UI route changes.
+
+Validation on Linux (2026-11-09), all commands exited 0:
+
+```sh
+cargo test --test native_pdf_command_case --test native_pdf_page_start_var --test native_pdf_page_start --test native_pdf_albumeasy --test native_pdf_album
+cargo test --test native_pdf_command_case
+cargo clippy --lib --test native_pdf_command_case --example render_stampalbum
+cargo build --example render_stampalbum
+cargo fmt --all -- --check
+git diff --check
+```
+
+Outcome: **41 passed, 6 ignored, 0 failed** across the five suites; final
+case-only rerun **2 passed** (including bare group delimiters). Clippy/build
+passed with existing unrelated warnings. Six actual CLI invocations of
+`target/debug/examples/render_stampalbum <input> <output.pdf>` covered
+lowercase/mixed-case TXT, raw `.stampalbum` and native `.stampalbum`;
+each returned four pages, exit 0. Exact resolved commands/results are retained
+in the session execution log `command-case-cli.log`. PDF content streams match
+uppercase baselines byte-for-byte; this is not a new visual-parity claim.
+
+Filesystem impact: added the case regression test; updated the shared parser,
+TXT admission, standalone example and directly related documentation. Existing
+uncommitted #104 work is preserved. Temporary case inputs/PDFs were auto-cleaned;
+Cargo build artifacts/logs are ignored or session-local. No inputs moved/deleted
+and no source/reference PDFs changed. DB impact: none (no connections, schema
+changes, inserts, updates or duplicates applicable). Final error inventory:
+none. Logic risks addressed: admission before dispatch, bare group delimiters,
+case-sensitive equality/suffix checks and native-header routing. Windows was
+not executed; normalization uses portable ASCII/string and Path APIs.
+
 ## How to read and update this list
 
 - **[x] Mapped:** a bounded standalone native mapping exists, with tests.

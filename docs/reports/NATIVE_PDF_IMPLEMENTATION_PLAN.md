@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-09
-**Revision:** 66
+**Revision:** 67
 **Status:** Bounded standalone renderer and command-family slices are implemented. Against the 46 roadmap tasks, 19 are partially evidenced, 27 remain unsatisfied, and none yet meets its full task acceptance criteria. Full AlbumEasy compatibility, canonical application integration, export and production routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -2659,6 +2659,7 @@ task markers whenever implementation scope changes.
 
 | Date | Tasks / decision | Outcome / evidence | Next action |
 |------|------------------|--------------------|-------------|
+| 2026-11-09 | Revision 67: command-keyword case audit (#105) | Fixed uppercase-only shared parser, group admission, native header and standalone dispatch; lowercase/mixed-case commands normalize without changing values or paths. Maintainer clarified future output uses uppercase keywords only. | Output-generation changes remain deferred; no production integration or expanded command coverage. See checklist case policy/tests. |
 | 2026-11-09 | Revision 66: bounded PAGE_START_VAR mapping (#104) | Accepted main reference plus isolated horizontal probe; TXT/raw local H/V, zero/reset and offset group substitution; native optional break spacing, blank pages, automatic inheritance and numbering state. 69 integration tests and 17 native units pass; three native input routes produce four-page Letter PDFs. | Review native proofs; retain native first-page override, full group-body language, absolute font/row metric differences, production integration, Windows and actual-size print acceptance as open. Roadmap counts unchanged. |
 | 2026-11-09 | Revision 65: bounded PAGE_START groups and native breaks (#103) | Accepted reference first; added bounded TXT group expansion, explicit native breaks including intentional empty pages, and corrected the missing title-following vertical gap. Three native input paths and pagination/error/state regressions are exercised. | Review native proofs; retain full group-body language, PAGE_START_VAR/INFO, free native page text, production integration, Windows and actual-size print acceptance as open. No full roadmap completion. |
 | 2026-11-09 | Revision 63: Christmas Island existing-support border test (#101) | Recorded CIS-01–CIS-05 for loader wiring, Classic asset provenance, empty spacers, footer/case/empty-affix semantics and border acceptance. Maintainer selected original A4 and a separate native border-only proof, not production implementation. Confirmed Brazil TODOs remain recorded; no demonstrated embedded-JPEG resolution loss. | Review two-page proofs and complete bounded mappings with reference evidence; no roadmap completion or production integration claimed. |

@@ -217,7 +217,12 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
         if line.is_empty() {
             continue;
         }
-        let name = line.split('(').next().unwrap_or(line).trim().to_ascii_uppercase();
+        let name = line
+            .split('(')
+            .next()
+            .unwrap_or(line)
+            .trim()
+            .to_ascii_uppercase();
         let name = name.as_str();
         if !supported(name) {
             return Err(format!("Line {line_number}: Unsupported AlbumEasy command {name}; record it in the plan and comment it out in a test copy"));

@@ -171,7 +171,7 @@ renderer regression:
 | `PAGE_TEXT_CENTRE arguments must be separated by whitespace` | A quoted multiword group value was placed inside an already quoted template. Use the existing supported whole-argument substitution idiom. Quote-context-aware interpolation remains outside this slice. |
 | Expected `(Page 10 of 2) Tj` absent | `$PAGES$` is the document count (4), even under section scope. Correct the assertion; do not alter established numbering behavior. |
 | `Missing ALBUM_PAGES_BORDER` | Supply the required border in the synthetic all-nine-values test. No production default added. |
-| Final rerun temporarily failed with `E0308` during concurrent uppercase-match editing | Maintainer completed the edits; resumed validation uses `to_uppercase().as_str()`. Existing strict command admission is unchanged; this does not add lowercase-command support. |
+| Final rerun temporarily failed with `E0308` during concurrent uppercase-match editing | Maintainer completed the edits; resumed validation uses `to_uppercase().as_str()`. That #104 validation did not yet add lowercase admission; the subsequent #105 shared-parser fix is documented in the [command checklist](../../../../docs/guides/NATIVE_PDF_COMMAND_CHECKLIST.md#command-keyword-case-105). |
 
 #### Measured comparison and open follow-ups
 
