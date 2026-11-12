@@ -18,6 +18,39 @@ Alternative on Linux using `osslsigncode`:
 osslsigncode sign -pkcs12 cert.pfx -h sha256 -t http://timestamp.digicert.com -in stamp_album_gen2.exe -out stamp_album_gen2-signed.exe
 ```
 
+Yes, you can create a PFX code-signing certificate using a .cer file, but you will also need the corresponding private key. Both the certificate and the private key must be combined into a single PFX file using a tool like OpenSSL.
+
+Creating a PFX Code-Signing Certificate
+Yes, you can create a PFX code-signing certificate using a .cer file, but there are specific requirements to consider.
+
+Requirements
+To successfully create a PFX file, you need:
+
+.cer File: This is your code-signing certificate.
+Private Key: The corresponding private key must be available. The private key is essential as it is used to sign the code.
+Steps to Create a PFX File
+You can use OpenSSL to combine the .cer file and the private key into a PFX file. Here’s how:
+
+Install OpenSSL: Ensure OpenSSL is installed on your system.
+Use the Command: Run the following command in your terminal or command prompt:
+
+```sh
+openssl pkcs12 -export -out certificate.pfx -inkey privateKey.key -in certificate.cer
+```
+
+openssl pkcs12 -export -out certificate.pfx -inkey privateKey.key -in certificate.cer
+-export: Indicates that you want to create a PFX file.
+-out certificate.pfx: Specifies the name of the output PFX file.
+-inkey privateKey.key: Points to your private key file.
+-in certificate.cer: Points to your .cer certificate file.
+Set a Password: During the process, you will be prompted to set a password for the PFX file. This password is crucial for protecting the private key.
+Important Notes
+Ensure that the private key is exportable if it was generated on a secure device.
+If your certificate was issued after June 2023, it may be stored in a secure hardware module, making it non-exportable.
+By following these steps, you can successfully create a PFX code-signing certificate from a .cer file and its corresponding private key.
+
+
+
 ## 2) Produce checksum and GPG detached signature
 
 ```bash

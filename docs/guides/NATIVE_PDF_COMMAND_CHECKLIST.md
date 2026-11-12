@@ -354,6 +354,7 @@ requested work, **not additional accepted AlbumEasy spellings**.
 | [x] | Native explicit page-break command | #103 intentional empty pages/caption continuation; #104 optional H/V override, automatic inheritance and default reset. |
 | [ ] | Native free-standing page text and vertical-space commands | AUS-03; preserve order and source text without relocating it into stamp captions/headings. |
 | [ ] | Native page-frame item alignment: left / centre / right | Add an option to align items horizontally within the page frame, distinct from existing row distribution. Requested backlog only; scope, command syntax and implementation deferred. |
+| [ ] | Native PDF color formats: hexadecimal and RGB | #107 backlog only: define and add hex/RGB values consistently across all native-PDF color options (AlbumEasy-compatible and native-only commands, TOML/config/defaults). Decide accepted syntax, ranges, alpha/transparency, errors, serialization and TXT compatibility/export policy before implementation. Existing AlbumEasy 4.5 border-color command rejects hex; do not silently change imported TXT semantics. |
 | [ ] | Combined heading + inside + side-label attachment | AUS-05; preserve all footprints without resizing physical frames. |
 | [ ] | Left/right title-icon commands | Requested direction; detailed command design/implementation pending. |
 | [ ] | Country-review preview command/UI | Idea only; no command/API approved. |
