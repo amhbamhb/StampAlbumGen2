@@ -2,7 +2,7 @@
 
 **Created:** 2026-11-01  
 **Last updated:** 2026-11-09
-**Revision:** 67
+**Revision:** 68
 **Status:** Bounded standalone renderer and command-family slices are implemented. Against the 46 roadmap tasks, 19 are partially evidenced, 27 remain unsatisfied, and none yet meets its full task acceptance criteria. Full AlbumEasy compatibility, canonical application integration, export and production routing remain incomplete.
 **Scope:** Build StampAlbumGen2's own canonical album document and native PDF renderer. Generate the PDF directly from that document, then optionally export an AlbumEasy-compatible TXT projection. Continue to accept/import existing user-authored AlbumEasy TXT as a separate compatibility path. AlbumEasy 4.5.0 is a reference renderer and export target, not the canonical model or a permanent rendering dependency.
 
@@ -1705,8 +1705,16 @@ global behavior; the current test-only fixture adapter is not a new importer.
 missing-parenthesis error and quoted hex as an invalid colour name. Native
 code therefore supports opaque named colours only for this command and rejects
 hex/RGB functions/transparency explicitly. Previous template hex-support claims
-are corrected, without changing production TXT emission. A future hex extension
-would need an explicit compatibility policy rather than silent divergent output.
+are corrected, without changing production TXT emission.
+
+**TODO (#107; backlog only):** Before implementing colour-format support,
+re-check AlbumEasy documentation for whether hex colour values/names are
+supported and how they are written. Then make all relevant colour forms
+(named colours, hex, RGB and other documented forms) available across native
+PDF colour options. This is a tracking item only; no implementation is
+authorized. Define an explicit compatibility policy rather than silently
+changing imported AlbumEasy TXT behavior or producing divergent AlbumEasy
+exports.
 
 The existing `[colors].color_album_border` now reaches native strokes through
 the same snapshot; `[colors]` overrides a legacy root key with reporting.
