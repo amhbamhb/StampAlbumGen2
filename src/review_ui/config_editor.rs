@@ -516,6 +516,20 @@ pub(super) fn load_current_config_values(
     Ok(values)
 }
 
+fn is_sensitive_config_field(id: &str) -> bool {
+    let key = id.rsplit('.').next().unwrap_or(id).to_ascii_lowercase();
+    [
+        "password",
+        "passwd",
+        "secret",
+        "token",
+        "api_key",
+        "access_key",
+    ]
+    .iter()
+    .any(|part| key.contains(part))
+}
+
 pub(super) fn build_config_editor_data(
     config_path: &str,
     template_path: &str,
@@ -613,6 +627,12 @@ pub(super) fn build_config_editor_data(
         }
     }
 
+    for section in &mut template_sections {
+        section
+            .fields
+            .retain(|field| !is_sensitive_config_field(&field.id));
+    }
+    template_sections.retain(|section| !section.fields.is_empty());
     Ok(template_sections)
 }
 
@@ -756,8 +776,16 @@ pub(super) fn save_full_config_values(
 
     let mut normalized_values: HashMap<String, String> = HashMap::new();
     for (field_id, value) in values {
+        if is_sensitive_config_field(field_id) {
+            return Err(format!("Sensitive setting {field_id} must be managed separately").into());
+        }
         let normalized = normalize_value_for_template(template_defaults_by_id.get(field_id), value);
         normalized_values.insert(field_id.clone(), normalized);
+    }
+    for (field_id, value) in load_current_config_values(config_path)? {
+        if is_sensitive_config_field(&field_id) {
+            normalized_values.insert(field_id, value);
+        }
     }
 
     let rendered = render_config_from_template_values(&template_content, &normalized_values);
@@ -847,8 +875,22 @@ pub(super) fn save_album_config_diff(
     // Normalize all submitted values.
     let mut normalized: HashMap<String, String> = HashMap::new();
     for (field_id, raw_value) in all_ui_values {
+        if is_sensitive_config_field(field_id) {
+            return Err(format!("Sensitive setting {field_id} must be managed separately").into());
+        }
         let n = normalize_value_for_template(template_defaults_by_id.get(field_id), raw_value);
         normalized.insert(field_id.clone(), n);
+    }
+    let existing_override = album_dir.join("config.toml");
+    if existing_override.exists() {
+        let path = existing_override
+            .to_str()
+            .ok_or("Album config path is not valid UTF-8")?;
+        for (field_id, value) in load_current_config_values(path)? {
+            if is_sensitive_config_field(&field_id) {
+                normalized.insert(field_id, value);
+            }
+        }
     }
 
     // Load the global config current values for comparison.
@@ -867,7 +909,7 @@ pub(super) fn save_album_config_diff(
             .map(|s| s.trim().to_string())
             .unwrap_or_default();
         let new_trimmed = new_val.trim().to_string();
-        if new_trimmed == global_val {
+        if new_trimmed == global_val && !is_sensitive_config_field(field_id) {
             continue; // unchanged vs global — skip
         }
         // field_id is like "stamps.default_catalog_code"
@@ -952,6 +994,69 @@ pub(super) fn render_config_editor_assets() -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn editor_hides_and_preserves_sensitive_values_in_global_and_album_configs() {
+        let temp = tempfile::tempdir().expect("temporary config directory");
+        let global = temp.path().join("config.toml");
+        let template = temp.path().join("template.toml");
+        let pdf = temp.path().join("pdf.toml");
+        let album = temp.path().join("album");
+        fs::create_dir(&album).expect("album directory");
+        let defaults = "[stampworld]\nusername = \"\"\npassword = \"\"\n[colnect]\npassword = \"\"\n[runtime]\nname = \"\"\n";
+        fs::write(&template, defaults).expect("template");
+        fs::write(&pdf, "").expect("pdf");
+        fs::write(&global, "[stampworld]\nusername = \"user\"\npassword = \"global-one\"\n[colnect]\npassword = \"global-two\"\n[runtime]\nname = \"original\"\n[extra]\napi_key = \"extra-secret\"\n").expect("global");
+        fs::write(
+            album.join("config.toml"),
+            "[stampworld]\npassword = \"album-secret\"\n[colnect]\npassword = \"global-two\"\n[runtime]\nname = \"album\"\n",
+        )
+        .expect("album override");
+        let global_path = global.to_str().expect("global path");
+        let template_path = template.to_str().expect("template path");
+        let pdf_path = pdf.to_str().expect("pdf path");
+        let sections =
+            build_config_editor_data(global_path, template_path, pdf_path).expect("editor");
+        let serialized = serde_json::to_string(&sections).expect("serialize");
+        for secret in ["global-one", "global-two", "extra-secret"] {
+            assert!(!serialized.contains(secret));
+        }
+        let (sections, _) =
+            build_config_editor_data_for_album(global_path, template_path, pdf_path, &album)
+                .expect("album editor");
+        assert!(!serde_json::to_string(&sections)
+            .expect("serialize")
+            .contains("album-secret"));
+        let mut values: HashMap<String, String> = sections
+            .iter()
+            .flat_map(|section| section.fields.iter())
+            .map(|field| (field.id.clone(), field.current_value.clone()))
+            .collect();
+        values.insert("runtime.name".to_string(), "\"changed\"".to_string());
+        save_full_config_values(global_path, template_path, pdf_path, &values)
+            .expect("save global");
+        let saved = load_current_config_values(global_path).expect("saved config");
+        assert_eq!(saved["stampworld.password"], "\"global-one\"");
+        assert_eq!(saved["colnect.password"], "\"global-two\"");
+        assert_eq!(saved["extra.api_key"], "\"extra-secret\"");
+        save_album_config_diff(
+            &album,
+            "Test",
+            global_path,
+            pdf_path,
+            template_path,
+            &values,
+        )
+        .expect("save album");
+        let saved =
+            load_current_config_values(album.join("config.toml").to_str().expect("album path"))
+                .expect("saved album");
+        assert_eq!(saved["stampworld.password"], "\"album-secret\"");
+        assert_eq!(saved["colnect.password"], "\"global-two\"");
+        let injected =
+            HashMap::from([("stampworld.password".to_string(), "\"replace\"".to_string())]);
+        assert!(save_full_config_values(global_path, template_path, pdf_path, &injected).is_err());
+    }
 
     #[test]
     fn native_row_alignment_help_reaches_editor_and_matches_example() {

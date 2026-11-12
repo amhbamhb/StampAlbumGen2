@@ -7,6 +7,9 @@
 
 This application generates AlbumEasy source pages (*.txt files) from stamp data sources and has a built in SQLite database for each country/theme.  The application can update the database with new stamp information as it becomes available.
 
+
+# Please note this is a beta version and does not have the native PDF support yet.  
+
 The latest release is available on github with attestations: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
 
 The application is designed to simplify the process of generating stamp album pages from various data sources, ensuring that users can efficiently manage and update their collections.
@@ -413,8 +416,13 @@ in an existing country review session.
   either `--album-name` (resolves to `Albums/<name>/<name>.db`) or
   `--db-path` to identify which database to open.
 - `--review-ui-bind <ADDR>`
-  Override the listen address for the review UI server.
+  Override the loopback listen address for the review UI server. Remote
+  addresses such as `0.0.0.0` are rejected because the UI has no authentication.
   Default: `127.0.0.1:7878`.
+
+The config editor does not display saved passwords or other sensitive settings;
+use **Site Accounts** to update site credentials. Saving other settings preserves
+those values.
 
 ### Diagnostics
 
@@ -486,7 +494,7 @@ Open with an explicit database path:
 Bind to a different address or port:
 
 ```bash
-./stamp_album_gen2 --review-ui --album-name Malta --review-ui-bind 0.0.0.0:8080
+./stamp_album_gen2 --review-ui --album-name Malta --review-ui-bind 127.0.0.1:8080
 ```
 
 Then open `http://127.0.0.1:7878/` (or the custom address) in a browser.

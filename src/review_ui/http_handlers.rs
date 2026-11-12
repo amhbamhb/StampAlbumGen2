@@ -19,6 +19,85 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
+fn protect_local_request(
+    request: tiny_http::Request,
+    server: &Server,
+) -> Option<tiny_http::Request> {
+    let header = |name: &'static str| {
+        let mut matches = request.headers().iter().filter(|h| h.field.equiv(name));
+        let first = matches.next().map(|h| h.value.as_str());
+        if matches.next().is_some() {
+            None
+        } else {
+            first
+        }
+    };
+    let valid = (|| {
+        for name in ["Host", "Origin", "Sec-Fetch-Site", "Content-Type"] {
+            if request
+                .headers()
+                .iter()
+                .filter(|h| h.field.equiv(name))
+                .count()
+                > 1
+            {
+                return None;
+            }
+        }
+        let bound = server.server_addr().to_ip()?;
+        let host = header("Host")?;
+        let url = reqwest::Url::parse(&format!("http://{host}/")).ok()?;
+        if !url.username().is_empty()
+            || url.password().is_some()
+            || url.path() != "/"
+            || url.query().is_some()
+            || url.fragment().is_some()
+            || url.port_or_known_default()? != bound.port()
+        {
+            return None;
+        }
+        let hostname = url.host_str()?;
+        let is_local = hostname.eq_ignore_ascii_case("localhost")
+            || hostname
+                .trim_matches(['[', ']'])
+                .parse::<std::net::IpAddr>()
+                .is_ok_and(|ip| ip.is_loopback());
+        if !is_local
+            || header("Sec-Fetch-Site").is_some_and(|s| s.eq_ignore_ascii_case("cross-site"))
+        {
+            return None;
+        }
+        if let Some(origin) = header("Origin") {
+            if !origin.eq_ignore_ascii_case(&format!("http://{host}")) {
+                return None;
+            }
+        } else if request.method() != &Method::Get
+            && request.method() != &Method::Head
+            && !header("Content-Type").is_some_and(|value| {
+                value
+                    .split(';')
+                    .next()
+                    .is_some_and(|v| v.trim().eq_ignore_ascii_case("application/json"))
+            })
+        {
+            return None;
+        }
+        Some(())
+    })()
+    .is_some();
+    if valid {
+        Some(request)
+    } else {
+        if let Err(error) = request.respond(
+            Response::from_string("Forbidden: local same-origin requests only")
+                .with_status_code(StatusCode(403)),
+        ) {
+            log_runtime_event(&format!("Review UI request rejection failed: {error}"));
+        }
+        None
+    }
+}
+
 fn handle_stampworld_import_request(
     mut request: tiny_http::Request,
     review: Option<(&Connection, &str, &str)>,
@@ -249,6 +328,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
     let reload_requested = false;
 
     for request in server.incoming_requests() {
+        let Some(request) = protect_local_request(request, server) else {
+            continue;
+        };
         let Some(request) = handle_stampworld_import_request(request, None) else {
             continue;
         };
@@ -1289,6 +1371,9 @@ pub(super) fn serve_review_requests(
     let mut return_to_start_requested = false;
 
     for request in server.incoming_requests() {
+        let Some(request) = protect_local_request(request, server) else {
+            continue;
+        };
         let Some(request) = handle_stampworld_import_request(
             request,
             Some((&input.conn, &input.album_name, &input.db_path)),
@@ -2747,6 +2832,7 @@ mod site_account_tests {
             for body in ["{", "{}", r#"{"country":42}"#] {
                 let response = client
                     .post(format!("http://{addr}/api/stampworld-import-file"))
+                    .header("Content-Type", "application/json")
                     .body(body)
                     .send()
                     .expect("import response");
@@ -2808,6 +2894,7 @@ mod site_account_tests {
         ] {
             let response = client
                 .post(format!("http://{addr}/generate-pdf-now"))
+                .header("Content-Type", "application/json")
                 .body(body)
                 .send()
                 .expect("invalid request response");
@@ -2860,6 +2947,7 @@ mod site_account_tests {
             ] {
                 let response = client
                     .post(format!("http://{addr}/api/stampworld-country-url"))
+                    .header("Content-Type", "application/json")
                     .body(body)
                     .send()
                     .expect("country URL response");
@@ -2879,6 +2967,79 @@ mod site_account_tests {
             assert_eq!(response.status().as_u16(), 400);
             server.unblock();
             worker.join().expect("server worker");
+        }
+    }
+
+    #[test]
+    fn both_servers_reject_cross_origin_and_rebound_host_requests() {
+        for review in [false, true] {
+            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("server"));
+            let addr = server.server_addr().to_ip().expect("address");
+            let worker_server = server.clone();
+            let worker = std::thread::spawn(move || {
+                if review {
+                    serve_review_requests(&worker_server, review_input());
+                } else {
+                    serve_bootstrap_requests(&worker_server, "");
+                }
+            });
+            let client = reqwest::blocking::Client::builder()
+                .timeout(std::time::Duration::from_secs(10))
+                .build()
+                .expect("client");
+            let base = format!("http://{addr}");
+            for response in [
+                client
+                    .get(format!("{base}/api/ping"))
+                    .header("Host", format!("evil.example:{}", addr.port()))
+                    .send()
+                    .expect("host"),
+                client
+                    .get(format!("{base}/api/ping"))
+                    .header("Origin", "https://evil.example")
+                    .send()
+                    .expect("origin"),
+                client
+                    .post(format!("{base}/api/save-site-credentials"))
+                    .header("Origin", "https://evil.example")
+                    .json(&serde_json::json!({}))
+                    .send()
+                    .expect("post origin"),
+                client
+                    .post(format!("{base}/api/save-site-credentials"))
+                    .body("{}")
+                    .send()
+                    .expect("simple post"),
+                client
+                    .get(format!("{base}/api/ping"))
+                    .header("Sec-Fetch-Site", "cross-site")
+                    .send()
+                    .expect("fetch site"),
+            ] {
+                assert_eq!(response.status().as_u16(), 403);
+            }
+            assert_eq!(
+                client
+                    .get(format!("{base}/api/ping"))
+                    .send()
+                    .expect("local get")
+                    .status()
+                    .as_u16(),
+                200
+            );
+            assert_eq!(
+                client
+                    .post(format!("{base}/api/save-site-credentials"))
+                    .header("Origin", &base)
+                    .body("{")
+                    .send()
+                    .expect("local post")
+                    .status()
+                    .as_u16(),
+                400
+            );
+            server.unblock();
+            worker.join().expect("worker");
         }
     }
 
@@ -2903,6 +3064,7 @@ mod site_account_tests {
             for body in ["", "{", r#"{"stampworld_password":42}"#] {
                 let response = client
                     .post(format!("http://{addr}/api/save-site-credentials"))
+                    .header("Content-Type", "application/json")
                     .body(body)
                     .send()
                     .expect("credentials response");
