@@ -943,16 +943,17 @@ pub fn first_run_decision(
     FirstRunDecision::MoveTo(default_dest.to_path_buf())
 }
 pub fn ensure_first_run_installation() -> std::io::Result<()> {
-    let config_exists = Path::new("config.toml").exists();
-    let albums_exists = Path::new("Albums").exists();
-    let handled_marker = Path::new(FIRST_RUN_HANDLED_MARKER);
+    let exe_path = std::env::current_exe()?;
+    let exe_dir = exe_path
+        .parent()
+        .ok_or_else(|| std::io::Error::other("Failed to determine executable directory"))?;
+    let config_exists = exe_dir.join("config.toml").exists();
+    let albums_exists = exe_dir.join("Albums").exists();
+    let handled_marker = exe_dir.join(FIRST_RUN_HANDLED_MARKER);
 
     if handled_marker.exists() {
         return Ok(());
     }
-
-    let exe_path = std::env::current_exe()?;
-    let exe_dir = exe_path.parent().unwrap_or_else(|| Path::new("."));
 
     let default_dest = directories::UserDirs::new()
         .and_then(|dirs| {
@@ -965,17 +966,27 @@ pub fn ensure_first_run_installation() -> std::io::Result<()> {
 
     // If we stay, or if user cancels the move, we mark it handled.
     if let FirstRunDecision::Stay = decision {
-        std::fs::File::create(handled_marker)?;
+        std::fs::File::create(&handled_marker)?;
         return Ok(());
     }
 
-    // Attempt to move.
+    // Portable Linux releases omit rfd; use the same picker as Review UI.
+    #[cfg(all(target_os = "linux", not(feature = "rfd")))]
+    let dest = crate::review_ui::pick_folder_via_dialog(
+        "Select Destination Folder (Cancel to keep current)",
+        &default_dest
+            .parent()
+            .unwrap_or(Path::new("."))
+            .to_string_lossy(),
+    )
+    .map_err(std::io::Error::other)?
+    .map(PathBuf::from);
     #[cfg(feature = "rfd")]
     let dest = rfd::FileDialog::new()
         .set_title("Select Destination Folder")
         .set_directory(default_dest.parent().unwrap_or(Path::new(".")))
         .pick_folder();
-    #[cfg(not(feature = "rfd"))]
+    #[cfg(all(not(target_os = "linux"), not(feature = "rfd")))]
     let dest: Option<PathBuf> = None;
 
     if let Some(selected_path) = dest {
@@ -986,14 +997,11 @@ pub fn ensure_first_run_installation() -> std::io::Result<()> {
                 selected_path
             };
 
-        let target_bin = dest_path.join(exe_path.file_name().unwrap());
-
-        std::fs::create_dir_all(&dest_path)?;
-        std::fs::create_dir_all(dest_path.join("Albums"))?;
-        std::fs::copy(&exe_path, &target_bin)?;
+        let target_bin = copy_first_run_executable(&exe_path, &dest_path)?;
 
         Command::new(&target_bin)
-            .args(std::env::args().skip(1))
+            .current_dir(&dest_path)
+            .args(std::env::args_os().skip(1))
             .spawn()?;
 
         std::process::exit(0);
@@ -1002,6 +1010,24 @@ pub fn ensure_first_run_installation() -> std::io::Result<()> {
     // User cancelled move, mark as handled so we stop asking.
     std::fs::File::create(handled_marker)?;
     Ok(())
+}
+
+fn copy_first_run_executable(exe_path: &Path, dest_path: &Path) -> std::io::Result<PathBuf> {
+    let name = exe_path
+        .file_name()
+        .ok_or_else(|| std::io::Error::other("Failed to determine executable name"))?;
+    std::fs::create_dir_all(dest_path)?;
+    let target_bin = dest_path.join(name);
+    if target_bin.exists()
+        && std::fs::canonicalize(exe_path)? == std::fs::canonicalize(&target_bin)?
+    {
+        return Err(std::io::Error::other(
+            "Destination is the running executable; select a different folder or Cancel",
+        ));
+    }
+    std::fs::copy(exe_path, &target_bin)?;
+    std::fs::create_dir_all(dest_path.join("Albums"))?;
+    Ok(target_bin)
 }
 
 #[cfg(test)]
@@ -1023,6 +1049,52 @@ mod setup_tests {
         assert_eq!(
             first_run_decision(false, false, Path::new("/tmp/downloads"), &dest),
             FirstRunDecision::MoveTo(dest)
+        );
+    }
+
+    #[test]
+    fn first_run_copy_preserves_source_and_creates_albums() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let source = temp.path().join("stamp_album_gen2");
+        std::fs::write(&source, b"binary fixture").expect("source");
+        let dest = temp
+            .path()
+            .join("Documents with spaces")
+            .join("StampAlbumGen2");
+        let target = copy_first_run_executable(&source, &dest).expect("copy executable");
+        assert_eq!(std::fs::read(&target).expect("target"), b"binary fixture");
+        assert_eq!(std::fs::read(&source).expect("source"), b"binary fixture");
+        assert!(dest.join("Albums").is_dir());
+    }
+
+    #[test]
+    fn first_run_copy_rejects_running_executable_as_destination() {
+        let temp = tempfile::tempdir().expect("temp dir");
+        let source = temp.path().join("stamp_album_gen2");
+        std::fs::write(&source, b"binary fixture").expect("source");
+        let error = copy_first_run_executable(&source, temp.path()).expect_err("same file");
+        assert!(error.to_string().contains("running executable"));
+        assert_eq!(std::fs::read(&source).expect("source"), b"binary fixture");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn first_run_copy_keeps_executable_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().expect("temp dir");
+        let source = temp.path().join("stamp_album_gen2");
+        std::fs::write(&source, b"binary fixture").expect("source");
+        std::fs::set_permissions(&source, std::fs::Permissions::from_mode(0o755))
+            .expect("executable permissions");
+        let target = copy_first_run_executable(&source, &temp.path().join("installed"))
+            .expect("copy executable");
+        assert_eq!(
+            std::fs::metadata(target)
+                .expect("metadata")
+                .permissions()
+                .mode()
+                & 0o777,
+            0o755
         );
     }
 }

@@ -94,7 +94,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     if launched_without_args && !running_from_target {
         if let Err(e) = ensure_first_run_installation() {
+            write_startup_probe("first_run.error", &e.to_string());
             eprintln!("Failed to perform first-run installation: {}", e);
+            return Err(Box::new(e) as Box<dyn std::error::Error>);
         }
     }
 

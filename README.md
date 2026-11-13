@@ -42,6 +42,22 @@ Most people will just launch the binary and automatically start the application.
 
 This works in both Linux and Windows environments.
 
+On Linux, download the release **`.tar.gz` archive** and extract it with
+`tar -xzf stamp_album_gen2-v<VERSION>.tar.gz`. The archive preserves the
+Linux binary's executable permission. Launch it with `./stamp_album_gen2`.
+A raw binary downloaded through a browser does not carry Unix permissions;
+run `chmod +x stamp_album_gen2` before launching that download.
+
+Portable Linux releases' first-run destination selection (starting in Documents)
+and Review UI Browse buttons require `zenity` or `kdialog`. Install either using your
+distribution's package manager (for example, `sudo apt install zenity` on
+Ubuntu/Debian). Selecting a folder copies the binary into its `StampAlbumGen2`
+subfolder and starts that copy; Cancel keeps the current location. Picker
+errors are recorded in `startup_trace.log` beside the original executable.
+If an older Linux release already skipped selection, remove only
+`.first_run_handled.flag` beside the binary before retrying, provided that
+location has no existing configuration or Albums directory.
+
 
 ![Stamp Album Generator 2 Screenshot Linux](image.png)   ![Stamp Album Generator 2 Screenshot Windows](image.png)
 
