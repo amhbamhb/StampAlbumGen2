@@ -103,6 +103,30 @@ test('one-button workflow tests both platforms before source publication', () =>
     assert.doesNotMatch(workflow, /continue-on-error|softprops|find .*rm -f/);
 });
 
+test('release archive restores executable mode after artifact download', t => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-permissions-'));
+    t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+    const binary = path.join(dir, 'stamp_album_gen2');
+    fs.copyFileSync('/bin/true', binary);
+    fs.chmodSync(binary, 0o644);
+    for (const name of ['stamp_album_gen2.exe', 'stamp_album_gen2.exe.sha256',
+        'stamp_album_gen2.sha256']) {
+        fs.writeFileSync(path.join(dir, name), 'fixture');
+    }
+    const step = workflow.match(
+        /- name: Package all binaries into a single archive\n\s+run: \|\n([\s\S]*?)(?=\n      - name:)/);
+    assert.ok(step, 'Archive packaging step must exist');
+    const script = step[1].replace(
+        '${{ needs.prepare-release.outputs.release_tag }}', 'v0.0.0');
+    success(command(dir, 'bash', ['-c', script]));
+    const extracted = path.join(dir, 'extracted');
+    fs.mkdirSync(extracted);
+    success(command(dir, 'tar', ['-xzf', 'stamp_album_gen2-v0.0.0.tar.gz', '-C', extracted]));
+    const installed = path.join(extracted, 'stamp_album_gen2');
+    assert.equal(fs.statSync(installed).mode & 0o777, 0o755);
+    success(command(extracted, installed, []));
+});
+
 for (const [increment, expected] of [['patch', 'v1.14.1'], ['minor', 'v1.15.0'], ['major', 'v2.0.0']]) {
     test(`${increment} prepares ${expected} above existing tags without publication`, t => {
         const f = fixture(t);

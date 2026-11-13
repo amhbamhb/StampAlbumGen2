@@ -2041,7 +2041,7 @@ fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, 
 }
 
 #[cfg(not(windows))]
-fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, String> {
+pub(crate) fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, String> {
     if which::which("zenity").is_ok() {
         let output = Command::new("zenity")
             .arg("--file-selection")
@@ -2053,23 +2053,7 @@ fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, 
             .output()
             .map_err(|e| format!("failed to launch zenity: {}", e))?;
 
-        if output.status.success() {
-            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            return if selected.is_empty() {
-                Ok(None)
-            } else {
-                Ok(Some(selected))
-            };
-        }
-
-        if output.status.code() == Some(1) {
-            return Ok(None);
-        }
-
-        return Err(format!(
-            "zenity failed: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        ));
+        return folder_picker_result("zenity", output);
     }
 
     if which::which("kdialog").is_ok() {
@@ -2081,26 +2065,36 @@ fn pick_folder_via_dialog(title: &str, current: &str) -> Result<Option<String>, 
             .output()
             .map_err(|e| format!("failed to launch kdialog: {}", e))?;
 
-        if output.status.success() {
-            let selected = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            return if selected.is_empty() {
-                Ok(None)
-            } else {
-                Ok(Some(selected))
-            };
-        }
-
-        if output.status.code() == Some(1) {
-            return Ok(None);
-        }
-
-        return Err(format!(
-            "kdialog failed: {}",
-            String::from_utf8_lossy(&output.stderr).trim()
-        ));
+        return folder_picker_result("kdialog", output);
     }
 
     Err("No supported folder picker found (install zenity or kdialog)".to_string())
+}
+
+#[cfg(not(windows))]
+fn folder_picker_result(
+    name: &str,
+    output: std::process::Output,
+) -> Result<Option<String>, String> {
+    if output.status.success() {
+        let selected = String::from_utf8(output.stdout)
+            .map_err(|e| format!("{} returned an invalid UTF-8 folder path: {}", name, e))?;
+        let selected = selected.trim().to_string();
+        return if selected.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(selected))
+        };
+    }
+    if output.status.code() == Some(1) {
+        return Ok(None);
+    }
+    Err(format!(
+        "{} failed ({}): {}",
+        name,
+        output.status,
+        String::from_utf8_lossy(&output.stderr).trim()
+    ))
 }
 
 fn pick_and_copy_stampworld_file_via_dialog(country: &str) -> BootstrapPickColnectFileResponse {
@@ -3386,6 +3380,36 @@ pub fn run_review_ui(
 
 #[cfg(test)]
 mod tests {
+    #[cfg(unix)]
+    #[test]
+    fn linux_folder_picker_distinguishes_selection_cancel_and_failure() {
+        use std::os::unix::process::ExitStatusExt;
+        let output = |code, stdout: &[u8], stderr: &[u8]| std::process::Output {
+            status: std::process::ExitStatus::from_raw(code << 8),
+            stdout: stdout.to_vec(),
+            stderr: stderr.to_vec(),
+        };
+        for name in ["zenity", "kdialog"] {
+            assert_eq!(
+                super::folder_picker_result(name, output(0, b"/tmp/Documents with spaces\n", b""))
+                    .expect("selected"),
+                Some("/tmp/Documents with spaces".to_string())
+            );
+            assert_eq!(
+                super::folder_picker_result(name, output(1, b"", b"")).expect("cancelled"),
+                None
+            );
+            let error = super::folder_picker_result(name, output(2, b"", b"cannot open display"))
+                .expect_err("picker failure");
+            assert!(error.contains(name));
+            assert!(error.contains("cannot open display"));
+            assert!(
+                super::folder_picker_result(name, output(0, &[0xff], b"")).is_err(),
+                "Invalid paths must not be silently changed"
+            );
+        }
+    }
+
     #[test]
     fn explicit_review_bind_is_loopback_only() {
         for invalid in ["0.0.0.0:0", "[::]:0", "192.0.2.1:7878", "example.com:7878"] {

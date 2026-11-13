@@ -286,6 +286,8 @@ jobs:
         run: |
           TAG="${{ needs.prepare-release.outputs.release_tag }}"
           ARCHIVE_NAME="stamp_album_gen2-${TAG}.tar.gz"
+          # Artifact downloads reset file modes; restore the Linux executable.
+          chmod 755 stamp_album_gen2
           tar -czf "$ARCHIVE_NAME" stamp_album_gen2.exe stamp_album_gen2.exe.sha256 stamp_album_gen2 stamp_album_gen2.sha256
           ls -lh "$ARCHIVE_NAME"
       - name: Upload assets and publish release (retry safe)

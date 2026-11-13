@@ -3,7 +3,7 @@
 
 # Stamp Album Generator 2
 
-![Stamp Album Generator 2 Logo](assets/new/Stamp5WebHeader1.jpg)
+![Stamp Album Generator 2 Logo](assets/new/Mainone1.jpg)
 
 This application generates AlbumEasy source pages (*.txt files) from stamp data sources and has a built in SQLite database for each country/theme.  The application can update the database with new stamp information as it becomes available.
 
@@ -28,7 +28,7 @@ creating a fork or making changes is not such approval. See [LICENSE.md](LICENSE
 
 ## Start Here
 
-The simpliiste way to get started is to download the latest release and launch the binary. The application will automatically create the necessary files and directories upon the first run, making it easy for users to begin managing their stamp collections. No additional setup is required, and users can immediately start adding and organizing their stamps.
+The simplest way to get started is to download the latest release and launch the binary. The application will automatically create the necessary files and directories upon the first run, making it easy for users to begin managing their stamp collections. No additional setup is required, and users can immediately start adding and organizing their stamps.
 
 ## Quick Start 
 
@@ -41,6 +41,22 @@ For users who prefer to build from source, the repository contains all the neces
 Most people will just launch the binary and automatically start the application. To download the program, visit the [releases page](https://github.com/amhbamhb/StampAlbumGen2/releases/latest). The Web UI is default when starting the program directly.
 
 This works in both Linux and Windows environments.
+
+On Linux, download the release **`.tar.gz` archive** and extract it with
+`tar -xzf stamp_album_gen2-v<VERSION>.tar.gz`. The archive preserves the
+Linux binary's executable permission. Launch it with `./stamp_album_gen2`.
+A raw binary downloaded through a browser does not carry Unix permissions;
+run `chmod +x stamp_album_gen2` before launching that download.
+
+Portable Linux releases' first-run destination selection (starting in Documents)
+and Review UI Browse buttons require `zenity` or `kdialog`. Install either using your
+distribution's package manager (for example, `sudo apt install zenity` on
+Ubuntu/Debian). Selecting a folder copies the binary into its `StampAlbumGen2`
+subfolder and starts that copy; Cancel keeps the current location. Picker
+errors are recorded in `startup_trace.log` beside the original executable.
+If an older Linux release already skipped selection, remove only
+`.first_run_handled.flag` beside the binary before retrying, provided that
+location has no existing configuration or Albums directory.
 
 
 ![Stamp Album Generator 2 Screenshot Linux](image.png)   ![Stamp Album Generator 2 Screenshot Windows](image.png)
@@ -117,6 +133,9 @@ Generate album output from an existing database:
 ```
 
 You can also use other sources like StampWorld for a country/year range.  You must have a StampWorld account before using this.  The configuration requires specifying the source, site name, album name, and the year range.  The values are in the config.toml file, including the StampWorld account setup: 
+
+# Please note no long working due to anti-bot measures on StampWorld sites
+# please use the web UI instead and print a page in pdf and import.
 
 To register for stampworld, visit [StampWorld's registration page](https://www.stampworld.com/en/register) and create an account.
 
