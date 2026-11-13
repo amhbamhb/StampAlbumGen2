@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: run_stampworld_file_import
-resource: src/modes.rs#L1450-L1472
+resource: src/modes.rs#L1450-L1486
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -26,7 +26,7 @@ relationships:
 
 # Signature
 
-`pub fn run_stampworld_file_import( cli: &crate::cli::Cli, ) -> Result<(), Box<dyn std::error::Error>>`
+`pub fn run_stampworld_file_import(cli: &crate::cli::Cli) -> Result<(), Box<dyn std::error::Error>>`
 
 # Calls
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_query_flag
-resource: src/review_ui.rs#L2587-L2599
+resource: src/review_ui.rs#L2592-L2604
 visibility: private
 generated:
   by: okf-rs/0.4.0

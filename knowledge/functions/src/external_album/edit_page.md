@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: edit_page
-resource: src/external_album.rs#L1282-L1380
+resource: src/external_album.rs#L1289-L1386
 generated:
   by: okf-rs/0.4.0
 relationships:

@@ -38,6 +38,42 @@ relationships:
   - target: functions/src/external_album/edit_page
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/albumeasy_baseline/check_hash
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_border_colour/named_colours_defaults_aliases_and_frozen_identities_match
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_crop_marks/frozen_reference_hashes_and_media_sizes
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_decorative_border/frozen_reference_hashes_and_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_footer_date/frozen_footer_date_reference_identities_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_footer_number/frozen_number_reference_identities_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_header_date/frozen_reference_date_and_hashes_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_header_number/frozen_header_number_reference_identities_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_border/frozen_reference_identities_and_text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_footer/frozen_footer_reference_identities_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_header/frozen_header_reference_identities_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/native_pdf_page_title/frozen_title_reference_identities_are_unchanged
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -59,3 +95,15 @@ relationships:
 - [layout_hash](../../../functions/src/external_album/layout_hash.md)
 - [approve_album](../../../functions/src/external_album/approve_album.md)
 - [edit_page](../../../functions/src/external_album/edit_page.md)
+- [check_hash](../../../functions/tests/albumeasy_baseline/check_hash.md)
+- [named_colours_defaults_aliases_and_frozen_identities_match](../../../functions/tests/native_pdf_border_colour/named_colours_defaults_aliases_and_frozen_identities_match.md)
+- [frozen_reference_hashes_and_media_sizes](../../../functions/tests/native_pdf_crop_marks/frozen_reference_hashes_and_media_sizes.md)
+- [frozen_reference_hashes_and_text](../../../functions/tests/native_pdf_decorative_border/frozen_reference_hashes_and_text.md)
+- [frozen_footer_date_reference_identities_are_unchanged](../../../functions/tests/native_pdf_footer_date/frozen_footer_date_reference_identities_are_unchanged.md)
+- [frozen_number_reference_identities_are_unchanged](../../../functions/tests/native_pdf_footer_number/frozen_number_reference_identities_are_unchanged.md)
+- [frozen_reference_date_and_hashes_are_unchanged](../../../functions/tests/native_pdf_header_date/frozen_reference_date_and_hashes_are_unchanged.md)
+- [frozen_header_number_reference_identities_are_unchanged](../../../functions/tests/native_pdf_header_number/frozen_header_number_reference_identities_are_unchanged.md)
+- [frozen_reference_identities_and_text](../../../functions/tests/native_pdf_page_border/frozen_reference_identities_and_text.md)
+- [frozen_footer_reference_identities_are_unchanged](../../../functions/tests/native_pdf_page_footer/frozen_footer_reference_identities_are_unchanged.md)
+- [frozen_header_reference_identities_are_unchanged](../../../functions/tests/native_pdf_page_header/frozen_header_reference_identities_are_unchanged.md)
+- [frozen_title_reference_identities_are_unchanged](../../../functions/tests/native_pdf_page_title/frozen_title_reference_identities_are_unchanged.md)

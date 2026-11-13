@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_config_editor_assets
-resource: src/review_ui/config_editor.rs#L932-L943
+resource: src/review_ui/config_editor.rs#L939-L950
 generated:
   by: okf-rs/0.4.0
 relationships:

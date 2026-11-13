@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: drop
-resource: src/review_ui.rs#L185-L187
+resource: src/review_ui.rs#L183-L185
 visibility: private
 generated:
   by: okf-rs/0.4.0

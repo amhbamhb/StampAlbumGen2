@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/colnect/db/get_colnect_info
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -27,3 +30,4 @@ relationships:
 - [parse_csv](../../../functions/src/colnect/parser/parse_csv.md)
 - [ingest_colnect_data](../../../functions/src/colnect/ingest/ingest_colnect_data.md)
 - [get_colnect_info](../../../functions/src/colnect/db/get_colnect_info.md)
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)

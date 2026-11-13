@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/db_utils/migrations/run_pending_schema_migrations_adds_missing_columns_and_records_versions
     resolved_by: tree-sitter
@@ -24,6 +28,10 @@ relationships:
 # Signature
 
 `fn column_names(conn: &Connection, table_name: &str) -> Vec<String>`
+
+# Calls
+
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 
 # Called by
 

@@ -13,6 +13,9 @@ relationships:
   - target: functions/src/progress/ProgressIndicator/clear
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/generator/format_number_with_commas
     resolved_by: tree-sitter
     confidence: exact
@@ -57,6 +60,7 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [clear](../../../../functions/src/progress/ProgressIndicator/clear.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [format_number_with_commas](../../../../functions/src/album_globals/generator/format_number_with_commas.md)
 - [skip](../../../../functions/src/external_album/parser/Lexer/skip.md)
 - [colnect_details_enabled](../../../../functions/src/config/Config/colnect_details_enabled.md)

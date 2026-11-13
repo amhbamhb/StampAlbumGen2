@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: export_layout
-resource: src/external_album.rs#L1392-L1444
+resource: src/external_album.rs#L1398-L1450
 generated:
   by: okf-rs/0.4.0
 relationships:

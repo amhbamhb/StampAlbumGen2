@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: get_image_path_or_placeholder
-resource: src/file_utils.rs#L103-L114
+resource: src/file_utils.rs#L110-L121
 generated:
   by: okf-rs/0.4.0
 relationships:

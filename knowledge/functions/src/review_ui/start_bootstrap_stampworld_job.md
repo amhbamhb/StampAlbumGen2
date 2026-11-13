@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: start_bootstrap_stampworld_job
-resource: src/review_ui.rs#L883-L1134
+resource: src/review_ui.rs#L881-L1132
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -31,7 +31,13 @@ relationships:
   - target: functions/src/review_ui/log_runtime_event
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/set_stampworld_state
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/tests/release_publication_shell/success
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -57,7 +63,9 @@ relationships:
 - [stampworld_job_state](../../../functions/src/review_ui/stampworld_job_state.md)
 - [build_stampworld_args](../../../functions/src/review_ui/build_stampworld_args.md)
 - [log_runtime_event](../../../functions/src/review_ui/log_runtime_event.md)
+- [args](../../../functions/tests/native_pdf_page_settings/args.md)
 - [set_stampworld_state](../../../functions/src/review_ui/set_stampworld_state.md)
+- [success](../../../functions/tests/release_publication_shell/success.md)
 
 # Called by
 

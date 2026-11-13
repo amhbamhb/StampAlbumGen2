@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: approval_rejects_modified_pdfs_and_preserved_assets
-resource: tests/external_album_backend.rs#L351-L383
+resource: tests/external_album_backend.rs#L353-L385
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -5,6 +5,10 @@ resource: src/config.rs#L1642-L1682
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/date/DateFormat/format
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/main
     resolved_by: tree-sitter
@@ -20,6 +24,10 @@ relationships:
 # Signature
 
 `pub fn create_config_from_template( path: &str, force: bool, ) -> Result<(), Box<dyn std::error::Error>>`
+
+# Calls
+
+- [format](../../../functions/src/native_pdf/date/DateFormat/format.md)
 
 # Called by
 

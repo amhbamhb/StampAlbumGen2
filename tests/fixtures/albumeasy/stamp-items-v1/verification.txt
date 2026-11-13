@@ -1,0 +1,7 @@
+Independent MuPDF verification: complete native image/text Letter row proofs.
+Bounds/text position tolerance 0.004 mm; gap tolerance 0.006 mm.
+PASS wrapped-images: 8 images, rows [4, 4]; every image position/size/aspect, footprint/frame/physical outline, text line/baseline, 3 mm gaps and 10 pt fonts.
+PASS expanded-images: 8 images, rows [4, 4]; every image position/size/aspect, footprint/frame/physical outline, text line/baseline, 3 mm gaps and 10 pt fonts.
+2/2 pass. Small illustration 11x12.5 mm; fitted portraits 22x25 mm; fitted landscape 25x12.5 mm.
+Images centered within physical stamp area; text policy does not stretch images or change mounting size.
+Synthetic assets only. TXT is adapted/unrendered, not native-position parity. Production backend, pagination and physical printing not verified.

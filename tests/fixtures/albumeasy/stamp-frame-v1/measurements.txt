@@ -1,0 +1,18 @@
+NATIVE FRAME GEOMETRY PROOFS - Letter 215.9 x 279.4 mm
+Print ACTUAL SIZE / 100%; disable Fit, Shrink and borderless scaling.
+Black = frame centreline; blue = physical perforation-tip bounds.
+The synthetic picture is not a real stamp or a physical-size reference.
+Case 10 blue/black outlines coincide: measure 100 mm on BOTH axes.
+Existing extras are TOTAL additions, not per-edge amounts.
+
+case,physical_w,physical_h,extra_w,extra_h,adjust,frame_w,frame_h,clearance_x,clearance_y,image_w,image_h
+01-standard-small-image,22,25,6,6,0,28,31,3,3,11.000000,12.500000
+02-standard-fit-image,22,25,6,6,0,28,31,3,3,22.000000,25.000000
+03-fractional,22.5,25,3,5,0.5,26,30.5,1.75,2.75,22.000000,25.000000
+04-portrait,25,40,6,6,0,31,46,3,3,25.000000,28.409091
+05-landscape,40,25,6,6,0,46,31,3,3,22.000000,25.000000
+06-booklet,44,90,6,6,0,50,96,3,3,44.000000,50.000000
+07-se-tenant,125,66,6,6,0,131,72,3,3,58.080000,66.000000
+08-wide,103,51,6,6,0,109,57,3,3,44.880000,51.000000
+09-zero-clearance,22,25,0,0,0,22,25,0,0,22.000000,25.000000
+10-calibration,100,100,0,0,0,100,100,0,0,11.000000,12.500000

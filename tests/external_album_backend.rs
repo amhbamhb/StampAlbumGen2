@@ -906,6 +906,7 @@ fn brazil_real_albumeasy_import_approval_and_page_edit() {
     let reconstructed = album.join(&imported.generated_pdf);
     assert_ne!(reference, reconstructed);
     assert!(reference.starts_with(&album) && reconstructed.starts_with(&album));
+    let original_generated_pdf = fs::read(&reconstructed).expect("Original reconstructed PDF");
     eprintln!(
         "Real PDFs: reference={} reconstructed={}",
         reference.display(),
@@ -973,7 +974,11 @@ fn brazil_real_albumeasy_import_approval_and_page_edit() {
     assert_eq!(edited.reference_pdf, approved.reference_pdf);
     assert_eq!(&edited.pages[1..], &approved.pages[1..]);
     assert_eq!(edited.pages.len(), 85);
-    assert_ne!(edited.generated_pdf, imported.generated_pdf);
+    assert_ne!(
+        fs::read(album.join(&edited.generated_pdf)).expect("Edited reconstructed PDF"),
+        original_generated_pdf,
+        "Editing page text must regenerate the PDF contents even when its path is reused"
+    );
     if let Ok(tool) = which::which("pdftoppm") {
         let raster = directory.path().join("raster");
         rasterize_pdf(

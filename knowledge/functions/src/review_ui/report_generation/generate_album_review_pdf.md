@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: generate_album_review_pdf
-resource: src/review_ui/report_generation.rs#L47-L73
+resource: src/review_ui/report_generation.rs#L50-L76
 generated:
   by: okf-rs/0.4.0
 ---

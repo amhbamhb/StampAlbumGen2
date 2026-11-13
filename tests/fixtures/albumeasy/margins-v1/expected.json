@@ -1,0 +1,72 @@
+{
+  "baseline": "margins-v1",
+  "command": "ALBUM_PAGES_MARGINS",
+  "interaction": "ALBUM_PAGES_MARGINSE on physical page 2 of three explicit pages",
+  "reference_renderer": "AlbumEasy 4.5.0",
+  "page_size_mm": [210.0, 297.0],
+  "geometry_tolerance_mm": 0.01,
+  "margin_order": ["left", "right", "top", "bottom"],
+  "border_width_mm": 0.2,
+  "border_coordinates": "left, bottom, right, top; stroke centrelines in PDF bottom-left millimetres",
+  "border_formula": "[left+0.1, bottom+0.1, 210-right-0.1, 297-top-0.1]",
+  "cases": [
+    {
+      "input": "symmetric.txt",
+      "input_sha256": "eeb1aeabed1b81e1d72d1dcb50a31156fcf68beedb7217d62cda838f11fdb5dd",
+      "reference": "symmetric.reference.pdf",
+      "reference_sha256": "783fe6d20f61571e82b8204b829d3cb1658c4ca5d4de594c99c8900d1f8a640c",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 2,
+      "margins_by_page_mm": [[15.0, 15.0, 15.0, 15.0], [15.0, 15.0, 15.0, 15.0]],
+      "border_by_page_mm": [[15.1, 15.1, 194.9, 281.9], [15.1, 15.1, 194.9, 281.9]]
+    },
+    {
+      "input": "asymmetric.txt",
+      "input_sha256": "e18251b812d03e7fab60c2fa5e1c0c6a5d86075393d26fffcf306a9aca7dc6d2",
+      "reference": "asymmetric.reference.pdf",
+      "reference_sha256": "5eeba9a90f39242116b6f20dde69ef3c2be886ecb6f41f8f5fced76ecc1f8f49",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 2,
+      "margins_by_page_mm": [[25.0, 12.0, 18.0, 21.0], [25.0, 12.0, 18.0, 21.0]],
+      "border_by_page_mm": [[25.1, 21.1, 197.9, 278.9], [25.1, 21.1, 197.9, 278.9]]
+    },
+    {
+      "input": "fractional.txt",
+      "input_sha256": "f10fc639a5c713338f1e55d1fb6afd216950d981293f72f32e52cd0b1451ef75",
+      "reference": "fractional.reference.pdf",
+      "reference_sha256": "6f467111bf4faeea602ca3f91111c20bb7bd3f0821e5ce2e25998bd25232932c",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "margins_by_page_mm": [[12.25, 17.75, 20.25, 23.75]],
+      "border_by_page_mm": [[12.35, 23.85, 192.15, 276.65]]
+    },
+    {
+      "input": "even-override.txt",
+      "input_sha256": "24186d5df249e3a7de42f3c4fefdf276458bbbc174277c07c534542d0c061314",
+      "reference": "even-override.reference.pdf",
+      "reference_sha256": "fd3e97d5614452bdc58f4e6a42cfaf5564c8ab0960e92860f33b7cc540d93af6",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 3,
+      "margins_by_page_mm": [[25.0, 12.0, 18.0, 21.0], [12.0, 25.0, 22.0, 16.0], [25.0, 12.0, 18.0, 21.0]],
+      "border_by_page_mm": [[25.1, 21.1, 197.9, 278.9], [12.1, 16.1, 184.9, 274.9], [25.1, 21.1, 197.9, 278.9]]
+    },
+    {
+      "input": "missing-margins.txt",
+      "input_sha256": "8c2f53bf3b210a25cea7d1421663742ed8affa9a270a22bdb6aca85efe008b49",
+      "renderer_exit_code": 0,
+      "pdf_created": false,
+      "stderr_contains": "PDF generation error: Page margins not set."
+    },
+    {
+      "input": "missing-bottom.txt",
+      "input_sha256": "70c804120fce71fdd0fc6bd58a113fb32bf683f9824a7ab2b991cb49241a96bc",
+      "renderer_exit_code": 0,
+      "pdf_created": false,
+      "stderr_contains": "Error in line 3: ALBUM_PAGES_MARGINS command - Incorrect number or format of parameters."
+    }
+  ]
+}

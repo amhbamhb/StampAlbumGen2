@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: command
-resource: src/external_album/parser.rs#L271-L351
+resource: src/external_album/parser.rs#L286-L367
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -11,13 +11,6 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/external_album/parser/Lexer/bump
-    resolved_by: tree-sitter
-    confidence: exact
-  called_by:
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
-  - target: functions/src/main
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -30,8 +23,3 @@ relationships:
 
 - [peek](../../../../../functions/src/external_album/parser/Lexer/peek.md)
 - [bump](../../../../../functions/src/external_album/parser/Lexer/bump.md)
-
-# Called by
-
-- [parse](../../../../../functions/src/external_album/parser/parse.md)
-- [main](../../../../../functions/src/main.md)

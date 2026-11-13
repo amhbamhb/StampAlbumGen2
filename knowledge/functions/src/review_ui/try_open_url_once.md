@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: try_open_url_once
-resource: src/review_ui.rs#L1554-L1579
+resource: src/review_ui.rs#L1552-L1577
 visibility: private
 generated:
   by: okf-rs/0.4.0

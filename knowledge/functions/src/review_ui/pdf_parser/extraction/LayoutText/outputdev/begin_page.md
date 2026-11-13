@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: begin_page
-resource: src/review_ui/pdf_parser/extraction.rs#L20-L27
+resource: src/review_ui/pdf_parser/extraction.rs#L17-L24
 visibility: private
 generated:
   by: okf-rs/0.4.0

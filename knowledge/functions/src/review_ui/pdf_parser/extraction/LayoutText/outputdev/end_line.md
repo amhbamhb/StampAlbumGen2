@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: end_line
-resource: src/review_ui/pdf_parser/extraction.rs#L89-L91
+resource: src/review_ui/pdf_parser/extraction.rs#L86-L88
 visibility: private
 generated:
   by: okf-rs/0.4.0

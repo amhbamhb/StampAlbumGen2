@@ -1616,13 +1616,32 @@ fn bind_review_server(
     bind_addr_opt: Option<&str>,
 ) -> Result<(Server, String), Box<dyn std::error::Error>> {
     if let Some(explicit) = bind_addr_opt {
-        let srv = Server::http(explicit).map_err(|e| {
+        let address = if let Some(port) = explicit.strip_prefix("localhost:") {
+            std::net::SocketAddr::from(([127, 0, 0, 1], port.parse::<u16>()?))
+        } else {
+            explicit.parse::<std::net::SocketAddr>().map_err(|_| {
+                std::io::Error::other(
+                    "Review UI bind must be a loopback IP or localhost with a port",
+                )
+            })?
+        };
+        if !address.ip().is_loopback() {
+            return Err(std::io::Error::other(
+                "Review UI only supports loopback binding; remote access is not authenticated",
+            )
+            .into());
+        }
+        let srv = Server::http(address).map_err(|e| {
             std::io::Error::other(format!(
                 "failed to start review UI server on {}: {}",
                 explicit, e
             ))
         })?;
-        return Ok((srv, explicit.to_string()));
+        let bound = srv
+            .server_addr()
+            .to_ip()
+            .ok_or_else(|| std::io::Error::other("Review UI did not bind a TCP address"))?;
+        return Ok((srv, bound.to_string()));
     }
 
     // Debug builds use a different base port so a dev instance and a release
@@ -3367,6 +3386,28 @@ pub fn run_review_ui(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn explicit_review_bind_is_loopback_only() {
+        for invalid in ["0.0.0.0:0", "[::]:0", "192.0.2.1:7878", "example.com:7878"] {
+            assert!(
+                super::bind_review_server(Some(invalid)).is_err(),
+                "{invalid}"
+            );
+        }
+        for valid in ["127.0.0.1:0", "localhost:0"] {
+            let (server, address) = super::bind_review_server(Some(valid)).expect("loopback bind");
+            let address: std::net::SocketAddr = address.parse().expect("socket address");
+            assert!(address.ip().is_loopback());
+            assert_ne!(address.port(), 0);
+            drop(server);
+        }
+        let ipv6: std::net::SocketAddr = "[::1]:0".parse().expect("IPv6");
+        if let Ok(probe) = std::net::TcpListener::bind(ipv6) {
+            drop(probe);
+            assert!(super::bind_review_server(Some("[::1]:0")).is_ok());
+        }
+    }
+
     use super::matcher_service::{
         mark_colnect_candidate_processed, sync_processed_colnect_candidates,
     };

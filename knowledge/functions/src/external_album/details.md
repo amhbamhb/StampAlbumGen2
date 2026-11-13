@@ -13,6 +13,9 @@ relationships:
   - target: functions/src/external_album/err
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/sql_usize
     resolved_by: tree-sitter
     confidence: exact
@@ -51,6 +54,7 @@ relationships:
 
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [err](../../../functions/src/external_album/err.md)
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [sql_usize](../../../functions/src/external_album/sql_usize.md)
 - [validate_document](../../../functions/src/external_album/parser/validate_document.md)
 

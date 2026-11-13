@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: BootstrapPickColnectFileResponse
-resource: src/review_ui.rs#L509-L516
+resource: src/review_ui.rs#L507-L514
 visibility: private
 generated:
   by: okf-rs/0.4.0

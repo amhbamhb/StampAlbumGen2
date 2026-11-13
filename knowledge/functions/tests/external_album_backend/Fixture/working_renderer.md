@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: working_renderer
-resource: tests/external_album_backend.rs#L64-L66
+resource: tests/external_album_backend.rs#L64-L68
 visibility: private
 generated:
   by: okf-rs/0.4.0

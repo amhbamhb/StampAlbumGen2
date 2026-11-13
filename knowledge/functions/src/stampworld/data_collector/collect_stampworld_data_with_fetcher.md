@@ -9,7 +9,7 @@ relationships:
   - target: functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/views/compare/html
@@ -73,7 +73,7 @@ relationships:
 # Calls
 
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
-- [parse](../../../../functions/src/external_album/parser/parse.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [html](../../../../functions/src/review_ui/views/compare/html.md)
 - [dedupe_details](../../../../functions/src/stampworld/parser/dedupe_details.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)

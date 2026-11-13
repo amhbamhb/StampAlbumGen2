@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: validate_page
-resource: src/external_album/parser.rs#L138-L161
+resource: src/external_album/parser.rs#L141-L171
 generated:
   by: okf-rs/0.4.0
 relationships:

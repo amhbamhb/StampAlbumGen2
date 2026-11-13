@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: ui_state
-resource: src/review_ui/ui_state.rs#L1-L11
+resource: src/review_ui/ui_state.rs#L1-L10
 generated:
   by: okf-rs/0.4.0
 relationships:

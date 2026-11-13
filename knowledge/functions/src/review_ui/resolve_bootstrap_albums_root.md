@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: resolve_bootstrap_albums_root
-resource: src/review_ui.rs#L2425-L2471
+resource: src/review_ui.rs#L2430-L2476
 visibility: private
 generated:
   by: okf-rs/0.4.0

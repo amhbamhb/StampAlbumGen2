@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: metadata
-resource: src/review_ui/pdf_parser/extraction.rs#L165-L192
+resource: src/review_ui/pdf_parser/extraction.rs#L171-L198
 visibility: private
 generated:
   by: okf-rs/0.4.0

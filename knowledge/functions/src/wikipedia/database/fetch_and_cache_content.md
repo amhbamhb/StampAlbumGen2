@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/external_album/open
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -34,6 +37,7 @@ relationships:
 # Calls
 
 - [open](../../../../functions/src/external_album/open.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [fetch_grokipedia_content](../../../../functions/src/wikipedia/fetchers/fetch_grokipedia_content.md)
 - [fetch_wikipedia_content](../../../../functions/src/wikipedia/fetchers/fetch_wikipedia_content.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: parse_content_into_sections
-resource: src/album_utils/globals.rs#L1145-L1229
+resource: src/album_utils/globals.rs#L1168-L1252
 visibility: private
 generated:
   by: okf-rs/0.4.0

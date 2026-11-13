@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: render_pair
-resource: src/external_album.rs#L940-L1016
+resource: src/external_album.rs#L948-L1024
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,0 +1,21 @@
+# Frozen AlbumEasy 4.5.0 reference input: documented STAMP_ADD_IMG overloads.
+# Commands in this fixture are AlbumEasy 4.5.0 commands only.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+ALBUM_PAGES_TITLE (HB 12 "AlbumEasy stamp-image-overloads-v1")
+STAMP_BOXES_SIZE_ADJUST (0.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HB 10 "IMAGE OVERLOADS V1 / PAGE 1" 3.0)
+ROW_START_FS (HN 7 0.1 5.0)
+STAMP_ADD_IMG (42.0 34.0 "assets/synthetic-asymmetric.png" "PNG left" "PNG centre" "PNG right")
+STAMP_ADD_IMG (42.0 34.0 "assets/synthetic-asymmetric.jpg" "JPEG, no frame" "" "" NO_FRAME)
+
+PAGE_TEXT_CENTRE (HN 8 "Basic image overload; PNG/JPEG and optional NO_FRAME." 4.0)
+ROW_START_FS (HN 7 0.1 5.0)
+STAMP_ADD_IMG (42.0 34.0 "assets/synthetic-asymmetric.png" "" "" "" "inside vertical A" -4.0 4.0)
+STAMP_ADD_IMG (42.0 34.0 "assets/synthetic-asymmetric.jpg" "" "" "" "inside offsets B" 2.0 -2.0 -3.0 3.0 NO_FRAME)
+
+PAGE_TEXT_CENTRE (HN 8 "Combined overload: signed vertical offsets and optional horizontal offsets." 4.0)

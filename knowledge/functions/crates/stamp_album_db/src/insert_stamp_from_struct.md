@@ -18,6 +18,9 @@ relationships:
   - target: functions/crates/stamp_album_db/src/is_colnect_image_url
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/crates/stamp_album_db/src/load_existing_stamp
     resolved_by: tree-sitter
     confidence: exact
@@ -30,7 +33,7 @@ relationships:
   - target: functions/crates/stamp_album_db/src/is_placeholder_image_path
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -45,8 +48,9 @@ relationships:
 - [is_stampworld_image_url](../../../../functions/crates/stamp_album_db/src/is_stampworld_image_url.md)
 - [is_colnect_page_url](../../../../functions/crates/stamp_album_db/src/is_colnect_page_url.md)
 - [is_colnect_image_url](../../../../functions/crates/stamp_album_db/src/is_colnect_image_url.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [load_existing_stamp](../../../../functions/crates/stamp_album_db/src/load_existing_stamp.md)
 - [is_real_image_candidate](../../../../functions/crates/stamp_album_db/src/is_real_image_candidate.md)
 - [cleanup_stampworld_identity_duplicates](../../../../functions/crates/stamp_album_db/src/cleanup_stampworld_identity_duplicates.md)
 - [is_placeholder_image_path](../../../../functions/crates/stamp_album_db/src/is_placeholder_image_path.md)
-- [parse](../../../../functions/src/external_album/parser/parse.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)

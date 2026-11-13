@@ -7,7 +7,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/external_album/parser/parse
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
@@ -28,7 +28,7 @@ relationships:
 
 # Calls
 
-- [parse](../../../../functions/src/external_album/parser/parse.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [parse_stamp_from_title_and_description](../../../../functions/src/us1847/collector/parse_stamp_from_title_and_description.md)
 

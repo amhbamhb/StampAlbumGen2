@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/album_globals/selection/count
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/modes/remap_colnect_sg_to_existing_stamps
     resolved_by: tree-sitter
@@ -23,6 +26,7 @@ relationships:
 # Calls
 
 - [count](../../../functions/src/album_globals/selection/count.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

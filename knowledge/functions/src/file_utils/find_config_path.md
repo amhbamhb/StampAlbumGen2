@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: find_config_path
-resource: src/file_utils.rs#L53-L77
+resource: src/file_utils.rs#L56-L80
 generated:
   by: okf-rs/0.4.0
 relationships:

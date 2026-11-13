@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: extraction
-resource: src/review_ui/pdf_parser/extraction.rs#L1-L348
+resource: src/review_ui/pdf_parser/extraction.rs#L1-L354
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -9,10 +9,10 @@ relationships:
   - target: external/super-types-pdfstamprecord
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/pdf-extract-document-mediabox-outputdev-outputerror-transform
+  - target: external/oxidize-pdf-operations-extract-images-from-pdf-extractimagesoptions
     resolved_by: tree-sitter
     confidence: exact
-  - target: external/oxidize-pdf-operations-extract-images-from-pdf-extractimagesoptions
+  - target: external/pdf-extract-document-mediabox-outputdev-outputerror-transform
     resolved_by: tree-sitter
     confidence: exact
   - target: external/std-path-path
@@ -51,9 +51,9 @@ relationships:
 # Imports
 
 - `super::types::PdfStampRecord`
-- `pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform}`
 - `oxidize_pdf::operations::{extract_images_from_pdf, ExtractImagesOptions}`
-- `std::path::{Path}`
+- `pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform}`
+- `std::path::Path`
 - `regex::Regex`
 - `scraper::{Html, Selector}`
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: scan_bootstrap_countries
-resource: src/review_ui.rs#L1887-L1939
+resource: src/review_ui.rs#L1886-L1939
 visibility: private
 generated:
   by: okf-rs/0.4.0

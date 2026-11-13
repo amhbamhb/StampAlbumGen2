@@ -1,0 +1,151 @@
+# COMPATIBILITY ADAPTATION: separate image/text blocks, NOT native position/page parity.
+# Full source text retained; native footprint/continuation policy is not an AlbumEasy command.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (12 12 12 12)
+ALBUM_PAGES_SPACING (3 3)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+STAMP_BOXES_SIZE_ADJUST (0)
+PAGE_START
+# US DB ID 150 / SG 1125a / recorded Colnect 52 x 29 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (58 35 "us-150.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1125a" 2)
+PAGE_TEXT (HN 10 "DB ID 150\nPhysical 52 x 29 mm\nFrame 58 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 151 / SG 1137a / recorded Colnect 26 x 29 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (32 35 "us-151.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1137a" 2)
+PAGE_TEXT (HN 10 "DB ID 151\nPhysical 26 x 29 mm\nFrame 32 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 152 / SG 1137b / recorded Colnect 26 x 29 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (32 35 "us-152.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1959 / SG 1137b" 2)
+PAGE_TEXT (HN 10 "DB ID 152\nPhysical 26 x 29 mm\nFrame 32 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 156 / SG 1148a / recorded Colnect 52 x 29 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (58 35 "us-156.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1960 / SG 1148a" 2)
+PAGE_TEXT (HN 10 "DB ID 156\nPhysical 52 x 29 mm\nFrame 58 x 35 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 157 / SG 1151a / recorded Colnect 26 x 56 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (32 62 "us-157.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1960 / SG 1151a" 2)
+PAGE_TEXT (HN 10 "DB ID 157\nPhysical 26 x 56 mm\nFrame 32 x 62 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 287 / SG 1391 / recorded Colnect 40 x 26 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 32 "us-287.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1391" 2)
+PAGE_TEXT (HN 10 "DB ID 287\nPhysical 40 x 26 mm\nFrame 46 x 32 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 288 / SG 1422a / recorded Colnect 50 x 40 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (56 46 "us-288.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1422a" 2)
+PAGE_TEXT (HN 10 "DB ID 288\nPhysical 50 x 40 mm\nFrame 56 x 46 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 289 / SG 1420a / recorded Colnect 25 x 40 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (31 46 "us-289.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1420a" 2)
+PAGE_TEXT (HN 10 "DB ID 289\nPhysical 25 x 40 mm\nFrame 31 x 46 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 290 / SG 1410 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-290.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1410" 2)
+PAGE_TEXT (HN 10 "DB ID 290\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 291 / SG 1411 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-291.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1411" 2)
+PAGE_TEXT (HN 10 "DB ID 291\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 292 / SG 1412 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-292.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1412" 2)
+PAGE_TEXT (HN 10 "DB ID 292\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 293 / SG 1413 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-293.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1413" 2)
+PAGE_TEXT (HN 10 "DB ID 293\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 294 / SG 1414b / recorded Colnect 25 x 40 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (31 46 "us-294.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1414b" 2)
+PAGE_TEXT (HN 10 "DB ID 294\nPhysical 25 x 40 mm\nFrame 31 x 46 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 295 / SG 1415 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-295.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1415" 2)
+PAGE_TEXT (HN 10 "DB ID 295\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 296 / SG 1415b / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-296.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1415b" 2)
+PAGE_TEXT (HN 10 "DB ID 296\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 297 / SG 1416 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-297.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1416" 2)
+PAGE_TEXT (HN 10 "DB ID 297\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 298 / SG 1416b / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-298.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1416b" 2)
+PAGE_TEXT (HN 10 "DB ID 298\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 299 / SG 1417 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-299.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1417" 2)
+PAGE_TEXT (HN 10 "DB ID 299\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 300 / SG 1417b / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-300.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1417b" 2)
+PAGE_TEXT (HN 10 "DB ID 300\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 301 / SG 1418 / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-301.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1418" 2)
+PAGE_TEXT (HN 10 "DB ID 301\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 302 / SG 1418d / recorded Colnect 40 x 25 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (46 31 "us-302.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1418d" 2)
+PAGE_TEXT (HN 10 "DB ID 302\nPhysical 40 x 25 mm\nFrame 46 x 31 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 303 / SG 1414d / recorded Colnect 75 x 40 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (81 46 "us-303.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1414d" 2)
+PAGE_TEXT (HN 10 "DB ID 303\nPhysical 75 x 40 mm\nFrame 81 x 46 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 305 / SG 1418e / recorded Colnect 80 x 50 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (86 56 "us-305.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1418e" 2)
+PAGE_TEXT (HN 10 "DB ID 305\nPhysical 80 x 50 mm\nFrame 86 x 56 mm\n3 mm clearance each edge" 2)
+PAGE_START
+# US DB ID 306 / SG 1418f / recorded Colnect 80 x 50 mm
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD_IMG (86 56 "us-306.png" "" "" "")
+PAGE_TEXT (HN 10 "US 1970 / SG 1418f" 2)
+PAGE_TEXT (HN 10 "DB ID 306\nPhysical 80 x 50 mm\nFrame 86 x 56 mm\n3 mm clearance each edge" 2)

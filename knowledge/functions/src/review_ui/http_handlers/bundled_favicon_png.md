@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: bundled_favicon_png
-resource: src/review_ui/http_handlers.rs#L11-L13
+resource: src/review_ui/http_handlers.rs#L7-L9
 visibility: private
 generated:
   by: okf-rs/0.4.0

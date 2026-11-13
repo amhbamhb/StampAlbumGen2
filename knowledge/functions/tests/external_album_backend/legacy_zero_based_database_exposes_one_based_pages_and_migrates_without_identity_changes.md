@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: legacy_zero_based_database_exposes_one_based_pages_and_migrates_without_identity_changes
-resource: tests/external_album_backend.rs#L1146-L1231
+resource: tests/external_album_backend.rs#L1169-L1254
 visibility: private
 generated:
   by: okf-rs/0.4.0

@@ -1,0 +1,200 @@
+{
+  "cases": [
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        28.0,
+        31.0
+      ],
+      "image_size_mm": [
+        11.0,
+        12.5
+      ],
+      "name": "01-standard-small-image",
+      "physical_size_mm": [
+        22.0,
+        25.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        28.0,
+        31.0
+      ],
+      "image_size_mm": [
+        22.0,
+        25.0
+      ],
+      "name": "02-standard-fit-image",
+      "physical_size_mm": [
+        22.0,
+        25.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        1.75,
+        2.75
+      ],
+      "frame_size_mm": [
+        26.0,
+        30.5
+      ],
+      "image_size_mm": [
+        22.0,
+        25.0
+      ],
+      "name": "03-fractional",
+      "physical_size_mm": [
+        22.5,
+        25.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        31.0,
+        46.0
+      ],
+      "image_size_mm": [
+        25.000000000000004,
+        28.40909090909091
+      ],
+      "name": "04-portrait",
+      "physical_size_mm": [
+        25.0,
+        40.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        46.0,
+        31.0
+      ],
+      "image_size_mm": [
+        22.0,
+        25.0
+      ],
+      "name": "05-landscape",
+      "physical_size_mm": [
+        40.0,
+        25.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        50.0,
+        96.0
+      ],
+      "image_size_mm": [
+        44.0,
+        50.0
+      ],
+      "name": "06-booklet",
+      "physical_size_mm": [
+        44.0,
+        90.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        131.0,
+        72.0
+      ],
+      "image_size_mm": [
+        58.080000000000005,
+        66.0
+      ],
+      "name": "07-se-tenant",
+      "physical_size_mm": [
+        125.0,
+        66.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        3.0,
+        3.0
+      ],
+      "frame_size_mm": [
+        109.0,
+        57.0
+      ],
+      "image_size_mm": [
+        44.879999999999995,
+        51.0
+      ],
+      "name": "08-wide",
+      "physical_size_mm": [
+        103.0,
+        51.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        0.0,
+        0.0
+      ],
+      "frame_size_mm": [
+        22.0,
+        25.0
+      ],
+      "image_size_mm": [
+        22.0,
+        25.0
+      ],
+      "name": "09-zero-clearance",
+      "physical_size_mm": [
+        22.0,
+        25.0
+      ]
+    },
+    {
+      "clearance_per_edge_mm": [
+        0.0,
+        0.0
+      ],
+      "frame_size_mm": [
+        100.0,
+        100.0
+      ],
+      "image_size_mm": [
+        11.0,
+        12.5
+      ],
+      "name": "10-calibration",
+      "physical_size_mm": [
+        100.0,
+        100.0
+      ]
+    }
+  ],
+  "page_size_mm": [
+    215.9,
+    279.4
+  ],
+  "reference": "Calculated native geometry; AlbumEasy TXT not reference-rendered",
+  "tolerance_mm": 0.004
+}

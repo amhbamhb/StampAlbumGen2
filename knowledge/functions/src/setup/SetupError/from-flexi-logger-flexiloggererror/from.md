@@ -70,6 +70,21 @@ relationships:
   - target: functions/src/modes/run_scraping_mode
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/colour/NamedColour/rgb
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/commands/page/album_pages_decorative_border/image_dimensions_mm
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/numbering/PageNumbering/text
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/embedded_reference_scale_matches_great_britain_albumeasy_footprints
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/placeholder_image/draw_text
     resolved_by: tree-sitter
     confidence: exact
@@ -98,6 +113,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/colnect_import_data
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/http_handlers/serve_review_requests
@@ -163,6 +181,9 @@ relationships:
   - target: functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_page_footer/serialized_footer_positions_colours_and_content_match_references
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -192,6 +213,11 @@ relationships:
 - [run_colnect_inbox_mode](../../../../../functions/src/modes/run_colnect_inbox_mode.md)
 - [run_database_mode](../../../../../functions/src/modes/run_database_mode.md)
 - [run_scraping_mode](../../../../../functions/src/modes/run_scraping_mode.md)
+- [rgb](../../../../../functions/src/native_pdf/colour/NamedColour/rgb.md)
+- [image_dimensions_mm](../../../../../functions/src/native_pdf/commands/page/album_pages_decorative_border/image_dimensions_mm.md)
+- [text](../../../../../functions/src/native_pdf/numbering/PageNumbering/text.md)
+- [prepare](../../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
+- [embedded_reference_scale_matches_great_britain_albumeasy_footprints](../../../../../functions/src/native_pdf/stamp_image/embedded_reference_scale_matches_great_britain_albumeasy_footprints.md)
 - [draw_text](../../../../../functions/src/placeholder_image/draw_text.md)
 - [start_bootstrap_stampworld_job](../../../../../functions/src/review_ui/start_bootstrap_stampworld_job.md)
 - [log_startup](../../../../../functions/src/review_ui/log_startup.md)
@@ -202,6 +228,7 @@ relationships:
 - [set_bootstrap_albums_root_override](../../../../../functions/src/review_ui/set_bootstrap_albums_root_override.md)
 - [album_dir_for_ui](../../../../../functions/src/review_ui/album_dir_for_ui.md)
 - [colnect_import_data](../../../../../functions/src/review_ui/colnect_import_data.md)
+- [renders_global_and_saves_album_config_with_quoted_windows_path](../../../../../functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path.md)
 - [serve_review_requests](../../../../../functions/src/review_ui/http_handlers/serve_review_requests.md)
 - [test_is_pdf_with_directory_path](../../../../../functions/src/review_ui/http_utils/test_is_pdf_with_directory_path.md)
 - [pollStampWorldStatus](../../../../../functions/src/review_ui/views/bootstrap/pollStampWorldStatus.md)
@@ -223,3 +250,4 @@ relationships:
 - [brazil_exact_acceptance_counts](../../../../../functions/tests/external_album_backend/brazil_exact_acceptance_counts.md)
 - [brazil_database_roundtrip_and_repeated_placements](../../../../../functions/tests/external_album_backend/brazil_database_roundtrip_and_repeated_placements.md)
 - [brazil_real_albumeasy_import_approval_and_page_edit](../../../../../functions/tests/external_album_backend/brazil_real_albumeasy_import_approval_and_page_edit.md)
+- [serialized_footer_positions_colours_and_content_match_references](../../../../../functions/tests/native_pdf_page_footer/serialized_footer_positions_colours_and_content_match_references.md)

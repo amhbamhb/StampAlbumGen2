@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: list_albums
-resource: src/external_album.rs#L656-L698
+resource: src/external_album.rs#L656-L706
 generated:
   by: okf-rs/0.4.0
 relationships:

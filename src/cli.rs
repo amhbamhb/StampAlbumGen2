@@ -120,7 +120,7 @@ pub struct Cli {
     #[arg(long, default_value_t = false)]
     pub review_ui: bool,
 
-    /// Bind address for review UI server (default: 127.0.0.1:7878)
+    /// Loopback-only bind address for review UI (default: 127.0.0.1:7878)
     #[arg(long)]
     pub review_ui_bind: Option<String>,
 

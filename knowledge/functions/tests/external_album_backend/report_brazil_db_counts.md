@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: report_brazil_db_counts
-resource: tests/external_album_backend.rs#L1233-L1268
+resource: tests/external_album_backend.rs#L1256-L1291
 visibility: private
 generated:
   by: okf-rs/0.4.0

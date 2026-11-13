@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
     resolved_by: tree-sitter
@@ -15,6 +19,10 @@ relationships:
 # Signature
 
 `fn normalize_currency_token(s: &str) -> String`
+
+# Calls
+
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

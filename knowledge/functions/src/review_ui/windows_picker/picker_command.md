@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/review_ui/windows_picker/pick
     resolved_by: tree-sitter
@@ -18,6 +22,10 @@ relationships:
 # Signature
 
 `fn picker_command(kind: PickerKind, title: &str, start: &str) -> Command`
+
+# Calls
+
+- [args](../../../../functions/tests/native_pdf_page_settings/args.md)
 
 # Called by
 

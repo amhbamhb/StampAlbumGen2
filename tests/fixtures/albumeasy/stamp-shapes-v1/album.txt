@@ -1,0 +1,30 @@
+# Frozen AlbumEasy 4.5.0 reference input: documented stamp shapes and text forms.
+# Commands in this fixture are AlbumEasy 4.5.0 commands only.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+ALBUM_PAGES_TITLE (HB 12 "AlbumEasy stamp-shapes-v1")
+STAMP_BOXES_SIZE_ADJUST (0.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HB 10 "SHAPES V1 / PAGE 1" 3.0)
+ROW_START_FS (HN 7 0.1 4.0)
+STAMP_ADD (28.0 20.0 "RECT modern" "left" "centre" "right")
+STAMP_ADD (28.0 20.0 "legacy 0" "legacy 1" "legacy 2" "" "legacy caption" "")
+STAMP_ADD_DIAMOND (28.0 20.0 "DIAMOND" "" "diamond caption" "")
+STAMP_ADD_OVAL (28.0 20.0 "OVAL" "" "oval caption" "")
+
+ROW_START_FS (HN 7 0.1 4.0)
+STAMP_ADD_PENTAGON (28.0 SU "PENTAGON SU" "" "side up" "")
+STAMP_ADD_HEXAGON (28.0 CU "HEXAGON CU" "" "corner up" "")
+STAMP_ADD_OCTAGON (28.0 SU "OCTAGON SU" "" "side up" "")
+STAMP_ADD_TRIANGLE (28.0 20.0 "TRIANGLE" "" "apex 4 mm" "" 4.0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HB 10 "SHAPES V1 / PAGE 2" 3.0)
+ROW_START_FS (HN 7 0.1 4.0)
+STAMP_ADD_TRIANGLE_INV (28.0 20.0 "INVERTED" "" "apex 4 mm" "" 4.0)
+STAMP_ADD_RT_TRIANGLE (28.0 20.0 CU L "RIGHT TRIANGLE" "" "CU / left" "")
+STAMP_ADD_BLANK (28.0 20.0)
+PAGE_TEXT_CENTRE (HN 8 "Includes modern and legacy STAMP_ADD text forms." 4.0)

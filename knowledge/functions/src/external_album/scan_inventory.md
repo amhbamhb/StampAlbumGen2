@@ -13,6 +13,9 @@ relationships:
   - target: functions/src/external_album/portable_path
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/external_album/windows_reserved
     resolved_by: tree-sitter
     confidence: exact
@@ -36,6 +39,7 @@ relationships:
 
 - [err](../../../functions/src/external_album/err.md)
 - [portable_path](../../../functions/src/external_album/portable_path.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [windows_reserved](../../../functions/src/external_album/windows_reserved.md)
 - [digest](../../../functions/src/external_album/digest.md)
 

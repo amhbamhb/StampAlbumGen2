@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: verify_layout
-resource: src/external_album.rs#L1171-L1186
+resource: src/external_album.rs#L1179-L1194
 visibility: private
 generated:
   by: okf-rs/0.4.0

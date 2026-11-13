@@ -1,7 +1,7 @@
 ---
 type: Rust Method
 title: db
-resource: tests/external_album_backend.rs#L82-L84
+resource: tests/external_album_backend.rs#L84-L86
 visibility: private
 generated:
   by: okf-rs/0.4.0

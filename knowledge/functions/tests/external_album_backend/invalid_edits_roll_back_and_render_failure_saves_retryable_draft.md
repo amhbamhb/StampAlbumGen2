@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: invalid_edits_roll_back_and_render_failure_saves_retryable_draft
-resource: tests/external_album_backend.rs#L446-L524
+resource: tests/external_album_backend.rs#L448-L526
 visibility: private
 generated:
   by: okf-rs/0.4.0

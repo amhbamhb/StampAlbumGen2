@@ -13,6 +13,9 @@ relationships:
   - target: functions/tests/config_template_key_usage_audit/collect_rs_files
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/tests/config_template_key_usage_audit/count_occurrences
     resolved_by: tree-sitter
     confidence: exact
@@ -26,4 +29,5 @@ relationships:
 
 - [parse_template_keys](../../../functions/tests/config_template_key_usage_audit/parse_template_keys.md)
 - [collect_rs_files](../../../functions/tests/config_template_key_usage_audit/collect_rs_files.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [count_occurrences](../../../functions/tests/config_template_key_usage_audit/count_occurrences.md)

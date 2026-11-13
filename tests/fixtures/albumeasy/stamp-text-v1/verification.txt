@@ -1,0 +1,11 @@
+Independent MuPDF verification: four native stamp-text Letter proofs.
+Bounds/text-position tolerance 0.004 mm; gap tolerance 0.006 mm.
+PASS wrap_to_frame: 6 items; row counts [5, 1]; every bound/text position, configured text cap plus padding, complete text, 3 mm gaps and 10 pt fonts.
+PASS expand_footprint: 6 items; row counts [3, 3]; every bound/text position, configured text cap plus padding, complete text, 3 mm gaps and 10 pt fonts.
+PASS expanded-percent-120: 2 items; row counts [2]; every bound/text position, configured text cap plus padding, complete text, 3 mm gaps and 10 pt fonts.
+PASS expanded-mm-30: 2 items; row counts [2]; every bound/text position, configured text cap plus padding, complete text, 3 mm gaps and 10 pt fonts.
+4/4 pass. Physical stamps 22x25 mm and mounting frames 28x31 mm unchanged.
+120 percent cap = 33.6 mm text / at most 37.6 mm footprint; absolute cap = 30 mm text / at most 34 mm footprint.
+Explicit four-line inputs wrap into more lines without omissions. Separate regression verifies 30 lines without a line-count cap.
+TXT comparison inputs preserve text with adaptation comments, not reference-rendered/native layout parity.
+Production backend/export, automatic pagination and physical printing remain unverified.

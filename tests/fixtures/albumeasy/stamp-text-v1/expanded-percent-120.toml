@@ -1,0 +1,9 @@
+# Policy fragment; merge into a full native config. See config_template.toml for complete help.
+[native_pdf.stamp_text]
+enabled = true
+expanded_width_limit = "percent"
+expanded_width_value = 120.0
+horizontal_padding_mm = 2.0
+text_gap_mm = 3.0
+vertical_padding_mm = 1.0
+width_policy = "expand_footprint"

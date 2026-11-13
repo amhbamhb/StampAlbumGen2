@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: main
-resource: src/main.rs#L39-L646
+resource: src/main.rs#L40-L651
 visibility: private
 generated:
   by: okf-rs/0.4.0
@@ -19,13 +19,13 @@ relationships:
   - target: functions/src/setup/ensure_first_run_installation
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/setup/setup_logging
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/setup/uninstall_linux_desktop_integration
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/setup/install_linux_desktop_integration
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/config/ensure_config_and_template_files
@@ -136,9 +136,6 @@ relationships:
   - target: functions/src/validation/validate_user_input
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/Lexer/command
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/validation/validate_year_range
     resolved_by: tree-sitter
     confidence: exact
@@ -169,9 +166,9 @@ relationships:
 - [log_runtime_event](../../functions/src/review_ui/log_runtime_event.md)
 - [write_startup_probe_snapshot](../../functions/src/setup/write_startup_probe_snapshot.md)
 - [ensure_first_run_installation](../../functions/src/setup/ensure_first_run_installation.md)
-- [parse](../../functions/src/external_album/parser/parse.md)
 - [setup_logging](../../functions/src/setup/setup_logging.md)
 - [uninstall_linux_desktop_integration](../../functions/src/setup/uninstall_linux_desktop_integration.md)
+- [install_linux_desktop_integration](../../functions/src/setup/install_linux_desktop_integration.md)
 - [ensure_config_and_template_files](../../functions/src/config/ensure_config_and_template_files.md)
 - [align_process_working_dir_to_runtime_layout](../../functions/src/setup/align_process_working_dir_to_runtime_layout.md)
 - [ensure_manual_import_files](../../functions/src/colnect/template/ensure_manual_import_files.md)
@@ -208,7 +205,6 @@ relationships:
 - [review_ui_catalog_family_options](../../functions/src/config/Config/review_ui_catalog_family_options.md)
 - [create_config_from_template](../../functions/src/config/create_config_from_template.md)
 - [validate_user_input](../../functions/src/validation/validate_user_input.md)
-- [command](../../functions/src/external_album/parser/Lexer/command.md)
 - [validate_year_range](../../functions/src/validation/validate_year_range.md)
 - [print_validation_error](../../functions/src/validation/print_validation_error.md)
 - [validate_source](../../functions/src/validation/validate_source.md)

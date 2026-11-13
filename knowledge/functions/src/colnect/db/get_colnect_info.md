@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/colnect/db/load_colnect_info_with_query
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -49,6 +52,7 @@ relationships:
 # Calls
 
 - [load_colnect_info_with_query](../../../../functions/src/colnect/db/load_colnect_info_with_query.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [hydrate_catalog_codes](../../../../functions/src/colnect/db/hydrate_catalog_codes.md)
 

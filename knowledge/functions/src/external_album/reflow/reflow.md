@@ -9,9 +9,6 @@ relationships:
   - target: functions/src/external_album/reflow/setting
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/number
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/album_globals/selection/count
     resolved_by: tree-sitter
     confidence: exact
@@ -28,7 +25,6 @@ relationships:
 # Calls
 
 - [setting](../../../../functions/src/external_album/reflow/setting.md)
-- [number](../../../../functions/src/external_album/parser/number.md)
 - [count](../../../../functions/src/album_globals/selection/count.md)
 
 # Called by

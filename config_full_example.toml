@@ -26,8 +26,27 @@ page_border_outer = 0.5
 page_border_inner1 = 0.1
 page_border_inner2 = 0.0
 page_border_spacing = 3.0
+# Horizontal within-page spacing (mm), including left/right content insets.
 album_pages_spacing_h = 0.0
+# Vertical gap between elements (mm), not a page-edge inset.
 album_pages_spacing_v = 0.0
+# Native border colour; legacy root form is supported, [colors] wins if present.
+# Opaque SVG named colours only; required by the native loader.
+color_album_border = "black"
+# Native title font (AlbumEasy token), size (points) and named colour.
+album_pages_title_font = "HN"
+album_pages_title_size = 10.0
+color_album_title = "black"
+album_pages_header_position = "C"
+color_album_header = "black"
+color_album_footer = "black"
+album_pages_footer_number_enabled = true
+album_pages_footer_number_font = "HN"
+album_pages_footer_number_size = 8.0
+album_pages_footer_number_position = "C"
+album_pages_footer_number_start = 1
+album_pages_footer_number_before = "Page "
+album_pages_footer_number_after = " of $PAGES$"
 
 median_width_cap_3 = 36.0
 median_width_cap_4 = 30.0
@@ -256,3 +275,249 @@ catalog_family_options = [
 	"un|Unificato|169053",
 	"col|Colnect codes|445975"
 ]
+
+# Optional native PDF proof setting only; the main application does not use it.
+# Keep this table after other settings when uncommenting it in this flat example.
+# [page.even_margins]
+# left_mm = 10.0
+# right_mm = 10.0
+# top_mm = 10.0
+# bottom_mm = 10.0
+
+# Native diagnostic proof only; not consumed by the main application.
+# All fields are required by the native loader, even when the guide is disabled.
+[native_pdf.proof]
+page_count = 3
+guide_enabled = true
+guide_width_mm = 0.1
+guide_colour = "black" # Opaque SVG named colour, independent of album border colour.
+
+# Native per-line colours override the shared color_album_border setting.
+# All three are required when this table is present.
+[native_pdf.border_colours]
+outer = "black"
+inner1 = "black"
+inner2 = "black"
+
+# Native repeating page title, disabled to retain geometry-only proof.
+[native_pdf.title]
+enabled = false
+text = "Stamp Album"
+vspace_after_mm = 0.0
+minimum_height_mm = 0.0 # Automatic; positive values reserve at least this height.
+
+# Native header in the top margin, independently measured from the title.
+[native_pdf.header]
+enabled = false
+font = "HN"
+size_pt = 8.0
+text = "Stamp Album Header"
+padding_mm = 0.0 # Positive moves away from the top border; negative moves closer.
+minimum_height_mm = 0.0 # Automatic; positive enlarges reservation below the text.
+
+# Native text footer; independent of page-number/date commands.
+[native_pdf.footer]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "C" # L, C, R, LR (odd-left/even-right) or RL.
+text = "Stamp Album Footer"
+padding_mm = 0.0 # Positive moves down, away from the bottom border; negative moves closer.
+minimum_height_mm = 0.0 # Automatic; positive enlarges reservation above the text.
+
+# Native page-number opt-in; uses explicit root footer-number fields
+# and native footer padding/height plus color_album_footer.
+[native_pdf.footer_number]
+enabled = false
+# document preserves one sequence; section restarts after explicit native section markers.
+scope = "document"
+# First displayed number in section scope; use an integer such as 10 to customize it.
+section_start = 1
+
+# Independent header labels; share native header padding/height and header colour.
+[native_pdf.header_number]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "R" # Physical-page parity: L, C, R, LR or RL.
+start = 1
+before = "Page "
+after = " of $PAGES$" # Final document count, not the last printed label.
+
+# Generation date is local and captured once per document. Fixed mode is reproducible.
+# Every field, including the inactive fixed override, must be valid.
+[native_pdf.header_date]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "L" # L, C, R, LR or RL; independent of header text/number position.
+format = "YMD" # YMD, DMY or MDY.
+separator = "-"
+before = "Generated: "
+after = ""
+date_source = "generation" # generation or fixed.
+fixed_date = "2026-01-01" # Used only when date_source = "fixed"; YYYY-MM-DD.
+
+# Footer generation date; shares footer padding/height/colour, not its text style.
+[native_pdf.footer_date]
+enabled = false
+font = "HN"
+size_pt = 8.0
+position = "L" # L, C, R, LR or RL.
+format = "YMD" # YMD, DMY or MDY.
+separator = "-"
+before = "Generated: "
+after = ""
+date_source = "generation" # Header/footer generation modes share one document date.
+fixed_date = "2026-01-01" # Strict YYYY-MM-DD; used only in fixed mode.
+
+# Optional ALBUM_PAGES_CROP_MARKS; all values explicit even when disabled.
+# AlbumEasy preserves page size; outer arms may be clipped (reported as a warning).
+# Width 0 is a PDF hairline, not off. Set enabled=false to omit marks.
+[native_pdf.crop_marks]
+enabled = false
+line_width_mm = 0.1
+horizontal_padding_mm = 1.0
+vertical_padding_mm = 1.0
+arms_mm = 5.0
+colour = "black"
+
+# Optional corner/edge-PNG decorative border; definition commands override this explicit
+# omitted-command policy. Relative paths resolve beside this config, then PNGs
+# beside the definition. Edge padding is signed and applies to its orientation.
+[native_pdf.decorative_border]
+enabled = false
+definition_file = ""
+image_scale = 1.0
+corner_padding_h_mm = 0.0
+corner_padding_v_mm = 0.0
+line_outer_mm = 0.0
+line_inner1_mm = 0.0
+line_inner2_mm = 0.0
+line_spacing_mm = 0.0
+line_padding_h_mm = 0.0
+line_padding_v_mm = 0.0
+end_offset_h_mm = 0.0
+end_offset_v_mm = 0.0
+edge_padding_h_mm = 0.0
+edge_padding_v_mm = 0.0
+colour = "black"
+
+[native_pdf.rows]
+# Native proof/layout only: existing AlbumEasy generation is unchanged.
+# Applies to every row in the section, including the last row and text-only
+# continuations. A new section can select another alignment and starts a new row.
+# left/right: anchor the complete row at that usable-page edge; keep the configured
+# horizontal gap unchanged. Alignment uses full text/frame footprints, not images.
+# center (NEW NATIVE DEFAULT): distribute items with equal internal and outer gaps.
+# Example: usable width 180 mm, three 40 mm footprints => four equal 15 mm gaps.
+# If equal gaps would be smaller than album_pages_spacing_h, preserve that minimum
+# internal gap and divide the remaining space equally between the two outer edges.
+# justified: first/last footprints touch usable-page edges; spread spare width
+# equally between items, including on the last row. A singleton is centered.
+# Single-item rows/text continuations are centered in both center and justified.
+# Never stretches frames, stamp images, glyphs or text; vertical layout is unchanged.
+# If this optional table is absent, native rows still use center. If present,
+# alignment is required; invalid/unknown values fail rather than silently default.
+# TXT EXPORT CONTRACT: this is not an AlbumEasy command; do not emit it into TXT.
+# Future last-row-left/last-row-center variants need new native commands and an
+# explicit compatibility mapping to the three main AlbumEasy modes; not implemented.
+alignment = "center"
+
+# Native stamp text layout; this table is NOT an AlbumEasy command section.
+# Template comments are also field help in the existing configuration UI.
+[native_pdf.stamp_text]
+# Opt in to the measured stamp-text proof/layout policy below.
+# CURRENT SCOPE: native text-layout proofs only; the production album generator
+# and legacy AlbumEasy renderer do not use this table yet. No backend is switched.
+# false leaves this policy inactive; all supplied fields are still validated.
+# Older configs may omit this entire table. If present, supply every field.
+enabled = false
+# Choose exactly "wrap_to_frame" or "expand_footprint".
+# wrap_to_frame: wrap headings/captions to the MOUNTING FRAME width, not the
+# picture width. Preserve explicit newlines; normalize repeated spaces while
+# wrapping; split overlong words at character boundaries. Never reduce font size.
+# A glyph wider than the frame is an error. Reserve all resulting text height.
+# This is the compatibility-oriented choice, NOT certified AlbumEasy parity:
+# line wrapping/fonts/row positions must still be compared with AlbumEasy.
+# expand_footprint: preserve explicit newlines; wrap lines that exceed the
+# expanded_width_limit/expanded_width_value cap specified below.
+# The item width is max(frame width, widest heading/caption) plus horizontal
+# padding on BOTH sides. Long text may move this item or following items to
+# another row. Its measured text height is ALSO reserved, with vertical padding.
+# This native enhancement may change row/page breaks compared with AlbumEasy.
+# BOTH modes leave physical perforation-tip size, mounting frame and image
+# scale unchanged. A footprint is reserved layout space, NOT a larger stamp.
+# TXT EXPORT CONTRACT: never write this setting as an AlbumEasy command.
+# Keep actual text. Any export adaptation must be explicit in TXT comments
+# and compatibility findings; native settings remain saved in TOML.
+# Existing production TXT export is unchanged and does not apply this policy.
+width_policy = "wrap_to_frame"
+# Expanded-mode text width cap: choose exactly "percent" or "mm".
+# percent uses the MOUNTING FRAME width, including mounting clearance:
+# expanded_width_value = 120 means up to 20% wider than the frame.
+# mm uses an absolute text width: expanded_width_value = 30 means 30 mm.
+# The cap is a maximum, NOT a forced width; shorter text keeps a smaller footprint.
+# It applies BEFORE horizontal footprint padding; that padding is added outside.
+# Lines longer than the cap wrap without reducing font size; explicit newlines
+# and blank lines remain. Overlong words split at character boundaries.
+# No fixed line-count limit: reserve ALL measured lines and their full height.
+# The single-page proof still errors if the total footprint cannot fit; it
+# never truncates text, silently caps line count, or automatically paginates.
+# wrap_to_frame ignores this cap and wraps to frame width instead, but both
+# cap settings must still be syntactically valid even when inactive/disabled.
+# This is native-only; do not emit these keys as AlbumEasy commands.
+expanded_width_limit = "percent"
+# Value for expanded_width_limit: finite percent >= 100, or finite positive mm.
+# 120 percent on a 28 mm frame => 33.6 mm text cap; with 2 mm padding per
+# side, the complete footprint is at most 37.6 mm wide (not a larger frame).
+# 30 mm on that frame => up to 34 mm footprint with the same padding.
+# In expanded mode an mm cap BELOW an item's mounting-frame width is an error,
+# even if that item has no text. Raise the cap or choose percent for mixed sizes.
+# Changing this value may wrap more lines, increase height and change row breaks.
+# Physical stamp size, mounting frame and font size remain unchanged.
+expanded_width_value = 120.0
+# Extra reserved space PER SIDE, outside the union of frame and text, in mm.
+# Total item width = max(frame width, measured text width) + 2 * this value.
+# In wrap_to_frame mode the wrap limit remains frame width; this padding does
+# NOT narrow the text area, enlarge the mounting frame, or alter page margins.
+# Horizontal row spacing is additional, between complete item footprints.
+# Example: 28 mm frame, 40 mm text, padding 2 => 44 mm expand-mode footprint.
+# Finite nonnegative mm; 0 means no extra horizontal footprint padding.
+horizontal_padding_mm = 0.0
+# Extra reserved space PER EDGE above/below the complete frame/text union.
+# Total height = frame height + heading height/gap (if present) + caption
+# height/gap (if present) + 2 * this value. Multiline height uses font metrics
+# and line spacing, not just the font size. Applies to BOTH width policies.
+# This is NOT physical mounting clearance and does not change the page margin.
+# Vertical row spacing is additional, below the tallest complete item footprint.
+# Finite nonnegative mm; 0 means no extra vertical footprint padding.
+vertical_padding_mm = 0.0
+# Distance in mm from frame top to heading bottom, and frame bottom to caption
+# top. Add one gap for each text block present; absent text adds no gap.
+# Separate from mounting clearance, footprint padding and inter-row spacing.
+# Example: 31 mm frame + 5 mm heading + 3 mm gap + 8 mm caption + 3 mm gap
+# + 1 mm vertical padding at each edge => 52 mm total item height.
+# Text/frame overflow is an explicit error in the single-page proof; automatic
+# pagination and production text-aware row integration are not implemented yet.
+# Finite nonnegative mm. A zero gap permits touching, not overlapping.
+text_gap_mm = 3.0
+
+# Native-only side labels beside stamp frames; these settings are used only by
+# NATIVE_STAMP_IMAGE_SIDE_LABEL and are not AlbumEasy TXT settings.
+# TOML values are defaults; per-item size, width, and line overrides are supported.
+# Stamp/frame physical sizes remain unchanged; wider/taller wrapped label
+# footprints reposition neighboring stamps and rows. Page-boundary conflicts fail.
+[native_pdf.stamp_image_side_labels]
+# Default font size in points; per-item command sizes override this value.
+font_size_pt = 3.5
+# Default maximum width of each wrapped side label, in mm.
+wrap_width_mm = 20.0
+# Allowed lower/upper wrap width for per-item overrides, in mm.
+minimum_wrap_width_mm = 5.0
+maximum_wrap_width_mm = 40.0
+# Default maximum wrapped lines per side label.
+max_lines = 4
+# Allowed lower/upper maximum-line count for per-item overrides.
+minimum_max_lines = 1
+maximum_max_lines = 8

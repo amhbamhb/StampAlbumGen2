@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: load_current_config_values
-resource: src/review_ui/config_editor.rs#L500-L510
+resource: src/review_ui/config_editor.rs#L507-L517
 generated:
   by: okf-rs/0.4.0
 relationships:

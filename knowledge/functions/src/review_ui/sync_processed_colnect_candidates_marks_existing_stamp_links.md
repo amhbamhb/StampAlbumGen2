@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: sync_processed_colnect_candidates_marks_existing_stamp_links
-resource: src/review_ui.rs#L3481-L3518
+resource: src/review_ui.rs#L3486-L3523
 visibility: private
 generated:
   by: okf-rs/0.4.0

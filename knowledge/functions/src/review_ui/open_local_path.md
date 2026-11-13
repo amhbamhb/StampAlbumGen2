@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: open_local_path
-resource: src/review_ui.rs#L1517-L1533
+resource: src/review_ui.rs#L1515-L1531
 visibility: private
 generated:
   by: okf-rs/0.4.0

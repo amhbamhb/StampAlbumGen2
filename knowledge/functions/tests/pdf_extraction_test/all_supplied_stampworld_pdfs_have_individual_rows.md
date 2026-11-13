@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: all_supplied_stampworld_pdfs_have_individual_rows
-resource: tests/pdf_extraction_test.rs#L39-L68
+resource: tests/pdf_extraction_test.rs#L41-L71
 visibility: private
 generated:
   by: okf-rs/0.4.0

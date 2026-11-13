@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: log_startup
-resource: src/review_ui.rs#L1722-L1752
+resource: src/review_ui.rs#L1720-L1750
 visibility: private
 generated:
   by: okf-rs/0.4.0

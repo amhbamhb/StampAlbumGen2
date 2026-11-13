@@ -16,6 +16,9 @@ relationships:
   - target: functions/src/album_globals/albumeasy_diagnostics
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/release_publication_shell/success
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/albumeasy_reported_error
     resolved_by: tree-sitter
     confidence: exact
@@ -46,6 +49,7 @@ relationships:
 - [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [from](../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)
 - [albumeasy_diagnostics](../../../functions/src/album_globals/albumeasy_diagnostics.md)
+- [success](../../../functions/tests/release_publication_shell/success.md)
 - [albumeasy_reported_error](../../../functions/src/album_globals/albumeasy_reported_error.md)
 - [wait_for_generated_pdf](../../../functions/src/album_globals/wait_for_generated_pdf.md)
 

@@ -1,13 +1,13 @@
 ---
 type: Rust Function
 title: probe_port
-resource: src/review_ui.rs#L1754-L1824
+resource: src/review_ui.rs#L1752-L1822
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/external_album/parser/parse
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/log_startup
@@ -25,7 +25,7 @@ relationships:
 
 # Calls
 
-- [parse](../../../functions/src/external_album/parser/parse.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [log_startup](../../../functions/src/review_ui/log_startup.md)
 
 # Called by

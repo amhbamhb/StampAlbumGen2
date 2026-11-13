@@ -15,6 +15,9 @@ relationships:
   - target: functions/src/review_ui/pdf_parser/extraction/parse_stampworld_html
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/db_query/process_pdf_records
     resolved_by: tree-sitter
     confidence: exact
@@ -45,6 +48,7 @@ relationships:
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [parse_stampworld_pdf](../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_pdf.md)
 - [parse_stampworld_html](../../../../functions/src/review_ui/pdf_parser/extraction/parse_stampworld_html.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [process_pdf_records](../../../../functions/src/review_ui/db_query/process_pdf_records.md)
 
 # Called by

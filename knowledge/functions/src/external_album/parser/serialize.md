@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: serialize
-resource: src/external_album/parser.rs#L354-L378
+resource: src/external_album/parser.rs#L370-L394
 generated:
   by: okf-rs/0.4.0
 relationships:

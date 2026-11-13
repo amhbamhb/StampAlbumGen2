@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/resolve_bootstrap_albums_root
     resolved_by: tree-sitter
     confidence: exact
@@ -25,6 +28,7 @@ relationships:
 
 # Calls
 
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [resolve_bootstrap_albums_root](../../../functions/src/review_ui/resolve_bootstrap_albums_root.md)
 - [log_runtime_event](../../../functions/src/review_ui/log_runtime_event.md)
 

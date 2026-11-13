@@ -25,6 +25,9 @@ relationships:
   - target: functions/src/external_album/parser/Lexer/skip
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -39,3 +42,4 @@ relationships:
 - [with_album_config_override_async](../../../functions/src/config/with_album_config_override_async.md)
 - [count](../../../functions/src/album_globals/selection/count.md)
 - [skip](../../../functions/src/external_album/parser/Lexer/skip.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)

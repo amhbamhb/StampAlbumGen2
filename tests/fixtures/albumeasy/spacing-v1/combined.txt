@@ -1,0 +1,16 @@
+# Combine the same fractional values; content is identical across valid probes.
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (6.25 8.75)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+STAMP_BOXES_SIZE_ADJUST (0.0)
+PAGE_START
+PAGE_TEXT (HN 10 "SPACING-V1 / FIRST")
+PAGE_TEXT (HN 10 "SPACING-V1 / SECOND")
+ROW_ALIGN_TOP
+ROW_START_JS (HN 10 0.2)
+STAMP_ADD (25.0 20.0 "" "" "" "")
+STAMP_ADD (30.0 25.0 "" "" "" "")
+ROW_START_JS (HN 10 0.2)
+STAMP_ADD (25.0 20.0 "" "" "" "")
+STAMP_ADD (30.0 25.0 "" "" "" "")

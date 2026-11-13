@@ -15,13 +15,13 @@ relationships:
   - target: functions/src/external_album/scan_inventory
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
-    resolved_by: tree-sitter
-    confidence: exact
   - target: functions/src/external_album/asset_errors
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
 ---
@@ -35,6 +35,6 @@ relationships:
 - [entry_relative](../../../functions/src/external_album/entry_relative.md)
 - [err](../../../functions/src/external_album/err.md)
 - [scan_inventory](../../../functions/src/external_album/scan_inventory.md)
-- [parse](../../../functions/src/external_album/parser/parse.md)
 - [asset_errors](../../../functions/src/external_album/asset_errors.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)

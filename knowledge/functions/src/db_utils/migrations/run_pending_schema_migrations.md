@@ -9,6 +9,12 @@ relationships:
   - target: functions/src/db_utils/migrations/ensure_schema_migrations_table
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/db_utils/migrations/enforce_runtime_schema_compatibility
     resolved_by: tree-sitter
     confidence: exact
@@ -34,6 +40,8 @@ relationships:
 # Calls
 
 - [ensure_schema_migrations_table](../../../../functions/src/db_utils/migrations/ensure_schema_migrations_table.md)
+- [prepare](../../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [enforce_runtime_schema_compatibility](../../../../functions/src/db_utils/migrations/enforce_runtime_schema_compatibility.md)
 
 # Called by

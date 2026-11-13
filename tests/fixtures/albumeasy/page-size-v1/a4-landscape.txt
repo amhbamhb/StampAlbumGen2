@@ -1,0 +1,7 @@
+# Orientation is expressed by width/height order, not a separate flag.
+ALBUM_PAGES_SIZE (297.0 210.0)
+ALBUM_PAGES_MARGINS (15.0 15.0 15.0 15.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+PAGE_START
+PAGE_TEXT_CENTRE (HN 12 "PAGE-SIZE-V1 / A4 LANDSCAPE")

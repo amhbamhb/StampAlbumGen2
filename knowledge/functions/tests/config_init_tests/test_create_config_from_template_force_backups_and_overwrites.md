@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/config/create_config_from_template
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
 ---
 
 # Signature
@@ -19,3 +22,4 @@ relationships:
 # Calls
 
 - [create_config_from_template](../../../functions/src/config/create_config_from_template.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: source_checksums
-resource: tests/external_album_backend.rs#L1270-L1304
+resource: tests/external_album_backend.rs#L1293-L1327
 visibility: private
 generated:
   by: okf-rs/0.4.0

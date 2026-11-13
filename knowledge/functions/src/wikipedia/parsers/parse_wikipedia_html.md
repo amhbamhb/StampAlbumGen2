@@ -6,7 +6,7 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
-  - target: functions/src/external_album/parser/parse
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -21,7 +21,7 @@ relationships:
 
 # Calls
 
-- [parse](../../../../functions/src/external_album/parser/parse.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

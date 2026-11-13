@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: placement_identities
-resource: tests/external_album_backend.rs#L719-L737
+resource: tests/external_album_backend.rs#L721-L739
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -37,6 +40,7 @@ relationships:
 
 # Calls
 
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 
 # Called by

@@ -156,6 +156,7 @@ artifacts/stamp_album_gen2.exe.sha256
 
 # Local runtime configs and credentials (templates remain tracked)
 config.toml
+/config-pdf.toml
 /artifacts/config.toml
 /Albums/*/config.toml
 /Albums/**/config.toml
@@ -211,3 +212,15 @@ download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 3.pdf
 download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 4.pdf
 download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 5.pdf
 download-pdf/Denmark - Postage stamps (1980 - 1989) - Page 6.pdf
+
+# Local real-country native PDF comparisons; retain files without committing.
+/docs/reports/NATIVE_PDF_COUNTRY_COMPARISON_WORKFLOW.md
+/tests/fixtures/albumeasy/australia-first20-v1/
+/tests/fixtures/albumeasy/brazil-first20-v1/
+/tests/fixtures/albumeasy/christmas-island-first2-v1/
+/tests/native_pdf_australia_comparison.rs
+/tests/native_pdf_brazil_comparison.rs
+/tests/native_pdf_christmas_island_comparison.rs
+# Naming convention for future local-only country comparisons.
+/tests/fixtures/albumeasy/local-country-*/
+/tests/native_pdf_local_country_*.rs

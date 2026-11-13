@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: set_rendered
-resource: src/external_album.rs#L1188-L1193
+resource: src/external_album.rs#L1196-L1201
 visibility: private
 generated:
   by: okf-rs/0.4.0

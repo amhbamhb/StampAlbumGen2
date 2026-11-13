@@ -1,0 +1,38 @@
+# AlbumEasy 4.5.0 reference only. No native commands.
+# Verified real stamp records and source images are described in README.md.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 5)
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "1959-1960  |  STAMP BACKGROUND COLOURS" 5)
+PAGE_TEXT_CENTRE (HN 9 "DEFAULT  |  BLACK  |  COLOUR PERSISTENCE" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm\nDefault background" "")
+COLOR_STAMP_BACKGROUND (black)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\nExplicit black" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nBlack persists" "")
+
+PAGE_TEXT_CENTRE (HN 9 "COLOUR ALIAS  |  NO FRAME  |  BLANK BORDER" 5)
+ROW_START_ES (HN 8 0.1)
+COLOUR_STAMP_BACKGROUND (lightblue)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\nLightblue / framed" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nLightblue / NO_FRAME" "" NO_FRAME)
+STAMP_BORDER_STYLE (BLANK)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm\nLightblue / BLANK" "")
+
+PAGE_TEXT_CENTRE (HN 9 "HIDDEN IMAGE  |  RESET TO WHITE" 5)
+ROW_START_ES (HN 8 0.1)
+STAMP_BORDER_STYLE (SOLID)
+COLOR_STAMP_BACKGROUND (black)
+ALBUM_STAMP_IMG_HIDE
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm\nHidden image / black" "")
+ALBUM_STAMP_IMG_SHOW
+COLOUR_STAMP_BACKGROUND (white)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm\nWhite reset / shown" "")

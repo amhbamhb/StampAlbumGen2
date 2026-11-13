@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/album_globals/structs/GenericAttrs/get
     resolved_by: tree-sitter
     confidence: exact
@@ -22,4 +25,5 @@ relationships:
 # Calls
 
 - [collect_stampworld_data_with_fetcher](../../../functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [get](../../../functions/src/album_globals/structs/GenericAttrs/get.md)

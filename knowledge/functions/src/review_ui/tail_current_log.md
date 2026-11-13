@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: tail_current_log
-resource: src/review_ui.rs#L98-L167
+resource: src/review_ui.rs#L96-L165
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
   - target: functions/src/review_ui/get_runtime_log_lines
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/review_ui/pdf_parser/extraction/metadata
@@ -31,6 +34,7 @@ relationships:
 # Calls
 
 - [get_runtime_log_lines](../../../functions/src/review_ui/get_runtime_log_lines.md)
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 - [metadata](../../../functions/src/review_ui/pdf_parser/extraction/metadata.md)
 - [open](../../../functions/src/external_album/open.md)
 

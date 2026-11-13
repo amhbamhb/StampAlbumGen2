@@ -1,12 +1,15 @@
 ---
 type: Rust Function
 title: load_stamp_all_fields
-resource: src/review_ui.rs#L2543-L2574
+resource: src/review_ui.rs#L2548-L2579
 visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/db_utils/migrations/column_names
     resolved_by: tree-sitter
     confidence: exact
@@ -28,6 +31,7 @@ relationships:
 
 # Calls
 
+- [prepare](../../../functions/src/native_pdf/stamp_image/StampImageProofSettings/prepare.md)
 - [column_names](../../../functions/src/db_utils/migrations/column_names.md)
 - [value_ref_to_string](../../../functions/src/review_ui/value_ref_to_string.md)
 

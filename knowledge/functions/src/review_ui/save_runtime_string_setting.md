@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_runtime_string_setting
-resource: src/review_ui.rs#L676-L709
+resource: src/review_ui.rs#L674-L707
 visibility: private
 generated:
   by: okf-rs/0.4.0

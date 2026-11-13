@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stampworld_pdf_extraction_layout
-resource: tests/pdf_extraction_test.rs#L2-L20
+resource: tests/pdf_extraction_test.rs#L2-L22
 visibility: private
 generated:
   by: okf-rs/0.4.0

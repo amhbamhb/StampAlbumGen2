@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: stampworld_db_snapshot
-resource: src/review_ui.rs#L610-L649
+resource: src/review_ui.rs#L608-L647
 visibility: private
 generated:
   by: okf-rs/0.4.0

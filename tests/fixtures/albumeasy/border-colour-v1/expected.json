@@ -1,0 +1,108 @@
+{
+  "reference": "AlbumEasy 4.5.0",
+  "rgb_tolerance": 0.00051,
+  "parsed_rgb_tolerance": 0.00001,
+  "geometry_tolerance_mm": 0.01,
+  "cases": [
+    {
+      "name": "alias",
+      "pages": 1,
+      "rgb": [
+        0.0,
+        0.50196,
+        0.0
+      ]
+    },
+    {
+      "name": "default",
+      "pages": 1,
+      "rgb": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "global-last",
+      "pages": 2,
+      "rgb": [
+        0.0,
+        0.0,
+        0.50196
+      ]
+    },
+    {
+      "name": "light-grey",
+      "pages": 1,
+      "rgb": [
+        0.82745,
+        0.82745,
+        0.82745
+      ]
+    },
+    {
+      "name": "named",
+      "pages": 1,
+      "rgb": [
+        0.0,
+        0.0,
+        0.5451
+      ]
+    },
+    {
+      "name": "white",
+      "pages": 1,
+      "rgb": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "name": "hex",
+      "diagnostic": "Warnings/Errors in file album.txt:\nError in line 5: COLOUR_ALBUM_BORDER command - the specified colour \"#1E4A7A\" is not a valid colour\n"
+    },
+    {
+      "name": "invalid-hex",
+      "diagnostic": "Warnings/Errors in file album.txt:\nError in line 5: COLOUR_ALBUM_BORDER command - the specified colour \"#GG00FF\" is not a valid colour\n"
+    },
+    {
+      "name": "invalid-name",
+      "diagnostic": "Warnings/Errors in file album.txt:\nError in line 5: COLOUR_ALBUM_BORDER command - the specified colour not-a-colour is not a valid colour\n"
+    },
+    {
+      "name": "missing",
+      "diagnostic": "Warnings/Errors in file album.txt:\nError in line 5: COLOUR_ALBUM_BORDER command - expecting a colour value\n"
+    },
+    {
+      "name": "short-hex",
+      "diagnostic": "Warnings/Errors in file album.txt:\nError in line 5: COLOUR_ALBUM_BORDER command - the specified colour \"#F80\" is not a valid colour\n"
+    },
+    {
+      "name": "unquoted-hex",
+      "diagnostic": "Warnings/Errors in file album.txt:\nError in line 5: COLOUR_ALBUM_BORDER command - Parameters require closing parenthesis.\n"
+    }
+  ],
+  "sha256": {
+    "alias.pdf": "d48b51a1611d369bd22ec199447d7f2f73143ce2d095040d242fe32938002239",
+    "alias.txt": "4ca3e8e6475606facc5a7547bc5d76d984bc2a4c36baf333e7c2c9f53b82ab24",
+    "default.pdf": "25bfcec3cede4f8014d9e366830b06086a1bcaf3ac809e4c2ff5aee37bce125a",
+    "default.txt": "9e9dfa98d5106731e4366a7cecb13f6c31186d424bf940c7d6a191d3f0ad1dc7",
+    "global-last.pdf": "3b3b36b1907d68c2d5db1c7e8a513dc97073d44b43db860432efe949965d1519",
+    "global-last.txt": "68e8f849cefc6c9917953dd7ac7cbf7f9d416bf9ab735a0ecf66f0b9b6e9990c",
+    "hex.txt": "58b9be7abb57d7eb273849ca82e24505246c694621eedd0850870a5040ee7684",
+    "invalid-hex.txt": "ad064ecc0c06357f0126256cd91437f3e1b765181c77049c52f5c51187867b81",
+    "invalid-name.txt": "159f0ff38f53d88ed19fb3d933d02ffcb9fb1c42f763bce7e6ac22acc2917408",
+    "light-grey.pdf": "6b90fd6768f21544699c59cdb95e9ed4963cdacf3a02afbd2bd4130002078a33",
+    "light-grey.txt": "0cabf0c9ecffc2bf068c34bc1e2a2559f0dcfa3b1f56ee8a4887a50021be230a",
+    "missing.txt": "7de8b0855783bd9154e5a0341648b55825dcd6ee1dd6255caa50f63d94f889c7",
+    "named.pdf": "d286628c733404bde72e43730e9a8f2394f7d3b0af08adc1c38030378704e181",
+    "named.txt": "549123e4d0378625178fe3fdd2b8c8b21a3a24e3fc3ae4288f6791715ff22c56",
+    "short-hex.txt": "914a3a0e9d50a5218e3db9090bc94e12a304fc5040275a3ffbff4b90479b2249",
+    "unquoted-hex.txt": "ee8cb403c8368acebf232950083947a2a4b37e3a95d51649bcb7d62226e824e0",
+    "white.pdf": "34b13b7fb46f8d3908b01643141bb5093ad68dd5ebdcd8659b8e62fb6dd77510",
+    "white.txt": "4dea724fcff2073a228f54b81e931ad48ede54e07f1166facdf5c966a63abdc2"
+  }
+}

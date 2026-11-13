@@ -7,6 +7,9 @@ generated:
   by: okf-rs/0.4.0
 relationships:
   calls:
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
     resolved_by: tree-sitter
     confidence: exact
@@ -33,6 +36,7 @@ relationships:
 
 # Calls
 
+- [args](../../../../functions/tests/native_pdf_page_settings/args.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [print_usage](../../../../functions/src/bin/backfill_image_dims/print_usage.md)
 - [from](../../../../functions/src/setup/SetupError/from-flexi-logger-flexiloggererror/from.md)

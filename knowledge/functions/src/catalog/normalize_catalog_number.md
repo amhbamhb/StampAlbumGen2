@@ -5,6 +5,10 @@ resource: src/catalog.rs#L92-L112
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_globals/generator_new/helpers/fetch_and_filter_stamps_impl
     resolved_by: tree-sitter
@@ -26,6 +30,10 @@ relationships:
 # Signature
 
 `pub fn normalize_catalog_number(raw: &str) -> String`
+
+# Calls
+
+- [contains](../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

@@ -1,0 +1,22 @@
+Independent MuPDF trace verification (2026-11-05)
+
+Command for each case:
+mutool draw -F trace -o TRACE_PATH tests/fixtures/albumeasy/row-alignment-v1/CASE.pdf
+
+Compared to expected.json using XML trace data, with 0.004 mm tolerance:
+left: PASS; 1 Letter page, 5 images, 15 outlines, 28 positioned text lines
+center: PASS; 1 Letter page, 5 images, 15 outlines, 28 positioned text lines
+right: PASS; 1 Letter page, 5 images, 15 outlines, 28 positioned text lines
+justified: PASS; 1 Letter page, 5 images, 15 outlines, 28 positioned text lines
+mixed-sections: PASS; 1 Letter page, 5 images, 15 outlines, 28 positioned text lines
+center-continuation: PASS; 3 Letter pages, 1 image, 5 outlines, 135 positioned text lines
+
+All pages have 612x792 pt / 215.9x279.4 mm mediaboxes.
+Combined all-cases.pdf has 8 pages; mutool info confirms the same Letter mediabox.
+All image sizes/positions and all physical/frame/footprint rectangles match.
+Every nonblank stamp-text line matches content, left position, baseline and 10 pt size.
+Center page was rasterized at 100 DPI and visually inspected for readability,
+image aspect, row edge spacing, full bottom border and final-count footer.
+
+MuPDF emitted: warning: ICC support is not available
+No color-profile, physical-print or AlbumEasy reference-rendering claim is made.

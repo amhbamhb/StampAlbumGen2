@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: add_stamp
-resource: src/album_globals/page_functions.rs#L145-L161
+resource: src/album_globals/page_functions.rs#L149-L165
 generated:
   by: okf-rs/0.4.0
 relationships:

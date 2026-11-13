@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: config_editor
-resource: src/review_ui/config_editor.rs#L1-L943
+resource: src/review_ui/config_editor.rs#L1-L1039
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -16,6 +16,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: external/super-configeditorfield-configeditorsection
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: external/super
     resolved_by: tree-sitter
     confidence: exact
   member_of:
@@ -46,6 +49,8 @@ relationships:
 - [build_config_editor_data_for_album](../../../functions/src/review_ui/config_editor/build_config_editor_data_for_album.md)
 - [save_album_config_diff](../../../functions/src/review_ui/config_editor/save_album_config_diff.md)
 - [render_config_editor_assets](../../../functions/src/review_ui/config_editor/render_config_editor_assets.md)
+- [normalizes_windows_paths_and_preserves_valid_toml_strings](../../../functions/src/review_ui/config_editor/normalizes_windows_paths_and_preserves_valid_toml_strings.md)
+- [renders_global_and_saves_album_config_with_quoted_windows_path](../../../functions/src/review_ui/config_editor/renders_global_and_saves_album_config_with_quoted_windows_path.md)
 
 # Imports
 
@@ -53,6 +58,7 @@ relationships:
 - `std::fs`
 - `crate::config`
 - `super::{ConfigEditorField, ConfigEditorSection}`
+- `super::*`
 
 # Member of
 

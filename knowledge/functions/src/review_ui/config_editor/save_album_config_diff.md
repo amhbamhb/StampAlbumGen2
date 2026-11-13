@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: save_album_config_diff
-resource: src/review_ui/config_editor.rs#L822-L930
+resource: src/review_ui/config_editor.rs#L829-L937
 generated:
   by: okf-rs/0.4.0
 relationships:

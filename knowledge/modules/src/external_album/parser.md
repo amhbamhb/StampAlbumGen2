@@ -1,7 +1,7 @@
 ---
 type: Rust Module
 title: parser
-resource: src/external_album/parser.rs#L1-L378
+resource: src/external_album/parser.rs#L1-L394
 generated:
   by: okf-rs/0.4.0
 relationships:

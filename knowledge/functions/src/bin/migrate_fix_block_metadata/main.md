@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/init
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/time_utils/formatted_now
     resolved_by: tree-sitter
     confidence: exact
@@ -25,5 +28,6 @@ relationships:
 # Calls
 
 - [init](../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/init.md)
+- [args](../../../../functions/tests/native_pdf_page_settings/args.md)
 - [formatted_now](../../../../functions/src/time_utils/formatted_now.md)
 - [open](../../../../functions/src/external_album/open.md)

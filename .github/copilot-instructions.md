@@ -30,14 +30,16 @@ This helps in:
 When a new issue, fix, bug, performance problem, or significant remediation task is identified, follow this workflow by default:
 
 1. Create a new git branch before making substantive changes.
-2. Create a GitLab issue for the work item when GitLab CLI/API access is available.
-3. Prefer branch names that include the GitLab issue number when known, for example:
+2. Create a GitHub issue in `amhbamhb/StampAlbumGen2` for the work item when GitHub CLI/API access is available; prefer `gh`.
+3. Prefer branch names that include the GitHub issue number when known, for example:
 - `issue/123-short-description`
 4. Link the branch and the issue by:
 - naming the branch with the issue number when possible, and
 - including the branch name in the issue description or follow-up comment if needed.
-5. If GitLab authentication or API access is unavailable, state that clearly and continue on a descriptive branch name, then create/link the issue later once access is restored.
+5. If GitHub authentication or API access is unavailable, state that clearly and continue on a descriptive branch name, then create/link the issue later once access is restored.
 6. When a branch already exists before the issue is created, rename the branch to include the issue number when practical.
+
+This hosting policy applies only to this repository and replaces its former GitLab-only guidance. Do not push without explicit maintainer instruction.
 
 ## Commit Quality Gate
 

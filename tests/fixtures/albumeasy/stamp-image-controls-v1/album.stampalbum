@@ -1,0 +1,47 @@
+# Native rendition of the accepted AlbumEasy 4.5.0 image-controls page.
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_PAGE_HEADER (HN 9 C "1959-1960  |  STAMP IMAGE CONTROLS" 0 0)
+NATIVE_PAGE_TITLE (TB 16 "UNITED STATES - LIBERTY ISSUE" 5)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black 6)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 1.5)
+
+# DB ID 150 / SG 1125a / Colnect 700029 / 52 x 29 mm.
+# The total 6 mm frame addition and 0.7 mm image padding retain the recorded
+# physical size and AlbumEasy's omitted-setting default behavior.
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0.7 0.7 false fit colour show)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "DB 150 / SG 1125a\n52 x 29 mm\nAlbumEasy default")
+
+# DB ID 151 / SG 1137a / Colnect 700273 / 26 x 29 mm.
+NATIVE_STAMP_IMAGE_POLICY (millimetres 2 2 false fit colour show)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\n2 mm padding")
+NATIVE_ROW_BREAK ()
+
+# DB ID 152 / SG 1137b / Colnect 700274 / 26 x 29 mm.
+# Percent padding is relative to the frame; the low-resolution image is kept
+# small first, then stretched in the next item.
+NATIVE_STAMP_IMAGE_POLICY (percent 10 10 false fit colour show)
+STAMP_IMAGE ("us-152-small.png" 26 29 0.3 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nSmall / no stretch")
+NATIVE_STAMP_IMAGE_LABEL (HN 3.5 black "SG 1137b" "SG 1137b")
+NATIVE_STAMP_IMAGE_SIDE_LABEL (HN black 18 4 "SG 1137b - Description text demonstrates wrapping beside the frame." "SG 1137b - Colour, issue type, and emission notes fit in wrapped lines.")
+NATIVE_STAMP_IMAGE_POLICY (percent 10 10 true fit colour show)
+STAMP_IMAGE ("us-152-small.png" 26 29 0.3527777778 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nSmall / stretch")
+NATIVE_ROW_BREAK ()
+
+# DB ID 156 / SG 1148a / Colnect 700272 / 52 x 29 mm.
+NATIVE_STAMP_IMAGE_POLICY (percent 10 10 true preserve grayscale show)
+STAMP_IMAGE ("../stamp-pagination-v1/us-156.png" 52 29 0.0506822612 "HN" 8 "DB 156 / SG 1148a\n52 x 29 mm\nAspect / grayscale")
+
+# The hidden illustration retains its physical frame and readable caption.
+NATIVE_STAMP_IMAGE_POLICY (percent 10 10 true preserve grayscale hide)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "DB 151 / SG 1137a\n26 x 29 mm\nImage hidden")
+
+# Restoring colour and visibility applies to this item only.
+NATIVE_STAMP_IMAGE_POLICY (percent 10 10 true preserve colour show)
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052 "HN" 8 "DB 152 / SG 1137b\n26 x 29 mm\nColour / show")

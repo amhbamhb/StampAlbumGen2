@@ -6,6 +6,10 @@ visibility: private
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/tests/cli_option_validation/test_cli_help_and_version
     resolved_by: tree-sitter
@@ -45,6 +49,10 @@ relationships:
 # Signature
 
 `fn run_cli_with_args(args: &[&str]) -> (i32, String, String)`
+
+# Calls
+
+- [args](../../../functions/tests/native_pdf_page_settings/args.md)
 
 # Called by
 

@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: extract_block_metadata
-resource: src/stampworld/parser.rs#L47-L127
+resource: src/stampworld/parser.rs#L51-L143
 generated:
   by: okf-rs/0.4.0
 relationships:
@@ -10,6 +10,9 @@ relationships:
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
+    resolved_by: tree-sitter
+    confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   called_by:
@@ -32,6 +35,7 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

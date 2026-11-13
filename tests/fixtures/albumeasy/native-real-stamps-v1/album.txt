@@ -1,0 +1,19 @@
+# AlbumEasy 4.5.0 input: same real stamp records used by album.stampalbum.
+# Image assets and Colnect dimensions are documented in README.md.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (3 4)
+ALBUM_PAGES_BORDER (0 0 0 0)
+STAMP_BOXES_SIZE_ADJUST (0)
+ALBUM_STAMP_IMG_NEW_SETTING (0 0 false)
+
+PAGE_START
+ROW_START_ES (HN 7 0.1)
+# DB ID 150 / SG 1125a / Colnect 700029 / 52 x 29 mm
+STAMP_ADD_IMG (52 29 "../stamp-pagination-v1/us-150.png" "" "" "")
+# DB ID 151 / SG 1137a / Colnect 700273 / 26 x 29 mm
+STAMP_ADD_IMG (26 29 "../stamp-pagination-v1/us-151.png" "" "" "")
+# DB ID 152 / SG 1137b / Colnect 700274 / 26 x 29 mm
+STAMP_ADD_IMG (26 29 "../stamp-pagination-v1/us-152.png" "" "" "")
+# DB ID 156 / SG 1148a / Colnect 700272 / 52 x 29 mm
+STAMP_ADD_IMG (52 29 "../stamp-pagination-v1/us-156.png" "" "" "")

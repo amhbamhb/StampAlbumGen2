@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: ping_response_json
-resource: src/review_ui/http_handlers.rs#L17-L24
+resource: src/review_ui/http_handlers.rs#L13-L20
 visibility: private
 generated:
   by: okf-rs/0.4.0

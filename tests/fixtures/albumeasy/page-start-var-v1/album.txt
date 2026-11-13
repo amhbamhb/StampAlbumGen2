@@ -1,0 +1,48 @@
+# AlbumEasy 4.5.0 reference first; PAGE_START_VAR settings are page-local.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 14)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 16 "UNITED STATES - PER-PAGE SPACING" 5)
+ALBUM_PAGES_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$")
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+
+PAGE_START_GROUP_BEGIN
+PAGE_TEXT_CENTRE (TB 11 $$1 5)
+PAGE_TEXT_CENTRE (HN 9 "Year: $$2 | repeated: $$2" 5)
+PAGE_START_GROUP_END
+
+PAGE_START ("DEFAULT - H 4 / V 14" 1959)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical\nFirst row - wide" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical\nFirst row - portrait" "")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm physical\nSecond row - portrait" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm physical\nSecond row - wide" "")
+
+PAGE_START_VAR (12 6 "OVERRIDE - H 12 / V 6" 1960)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical\nFirst row - wide" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical\nFirst row - portrait" "")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm physical\nSecond row - portrait" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm physical\nSecond row - wide" "")
+
+PAGE_START_VAR (0 0 "ZERO OVERRIDE - H 0 / V 0" 1961)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical\nFirst row - wide" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical\nFirst row - portrait" "")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm physical\nSecond row - portrait" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm physical\nSecond row - wide" "")
+
+PAGE_START ("RESTORED DEFAULT - H 4 / V 14" 1962)
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-150.png" "" "DB 150 / SG 1125a\n52 x 29 mm physical\nFirst row - wide" "")
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-151.png" "" "DB 151 / SG 1137a\n26 x 29 mm physical\nFirst row - portrait" "")
+ROW_START_ES (HN 8 0.1)
+STAMP_ADD_IMG (32 35 "../stamp-pagination-v1/us-152.png" "" "DB 152 / SG 1137b\n26 x 29 mm physical\nSecond row - portrait" "")
+STAMP_ADD_IMG (58 35 "../stamp-pagination-v1/us-156.png" "" "DB 156 / SG 1148a\n52 x 29 mm physical\nSecond row - wide" "")

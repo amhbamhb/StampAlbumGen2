@@ -1,0 +1,59 @@
+# AlbumEasy 4.5.0-only complete-page reference for footer text padding/state.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (15 15 15 15)
+ALBUM_PAGES_SPACING (4 10)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+ALBUM_PAGES_TITLE (TB 14 "UNITED STATES - 1970 ISSUES" 3)
+COLOR_ALBUM_FOOTER (darkblue)
+ALBUM_PAGES_FOOTER_NUMBER (HN 9 C 1 "Page " " of $PAGES$")
+COLOR_ALBUM_MARGIN_TXT (darkblue)
+ALBUM_PAGES_MARGIN_TXT (HN 9 "STAMP FOOTER TEXT - PADDING / STATE" L)
+STAMP_BOXES_SIZE_ADJUST (0)
+STAMP_BORDER_STYLE (SOLID)
+COLOR_STAMP_BORDER (darkblue)
+ALBUM_STAMP_IMG_NEW_SETTING (3 3 false)
+ALBUM_STAMP_IMG_ASPECT_RATIO (true)
+STAMP_FOOTER_TXT_ALIGN (ALIGN)
+STAMP_FOOTER_TXT_PAD (0)
+TEXT_LINE_LEADING (0)
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "ZERO PADDING: DEFAULT GAP; DEFAULT MULTILINE LEADING" 1)
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD_IMG (46 32 "../stamp-pagination-v1/us-287.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+STAMP_ADD_IMG (56 46 "../stamp-pagination-v1/us-288.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+
+PAGE_TEXT_CENTRE (HN 8 "POSITIVE PADDING: +6 MM" 0)
+STAMP_FOOTER_TXT_PAD (6)
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD_IMG (46 32 "../stamp-pagination-v1/us-287.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+STAMP_ADD_IMG (56 46 "../stamp-pagination-v1/us-288.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+
+PAGE_TEXT_CENTRE (HN 8 "NEGATIVE PADDING: -1 MM" 0)
+STAMP_FOOTER_TXT_PAD (-1)
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD_IMG (46 32 "../stamp-pagination-v1/us-287.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+STAMP_ADD_IMG (56 46 "../stamp-pagination-v1/us-288.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+
+PAGE_START
+PAGE_TEXT_CENTRE (HN 9 "ZERO RESTORES DEFAULT; BASELINE ALIGN / ZERO PADDING" 1)
+STAMP_FOOTER_TXT_PAD (0)
+STAMP_FOOTER_TXT_ALIGN (ALIGN)
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD_IMG (46 32 "../stamp-pagination-v1/us-287.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+STAMP_ADD_IMG (56 46 "../stamp-pagination-v1/us-288.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+
+ALBUM_STAMP_SETTINGS_SAVE
+STAMP_FOOTER_TXT_PAD (3)
+STAMP_FOOTER_TXT_ALIGN (CENTRE)
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD_IMG (46 32 "../stamp-pagination-v1/us-287.png" "Left +3\nLower" "Center\nShort" "Right +3\nLower")
+STAMP_FOOTER_TXT_PAD (-1)
+STAMP_FOOTER_TXT_ALIGN (CNR_CENTRE)
+STAMP_ADD_IMG (56 46 "../stamp-pagination-v1/us-288.png" "Left -1\nLower" "Center\nShort" "Right -1\nLower")
+
+ALBUM_STAMP_SETTINGS_RESTORE
+PAGE_TEXT_CENTRE (HN 8 "RESTORED: ZERO PADDING / ALIGN" 0)
+ROW_START_ES (HN 8 0.2)
+STAMP_ADD_IMG (46 32 "../stamp-pagination-v1/us-287.png" "Left top\nLower" "Center\nShort" "Right top\nLower")
+STAMP_ADD_IMG (56 46 "../stamp-pagination-v1/us-288.png" "Left top\nLower" "Center\nShort" "Right top\nLower")

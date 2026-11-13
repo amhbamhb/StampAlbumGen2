@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/release_publication_shell/success
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/setup/refresh_linux_desktop_caches
     resolved_by: tree-sitter
@@ -26,6 +29,7 @@ relationships:
 # Calls
 
 - [status](../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status.md)
+- [success](../../../functions/tests/release_publication_shell/success.md)
 
 # Called by
 

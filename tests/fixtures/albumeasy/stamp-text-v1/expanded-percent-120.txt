@@ -1,0 +1,18 @@
+# COMPATIBILITY ADAPTATION: native expand_footprint, cap 120 percent; comparison input only, not certified layout parity.
+# Native footprint padding and expanded width are NOT AlbumEasy commands.
+# All text is retained below; row/page positions may differ. Native settings remain in TOML.
+ALBUM_PAGES_SIZE (215.9 279.4)
+ALBUM_PAGES_MARGINS (12 12 12 12)
+ALBUM_PAGES_SPACING (3 3)
+ALBUM_PAGES_BORDER (0.2 0 0 0)
+STAMP_BOXES_SIZE_ADJUST (0)
+PAGE_START
+PAGE_TEXT_CENTRE (HN 10 "expanded-percent-120: text-preserving compatibility comparison" 4)
+PAGE_TEXT (HN 10 "Example 1" 2)
+PAGE_TEXT (HN 10 "line text 1\nLINE text 2 that is\nreally really really\nreally really long.\nline 3 another long\nline\nline 4 short" 2)
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD (28 31 "" "" "" "")
+PAGE_TEXT (HN 10 "Example 2" 2)
+PAGE_TEXT (HN 10 "line text 1\nLINE text 2 that is\nreally really really\nreally really long.\nline 3 another long\nline\nline 4 short" 2)
+ROW_START_ES (HN 10 0.1)
+STAMP_ADD (28 31 "" "" "" "")

@@ -1,7 +1,7 @@
 ---
 type: Rust Struct
 title: MatcherPayload
-resource: src/review_ui.rs#L304-L332
+resource: src/review_ui.rs#L302-L330
 visibility: private
 generated:
   by: okf-rs/0.4.0

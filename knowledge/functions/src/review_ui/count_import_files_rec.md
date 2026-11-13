@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: count_import_files_rec
-resource: src/review_ui.rs#L1844-L1862
+resource: src/review_ui.rs#L1843-L1861
 visibility: private
 generated:
   by: okf-rs/0.4.0

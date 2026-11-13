@@ -10,6 +10,9 @@ relationships:
   - target: functions/src/setup/command_exists
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/tests/native_pdf_page_settings/args
+    resolved_by: tree-sitter
+    confidence: exact
   - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status
     resolved_by: tree-sitter
     confidence: exact
@@ -26,6 +29,7 @@ relationships:
 # Calls
 
 - [command_exists](../../../functions/src/setup/command_exists.md)
+- [args](../../../functions/tests/native_pdf_page_settings/args.md)
 - [status](../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status.md)
 
 # Called by

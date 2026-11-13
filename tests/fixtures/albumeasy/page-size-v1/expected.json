@@ -1,0 +1,68 @@
+{
+  "baseline": "page-size-v1",
+  "command": "ALBUM_PAGES_SIZE",
+  "reference_renderer": "AlbumEasy 4.5.0",
+  "units": "millimetres",
+  "geometry_tolerance_mm": 0.01,
+  "comparison": "Compare page MediaBox and filename-normalized MuPDF page traces; PDF metadata bytes may differ.",
+  "cases": [
+    {
+      "input": "a4-portrait.txt",
+      "input_sha256": "bd520a1224199f98bdc4a6df728472d8b3fffcaea379c265467f43839b7637a1",
+      "reference": "a4-portrait.reference.pdf",
+      "reference_sha256": "2e398e0b73ec28101607881677d2363f43a5ea6a6e5e51284355ba19b6b72a20",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "page_size_mm": [210.0, 297.0],
+      "observed_mediabox_points": [0.0, 0.0, 595.2756, 841.8898]
+    },
+    {
+      "input": "a4-landscape.txt",
+      "input_sha256": "23060cf98eac9ee4650f7ba4e94b812183ba5324d8c833852984e44be6262e7d",
+      "reference": "a4-landscape.reference.pdf",
+      "reference_sha256": "d533e35794e99ca44c214fdcc33ad119a49c917867cfc3e55c5d8669920ca89d",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "page_size_mm": [297.0, 210.0],
+      "observed_mediabox_points": [0.0, 0.0, 841.8898, 595.2756]
+    },
+    {
+      "input": "us-letter.txt",
+      "input_sha256": "20772c2f1e64072b6a38d049108009550357f8d0903c920e82d8aec0b7eb2860",
+      "reference": "us-letter.reference.pdf",
+      "reference_sha256": "46d308c593d531a8cb8c2db796e58faede01023422754d016dc7ed97e36713a6",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "page_size_mm": [215.9, 279.4],
+      "observed_mediabox_points": [0.0, 0.0, 612.0, 792.0]
+    },
+    {
+      "input": "fractional.txt",
+      "input_sha256": "70e2bd0613efff939039f1a8ff7b5a10461362061a35fb9186b7a051ae24556e",
+      "reference": "fractional.reference.pdf",
+      "reference_sha256": "dab9b279ebdb8d01398a0ef0cf064d9215a75c0175e5562c3e74882c23d36d6b",
+      "renderer_exit_code": 0,
+      "pdf_created": true,
+      "pages": 1,
+      "page_size_mm": [210.25, 297.75],
+      "observed_mediabox_points": [0.0, 0.0, 595.98428, 844.01577]
+    },
+    {
+      "input": "missing-size.txt",
+      "input_sha256": "5e9157832de5106766fba37bb7674f1aedf33154000454ea59d79d87380b0902",
+      "renderer_exit_code": 0,
+      "pdf_created": false,
+      "stderr_contains": "PDF generation error: Page size not defined."
+    },
+    {
+      "input": "missing-height.txt",
+      "input_sha256": "a8db11cc8cb2109c58f253fd732b8d14bc01fb374c3948ff4e4a7ebd4e412e6a",
+      "renderer_exit_code": 0,
+      "pdf_created": false,
+      "stderr_contains": "Error in line 2: ALBUM_PAGES_SIZE command - Incorrect number or format of parameters."
+    }
+  ]
+}

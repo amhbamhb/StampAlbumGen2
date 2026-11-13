@@ -12,7 +12,7 @@ relationships:
   - target: functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status
     resolved_by: tree-sitter
     confidence: exact
-  - target: functions/src/external_album/parser/parse
+  - target: functions/src/native_pdf/stamp_image/contains
     resolved_by: tree-sitter
     confidence: exact
   - target: functions/src/wikipedia/models/ContentSource/as_str
@@ -50,7 +50,7 @@ relationships:
 
 - [get](../../../../functions/src/album_globals/structs/GenericAttrs/get.md)
 - [status](../../../../functions/src/review_ui/views/pdf_filters/ReviewPdfFilters/status.md)
-- [parse](../../../../functions/src/external_album/parser/parse.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 - [as_str](../../../../functions/src/wikipedia/models/ContentSource/as_str.md)
 - [parse_liberty_issue_stamp](../../../../functions/src/us1847/collector/parse_liberty_issue_stamp.md)
 - [parse_html_tables](../../../../functions/src/us1847/collector/parse_html_tables.md)

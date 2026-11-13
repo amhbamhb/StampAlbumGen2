@@ -9,6 +9,9 @@ relationships:
   - target: functions/src/album_globals/selection/count
     resolved_by: tree-sitter
     confidence: exact
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/album_utils/globals/add_wikipedia_section
     resolved_by: tree-sitter
@@ -22,6 +25,7 @@ relationships:
 # Calls
 
 - [count](../../../../functions/src/album_globals/selection/count.md)
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 

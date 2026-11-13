@@ -1,7 +1,7 @@
 ---
 type: Rust Function
 title: uploaded_images_are_rendered_exported_and_checksum_gated
-resource: tests/external_album_backend.rs#L1308-L1414
+resource: tests/external_album_backend.rs#L1331-L1437
 visibility: private
 generated:
   by: okf-rs/0.4.0

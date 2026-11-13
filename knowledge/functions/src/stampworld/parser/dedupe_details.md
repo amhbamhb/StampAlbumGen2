@@ -1,10 +1,14 @@
 ---
 type: Rust Function
 title: dedupe_details
-resource: src/stampworld/parser.rs#L29-L43
+resource: src/stampworld/parser.rs#L33-L47
 generated:
   by: okf-rs/0.4.0
 relationships:
+  calls:
+  - target: functions/src/native_pdf/stamp_image/contains
+    resolved_by: tree-sitter
+    confidence: exact
   called_by:
   - target: functions/src/stampworld/data_collector/collect_stampworld_data_with_fetcher
     resolved_by: tree-sitter
@@ -17,6 +21,10 @@ relationships:
 # Signature
 
 `pub fn dedupe_details(details: &[String]) -> Vec<String>`
+
+# Calls
+
+- [contains](../../../../functions/src/native_pdf/stamp_image/contains.md)
 
 # Called by
 
