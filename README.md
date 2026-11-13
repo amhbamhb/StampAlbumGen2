@@ -3,7 +3,7 @@
 
 # Stamp Album Generator 2
 
-![Stamp Album Generator 2 Logo](assets/new/Stamp5WebHeader1.jpg)
+![Stamp Album Generator 2 Logo](assets/new/Mainone1.jpg)
 
 This application generates AlbumEasy source pages (*.txt files) from stamp data sources and has a built in SQLite database for each country/theme.  The application can update the database with new stamp information as it becomes available.
 
@@ -28,7 +28,7 @@ creating a fork or making changes is not such approval. See [LICENSE.md](LICENSE
 
 ## Start Here
 
-The simpliiste way to get started is to download the latest release and launch the binary. The application will automatically create the necessary files and directories upon the first run, making it easy for users to begin managing their stamp collections. No additional setup is required, and users can immediately start adding and organizing their stamps.
+The simplest way to get started is to download the latest release and launch the binary. The application will automatically create the necessary files and directories upon the first run, making it easy for users to begin managing their stamp collections. No additional setup is required, and users can immediately start adding and organizing their stamps.
 
 ## Quick Start 
 
@@ -117,6 +117,9 @@ Generate album output from an existing database:
 ```
 
 You can also use other sources like StampWorld for a country/year range.  You must have a StampWorld account before using this.  The configuration requires specifying the source, site name, album name, and the year range.  The values are in the config.toml file, including the StampWorld account setup: 
+
+# Please note no long working due to anti-bot measures on StampWorld sites
+# please use the web UI instead and print a page in pdf and import.
 
 To register for stampworld, visit [StampWorld's registration page](https://www.stampworld.com/en/register) and create an account.
 
