@@ -639,11 +639,10 @@ fn flush(
                 )?);
             }
         }
-        if let Some(inner) = item.inner_border {
-            if let Some(paths) = inner.layout(bounds, row.border)? {
+        if let Some(inner) = item.inner_border
+            && let Some(paths) = inner.layout(bounds, row.border)? {
                 page.inner_borders.push(paths);
             }
-        }
         if let Some(colour) = item.background {
             page.backgrounds.push((bounds, colour));
         }

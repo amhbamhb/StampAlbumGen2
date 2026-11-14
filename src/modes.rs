@@ -367,11 +367,10 @@ async fn run_colnect_inbox_mode(
 
         let mut country = parse_colnect_csv_filename(&csv_file.to_string_lossy()).map(|(c, _)| c);
 
-        if cli.colnect_auto_route {
-            if let Some(c) = country.clone() {
+        if cli.colnect_auto_route
+            && let Some(c) = country.clone() {
                 csv_file = move_to_country_inbox(&csv_file, &c)?;
             }
-        }
 
         let stamps = match crate::colnect::parser::parse_csv(&csv_file) {
             Ok(s) => s,
@@ -384,11 +383,10 @@ async fn run_colnect_inbox_mode(
 
         if country.is_none() {
             country = infer_country_from_stamps(&stamps);
-            if cli.colnect_auto_route {
-                if let Some(c) = country.clone() {
+            if cli.colnect_auto_route
+                && let Some(c) = country.clone() {
                     csv_file = move_to_country_inbox(&csv_file, &c)?;
                 }
-            }
         }
 
         let country = match country {
@@ -1277,8 +1275,8 @@ pub async fn run_database_mode(
     progress.set_message(&format!("📁 Checking database path: {}", db_path));
 
     // Ensure parent directory exists and attempt to create the DB file if missing
-    if let Some(parent) = std::path::Path::new(&db_path).parent() {
-        if !parent.exists() {
+    if let Some(parent) = std::path::Path::new(&db_path).parent()
+        && !parent.exists() {
             progress.set_message(&format!(
                 "📁 Creating parent directory: {}",
                 parent.display()
@@ -1293,7 +1291,6 @@ pub async fn run_database_mode(
                 return Err(e.into());
             }
         }
-    }
     if !std::path::Path::new(&db_path).exists() {
         progress.set_message("📝 Creating new database file...");
         match std::fs::File::create(db_path) {
@@ -1338,8 +1335,8 @@ pub async fn run_database_mode(
         .file_stem()
         .map(|s| s.to_string_lossy().to_string())
         .unwrap_or_else(|| "Album".to_string());
-    if let Some(name) = &cli.album_name {
-        if canonical_album_dir_name(name).to_lowercase() != db_stem.to_lowercase() {
+    if let Some(name) = &cli.album_name
+        && canonical_album_dir_name(name).to_lowercase() != db_stem.to_lowercase() {
             warn!(
                 "album-name '{}' differs from DB base '{}'; using '{}' so output and images stay in one folder",
                 name, db_stem, db_stem
@@ -1349,7 +1346,6 @@ pub async fn run_database_mode(
                 name, db_stem, db_stem
             );
         }
-    }
     let album_name = db_stem;
 
     // If Colnect is being ingested before StampWorld images exist, continue

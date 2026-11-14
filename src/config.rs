@@ -114,11 +114,10 @@ pub fn ensure_config_and_template_files(
                 let name = e.file_name();
                 // Log each visible entry for debugging first-run detection
                 debug!("dir-entry: {}", name.to_string_lossy());
-                if let Some(ref exe_n) = exe_name {
-                    if name == *exe_n {
+                if let Some(ref exe_n) = exe_name
+                    && name == *exe_n {
                         continue;
                     }
-                }
                 // Ignore startup probe file(s) created earlier in main.rs
                 if name.to_string_lossy().starts_with("startup_trace") {
                     debug!("ignoring probe file: {}", name.to_string_lossy());
@@ -1786,8 +1785,8 @@ pub fn load_config(path: &str) -> Config {
 
         // Also try paths relative to the executable's location
         // This helps when running the executable from a different directory
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(mut exe_dir) = exe_path.parent() {
+        if let Ok(exe_path) = std::env::current_exe()
+            && let Some(mut exe_dir) = exe_path.parent() {
                 for _ in 0..8 {
                     paths.push(exe_dir.join(path));
                     if let Some(parent) = exe_dir.parent() {
@@ -1797,7 +1796,6 @@ pub fn load_config(path: &str) -> Config {
                     }
                 }
             }
-        }
 
         // Also try the literal path as a last resort
         paths.push(std::path::PathBuf::from(path));
@@ -1900,15 +1898,13 @@ pub fn load_config(path: &str) -> Config {
                     for section in promotable_sections.iter() {
                         if let Some(sec_table) =
                             value.get(*section).and_then(|v| v.as_table()).cloned()
-                        {
-                            if let Some(tbl) = value.as_table_mut() {
+                            && let Some(tbl) = value.as_table_mut() {
                                 for (k, v) in sec_table.iter() {
                                     // Sectioned keys should win over stale top-level values
                                     // so explicit [stamps]/[layout]/... edits are honored.
                                     tbl.insert(k.clone(), v.clone());
                                 }
                             }
-                        }
                     }
 
                     // Now serialize the possibly-modified `Value` back to TOML
@@ -2698,29 +2694,25 @@ pub fn load_config_with_override(global_path: &str, album_dir: &std::path::Path)
         .get("header_formatting")
         .and_then(|v| v.as_table())
         .cloned()
-    {
-        if let Some(tbl) = override_val.as_table_mut() {
+        && let Some(tbl) = override_val.as_table_mut() {
             for (k, v) in hf_table.iter() {
                 if tbl.get(k).is_none() {
                     tbl.insert(k.clone(), v.clone());
                 }
             }
         }
-    }
     for section in promotable_sections.iter() {
         if let Some(sec_table) = override_val
             .get(*section)
             .and_then(|v| v.as_table())
             .cloned()
-        {
-            if let Some(tbl) = override_val.as_table_mut() {
+            && let Some(tbl) = override_val.as_table_mut() {
                 for (k, v) in sec_table.iter() {
                     // In album overrides, sectioned keys should override root keys
                     // to avoid old preserved values masking current UI edits.
                     tbl.insert(k.clone(), v.clone());
                 }
             }
-        }
     }
 
     // Serialize the (already-defaulted) base Config to toml::Value so we can
@@ -2801,8 +2793,8 @@ pub(crate) fn slug_override_path(path: &str) -> Result<std::path::PathBuf, Strin
         }
 
         // Also try paths relative to the executable's location
-        if let Ok(exe_path) = std::env::current_exe() {
-            if let Some(mut exe_dir) = exe_path.parent() {
+        if let Ok(exe_path) = std::env::current_exe()
+            && let Some(mut exe_dir) = exe_path.parent() {
                 for _ in 0..8 {
                     paths.push(exe_dir.join(path));
                     if let Some(parent) = exe_dir.parent() {
@@ -2812,7 +2804,6 @@ pub(crate) fn slug_override_path(path: &str) -> Result<std::path::PathBuf, Strin
                     }
                 }
             }
-        }
 
         paths.push(std::path::PathBuf::from(path));
         paths

@@ -61,7 +61,7 @@ impl AlbumPagesFooterNumber {
         page_number: usize,
         text: &str,
     ) -> Result<FooterLayout> {
-        self.style.with_text(&text)
+        self.style.with_text(text)
             .and_then(|footer| footer.layout(margin,physical_page,page_number))
             .map_err(|error| format!("ALBUM_PAGES_FOOTER_NUMBER (album_pages_footer_number_font/size/position/start/before/after): {error}"))
     }

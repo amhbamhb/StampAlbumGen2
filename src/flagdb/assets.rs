@@ -18,16 +18,14 @@ pub(super) fn flag_directories() -> Vec<PathBuf> {
         dirs.push(path.join("flags"));
     }
     dirs.push(PathBuf::from("flags"));
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent() {
             dirs.push(parent.join("flags"));
         }
-    }
-    if let Ok(cwd) = std::env::current_dir() {
-        if let Some(parent) = cwd.parent() {
+    if let Ok(cwd) = std::env::current_dir()
+        && let Some(parent) = cwd.parent() {
             dirs.push(parent.join("flags"));
         }
-    }
     dirs.push(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("flags"));
     dirs.dedup();
     dirs

@@ -294,8 +294,8 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
                     None
                 };
 
-                if let Some(new_sg) = best_match {
-                    if new_sg != current_sg {
+                if let Some(new_sg) = best_match
+                    && new_sg != current_sg {
                         info!(
                             "Linking Colnect {} (SG {}) -> StampWorld SG {}",
                             colnect_id, current_sg, new_sg
@@ -303,7 +303,6 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
                         update_stmt.execute(params![new_sg, colnect_id])?;
                         linked_count += 1;
                     }
-                }
             }
         }
     }

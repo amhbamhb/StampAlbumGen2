@@ -97,57 +97,52 @@ pub fn process_1847us_page(
         let lower = text.to_lowercase();
 
         // Extract president info
-        if lower.contains("president:") {
-            if let Some(cap) = president_regex.captures(&text) {
+        if lower.contains("president:")
+            && let Some(cap) = president_regex.captures(&text) {
                 president = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
                     .unwrap_or("")
                     .to_string();
             }
-        }
 
         // Extract postmaster general
-        if lower.contains("postmaster general:") {
-            if let Some(cap) = pm_regex.captures(&text) {
+        if lower.contains("postmaster general:")
+            && let Some(cap) = pm_regex.captures(&text) {
                 postmaster_general = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
                     .unwrap_or("")
                     .to_string();
             }
-        }
 
         // Extract rates
-        if lower.contains("domestic letter rate:") {
-            if let Some(cap) = domestic_rate_regex.captures(&text) {
+        if lower.contains("domestic letter rate:")
+            && let Some(cap) = domestic_rate_regex.captures(&text) {
                 domestic_letter_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
                     .unwrap_or("")
                     .to_string();
             }
-        }
 
-        if lower.contains("postcard rate:") {
-            if let Some(cap) = postcard_rate_regex.captures(&text) {
+        if lower.contains("postcard rate:")
+            && let Some(cap) = postcard_rate_regex.captures(&text) {
                 postcard_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
                     .unwrap_or("")
                     .to_string();
             }
-        }
 
-        if lower.contains("air mail rate:") || lower.contains("airmail rate:") {
-            if let Some(cap) = airmail_rate_regex.captures(&text) {
+        if (lower.contains("air mail rate:") || lower.contains("airmail rate:"))
+            && let Some(cap) = airmail_rate_regex.captures(&text) {
                 airmail_rate = cap
                     .get(1)
                     .map(|m| m.as_str().trim())
                     .unwrap_or("")
                     .to_string();
             }
-        }
 
         // Other info
         if lower.contains("bureau of engraving") || lower.contains("printing") {
@@ -157,24 +152,22 @@ pub fn process_1847us_page(
         } else if lower.contains("size") || lower.contains("design size") {
             size_info = text.trim().to_string();
             // Extract design sizes
-            if lower.contains("portrait stamps") {
-                if let Some(cap) = portrait_regex.captures(&text) {
+            if lower.contains("portrait stamps")
+                && let Some(cap) = portrait_regex.captures(&text) {
                     design_size_portrait = cap
                         .get(1)
                         .map(|m| m.as_str().trim())
                         .unwrap_or("")
                         .to_string();
                 }
-            }
-            if lower.contains("landscape stamps") {
-                if let Some(cap) = landscape_regex.captures(&text) {
+            if lower.contains("landscape stamps")
+                && let Some(cap) = landscape_regex.captures(&text) {
                     design_size_landscape = cap
                         .get(1)
                         .map(|m| m.as_str().trim())
                         .unwrap_or("")
                         .to_string();
                 }
-            }
         } else if series_description.is_empty()
             && text.len() > 50
             && !text.contains("President:")
@@ -275,11 +268,10 @@ fn parse_html_tables(
             // Get all text after the commemoratives header until next h2
             let mut current = h2.next_sibling();
             while let Some(sibling) = current {
-                if let scraper::Node::Element(elem) = sibling.value() {
-                    if elem.name() == "h2" {
+                if let scraper::Node::Element(elem) = sibling.value()
+                    && elem.name() == "h2" {
                         break;
                     }
-                }
                 // Collect text from all descendant text nodes
                 fn collect_text(node: &scraper::element_ref::ElementRef) -> String {
                     let mut text = String::new();
@@ -358,12 +350,11 @@ fn parse_html_tables(
                     }
                 } else if elem.name() == "img" {
                     // Handle single images (like Certified Mail)
-                    if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling) {
-                        if let Some(single_stamp) = parse_single_image_stamp(&elem_ref, &stamp_type)
+                    if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling)
+                        && let Some(single_stamp) = parse_single_image_stamp(&elem_ref, &stamp_type)
                         {
                             section_stamps.push(single_stamp);
                         }
-                    }
                 } else {
                     // Look for images inside other elements (like div, p, etc.)
                     if let Some(elem_ref) = scraper::element_ref::ElementRef::wrap(sibling) {

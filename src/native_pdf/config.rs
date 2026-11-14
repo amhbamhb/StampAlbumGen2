@@ -204,22 +204,20 @@ impl NativePdfConfig {
         };
         let mut overridden_keys = Vec::new();
         for key in SIZE.iter().chain(&MARGINS).chain(&SPACING).chain(&BORDER) {
-            if let Some(value) = page.remove(*key) {
-                if root.insert((*key).into(), value).is_some() {
+            if let Some(value) = page.remove(*key)
+                && root.insert((*key).into(), value).is_some() {
                     overridden_keys.push((*key).into());
                 }
-            }
         }
         let mut colors = match root.remove("colors") {
             Some(Value::Table(table)) => table,
             Some(_) => return Err("Native PDF setting colors must be a table".into()),
             None => Table::new(),
         };
-        if let Some(value) = colors.remove("color_album_border") {
-            if root.insert("color_album_border".into(), value).is_some() {
+        if let Some(value) = colors.remove("color_album_border")
+            && root.insert("color_album_border".into(), value).is_some() {
                 overridden_keys.push("color_album_border".into());
             }
-        }
         overridden_keys.sort();
 
         let size = PageSize::parse(&numbers(&mut root, &SIZE, "")?)?;
@@ -383,11 +381,10 @@ impl NativePdfConfig {
                     );
                 }
             };
-            if let Some(colour) = colors.remove("color_album_footer") {
-                if root.insert("color_album_footer".into(), colour).is_some() {
+            if let Some(colour) = colors.remove("color_album_footer")
+                && root.insert("color_album_footer".into(), colour).is_some() {
                     overridden_keys.push("color_album_footer".into());
                 }
-            }
             let colour = NamedColour::parse(&string(&mut root, "color_album_footer", "")?)
                 .map_err(|error| format!("color_album_footer: {error}"))?;
             let prefix = "native_pdf.footer.";
@@ -508,11 +505,10 @@ impl NativePdfConfig {
                 "album_pages_footer_number_before",
                 "album_pages_footer_number_after",
             ] {
-                if let Some(value) = footer.remove(key) {
-                    if root.insert(key.into(), value).is_some() {
+                if let Some(value) = footer.remove(key)
+                    && root.insert(key.into(), value).is_some() {
                         overridden_keys.push(key.into());
                     }
-                }
             }
             let enabled = boolean(&mut root, "album_pages_footer_number_enabled", "")?;
             if scope == NativePageNumberingScope::Section && !enabled {
@@ -576,19 +572,17 @@ impl NativePdfConfig {
                 Some(_) => return Err("Native PDF setting header must be a table".into()),
                 None => Table::new(),
             };
-            if let Some(position) = header.remove("album_pages_header_position") {
-                if root
+            if let Some(position) = header.remove("album_pages_header_position")
+                && root
                     .insert("album_pages_header_position".into(), position)
                     .is_some()
                 {
                     overridden_keys.push("album_pages_header_position".into());
                 }
-            }
-            if let Some(colour) = colors.remove("color_album_header") {
-                if root.insert("color_album_header".into(), colour).is_some() {
+            if let Some(colour) = colors.remove("color_album_header")
+                && root.insert("color_album_header".into(), colour).is_some() {
                     overridden_keys.push("color_album_header".into());
                 }
-            }
             let position =
                 HeaderPosition::parse(&string(&mut root, "album_pages_header_position", "")?)?;
             let colour = NamedColour::parse(&string(&mut root, "color_album_header", "")?)
@@ -706,17 +700,15 @@ impl NativePdfConfig {
                 None => Table::new(),
             };
             for key in ["album_pages_title_font", "album_pages_title_size"] {
-                if let Some(value) = header.remove(key) {
-                    if root.insert(key.into(), value).is_some() {
+                if let Some(value) = header.remove(key)
+                    && root.insert(key.into(), value).is_some() {
                         overridden_keys.push(key.into());
                     }
-                }
             }
-            if let Some(value) = colors.remove("color_album_title") {
-                if root.insert("color_album_title".into(), value).is_some() {
+            if let Some(value) = colors.remove("color_album_title")
+                && root.insert("color_album_title".into(), value).is_some() {
                     overridden_keys.push("color_album_title".into());
                 }
-            }
             let font = string(&mut root, "album_pages_title_font", "")?;
             let size = number(&mut root, "album_pages_title_size", "", "points")?;
             let colour = NamedColour::parse(&string(&mut root, "color_album_title", "")?)

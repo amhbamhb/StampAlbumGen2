@@ -432,19 +432,17 @@ pub async fn collect_stampworld_data_with_fetcher(
             if let Some(table_node) = content_div
                 .select(&Selector::parse("table").unwrap())
                 .next()
-            {
-                if let Some(thead) = table_node.select(&Selector::parse("thead").unwrap()).next() {
+                && let Some(thead) = table_node.select(&Selector::parse("thead").unwrap()).next() {
                     for th in thead.select(&Selector::parse("th").unwrap()) {
                         let mut txt = th.text().collect::<String>();
                         txt = txt.trim().to_string();
-                        if let Some(img) = th.select(&Selector::parse("img").unwrap()).next() {
-                            if let Some(alt) = img.value().attr("alt") {
+                        if let Some(img) = th.select(&Selector::parse("img").unwrap()).next()
+                            && let Some(alt) = img.value().attr("alt") {
                                 let a = alt.trim();
                                 if !a.is_empty() {
                                     txt = a.to_string();
                                 }
                             }
-                        }
                         header_texts.push(txt.clone());
                     }
                     // Map names to header indices (we'll align these with row cells including th)
@@ -470,7 +468,6 @@ pub async fn collect_stampworld_data_with_fetcher(
                         }
                     }
                 }
-            }
             if !header_texts.is_empty() {
                 // info!("Block {} headers: {:?}", block_idx, header_texts);
             }
@@ -588,11 +585,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                             break;
                         }
                     }
-                    if !found_stamp_year {
-                        if let Some(m) = year_re.find(&description) {
+                    if !found_stamp_year
+                        && let Some(m) = year_re.find(&description) {
                             stamp_year = m.as_str().parse::<i32>().unwrap_or(block_year_int);
                         }
-                    }
 
                     // Normalize common Unicode hyphen variants to ASCII
                     let mut norm = sg_number.clone();
@@ -610,8 +606,8 @@ pub async fn collect_stampworld_data_with_fetcher(
                             .map(|s| s.trim())
                             .filter(|s| !s.is_empty())
                             .collect();
-                        if parts.len() == 2 {
-                            if let (Ok(a), Ok(b)) =
+                        if parts.len() == 2
+                            && let (Ok(a), Ok(b)) =
                                 (parts[0].parse::<i32>(), parts[1].parse::<i32>())
                             {
                                 let start = a.min(b);
@@ -655,8 +651,7 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                         stamp_year,
                                                         &ms,
                                                     )
-                                                {
-                                                    if inserted {
+                                                    && inserted {
                                                         let _ = conn.execute(
                                                             "UPDATE stamps
                                                              SET catalog_code = 'sw'
@@ -688,7 +683,6 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                             ""
                                                         ));
                                                     }
-                                                }
                                             }
                                             break;
                                         }
@@ -1007,7 +1001,6 @@ pub async fn collect_stampworld_data_with_fetcher(
                                     continue;
                                 }
                             }
-                        }
                     }
                     if emit_row_diag {
                         info!(
@@ -1080,11 +1073,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                         break;
                     }
                 }
-                if !found_stamp_year {
-                    if let Some(m) = year_re.find(&description) {
+                if !found_stamp_year
+                    && let Some(m) = year_re.find(&description) {
                         stamp_year = m.as_str().parse::<i32>().unwrap_or(block_year_int);
                     }
-                }
 
                 // Enforce year range
                 if stamp_year < start_year {
@@ -1282,11 +1274,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                         row_cells.push(td.text().collect::<String>().trim().to_string());
                     }
                     let get_col = |name: &str| -> String {
-                        if let Some(&idx) = col_map.get(name) {
-                            if idx < row_cells.len() {
+                        if let Some(&idx) = col_map.get(name)
+                            && idx < row_cells.len() {
                                 return row_cells[idx].clone();
                             }
-                        }
                         String::new()
                     };
                     if series_desc.contains("1860 -1862 Queen Victoria - Not Watermarked")
@@ -1494,8 +1485,8 @@ pub async fn collect_stampworld_data_with_fetcher(
                             );
                             all_stamp_data.push(stamp_line);
                             // Persist image pixel dimensions when available (read from local file if present)
-                            if !local_image_path.is_empty() {
-                                if let Err(e) = crate::db_utils::persist_image_dimensions_from_file(
+                            if !local_image_path.is_empty()
+                                && let Err(e) = crate::db_utils::persist_image_dimensions_from_file(
                                     &conn,
                                     site_name,
                                     &series_name,
@@ -1507,7 +1498,6 @@ pub async fn collect_stampworld_data_with_fetcher(
                                         site_name, series_name, sg_number, e
                                     );
                                 }
-                            }
                         } else if overwrite_images {
                             // The row already exists and wasn't updated by insert_stamp (no placeholder).
                             // If --overwrite-images was requested, perform a targeted UPDATE to replace image fields
@@ -1584,8 +1574,8 @@ pub async fn collect_stampworld_data_with_fetcher(
                                         );
                                         all_stamp_data.push(stamp_line);
                                         // Persist image pixel dimensions when available (read from local file if present)
-                                        if !local_image_path.is_empty() {
-                                            if let Err(e) =
+                                        if !local_image_path.is_empty()
+                                            && let Err(e) =
                                                 crate::db_utils::persist_image_dimensions_from_file(
                                                     &conn,
                                                     site_name,
@@ -1599,7 +1589,6 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                     site_name, series_name, sg_number, e
                                                 );
                                             }
-                                        }
                                     } else {
                                         debug!(
                                             "--overwrite-images set but no DB row matched for update: {} | {} | {}",

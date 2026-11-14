@@ -96,8 +96,8 @@ pub fn emit_stamp_grid_row<W: Write>(
     }
 
     // Second stamp (if provided)
-    if let Some(s2) = stamp2 {
-        if let (Some(w), Some(h)) = (s2.est_width_mm, s2.est_height_mm) {
+    if let Some(s2) = stamp2
+        && let (Some(w), Some(h)) = (s2.est_width_mm, s2.est_height_mm) {
             let title2 = if let Some(desc) = s2.attrs.get("description") {
                 if !desc.trim().is_empty() {
                     clean_for_output(desc)
@@ -125,7 +125,6 @@ pub fn emit_stamp_grid_row<W: Write>(
             )?;
             writeln!(out, "STAMP_HEADING_VA (HB 9 \"{}\")", title2)?;
         }
-    }
 
     Ok(())
 }
@@ -189,67 +188,59 @@ fn build_stamp_description(stamp: &Stamp) -> String {
 
     // Issued date
 
-    if let Some(issued) = stamp.attrs.get("issue_date") {
-        if !issued.is_empty() {
+    if let Some(issued) = stamp.attrs.get("issue_date")
+        && !issued.is_empty() {
             parts.push(format!("Issued: {}", issued));
         }
-    }
 
     // Color
 
-    if let Some(color) = stamp.attrs.get("color") {
-        if !color.is_empty() {
+    if let Some(color) = stamp.attrs.get("color")
+        && !color.is_empty() {
             parts.push(format!("Color: {}", color));
         }
-    }
 
     // Quantity
 
-    if let Some(qty) = stamp.attrs.get("stamps_issued") {
-        if !qty.is_empty() {
+    if let Some(qty) = stamp.attrs.get("stamps_issued")
+        && !qty.is_empty() {
             parts.push(format!("Quantity: {}", qty));
         }
-    }
 
     // Notes (if available)
 
-    if let Some(notes) = stamp.attrs.get("notes") {
-        if !notes.is_empty() {
+    if let Some(notes) = stamp.attrs.get("notes")
+        && !notes.is_empty() {
             parts.push(notes.to_string());
         }
-    }
 
     // Join with newlines, escape for output
 
     parts.join("\\\n");
 
     // Issued date
-    if let Some(issued) = stamp.attrs.get("issue_date") {
-        if !issued.is_empty() {
+    if let Some(issued) = stamp.attrs.get("issue_date")
+        && !issued.is_empty() {
             parts.push(format!("Issued: {}", issued));
         }
-    }
 
     // Color
-    if let Some(color) = stamp.attrs.get("color") {
-        if !color.is_empty() {
+    if let Some(color) = stamp.attrs.get("color")
+        && !color.is_empty() {
             parts.push(format!("Color: {}", color));
         }
-    }
 
     // Quantity
-    if let Some(qty) = stamp.attrs.get("stamps_issued") {
-        if !qty.is_empty() {
+    if let Some(qty) = stamp.attrs.get("stamps_issued")
+        && !qty.is_empty() {
             parts.push(format!("Quantity: {}", qty));
         }
-    }
 
     // Notes (if available)
-    if let Some(notes) = stamp.attrs.get("notes") {
-        if !notes.is_empty() {
+    if let Some(notes) = stamp.attrs.get("notes")
+        && !notes.is_empty() {
             parts.push(notes.to_string());
         }
-    }
 
     // Join with newlines, escape for output
     parts.join("\\n")

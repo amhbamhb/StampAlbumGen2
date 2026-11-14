@@ -657,8 +657,8 @@ fn find_global_config_path() -> Option<std::path::PathBuf> {
             }
         }
     }
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(mut dir) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(mut dir) = exe.parent() {
             for _ in 0..8 {
                 search_dirs.push(dir.join("config.toml"));
                 match dir.parent() {
@@ -667,7 +667,6 @@ fn find_global_config_path() -> Option<std::path::PathBuf> {
                 }
             }
         }
-    }
     search_dirs.into_iter().find(|p| p.exists())
 }
 
@@ -2256,11 +2255,10 @@ fn pick_and_copy_colnect_file_to_dir<F>(
 where
     F: Fn(String) -> BootstrapPickColnectFileResponse,
 {
-    if !colnect_dir.exists() {
-        if let Err(e) = fs::create_dir_all(colnect_dir) {
+    if !colnect_dir.exists()
+        && let Err(e) = fs::create_dir_all(colnect_dir) {
             return fail(format!("Could not create colnect dir: {}", e));
         }
-    }
     #[cfg(windows)]
     let pick_result = windows_picker::pick(
         if stampworld {
@@ -2444,25 +2442,21 @@ fn set_bootstrap_albums_root_override(path: &str) -> Result<Option<String>, Stri
 }
 
 fn resolve_bootstrap_albums_root() -> Option<PathBuf> {
-    if let Ok(guard) = bootstrap_albums_root_override().lock() {
-        if let Some(path) = guard.as_ref() {
-            if path.exists() && path.is_dir() {
+    if let Ok(guard) = bootstrap_albums_root_override().lock()
+        && let Some(path) = guard.as_ref()
+            && path.exists() && path.is_dir() {
                 return Some(path.clone());
             }
-        }
-    }
 
     if let Some(persisted) = crate::config::load_config("config.toml")
         .effective_bootstrap_albums_root_path()
         .map(PathBuf::from)
-    {
-        if let Some(albums_dir) = normalize_albums_root_candidate(&persisted) {
+        && let Some(albums_dir) = normalize_albums_root_candidate(&persisted) {
             if let Ok(mut guard) = bootstrap_albums_root_override().lock() {
                 *guard = Some(albums_dir.clone());
             }
             return Some(albums_dir);
         }
-    }
 
     if let Ok(mut dir) = std::env::current_dir() {
         for _ in 0..8 {
@@ -2475,8 +2469,8 @@ fn resolve_bootstrap_albums_root() -> Option<PathBuf> {
         }
     }
 
-    if let Ok(exe_path) = std::env::current_exe() {
-        if let Some(mut dir) = exe_path.parent().map(|p| p.to_path_buf()) {
+    if let Ok(exe_path) = std::env::current_exe()
+        && let Some(mut dir) = exe_path.parent().map(|p| p.to_path_buf()) {
             for _ in 0..8 {
                 if let Some(albums_dir) = normalize_albums_root_candidate(&dir) {
                     return Some(albums_dir);
@@ -2486,7 +2480,6 @@ fn resolve_bootstrap_albums_root() -> Option<PathBuf> {
                 }
             }
         }
-    }
 
     None
 }
@@ -2922,13 +2915,11 @@ fn colnect_import_data(
                     match entry_result {
                         Ok(entry) => {
                             let path = entry.path();
-                            if path.is_file() {
-                                if let Some(ext) = path.extension() {
-                                    if ext.eq_ignore_ascii_case("csv") {
+                            if path.is_file()
+                                && let Some(ext) = path.extension()
+                                    && ext.eq_ignore_ascii_case("csv") {
                                         local_csvs.push(path);
                                     }
-                                }
-                            }
                         }
                         Err(e) => {
                             candidate_scan_errors.push(format!(

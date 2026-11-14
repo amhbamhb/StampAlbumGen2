@@ -59,17 +59,15 @@ pub async fn download_image(
     }
 
     // Check content-type header to avoid saving HTML error pages
-    if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE) {
-        if let Ok(ct_str) = ct.to_str() {
-            if !ct_str.starts_with("image/") {
+    if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE)
+        && let Ok(ct_str) = ct.to_str()
+            && !ct_str.starts_with("image/") {
                 warn!(
                     "[DOWNLOAD_FAIL] sg={} url={} error=unexpected_content_type:{}",
                     sg, url, ct_str
                 );
                 return Err(format!("unexpected content-type: {}", ct_str).into());
             }
-        }
-    }
 
     // Validate bytes decode as an image before writing to disk
     if image::load_from_memory(&bytes).is_err() {

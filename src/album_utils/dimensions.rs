@@ -98,9 +98,8 @@ pub fn calculate_stamp_dimensions(
         if let Some(basename) = std::path::Path::new(&resolved_image_path)
             .file_name()
             .and_then(|s| s.to_str())
-        {
-            if let Some((mm_per_px_w, mm_per_px_h)) = calib_map.get(basename) {
-                if let Some((w_mm, h_mm)) = crate::image_utils::estimate_real_dimensions(
+            && let Some((mm_per_px_w, mm_per_px_h)) = calib_map.get(basename)
+                && let Some((w_mm, h_mm)) = crate::image_utils::estimate_real_dimensions(
                     &resolved_image_path,
                     *mm_per_px_w,
                     *mm_per_px_h,
@@ -115,15 +114,12 @@ pub fn calculate_stamp_dimensions(
                     height = height.clamp(10.0, 120.0);
                     return (width, height);
                 }
-            }
-        }
     }
 
     // Preferred approach: use embedded-reference sizing first (more consistent)
     if let Some((mm_per_px_w, mm_per_px_h)) =
         crate::image_utils::calc_mm_per_pixel_embedded(REF_W_MM, REF_H_MM)
-    {
-        if let Some((w_mm, h_mm)) = crate::image_utils::estimate_real_dimensions(
+        && let Some((w_mm, h_mm)) = crate::image_utils::estimate_real_dimensions(
             &resolved_image_path,
             mm_per_px_w,
             mm_per_px_h,
@@ -152,15 +148,13 @@ pub fn calculate_stamp_dimensions(
                 return (width, height);
             }
         }
-    }
 
     // If embedded-reference approach failed, try DPI-based sizing
     if let Ok(output) = Command::new("identify")
         .args(["-format", "%x %y %U", &resolved_image_path])
         .output()
-    {
-        if output.status.success() {
-            if let Ok(s) = String::from_utf8(output.stdout) {
+        && output.status.success()
+            && let Ok(s) = String::from_utf8(output.stdout) {
                 let parts: Vec<&str> = s.split_whitespace().collect();
                 // Handle possible formats from ImageMagick identify:
                 let mut dpi_x_opt: Option<f32> = None;
@@ -172,24 +166,20 @@ pub fn calculate_stamp_dimensions(
                         dpi_x_opt = Some(dx);
                         dpi_y_opt = Some(dy);
                         unit_opt = Some(parts[2]);
-                    } else if parts[0].contains('x') {
-                        if let Some((dxs, dys)) = parts[0].split_once('x') {
-                            if let (Ok(dx), Ok(dy)) = (dxs.parse::<f32>(), dys.parse::<f32>()) {
+                    } else if parts[0].contains('x')
+                        && let Some((dxs, dys)) = parts[0].split_once('x')
+                            && let (Ok(dx), Ok(dy)) = (dxs.parse::<f32>(), dys.parse::<f32>()) {
                                 dpi_x_opt = Some(dx);
                                 dpi_y_opt = Some(dy);
                                 unit_opt = Some(parts[1]);
                             }
-                        }
-                    }
-                } else if parts.len() >= 2 && parts[0].contains('x') {
-                    if let Some((dxs, dys)) = parts[0].split_once('x') {
-                        if let (Ok(dx), Ok(dy)) = (dxs.parse::<f32>(), dys.parse::<f32>()) {
+                } else if parts.len() >= 2 && parts[0].contains('x')
+                    && let Some((dxs, dys)) = parts[0].split_once('x')
+                        && let (Ok(dx), Ok(dy)) = (dxs.parse::<f32>(), dys.parse::<f32>()) {
                             dpi_x_opt = Some(dx);
                             dpi_y_opt = Some(dy);
                             unit_opt = Some(parts[1]);
                         }
-                    }
-                }
 
                 if let (Some(dpi_x), Some(dpi_y), Some(unit)) = (dpi_x_opt, dpi_y_opt, unit_opt) {
                     let (mm_per_px_w_dpi, mm_per_px_h_dpi) = if unit.to_lowercase().contains("inch")
@@ -204,8 +194,8 @@ pub fn calculate_stamp_dimensions(
                         (0.0_f32, 0.0_f32)
                     };
 
-                    if mm_per_px_w_dpi > 0.0 && mm_per_px_h_dpi > 0.0 {
-                        if let Some((wpx, hpx)) =
+                    if mm_per_px_w_dpi > 0.0 && mm_per_px_h_dpi > 0.0
+                        && let Some((wpx, hpx)) =
                             crate::image_utils::get_image_dimensions(&resolved_image_path)
                         {
                             let mut w_mm = (wpx as f32) * mm_per_px_w_dpi;
@@ -220,11 +210,8 @@ pub fn calculate_stamp_dimensions(
                             // Clamp and return
                             return (w_mm.clamp(10.0, 120.0), h_mm.clamp(10.0, 120.0));
                         }
-                    }
                 }
             }
-        }
-    }
 
     // If DPI-based approach failed or unknown, attempt to compute mm-per-pixel from the embedded reference image
     if let Some((mm_per_px_w, mm_per_px_h)) =

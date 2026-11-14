@@ -890,8 +890,8 @@ pub(super) fn add_colnect_stamp_to_stamps(
         params![candidate.colnect_id.clone()],
         |row| row.get::<_, i64>(0),
     );
-    if let Ok(count) = existing {
-        if count > 0 {
+    if let Ok(count) = existing
+        && count > 0 {
             return AddColnectStampResponse {
                 ok: false,
                 message: format!(
@@ -902,7 +902,6 @@ pub(super) fn add_colnect_stamp_to_stamps(
                 processed_colnect_id: None,
             };
         }
-    }
 
     let mut image_path = String::new();
     if req.associate_image {

@@ -115,8 +115,8 @@ pub fn validate_source(cli: &crate::cli::Cli) -> Result<String, ValidationError>
         // auto-accept when the similarity is very high to avoid false accepts.
         // For borderline scores we'll fall back to prompting the user (if
         // running interactively) so they can confirm. Threshold is conservative.
-        if cli.accept_top_suggestion {
-            if let Some((best, score)) = scored.first() {
+        if cli.accept_top_suggestion
+            && let Some((best, score)) = scored.first() {
                 let threshold = 0.85_f64;
                 if *score > threshold {
                     // High confidence: accept silently
@@ -142,7 +142,6 @@ pub fn validate_source(cli: &crate::cli::Cli) -> Result<String, ValidationError>
                     }
                 }
             }
-        }
 
         // If we still don't recognize the source (no auto-accept or score low),
         // return error with suggestions

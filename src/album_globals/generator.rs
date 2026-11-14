@@ -355,13 +355,12 @@ fn build_stamp_text(
         }
         // If string contains a '+' and not whitespace around it (common surcharge form),
         // split at the first '+' and keep the '+' on the second line.
-        if s.contains('+') && !s.contains(' ') {
-            if let Some(pos) = s.find('+') {
+        if s.contains('+') && !s.contains(' ')
+            && let Some(pos) = s.find('+') {
                 let first = s[..pos].to_string();
                 let second = format!("+{}", s[pos + 1..].trim());
                 return format!("{}\\n{}", first, second);
             }
-        }
         // Greedy word-wrap preserving words
         let mut lines: Vec<String> = Vec::new();
         let mut current = String::new();
@@ -541,28 +540,24 @@ fn build_stamp_text(
 
     // Only collect Colnect data if not in minimal mode
     if detail_layout != "minimal" && colnect_enabled {
-        if enabled_fields.contains("name") {
-            if let Some(v) = stamp.attrs.get("colnect_name") {
+        if enabled_fields.contains("name")
+            && let Some(v) = stamp.attrs.get("colnect_name") {
                 colnect_parts.push(format!("Name: {}", v));
             }
-        }
-        if enabled_fields.contains("catalog_codes") {
-            if let Some(v) = stamp.attrs.get("colnect_catalog_codes") {
+        if enabled_fields.contains("catalog_codes")
+            && let Some(v) = stamp.attrs.get("colnect_catalog_codes") {
                 colnect_parts.push(format!("Catalog: {}", v));
             }
-        }
-        if enabled_fields.contains("country") {
-            if let Some(v) = stamp.attrs.get("colnect_country") {
+        if enabled_fields.contains("country")
+            && let Some(v) = stamp.attrs.get("colnect_country") {
                 colnect_parts.push(format!("Country: {}", v));
             }
-        }
-        if enabled_fields.contains("colnect_link") {
-            if let Some(v) = stamp.attrs.get("colnect_page_url") {
+        if enabled_fields.contains("colnect_link")
+            && let Some(v) = stamp.attrs.get("colnect_page_url") {
                 colnect_parts.push(format!("Colnect link: {}", v));
             }
-        }
-        if enabled_fields.contains("description") {
-            if let Some(v) = stamp.attrs.get("colnect_description") {
+        if enabled_fields.contains("description")
+            && let Some(v) = stamp.attrs.get("colnect_description") {
                 let cleaned_colnect_desc = clean_text(&strip_bracket_tags(v));
                 if !cleaned_colnect_desc.trim().is_empty()
                     && !is_effectively_duplicate_text(&raw_description, &cleaned_colnect_desc)
@@ -570,174 +565,142 @@ fn build_stamp_text(
                     colnect_parts.push(cleaned_colnect_desc);
                 }
             }
-        }
-        if enabled_fields.contains("themes") {
-            if let Some(v) = stamp.attrs.get("colnect_themes") {
+        if enabled_fields.contains("themes")
+            && let Some(v) = stamp.attrs.get("colnect_themes") {
                 colnect_parts.push(format!("Themes: {}", v));
             }
-        }
-        if enabled_fields.contains("printing") || enabled_fields.contains("printing_type") {
-            if let Some(v) = stamp.attrs.get("colnect_printing") {
+        if (enabled_fields.contains("printing") || enabled_fields.contains("printing_type"))
+            && let Some(v) = stamp.attrs.get("colnect_printing") {
                 colnect_parts.push(format!("Printing type: {}", v));
             }
-        }
-        if enabled_fields.contains("format") {
-            if let Some(v) = stamp.attrs.get("colnect_format") {
+        if enabled_fields.contains("format")
+            && let Some(v) = stamp.attrs.get("colnect_format") {
                 colnect_parts.push(format!("Format: {}", v));
             }
-        }
-        if enabled_fields.contains("emission") {
-            if let Some(v) = stamp.attrs.get("colnect_emission") {
+        if enabled_fields.contains("emission")
+            && let Some(v) = stamp.attrs.get("colnect_emission") {
                 colnect_parts.push(format!("Emission: {}", v));
             }
-        }
-        if enabled_fields.contains("paper") {
-            if let Some(v) = stamp.attrs.get("colnect_paper") {
+        if enabled_fields.contains("paper")
+            && let Some(v) = stamp.attrs.get("colnect_paper") {
                 colnect_parts.push(format!("Paper: {}", v));
             }
-        }
-        if enabled_fields.contains("gum") {
-            if let Some(v) = stamp.attrs.get("colnect_gum") {
+        if enabled_fields.contains("gum")
+            && let Some(v) = stamp.attrs.get("colnect_gum") {
                 colnect_parts.push(format!("Gum: {}", v));
             }
-        }
-        if enabled_fields.contains("designers") {
-            if let Some(v) = stamp.attrs.get("colnect_designers") {
+        if enabled_fields.contains("designers")
+            && let Some(v) = stamp.attrs.get("colnect_designers") {
                 colnect_parts.push(format!("Designers: {}", v));
             }
-        }
-        if enabled_fields.contains("printers") {
-            if let Some(v) = stamp.attrs.get("colnect_printers") {
+        if enabled_fields.contains("printers")
+            && let Some(v) = stamp.attrs.get("colnect_printers") {
                 colnect_parts.push(format!("Printers: {}", v));
             }
-        }
-        if enabled_fields.contains("colors") {
-            if let Some(v) = stamp.attrs.get("colnect_colors") {
+        if enabled_fields.contains("colors")
+            && let Some(v) = stamp.attrs.get("colnect_colors") {
                 colnect_parts.push(format!("Colors: {}", v));
             }
-        }
-        if enabled_fields.contains("watermark") {
-            if let Some(v) = stamp.attrs.get("colnect_watermark") {
+        if enabled_fields.contains("watermark")
+            && let Some(v) = stamp.attrs.get("colnect_watermark") {
                 colnect_parts.push(format!("Watermark: {}", v));
             }
-        }
         // Perforation is shown in STAMP_HEADING; keep it out of stamp body text to avoid duplicate clutter.
-        if enabled_fields.contains("issued_on") {
-            if let Some(v) = stamp.attrs.get("colnect_issued_on") {
+        if enabled_fields.contains("issued_on")
+            && let Some(v) = stamp.attrs.get("colnect_issued_on") {
                 colnect_parts.push(format!("Issued: {}", v));
             }
-        }
-        if enabled_fields.contains("expiry_date") {
-            if let Some(v) = stamp.attrs.get("colnect_expiry_date") {
+        if enabled_fields.contains("expiry_date")
+            && let Some(v) = stamp.attrs.get("colnect_expiry_date") {
                 colnect_parts.push(format!("Expiry: {}", v));
             }
-        }
-        if enabled_fields.contains("size") {
-            if let (Some(w), Some(h)) = (
+        if enabled_fields.contains("size")
+            && let (Some(w), Some(h)) = (
                 stamp.attrs.get("colnect_width_mm"),
                 stamp.attrs.get("colnect_height_mm"),
             ) {
                 colnect_parts.push(format!("Size: {} x {} mm", w, h));
             }
-        }
-        if enabled_fields.contains("width") {
-            if let Some(v) = stamp.attrs.get("colnect_width_mm") {
+        if enabled_fields.contains("width")
+            && let Some(v) = stamp.attrs.get("colnect_width_mm") {
                 colnect_parts.push(format!("Width: {} mm", v));
             }
-        }
-        if enabled_fields.contains("height") {
-            if let Some(v) = stamp.attrs.get("colnect_height_mm") {
+        if enabled_fields.contains("height")
+            && let Some(v) = stamp.attrs.get("colnect_height_mm") {
                 colnect_parts.push(format!("Height: {} mm", v));
             }
-        }
-        if enabled_fields.contains("face_value") {
-            if let Some(v) = stamp.attrs.get("colnect_face_value") {
+        if enabled_fields.contains("face_value")
+            && let Some(v) = stamp.attrs.get("colnect_face_value") {
                 if let Some(cur) = stamp.attrs.get("colnect_currency") {
                     colnect_parts.push(format!("Face value: {} {}", v, cur));
                 } else {
                     colnect_parts.push(format!("Face value: {}", v));
                 }
             }
-        }
-        if enabled_fields.contains("currency") {
-            if let Some(v) = stamp.attrs.get("colnect_currency") {
+        if enabled_fields.contains("currency")
+            && let Some(v) = stamp.attrs.get("colnect_currency") {
                 colnect_parts.push(format!("Currency: {}", v));
             }
-        }
-        if enabled_fields.contains("score") {
-            if let Some(v) = stamp.attrs.get("colnect_score") {
+        if enabled_fields.contains("score")
+            && let Some(v) = stamp.attrs.get("colnect_score") {
                 if let Some(acc) = stamp.attrs.get("colnect_accuracy") {
                     colnect_parts.push(format!("Score: {} (Accuracy: {})", v, acc));
                 } else {
                     colnect_parts.push(format!("Score: {}", v));
                 }
             }
-        }
-        if enabled_fields.contains("accuracy") {
-            if let Some(v) = stamp.attrs.get("colnect_accuracy") {
+        if enabled_fields.contains("accuracy")
+            && let Some(v) = stamp.attrs.get("colnect_accuracy") {
                 colnect_parts.push(format!("Accuracy: {}", v));
             }
-        }
-        if enabled_fields.contains("ord_mi") {
-            if let Some(v) = stamp.attrs.get("colnect_ord_mi") {
+        if enabled_fields.contains("ord_mi")
+            && let Some(v) = stamp.attrs.get("colnect_ord_mi") {
                 colnect_parts.push(format!("MI order: {}", v));
             }
-        }
-        if enabled_fields.contains("ord_sn") {
-            if let Some(v) = stamp.attrs.get("colnect_ord_sn") {
+        if enabled_fields.contains("ord_sn")
+            && let Some(v) = stamp.attrs.get("colnect_ord_sn") {
                 colnect_parts.push(format!("SN order: {}", v));
             }
-        }
-        if enabled_fields.contains("ord_yt") {
-            if let Some(v) = stamp.attrs.get("colnect_ord_yt") {
+        if enabled_fields.contains("ord_yt")
+            && let Some(v) = stamp.attrs.get("colnect_ord_yt") {
                 colnect_parts.push(format!("YT order: {}", v));
             }
-        }
-        if enabled_fields.contains("ord_sg") {
-            if let Some(v) = stamp.attrs.get("colnect_ord_sg") {
+        if enabled_fields.contains("ord_sg")
+            && let Some(v) = stamp.attrs.get("colnect_ord_sg") {
                 colnect_parts.push(format!("SG order: {}", v));
             }
-        }
-        if enabled_fields.contains("parent_item") {
-            if let Some(v) = stamp.attrs.get("colnect_parent_item") {
+        if enabled_fields.contains("parent_item")
+            && let Some(v) = stamp.attrs.get("colnect_parent_item") {
                 colnect_parts.push(format!("Parent item: {}", v));
             }
-        }
-        if enabled_fields.contains("variant") {
-            if let Some(v) = stamp.attrs.get("colnect_variant") {
+        if enabled_fields.contains("variant")
+            && let Some(v) = stamp.attrs.get("colnect_variant") {
                 colnect_parts.push(format!("Variant: {}", v));
             }
-        }
-        if enabled_fields.contains("overprint_variant") {
-            if let Some(v) = stamp.attrs.get("colnect_overprint_variant") {
+        if enabled_fields.contains("overprint_variant")
+            && let Some(v) = stamp.attrs.get("colnect_overprint_variant") {
                 colnect_parts.push(format!("Overprint variant: {}", v));
             }
-        }
-        if enabled_fields.contains("list") {
-            if let Some(v) = stamp.attrs.get("colnect_list") {
+        if enabled_fields.contains("list")
+            && let Some(v) = stamp.attrs.get("colnect_list") {
                 colnect_parts.push(format!("List: {}", v));
             }
-        }
-        if enabled_fields.contains("quantity") {
-            if let Some(v) = stamp.attrs.get("colnect_quantity") {
+        if enabled_fields.contains("quantity")
+            && let Some(v) = stamp.attrs.get("colnect_quantity") {
                 colnect_parts.push(format!("Quantity: {}", v));
             }
-        }
-        if enabled_fields.contains("condition") {
-            if let Some(v) = stamp.attrs.get("colnect_condition") {
+        if enabled_fields.contains("condition")
+            && let Some(v) = stamp.attrs.get("colnect_condition") {
                 colnect_parts.push(format!("Condition: {}", v));
             }
-        }
-        if enabled_fields.contains("public_note") {
-            if let Some(v) = stamp.attrs.get("colnect_public_note") {
+        if enabled_fields.contains("public_note")
+            && let Some(v) = stamp.attrs.get("colnect_public_note") {
                 colnect_parts.push(format!("Public note: {}", v));
             }
-        }
-        if enabled_fields.contains("private_note") {
-            if let Some(v) = stamp.attrs.get("colnect_private_note") {
+        if enabled_fields.contains("private_note")
+            && let Some(v) = stamp.attrs.get("colnect_private_note") {
                 colnect_parts.push(format!("Private note: {}", v));
             }
-        }
     }
 
     // Remove empty fields (or empty `Label:` entries) before formatting.
@@ -2216,11 +2179,10 @@ where
                 // (if enabled) but avoid generating spacer artifacts that change layout.
             }
 
-            if series_gap > 0.0 {
-                if let Err(error) = layout::write_page_vspace(&mut output, series_gap) {
+            if series_gap > 0.0
+                && let Err(error) = layout::write_page_vspace(&mut output, series_gap) {
                     log::error!("Failed to write series row spacing: {}", error);
                 }
-            }
             if let Err(error) = writeln!(output, "# ROW_HEIGHT mm={:.4}",
                 total_row_height + row_start_total_height - series_gap) {
                 log::error!("Failed to write row height measurement: {}", error);
@@ -2678,8 +2640,8 @@ where
                     // of the existing file even if generation produced no STAMP lines.
                     if crate::file_utils::get_overwrite_album_from_cli() && output_path.exists() {
                         // use chrono::Local;
-                        if let Some(stem_os) = output_path.file_stem() {
-                            if let Some(stem) = stem_os.to_str() {
+                        if let Some(stem_os) = output_path.file_stem()
+                            && let Some(stem) = stem_os.to_str() {
                                 let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
                                 let ext = output_path
                                     .extension()
@@ -2702,7 +2664,6 @@ where
                                     ),
                                 }
                             }
-                        }
                     }
                     info!(
                         "No stamp lines produced for {} ({}). Leaving existing file intact.",
@@ -2714,8 +2675,8 @@ where
                     // Create a timestamped backup of the existing file if present
                     if output_path.exists() {
                         // use chrono::Local;
-                        if let Some(stem_os) = output_path.file_stem() {
-                            if let Some(stem) = stem_os.to_str() {
+                        if let Some(stem_os) = output_path.file_stem()
+                            && let Some(stem) = stem_os.to_str() {
                                 let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
                                 let ext = output_path
                                     .extension()
@@ -2737,7 +2698,6 @@ where
                                     }
                                 }
                             }
-                        }
                     }
                     // Atomically move temp into place
                     match fs::rename(&tmp_path, &output_path) {

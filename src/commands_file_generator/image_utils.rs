@@ -103,8 +103,8 @@ fn get_image_blocking(_url: &str, _name: &str, _file_path: &str) -> ImageStatus 
     debug!("Attempting to fetch image from URL: {}", _url);
     debug!("Image will be saved as: {}", _file_path);
     // Ensure the destination directory exists to avoid "No such file or directory" errors
-    if let Some(parent) = std::path::Path::new(_file_path).parent() {
-        if let Err(e) = std::fs::create_dir_all(parent) {
+    if let Some(parent) = std::path::Path::new(_file_path).parent()
+        && let Err(e) = std::fs::create_dir_all(parent) {
             error!(
                 "Failed to create image directory {}: {}",
                 parent.display(),
@@ -112,7 +112,6 @@ fn get_image_blocking(_url: &str, _name: &str, _file_path: &str) -> ImageStatus 
             );
             // proceed anyway; write will likely fail and be logged below
         }
-    }
     // Example: Use reqwest to fetch the image
     match reqwest::blocking::get(_url) {
         Ok(resp) => {

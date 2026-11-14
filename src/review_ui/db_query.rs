@@ -1,11 +1,10 @@
 use crate::db_utils::{StampInsert, insert_stamp_from_struct};
-use crate::review_ui::http_utils::{is_real_image_path, local_image_file_exists};
 use crate::review_ui::pdf_parser::types::{ImportSummary, PdfStampRecord};
 use rusqlite::{Connection, params};
 
 pub async fn best_effort_prepare_images_for_pdf(
-    conn: &Connection,
-    album_name: &str,
+    _conn: &Connection,
+    _album_name: &str,
 ) -> (usize, usize) {
     (0, 0)
 }
