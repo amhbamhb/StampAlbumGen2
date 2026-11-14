@@ -13,12 +13,12 @@ impl Drop for RestoreEnvironment {
     fn drop(&mut self) {
         std::env::set_current_dir(&self.cwd).expect("restore test cwd");
         match &self.flags_dir {
-            Some(value) => std::env::set_var("STAMP_FLAGS_DIR", value),
-            None => std::env::remove_var("STAMP_FLAGS_DIR"),
+            Some(value) => unsafe{std::env::set_var("STAMP_FLAGS_DIR", value)},
+            None => unsafe{std::env::remove_var("STAMP_FLAGS_DIR")},
         }
         match &self.albums_root {
-            Some(value) => std::env::set_var("STAMP_ALBUMS_ROOT", value),
-            None => std::env::remove_var("STAMP_ALBUMS_ROOT"),
+            Some(value) => unsafe{std::env::set_var("STAMP_ALBUMS_ROOT", value)},
+            None => unsafe{std::env::remove_var("STAMP_ALBUMS_ROOT")},
         }
     }
 }
@@ -52,11 +52,11 @@ async fn public_pipeline_merges_overrides_honors_refresh_and_emits_local_cover_f
         albums_root: std::env::var_os("STAMP_ALBUMS_ROOT"),
     };
     std::env::set_current_dir(temp.path()).expect("isolated cwd");
-    std::env::remove_var("STAMP_ALBUMS_ROOT");
+    unsafe{std::env::remove_var("STAMP_ALBUMS_ROOT");}
     let root = temp.path().join("assets");
     let flags = root.join("flags");
     std::fs::create_dir_all(&flags).expect("flag directory");
-    std::env::set_var("STAMP_FLAGS_DIR", &root);
+    unsafe{std::env::set_var("STAMP_FLAGS_DIR", &root);}
     std::fs::write(
         flags.join("flag_codes.json"),
         r#"{"Test local country":"KR"}"#,

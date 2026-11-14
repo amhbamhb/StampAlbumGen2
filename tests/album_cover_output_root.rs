@@ -9,8 +9,8 @@ impl Drop for RestoreRuntime {
     fn drop(&mut self) {
         std::env::set_current_dir(&self.cwd).expect("restore cwd");
         match &self.albums_root {
-            Some(value) => std::env::set_var("STAMP_ALBUMS_ROOT", value),
-            None => std::env::remove_var("STAMP_ALBUMS_ROOT"),
+            Some(value) => unsafe{std::env::set_var("STAMP_ALBUMS_ROOT", value)},
+            None => unsafe{std::env::remove_var("STAMP_ALBUMS_ROOT")},
         }
     }
 }
