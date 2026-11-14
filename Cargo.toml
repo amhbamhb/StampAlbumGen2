@@ -108,8 +108,10 @@ serial_test = "4.0"
 
 [package]
 name = "stamp_album_gen2"
-version = "1.13.5"
+
+version = "1.14.1"
 edition = "2024"
+
 default-run = "stamp_album_gen2"
 
 [build-dependencies]
