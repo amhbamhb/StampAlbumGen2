@@ -2815,6 +2815,7 @@ mod site_account_tests {
             for body in ["{", "{}", r#"{"country":42}"#] {
                 let response = client
                     .post(format!("http://{addr}/api/stampworld-import-file"))
+                    .header("Content-Type", "application/json")
                     .body(body)
                     .send()
                     .expect("import response");
