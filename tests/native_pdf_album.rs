@@ -110,9 +110,11 @@ fn native_image_controls_keep_page_background_independent_of_hidden_stamps() -> 
         })
         .collect::<Result<Vec<_>, _>>()?;
     for (start, end) in [(0, 2), (2, 4), (4, 7)] {
-        assert!(frame_tops[start..end]
-            .iter()
-            .all(|top| (top - frame_tops[start]).abs() < 0.001));
+        assert!(
+            frame_tops[start..end]
+                .iter()
+                .all(|top| (top - frame_tops[start]).abs() < 0.001)
+        );
     }
     assert!(frame_tops[0] > frame_tops[2]);
     assert!(frame_tops[2] > frame_tops[4]);
@@ -485,8 +487,8 @@ fn native_footer_alignment_padding_and_saved_state_are_applied() -> Result<(), S
 }
 
 #[test]
-fn native_footer_requires_explicit_state_and_rejects_empty_or_conflicting_text(
-) -> Result<(), String> {
+fn native_footer_requires_explicit_state_and_rejects_empty_or_conflicting_text()
+-> Result<(), String> {
     let path = fixture();
     let source = fs::read_to_string(&path).map_err(|error| error.to_string())?;
     let source = format!("{source}\nNATIVE_STAMP_FOOTER_TEXT (HN 8 black \"left\" \"\" \"\")\n");

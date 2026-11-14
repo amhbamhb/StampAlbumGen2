@@ -75,7 +75,9 @@ fn txt_and_raw_restore_all_current_stamp_state_without_retroactive_changes() -> 
         let white = "1.000 1.000 1.000";
         assert_eq!(
             actual,
-            [blue, blue, white, white, blue, blue, blue, blue, white, white, blue, blue]
+            [
+                blue, blue, white, white, blue, blue, blue, blue, white, white, blue, blue
+            ]
         );
         assert_restored_dimensions(&image_dimensions(&pages.join("\n"))?);
         let frame_sizes = frames

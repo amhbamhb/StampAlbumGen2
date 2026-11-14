@@ -124,13 +124,25 @@ fn serialized_dates_and_coexistence_match_frozen_reference_pdfs() -> Result<()> 
             .replace("padding_mm = 0",&format!("padding_mm = {padding}"))
             .replace("page_count = 2",&format!("page_count = {pages}"));
         if asymmetric {
-            source=source.replace("page_left_margin_mm = 15","page_left_margin_mm = 25").replace("page_right_margin_mm = 15","page_right_margin_mm = 12")
+            source = source
+                .replace("page_left_margin_mm = 15", "page_left_margin_mm = 25")
+                .replace("page_right_margin_mm = 15", "page_right_margin_mm = 12")
                 + "\n[page.even_margins]\nleft_mm = 12\nright_mm = 25\ntop_mm = 18\nbottom_mm = 20\n";
         }
         if coexist {
-            source=source.replace("[native_pdf.header]\nenabled = false","[native_pdf.header]\nenabled = true")
-                .replace("[header]","[header]\nalbum_pages_title_font = \"HN\"\nalbum_pages_title_size = 10")
-                .replace("[colors]","[colors]\ncolor_album_title = \"black\"\ncolor_album_footer = \"black\"")
+            source = source
+                .replace(
+                    "[native_pdf.header]\nenabled = false",
+                    "[native_pdf.header]\nenabled = true",
+                )
+                .replace(
+                    "[header]",
+                    "[header]\nalbum_pages_title_font = \"HN\"\nalbum_pages_title_size = 10",
+                )
+                .replace(
+                    "[colors]",
+                    "[colors]\ncolor_album_title = \"black\"\ncolor_album_footer = \"black\"",
+                )
                 + "\n[native_pdf.header_number]\nenabled = true\nfont = \"HN\"\nsize_pt = 8\nposition = \"R\"\nstart = 7\nbefore = \"Page \"\nafter = \" of $PAGES$\"\n[footer]\nalbum_pages_footer_number_enabled = true\nalbum_pages_footer_number_font = \"HN\"\nalbum_pages_footer_number_size = 8\nalbum_pages_footer_number_position = \"C\"\nalbum_pages_footer_number_start = 1\nalbum_pages_footer_number_before = \"Sheet \"\nalbum_pages_footer_number_after = \" / $PAGES$\"\n[native_pdf.footer]\nenabled = false\nfont = \"HN\"\nsize_pt = 8\nposition = \"C\"\ntext = \"Footer\"\npadding_mm = 0\nminimum_height_mm = 0\n[native_pdf.footer_number]\nenabled = true\n[native_pdf.title]\nenabled = true\ntext = \"TITLE\"\nvspace_after_mm = 2\nminimum_height_mm = 0\n";
         }
         for minimum in [0, 25] {
@@ -321,12 +333,14 @@ fn generation_date_requires_one_explicit_document_context() -> Result<()> {
         &CONFIG.replace("date_source = \"fixed\"", "date_source = \"generation\""),
     )?;
     assert!(config.page_settings.capture_generation_date().is_some());
-    assert!(config
-        .page_settings
-        .resolve(1)
-        .err()
-        .ok_or("missing date")?
-        .contains("resolve_with_context"));
+    assert!(
+        config
+            .page_settings
+            .resolve(1)
+            .err()
+            .ok_or("missing date")?
+            .contains("resolve_with_context")
+    );
     assert!(config.page_settings.resolve_with_page_count(1, 2).is_err());
     let date = chrono::NaiveDate::from_ymd_opt(2024, 12, 31).ok_or("date")?;
     for page in [1, 2] {
@@ -351,13 +365,10 @@ fn generation_date_requires_one_explicit_document_context() -> Result<()> {
     );
     let dir = tempfile::tempdir()?;
     let output = dir.path().join("native.pdf");
-    assert!(write_page_geometry_proof_with_date(
-        &config.page_settings,
-        &config.proof,
-        &output,
-        None
-    )
-    .is_err());
+    assert!(
+        write_page_geometry_proof_with_date(&config.page_settings, &config.proof, &output, None)
+            .is_err()
+    );
     assert!(!output.exists());
     write_page_geometry_proof_with_date(&config.page_settings, &config.proof, &output, Some(date))?;
     let pdf = oxidize_pdf::parser::PdfDocument::open(&output)?;
@@ -429,12 +440,16 @@ fn defaults_disabled_validation_snapshot_and_unapplied_keys_are_explicit() -> Re
     let absent = NativePdfConfig::from_toml(base)?;
     assert!(absent.page_settings.resolve(1)?.header_date.is_none());
     let config = NativePdfConfig::from_toml(&(CONFIG.to_owned() + "\nfuture_option = 1\n"))?;
-    assert!(config
-        .unapplied_keys
-        .contains(&"native_pdf.header_date.future_option".into()));
-    assert!(!config
-        .unapplied_keys
-        .contains(&"native_pdf.header_date.date_source".into()));
+    assert!(
+        config
+            .unapplied_keys
+            .contains(&"native_pdf.header_date.future_option".into())
+    );
+    assert!(
+        !config
+            .unapplied_keys
+            .contains(&"native_pdf.header_date.date_source".into())
+    );
     let changed = CONFIG.replace("fixed_date = \"2024-02-29\"", "fixed_date = \"2025-01-01\"");
     assert_eq!(
         config
@@ -546,16 +561,18 @@ fn invalid_missing_date_fields_return_redacted_keyed_errors() -> Result<()> {
             assert!(!error.contains("private-value"));
         }
     }
-    assert!(NativePdfConfig::from_toml(
-        &CONFIG.replace("[native_pdf.header]", "[unsupported_header]")
-    )
-    .is_err());
-    assert!(NativePdfConfig::from_toml(
-        &CONFIG
-            .replace("date_source = \"fixed\"", "date_source = \"generation\"")
-            .replace("2024-02-29", "2023-02-29")
-    )
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace("[native_pdf.header]", "[unsupported_header]"))
+            .is_err()
+    );
+    assert!(
+        NativePdfConfig::from_toml(
+            &CONFIG
+                .replace("date_source = \"fixed\"", "date_source = \"generation\"")
+                .replace("2024-02-29", "2023-02-29")
+        )
+        .is_err()
+    );
     for date in ["0001-01-01", "2000-02-29", "9999-12-31"] {
         assert!(NativePdfConfig::from_toml(&CONFIG.replace("2024-02-29", date)).is_ok());
     }
@@ -643,11 +660,14 @@ fn date_collisions_with_text_and_numbers_identify_correction_keys() -> Result<()
             "album_pages_header_position = \"C\"",
             "album_pages_header_position = \"R\"",
         );
-    assert!(NativePdfConfig::from_toml(&parity)
-        .err()
-        .ok_or("even collision")?
-        .contains("page 2"));
-    let number=CONFIG.to_owned()+"\n[native_pdf.header_number]\nenabled = true\nfont = \"HN\"\nsize_pt = 8\nposition = \"L\"\nstart = 1\nbefore = \"Page \"\nafter = \" of $PAGES$\"\n";
+    assert!(
+        NativePdfConfig::from_toml(&parity)
+            .err()
+            .ok_or("even collision")?
+            .contains("page 2")
+    );
+    let number = CONFIG.to_owned()
+        + "\n[native_pdf.header_number]\nenabled = true\nfont = \"HN\"\nsize_pt = 8\nposition = \"L\"\nstart = 1\nbefore = \"Page \"\nafter = \" of $PAGES$\"\n";
     let error = NativePdfConfig::from_toml(&number)
         .err()
         .ok_or("number collision")?;
@@ -663,7 +683,8 @@ fn date_collisions_with_text_and_numbers_identify_correction_keys() -> Result<()
     let (base, _) = number
         .split_once("[native_pdf.header_number]")
         .ok_or("number")?;
-    let safe=base.to_owned()+"\n[native_pdf.header_number]\nenabled = true\nfont = \"HN\"\nsize_pt = 8\nposition = \"R\"\nstart = 1\nbefore = \"Page \"\nafter = \" of $PAGES$\"\n";
+    let safe = base.to_owned()
+        + "\n[native_pdf.header_number]\nenabled = true\nfont = \"HN\"\nsize_pt = 8\nposition = \"R\"\nstart = 1\nbefore = \"Page \"\nafter = \" of $PAGES$\"\n";
     assert!(NativePdfConfig::from_toml(&safe).is_ok());
     Ok(())
 }
@@ -673,9 +694,16 @@ fn title_separation_and_invalid_later_page_preserve_output() -> Result<()> {
     use stamp_album_gen2::native_pdf::{
         commands::page::album_pages_marginse::EvenMargins, renderer::write_page_geometry_proof,
     };
-    let source=CONFIG.replace("[native_pdf.header]\nenabled = false","[native_pdf.header]\nenabled = true")
-        .replace("[header]","[header]\nalbum_pages_title_font = \"TB\"\nalbum_pages_title_size = 25")
-        .replace("[colors]","[colors]\ncolor_album_title = \"black\"")
+    let source = CONFIG
+        .replace(
+            "[native_pdf.header]\nenabled = false",
+            "[native_pdf.header]\nenabled = true",
+        )
+        .replace(
+            "[header]",
+            "[header]\nalbum_pages_title_font = \"TB\"\nalbum_pages_title_size = 25",
+        )
+        .replace("[colors]", "[colors]\ncolor_album_title = \"black\"")
         + "\n[native_pdf.title]\nenabled = true\ntext = \"Agyp TITLE\\nSecond line\"\nvspace_after_mm = 2\nminimum_height_mm = 0\n";
     for padding in [0, -6] {
         let layout = NativePdfConfig::from_toml(
@@ -754,8 +782,8 @@ fn all_font_variants_validate_exact_date_width_and_year_range() -> Result<()> {
             ..margin
         };
         assert!(date.layout(exact, page, 1, None).is_ok());
-        assert!(date
-            .layout(
+        assert!(
+            date.layout(
                 Bounds {
                     right: exact.right - 0.00001,
                     ..exact
@@ -764,7 +792,8 @@ fn all_font_variants_validate_exact_date_width_and_year_range() -> Result<()> {
                 1,
                 None
             )
-            .is_err());
+            .is_err()
+        );
         assert!(date.layout(margin, page, 0, None).is_err());
     }
     for year in [0, -1, 10000] {

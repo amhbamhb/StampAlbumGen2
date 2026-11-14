@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use reqwest::header::HeaderMap;
 use reqwest::StatusCode;
+use reqwest::header::HeaderMap;
 use stamp_album_gen2::stampworld::fetch::Fetcher;
 use stamp_album_gen2::wikipedia;
 use tempfile::tempdir;

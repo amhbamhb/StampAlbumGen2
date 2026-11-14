@@ -1,5 +1,5 @@
 use crate::wikipedia::models::ContentSource;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
 /// Database-based content management for Wikipedia and Grokipedia
 /// Store content in cache database for integration with album generation

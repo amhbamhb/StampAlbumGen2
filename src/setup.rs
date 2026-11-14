@@ -106,11 +106,10 @@ pub fn setup_logging() -> Result<(), SetupError> {
 }
 
 pub fn startup_probe_path() -> PathBuf {
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(dir) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(dir) = exe.parent() {
             return dir.join("startup_trace.log");
         }
-    }
     std::env::current_dir()
         .unwrap_or_else(|_| PathBuf::from("."))
         .join("startup_trace.log")
@@ -310,12 +309,11 @@ pub fn align_process_working_dir_to_runtime_layout() -> std::io::Result<Option<P
         // runtime-like directory (for example the workspace root), prefer the
         // executable-adjacent runtime tree. For dev builds under the workspace,
         // the executable remains inside the current runtime root, so keep cwd.
-        if let Some(exe_runtime_root) = runtime_root_from_executable_path(&exe_path) {
-            if exe_runtime_root != current_dir && !exe_path.starts_with(&current_dir) {
+        if let Some(exe_runtime_root) = runtime_root_from_executable_path(&exe_path)
+            && exe_runtime_root != current_dir && !exe_path.starts_with(&current_dir) {
                 std::env::set_current_dir(&exe_runtime_root)?;
                 return Ok(Some(exe_runtime_root));
             }
-        }
         return Ok(None);
     }
 
@@ -701,8 +699,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
 
     let desktop_contents = format!(
         "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon=stamp_album_gen2\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
-        exec_cmd,
-        working_dir,
+        exec_cmd, working_dir,
     );
 
     let mut changed = false;
@@ -934,11 +931,10 @@ pub fn first_run_decision(
         return FirstRunDecision::Stay;
     }
 
-    if let Some(dir_name) = exe_dir.file_name().and_then(|n| n.to_str()) {
-        if dir_name.eq_ignore_ascii_case("StampAlbumGen2") {
+    if let Some(dir_name) = exe_dir.file_name().and_then(|n| n.to_str())
+        && dir_name.eq_ignore_ascii_case("StampAlbumGen2") {
             return FirstRunDecision::Stay;
         }
-    }
 
     FirstRunDecision::MoveTo(default_dest.to_path_buf())
 }

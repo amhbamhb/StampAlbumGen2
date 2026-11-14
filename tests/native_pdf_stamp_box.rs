@@ -81,13 +81,10 @@ fn zero_clearance_and_signed_adjustments_preserve_total_addition_semantics() -> 
 #[test]
 fn invalid_sizes_and_frames_that_would_shrink_known_stamps_fail_explicitly() {
     for (width, height) in [(0.0, 25.0), (-1.0, 25.0), (22.0, 0.0), (22.0, f64::NAN)] {
-        assert!(StampBoxGeometry::from_total_additions(
-            physical_bounds(width, height),
-            3.0,
-            3.0,
-            0.0,
-        )
-        .is_err());
+        assert!(
+            StampBoxGeometry::from_total_additions(physical_bounds(width, height), 3.0, 3.0, 0.0,)
+                .is_err()
+        );
     }
     for (w, h, adjustment) in [
         (-1.0, 3.0, 0.0),

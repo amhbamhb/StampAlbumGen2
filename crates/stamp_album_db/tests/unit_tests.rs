@@ -1,7 +1,7 @@
 use rusqlite::Connection;
 use stamp_album_db::{
-    get_all_series, get_stamps_by_series, insert_stamp_from_struct, migrate_fix_block_metadata,
-    sort_stampstubs_inplace, StampInsert, StampStub,
+    StampInsert, StampStub, get_all_series, get_stamps_by_series, insert_stamp_from_struct,
+    migrate_fix_block_metadata, sort_stampstubs_inplace,
 };
 
 fn make_stub(sg: &str, year: i32) -> StampStub {

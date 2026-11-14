@@ -6,7 +6,7 @@ use stamp_album_gen2::native_pdf::{
     stamp_box::StampBoxGeometry,
     stamp_image::StampTextProofSettings,
     stamp_text::{
-        fit_text_rows, ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy,
+        ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy, fit_text_rows,
     },
 };
 
@@ -256,29 +256,35 @@ fn invalid_policy_oversized_text_and_page_overflow_are_explicit_errors() -> Resu
         assert!(StampTextPolicy::new(TextWidthPolicy::WrapToFrame, limit, 0.0, 0.0, v).is_err());
     }
     let spacing = Spacing::parse(&[3.0, 4.0])?;
-    assert!(fit_text_rows(
-        area(180.0, 20.0),
-        &[item()?],
-        spacing,
-        &policy(TextWidthPolicy::WrapToFrame)?
-    )
-    .is_err());
-    assert!(fit_text_rows(
-        area(32.0, 200.0),
-        &[item()?],
-        spacing,
-        &policy(TextWidthPolicy::ExpandFootprint)?
-    )
-    .is_err());
+    assert!(
+        fit_text_rows(
+            area(180.0, 20.0),
+            &[item()?],
+            spacing,
+            &policy(TextWidthPolicy::WrapToFrame)?
+        )
+        .is_err()
+    );
+    assert!(
+        fit_text_rows(
+            area(32.0, 200.0),
+            &[item()?],
+            spacing,
+            &policy(TextWidthPolicy::ExpandFootprint)?
+        )
+        .is_err()
+    );
     let mut tiny = item()?;
     tiny.geometry = StampBoxGeometry::from_total_additions(area(0.1, 25.0), 0.0, 0.0, 0.0)?;
-    assert!(fit_text_rows(
-        area(180.0, 200.0),
-        &[tiny],
-        spacing,
-        &policy(TextWidthPolicy::WrapToFrame)?
-    )
-    .is_err());
+    assert!(
+        fit_text_rows(
+            area(180.0, 200.0),
+            &[tiny],
+            spacing,
+            &policy(TextWidthPolicy::WrapToFrame)?
+        )
+        .is_err()
+    );
     Ok(())
 }
 
@@ -300,21 +306,27 @@ fn template_policy_is_explicit_validated_and_not_reported_as_unapplied() -> Resu
         );
         let config = NativePdfConfig::from_toml(&text)?;
         assert!(config.stamp_text.is_some());
-        assert!(!config
-            .unapplied_keys
-            .iter()
-            .any(|k| k.starts_with("native_pdf.stamp_text.")));
+        assert!(
+            !config
+                .unapplied_keys
+                .iter()
+                .any(|k| k.starts_with("native_pdf.stamp_text."))
+        );
     }
-    assert!(NativePdfConfig::from_toml(&enabled.replace(
-        "width_policy = \"wrap_to_frame\"",
-        "width_policy = \"wrong\""
-    ))
-    .is_err());
-    assert!(NativePdfConfig::from_toml(&enabled.replace(
-        "horizontal_padding_mm = 0.0",
-        "horizontal_padding_mm = -1.0"
-    ))
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&enabled.replace(
+            "width_policy = \"wrap_to_frame\"",
+            "width_policy = \"wrong\""
+        ))
+        .is_err()
+    );
+    assert!(
+        NativePdfConfig::from_toml(&enabled.replace(
+            "horizontal_padding_mm = 0.0",
+            "horizontal_padding_mm = -1.0"
+        ))
+        .is_err()
+    );
     assert!(NativePdfConfig::from_toml(&enabled.replace("text_gap_mm = 3.0", "")).is_err());
     for (old, new) in [
         (
@@ -340,17 +352,19 @@ fn template_policy_is_explicit_validated_and_not_reported_as_unapplied() -> Resu
             "expanded_width_value = 30.0",
         );
     assert!(NativePdfConfig::from_toml(&mm)?.stamp_text.is_some());
-    assert!(NativePdfConfig::from_toml(&template.replace(
-        "expanded_width_value = 120.0",
-        "expanded_width_value = -1.0"
-    ))
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&template.replace(
+            "expanded_width_value = 120.0",
+            "expanded_width_value = -1.0"
+        ))
+        .is_err()
+    );
     Ok(())
 }
 
 #[test]
-fn wrapping_keeps_explicit_blank_lines_and_splits_words_without_losing_characters(
-) -> Result<(), String> {
+fn wrapping_keeps_explicit_blank_lines_and_splits_words_without_losing_characters()
+-> Result<(), String> {
     use stamp_album_gen2::native_pdf::text::MeasuredText;
     let text = MeasuredText::new("HN", 10.0, "One  two\n\nABCDEFGHIJKLMNO")?;
     let wrapped = text.wrapped_to_width(12.0)?;
@@ -388,8 +402,8 @@ fn absent_text_has_no_phantom_gaps_and_empty_input_still_validates_bounds() -> R
 }
 
 #[test]
-fn both_policies_render_all_text_and_reject_overflow_before_touching_output(
-) -> Result<(), Box<dyn std::error::Error>> {
+fn both_policies_render_all_text_and_reject_overflow_before_touching_output()
+-> Result<(), Box<dyn std::error::Error>> {
     use oxidize_pdf::parser::PdfDocument;
     use stamp_album_gen2::native_pdf::renderer::write_stamp_text_geometry_proof;
     let config = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
@@ -434,24 +448,28 @@ fn both_policies_render_all_text_and_reject_overflow_before_touching_output(
             NamedColour::parse("black")?,
         ));
         let expand = policy(TextWidthPolicy::ExpandFootprint)?;
-        assert!(write_stamp_text_geometry_proof(
-            &config.page_settings,
-            &proof,
-            &[bad.clone()],
-            &expand,
-            &output
-        )
-        .is_err());
+        assert!(
+            write_stamp_text_geometry_proof(
+                &config.page_settings,
+                &proof,
+                &[bad.clone()],
+                &expand,
+                &output
+            )
+            .is_err()
+        );
         assert_eq!(std::fs::read(&output)?, original);
         let missing = temporary.path().join("must-not-exist.pdf");
-        assert!(write_stamp_text_geometry_proof(
-            &config.page_settings,
-            &proof,
-            &[bad],
-            &expand,
-            &missing
-        )
-        .is_err());
+        assert!(
+            write_stamp_text_geometry_proof(
+                &config.page_settings,
+                &proof,
+                &[bad],
+                &expand,
+                &missing
+            )
+            .is_err()
+        );
         assert!(!missing.exists());
     }
     Ok(())
@@ -536,7 +554,7 @@ fn regenerate_letter_text_fixtures() -> Result<(), Box<dyn std::error::Error>> {
             .content_bounds;
         let rows = fit_text_rows(content, &items, config.page_settings.spacing(), policy)?;
         let mut expected_rows = Vec::new();
-        let mut reference=format!(
+        let mut reference = format!(
             "# COMPATIBILITY ADAPTATION: native {mode}, cap {value} {unit}; comparison input only, not certified layout parity.\n\
              # Native footprint padding and expanded width are NOT AlbumEasy commands.\n\
              # All text is retained below; row/page positions may differ. Native settings remain in TOML.\n\
@@ -593,9 +611,13 @@ fn regenerate_letter_text_fixtures() -> Result<(), Box<dyn std::error::Error>> {
             expected_rows.push(data);
         }
         fs::write(output.join(format!("{name}.txt")), reference)?;
-        fs::write(output.join(format!("{name}.toml")),
-            format!("# Policy fragment; merge into a full native config. See config_template.toml for complete help.\n[native_pdf.stamp_text]\n{}\n",
-                toml::to_string(&source["native_pdf"]["stamp_text"])?.trim_end()))?;
+        fs::write(
+            output.join(format!("{name}.toml")),
+            format!(
+                "# Policy fragment; merge into a full native config. See config_template.toml for complete help.\n[native_pdf.stamp_text]\n{}\n",
+                toml::to_string(&source["native_pdf"]["stamp_text"])?.trim_end()
+            ),
+        )?;
         cases.push(serde_json::json!({
             "name":name,"width_policy":mode,"expanded_width_limit":unit,
             "expanded_width_value":value,"rows":expected_rows

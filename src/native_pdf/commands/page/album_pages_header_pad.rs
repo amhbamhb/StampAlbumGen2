@@ -1,4 +1,4 @@
-use crate::native_pdf::{units::mm_to_points, Result};
+use crate::native_pdf::{Result, units::mm_to_points};
 
 /// ALBUM_PAGES_HEADER_PAD shifts the whole header away from the top border.
 #[derive(Clone, Copy, Debug)]

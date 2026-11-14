@@ -218,17 +218,15 @@ pub async fn ensure_coat_of_arms_with_fetcher(
     // Current working directory 'flags/coats_of_arms'
     candidates.push(PathBuf::from("flags").join("coats_of_arms"));
     // Executable parent 'flags/coats_of_arms'
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
+    if let Ok(exe) = std::env::current_exe()
+        && let Some(parent) = exe.parent() {
             candidates.push(parent.join("flags").join("coats_of_arms"));
         }
-    }
     // Parent of cwd 'flags/coats_of_arms'
-    if let Ok(cwd) = std::env::current_dir() {
-        if let Some(parent) = cwd.parent() {
+    if let Ok(cwd) = std::env::current_dir()
+        && let Some(parent) = cwd.parent() {
             candidates.push(parent.join("flags").join("coats_of_arms"));
         }
-    }
     // Build-time manifest 'flags/coats_of_arms' (source tree)
     candidates.push(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -264,16 +262,14 @@ pub async fn ensure_coat_of_arms_with_fetcher(
             target_dir = cand;
         }
     }
-    if !target_dir.exists() && fs::create_dir_all(&target_dir).is_err() {
-        if let Ok(exe) = std::env::current_exe() {
-            if let Some(parent) = exe.parent() {
+    if !target_dir.exists() && fs::create_dir_all(&target_dir).is_err()
+        && let Ok(exe) = std::env::current_exe()
+            && let Some(parent) = exe.parent() {
                 let alt = parent.join("flags").join("coats_of_arms");
                 if fs::create_dir_all(&alt).is_ok() {
                     target_dir = alt;
                 }
             }
-        }
-    }
 
     let filepath = target_dir.join(&filename);
     // Honor overwrite config: only attempt network fetch if overwrite enabled
@@ -415,16 +411,14 @@ pub async fn ensure_coat_of_arms_with_fetcher(
     // Helper to inspect a JSON value for coat urls
     fn extract_from_obj(o: &serde_json::Value) -> Option<String> {
         if let Some(coa) = o.get("coatOfArms") {
-            if let Some(s) = coa.get("svg").and_then(|x| x.as_str()) {
-                if !s.trim().is_empty() {
+            if let Some(s) = coa.get("svg").and_then(|x| x.as_str())
+                && !s.trim().is_empty() {
                     return Some(s.to_string());
                 }
-            }
-            if let Some(s) = coa.get("png").and_then(|x| x.as_str()) {
-                if !s.trim().is_empty() {
+            if let Some(s) = coa.get("png").and_then(|x| x.as_str())
+                && !s.trim().is_empty() {
                     return Some(s.to_string());
                 }
-            }
         }
         None
     }
@@ -432,9 +426,9 @@ pub async fn ensure_coat_of_arms_with_fetcher(
     // If the API responded with an error structure, create a placeholder PNG
     // so album generation can continue (the absence of a coat should not
     // abort the whole run). Surface the message to logs for diagnosis.
-    if let Some(errors) = v.get("errors") {
-        if let Some(first) = errors.get(0) {
-            if let Some(msg) = first.get("message").and_then(|m| m.as_str()) {
+    if let Some(errors) = v.get("errors")
+        && let Some(first) = errors.get(0)
+            && let Some(msg) = first.get("message").and_then(|m| m.as_str()) {
                 eprintln!("restcountries API error: {}", msg);
                 // create placeholder PNG and return its path
                 let png_path = filepath.with_extension("png");
@@ -460,8 +454,6 @@ pub async fn ensure_coat_of_arms_with_fetcher(
                 let _ = im.save(&png_path);
                 return Ok(png_path.to_string_lossy().to_string());
             }
-        }
-    }
 
     // Try a few shapes: array of objects, single object, or nested data->... structures.
     let mut coa_url_opt: Option<String> = None;
@@ -484,11 +476,10 @@ pub async fn ensure_coat_of_arms_with_fetcher(
                         break;
                     }
                 }
-            } else if data.is_object() {
-                if let Some(s) = extract_from_obj(data) {
+            } else if data.is_object()
+                && let Some(s) = extract_from_obj(data) {
                     coa_url_opt = Some(s);
                 }
-            }
         }
     }
 
@@ -502,15 +493,14 @@ pub async fn ensure_coat_of_arms_with_fetcher(
 
         // Decide on extension: prefer Content-Type header, fall back to URL suffix
         let mut ext = None::<&str>;
-        if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE) {
-            if let Ok(cts) = ct.to_str() {
+        if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE)
+            && let Ok(cts) = ct.to_str() {
                 if cts.contains("svg") {
                     ext = Some("svg");
                 } else if cts.contains("png") {
                     ext = Some("png");
                 }
             }
-        }
         if ext.is_none() {
             if coa_url.to_lowercase().ends_with(".png") {
                 ext = Some("png");
@@ -707,8 +697,8 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
     // downsample it to the target final size for quality (Lanczos3).
     if which::which("rsvg-convert").is_ok() {
         // Attempt to determine a target and upscale similar to the resvg path.
-        if let Ok(svg_bytes) = std::fs::read(svg) {
-            if let Ok(tree) = {
+        if let Ok(svg_bytes) = std::fs::read(svg)
+            && let Ok(tree) = {
                 let mut opt = usvg::Options::default();
                 if let Some(parent) = svg.parent() {
                     opt.resources_dir = Some(parent.to_path_buf());
@@ -760,7 +750,6 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
                     }
                 }
             }
-        }
         // If the above high-res -> downsample path failed, try a simple conversion
         let status = Command::new("rsvg-convert")
             .arg("-f")
@@ -904,20 +893,18 @@ fn extract_flag_from_nexperts_html(html: &str, alpha: &str) -> Option<String> {
 
 fn extract_country_name_from_nexperts_html(html: &str) -> Option<String> {
     // Try <title> or an <h1> entry
-    if let Some(pos) = html.find("<title>") {
-        if let Some(end) = html[pos..].find("</title>") {
+    if let Some(pos) = html.find("<title>")
+        && let Some(end) = html[pos..].find("</title>") {
             let t = &html[pos + 7..pos + end];
             return Some(t.trim().to_string());
         }
-    }
     if let Some(pos) = html.find("<h1") {
         // find closing '>' then closing </h1>
-        if let Some(start) = html[pos..].find('>') {
-            if let Some(end) = html[pos + start..].find("</h1>") {
+        if let Some(start) = html[pos..].find('>')
+            && let Some(end) = html[pos + start..].find("</h1>") {
                 let t = &html[pos + start + 1..pos + start + end];
                 return Some(t.trim().to_string());
             }
-        }
     }
     None
 }

@@ -1,9 +1,9 @@
 use crate::native_pdf::{
+    Result,
     colour::NamedColour,
     document::Bounds,
     text::MeasuredText,
     units::{mm_to_points, points_to_mm},
-    Result,
 };
 use oxidize_pdf::text::Font;
 

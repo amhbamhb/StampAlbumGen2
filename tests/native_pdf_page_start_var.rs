@@ -92,7 +92,7 @@ fn variable_start_can_be_the_only_page_start_and_needs_no_group() -> Result<(), 
         .split("PAGE_START_GROUP_BEGIN")
         .next()
         .ok_or("Missing group")?;
-    let stamp="ROW_START_ES (HN 8 0.1)\nSTAMP_ADD_IMG (58 35 \"../stamp-pagination-v1/us-150.png\" \"\" \"single\" \"\")";
+    let stamp = "ROW_START_ES (HN 8 0.1)\nSTAMP_ADD_IMG (58 35 \"../stamp-pagination-v1/us-150.png\" \"\" \"single\" \"\")";
     let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
     let output = temp.path().join("single.pdf");
     assert_eq!(
@@ -124,20 +124,25 @@ fn invalid_overrides_and_recursive_groups_preserve_outputs() -> Result<(), Strin
         "PAGE_START_GROUP_BEGIN\nPAGE_START_VAR (4 6)\nPAGE_START_GROUP_END",
         "PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 $$2)\nPAGE_START_GROUP_END\nPAGE_START_VAR (4 6 onlyone)",
     ] {
-        assert!(albumeasy::render(source,&fixture(),&output).is_err(),"{source}");
-        assert_eq!(fs::read(&output).map_err(|e| e.to_string())?,b"existing");
+        assert!(
+            albumeasy::render(source, &fixture(), &output).is_err(),
+            "{source}"
+        );
+        assert_eq!(fs::read(&output).map_err(|e| e.to_string())?, b"existing");
     }
     let native =
         fs::read_to_string(fixture().join("album.stampalbum")).map_err(|e| e.to_string())?;
     for args in ["12", "12 6 1", "-1 6", "12 NaN", "\"12\" 6"] {
-        assert!(NativeAlbum::parse(
-            &native.replace(
-                "NATIVE_PAGE_BREAK (12 6)",
-                &format!("NATIVE_PAGE_BREAK ({args})")
-            ),
-            &fixture()
-        )
-        .is_err());
+        assert!(
+            NativeAlbum::parse(
+                &native.replace(
+                    "NATIVE_PAGE_BREAK (12 6)",
+                    &format!("NATIVE_PAGE_BREAK ({args})")
+                ),
+                &fixture()
+            )
+            .is_err()
+        );
     }
     Ok(())
 }
@@ -253,15 +258,19 @@ fn automatic_continuations_inherit_override_until_the_next_explicit_break() -> R
             .filter(|p| p.items.iter().any(|i| (4..8).contains(&i.source_index)))
             .collect::<Vec<_>>();
         assert_eq!(overrides.len(), 2);
-        assert!(overrides
-            .iter()
-            .all(|p| (p.layout.content_bounds.left - 27.2).abs() < 1e-8));
+        assert!(
+            overrides
+                .iter()
+                .all(|p| (p.layout.content_bounds.left - 27.2).abs() < 1e-8)
+        );
         let restored = pages
             .iter()
             .filter(|p| p.items.iter().any(|i| i.source_index >= 12));
-        assert!(restored
-            .into_iter()
-            .all(|p| (p.layout.content_bounds.left - 19.2).abs() < 1e-8));
+        assert!(
+            restored
+                .into_iter()
+                .all(|p| (p.layout.content_bounds.left - 19.2).abs() < 1e-8)
+        );
     }
     Ok(())
 }

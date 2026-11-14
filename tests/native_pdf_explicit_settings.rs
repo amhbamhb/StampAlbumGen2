@@ -229,18 +229,22 @@ fn rendering_policy_has_no_missing_key_fallbacks() -> Result<()> {
         .replace("page_border_inner1 = 0.5", "page_border_inner1 = 0")
         .replace("page_border_inner2 = 0.2", "page_border_inner2 = 0");
     let loaded = NativePdfConfig::from_toml(&disabled)?;
-    assert!(loaded
-        .page_settings
-        .border()
-        .strokes(loaded.page_settings.resolve(1)?.margin_bounds)?
-        .is_empty());
+    assert!(
+        loaded
+            .page_settings
+            .border()
+            .strokes(loaded.page_settings.resolve(1)?.margin_bounds)?
+            .is_empty()
+    );
     let no_proof = CONFIG.split("[native_pdf.proof]").next().ok_or("config")?;
     assert!(NativePdfConfig::from_toml(no_proof).is_err());
     let unknown = NativePdfConfig::from_toml(&format!("{CONFIG}\nfuture_setting = 42\n"))?;
     assert_eq!(unknown.unapplied_keys, ["native_pdf.proof.future_setting"]);
-    assert!(NativePdfConfig::from_toml(CONFIG)?
-        .unapplied_keys
-        .is_empty());
+    assert!(
+        NativePdfConfig::from_toml(CONFIG)?
+            .unapplied_keys
+            .is_empty()
+    );
     Ok(())
 }
 

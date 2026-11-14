@@ -7,7 +7,7 @@ use stamp_album_gen2::native_pdf::{
     stamp_box::StampBoxGeometry,
     stamp_image::{StampImageRowItem, StampTextProofSettings},
     stamp_text::{
-        fit_text_rows, ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy,
+        ExpandedWidthLimit, StampTextItem, StampTextPolicy, TextWidthPolicy, fit_text_rows,
     },
     units::{mm_to_points, points_to_mm},
 };
@@ -192,24 +192,28 @@ fn any_bad_image_or_scale_preserves_existing_output_and_creates_no_new_pdf() -> 
         }
         let output = temp.path().join("existing.pdf");
         fs::write(&output, b"original")?;
-        assert!(write_stamp_items_geometry_proof(
-            &config.page_settings,
-            &config.proof,
-            &items,
-            &policy,
-            &output
-        )
-        .is_err());
+        assert!(
+            write_stamp_items_geometry_proof(
+                &config.page_settings,
+                &config.proof,
+                &items,
+                &policy,
+                &output
+            )
+            .is_err()
+        );
         assert_eq!(fs::read(&output)?, b"original");
         let missing = temp.path().join("must-not-exist.pdf");
-        assert!(write_stamp_items_geometry_proof(
-            &config.page_settings,
-            &config.proof,
-            &items,
-            &policy,
-            &missing
-        )
-        .is_err());
+        assert!(
+            write_stamp_items_geometry_proof(
+                &config.page_settings,
+                &config.proof,
+                &items,
+                &policy,
+                &missing
+            )
+            .is_err()
+        );
         assert!(!missing.exists());
     }
     Ok(())
@@ -224,24 +228,28 @@ fn item_proof_rejects_multiple_pages_and_text_overflow_before_writing() -> Resul
     let output = temp.path().join("existing.pdf");
     fs::write(&output, b"original")?;
     config.proof.page_count = 2;
-    assert!(write_stamp_items_geometry_proof(
-        &config.page_settings,
-        &config.proof,
-        &items,
-        &policy,
-        &output
-    )
-    .is_err());
+    assert!(
+        write_stamp_items_geometry_proof(
+            &config.page_settings,
+            &config.proof,
+            &items,
+            &policy,
+            &output
+        )
+        .is_err()
+    );
     config.proof.page_count = 1;
     items[0].stamp.caption.as_mut().ok_or("caption")?.text = "long text ".repeat(1000);
-    assert!(write_stamp_items_geometry_proof(
-        &config.page_settings,
-        &config.proof,
-        &items,
-        &policy,
-        &output
-    )
-    .is_err());
+    assert!(
+        write_stamp_items_geometry_proof(
+            &config.page_settings,
+            &config.proof,
+            &items,
+            &policy,
+            &output
+        )
+        .is_err()
+    );
     assert_eq!(fs::read(output)?, b"original");
     Ok(())
 }
@@ -279,11 +287,13 @@ fn regenerate_letter_item_fixtures() -> Result<()> {
         let rows = fit_text_rows(content, &stamps, config.page_settings.spacing(), &policy)?;
         let mut source = inputs.iter();
         let mut data = Vec::new();
-        let mut txt=format!("# COMPATIBILITY ADAPTATION: {name}; standalone text and image blocks, NOT native row/position parity.\n\
+        let mut txt = format!(
+            "# COMPATIBILITY ADAPTATION: {name}; standalone text and image blocks, NOT native row/position parity.\n\
             # Native text cap/footprint policy is not an AlbumEasy command. All text and images retained.\n\
             ALBUM_PAGES_SIZE (215.9 279.4)\nALBUM_PAGES_MARGINS (12 12 12 12)\n\
             ALBUM_PAGES_SPACING (3 3)\nALBUM_PAGES_BORDER (0.2 0 0 0)\n\
-            STAMP_BOXES_SIZE_ADJUST (0)\nPAGE_START\n");
+            STAMP_BOXES_SIZE_ADJUST (0)\nPAGE_START\n"
+        );
         for row in rows {
             let mut row_data = Vec::new();
             for placed in row {

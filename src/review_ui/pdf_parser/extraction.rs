@@ -1,5 +1,5 @@
 use super::types::PdfStampRecord;
-use oxidize_pdf::operations::{extract_images_from_pdf, ExtractImagesOptions};
+use oxidize_pdf::operations::{ExtractImagesOptions, extract_images_from_pdf};
 use pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform};
 use std::path::Path;
 
@@ -96,7 +96,7 @@ pub fn parse_stampworld_pdf<P: AsRef<Path>>(
 ) -> Result<Vec<PdfStampRecord>, String> {
     let start = start_year.to_string();
     let end = end_year.to_string();
-    let _images = extract_stampworld_pdf_images(path.as_ref(), &country, &start, &end)?;
+    let _images = extract_stampworld_pdf_images(path.as_ref(), country, &start, &end)?;
     println!("path imgs: {}", path.as_ref().display());
     println!("imgs: {}", _images.len());
     println!("start year: {}", start);
@@ -109,7 +109,7 @@ pub fn extract_stampworld_pdf_content<P: AsRef<Path>>(
     path: P,
 ) -> Result<(String, Vec<oxidize_pdf::operations::ExtractedImage>), String> {
     let text = extract_stampworld_pdf_text(path.as_ref())?;
-    let images = extract_stampworld_pdf_images(path.as_ref(), "", &"", &"")?;
+    let images = extract_stampworld_pdf_images(path.as_ref(), "", "", "")?;
     Ok((text, images))
 }
 
@@ -133,7 +133,7 @@ pub fn extract_stampworld_pdf_images<P: AsRef<Path>>(
         .join(stem);
 
     let options = ExtractImagesOptions {
-        output_dir: output_dir, // or whatever you want
+        output_dir, // or whatever you want
         name_pattern: format!(
             "{country}_{start_year}-{end_year}_{{page}}_img_{{index}}.{{format}}",
             country = country,
@@ -273,12 +273,11 @@ pub fn parse_stampworld_text(text: &str) -> Result<Vec<PdfStampRecord>, String> 
             && !line.chars().next().is_some_and(|c| c.is_ascii_digit())
         {
             // Wrapped descriptions follow the first visual row, after its prices.
-            if let Some(record) = records.last_mut() {
-                if record.series == group.series && !record.description.is_empty() {
+            if let Some(record) = records.last_mut()
+                && record.series == group.series && !record.description.is_empty() {
                     record.description.push(' ');
                     record.description.push_str(&normalized(line));
                 }
-            }
         }
     }
     if !pending.is_empty() {

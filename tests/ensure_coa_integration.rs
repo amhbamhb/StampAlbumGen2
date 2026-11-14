@@ -23,7 +23,7 @@ async fn ensure_coa_from_local_svg_creates_png() {
     fs::write(&svg_path, svg_content).expect("write svg");
 
     // Set env so the library will look in our temp flags dir first
-    std::env::set_var("STAMP_FLAGS_DIR", dir.path());
+    unsafe{ std::env::set_var("STAMP_FLAGS_DIR", dir.path()); }
 
     // Call the public API which should locate the svg and attempt to rasterize
     let res = stamp_album_gen2::flagdb::ensure_coat_of_arms("ca").await;

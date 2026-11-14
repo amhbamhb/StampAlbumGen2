@@ -61,11 +61,13 @@ async fn unmapped_country_can_reuse_a_valid_album_local_flag_without_network() {
     .expect("album-local fallback");
     assert_eq!(std::path::Path::new(&result), path);
     std::fs::write(&path, "<html>bad cache</html>").expect("invalid local image");
-    assert!(stamp_album_gen2::flagdb::copy_flag_for_album(
-        "Atlantis",
-        temp.path().to_str().expect("path"),
-        "w320",
-    )
-    .await
-    .is_err());
+    assert!(
+        stamp_album_gen2::flagdb::copy_flag_for_album(
+            "Atlantis",
+            temp.path().to_str().expect("path"),
+            "w320",
+        )
+        .await
+        .is_err()
+    );
 }

@@ -148,20 +148,24 @@ fn numbering_defaults_enablement_precedence_and_snapshots_are_explicit() -> Resu
         assert_eq!(n.colour.rgb(), [0.0; 3]);
     }
     let disabled = CONFIG.replace("number_enabled = true", "number_enabled = false");
-    assert!(NativePdfConfig::from_toml(&disabled)?
-        .page_settings
-        .resolve(1)?
-        .footer_number
-        .is_none());
+    assert!(
+        NativePdfConfig::from_toml(&disabled)?
+            .page_settings
+            .resolve(1)?
+            .footer_number
+            .is_none()
+    );
     let absent = CONFIG
         .split("[native_pdf.footer_number]")
         .next()
         .ok_or("config")?;
-    assert!(NativePdfConfig::from_toml(absent)?
-        .page_settings
-        .resolve(1)?
-        .footer_number
-        .is_none());
+    assert!(
+        NativePdfConfig::from_toml(absent)?
+            .page_settings
+            .resolve(1)?
+            .footer_number
+            .is_none()
+    );
     let source =
         format!("album_pages_footer_number_start = 100\n{CONFIG}\nfuture_number_setting = 1\n");
     let temporary = tempfile::tempdir()?;
@@ -278,19 +282,23 @@ fn invalid_missing_and_overflow_values_fail_with_redacted_keys() -> Result<()> {
         .err()
         .ok_or("must fail")?;
     assert!(error.contains("native_pdf.footer_number.enabled") && !error.contains("private-value"));
-    assert!(NativePdfConfig::from_toml(&CONFIG.replace(
-        "[native_pdf.footer_number]\nenabled = true",
-        "[native_pdf.footer_number]"
-    ))
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace(
+            "[native_pdf.footer_number]\nenabled = true",
+            "[native_pdf.footer_number]"
+        ))
+        .is_err()
+    );
     let no_policy = CONFIG.replace("[native_pdf.footer]", "[unapplied_footer]");
     assert!(NativePdfConfig::from_toml(&no_policy).is_err());
     let config = NativePdfConfig::from_toml(CONFIG)?;
     for (page, total) in [(0, 2), (1, 0), (3, 2)] {
-        assert!(config
-            .page_settings
-            .resolve_with_page_count(page, total)
-            .is_err());
+        assert!(
+            config
+                .page_settings
+                .resolve_with_page_count(page, total)
+                .is_err()
+        );
     }
     let at_max = NativePdfConfig::from_toml(
         &CONFIG
@@ -316,10 +324,12 @@ fn coexistence_collisions_and_later_page_preflight_are_checked() -> Result<()> {
     let layout = config.page_settings.resolve_with_page_count(1, 2)?;
     assert!(layout.footer.is_some() && layout.footer_number.is_some());
     let collision = coexist.replace("number_position = \"R\"", "number_position = \"L\"");
-    assert!(NativePdfConfig::from_toml(&collision)
-        .err()
-        .ok_or("collision")?
-        .contains("overlaps"));
+    assert!(
+        NativePdfConfig::from_toml(&collision)
+            .err()
+            .ok_or("collision")?
+            .contains("overlaps")
+    );
     let even_collision = coexist.replace("number_position = \"R\"", "number_position = \"RL\"");
     let error = NativePdfConfig::from_toml(&even_collision)
         .err()
@@ -515,9 +525,10 @@ fn serialized_numbers_tokens_and_footer_coexistence_match_references() -> Result
             source = source.replace("number_font = \"HN\"", "number_font = \"TB\"");
         }
         if asymmetric {
-            source=source.replace("page_left_margin_mm = 15","page_left_margin_mm = 25")
-                    .replace("page_right_margin_mm = 15","page_right_margin_mm = 12")
-                    + "\n[page.even_margins]\nleft_mm = 12\nright_mm = 25\ntop_mm = 18\nbottom_mm = 20\n";
+            source = source
+                .replace("page_left_margin_mm = 15", "page_left_margin_mm = 25")
+                .replace("page_right_margin_mm = 15", "page_right_margin_mm = 12")
+                + "\n[page.even_margins]\nleft_mm = 12\nright_mm = 25\ntop_mm = 18\nbottom_mm = 20\n";
         }
         if coexist {
             source=source.replace("[native_pdf.footer]\nenabled = false","[native_pdf.footer]\nenabled = true")

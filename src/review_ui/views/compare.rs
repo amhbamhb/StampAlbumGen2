@@ -1,7 +1,7 @@
 use super::{
-    render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html, MatcherPayload,
-    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS,
+    BACKEND_NOT_RESPONDING_MESSAGE, FOOTER_YEAR_UPDATE_JS, MatcherPayload, render_app_footer_html,
+    render_config_editor_assets, render_footer_year_script, render_reconnect_banner_html,
+    render_runtime_log_panel_html,
 };
 
 use super::compare_assets::{
@@ -27,7 +27,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
             retry_fn: "retryBackendHealthCheckCompare",
             reload_fn: "reloadCurrentPageCompare",
             meta_id: "reconnectBannerCompareMeta",
-        })
+        }),
     );
     let runtime_log_compare_panel_html = render_runtime_log_panel_html(
         &(RuntimeLogPanelParams {
@@ -40,7 +40,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
             checkbox_id: "showRuntimeLogCompare",
             toggle_fn: "toggleRuntimeLogVisibilityCompare",
             copy_fn: "copyRuntimeLogCompare",
-        })
+        }),
     );
     let compare_top_html = render_compare_top_html(
         &reconnect_banner_compare_html,
@@ -55,7 +55,7 @@ pub(super) fn render_html(payload: &MatcherPayload) -> String {
     let local_catalog_select_assets =
         " <div class='sessionRow'>
                         <button onclick='openConfigEditor()'>Edit Local Config</button>
-                        <button onclick='openSiteAccountsDialog()'>Site Accounts</button>
+
                         <label for='defaultCatalogSelect'>Local Catalog</label>
                         <select id='defaultCatalogSelect' onchange='changeCountryDefaultCatalog()'>
                             <option value='sg'>Stanley Gibbons (SG)</option>

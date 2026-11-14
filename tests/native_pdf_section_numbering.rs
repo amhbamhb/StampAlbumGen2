@@ -105,8 +105,7 @@ fn section_scope_requires_a_start_and_supported_scope() -> Result<()> {
 #[test]
 fn section_markers_require_enabled_native_section_scope() -> Result<()> {
     let source = fs::read_to_string(fixture().join("normal.stampalbum"))?;
-    let first_stamp =
-        "STAMP_IMAGE (\"../stamp-pagination-v1/us-150.png\" 52 29 0.05078125 \"HN\" 8 \"DB 150 / SG 1125a\\n52 x 29 mm\\nFirst-page wide design\")\n";
+    let first_stamp = "STAMP_IMAGE (\"../stamp-pagination-v1/us-150.png\" 52 29 0.05078125 \"HN\" 8 \"DB 150 / SG 1125a\\n52 x 29 mm\\nFirst-page wide design\")\n";
     let marked = source.replacen(
         first_stamp,
         &format!("{first_stamp}NATIVE_PAGE_NUMBER_SECTION ()\n"),
@@ -120,9 +119,11 @@ fn section_markers_require_enabled_native_section_scope() -> Result<()> {
         "[native_pdf.footer_number]\nenabled = false",
         "[native_pdf.footer_number]\nenabled = true",
     );
-    assert!(album
-        .write_pdf_with_config(&NativePdfConfig::from_toml(&document_config)?, &output)
-        .is_err());
+    assert!(
+        album
+            .write_pdf_with_config(&NativePdfConfig::from_toml(&document_config)?, &output)
+            .is_err()
+    );
     Ok(())
 }
 
@@ -142,8 +143,7 @@ fn explicit_sections_reset_on_next_page_and_keep_document_count_tokens() -> Resu
             "\" of $PAGES$\"",
             "\" of $PAGES$; s$SECTION_PAGE$/$SECTION_PAGES$; d$DOCUMENT_PAGES$\"",
         );
-    let first_stamp =
-        "STAMP_IMAGE (\"../stamp-pagination-v1/us-150.png\" 52 29 0.05078125 \"HN\" 8 \"DB 150 / SG 1125a\\n52 x 29 mm\\nFirst-page wide design\")\n";
+    let first_stamp = "STAMP_IMAGE (\"../stamp-pagination-v1/us-150.png\" 52 29 0.05078125 \"HN\" 8 \"DB 150 / SG 1125a\\n52 x 29 mm\\nFirst-page wide design\")\n";
     let directory = tempfile::tempdir()?;
     let mut page_counts = Vec::new();
     for height in [140, 220] {

@@ -216,20 +216,24 @@ fn missing_invalid_disabled_keys_redaction_and_unknown_keys() -> Result<()> {
         );
         assert!(!error.contains("secret"), "{error}");
     }
-    assert!(config(&CROP.replace("enabled = true", "enabled = false"))?
-        .page_settings
-        .resolve(1)?
-        .crop_marks
-        .is_none());
+    assert!(
+        config(&CROP.replace("enabled = true", "enabled = false"))?
+            .page_settings
+            .resolve(1)?
+            .crop_marks
+            .is_none()
+    );
     assert_eq!(
         config(&format!("{CROP}\nfuture = 1"))?.unapplied_keys,
         ["native_pdf.crop_marks.future"]
     );
-    assert!(config(&CROP.replace(
-        "[native_pdf.crop_marks]",
-        "[native_pdf]\ncrop_marks = 1\n[native_pdf.other]"
-    ))
-    .is_err());
+    assert!(
+        config(&CROP.replace(
+            "[native_pdf.crop_marks]",
+            "[native_pdf]\ncrop_marks = 1\n[native_pdf.other]"
+        ))
+        .is_err()
+    );
     Ok(())
 }
 
@@ -253,16 +257,20 @@ fn templates_are_explicit_disabled_and_snapshot_is_independent() -> Result<()> {
         }
         let loaded = NativePdfConfig::from_toml(source)?;
         assert!(loaded.page_settings.resolve(1)?.crop_marks.is_none());
-        assert!(!loaded
-            .unapplied_keys
-            .iter()
-            .any(|key| key.starts_with("native_pdf.crop_marks")));
+        assert!(
+            !loaded
+                .unapplied_keys
+                .iter()
+                .any(|key| key.starts_with("native_pdf.crop_marks"))
+        );
         table["native_pdf"]["crop_marks"]["enabled"] = toml::Value::Boolean(true);
-        assert!(NativePdfConfig::from_toml(&toml::to_string(&table)?)?
-            .page_settings
-            .resolve(1)?
-            .crop_marks
-            .is_some());
+        assert!(
+            NativePdfConfig::from_toml(&toml::to_string(&table)?)?
+                .page_settings
+                .resolve(1)?
+                .crop_marks
+                .is_some()
+        );
         assert!(loaded.page_settings.resolve(1)?.crop_marks.is_none());
     }
     let temp = tempfile::tempdir()?;

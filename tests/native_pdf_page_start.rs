@@ -60,7 +60,9 @@ fn original_txt_and_byte_identical_raw_documents_preserve_page_groups() -> Resul
             assert_pair(&pages);
             if stem == "album" {
                 for (index, year) in ["1959", "1960"].iter().enumerate() {
-                    assert!(pages[index].contains(&format!("Year: {year} | Year repeated: {year}")));
+                    assert!(
+                        pages[index].contains(&format!("Year: {year} | Year repeated: {year}"))
+                    );
                     assert!(!pages[index].contains(if index == 0 { "1960" } else { "1959" }));
                 }
             }
@@ -237,11 +239,23 @@ fn groups_reject_malformed_input_and_preserve_existing_output() -> Result<(), St
         ("PAGE_START_GROUP_END", "no open group"),
         ("PAGE_START_GROUP_BEGIN", "Unclosed"),
         ("PAGE_START_GROUP_BEGIN\nPAGE_START_GROUP_BEGIN", "only one"),
-        ("PAGE_START_GROUP_BEGIN\nPAGE_START\nPAGE_START_GROUP_END", "inside its own group"),
+        (
+            "PAGE_START_GROUP_BEGIN\nPAGE_START\nPAGE_START_GROUP_END",
+            "inside its own group",
+        ),
         ("PAGE_START\nPAGE_START_GROUP_BEGIN", "before all pages"),
-        ("PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 $$2)\nPAGE_START_GROUP_END\nPAGE_START (one)", "Missing PAGE_START argument for $$2"),
-        ("PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 \"$$0\")\nPAGE_START_GROUP_END\nPAGE_START", "$$1 through $$9"),
-        ("PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 \"$$1\")\nPAGE_START_GROUP_END\nPAGE_START (\"quoted value\")", "invoked at line 4"),
+        (
+            "PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 $$2)\nPAGE_START_GROUP_END\nPAGE_START (one)",
+            "Missing PAGE_START argument for $$2",
+        ),
+        (
+            "PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 \"$$0\")\nPAGE_START_GROUP_END\nPAGE_START",
+            "$$1 through $$9",
+        ),
+        (
+            "PAGE_START_GROUP_BEGIN\nPAGE_TEXT_CENTRE (HN 9 \"$$1\")\nPAGE_START_GROUP_END\nPAGE_START (\"quoted value\")",
+            "invoked at line 4",
+        ),
     ];
     for (source, expected) in cases {
         let error = albumeasy::render(source, &fixture(), &output).expect_err(source);
@@ -292,9 +306,11 @@ fn break_arguments_fail_and_explicit_empty_albums_render() -> Result<(), String>
     let source =
         fs::read_to_string(fixture().join("basic.stampalbum")).map_err(|e| e.to_string())?;
     let invalid = source.replace("NATIVE_PAGE_BREAK ()", "NATIVE_PAGE_BREAK (1)");
-    assert!(NativeAlbum::parse(&invalid, &fixture())
-        .expect_err("break args")
-        .contains("takes no arguments"));
+    assert!(
+        NativeAlbum::parse(&invalid, &fixture())
+            .expect_err("break args")
+            .contains("takes no arguments")
+    );
     let declarations = source
         .split("# Native attached")
         .next()

@@ -4,7 +4,7 @@
 //! This module generates placeholder images for stamps that don't have associated images.
 
 use crate::image_utils::calc_mm_per_pixel_embedded;
-use ab_glyph::{point, Font, FontArc, PxScale, ScaleFont};
+use ab_glyph::{Font, FontArc, PxScale, ScaleFont, point};
 use image::{GenericImageView, ImageBuffer, Rgba};
 use log::{error, info};
 use std::fs::File;
@@ -75,7 +75,16 @@ pub fn compute_placeholder_size_for_series(series: &str) -> (u32, u32) {
         // mm_per_px_* are f32; convert and compute pixel dims
         let px_w = (target_mm_w as f32 / mm_per_px_w).round() as u32;
         let px_h = (target_mm_h as f32 / mm_per_px_h).round() as u32;
-        log::debug!("compute_placeholder_size_for_series: series='{}' target_mm=({:.2},{:.2}) mm_per_px=({:.6},{:.6}) -> px=({},{})", series, target_mm_w, target_mm_h, mm_per_px_w, mm_per_px_h, px_w, px_h);
+        log::debug!(
+            "compute_placeholder_size_for_series: series='{}' target_mm=({:.2},{:.2}) mm_per_px=({:.6},{:.6}) -> px=({},{})",
+            series,
+            target_mm_w,
+            target_mm_h,
+            mm_per_px_w,
+            mm_per_px_h,
+            px_w,
+            px_h
+        );
         // Keep sensible minimums
         return (px_w.max(50), px_h.max(40));
     }
@@ -215,33 +224,26 @@ pub fn generate_transparent_spacer(
 /// Returns a loaded `ab_glyph::FontArc` on success, or `None` if no font could be found.
 fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
     // If caller provided override path, try it first
-    if let Some(p) = font_override {
-        if Path::new(p).exists() {
-            if let Ok(mut f) = File::open(p) {
+    if let Some(p) = font_override
+        && Path::new(p).exists()
+            && let Ok(mut f) = File::open(p) {
                 let mut buf = Vec::new();
-                if f.read_to_end(&mut buf).is_ok() {
-                    if let Ok(font) = FontArc::try_from_vec(buf) {
+                if f.read_to_end(&mut buf).is_ok()
+                    && let Ok(font) = FontArc::try_from_vec(buf) {
                         return Some(font);
                     }
-                }
             }
-        }
-    }
     // Allow user to override font via environment variable if no explicit override provided
-    if font_override.is_none() {
-        if let Ok(env_path) = std::env::var("STAMP_ALBUM_PLACEHOLDER_FONT") {
-            if Path::new(&env_path).exists() {
-                if let Ok(mut f) = File::open(&env_path) {
+    if font_override.is_none()
+        && let Ok(env_path) = std::env::var("STAMP_ALBUM_PLACEHOLDER_FONT")
+            && Path::new(&env_path).exists()
+                && let Ok(mut f) = File::open(&env_path) {
                     let mut buf = Vec::new();
-                    if f.read_to_end(&mut buf).is_ok() {
-                        if let Ok(font) = FontArc::try_from_vec(buf) {
+                    if f.read_to_end(&mut buf).is_ok()
+                        && let Ok(font) = FontArc::try_from_vec(buf) {
                             return Some(font);
                         }
-                    }
                 }
-            }
-        }
-    }
     // Candidate font paths (common Linux, macOS, Windows locations). The project may bundle a font later.
     let candidates = [
         "assets/fonts/DejaVuSans.ttf",
@@ -253,16 +255,14 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
     ];
 
     for path in candidates.iter() {
-        if Path::new(path).exists() {
-            if let Ok(mut f) = File::open(path) {
+        if Path::new(path).exists()
+            && let Ok(mut f) = File::open(path) {
                 let mut buf = Vec::new();
-                if f.read_to_end(&mut buf).is_ok() {
-                    if let Ok(font) = FontArc::try_from_vec(buf) {
+                if f.read_to_end(&mut buf).is_ok()
+                    && let Ok(font) = FontArc::try_from_vec(buf) {
                         return Some(font);
                     }
-                }
             }
-        }
     }
 
     None
@@ -689,7 +689,14 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
                     need_create = false;
                 } else {
                     // log the mismatch and proceed to recreate
-                    log::info!("Placeholder {} exists with size {}x{} px but desired is {}x{} px; recreating", placeholder_path.display(), aw, ah, desired_px_w, desired_px_h);
+                    log::info!(
+                        "Placeholder {} exists with size {}x{} px but desired is {}x{} px; recreating",
+                        placeholder_path.display(),
+                        aw,
+                        ah,
+                        desired_px_w,
+                        desired_px_h
+                    );
                 }
             }
         }
@@ -770,7 +777,14 @@ pub fn ensure_placeholder_image_for_stamp_with_hint(
                 let (sw, sh) = saved.dimensions();
                 if sw != px_w || sh != px_h {
                     // Try a second write using the higher-level generator to be safe
-                    log::warn!("Saved placeholder {} has size {}x{} px but expected {}x{} px — attempting rewrite", placeholder_path.display(), sw, sh, px_w, px_h);
+                    log::warn!(
+                        "Saved placeholder {} has size {}x{} px but expected {}x{} px — attempting rewrite",
+                        placeholder_path.display(),
+                        sw,
+                        sh,
+                        px_w,
+                        px_h
+                    );
                     // Re-generate explicitly via the options API which is known
                     // to produce exact buffer sizes.
                     generate_placeholder_image_with_options(px_w, px_h, &placeholder_path, None)?;

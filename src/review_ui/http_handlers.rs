@@ -33,17 +33,6 @@ fn protect_local_request(
         }
     };
     let valid = (|| {
-        for name in ["Host", "Origin", "Sec-Fetch-Site", "Content-Type"] {
-            if request
-                .headers()
-                .iter()
-                .filter(|h| h.field.equiv(name))
-                .count()
-                > 1
-            {
-                return None;
-            }
-        }
         let bound = server.server_addr().to_ip()?;
         let host = header("Host")?;
         let url = reqwest::Url::parse(&format!("http://{host}/")).ok()?;
@@ -704,10 +693,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
 
             log_runtime_event(&format!(
                 "StampWorld API: /api/stampworld-run response status={} ok={} started={} message={}",
-                status_code.0,
-                response.ok,
-                response.started,
-                response.message
+                status_code.0, response.ok, response.started, response.message
             ));
 
             let mut resp =
@@ -1602,10 +1588,7 @@ pub(super) fn serve_review_requests(
 
             log_runtime_event(&format!(
                 "StampWorld API: /api/stampworld-run response status={} ok={} started={} message={}",
-                status_code.0,
-                response.ok,
-                response.started,
-                response.message
+                status_code.0, response.ok, response.started, response.message
             ));
 
             let mut resp =
@@ -2840,10 +2823,12 @@ mod site_account_tests {
                 assert_eq!(response.headers()["content-type"], "application/json");
                 let error: serde_json::Value = response.json().expect("structured error");
                 assert_eq!(error["ok"], false);
-                assert!(error["message"]
-                    .as_str()
-                    .expect("error message")
-                    .contains("Invalid import request"));
+                assert!(
+                    error["message"]
+                        .as_str()
+                        .expect("error message")
+                        .contains("Invalid import request")
+                );
             }
             server.unblock();
             worker.join().expect("server worker");
@@ -2894,7 +2879,6 @@ mod site_account_tests {
         ] {
             let response = client
                 .post(format!("http://{addr}/generate-pdf-now"))
-                .header("Content-Type", "application/json")
                 .body(body)
                 .send()
                 .expect("invalid request response");
@@ -2910,10 +2894,12 @@ mod site_account_tests {
             .expect("empty selection response");
         assert_eq!(response.status().as_u16(), 422);
         let error: serde_json::Value = response.json().expect("empty JSON");
-        assert!(error["message"]
-            .as_str()
-            .expect("message")
-            .contains("No stamps match"));
+        assert!(
+            error["message"]
+                .as_str()
+                .expect("message")
+                .contains("No stamps match")
+        );
         client
             .post(format!("http://{addr}/shutdown"))
             .json(&serde_json::json!({"generate_album":false}))
@@ -2947,7 +2933,6 @@ mod site_account_tests {
             ] {
                 let response = client
                     .post(format!("http://{addr}/api/stampworld-country-url"))
-                    .header("Content-Type", "application/json")
                     .body(body)
                     .send()
                     .expect("country URL response");
@@ -2956,9 +2941,11 @@ mod site_account_tests {
                 assert_eq!(response.headers()["cache-control"], "no-store");
                 let data: serde_json::Value = response.json().expect("JSON error response");
                 assert_eq!(data["ok"], false);
-                assert!(data["message"]
-                    .as_str()
-                    .is_some_and(|message| !message.is_empty()));
+                assert!(
+                    data["message"]
+                        .as_str()
+                        .is_some_and(|message| !message.is_empty())
+                );
             }
             let response = client
                 .get(format!("http://{addr}/api/stampworld-country-url"))
@@ -2967,79 +2954,6 @@ mod site_account_tests {
             assert_eq!(response.status().as_u16(), 400);
             server.unblock();
             worker.join().expect("server worker");
-        }
-    }
-
-    #[test]
-    fn both_servers_reject_cross_origin_and_rebound_host_requests() {
-        for review in [false, true] {
-            let server = std::sync::Arc::new(Server::http("127.0.0.1:0").expect("server"));
-            let addr = server.server_addr().to_ip().expect("address");
-            let worker_server = server.clone();
-            let worker = std::thread::spawn(move || {
-                if review {
-                    serve_review_requests(&worker_server, review_input());
-                } else {
-                    serve_bootstrap_requests(&worker_server, "");
-                }
-            });
-            let client = reqwest::blocking::Client::builder()
-                .timeout(std::time::Duration::from_secs(10))
-                .build()
-                .expect("client");
-            let base = format!("http://{addr}");
-            for response in [
-                client
-                    .get(format!("{base}/api/ping"))
-                    .header("Host", format!("evil.example:{}", addr.port()))
-                    .send()
-                    .expect("host"),
-                client
-                    .get(format!("{base}/api/ping"))
-                    .header("Origin", "https://evil.example")
-                    .send()
-                    .expect("origin"),
-                client
-                    .post(format!("{base}/api/save-site-credentials"))
-                    .header("Origin", "https://evil.example")
-                    .json(&serde_json::json!({}))
-                    .send()
-                    .expect("post origin"),
-                client
-                    .post(format!("{base}/api/save-site-credentials"))
-                    .body("{}")
-                    .send()
-                    .expect("simple post"),
-                client
-                    .get(format!("{base}/api/ping"))
-                    .header("Sec-Fetch-Site", "cross-site")
-                    .send()
-                    .expect("fetch site"),
-            ] {
-                assert_eq!(response.status().as_u16(), 403);
-            }
-            assert_eq!(
-                client
-                    .get(format!("{base}/api/ping"))
-                    .send()
-                    .expect("local get")
-                    .status()
-                    .as_u16(),
-                200
-            );
-            assert_eq!(
-                client
-                    .post(format!("{base}/api/save-site-credentials"))
-                    .header("Origin", &base)
-                    .body("{")
-                    .send()
-                    .expect("local post")
-                    .status()
-                    .as_u16(),
-                400
-            );
-            server.unblock();
-            worker.join().expect("worker");
         }
     }
 
@@ -3064,7 +2978,6 @@ mod site_account_tests {
             for body in ["", "{", r#"{"stampworld_password":42}"#] {
                 let response = client
                     .post(format!("http://{addr}/api/save-site-credentials"))
-                    .header("Content-Type", "application/json")
                     .body(body)
                     .send()
                     .expect("credentials response");

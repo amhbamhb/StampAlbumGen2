@@ -1,4 +1,4 @@
-use crate::native_pdf::{commands::arguments, Result};
+use crate::native_pdf::{Result, commands::arguments};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Spacing {

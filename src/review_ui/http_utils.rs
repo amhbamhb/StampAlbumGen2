@@ -48,28 +48,28 @@ pub fn open_local_path<P: AsRef<Path>>(path: P) -> bool {
     false
 }
 
-/// Opens a folder in the file manager (platform-specific)
-pub fn open_folder_in_file_manager<P: AsRef<Path>>(folder_path: P) -> bool {
-    #[allow(dead_code)]
-    let path = folder_path.as_ref();
-    if path.is_dir() {
-        #[cfg(target_family = "unix")]
-        {
-            return std::process::Command::new("xdg-open")
-                .arg(path)
-                .spawn()
-                .is_ok();
-        }
-        #[cfg(target_family = "windows")]
-        {
-            return std::process::Command::new("start")
-                .arg(path)
-                .spawn()
-                .is_ok();
-        }
-    }
-    false
-}
+// /// Opens a folder in the file manager (platform-specific)
+// pub fn open_folder_in_file_manager<P: AsRef<Path>>(folder_path: P) -> bool {
+//     #[allow(dead_code)]
+//     let path = folder_path.as_ref();
+//     if path.is_dir() {
+//         #[cfg(target_family = "unix")]
+//         {
+//             return std::process::Command::new("xdg-open")
+//                 .arg(path)
+//                 .spawn()
+//                 .is_ok();
+//         }
+//         #[cfg(target_family = "windows")]
+//         {
+//             return std::process::Command::new("start")
+//                 .arg(path)
+//                 .spawn()
+//                 .is_ok();
+//         }
+//     }
+//     false
+// }
 
 #[cfg(test)]
 mod tests {

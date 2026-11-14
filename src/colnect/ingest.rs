@@ -1,7 +1,7 @@
 use crate::colnect::parser::ColnectStamp;
 use log::info;
 use regex::Regex;
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result, params};
 
 pub fn ingest_colnect_data(conn: &Connection, stamps: &[ColnectStamp]) -> Result<()> {
     ingest_colnect_data_with_default_catalog(conn, stamps, "sg")
@@ -198,7 +198,7 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
             if let Ok(date) = chrono::NaiveDate::parse_from_str(&date_str, "%Y-%m-%d") {
                 let year = date.format("%Y").to_string();
                 let month = date.format("%-m").to_string(); // 1-12
-                                                            // let day = date.format("%-d").to_string();   // 1-31 (Unused for now)
+                // let day = date.format("%-d").to_string();   // 1-31 (Unused for now)
 
                 // Find candidates in main stamps table
                 // Note: stamps table has month_num as integer, day as text (sometimes "05" sometimes "5")
@@ -286,11 +286,7 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
 
                         // Only accept if score is reasonably high or significantly better?
                         // For now, just take the best one if > 0.5
-                        if best_score > 0.5 {
-                            best_sg
-                        } else {
-                            None
-                        }
+                        if best_score > 0.5 { best_sg } else { None }
                     } else {
                         None
                     }
@@ -298,8 +294,8 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
                     None
                 };
 
-                if let Some(new_sg) = best_match {
-                    if new_sg != current_sg {
+                if let Some(new_sg) = best_match
+                    && new_sg != current_sg {
                         info!(
                             "Linking Colnect {} (SG {}) -> StampWorld SG {}",
                             colnect_id, current_sg, new_sg
@@ -307,7 +303,6 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
                         update_stmt.execute(params![new_sg, colnect_id])?;
                         linked_count += 1;
                     }
-                }
             }
         }
     }

@@ -240,8 +240,8 @@ fn all_three_inputs_render_rotated_text_without_altering_stamps() -> Result<(), 
 }
 
 #[test]
-fn global_colour_and_padding_are_resolved_after_definitions_and_no_text_is_valid(
-) -> Result<(), String> {
+fn global_colour_and_padding_are_resolved_after_definitions_and_no_text_is_valid()
+-> Result<(), String> {
     let source = fs::read_to_string(fixture().join("album.txt")).map_err(|e| e.to_string())?;
     let modified = source.replace(
         "ALBUM_PAGES_MARGIN_TXT (HN 9 \"LIBERTY ISSUE - RIGHT MARGIN\" R)",
@@ -261,9 +261,11 @@ fn global_colour_and_padding_are_resolved_after_definitions_and_no_text_is_valid
         .collect::<Vec<_>>()
         .join("\n");
     assert_eq!(albumeasy::render(&no_text, &fixture(), &output)?, 2);
-    assert!(!contents(&output)?
-        .join("\n")
-        .contains("0.00 1.00 -1.00 0.00"));
+    assert!(
+        !contents(&output)?
+            .join("\n")
+            .contains("0.00 1.00 -1.00 0.00")
+    );
     Ok(())
 }
 

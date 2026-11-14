@@ -45,8 +45,8 @@ fn wait_for_generated_pdf_with_timing(
 ) -> bool {
     let started = Instant::now();
     loop {
-        if let Ok(meta) = std::fs::metadata(expected_pdf_path) {
-            if meta.len() > 0 {
+        if let Ok(meta) = std::fs::metadata(expected_pdf_path)
+            && meta.len() > 0 {
                 let is_newer = match (previous_modified, meta.modified()) {
                     (Some(prev), Ok(current)) => current > prev,
                     (None, Ok(_)) => true,
@@ -56,7 +56,6 @@ fn wait_for_generated_pdf_with_timing(
                     return true;
                 }
             }
-        }
         let remaining = timeout.saturating_sub(started.elapsed());
         if remaining.is_zero() {
             return false;
@@ -351,13 +350,11 @@ where
         conn, album_name, None, start_year, end_year,
     );
 
-    if path.exists() {
-        if let Ok(meta) = std::fs::metadata(&path) {
-            if meta.len() > 0 {
+    if path.exists()
+        && let Ok(meta) = std::fs::metadata(&path)
+            && meta.len() > 0 {
                 return generated_artifacts_from_path(path, generate_pdf_override);
             }
-        }
-    }
 
     // Fallback to original implementation
     let path = generator::generate_album_output_conn(
@@ -446,22 +443,18 @@ where
 {
     if let Ok(conn) =
         Connection::open_with_flags(db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
-    {
-        if let Some(artifacts) = imported_artifacts(&conn, None) {
+        && let Some(artifacts) = imported_artifacts(&conn, None) {
             return artifacts.output_txt_path;
         }
-    }
     // The refactored implementation is still a stub; preserve the callback
     // for the original implementation until the refactor can generate output.
     let path =
         generator_new::generate_album_output::<F>(db_path, album_name, None, start_year, end_year);
-    if path.exists() {
-        if let Ok(meta) = std::fs::metadata(&path) {
-            if meta.len() > 0 {
+    if path.exists()
+        && let Ok(meta) = std::fs::metadata(&path)
+            && meta.len() > 0 {
                 return generated_artifacts_from_path(path, None).output_txt_path;
             }
-        }
-    }
     let path =
         generator::generate_album_output(db_path, album_name, page_callback, start_year, end_year)
             .await;

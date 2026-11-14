@@ -1,4 +1,5 @@
 use super::{
+    Result,
     colour::NamedColour,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
@@ -25,7 +26,6 @@ use super::{
     stamp_text::{ExpandedWidthLimit, StampTextPolicy, TextWidthPolicy},
     text::TextPosition,
     units::mm_to_points,
-    Result,
 };
 use std::{fs, path::Path};
 use toml::{Table, Value};
@@ -204,22 +204,20 @@ impl NativePdfConfig {
         };
         let mut overridden_keys = Vec::new();
         for key in SIZE.iter().chain(&MARGINS).chain(&SPACING).chain(&BORDER) {
-            if let Some(value) = page.remove(*key) {
-                if root.insert((*key).into(), value).is_some() {
+            if let Some(value) = page.remove(*key)
+                && root.insert((*key).into(), value).is_some() {
                     overridden_keys.push((*key).into());
                 }
-            }
         }
         let mut colors = match root.remove("colors") {
             Some(Value::Table(table)) => table,
             Some(_) => return Err("Native PDF setting colors must be a table".into()),
             None => Table::new(),
         };
-        if let Some(value) = colors.remove("color_album_border") {
-            if root.insert("color_album_border".into(), value).is_some() {
+        if let Some(value) = colors.remove("color_album_border")
+            && root.insert("color_album_border".into(), value).is_some() {
                 overridden_keys.push("color_album_border".into());
             }
-        }
         overridden_keys.sort();
 
         let size = PageSize::parse(&numbers(&mut root, &SIZE, "")?)?;
@@ -380,14 +378,13 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "Missing or invalid native_pdf.footer.enabled; expected a boolean".into(),
-                    )
+                    );
                 }
             };
-            if let Some(colour) = colors.remove("color_album_footer") {
-                if root.insert("color_album_footer".into(), colour).is_some() {
+            if let Some(colour) = colors.remove("color_album_footer")
+                && root.insert("color_album_footer".into(), colour).is_some() {
                     overridden_keys.push("color_album_footer".into());
                 }
-            }
             let colour = NamedColour::parse(&string(&mut root, "color_album_footer", "")?)
                 .map_err(|error| format!("color_album_footer: {error}"))?;
             let prefix = "native_pdf.footer.";
@@ -468,20 +465,21 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "native_pdf.footer_number.scope must be `document` or `section`".into(),
-                    )
+                    );
                 }
             };
-            let section_start =
-                match settings.remove("section_start") {
-                    Some(Value::Integer(value)) => Some(i32::try_from(value).map_err(|_| {
-                        "native_pdf.footer_number.section_start must be a signed 32-bit integer"
-                    })?),
-                    Some(_) => return Err(
+            let section_start = match settings.remove("section_start") {
+                Some(Value::Integer(value)) => Some(i32::try_from(value).map_err(
+                    |_| "native_pdf.footer_number.section_start must be a signed 32-bit integer",
+                )?),
+                Some(_) => {
+                    return Err(
                         "native_pdf.footer_number.section_start must be a signed 32-bit integer"
                             .into(),
-                    ),
-                    None => None,
-                };
+                    );
+                }
+                None => None,
+            };
             if scope == NativePageNumberingScope::Section && !opt_in {
                 return Err(
                     "native_pdf.footer_number.enabled must be true when scope is `section`".into(),
@@ -507,11 +505,10 @@ impl NativePdfConfig {
                 "album_pages_footer_number_before",
                 "album_pages_footer_number_after",
             ] {
-                if let Some(value) = footer.remove(key) {
-                    if root.insert(key.into(), value).is_some() {
+                if let Some(value) = footer.remove(key)
+                    && root.insert(key.into(), value).is_some() {
                         overridden_keys.push(key.into());
                     }
-                }
             }
             let enabled = boolean(&mut root, "album_pages_footer_number_enabled", "")?;
             if scope == NativePageNumberingScope::Section && !enabled {
@@ -567,7 +564,7 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "Missing or invalid native_pdf.header.enabled; expected a boolean".into(),
-                    )
+                    );
                 }
             };
             let mut header = match root.remove("header") {
@@ -575,19 +572,17 @@ impl NativePdfConfig {
                 Some(_) => return Err("Native PDF setting header must be a table".into()),
                 None => Table::new(),
             };
-            if let Some(position) = header.remove("album_pages_header_position") {
-                if root
+            if let Some(position) = header.remove("album_pages_header_position")
+                && root
                     .insert("album_pages_header_position".into(), position)
                     .is_some()
                 {
                     overridden_keys.push("album_pages_header_position".into());
                 }
-            }
-            if let Some(colour) = colors.remove("color_album_header") {
-                if root.insert("color_album_header".into(), colour).is_some() {
+            if let Some(colour) = colors.remove("color_album_header")
+                && root.insert("color_album_header".into(), colour).is_some() {
                     overridden_keys.push("color_album_header".into());
                 }
-            }
             let position =
                 HeaderPosition::parse(&string(&mut root, "album_pages_header_position", "")?)?;
             let colour = NamedColour::parse(&string(&mut root, "color_album_header", "")?)
@@ -696,7 +691,7 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "Missing or invalid native_pdf.title.enabled; expected a boolean".into(),
-                    )
+                    );
                 }
             };
             let mut header = match root.remove("header") {
@@ -705,17 +700,15 @@ impl NativePdfConfig {
                 None => Table::new(),
             };
             for key in ["album_pages_title_font", "album_pages_title_size"] {
-                if let Some(value) = header.remove(key) {
-                    if root.insert(key.into(), value).is_some() {
+                if let Some(value) = header.remove(key)
+                    && root.insert(key.into(), value).is_some() {
                         overridden_keys.push(key.into());
                     }
-                }
             }
-            if let Some(value) = colors.remove("color_album_title") {
-                if root.insert("color_album_title".into(), value).is_some() {
+            if let Some(value) = colors.remove("color_album_title")
+                && root.insert("color_album_title".into(), value).is_some() {
                     overridden_keys.push("color_album_title".into());
                 }
-            }
             let font = string(&mut root, "album_pages_title_font", "")?;
             let size = number(&mut root, "album_pages_title_size", "", "points")?;
             let colour = NamedColour::parse(&string(&mut root, "color_album_title", "")?)
@@ -769,7 +762,7 @@ impl NativePdfConfig {
             _ => {
                 return Err(
                     "Missing or invalid native_pdf.proof.page_count; expected an integer".into(),
-                )
+                );
             }
         };
         let guide_enabled = match proof_table.remove("guide_enabled") {
@@ -777,7 +770,7 @@ impl NativePdfConfig {
             _ => {
                 return Err(
                     "Missing or invalid native_pdf.proof.guide_enabled; expected a boolean".into(),
-                )
+                );
             }
         };
         let guide_width_mm = numbers(&mut proof_table, &["guide_width_mm"], prefix)?[0];

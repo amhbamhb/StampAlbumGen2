@@ -1,16 +1,16 @@
 //! Ordered page layout with whole frames and line-boundary text continuation.
 
 use super::{
+    Result,
     commands::page::album_pages_spacing::Spacing,
     document::{Bounds, PageLayout, PageSettings},
     stamp_box::StampBoxGeometry,
-    stamp_rows::{row_prefix_len, RowAlignment},
+    stamp_rows::{RowAlignment, row_prefix_len},
     stamp_text::{
-        fit_text_rows, height, position, PositionedFooterText, PositionedStampText, StampTextItem,
-        StampTextPolicy,
+        PositionedFooterText, PositionedStampText, StampTextItem, StampTextPolicy, fit_text_rows,
+        height, position,
     },
     text::MeasuredText,
-    Result,
 };
 
 #[derive(Clone, Debug)]
@@ -217,7 +217,11 @@ fn paginate_pass(
         let content = page.layout.content_bounds;
         let (_, _, width, item_height) = &measured[index];
         if *width > content.right - content.left {
-            return Err(format!("native_pdf.pagination item {} footprint width {width} mm exceeds page {} content width", index + 1, pages.len() + 1));
+            return Err(format!(
+                "native_pdf.pagination item {} footprint width {width} mm exceeds page {} content width",
+                index + 1,
+                pages.len() + 1
+            ));
         }
         let fresh_height = content.top - content.bottom;
         if *item_height > fresh_height {
@@ -236,7 +240,11 @@ fn paginate_pass(
             loop {
                 let content = page.layout.content_bounds;
                 if *width > content.right - content.left {
-                    return Err(format!("native_pdf.pagination item {} continuation width exceeds page {} content width", index + 1, pages.len() + 1));
+                    return Err(format!(
+                        "native_pdf.pagination item {} continuation width exceeds page {} content width",
+                        index + 1,
+                        pages.len() + 1
+                    ));
                 }
                 let mut fragment = split_fragment(
                     index,
@@ -407,21 +415,23 @@ fn split_fragment(
     let frame = item.geometry.frame_bounds();
     let frame_height = frame.top - frame.bottom;
     if frame_height > available {
-        return Err(format!("native_pdf.pagination item {} indivisible frame height {frame_height} mm exceeds fresh page height", index + 1));
+        return Err(format!(
+            "native_pdf.pagination item {} indivisible frame height {frame_height} mm exceeds fresh page height",
+            index + 1
+        ));
     }
     let centre = content.left + width / 2.0;
     let mut used = 0.0;
     let mut heading_part = None;
     let mut caption_part = None;
     let mut geometry = None;
-    if let Some(text) = heading {
-        if cursor.heading < text.lines.len() {
+    if let Some(text) = heading
+        && cursor.heading < text.lines.len() {
             heading_part = take_lines(text, &mut cursor.heading, available);
             if let Some(part) = &heading_part {
                 used += height(part);
             }
         }
-    }
     let heading_done = cursor.heading == heading.as_ref().map_or(0, |t| t.lines.len());
     if heading_done && cursor.frame_pending {
         let gap = if heading_part.is_some() {
@@ -447,8 +457,8 @@ fn split_fragment(
         } else {
             0.0
         };
-    if !cursor.frame_pending {
-        if let Some(text) = caption {
+    if !cursor.frame_pending
+        && let Some(text) = caption {
             let gap = if geometry.is_some() {
                 policy.gap()
             } else {
@@ -459,7 +469,6 @@ fn split_fragment(
                 used += gap + height(part);
             }
         }
-    }
     if used == 0.0 {
         return Err(format!(
             "native_pdf.pagination item {} cannot fit a complete text line on a fresh page",

@@ -108,16 +108,14 @@ fn build_stamp_heading_lines(
         lines.extend(wrap_preserving_breaks_keep_empty(name, max_chars));
     }
 
-    if include_perforation {
-        if let Some(perf) = perforation {
-            if !perf.trim().is_empty() {
+    if include_perforation
+        && let Some(perf) = perforation
+            && !perf.trim().is_empty() {
                 lines.extend(wrap_preserving_breaks_keep_empty(
                     &format!("Perforation: {}", perf),
                     max_chars,
                 ));
             }
-        }
-    }
 
     lines
 }
@@ -312,8 +310,8 @@ pub fn emit_stamp<W: Write>(
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
         // Only emit STAMP_HEADING if a label is configured (the number alone
         // is from StampWorld's internal system, not a real catalog)
-        if !ctx.sh_label.is_empty() {
-            if let Some(heading) = format_stamp_heading(
+        if !ctx.sh_label.is_empty()
+            && let Some(heading) = format_stamp_heading(
                 ctx.sh_label,
                 ctx.sgnum,
                 ctx.stamp_name,
@@ -328,7 +326,6 @@ pub fn emit_stamp<W: Write>(
                     ctx.sh_font, ctx.sh_size, heading
                 )?;
             }
-        }
     } else {
         let left = escape_ae_text(ctx.left);
         let centre = escape_ae_text(ctx.centre);
@@ -339,8 +336,8 @@ pub fn emit_stamp<W: Write>(
         );
         writeln!(out, "{}", line.replace("\r", "").replace("\n", "\\n"))?;
         // Only emit STAMP_HEADING if a label is configured
-        if !ctx.sh_label.is_empty() {
-            if let Some(heading) = format_stamp_heading(
+        if !ctx.sh_label.is_empty()
+            && let Some(heading) = format_stamp_heading(
                 ctx.sh_label,
                 ctx.sgnum,
                 ctx.stamp_name,
@@ -355,7 +352,6 @@ pub fn emit_stamp<W: Write>(
                     ctx.sh_font, ctx.sh_size, heading
                 )?;
             }
-        }
     }
     Ok(())
 }

@@ -1,6 +1,6 @@
 //! Editable AlbumEasy layouts. The command database, not the copied TXT, is authoritative.
 
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeSet, HashMap, HashSet};

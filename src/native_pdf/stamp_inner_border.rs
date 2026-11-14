@@ -1,4 +1,4 @@
-use super::{colour::NamedColour, document::Bounds, units::mm_to_points, Result};
+use super::{Result, colour::NamedColour, document::Bounds, units::mm_to_points};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum InnerBorderStyle {

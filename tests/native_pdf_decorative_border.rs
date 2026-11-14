@@ -336,29 +336,35 @@ fn files_resolve_relative_to_config_and_definition_and_are_snapshotted() -> Resu
             .to_string_lossy()
             .replace('\\', "/"),
     );
-    assert!(NativePdfConfig::from_toml(&format!("{BASE}{absolute}"))?
-        .page_settings
-        .resolve(1)?
-        .decorative_border
-        .is_some());
+    assert!(
+        NativePdfConfig::from_toml(&format!("{BASE}{absolute}"))?
+            .page_settings
+            .resolve(1)?
+            .decorative_border
+            .is_some()
+    );
     Ok(())
 }
 
 #[test]
 fn explicit_config_disabled_compatibility_and_templates() -> Result<()> {
-    assert!(NativePdfConfig::from_toml(BASE)?
-        .page_settings
-        .resolve(1)?
-        .decorative_border
-        .is_none());
+    assert!(
+        NativePdfConfig::from_toml(BASE)?
+            .page_settings
+            .resolve(1)?
+            .decorative_border
+            .is_none()
+    );
     let disabled = DECOR
         .replace("enabled = true", "enabled = false")
         .replace("corner.def", "");
-    assert!(NativePdfConfig::from_toml(&format!("{BASE}{disabled}"))?
-        .page_settings
-        .resolve(1)?
-        .decorative_border
-        .is_none());
+    assert!(
+        NativePdfConfig::from_toml(&format!("{BASE}{disabled}"))?
+            .page_settings
+            .resolve(1)?
+            .decorative_border
+            .is_none()
+    );
     for line in DECOR.lines().filter(|line| line.contains(" = ")) {
         let key = line.split_once(" = ").ok_or("key")?.0;
         let bad = DECOR
@@ -420,10 +426,12 @@ fn explicit_config_disabled_compatibility_and_templates() -> Result<()> {
         );
         let loaded = NativePdfConfig::from_toml(source)?;
         assert!(loaded.page_settings.resolve(1)?.decorative_border.is_none());
-        assert!(!loaded
-            .unapplied_keys
-            .iter()
-            .any(|key| key.starts_with("native_pdf.decorative_border")));
+        assert!(
+            !loaded
+                .unapplied_keys
+                .iter()
+                .any(|key| key.starts_with("native_pdf.decorative_border"))
+        );
     }
     Ok(())
 }

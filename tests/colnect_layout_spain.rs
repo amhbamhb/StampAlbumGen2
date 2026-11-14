@@ -187,7 +187,12 @@ async fn spain_colnect_layout_packs_rich_rows_without_losing_stamps() {
             "page exceeds effective usable height: {height}"
         );
     }
-    println!("Spain fixture: copied {image_count} images; generated {page_count} pages, {} stamp/cover entries; output {}",
-        stamp_count(&generated), workspace.join(output).display());
-    println!("Database impact: source untouched; fixture copy only; no ingest, inserts, or deletes requested.");
+    println!(
+        "Spain fixture: copied {image_count} images; generated {page_count} pages, {} stamp/cover entries; output {}",
+        stamp_count(&generated),
+        workspace.join(output).display()
+    );
+    println!(
+        "Database impact: source untouched; fixture copy only; no ingest, inserts, or deletes requested."
+    );
 }

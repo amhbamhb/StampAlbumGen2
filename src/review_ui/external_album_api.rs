@@ -1,6 +1,6 @@
 use super::*;
 use crate::external_album;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::Read;
 use std::sync::atomic::AtomicU64;
 
@@ -146,13 +146,12 @@ where
 fn parameter(url: &str, name: &str) -> Result<String, String> {
     let query = url.split_once('?').map_or("", |(_, q)| q);
     for pair in query.split('&') {
-        if let Some((key, value)) = pair.split_once('=') {
-            if key == name {
+        if let Some((key, value)) = pair.split_once('=')
+            && key == name {
                 return urlencoding::decode(value)
                     .map(|v| v.into_owned())
                     .map_err(|e| format!("Invalid query parameter: {e}"));
             }
-        }
     }
     Err(format!("Missing query parameter: {name}"))
 }
@@ -495,9 +494,11 @@ mod tests {
             "data:image/png;base64,{}",
             base64::engine::general_purpose::STANDARD.encode(encoded.into_inner())
         );
-        assert!(store_image(directory.path(), &data)
-            .expect_err("case conflict")
-            .contains("capitalization"));
+        assert!(
+            store_image(directory.path(), &data)
+                .expect_err("case conflict")
+                .contains("capitalization")
+        );
     }
 
     #[test]

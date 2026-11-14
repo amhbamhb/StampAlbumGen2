@@ -1,4 +1,4 @@
-use super::{colour::NamedColour, document::PageLayout, units::mm_to_points, Result};
+use super::{Result, colour::NamedColour, document::PageLayout, units::mm_to_points};
 
 /// Diagnostic-only policy, separate from album command state.
 /// All fields are explicit TOML inputs; there is deliberately no Default.

@@ -78,8 +78,8 @@ fn txt_and_raw_keywords_accept_lower_and_mixed_case_without_changing_values() ->
 }
 
 #[test]
-fn native_keywords_and_header_accept_lower_and_mixed_case_without_changing_values(
-) -> Result<(), String> {
+fn native_keywords_and_header_accept_lower_and_mixed_case_without_changing_values()
+-> Result<(), String> {
     let assets =
         Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/page-start-var-v1");
     let source = fs::read_to_string(assets.join("album.stampalbum")).map_err(|e| e.to_string())?;

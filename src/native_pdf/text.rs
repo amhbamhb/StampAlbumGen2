@@ -1,9 +1,9 @@
 use super::{
+    Result,
     document::Bounds,
     units::{mm_to_points, points_to_mm},
-    Result,
 };
-use oxidize_pdf::text::{fonts::get_standard_font_metrics, measure_text, Font, TextEncoding};
+use oxidize_pdf::text::{Font, TextEncoding, fonts::get_standard_font_metrics, measure_text};
 
 #[derive(Clone, Copy, Debug)]
 pub enum TextPosition {

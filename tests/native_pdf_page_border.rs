@@ -143,14 +143,16 @@ fn invalid_border_arguments_and_unusable_strokes_fail_before_output() -> Result<
     }
     let invalid = fs::read_to_string(root().join("missing-gap.txt"))?;
     assert!(border(&invalid).is_err());
-    assert!(PageBorder::parse(&[0.0; 4])?
-        .strokes(Bounds {
-            left: 15.0,
-            bottom: 15.0,
-            right: 195.0,
-            top: 282.0,
-        })?
-        .is_empty());
+    assert!(
+        PageBorder::parse(&[0.0; 4])?
+            .strokes(Bounds {
+                left: 15.0,
+                bottom: 15.0,
+                right: 195.0,
+                top: 282.0,
+            })?
+            .is_empty()
+    );
     let settings = settings(PageBorder::parse(&[0.0, 0.0, 1.0, 50.0])?)?;
     let temporary = tempfile::tempdir()?;
     let output = temporary.path().join("must-not-exist.pdf");

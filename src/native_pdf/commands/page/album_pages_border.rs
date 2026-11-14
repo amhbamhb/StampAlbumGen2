@@ -1,4 +1,4 @@
-use crate::native_pdf::{commands::arguments, document::Bounds, units::mm_to_points, Result};
+use crate::native_pdf::{Result, commands::arguments, document::Bounds, units::mm_to_points};
 
 /// Explicit ALBUM_PAGES_BORDER arguments; zero widths disable border strokes.
 #[derive(Clone, Copy, Debug)]

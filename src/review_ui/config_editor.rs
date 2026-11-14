@@ -177,17 +177,25 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
     };
 
     if key_only.ends_with("_font") {
-        add_unique("AlbumEasy font code. Common values: HN=Helvetica Normal, HB=Helvetica Bold, TN=Times Normal, TB=Times Bold, TR=Times Roman, TI=Times Italic, BI=Bold Italic, CN=Courier Normal, CO=Courier Oblique.");
-        add_unique("Tip: keep heading/body font families consistent across related fields to avoid visual mismatch.");
+        add_unique(
+            "AlbumEasy font code. Common values: HN=Helvetica Normal, HB=Helvetica Bold, TN=Times Normal, TB=Times Bold, TR=Times Roman, TI=Times Italic, BI=Bold Italic, CN=Courier Normal, CO=Courier Oblique.",
+        );
+        add_unique(
+            "Tip: keep heading/body font families consistent across related fields to avoid visual mismatch.",
+        );
     }
 
     if key_only.ends_with("_size") {
-        add_unique("Font size used by AlbumEasy text rendering. Decimal values are allowed (for example 8.0, 10.5). Larger sizes increase layout pressure and can cause wrapping.");
+        add_unique(
+            "Font size used by AlbumEasy text rendering. Decimal values are allowed (for example 8.0, 10.5). Larger sizes increase layout pressure and can cause wrapping.",
+        );
     }
 
     if key_only.ends_with("_vspace") || key_only.contains("padding") || key_only.contains("margin")
     {
-        add_unique("Spacing value in millimeters (mm). Positive values increase vertical/horizontal whitespace; overly large values may reduce stamps-per-page.");
+        add_unique(
+            "Spacing value in millimeters (mm). Positive values increase vertical/horizontal whitespace; overly large values may reduce stamps-per-page.",
+        );
     }
 
     if key_only == "page_text_format"
@@ -197,7 +205,9 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
         add_unique(
             "Template must include exactly one '{}' placeholder where the text value is injected.",
         );
-        add_unique("Expected command shapes: PAGE_TEXT (<FONT> <SIZE> \"{}\" <VSPACE>), PAGE_TEXT_CENTRE (...), PAGE_TEXT_RIGHT (...).");
+        add_unique(
+            "Expected command shapes: PAGE_TEXT (<FONT> <SIZE> \"{}\" <VSPACE>), PAGE_TEXT_CENTRE (...), PAGE_TEXT_RIGHT (...).",
+        );
         add_unique("Example: PAGE_TEXT (HN 10 \"{}\" 1.0)");
     }
 
@@ -208,7 +218,9 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
         add_unique(
             "Emitted heading uses STAMP_HEADING(<FONT> <SIZE> \"<LABEL> : <CATALOG_NUMBER>\").",
         );
-        add_unique("stamp_heading_label='auto' uses catalog display name from default_catalog_code; empty string hides the label.");
+        add_unique(
+            "stamp_heading_label='auto' uses catalog display name from default_catalog_code; empty string hides the label.",
+        );
     }
 
     if key_only == "default_catalog_code" {
@@ -256,7 +268,9 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
     }
 
     if key_only == "stamp_detail_layout" {
-        add_unique("inline: details inside stamp text blocks; separate_rows: details in dedicated rows; minimal: reduced metadata output.");
+        add_unique(
+            "inline: details inside stamp text blocks; separate_rows: details in dedicated rows; minimal: reduced metadata output.",
+        );
     }
 
     if key_only == "include_denomination" {
@@ -296,12 +310,18 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
         || key_only == "row_start_es_vspace"
         || key_only == "row_start_es_marker"
     {
-        add_unique("Controls ROW_START_ES marker output used to anchor row layout in generated AlbumEasy text.");
-        add_unique("Disable row_start_es_enabled only if your output pipeline does not rely on row-start markers.");
+        add_unique(
+            "Controls ROW_START_ES marker output used to anchor row layout in generated AlbumEasy text.",
+        );
+        add_unique(
+            "Disable row_start_es_enabled only if your output pipeline does not rely on row-start markers.",
+        );
     }
 
     if key_only == "albumeasy_cli_path" {
-        add_unique("Absolute path to AlbumEasy CLI script/binary used for PDF generation from generated TXT.");
+        add_unique(
+            "Absolute path to AlbumEasy CLI script/binary used for PDF generation from generated TXT.",
+        );
         add_unique("Linux example: /home/<user>/work/AlbumEasy/AlbumEasy.sh");
     }
 
@@ -313,11 +333,15 @@ fn enrich_field_help(field: &mut ConfigEditorField, help_map: &HashMap<String, V
     }
 
     if key_only == "expand_grouped_ranges" {
-        add_unique("placeholders: split grouped catalog ranges into placeholder rows quickly; detail_fetch: attempt richer detail fetch per item (slower)." );
+        add_unique(
+            "placeholders: split grouped catalog ranges into placeholder rows quickly; detail_fetch: attempt richer detail fetch per item (slower).",
+        );
     }
 
     if key_only.starts_with("flag_cover_") || full_id_key.starts_with("flag_cover.") {
-        add_unique("Flag cover values control cover-page image/text layout and are interpreted in millimeters for size/spacing fields.");
+        add_unique(
+            "Flag cover values control cover-page image/text layout and are interpreted in millimeters for size/spacing fields.",
+        );
     }
 }
 
@@ -349,11 +373,10 @@ fn normalize_value_for_template(template_value: Option<&String>, raw_value: &str
     let trimmed = raw_value.trim();
 
     if trimmed.is_empty() {
-        if let Some(template) = template_value {
-            if template_literal_kind(template) == "string" {
+        if let Some(template) = template_value
+            && template_literal_kind(template) == "string" {
                 return "\"\"".to_string();
             }
-        }
         return String::new();
     }
 
@@ -1024,9 +1047,11 @@ mod tests {
         let (sections, _) =
             build_config_editor_data_for_album(global_path, template_path, pdf_path, &album)
                 .expect("album editor");
-        assert!(!serde_json::to_string(&sections)
-            .expect("serialize")
-            .contains("album-secret"));
+        assert!(
+            !serde_json::to_string(&sections)
+                .expect("serialize")
+                .contains("album-secret")
+        );
         let mut values: HashMap<String, String> = sections
             .iter()
             .flat_map(|section| section.fields.iter())

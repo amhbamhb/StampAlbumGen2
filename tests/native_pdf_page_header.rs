@@ -76,11 +76,13 @@ fn header_uses_margin_coordinates_without_consuming_normal_content() -> Result<(
     );
     assert!(disabled.page_settings.resolve(1)?.header.is_none());
     let absent = CONFIG.split("[native_pdf.header]").next().ok_or("config")?;
-    assert!(NativePdfConfig::from_toml(absent)?
-        .page_settings
-        .resolve(1)?
-        .header
-        .is_none());
+    assert!(
+        NativePdfConfig::from_toml(absent)?
+            .page_settings
+            .resolve(1)?
+            .header
+            .is_none()
+    );
     Ok(())
 }
 
@@ -278,17 +280,23 @@ fn header_fit_spill_and_all_standard_fonts_reserve_without_clipping() -> Result<
         .ok_or("header")?;
     let maximum = 297.0 - header.bounds.top;
     // Just inside and outside the physical edge must remain distinguishable.
-    assert!(NativePdfConfig::from_toml(&CONFIG.replace(
-        "padding_mm = 0",
-        &format!("padding_mm = {}", maximum - 0.000001)
-    ))
-    .is_ok());
-    assert!(NativePdfConfig::from_toml(&CONFIG.replace(
-        "padding_mm = 0",
-        &format!("padding_mm = {}", maximum + 0.000001)
-    ))
-    .is_err());
-    let narrow_even = format!("{CONFIG}\n[page.even_margins]\nleft_mm = 100\nright_mm = 100\ntop_mm = 15\nbottom_mm = 15\n");
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace(
+            "padding_mm = 0",
+            &format!("padding_mm = {}", maximum - 0.000001)
+        ))
+        .is_ok()
+    );
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace(
+            "padding_mm = 0",
+            &format!("padding_mm = {}", maximum + 0.000001)
+        ))
+        .is_err()
+    );
+    let narrow_even = format!(
+        "{CONFIG}\n[page.even_margins]\nleft_mm = 100\nright_mm = 100\ntop_mm = 15\nbottom_mm = 15\n"
+    );
     let error = NativePdfConfig::from_toml(&narrow_even)
         .err()
         .ok_or("must fail")?;
@@ -347,18 +355,23 @@ fn serialized_headers_and_title_interactions_match_references() -> Result<()> {
             .replace("size_pt = 8", &format!("size_pt = {size}"))
             .replace("padding_mm = 0", &format!("padding_mm = {padding}"));
         if asymmetric {
-            source = source.replace("page_left_margin_mm = 15", "page_left_margin_mm = 25")
+            source = source
+                .replace("page_left_margin_mm = 15", "page_left_margin_mm = 25")
                 .replace("page_right_margin_mm = 15", "page_right_margin_mm = 12")
                 + "\n[page.even_margins]\nleft_mm = 12\nright_mm = 25\ntop_mm = 18\nbottom_mm = 15\n";
         }
         if multiline {
-            source = source.replace("font = \"HN\"", "font = \"TB\"")
+            source = source
+                .replace("font = \"HN\"", "font = \"TB\"")
                 .replace("Agyp HEADER", "Agyp FIRST\\nSecond HEADER")
                 .replace("page_border_outer = 0.2", "page_border_outer = 0.1")
                 .replace("page_border_inner1 = 0", "page_border_inner1 = 0.5")
                 .replace("page_border_inner2 = 0", "page_border_inner2 = 0.2")
                 .replace("page_border_spacing = 0", "page_border_spacing = 1.25")
-                .replace("[header]", "[header]\nalbum_pages_title_font = \"HN\"\nalbum_pages_title_size = 10")
+                .replace(
+                    "[header]",
+                    "[header]\nalbum_pages_title_font = \"HN\"\nalbum_pages_title_size = 10",
+                )
                 .replace("[colors]", "[colors]\ncolor_album_title = \"black\"")
                 + "\n[native_pdf.title]\nenabled = true\ntext = \"Agyp TITLE\"\nvspace_after_mm = 2\nminimum_height_mm = 0\n";
         }

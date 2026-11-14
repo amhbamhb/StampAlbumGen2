@@ -1,7 +1,8 @@
 use super::{
+    Result,
     colour::NamedColour,
     document::{PageLayout, PageSettings},
-    pagination::{paginate_stamp_sections, StampItemPage, StampPageFragment, StampRowSection},
+    pagination::{StampItemPage, StampPageFragment, StampRowSection, paginate_stamp_sections},
     proof::GeometryProofSettings,
     stamp_box::StampBoxGeometry,
     stamp_image::{
@@ -10,11 +11,10 @@ use super::{
     },
     stamp_rows::fit_known_size_rows_with_alignment,
     stamp_text::{
-        fit_text_rows_with_alignment, PositionedStampItem, StampTextItem, StampTextPolicy,
+        PositionedStampItem, StampTextItem, StampTextPolicy, fit_text_rows_with_alignment,
     },
     text::PositionedTextLine,
     units::mm_to_points,
-    Result,
 };
 use oxidize_pdf::{Color, Document, Image, Page};
 use std::path::Path;
@@ -569,6 +569,12 @@ fn save_pdf(
     pages: Vec<PreparedPdfPage>,
 ) -> Result<()> {
     let mut document = Document::new();
+    document.set_author("Stamp Album Generator 2");
+    document.set_title("Stamp Album");
+    document.set_creator("Stamp Album Generator 2");
+    document.set_keywords("stamps, stamp album gen 2");
+    document.set_subject("Stamp Album - Country Album");
+    document.set_producer("Stamp Album Generator 2");
     for (
         index,
         PreparedPdfPage {
@@ -640,7 +646,10 @@ fn save_pdf(
                     || b.right > layout.size.width_mm()
                     || b.top > layout.size.height_mm()
             }) {
-                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER crosses the physical page and will be clipped; adjust IMAGE_SCALE/IMAGE_CORNER_PAD/IMAGE_EDGE_PAD/BORDER_PAD or native_pdf.decorative_border policy. Page size is unchanged.",index+1);
+                eprintln!(
+                    "Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER crosses the physical page and will be clipped; adjust IMAGE_SCALE/IMAGE_CORNER_PAD/IMAGE_EDGE_PAD/BORDER_PAD or native_pdf.decorative_border policy. Page size is unchanged.",
+                    index + 1
+                );
             }
             if footprints.iter().any(|b| {
                 b.left < layout.content_bounds.right
@@ -650,7 +659,10 @@ fn save_pdf(
             }) {
                 // TODO(native-pdf-ui): Show page/definition element and offer scale,
                 // padding/end-offset or content-spacing/hint corrections. Do not silently move content.
-                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER footprint intersects the content area; transparent image pixels may be clear. Adjust definition scale/corner/edge padding/end offsets or content spacing/height hints. Decorative borders do not reserve content space (AlbumEasy-compatible).",index+1);
+                eprintln!(
+                    "Warning: Native PDF page {}: ALBUM_PAGES_DECORATIVE_BORDER footprint intersects the content area; transparent image pixels may be clear. Adjust definition scale/corner/edge padding/end offsets or content spacing/height hints. Decorative borders do not reserve content space (AlbumEasy-compatible).",
+                    index + 1
+                );
             }
             for image in border.corners.iter().chain(&border.edges) {
                 page.add_image(image.resource_name, image.image.as_ref().clone());
@@ -679,7 +691,10 @@ fn save_pdf(
             if marks.clipped {
                 // TODO(native-pdf-ui): Show the physical-page clipping warning
                 // and offer padding/arms corrections without resizing silently.
-                eprintln!("Warning: Native PDF page {}: ALBUM_PAGES_CROP_MARKS extend partly or wholly outside the physical page and will be clipped; adjust native_pdf.crop_marks.horizontal_padding_mm/vertical_padding_mm/arms_mm/line_width_mm. Page size and content are unchanged (AlbumEasy-compatible).", index + 1);
+                eprintln!(
+                    "Warning: Native PDF page {}: ALBUM_PAGES_CROP_MARKS extend partly or wholly outside the physical page and will be clipped; adjust native_pdf.crop_marks.horizontal_padding_mm/vertical_padding_mm/arms_mm/line_width_mm. Page size and content are unchanged (AlbumEasy-compatible).",
+                    index + 1
+                );
             }
             let [red, green, blue] = marks.colour.rgb();
             for mark in marks.marks {

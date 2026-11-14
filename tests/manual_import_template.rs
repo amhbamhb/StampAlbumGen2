@@ -1,7 +1,7 @@
 use stamp_album_gen2::colnect::{
     ingest::ingest_colnect_data_with_mode,
     parser::parse_csv,
-    template::{ensure_manual_import_files, TEMPLATE_CSV, TEMPLATE_GUIDE},
+    template::{TEMPLATE_CSV, TEMPLATE_GUIDE, ensure_manual_import_files},
 };
 
 #[test]
@@ -18,9 +18,11 @@ fn creates_missing_files_and_preserves_existing_copies() {
         TEMPLATE_GUIDE
     );
     assert!(parse_csv(&csv).expect("blank template parses").is_empty());
-    assert!(ensure_manual_import_files(runtime.path())
-        .expect("repeat startup")
-        .is_empty());
+    assert!(
+        ensure_manual_import_files(runtime.path())
+            .expect("repeat startup")
+            .is_empty()
+    );
 
     std::fs::write(&csv, "user's working data").expect("edit template");
     std::fs::remove_file(&guide).expect("remove guide");
@@ -55,9 +57,11 @@ fn reports_conflicting_template_path_without_overwriting_it() {
     std::fs::create_dir_all(&csv).expect("conflicting directory");
     let error = ensure_manual_import_files(runtime.path()).expect_err("must report conflict");
     assert_eq!(error.kind(), std::io::ErrorKind::InvalidInput);
-    assert!(error
-        .to_string()
-        .contains("Manual import file path is not a file"));
+    assert!(
+        error
+            .to_string()
+            .contains("Manual import file path is not a file")
+    );
     assert!(csv.is_dir());
 }
 

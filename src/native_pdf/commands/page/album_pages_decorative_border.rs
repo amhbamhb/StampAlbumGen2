@@ -1,8 +1,8 @@
 use crate::native_pdf::{
+    Result,
     colour::NamedColour,
     document::Bounds,
     units::{mm_to_points, points_to_mm},
-    Result,
 };
 use oxidize_pdf::graphics::Image;
 use std::{fs, io::Cursor, path::Path, sync::Arc};
@@ -32,9 +32,9 @@ impl DecorativeBorderPolicy {
     ];
 
     pub fn parse(values: &[f64], colour: NamedColour) -> Result<Self> {
-        let values: [f64; 13] = values.try_into().map_err(|_| {
-            "native_pdf.decorative_border requires thirteen explicit numeric settings"
-        })?;
+        let values: [f64; 13] = values.try_into().map_err(
+            |_| "native_pdf.decorative_border requires thirteen explicit numeric settings",
+        )?;
         for (index, key) in Self::KEYS.into_iter().enumerate() {
             let value = values[index];
             let signed = matches!(index, 1 | 2 | 7 | 8 | 11 | 12);
@@ -43,7 +43,9 @@ impl DecorativeBorderPolicy {
                 || (!signed && value < 0.0)
                 || (index == 0 && value == 0.0)
             {
-                return Err(format!("native_pdf.decorative_border.{key} must be finite and fit PDF points; scale must be positive, widths/spacing/end offsets nonnegative"));
+                return Err(format!(
+                    "native_pdf.decorative_border.{key} must be finite and fit PDF points; scale must be positive, widths/spacing/end offsets nonnegative"
+                ));
             }
         }
         Ok(Self { values, colour })
@@ -180,29 +182,33 @@ impl AlbumPagesDecorativeBorder {
                         _ => edge_names[3] = Some(value.to_owned()),
                     }
                 }
-                "IMAGE_SCALE"
-                | "IMAGE_CORNER_PAD"
-                | "IMAGE_EDGE_PAD"
-                | "BORDER_LINES"
-                | "BORDER_PAD"
-                | "BORDER_END_OFFSETS" => {
-                    let (start,count) = match name {
-                        "IMAGE_SCALE" => (0,1),
-                        "IMAGE_CORNER_PAD" => (1,2),
-                        "BORDER_LINES" => (3,4),
-                        "BORDER_PAD" => (7,2),
-                        "BORDER_END_OFFSETS" => (9,2),
-                        _ => (11,2),
+                "IMAGE_SCALE" | "IMAGE_CORNER_PAD" | "IMAGE_EDGE_PAD" | "BORDER_LINES"
+                | "BORDER_PAD" | "BORDER_END_OFFSETS" => {
+                    let (start, count) = match name {
+                        "IMAGE_SCALE" => (0, 1),
+                        "IMAGE_CORNER_PAD" => (1, 2),
+                        "BORDER_LINES" => (3, 4),
+                        "BORDER_PAD" => (7, 2),
+                        "BORDER_END_OFFSETS" => (9, 2),
+                        _ => (11, 2),
                     };
-                    let numbers = args.split_whitespace().map(str::parse::<f64>)
-                        .collect::<std::result::Result<Vec<_>,_>>()
-                        .map_err(|_|error("invalid numeric arguments"))?;
-                    if numbers.len()!=count {return Err(error("wrong number of numeric arguments"));}
-                    policy.values[start..start+count].copy_from_slice(&numbers);
-                    policy = DecorativeBorderPolicy::parse(&policy.values,policy.colour)
-                        .map_err(|message|error(&message))?;
-                },
-                _ => return Err(error("unsupported decorative-border command; remove it or use a supported definition")),
+                    let numbers = args
+                        .split_whitespace()
+                        .map(str::parse::<f64>)
+                        .collect::<std::result::Result<Vec<_>, _>>()
+                        .map_err(|_| error("invalid numeric arguments"))?;
+                    if numbers.len() != count {
+                        return Err(error("wrong number of numeric arguments"));
+                    }
+                    policy.values[start..start + count].copy_from_slice(&numbers);
+                    policy = DecorativeBorderPolicy::parse(&policy.values, policy.colour)
+                        .map_err(|message| error(&message))?;
+                }
+                _ => {
+                    return Err(error(
+                        "unsupported decorative-border command; remove it or use a supported definition",
+                    ));
+                }
             }
         }
         if corner_name.is_none() && edge_names.iter().all(Option::is_none) {
@@ -248,8 +254,21 @@ impl AlbumPagesDecorativeBorder {
                 "native_pdf.decorative_border page height must be finite and positive".into(),
             );
         }
-        let [scale, ch, cv, outer, inner1, inner2, gap, ph, pv, eh, ev, edge_h, edge_v] =
-            self.policy.values;
+        let [
+            scale,
+            ch,
+            cv,
+            outer,
+            inner1,
+            inner2,
+            gap,
+            ph,
+            pv,
+            eh,
+            ev,
+            edge_h,
+            edge_v,
+        ] = self.policy.values;
         let mut corners = Vec::new();
         if let Some(image) = &self.corner {
             let (w, h) = image_dimensions_mm(image, scale)?;

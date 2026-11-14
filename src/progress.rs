@@ -73,11 +73,10 @@ impl ProgressIndicator {
         // TEMPORARY: Print final success message on new line
         println!("✅ {}", message);
 
-        if let Ok(pb_opt) = self.pb.lock() {
-            if let Some(pb) = pb_opt.as_ref() {
+        if let Ok(pb_opt) = self.pb.lock()
+            && let Some(pb) = pb_opt.as_ref() {
                 pb.finish_with_message(format!("✅ {}", message));
             }
-        }
     }
 
     /// Finish the progress indicator with an error message
@@ -89,11 +88,10 @@ impl ProgressIndicator {
         // TEMPORARY: Print error message on new line
         println!("❌ {}", message);
 
-        if let Ok(pb_opt) = self.pb.lock() {
-            if let Some(pb) = pb_opt.as_ref() {
+        if let Ok(pb_opt) = self.pb.lock()
+            && let Some(pb) = pb_opt.as_ref() {
                 pb.finish_with_message(format!("❌ {}", message));
             }
-        }
     }
 
     /// Clear the progress indicator
@@ -102,11 +100,10 @@ impl ProgressIndicator {
             return;
         }
 
-        if let Ok(pb_opt) = self.pb.lock() {
-            if let Some(pb) = pb_opt.as_ref() {
+        if let Ok(pb_opt) = self.pb.lock()
+            && let Some(pb) = pb_opt.as_ref() {
                 pb.finish_and_clear();
             }
-        }
     }
 }
 

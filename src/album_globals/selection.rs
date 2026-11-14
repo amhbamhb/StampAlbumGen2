@@ -1,4 +1,4 @@
-use super::{generator_new::helpers::fetch_and_filter_stamps_for_selection, Stamp};
+use super::{Stamp, generator_new::helpers::fetch_and_filter_stamps_for_selection};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -170,19 +170,23 @@ mod tests {
         assert_eq!(options.emission, ["", "Definitive", "Official", "Revenue"]);
         assert_eq!(options.format, ["", "Miniature Sheet", "Stamp"]);
         let other_country = init_db(":memory:").expect("another country's database");
-        assert!(colnect_pdf_options(&other_country)
-            .expect("empty country")
-            .emission
-            .is_empty());
+        assert!(
+            colnect_pdf_options(&other_country)
+                .expect("empty country")
+                .emission
+                .is_empty()
+        );
         conn.execute(
             "UPDATE stamps SET colnect_emission = 'New Category' WHERE sg_number = '1001'",
             [],
         )
         .expect("new category");
-        assert!(colnect_pdf_options(&conn)
-            .expect("updated options")
-            .emission
-            .contains(&"New Category".into()));
+        assert!(
+            colnect_pdf_options(&conn)
+                .expect("updated options")
+                .emission
+                .contains(&"New Category".into())
+        );
     }
 
     #[test]
@@ -199,10 +203,12 @@ mod tests {
             prepare_pdf_stamps(&conn, &filters, Some(1976), Some(1976)).expect("selected");
         assert_eq!(count(&selected), 2);
         assert!(selected["Sheets"].is_empty());
-        assert!(selected["Regular"].iter().any(|stamp| stamp
-            .attrs
-            .get("sg_number")
-            .is_some_and(|value| value == "1002")));
+        assert!(selected["Regular"].iter().any(|stamp| {
+            stamp
+                .attrs
+                .get("sg_number")
+                .is_some_and(|value| value == "1002")
+        }));
         let fallback = ColnectPdfFilters {
             emission: vec!["revenue".into()],
             format: vec![],
@@ -228,15 +234,19 @@ mod tests {
             emission: vec!["Not present".into()],
             format: vec![],
         };
-        assert!(prepare_pdf_stamps(&conn, &filters, None, None)
-            .expect_err("empty")
-            .contains("No stamps match"));
+        assert!(
+            prepare_pdf_stamps(&conn, &filters, None, None)
+                .expect_err("empty")
+                .contains("No stamps match")
+        );
         conn.execute("DROP TABLE colnect_catalog_codes", [])
             .expect("broken reference schema");
         assert!(colnect_pdf_options(&conn).is_err());
-        assert!(prepare_pdf_stamps(&conn, &filters, None, None)
-            .expect_err("broken database")
-            .contains("Failed to load PDF selection"));
+        assert!(
+            prepare_pdf_stamps(&conn, &filters, None, None)
+                .expect_err("broken database")
+                .contains("Failed to load PDF selection")
+        );
     }
 
     #[test]

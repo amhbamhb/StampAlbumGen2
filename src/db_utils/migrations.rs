@@ -3,7 +3,7 @@
 //! This module contains functions for migrating database schemas and data.
 
 use log::{debug, error};
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result, params};
 use std::collections::HashSet;
 
 const LATEST_SCHEMA_VERSION: i64 = 4;
@@ -485,7 +485,9 @@ pub fn migrate_stamps_table(conn: &Connection) -> Result<()> {
     if new_count == 0 && original_count > 0 {
         // If stamps_new ended up empty but the original table actually had rows,
         // abort to avoid data loss. If the original was empty, proceed.
-        error!("Migration aborted: stamps_new contains 0 rows after attempted copy. Rolling back to avoid data loss.");
+        error!(
+            "Migration aborted: stamps_new contains 0 rows after attempted copy. Rolling back to avoid data loss."
+        );
         // Roll back the explicit transaction we started earlier and return an error
         let _ = conn.execute_batch("ROLLBACK;");
         return Err(rusqlite::Error::InvalidQuery);
@@ -815,9 +817,11 @@ mod tests {
         assert!(colnect_columns.iter().any(|name| name == "is_processed"));
 
         let us1847_series_columns = column_names(&conn, "us1847_series");
-        assert!(us1847_series_columns
-            .iter()
-            .any(|name| name == "design_size_portrait"));
+        assert!(
+            us1847_series_columns
+                .iter()
+                .any(|name| name == "design_size_portrait")
+        );
 
         let us1847_stamp_columns = column_names(&conn, "us1847_stamps");
         assert!(us1847_stamp_columns.iter().any(|name| name == "color"));
@@ -856,9 +860,11 @@ mod tests {
         run_pending_schema_migrations(&conn).expect("run migrations");
 
         let stamps_columns = column_names(&conn, "stamps");
-        assert!(!stamps_columns
-            .iter()
-            .any(|name| name == "odd_legacy_column"));
+        assert!(
+            !stamps_columns
+                .iter()
+                .any(|name| name == "odd_legacy_column")
+        );
         assert!(stamps_columns.iter().any(|name| name == "quantity_printed"));
         assert!(stamps_columns.iter().any(|name| name == "uniq_key"));
     }

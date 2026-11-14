@@ -60,7 +60,7 @@ fn config_template_is_copied_to_config_toml_when_missing() {
 
 #[test]
 fn wikipedia_ingest_inserts_up_to_max_entries_from_cache() {
-    use rusqlite::{params, Connection};
+    use rusqlite::{Connection, params};
 
     let td = tempdir().unwrap();
     let cache_db = td.path().join("wiki_cache.db");

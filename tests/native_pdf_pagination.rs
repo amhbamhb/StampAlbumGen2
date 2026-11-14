@@ -158,22 +158,26 @@ fn long_heading_blank_lines_and_caption_preserve_sequence() -> Result<()> {
 #[test]
 fn indivisible_frame_and_overwide_item_error_and_empty_input_is_one_page() -> Result<()> {
     let config = config()?;
-    assert!(paginate_stamp_items(
-        &config.page_settings,
-        &[item(40.0, 400.0)?],
-        &policy()?,
-        None
-    )
-    .err()
-    .ok_or("expected error")?
-    .contains("item 1"));
-    assert!(paginate_stamp_items(
-        &config.page_settings,
-        &[item(400.0, 40.0)?],
-        &policy()?,
-        None
-    )
-    .is_err());
+    assert!(
+        paginate_stamp_items(
+            &config.page_settings,
+            &[item(40.0, 400.0)?],
+            &policy()?,
+            None
+        )
+        .err()
+        .ok_or("expected error")?
+        .contains("item 1")
+    );
+    assert!(
+        paginate_stamp_items(
+            &config.page_settings,
+            &[item(400.0, 40.0)?],
+            &policy()?,
+            None
+        )
+        .is_err()
+    );
     let pages = paginate_stamp_items(&config.page_settings, &[], &policy()?, None)?;
     assert_eq!(pages.len(), 1);
     assert!(pages[0].items.is_empty());

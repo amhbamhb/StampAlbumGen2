@@ -1,5 +1,5 @@
 use super::*;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use std::collections::HashMap;
 
 pub(super) fn sync_processed_colnect_candidates(
@@ -873,7 +873,7 @@ pub(super) fn add_colnect_stamp_to_stamps(
                     message: format!("colnect candidate not found for id={}", req.colnect_id),
                     added_left: None,
                     processed_colnect_id: None,
-                }
+                };
             }
             Err(e) => {
                 return AddColnectStampResponse {
@@ -881,7 +881,7 @@ pub(super) fn add_colnect_stamp_to_stamps(
                     message: format!("failed to load colnect candidate: {}", e),
                     added_left: None,
                     processed_colnect_id: None,
-                }
+                };
             }
         };
 
@@ -890,8 +890,8 @@ pub(super) fn add_colnect_stamp_to_stamps(
         params![candidate.colnect_id.clone()],
         |row| row.get::<_, i64>(0),
     );
-    if let Ok(count) = existing {
-        if count > 0 {
+    if let Ok(count) = existing
+        && count > 0 {
             return AddColnectStampResponse {
                 ok: false,
                 message: format!(
@@ -902,7 +902,6 @@ pub(super) fn add_colnect_stamp_to_stamps(
                 processed_colnect_id: None,
             };
         }
-    }
 
     let mut image_path = String::new();
     if req.associate_image {
@@ -958,7 +957,7 @@ pub(super) fn add_colnect_stamp_to_stamps(
                         message: e,
                         added_left: None,
                         processed_colnect_id: None,
-                    }
+                    };
                 }
             }
         }
@@ -1232,7 +1231,7 @@ pub(super) fn save_left_stamp(
                 ok: false,
                 message,
                 updated_left: None,
-            }
+            };
         }
     };
 
@@ -1249,7 +1248,7 @@ pub(super) fn save_left_stamp(
                 ok: false,
                 message,
                 updated_left: None,
-            }
+            };
         }
     };
 
@@ -1420,7 +1419,7 @@ pub(super) fn add_left_stamp(
                 ok: false,
                 message,
                 added_left: None,
-            }
+            };
         }
     };
 

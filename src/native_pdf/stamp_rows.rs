@@ -1,8 +1,8 @@
 //! Frame-only, ordered single-page fitting. Text and pagination are separate.
 
 use super::{
-    commands::page::album_pages_spacing::Spacing, document::Bounds, stamp_box::StampBoxGeometry,
-    Result,
+    Result, commands::page::album_pages_spacing::Spacing, document::Bounds,
+    stamp_box::StampBoxGeometry,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

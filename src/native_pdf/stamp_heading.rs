@@ -1,12 +1,12 @@
 //! Measured heading/frame row geometry shared by compatibility and native input.
 
 use super::{
+    Result,
     colour::NamedColour,
     document::Bounds,
     stamp_text::{PositionedStampText, StampFooterText},
     text::{MeasuredText, PositionedTextLine},
     units::mm_to_points,
-    Result,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -474,7 +474,7 @@ pub(crate) fn paginate_native_with_page_breaks(
                     return Err(format!(
                         "Native heading row starting at stamp {}: {error}",
                         start + 1
-                    ))
+                    ));
                 }
             };
             for (offset, placed) in layout.items.into_iter().enumerate() {

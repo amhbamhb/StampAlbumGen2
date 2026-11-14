@@ -18,10 +18,10 @@ async fn stamp_flags_dir_lookup_found_coa_svg() {
     f.write_all(svg_content.as_bytes()).expect("write svg");
 
     // Point STAMP_FLAGS_DIR at the temp dir and call ensure_coat_of_arms
-    std::env::set_var("STAMP_FLAGS_DIR", base);
+    unsafe{std::env::set_var("STAMP_FLAGS_DIR", base);}
     let res = stamp_album_gen2::flagdb::ensure_coat_of_arms("ca").await;
     // Cleanup env var
-    std::env::remove_var("STAMP_FLAGS_DIR");
+    unsafe{std::env::remove_var("STAMP_FLAGS_DIR");}
 
     assert!(res.is_ok(), "ensure_coat_of_arms should find local svg");
     let path = res.unwrap();

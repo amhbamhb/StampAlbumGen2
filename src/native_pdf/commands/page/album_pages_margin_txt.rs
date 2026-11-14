@@ -1,5 +1,5 @@
 use crate::native_pdf::{
-    colour::NamedColour, document::Bounds, text::MeasuredText, units::mm_to_points, Result,
+    Result, colour::NamedColour, document::Bounds, text::MeasuredText, units::mm_to_points,
 };
 use oxidize_pdf::text::Font;
 
@@ -179,7 +179,9 @@ impl AlbumPagesMarginText {
                 || (left && bounds.right > margin.left)
                 || (!left && bounds.left < margin.right)
             {
-                return Err(format!("ALBUM_PAGES_MARGIN_TXT on physical page {page} exceeds paper/margin bounds or overlaps the page border; adjust text, font size or border gap"));
+                return Err(format!(
+                    "ALBUM_PAGES_MARGIN_TXT on physical page {page} exceeds paper/margin bounds or overlaps the page border; adjust text, font size or border gap"
+                ));
             }
             lines.push(RotatedMarginLine {
                 text: line.text.clone(),

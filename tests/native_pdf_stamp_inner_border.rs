@@ -195,8 +195,12 @@ fn three_inputs_capture_inner_styles_state_cancellation_and_preserve_images() ->
                         + last_image[1].parse::<f32>().map_err(|e| e.to_string())? / 2.0;
                     let strokes = inner_strokes(&pages[1])?;
                     let last = &strokes[strokes.len() - 4..];
-                    assert!(((last[0].coordinates[0]+last[1].coordinates[0])/2.0-image_centre).abs()<0.02,
-                        "Outer BLANK's last stamp, not NO_FRAME's preceding stamp, retains the inner frame");
+                    assert!(
+                        ((last[0].coordinates[0] + last[1].coordinates[0]) / 2.0 - image_centre)
+                            .abs()
+                            < 0.02,
+                        "Outer BLANK's last stamp, not NO_FRAME's preceding stamp, retains the inner frame"
+                    );
                     for (index, (a, e)) in a.coordinates.iter().zip(e.coordinates).enumerate() {
                         let difference = if index % 2 == 0 {
                             (a - ax) - (e - ex)
@@ -365,13 +369,17 @@ fn save_restore_captures_inner_style_without_changing_earlier_items() -> Result<
     );
     albumeasy::render(&changed, &fixture(), &output)?;
     let pages = contents(&output)?;
-    assert!(inner_strokes(&pages[0])?[..8]
-        .iter()
-        .all(|stroke| stroke.dash.is_empty()));
+    assert!(
+        inner_strokes(&pages[0])?[..8]
+            .iter()
+            .all(|stroke| stroke.dash.is_empty())
+    );
     let second = inner_strokes(&pages[1])?;
-    assert!(second[..4]
-        .iter()
-        .all(|stroke| stroke.dash == vec![3.0, 2.0, 3.0, 2.0]));
+    assert!(
+        second[..4]
+            .iter()
+            .all(|stroke| stroke.dash == vec![3.0, 2.0, 3.0, 2.0])
+    );
     assert!(second[4..8].iter().all(|stroke| stroke.dash.is_empty()));
     let source =
         fs::read_to_string(fixture().join("album.stampalbum")).map_err(|e| e.to_string())?;
@@ -381,9 +389,11 @@ fn save_restore_captures_inner_style_without_changing_earlier_items() -> Result<
     )?
     .write_pdf(&output)?;
     let second = inner_strokes(&contents(&output)?[1])?;
-    assert!(second[..4]
-        .iter()
-        .all(|stroke| stroke.dash == vec![3.0, 2.0, 3.0, 2.0]));
+    assert!(
+        second[..4]
+            .iter()
+            .all(|stroke| stroke.dash == vec![3.0, 2.0, 3.0, 2.0])
+    );
     assert!(second[4..8].iter().all(|stroke| stroke.dash.is_empty()));
     Ok(())
 }

@@ -2,7 +2,7 @@ use stamp_album_gen2::native_pdf::{
     colour::NamedColour,
     config::NativePdfConfig,
     document::Bounds,
-    pagination::{paginate_stamp_items, paginate_stamp_sections, StampRowSection},
+    pagination::{StampRowSection, paginate_stamp_items, paginate_stamp_sections},
     stamp_box::StampBoxGeometry,
     stamp_image::StampTextProofSettings,
     stamp_rows::RowAlignment,
@@ -219,10 +219,11 @@ fn defaults_config_and_section_validation_are_explicit() -> Result<()> {
             cfg.page_settings.row_alignment(),
             RowAlignment::parse(mode)?
         );
-        assert!(!cfg
-            .unapplied_keys
-            .iter()
-            .any(|k| k.contains("native_pdf.rows.alignment")));
+        assert!(
+            !cfg.unapplied_keys
+                .iter()
+                .any(|k| k.contains("native_pdf.rows.alignment"))
+        );
     }
     assert!(RowAlignment::parse("justify_last_left").is_err());
     let mut source: toml::Value = toml::from_str(include_str!("../config_template.toml"))?;
@@ -254,17 +255,19 @@ fn defaults_config_and_section_validation_are_explicit() -> Result<()> {
         paginate_stamp_sections(&config.page_settings, &[item(22.0)?], &[], &policy()?, None)
             .is_err()
     );
-    assert!(paginate_stamp_sections(
-        &config.page_settings,
-        &[],
-        &[StampRowSection {
-            item_count: 0,
-            alignment: RowAlignment::Left
-        }],
-        &policy()?,
-        None
-    )
-    .is_err());
+    assert!(
+        paginate_stamp_sections(
+            &config.page_settings,
+            &[],
+            &[StampRowSection {
+                item_count: 0,
+                alignment: RowAlignment::Left
+            }],
+            &policy()?,
+            None
+        )
+        .is_err()
+    );
     Ok(())
 }
 
