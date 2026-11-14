@@ -104,7 +104,9 @@ fn main() {
     }
 
     if verbose {
-        std::env::set_var("RUST_LOG", "debug");
+        unsafe{
+            std::env::set_var("RUST_LOG", "debug");
+        }
     }
     // Initialize logger to write debug/info to a file under Logs and only duplicate errors to stderr
     let ts = stamp_album_gen2::time_utils::formatted_now("%Y%m%d-%H%M%S");

@@ -34,7 +34,7 @@ mod external_album_api;
 mod http_handlers;
 mod http_utils;
 mod pdf_generation;
-mod report_generation;
+// mod report_generation;
 mod ui_state;
 
 #[cfg(any(windows, test))]
@@ -2565,7 +2565,7 @@ fn load_stamp_all_fields(
     let mut stmt = conn.prepare("SELECT * FROM stamps WHERE rowid = ?1 LIMIT 1")?;
     let column_names: Vec<String> = stmt
         .column_names()
-        .iter()
+        
         .map(|n| (*n).to_string())
         .collect();
 
@@ -3171,11 +3171,12 @@ pub fn run_review_ui(
         .parent()
         .and_then(|album_dir| album_dir.parent())
     {
-        std::env::set_var("STAMP_ALBUMS_ROOT", albums_root);
+        unsafe{std::env::set_var("STAMP_ALBUMS_ROOT", albums_root);
         log_runtime_event(&format!(
             "Review UI: using albums root {}",
             albums_root.display()
         ));
+    }
     }
 
     log_runtime_event(&format!("Review UI: preparing data from {}", db_path));

@@ -275,7 +275,7 @@ fn parse_html_tables(
             // Get all text after the commemoratives header until next h2
             let mut current = h2.next_sibling();
             while let Some(sibling) = current {
-                if let scraper::Node::Element(ref elem) = sibling.value() {
+                if let scraper::Node::Element( elem) = sibling.value() {
                     if elem.name() == "h2" {
                         break;
                     }
@@ -284,7 +284,7 @@ fn parse_html_tables(
                 fn collect_text(node: &scraper::element_ref::ElementRef) -> String {
                     let mut text = String::new();
                     for descendant in node.descendants() {
-                        if let scraper::Node::Text(ref t) = descendant.value() {
+                        if let scraper::Node::Text(t) = descendant.value() {
                             text.push_str(t);
                         }
                     }
@@ -294,7 +294,7 @@ fn parse_html_tables(
                 if let Some(_elem) = sibling.value().as_element() {
                     let elem_ref = scraper::element_ref::ElementRef::wrap(sibling).unwrap();
                     commemoratives_text.push_str(&collect_text(&elem_ref));
-                } else if let scraper::Node::Text(ref t) = sibling.value() {
+                } else if let scraper::Node::Text(t) = sibling.value() {
                     commemoratives_text.push_str(t);
                 }
                 current = sibling.next_sibling();
@@ -341,7 +341,7 @@ fn parse_html_tables(
         let mut section_stamps = Vec::new();
 
         while let Some(sibling) = current {
-            if let scraper::Node::Element(ref elem) = sibling.value() {
+            if let scraper::Node::Element(elem) = sibling.value() {
                 if elem.name() == "h2" || elem.name() == "h3" {
                     break;
                 }
@@ -486,7 +486,7 @@ fn parse_html_tables(
             let mut section_stamps = Vec::new();
 
             while let Some(sibling) = current {
-                if let scraper::Node::Element(ref elem) = sibling.value() {
+                if let scraper::Node::Element(elem) = sibling.value() {
                     if elem.name() == "h2" || elem.name() == "h3" {
                         break;
                     }

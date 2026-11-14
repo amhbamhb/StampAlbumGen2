@@ -569,6 +569,12 @@ fn save_pdf(
     pages: Vec<PreparedPdfPage>,
 ) -> Result<()> {
     let mut document = Document::new();
+    document.set_author("Stamp Album Generator 2");
+    document.set_title("Stamp Album");
+    document.set_creator("Stamp Album Generator 2");
+    document.set_keywords("stamps, stamp album gen 2");
+    document.set_subject("Stamp Album - Country Album");
+    document.set_producer("Stamp Album Generator 2");
     for (
         index,
         PreparedPdfPage {

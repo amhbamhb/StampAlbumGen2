@@ -1,10 +1,10 @@
 [package]
 name = "stamp_album_db"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
-rusqlite = { version = "0.40", features = ["bundled"] }
+rusqlite = { version = "0.42", features = ["bundled"] }
 regex = "1.10"
 log = "0.4"
 uuid = { version = "1", features = ["v4"] }
