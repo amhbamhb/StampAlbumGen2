@@ -314,6 +314,7 @@ pub async fn generate_album_output_conn<F>(
     page_callback: Option<F>,
     start_year: Option<i32>,
     end_year: Option<i32>,
+   
 ) -> std::path::PathBuf
 where
     F: FnMut(usize),

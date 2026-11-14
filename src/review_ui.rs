@@ -3161,6 +3161,7 @@ pub fn run_review_ui(
         .parent()
         .and_then(|album_dir| album_dir.parent())
     {
+        
         unsafe {
             std::env::set_var("STAMP_ALBUMS_ROOT", albums_root);
             log_runtime_event(&format!(

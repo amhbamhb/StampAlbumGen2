@@ -1,12 +1,6 @@
 /// Path validation, image checking, and PDF detection utilities for the Review UI.
 use std::path::Path;
 
-/// Validates that an image path is a real image path, not a placeholder/no_image
-pub fn is_real_image_path(image_path: &str) -> bool {
-    let p = image_path.trim();
-    let lower = p.to_ascii_lowercase();
-    !p.is_empty() && !lower.contains("no_image")
-}
 
 /// Checks if an image file exists for the given album and image path
 pub fn local_image_file_exists(album_name: &str, image_path: &str) -> bool {
@@ -48,33 +42,35 @@ pub fn open_local_path<P: AsRef<Path>>(path: P) -> bool {
     false
 }
 
-// /// Opens a folder in the file manager (platform-specific)
-// pub fn open_folder_in_file_manager<P: AsRef<Path>>(folder_path: P) -> bool {
-//     #[allow(dead_code)]
-//     let path = folder_path.as_ref();
-//     if path.is_dir() {
-//         #[cfg(target_family = "unix")]
-//         {
-//             return std::process::Command::new("xdg-open")
-//                 .arg(path)
-//                 .spawn()
-//                 .is_ok();
-//         }
-//         #[cfg(target_family = "windows")]
-//         {
-//             return std::process::Command::new("start")
-//                 .arg(path)
-//                 .spawn()
-//                 .is_ok();
-//         }
-//     }
-//     false
-// }
+/// Opens a folder in the file manager (platform-specific)
+pub fn open_folder_in_file_manager<P: AsRef<Path>>(folder_path: P) -> bool {
+    #[allow(dead_code)]
+    let path = folder_path.as_ref();
+    if path.is_dir() {
+        #[cfg(target_family = "unix")]
+        {
+            return std::process::Command::new("xdg-open")
+                .arg(path)
+                .spawn()
+                .is_ok();
+        }
+        #[cfg(target_family = "windows")]
+        {
+            return std::process::Command::new("start")
+                .arg(path)
+                .spawn()
+                .is_ok();
+        }
+    }
+    false
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::path::PathBuf;
+    use crate::album_globals::generator::is_real_image_path;
+
 
     #[test]
     fn test_is_real_image_path() {

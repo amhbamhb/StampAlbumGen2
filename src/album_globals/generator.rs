@@ -5,6 +5,7 @@ use super::helpers::{
     build_page_text_template, build_series_page_text_centre_template,
     build_watermark_page_text_centre_template,
 };
+
 use super::structs::Stamp;
 use crate::album_globals::generator_new::helpers::RowSpacingMode;
 use crate::album_globals::generator_new::layout;
@@ -166,7 +167,7 @@ fn is_effectively_duplicate_text(base_text: &str, candidate_text: &str) -> bool 
     base.contains(&candidate) || candidate.contains(&base)
 }
 
-fn is_real_image_path(image_path: &str) -> bool {
+pub fn is_real_image_path(image_path: &str) -> bool {
     let p = image_path.trim().to_ascii_lowercase();
     !p.is_empty() && !p.contains("no_image")
 }
