@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use reqwest::{header::HeaderMap, StatusCode};
+use reqwest::{StatusCode, header::HeaderMap};
 use stamp_album_gen2::stampworld::fetch::Fetcher;
 use std::{path::PathBuf, sync::Mutex};
 
@@ -150,8 +150,10 @@ async fn public_pipeline_merges_overrides_honors_refresh_and_emits_local_cover_f
         None,
     )
     .await;
-    assert!(!String::from_utf8(output)
-        .expect("album output")
-        .contains("# Cover flag image for album"));
+    assert!(
+        !String::from_utf8(output)
+            .expect("album output")
+            .contains("# Cover flag image for album")
+    );
     drop(restore);
 }

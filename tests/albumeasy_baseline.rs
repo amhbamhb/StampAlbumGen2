@@ -325,11 +325,13 @@ fn strict_trace_detects_styles_but_ignores_filename() -> Result<()> {
         reference,
         &reference.replace("reference.pdf", "candidate.pdf"),
     )?;
-    assert!(check_strict_trace(
-        reference,
-        &reference.replace("linewidth=\"1\"", "linewidth=\"2\"")
-    )
-    .is_err());
+    assert!(
+        check_strict_trace(
+            reference,
+            &reference.replace("linewidth=\"1\"", "linewidth=\"2\"")
+        )
+        .is_err()
+    );
     Ok(())
 }
 

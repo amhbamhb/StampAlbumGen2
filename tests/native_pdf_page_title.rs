@@ -70,12 +70,16 @@ fn title_measures_once_and_reserves_font_dependent_height() -> Result<()> {
     assert_eq!(a.reserved_height_mm, a.measured_height_mm);
     assert!(small_page.content_bounds.top <= a.bounds.bottom);
     assert_eq!(a.lines.len(), 1);
-    assert!(!small
-        .unapplied_keys
-        .contains(&"header.album_pages_title_font".into()));
-    assert!(!small
-        .unapplied_keys
-        .contains(&"colors.color_album_title".into()));
+    assert!(
+        !small
+            .unapplied_keys
+            .contains(&"header.album_pages_title_font".into())
+    );
+    assert!(
+        !small
+            .unapplied_keys
+            .contains(&"colors.color_album_title".into())
+    );
     let text = "Agyp FIRST\\nSecond LINE";
     let multi = NativePdfConfig::from_toml(&CONFIG.replace("Agyp TITLE-8", text))?;
     assert_eq!(
@@ -208,11 +212,13 @@ fn title_precedence_snapshot_and_optional_extension_are_explicit() -> Result<()>
         ]
     );
     let absent = CONFIG.split("[native_pdf.title]").next().ok_or("config")?;
-    assert!(NativePdfConfig::from_toml(absent)?
-        .page_settings
-        .resolve(1)?
-        .title
-        .is_none());
+    assert!(
+        NativePdfConfig::from_toml(absent)?
+            .page_settings
+            .resolve(1)?
+            .title
+            .is_none()
+    );
     let temporary = tempfile::tempdir()?;
     let path = temporary.path().join("user config.toml");
     fs::write(&path, CONFIG)?;

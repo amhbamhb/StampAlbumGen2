@@ -287,8 +287,8 @@ fn duplicate_selectors_are_idempotent_like_albumeasy() -> Result<(), String> {
 }
 
 #[test]
-fn native_sides_inherit_existing_inner_style_and_dimension_updates_retain_mask(
-) -> Result<(), String> {
+fn native_sides_inherit_existing_inner_style_and_dimension_updates_retain_mask()
+-> Result<(), String> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/albumeasy/stamp-inner-borders-v1");
     let source = fs::read_to_string(root.join("album.stampalbum")).map_err(|e| e.to_string())?;
@@ -336,8 +336,8 @@ fn native_sides_inherit_existing_inner_style_and_dimension_updates_retain_mask(
 }
 
 #[test]
-fn all_side_and_corner_combinations_are_independent_and_blank_is_not_cancellation(
-) -> Result<(), String> {
+fn all_side_and_corner_combinations_are_independent_and_blank_is_not_cancellation()
+-> Result<(), String> {
     let bounds = Bounds {
         left: 10.0,
         right: 42.0,
@@ -387,10 +387,12 @@ fn all_side_and_corner_combinations_are_independent_and_blank_is_not_cancellatio
             mask.count_ones() as usize
         );
         state.apply(&["BLANK"])?;
-        assert!(state
-            .outer_paths(bounds, 0.2, NamedColour::parse("black")?)?
-            .stroke_paths()
-            .is_empty());
+        assert!(
+            state
+                .outer_paths(bounds, 0.2, NamedColour::parse("black")?)?
+                .stroke_paths()
+                .is_empty()
+        );
     }
     let inner = StampInnerBorder::new(
         2.0,

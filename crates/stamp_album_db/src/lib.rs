@@ -1,7 +1,7 @@
 // Minimal, self-contained DB utilities moved out of the main crate.
 use log::{debug, error};
 use regex::Regex;
-use rusqlite::{params, Connection, OptionalExtension, Result};
+use rusqlite::{Connection, OptionalExtension, Result, params};
 use uuid::Uuid;
 
 // The long-argument `insert_stamp` implementation has been consolidated

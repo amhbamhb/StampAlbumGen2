@@ -1,4 +1,4 @@
-use super::{countries, Fetcher};
+use super::{Fetcher, countries};
 use std::{
     fs,
     io::Write,
@@ -234,7 +234,7 @@ pub(super) fn copy_to_album(source: &Path, dir: &Path) -> AssetResult<String> {
 mod tests {
     use super::*;
     use async_trait::async_trait;
-    use reqwest::{header::HeaderMap, StatusCode};
+    use reqwest::{StatusCode, header::HeaderMap};
     use std::sync::Mutex;
 
     struct FakeFetcher {

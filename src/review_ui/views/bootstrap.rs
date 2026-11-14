@@ -1,6 +1,6 @@
 use super::{
-    render_app_footer_html, render_config_editor_assets, render_footer_year_script,
-    render_reconnect_banner_html, render_runtime_log_panel_html, BACKEND_NOT_RESPONDING_MESSAGE,
+    BACKEND_NOT_RESPONDING_MESSAGE, render_app_footer_html, render_config_editor_assets,
+    render_footer_year_script, render_reconnect_banner_html, render_runtime_log_panel_html,
 };
 
 use super::bootstrap_assets::{

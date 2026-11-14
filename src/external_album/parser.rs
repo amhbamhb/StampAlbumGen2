@@ -147,7 +147,7 @@ pub(super) fn validate_page(page: &LayoutPage) -> Result<()> {
         validate(command).map_err(|e| format!("Line {}: {e}", command.source_line))?;
         match command.name.as_str() {
             "PAGE_START" if index != 0 => {
-                return Err("Editing cannot add/remove page boundaries".into())
+                return Err("Editing cannot add/remove page boundaries".into());
             }
             "ROW_START_ES" | "ROW_START_JS" | "ROW_START_FS" | "STAMP_ADD_IMG"
             | "PAGE_TEXT_CENTRE" => {}
@@ -163,7 +163,7 @@ pub(super) fn validate_page(page: &LayoutPage) -> Result<()> {
                 return Err(format!(
                     "{} is a document setting, not an editable page command",
                     command.name
-                ))
+                ));
             }
         }
     }
@@ -327,7 +327,7 @@ impl Lexer {
                                     escaped = c == '\\' && !escaped;
                                 }
                                 None => {
-                                    return Err(format!("Unterminated quoted argument for {name}"))
+                                    return Err(format!("Unterminated quoted argument for {name}"));
                                 }
                             }
                         }

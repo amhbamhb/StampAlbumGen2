@@ -2,7 +2,7 @@
 //!
 //! This module contains functions for updating database records.
 
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result, params};
 
 /// Lightweight update_image_dimensions kept here (simple SQL update)
 pub fn update_image_dimensions(

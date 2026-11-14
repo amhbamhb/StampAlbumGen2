@@ -1,4 +1,4 @@
-use crate::native_pdf::{units::mm_to_points, Result};
+use crate::native_pdf::{Result, units::mm_to_points};
 
 /// ALBUM_PAGES_FOOTER_PAD moves the footer away from the bottom border.
 #[derive(Clone, Copy, Debug)]

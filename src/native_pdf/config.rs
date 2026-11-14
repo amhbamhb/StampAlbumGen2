@@ -1,4 +1,5 @@
 use super::{
+    Result,
     colour::NamedColour,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
@@ -25,7 +26,6 @@ use super::{
     stamp_text::{ExpandedWidthLimit, StampTextPolicy, TextWidthPolicy},
     text::TextPosition,
     units::mm_to_points,
-    Result,
 };
 use std::{fs, path::Path};
 use toml::{Table, Value};
@@ -380,7 +380,7 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "Missing or invalid native_pdf.footer.enabled; expected a boolean".into(),
-                    )
+                    );
                 }
             };
             if let Some(colour) = colors.remove("color_album_footer") {
@@ -468,20 +468,21 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "native_pdf.footer_number.scope must be `document` or `section`".into(),
-                    )
+                    );
                 }
             };
-            let section_start =
-                match settings.remove("section_start") {
-                    Some(Value::Integer(value)) => Some(i32::try_from(value).map_err(|_| {
-                        "native_pdf.footer_number.section_start must be a signed 32-bit integer"
-                    })?),
-                    Some(_) => return Err(
+            let section_start = match settings.remove("section_start") {
+                Some(Value::Integer(value)) => Some(i32::try_from(value).map_err(
+                    |_| "native_pdf.footer_number.section_start must be a signed 32-bit integer",
+                )?),
+                Some(_) => {
+                    return Err(
                         "native_pdf.footer_number.section_start must be a signed 32-bit integer"
                             .into(),
-                    ),
-                    None => None,
-                };
+                    );
+                }
+                None => None,
+            };
             if scope == NativePageNumberingScope::Section && !opt_in {
                 return Err(
                     "native_pdf.footer_number.enabled must be true when scope is `section`".into(),
@@ -567,7 +568,7 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "Missing or invalid native_pdf.header.enabled; expected a boolean".into(),
-                    )
+                    );
                 }
             };
             let mut header = match root.remove("header") {
@@ -696,7 +697,7 @@ impl NativePdfConfig {
                 _ => {
                     return Err(
                         "Missing or invalid native_pdf.title.enabled; expected a boolean".into(),
-                    )
+                    );
                 }
             };
             let mut header = match root.remove("header") {
@@ -769,7 +770,7 @@ impl NativePdfConfig {
             _ => {
                 return Err(
                     "Missing or invalid native_pdf.proof.page_count; expected an integer".into(),
-                )
+                );
             }
         };
         let guide_enabled = match proof_table.remove("guide_enabled") {
@@ -777,7 +778,7 @@ impl NativePdfConfig {
             _ => {
                 return Err(
                     "Missing or invalid native_pdf.proof.guide_enabled; expected a boolean".into(),
-                )
+                );
             }
         };
         let guide_width_mm = numbers(&mut proof_table, &["guide_width_mm"], prefix)?[0];

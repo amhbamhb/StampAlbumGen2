@@ -13,7 +13,7 @@ pub mod runtime_defaults;
 pub mod setup;
 pub mod validation;
 pub mod wikipedia;
-pub use crate::config::{load_slug_overrides, Config, HeaderFormatting};
+pub use crate::config::{Config, HeaderFormatting, load_slug_overrides};
 // Main library file for StampAlbumGen2
 // External crates
 

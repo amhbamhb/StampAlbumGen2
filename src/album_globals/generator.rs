@@ -1070,21 +1070,13 @@ where
 
     // Determine effective start/end to use for filename (Option<i32>)
     let effective_start: Option<i32> = if let Some(s) = passed_start_year {
-        if s > 0 {
-            Some(s)
-        } else {
-            None
-        }
+        if s > 0 { Some(s) } else { None }
     } else {
         // not provided: try DB min
         db_min_year
     };
     let effective_end: Option<i32> = if let Some(e) = passed_end_year {
-        if e < 9999 {
-            Some(e)
-        } else {
-            None
-        }
+        if e < 9999 { Some(e) } else { None }
     } else {
         // not provided: try DB max
         db_max_year
@@ -1245,8 +1237,8 @@ where
     // Local layout estimates (we use configured values above where available)
     let _stamp_box_height = 24.0; // Estimate: typical stamp box height (unused default)
     let _header_lines = 4; // Year, name, desc, perforation (unused default)
-                           // let header_height = (header_lines as f64) * header_font_spacing;
-                           // let row_height = stamp_box_height + row_font_spacing;
+    // let header_height = (header_lines as f64) * header_font_spacing;
+    // let row_height = stamp_box_height + row_font_spacing;
 
     let series_order = config.series_order.clone().map(|s| s.as_str().to_string());
     let series_order_slice = series_order.as_deref();
@@ -2700,8 +2692,14 @@ where
                                 };
                                 let backup_path = output_path.with_file_name(backup_name);
                                 match fs::copy(&output_path, &backup_path) {
-                                    Ok(_) => info!("Created backup of existing file at {} (requested overwrite)", backup_path.display()),
-                                    Err(e) => error!("Failed to create backup before overwrite (requested) : {}", e),
+                                    Ok(_) => info!(
+                                        "Created backup of existing file at {} (requested overwrite)",
+                                        backup_path.display()
+                                    ),
+                                    Err(e) => error!(
+                                        "Failed to create backup before overwrite (requested) : {}",
+                                        e
+                                    ),
                                 }
                             }
                         }
@@ -2840,7 +2838,10 @@ mod layout_tests {
             ("catalog_code", "sg"),
             ("denomination", "5R"),
             ("stamps_issued", "42323"),
-            ("description", "Portrait of Isabel II, (facing right) in dark coloured oval within oval banner with wording FRANCO SEIS CUARTOS CORREOS 1851"),
+            (
+                "description",
+                "Portrait of Isabel II, (facing right) in dark coloured oval within oval banner with wording FRANCO SEIS CUARTOS CORREOS 1851",
+            ),
             ("color", "rose"),
             ("mint_condition", "2247"),
             ("used", "280"),
@@ -2901,9 +2902,10 @@ issued_on = true
             assert_eq!(text.left, "5R");
             assert_eq!(text.raw_stamps_issued, "42,323");
             assert_eq!(count_albumeasy_text_lines(&text.centre), 16);
-            assert!(text
-                .centre
-                .contains("Printing type: Typography;\\nFormat: Stamp;"));
+            assert!(
+                text.centre
+                    .contains("Printing type: Typography;\\nFormat: Stamp;")
+            );
             assert!(text.centre.contains("Paper: Normal paper;"));
             let height = stamp_content_height(&stamp, &config, 24.0, 29.0);
             assert!(

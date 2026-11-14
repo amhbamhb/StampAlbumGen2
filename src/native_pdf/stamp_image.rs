@@ -1,12 +1,12 @@
 //! Proof-only placement for one stamp image with measured heading and caption.
 
 use super::{
+    Result,
     colour::NamedColour,
     document::{Bounds, PageLayout},
     stamp_box::StampBoxGeometry,
     text::{MeasuredText, PositionedTextLine},
     units::{mm_to_points, points_to_mm},
-    Result,
 };
 use oxidize_pdf::Image;
 use std::path::PathBuf;
@@ -237,7 +237,7 @@ impl StampImageSettings {
             _ => {
                 return Err(
                     "native_pdf.stamp_image.image_path must reference a PNG or JPEG image".into(),
-                )
+                );
             }
         }
         let image = if self.options.grayscale {

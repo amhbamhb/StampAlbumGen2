@@ -1,4 +1,4 @@
-use crate::native_pdf::{colour::NamedColour, Result};
+use crate::native_pdf::{Result, colour::NamedColour};
 
 /// COLOUR_ALBUM_BORDER and its COLOR_ALBUM_BORDER spelling alias.
 /// AlbumEasy applies the final setting to every page, including earlier pages.

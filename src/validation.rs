@@ -198,7 +198,9 @@ pub fn print_validation_error(error: &ValidationError) {
                     "(Suggestions computed using Jaro–Winkler similarity; higher is better.)"
                 );
             } else {
-                eprintln!("Valid sources are: stampworld, touchstamps, extractfile, colnectexport, us1847, pdf");
+                eprintln!(
+                    "Valid sources are: stampworld, touchstamps, extractfile, colnectexport, us1847, pdf"
+                );
             }
             eprintln!("\nHere are quick examples you can copy-paste:");
             eprintln!("  # Generate from an existing DB (db-only):");

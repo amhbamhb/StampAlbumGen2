@@ -63,9 +63,11 @@ fn all_supplied_stampworld_pdfs_have_individual_rows() {
             )
         });
         assert_eq!(records.len(), count, "{}", path.display());
-        assert!(records
-            .iter()
-            .all(|r| !r.year.is_empty() && !r.series.is_empty()));
+        assert!(
+            records
+                .iter()
+                .all(|r| !r.year.is_empty() && !r.series.is_empty())
+        );
         assert!(records.iter().all(|r| r.currency == "USD"));
     }
 }

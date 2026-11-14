@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
          The synthetic picture is not a real stamp or a physical-size reference.\n\
          Case 10 blue/black outlines coincide: measure 100 mm on BOTH axes.\n\
          Existing extras are TOTAL additions, not per-edge amounts.\n\n\
-         case,physical_w,physical_h,extra_w,extra_h,adjust,frame_w,frame_h,clearance_x,clearance_y,image_w,image_h\n"
+         case,physical_w,physical_h,extra_w,extra_h,adjust,frame_w,frame_h,clearance_x,clearance_y,image_w,image_h\n",
     );
     let reference_preamble = String::from(
         "# Independent frame-size comparison, not native image/text parity.\n\

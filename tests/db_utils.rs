@@ -1,6 +1,6 @@
 use stamp_album_gen2::db_utils::{
-    init_db, insert_stamp, insert_stamp_placeholder, migrate_fix_block_metadata,
-    sort_stampstubs_inplace, StampStub,
+    StampStub, init_db, insert_stamp, insert_stamp_placeholder, migrate_fix_block_metadata,
+    sort_stampstubs_inplace,
 };
 
 fn make_stub(sg: &str, year: i32) -> StampStub {

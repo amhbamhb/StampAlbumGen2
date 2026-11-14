@@ -1,4 +1,4 @@
-use super::{parser::number, LayoutCommand, LayoutPage, Result};
+use super::{LayoutCommand, LayoutPage, Result, parser::number};
 
 fn setting<'a>(globals: &'a [LayoutCommand], name: &str) -> Result<&'a LayoutCommand> {
     globals
@@ -82,7 +82,10 @@ pub(super) fn reflow(globals: &[LayoutCommand], page: LayoutPage) -> Result<Layo
         let stamp_width = number(&command, 0)? + adjust;
         let stamp_height = number(&command, 1)? + adjust;
         if stamp_width <= 0.0 || stamp_height <= 0.0 || stamp_width > width {
-            return Err(format!("Overflow on page {}: stamp at line {} does not fit the usable width ({width:.2}mm)", page.index, command.source_line));
+            return Err(format!(
+                "Overflow on page {}: stamp at line {} does not fit the usable width ({width:.2}mm)",
+                page.index, command.source_line
+            ));
         }
         let gap = if row_count == 0 {
             0.0
@@ -122,7 +125,10 @@ pub(super) fn reflow(globals: &[LayoutCommand], page: LayoutPage) -> Result<Layo
         used_height += row_height + vertical;
     }
     if used_height > height {
-        return Err(format!("Overflow on page {}: conservative required height {used_height:.2}mm exceeds {height:.2}mm; no new page was created", page.index));
+        return Err(format!(
+            "Overflow on page {}: conservative required height {used_height:.2}mm exceeds {height:.2}mm; no new page was created",
+            page.index
+        ));
     }
     Ok(result)
 }

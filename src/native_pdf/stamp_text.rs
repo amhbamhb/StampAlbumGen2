@@ -1,14 +1,14 @@
 //! Native text footprints, separate from physical stamps and mounting frames.
 
 use super::{
+    Result,
     commands::page::album_pages_spacing::Spacing,
     document::Bounds,
     stamp_box::StampBoxGeometry,
     stamp_image::StampTextProofSettings,
-    stamp_rows::{fit_known_size_rows_with_alignment, RowAlignment},
+    stamp_rows::{RowAlignment, fit_known_size_rows_with_alignment},
     text::{MeasuredText, PositionedTextLine},
     units::mm_to_points,
-    Result,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -53,7 +53,7 @@ impl ExpandedWidthLimit {
             _ => {
                 return Err(
                     "native_pdf.stamp_text.expanded_width_limit must be percent or mm".into(),
-                )
+                );
             }
         };
         if !value.is_finite()
@@ -93,7 +93,9 @@ impl StampTextPolicy {
             ("text_gap_mm", text_gap_mm),
         ] {
             if !value.is_finite() || value < 0.0 || !mm_to_points(value * 2.0).is_finite() {
-                return Err(format!("native_pdf.stamp_text.{key} must be finite nonnegative millimetres without PDF overflow"));
+                return Err(format!(
+                    "native_pdf.stamp_text.{key} must be finite nonnegative millimetres without PDF overflow"
+                ));
             }
         }
         Ok(Self {

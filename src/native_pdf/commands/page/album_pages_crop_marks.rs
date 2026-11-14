@@ -1,5 +1,5 @@
 use crate::native_pdf::{
-    colour::NamedColour, commands::page::album_pages_size::PageSize, units::mm_to_points, Result,
+    Result, colour::NamedColour, commands::page::album_pages_size::PageSize, units::mm_to_points,
 };
 
 /// Explicit ALBUM_PAGES_CROP_MARKS values; optional TXT defaults belong in TOML.
@@ -39,7 +39,9 @@ impl AlbumPagesCropMarks {
             ("arms_mm", arms_mm),
         ] {
             if !value.is_finite() || value < 0.0 || !mm_to_points(value).is_finite() {
-                return Err(format!("native_pdf.crop_marks.{key} must be finite, nonnegative and fit PDF point dimensions"));
+                return Err(format!(
+                    "native_pdf.crop_marks.{key} must be finite, nonnegative and fit PDF point dimensions"
+                ));
             }
         }
         Ok(Self {

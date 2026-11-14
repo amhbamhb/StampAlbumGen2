@@ -1342,9 +1342,7 @@ pub async fn run_database_mode(
         if canonical_album_dir_name(name).to_lowercase() != db_stem.to_lowercase() {
             warn!(
                 "album-name '{}' differs from DB base '{}'; using '{}' so output and images stay in one folder",
-                name,
-                db_stem,
-                db_stem
+                name, db_stem, db_stem
             );
             eprintln!(
                 "Warning: --album-name '{}' differs from DB base '{}'. Using '{}' to keep output and images together.",
@@ -1480,7 +1478,10 @@ pub fn run_stampworld_file_import(cli: &crate::cli::Cli) -> Result<(), Box<dyn s
     .map_err(std::io::Error::other)?;
     println!(
         "StampWorld import complete: database={}, found={}, imported={}, skipped={} (duplicates or year filter)",
-        db_path.display(), summary.total_found, summary.imported, summary.skipped,
+        db_path.display(),
+        summary.total_found,
+        summary.imported,
+        summary.skipped,
     );
     Ok(())
 }
@@ -1557,9 +1558,7 @@ pub async fn run_scraping_mode(
     {
         warn!(
             "album-name '{}' differs from site-name '{}'; storage/output will use '{}' so StampWorld and Colnect share one folder",
-            album_name,
-            site_name,
-            canonical_storage_dir
+            album_name, site_name, canonical_storage_dir
         );
         eprintln!(
             "Warning: --album-name '{}' differs from --site-name '{}'. Using '{}' as shared storage base.",

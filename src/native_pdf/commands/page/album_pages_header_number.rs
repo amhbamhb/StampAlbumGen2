@@ -1,5 +1,5 @@
 use super::album_pages_header::{AlbumPagesHeader, HeaderLayout};
-use crate::native_pdf::{document::Bounds, numbering::PageNumbering, Result};
+use crate::native_pdf::{Result, document::Bounds, numbering::PageNumbering};
 
 /// ALBUM_PAGES_HEADER_NUMBER shares header geometry, not footer label state.
 #[derive(Clone, Debug)]

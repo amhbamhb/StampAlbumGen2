@@ -91,13 +91,13 @@ fn footer_anchor_and_hint_share_layout_without_moving_glyphs() -> Result<()> {
             .footer
             .is_none()
     );
-    assert!(NativePdfConfig::from_toml(
-        CONFIG.split("[native_pdf.footer]").next().ok_or("config")?
-    )?
-    .page_settings
-    .resolve(1)?
-    .footer
-    .is_none());
+    assert!(
+        NativePdfConfig::from_toml(CONFIG.split("[native_pdf.footer]").next().ok_or("config")?)?
+            .page_settings
+            .resolve(1)?
+            .footer
+            .is_none()
+    );
     Ok(())
 }
 
@@ -206,7 +206,9 @@ fn footer_defaults_colour_precedence_and_snapshots_preserve_number_settings() ->
         assert_eq!(footer.lines[0].text, "Stamp Album Footer");
         near(footer.size_pt, 8.0);
     }
-    let source = format!("color_album_footer = \"private-value\"\n{CONFIG}\nfuture_hint = 1\n[footer]\nalbum_pages_footer_number_position = \"R\"\n");
+    let source = format!(
+        "color_album_footer = \"private-value\"\n{CONFIG}\nfuture_hint = 1\n[footer]\nalbum_pages_footer_number_position = \"R\"\n"
+    );
     let temporary = tempfile::tempdir()?;
     let path = temporary.path().join("user settings.toml");
     fs::write(&path, source)?;
@@ -274,16 +276,20 @@ fn footer_fonts_fit_spill_and_no_partial_output() -> Result<()> {
         .footer
         .ok_or("footer")?;
     let maximum = footer.bounds.bottom;
-    assert!(NativePdfConfig::from_toml(&CONFIG.replace(
-        "padding_mm = 0",
-        &format!("padding_mm = {}", maximum - 0.000001)
-    ))
-    .is_ok());
-    assert!(NativePdfConfig::from_toml(&CONFIG.replace(
-        "padding_mm = 0",
-        &format!("padding_mm = {}", maximum + 0.000001)
-    ))
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace(
+            "padding_mm = 0",
+            &format!("padding_mm = {}", maximum - 0.000001)
+        ))
+        .is_ok()
+    );
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace(
+            "padding_mm = 0",
+            &format!("padding_mm = {}", maximum + 0.000001)
+        ))
+        .is_err()
+    );
     // A later physical page may have a smaller bottom margin.
     let even = "\n[page.even_margins]\nleft_mm = 15\nright_mm = 15\ntop_mm = 15\nbottom_mm = 1\n";
     let error = NativePdfConfig::from_toml(&format!("{CONFIG}{even}"))
@@ -334,10 +340,12 @@ fn footer_and_header_hints_share_usable_content_and_title_fit() -> Result<()> {
     let collision = with_title.replacen("minimum_height_mm = 0", "minimum_height_mm = 265", 1);
     assert!(NativePdfConfig::from_toml(&collision).is_err());
     // A footer alone may fit physically while reserving the entire usable area.
-    assert!(NativePdfConfig::from_toml(
-        &CONFIG.replace("minimum_height_mm = 0", "minimum_height_mm = 280")
-    )
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(
+            &CONFIG.replace("minimum_height_mm = 0", "minimum_height_mm = 280")
+        )
+        .is_err()
+    );
     Ok(())
 }
 
@@ -375,8 +383,9 @@ fn serialized_footer_positions_colours_and_content_match_references() -> Result<
             .replace("size_pt = 8", &format!("size_pt = {size}"))
             .replace("padding_mm = 0", &format!("padding_mm = {padding}"));
         if asymmetric {
-            source = source.replace("page_left_margin_mm = 15","page_left_margin_mm = 25")
-                .replace("page_right_margin_mm = 15","page_right_margin_mm = 12")
+            source = source
+                .replace("page_left_margin_mm = 15", "page_left_margin_mm = 25")
+                .replace("page_right_margin_mm = 15", "page_right_margin_mm = 12")
                 + "\n[page.even_margins]\nleft_mm = 12\nright_mm = 25\ntop_mm = 18\nbottom_mm = 20\n";
         }
         if multiline {

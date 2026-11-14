@@ -165,7 +165,9 @@ pub fn ensure_config_and_template_files(
                                 picked_opt = Some(p);
                             }
                             None => {
-                                println!("GUI picker returned no selection; skipping interactive move/copy");
+                                println!(
+                                    "GUI picker returned no selection; skipping interactive move/copy"
+                                );
                                 debug!("GUI picker returned no selection");
                                 // keep picked_opt as None; since GUI was used,
                                 // avoid falling back to console prompt below.
@@ -1651,7 +1653,10 @@ pub fn create_config_from_template(
 
     if target.exists() && !force {
         // Do not overwrite by default
-        println!("Config file '{}' already exists; not overwriting (use --force-init-config to overwrite).", target.display());
+        println!(
+            "Config file '{}' already exists; not overwriting (use --force-init-config to overwrite).",
+            target.display()
+        );
         return Ok(());
     }
 
@@ -2489,8 +2494,12 @@ pub fn load_config(path: &str) -> Config {
                                     candidate.display(),
                                     e
                                 );
-                                eprintln!("This usually means there are unknown or invalid configuration keys.");
-                                eprintln!("Please check that all setting names are correct and values are in the right format.");
+                                eprintln!(
+                                    "This usually means there are unknown or invalid configuration keys."
+                                );
+                                eprintln!(
+                                    "Please check that all setting names are correct and values are in the right format."
+                                );
                                 break;
                             }
                         },
@@ -2848,7 +2857,7 @@ pub(crate) fn try_load_slug_overrides(path: &str) -> Result<HashMap<String, Stri
 
 #[cfg(test)]
 mod tests {
-    use super::{detect_duplicate_keys, Config};
+    use super::{Config, detect_duplicate_keys};
 
     #[test]
     fn albumeasy_pdf_timeout_defaults_and_positive_overrides() {

@@ -275,7 +275,7 @@ fn parse_html_tables(
             // Get all text after the commemoratives header until next h2
             let mut current = h2.next_sibling();
             while let Some(sibling) = current {
-                if let scraper::Node::Element( elem) = sibling.value() {
+                if let scraper::Node::Element(elem) = sibling.value() {
                     if elem.name() == "h2" {
                         break;
                     }
@@ -937,7 +937,7 @@ fn extract_design_size(document: &Html) -> String {
             // Extract Portrait: look for "Portrait Stamps:" and get dimensions
             if let Some(start) = text.find("Portrait Stamps:") {
                 let after = &text[start + 16..]; // len("Portrait Stamps:") = 16
-                                                 // Find dimensions: look for pattern ".XX x .XX inches" or ".XX x .XX in"
+                // Find dimensions: look for pattern ".XX x .XX inches" or ".XX x .XX in"
                 if let Some(first_dot) = after.find('.') {
                     let from_first = &after[first_dot..];
                     // Find " inches" or " in" to mark end of this dimension section
@@ -951,7 +951,7 @@ fn extract_design_size(document: &Html) -> String {
             // Extract Landscape: look for "Landscape Stamps:" and get dimensions
             if let Some(start) = text.find("Landscape Stamps:") {
                 let after = &text[start + 17..]; // len("Landscape Stamps:") = 17
-                                                 // Find dimensions: look for pattern ".XX x .XX in"
+                // Find dimensions: look for pattern ".XX x .XX in"
                 if let Some(first_dot) = after.find('.') {
                     let from_first = &after[first_dot..];
                     // Find " in" to mark end of this dimension section (could be "in." or "in,")

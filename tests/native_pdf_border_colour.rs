@@ -162,9 +162,11 @@ fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() ->
     assert_eq!(section.unapplied_keys, ["colors.color_album_footer"]);
     let template = NativePdfConfig::from_toml(include_str!("../config_template.toml"))?;
     assert_eq!(template.page_settings.border_colour().rgb(), [0.0; 3]);
-    assert!(!template
-        .unapplied_keys
-        .contains(&"colors.color_album_border".into()));
+    assert!(
+        !template
+            .unapplied_keys
+            .contains(&"colors.color_album_border".into())
+    );
     assert_eq!(base.border_colour().rgb(), [0.0; 3]);
     for number in [1, 2, 3] {
         let original = base.resolve(number)?;
@@ -184,15 +186,19 @@ fn config_colour_is_applied_with_section_precedence_and_no_geometry_changes() ->
         assert!(error.contains("color_album_border") || error.contains("COLOUR_ALBUM_BORDER"));
         assert!(!error.contains("private-value"));
     }
-    assert!(NativePdfConfig::from_toml(&format!(
-        "color_album_border = \"black\"\n{PAGE}\ncolors = false\n"
-    ))
-    .is_ok());
+    assert!(
+        NativePdfConfig::from_toml(&format!(
+            "color_album_border = \"black\"\n{PAGE}\ncolors = false\n"
+        ))
+        .is_ok()
+    );
     assert!(NativePdfConfig::from_toml(&format!("colors = false\n{PAGE}")).is_err());
-    assert!(NativePdfConfig::from_toml(&format!(
-        "color_album_border = \"green\"\n{PAGE}\n[colors]\ncolor_album_border = \"invalid\"\n"
-    ))
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&format!(
+            "color_album_border = \"green\"\n{PAGE}\n[colors]\ncolor_album_border = \"invalid\"\n"
+        ))
+        .is_err()
+    );
     Ok(())
 }
 

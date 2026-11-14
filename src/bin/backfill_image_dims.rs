@@ -104,7 +104,7 @@ fn main() {
     }
 
     if verbose {
-        unsafe{
+        unsafe {
             std::env::set_var("RUST_LOG", "debug");
         }
     }

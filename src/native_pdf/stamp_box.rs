@@ -1,6 +1,6 @@
 //! Known physical stamp bounds and independent mounting-frame clearance.
 
-use super::{document::Bounds, units::mm_to_points, Result};
+use super::{Result, document::Bounds, units::mm_to_points};
 
 #[derive(Clone, Copy, Debug)]
 pub struct StampBoxGeometry {

@@ -1,8 +1,8 @@
 use super::album_pages_header::{AlbumPagesHeader, HeaderLayout};
 use crate::native_pdf::{
+    Result,
     date::{DateFormat, DateSource, DateText},
     document::Bounds,
-    Result,
 };
 use chrono::NaiveDate;
 

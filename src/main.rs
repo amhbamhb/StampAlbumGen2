@@ -20,8 +20,8 @@ use stamp_album_gen2::{
     config,
     modes::{run_database_mode, run_scraping_mode},
     review_ui::{
-        log_runtime_event, run_review_ui, run_review_ui_bootstrap, MatcherPayloadOptions,
-        ReviewUiBootstrapOutcome, ReviewUiRunOutcome, ReviewUiSelected,
+        MatcherPayloadOptions, ReviewUiBootstrapOutcome, ReviewUiRunOutcome, ReviewUiSelected,
+        log_runtime_event, run_review_ui, run_review_ui_bootstrap,
     },
     setup::{
         align_process_working_dir_to_runtime_layout, ensure_first_run_installation,
@@ -362,7 +362,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             match current_state {
                 ReviewUiLaunchState::Bootstrap { open_browser } => {
                     log_runtime_event(
-                        "Review UI: no country/database selected on CLI; opening startup selector..."
+                        "Review UI: no country/database selected on CLI; opening startup selector...",
                     );
                     let bootstrap_outcome = match run_review_ui_bootstrap(
                         cli.review_ui_bind.as_deref(),
@@ -503,7 +503,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                         ReviewUiRunOutcome::ReturnToStartRequested => {
                             log_runtime_event(
-                                "Review UI: return-to-start requested from compare view; opening startup selector..."
+                                "Review UI: return-to-start requested from compare view; opening startup selector...",
                             );
                             launch_state = ReviewUiLaunchState::Bootstrap {
                                 open_browser: false,

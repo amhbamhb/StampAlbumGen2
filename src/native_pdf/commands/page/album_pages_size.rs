@@ -1,4 +1,4 @@
-use crate::native_pdf::{commands::arguments, units::mm_to_points, Result};
+use crate::native_pdf::{Result, commands::arguments, units::mm_to_points};
 
 #[derive(Clone, Copy, Debug)]
 pub struct PageSize {

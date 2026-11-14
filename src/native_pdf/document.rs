@@ -1,4 +1,5 @@
 use super::{
+    Result,
     commands::colour::colour_album_border::AlbumBorderColour,
     commands::page::{
         album_pages_border::PageBorder,
@@ -20,7 +21,6 @@ use super::{
     date::DateSource,
     numbering::NumberingContext,
     text::text_lines_overlap,
-    Result,
 };
 
 /// Millimetres in PDF bottom-left coordinates.
@@ -414,7 +414,9 @@ impl PageSettings {
             if text_lines_overlap(&header.lines, header.bounds, &number.lines, number.bounds)? {
                 // TODO(native-pdf-ui): Show conflicting elements, physical page and
                 // TOML keys; offer correction in the UI rather than silently moving text.
-                return Err(format!("Native PDF page {page_number}: native_pdf.header.text overlaps ALBUM_PAGES_HEADER_NUMBER; adjust album_pages_header_position or native_pdf.header_number.position, native_pdf.header.text, native_pdf.header_number.before/after or font/size_pt values"));
+                return Err(format!(
+                    "Native PDF page {page_number}: native_pdf.header.text overlaps ALBUM_PAGES_HEADER_NUMBER; adjust album_pages_header_position or native_pdf.header_number.position, native_pdf.header.text, native_pdf.header_number.before/after or font/size_pt values"
+                ));
             }
         }
         let header_date = self
@@ -443,7 +445,9 @@ impl PageSettings {
                     if text_lines_overlap(&date.lines, date.bounds, &layout.lines, layout.bounds)? {
                         // TODO(native-pdf-ui): Include date conflicts in the UI's
                         // physical-page warning and TOML correction choices.
-                        return Err(format!("Native PDF page {page_number}: ALBUM_PAGES_HEADER_DATE overlaps {element}; adjust native_pdf.header_date.position/font/size_pt/before/after/separator or {keys}"));
+                        return Err(format!(
+                            "Native PDF page {page_number}: ALBUM_PAGES_HEADER_DATE overlaps {element}; adjust native_pdf.header_date.position/font/size_pt/before/after/separator or {keys}"
+                        ));
                     }
                 }
             }
@@ -522,7 +526,9 @@ impl PageSettings {
                     if text_lines_overlap(&date.lines, date.bounds, &layout.lines, layout.bounds)? {
                         // TODO(native-pdf-ui): Show footer date conflicts and
                         // physical-page/TOML correction choices in the UI.
-                        return Err(format!("Native PDF page {page_number}: ALBUM_PAGES_FOOTER_DATE overlaps {element}; adjust native_pdf.footer_date.position/font/size_pt/before/after/separator or {keys}"));
+                        return Err(format!(
+                            "Native PDF page {page_number}: ALBUM_PAGES_FOOTER_DATE overlaps {element}; adjust native_pdf.footer_date.position/font/size_pt/before/after/separator or {keys}"
+                        ));
                     }
                 }
             }
@@ -538,17 +544,34 @@ impl PageSettings {
         if let Some(title) = &title {
             if let Some(date) = &footer_date {
                 if text_lines_overlap(&date.lines, date.bounds, &title.lines, title.bounds)? {
-                    return Err(format!("Native PDF page {page_number}: ALBUM_PAGES_FOOTER_DATE overlaps native_pdf.title.text; adjust native_pdf.footer_date.font/size_pt/before/after/separator, native_pdf.footer.padding_mm or album_pages_title_font/size/native_pdf.title.text"));
+                    return Err(format!(
+                        "Native PDF page {page_number}: ALBUM_PAGES_FOOTER_DATE overlaps native_pdf.title.text; adjust native_pdf.footer_date.font/size_pt/before/after/separator, native_pdf.footer.padding_mm or album_pages_title_font/size/native_pdf.title.text"
+                    ));
                 }
             }
             for (element, layout, keys) in [
-                ("native_pdf.header.text", header.as_ref(), "album_pages_header_position, native_pdf.header.font/size_pt/text/padding_mm"),
-                ("ALBUM_PAGES_HEADER_NUMBER", header_number.as_ref(), "native_pdf.header_number.position/font/size_pt/before/after, native_pdf.header.padding_mm"),
-                ("ALBUM_PAGES_HEADER_DATE", header_date.as_ref(), "native_pdf.header_date.position/font/size_pt/before/after/separator, native_pdf.header.padding_mm"),
+                (
+                    "native_pdf.header.text",
+                    header.as_ref(),
+                    "album_pages_header_position, native_pdf.header.font/size_pt/text/padding_mm",
+                ),
+                (
+                    "ALBUM_PAGES_HEADER_NUMBER",
+                    header_number.as_ref(),
+                    "native_pdf.header_number.position/font/size_pt/before/after, native_pdf.header.padding_mm",
+                ),
+                (
+                    "ALBUM_PAGES_HEADER_DATE",
+                    header_date.as_ref(),
+                    "native_pdf.header_date.position/font/size_pt/before/after/separator, native_pdf.header.padding_mm",
+                ),
             ] {
                 if let Some(layout) = layout {
-                    if text_lines_overlap(&layout.lines, layout.bounds, &title.lines, title.bounds)? {
-                        return Err(format!("Native PDF page {page_number}: {element} overlaps native_pdf.title.text; adjust {keys}, album_pages_title_font/size or native_pdf.title.text"));
+                    if text_lines_overlap(&layout.lines, layout.bounds, &title.lines, title.bounds)?
+                    {
+                        return Err(format!(
+                            "Native PDF page {page_number}: {element} overlaps native_pdf.title.text; adjust {keys}, album_pages_title_font/size or native_pdf.title.text"
+                        ));
                     }
                 }
             }
@@ -570,7 +593,9 @@ impl PageSettings {
                         && first.bounds.bottom < second.bounds.top
                         && second.bounds.bottom < first.bounds.top
                     {
-                        return Err(format!("ALBUM_PAGES_MARGIN_TXT definitions overlap on physical page {page_number}"));
+                        return Err(format!(
+                            "ALBUM_PAGES_MARGIN_TXT definitions overlap on physical page {page_number}"
+                        ));
                     }
                 }
             }

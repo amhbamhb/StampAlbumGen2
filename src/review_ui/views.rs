@@ -4,10 +4,10 @@ mod compare;
 mod compare_assets;
 mod shared;
 
-use super::{render_config_editor_assets, MatcherPayload};
+use super::{MatcherPayload, render_config_editor_assets};
 use shared::{
-    render_app_footer_html, render_footer_year_script, render_reconnect_banner_html,
-    render_runtime_log_panel_html, FOOTER_YEAR_UPDATE_JS,
+    FOOTER_YEAR_UPDATE_JS, render_app_footer_html, render_footer_year_script,
+    render_reconnect_banner_html, render_runtime_log_panel_html,
 };
 
 pub(super) fn render_bootstrap_html(default_inbox_path: Option<&str>) -> String {

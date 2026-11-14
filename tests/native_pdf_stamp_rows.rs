@@ -130,8 +130,8 @@ fn empty_input_is_empty_but_invalid_content_is_not_silently_accepted() -> Result
 }
 
 #[test]
-fn rendered_letter_rows_match_positions_and_overflow_preserves_output(
-) -> Result<(), Box<dyn std::error::Error>> {
+fn rendered_letter_rows_match_positions_and_overflow_preserves_output()
+-> Result<(), Box<dyn std::error::Error>> {
     use oxidize_pdf::parser::PdfDocument;
     use stamp_album_gen2::native_pdf::{
         colour::NamedColour,

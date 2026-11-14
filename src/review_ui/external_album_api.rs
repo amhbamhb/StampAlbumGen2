@@ -1,6 +1,6 @@
 use super::*;
 use crate::external_album;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::io::Read;
 use std::sync::atomic::AtomicU64;
 
@@ -495,9 +495,11 @@ mod tests {
             "data:image/png;base64,{}",
             base64::engine::general_purpose::STANDARD.encode(encoded.into_inner())
         );
-        assert!(store_image(directory.path(), &data)
-            .expect_err("case conflict")
-            .contains("capitalization"));
+        assert!(
+            store_image(directory.path(), &data)
+                .expect_err("case conflict")
+                .contains("capitalization")
+        );
     }
 
     #[test]

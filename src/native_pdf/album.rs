@@ -1,4 +1,5 @@
 use super::{
+    Result,
     colour::NamedColour,
     commands::{
         colour::colour_album_border::AlbumBorderColour,
@@ -38,7 +39,6 @@ use super::{
     },
     text::MeasuredText,
     units::mm_to_points,
-    Result,
 };
 use std::{
     fs,
@@ -281,7 +281,9 @@ impl NativeAlbum {
                 }
                 "NATIVE_PAGE_MARGIN_TEXT" => {
                     if args.len() != 8 {
-                        return Err(fail(format!("{name} requires font, size, quoted text, position, alignment, direction, explicit border gap mm and colour")));
+                        return Err(fail(format!(
+                            "{name} requires font, size, quoted text, position, alignment, direction, explicit border gap mm and colour"
+                        )));
                     }
                     for index in [0, 3, 4, 5, 7] {
                         if args[index].quoted {
@@ -360,8 +362,8 @@ impl NativeAlbum {
                     let [mode, limit_unit, limit_value, horizontal, vertical, gap] = &args[..]
                     else {
                         return Err(fail(format!(
-                                "{name} requires six arguments: mode, limit unit, limit value, horizontal padding, vertical padding, text gap"
-                            )));
+                            "{name} requires six arguments: mode, limit unit, limit value, horizontal padding, vertical padding, text gap"
+                        )));
                     };
                     let mode = unquoted(mode, &name).map_err(&fail)?;
                     let limit_unit = unquoted(limit_unit, &name).map_err(&fail)?;
@@ -510,7 +512,7 @@ impl NativeAlbum {
                         _ => {
                             return Err(fail(format!(
                                 "{name} padding unit must be millimetres or percent"
-                            )))
+                            )));
                         }
                     };
                     let padding_horizontal = number(&args[1], &name, 2).map_err(&fail)?;
@@ -525,7 +527,7 @@ impl NativeAlbum {
                         _ => {
                             return Err(fail(format!(
                                 "{name} aspect ratio must be preserve or fit"
-                            )))
+                            )));
                         }
                     };
                     let grayscale = match unquoted(&args[5], &name).map_err(&fail)?.as_str() {
@@ -534,7 +536,7 @@ impl NativeAlbum {
                         _ => {
                             return Err(fail(format!(
                                 "{name} colour mode must be colour or grayscale"
-                            )))
+                            )));
                         }
                     };
                     let visible = match unquoted(&args[6], &name).map_err(&fail)?.as_str() {
@@ -662,7 +664,9 @@ impl NativeAlbum {
                 }
                 "NATIVE_STAMP_HEADING" => {
                     if args.len() != 7 {
-                        return Err(fail(format!("{name} requires mode, font, size, quoted text, offset mm, baseline gap mm and colour")));
+                        return Err(fail(format!(
+                            "{name} requires mode, font, size, quoted text, offset mm, baseline gap mm and colour"
+                        )));
                     }
                     if !matches!(
                         previous_command.as_str(),
@@ -1261,7 +1265,7 @@ fn parse_arguments(name: &str, body: &str) -> Result<Vec<Argument>> {
                         Some(other) => {
                             return Err(format!(
                                 "{name} contains unsupported string escape `\\{other}`"
-                            ))
+                            ));
                         }
                         None => return Err(format!("{name} has an incomplete string escape")),
                     },

@@ -1,7 +1,7 @@
 use base64::Engine;
-use http_handlers::{serve_bootstrap_requests, serve_review_requests, ReviewHandlersStateRequests};
+use http_handlers::{ReviewHandlersStateRequests, serve_bootstrap_requests, serve_review_requests};
 use log::debug;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -620,7 +620,7 @@ fn stampworld_db_snapshot(db_path: &str) -> String {
                 size,
                 db.display(),
                 e
-            )
+            );
         }
     };
 
@@ -2367,11 +2367,14 @@ where
                 let destination = match fs::canonicalize(&dest) {
                     Ok(path) => path,
                     Err(error) => {
-                        return fail(format!("Cannot resolve destination file: {}", error))
+                        return fail(format!("Cannot resolve destination file: {}", error));
                     }
                 };
                 if source != destination {
-                    return fail(format!("Destination already exists: {}. Select the existing file or rename the new file to avoid overwriting it.", dest.display()));
+                    return fail(format!(
+                        "Destination already exists: {}. Select the existing file or rename the new file to avoid overwriting it.",
+                        dest.display()
+                    ));
                 }
                 Ok(0)
             } else {
@@ -2563,11 +2566,7 @@ fn load_stamp_all_fields(
     rowid: i64,
 ) -> Result<Vec<DbField>, Box<dyn std::error::Error>> {
     let mut stmt = conn.prepare("SELECT * FROM stamps WHERE rowid = ?1 LIMIT 1")?;
-    let column_names: Vec<String> = stmt
-        .column_names()
-        
-        .map(|n| (*n).to_string())
-        .collect();
+    let column_names: Vec<String> = stmt.column_names().map(|n| (*n).to_string()).collect();
 
     let mut rows = stmt.query(params![rowid])?;
     let Some(row) = rows.next()? else {
@@ -3171,12 +3170,13 @@ pub fn run_review_ui(
         .parent()
         .and_then(|album_dir| album_dir.parent())
     {
-        unsafe{std::env::set_var("STAMP_ALBUMS_ROOT", albums_root);
-        log_runtime_event(&format!(
-            "Review UI: using albums root {}",
-            albums_root.display()
-        ));
-    }
+        unsafe {
+            std::env::set_var("STAMP_ALBUMS_ROOT", albums_root);
+            log_runtime_event(&format!(
+                "Review UI: using albums root {}",
+                albums_root.display()
+            ));
+        }
     }
 
     log_runtime_event(&format!("Review UI: preparing data from {}", db_path));

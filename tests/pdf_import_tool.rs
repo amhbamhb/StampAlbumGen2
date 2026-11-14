@@ -83,7 +83,10 @@ fn imports_real_pdfs_into_disk_database_and_skips_reimports() {
             (second.total_found, second.imported, second.skipped),
             (count, 0, count)
         );
-        println!("{country}: DB={}, schema=compatible, imported={count}, repeat_duplicates={count}, failed=0", db.display());
+        println!(
+            "{country}: DB={}, schema=compatible, imported={count}, repeat_duplicates={count}, failed=0",
+            db.display()
+        );
     }
     drop(conn);
     let reopened = rusqlite::Connection::open(db).expect("reopen DB");
@@ -139,7 +142,10 @@ fn imports_denmark_pages_and_skips_all_266_on_second_pass() {
             (imported, skipped),
             if pass == 0 { (266, 0) } else { (0, 266) }
         );
-        println!("Denmark: pass={pass}, DB={}, schema=compatible, imported={imported}, skipped_duplicates={skipped}, failed=0", db.display());
+        println!(
+            "Denmark: pass={pass}, DB={}, schema=compatible, imported={imported}, skipped_duplicates={skipped}, failed=0",
+            db.display()
+        );
     }
 }
 

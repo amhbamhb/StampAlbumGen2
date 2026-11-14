@@ -3,7 +3,7 @@
 //! This module contains functions for inserting, updating, and querying stamp data.
 
 use log::{debug, error};
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result, params};
 
 use crate::db_utils::StampStub;
 use stamp_album_db::StampInsert as DbStampInsert;

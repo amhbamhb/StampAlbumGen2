@@ -701,8 +701,7 @@ pub fn ensure_linux_desktop_integration() -> std::io::Result<LinuxDesktopIntegra
 
     let desktop_contents = format!(
         "[Desktop Entry]\nType=Application\nVersion=1.0\nName=Stamp Album Generator 2\nComment=Open Stamp Album Generator 2 Review UI\nExec={}\nPath={}\nIcon=stamp_album_gen2\nTerminal=false\nCategories=Graphics;Education;Utility;\nStartupNotify=true\n",
-        exec_cmd,
-        working_dir,
+        exec_cmd, working_dir,
     );
 
     let mut changed = false;

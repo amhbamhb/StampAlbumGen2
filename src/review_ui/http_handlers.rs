@@ -19,27 +19,41 @@ fn ping_response_json() -> String {
     format!("{{\"app\":\"stamp_album_gen2\",\"build\":\"{}\"}}", build)
 }
 
-fn protect_local_request(request: tiny_http::Request, server: &Server) -> Option<tiny_http::Request> {
+fn protect_local_request(
+    request: tiny_http::Request,
+    server: &Server,
+) -> Option<tiny_http::Request> {
     let header = |name: &'static str| {
         let mut matches = request.headers().iter().filter(|h| h.field.equiv(name));
         let first = matches.next().map(|h| h.value.as_str());
-        if matches.next().is_some() { None } else { first }
+        if matches.next().is_some() {
+            None
+        } else {
+            first
+        }
     };
     let valid = (|| {
         let bound = server.server_addr().to_ip()?;
         let host = header("Host")?;
         let url = reqwest::Url::parse(&format!("http://{host}/")).ok()?;
-        if !url.username().is_empty() || url.password().is_some()
-            || url.path() != "/" || url.query().is_some() || url.fragment().is_some()
+        if !url.username().is_empty()
+            || url.password().is_some()
+            || url.path() != "/"
+            || url.query().is_some()
+            || url.fragment().is_some()
             || url.port_or_known_default()? != bound.port()
         {
             return None;
         }
         let hostname = url.host_str()?;
         let is_local = hostname.eq_ignore_ascii_case("localhost")
-            || hostname.trim_matches(['[', ']']).parse::<std::net::IpAddr>()
+            || hostname
+                .trim_matches(['[', ']'])
+                .parse::<std::net::IpAddr>()
                 .is_ok_and(|ip| ip.is_loopback());
-        if !is_local || header("Sec-Fetch-Site").is_some_and(|s| s.eq_ignore_ascii_case("cross-site")) {
+        if !is_local
+            || header("Sec-Fetch-Site").is_some_and(|s| s.eq_ignore_ascii_case("cross-site"))
+        {
             return None;
         }
         if let Some(origin) = header("Origin") {
@@ -49,17 +63,24 @@ fn protect_local_request(request: tiny_http::Request, server: &Server) -> Option
         } else if request.method() != &Method::Get
             && request.method() != &Method::Head
             && !header("Content-Type").is_some_and(|value| {
-                value.split(';').next().is_some_and(|v| v.trim().eq_ignore_ascii_case("application/json"))
+                value
+                    .split(';')
+                    .next()
+                    .is_some_and(|v| v.trim().eq_ignore_ascii_case("application/json"))
             })
         {
             return None;
         }
         Some(())
-    })().is_some();
+    })()
+    .is_some();
     if valid {
         Some(request)
     } else {
-        if let Err(error) = request.respond(Response::from_string("Forbidden: local same-origin requests only").with_status_code(StatusCode(403))) {
+        if let Err(error) = request.respond(
+            Response::from_string("Forbidden: local same-origin requests only")
+                .with_status_code(StatusCode(403)),
+        ) {
             log_runtime_event(&format!("Review UI request rejection failed: {error}"));
         }
         None
@@ -672,10 +693,7 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
 
             log_runtime_event(&format!(
                 "StampWorld API: /api/stampworld-run response status={} ok={} started={} message={}",
-                status_code.0,
-                response.ok,
-                response.started,
-                response.message
+                status_code.0, response.ok, response.started, response.message
             ));
 
             let mut resp =
@@ -1570,10 +1588,7 @@ pub(super) fn serve_review_requests(
 
             log_runtime_event(&format!(
                 "StampWorld API: /api/stampworld-run response status={} ok={} started={} message={}",
-                status_code.0,
-                response.ok,
-                response.started,
-                response.message
+                status_code.0, response.ok, response.started, response.message
             ));
 
             let mut resp =
@@ -2807,10 +2822,12 @@ mod site_account_tests {
                 assert_eq!(response.headers()["content-type"], "application/json");
                 let error: serde_json::Value = response.json().expect("structured error");
                 assert_eq!(error["ok"], false);
-                assert!(error["message"]
-                    .as_str()
-                    .expect("error message")
-                    .contains("Invalid import request"));
+                assert!(
+                    error["message"]
+                        .as_str()
+                        .expect("error message")
+                        .contains("Invalid import request")
+                );
             }
             server.unblock();
             worker.join().expect("server worker");
@@ -2876,10 +2893,12 @@ mod site_account_tests {
             .expect("empty selection response");
         assert_eq!(response.status().as_u16(), 422);
         let error: serde_json::Value = response.json().expect("empty JSON");
-        assert!(error["message"]
-            .as_str()
-            .expect("message")
-            .contains("No stamps match"));
+        assert!(
+            error["message"]
+                .as_str()
+                .expect("message")
+                .contains("No stamps match")
+        );
         client
             .post(format!("http://{addr}/shutdown"))
             .json(&serde_json::json!({"generate_album":false}))
@@ -2921,9 +2940,11 @@ mod site_account_tests {
                 assert_eq!(response.headers()["cache-control"], "no-store");
                 let data: serde_json::Value = response.json().expect("JSON error response");
                 assert_eq!(data["ok"], false);
-                assert!(data["message"]
-                    .as_str()
-                    .is_some_and(|message| !message.is_empty()));
+                assert!(
+                    data["message"]
+                        .as_str()
+                        .is_some_and(|message| !message.is_empty())
+                );
             }
             let response = client
                 .get(format!("http://{addr}/api/stampworld-country-url"))

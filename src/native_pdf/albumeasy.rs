@@ -1,9 +1,10 @@
 //! Standalone, bounded AlbumEasy compatibility input for the native renderer.
 
 use super::{
+    Result,
     album::{
-        integer, number, parse_command, restore_stamp_settings, save_stamp_settings, strip_comment,
-        Argument,
+        Argument, integer, number, parse_command, restore_stamp_settings, save_stamp_settings,
+        strip_comment,
     },
     colour::NamedColour,
     commands::{
@@ -25,16 +26,15 @@ use super::{
         },
     },
     document::{Bounds, PageSettings},
-    renderer::{write_imported_album_pdf, ImportedPdfPage},
+    renderer::{ImportedPdfPage, write_imported_album_pdf},
     stamp_heading::{self, HeadingMode, HeadingRowItem, StampHeading, VerticalAlignment},
     stamp_image::{ImageAspectRatio, ImagePaddingUnit, StampImageOptions, StampImageSettings},
     stamp_inner_border::{BorderStyleState, InnerBorderStyle, StampInnerBorder},
     stamp_text::{
-        position_footer_caption, FooterTextAlignment, FooterTextSide, PositionedStampText,
+        FooterTextAlignment, FooterTextSide, PositionedStampText, position_footer_caption,
     },
     text::{MeasuredText, PositionedTextLine},
     units::mm_to_points,
-    Result,
 };
 use std::{fs, path::Path};
 
@@ -229,14 +229,18 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
             .to_ascii_uppercase();
         let name = name.as_str();
         if !supported(name) {
-            return Err(format!("Line {line_number}: Unsupported AlbumEasy command {name}; record it in the plan and comment it out in a test copy"));
+            return Err(format!(
+                "Line {line_number}: Unsupported AlbumEasy command {name}; record it in the plan and comment it out in a test copy"
+            ));
         }
         match name {
             "PAGE_START_GROUP_BEGIN" => {
                 let c = command(line, line_number)?;
                 count(&c, 0, 0).map_err(|error| format!("{}: {error}", c.location()))?;
                 if group.is_some() || page_seen {
-                    return Err(format!("Line {line_number}: Define only one PAGE_START group, before all pages; nested groups are not supported"));
+                    return Err(format!(
+                        "Line {line_number}: Define only one PAGE_START group, before all pages; nested groups are not supported"
+                    ));
                 }
                 group = Some(Vec::new());
                 group_open = true;
@@ -289,7 +293,9 @@ fn input_commands(source: &str) -> Result<Vec<Command>> {
                     if let Some(group) = &group {
                         for (origin, template) in group {
                             let context = |error| {
-                                format!("Line {origin} (page-start group invoked at line {line_number}): {error}")
+                                format!(
+                                    "Line {origin} (page-start group invoked at line {line_number}): {error}"
+                                )
                             };
                             let expanded = expand_group_line(template, &args).map_err(&context)?;
                             let mut c = command(&expanded, *origin).map_err(&context)?;
@@ -364,7 +370,7 @@ fn stamp_image_overload(c: &Command) -> Result<StampImageOverload> {
         _ => {
             return Err(
                 "STAMP_ADD_IMG expects the basic form or a documented combined overload".into(),
-            )
+            );
         }
     };
     if no_frame {

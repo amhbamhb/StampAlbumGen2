@@ -1,10 +1,10 @@
 use super::album_pages_header_pad::HeaderPadding;
 use crate::native_pdf::{
+    Result,
     colour::NamedColour,
     document::Bounds,
     text::{MeasuredText, PositionedTextLine},
     units::mm_to_points,
-    Result,
 };
 use oxidize_pdf::text::Font;
 

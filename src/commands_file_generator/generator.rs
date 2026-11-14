@@ -125,7 +125,10 @@ impl CommandsFileGenerator {
             crate::commands_file_generator::image_utils::get_image(url, &target_name, &file_path)
         };
 
-        info!("Invoking commands_file_generator::data_collection::collect_stampworld_data with base_url='{}'", params.base_url);
+        info!(
+            "Invoking commands_file_generator::data_collection::collect_stampworld_data with base_url='{}'",
+            params.base_url
+        );
         let mut dparams =
             crate::commands_file_generator::data_collection::CollectStampworldParams {
                 sequencer: &mut sequencer,

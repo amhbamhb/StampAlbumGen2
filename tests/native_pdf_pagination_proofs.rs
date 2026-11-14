@@ -145,9 +145,11 @@ fn real_multi_page_pdf_has_each_image_once_correct_matrices_and_final_numbering(
         let page = pdf.get_page(u32::try_from(index)?)?;
         assert!((points_to_mm(page.media_box[2]) - 215.9).abs() < 0.002);
         assert!((points_to_mm(page.media_box[3]) - 279.4).abs() < 0.002);
-        assert!(text[index]
-            .text
-            .contains(&format!("Page {} of {}", index + 1, pages.len())));
+        assert!(
+            text[index]
+                .text
+                .contains(&format!("Page {} of {}", index + 1, pages.len()))
+        );
         let mut matrices = Vec::new();
         for stream in pdf.get_page_content_streams(&page)? {
             let text = std::str::from_utf8(&stream)?;
@@ -199,24 +201,28 @@ fn invalid_last_page_asset_preserves_output_and_line_continuations_render() -> R
     let output = temp.path().join("existing.pdf");
     fs::write(&output, b"unchanged")?;
     inputs.last_mut().ok_or("last")?.image_path = temp.path().join("missing.png");
-    assert!(write_paginated_stamp_items_geometry_proof(
-        &config.page_settings,
-        &config.proof,
-        &inputs,
-        &policy,
-        &output
-    )
-    .is_err());
+    assert!(
+        write_paginated_stamp_items_geometry_proof(
+            &config.page_settings,
+            &config.proof,
+            &inputs,
+            &policy,
+            &output
+        )
+        .is_err()
+    );
     assert_eq!(fs::read(&output)?, b"unchanged");
     let fresh = temp.path().join("new.pdf");
-    assert!(write_paginated_stamp_items_geometry_proof(
-        &config.page_settings,
-        &config.proof,
-        &inputs,
-        &policy,
-        &fresh
-    )
-    .is_err());
+    assert!(
+        write_paginated_stamp_items_geometry_proof(
+            &config.page_settings,
+            &config.proof,
+            &inputs,
+            &policy,
+            &fresh
+        )
+        .is_err()
+    );
     assert!(!fresh.exists());
     let mut inputs = inputs_from_first()?;
     inputs[0].stamp.caption = Some(StampTextProofSettings::new(
@@ -337,7 +343,9 @@ fn regenerate_real_letter_pagination_proofs() -> Result<()> {
             &policy,
             &directory().join(format!("{name}.pdf")),
         )?;
-        let mut txt = String::from("# COMPATIBILITY ADAPTATION: separate image/text blocks, NOT native position/page parity.\n# Full source text retained; native footprint/continuation policy is not an AlbumEasy command.\nALBUM_PAGES_SIZE (215.9 279.4)\nALBUM_PAGES_MARGINS (12 12 12 12)\nALBUM_PAGES_SPACING (3 3)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nSTAMP_BOXES_SIZE_ADJUST (0)\n");
+        let mut txt = String::from(
+            "# COMPATIBILITY ADAPTATION: separate image/text blocks, NOT native position/page parity.\n# Full source text retained; native footprint/continuation policy is not an AlbumEasy command.\nALBUM_PAGES_SIZE (215.9 279.4)\nALBUM_PAGES_MARGINS (12 12 12 12)\nALBUM_PAGES_SPACING (3 3)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nSTAMP_BOXES_SIZE_ADJUST (0)\n",
+        );
         for (i, input) in inputs.iter().enumerate() {
             let source = &sources.records[i];
             txt.push_str(&format!("PAGE_START\n# US DB ID {} / SG {} / recorded Colnect {} x {} mm\nROW_START_ES (HN 10 0.1)\nSTAMP_ADD_IMG ({} {} \"{}\" \"\" \"\" \"\")\n",
@@ -492,7 +500,9 @@ fn regenerate_real_letter_alignment_proofs() -> Result<()> {
             &policy(TextWidthPolicy::ExpandFootprint)?,
             &output.join(format!("{name}.pdf")),
         )?;
-        let mut txt=String::from("# COMPATIBILITY ADAPTATION: full images/text retained in separate blocks; NOT native row/page/position parity.\n# Native alignment and section settings are in companion TOML; not AlbumEasy commands.\nALBUM_PAGES_SIZE (215.9 279.4)\nALBUM_PAGES_MARGINS (12 12 12 12)\nALBUM_PAGES_SPACING (3 3)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nSTAMP_BOXES_SIZE_ADJUST (0)\n");
+        let mut txt = String::from(
+            "# COMPATIBILITY ADAPTATION: full images/text retained in separate blocks; NOT native row/page/position parity.\n# Native alignment and section settings are in companion TOML; not AlbumEasy commands.\nALBUM_PAGES_SIZE (215.9 279.4)\nALBUM_PAGES_MARGINS (12 12 12 12)\nALBUM_PAGES_SPACING (3 3)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nSTAMP_BOXES_SIZE_ADJUST (0)\n",
+        );
         for (i, item) in items.iter().enumerate() {
             let record = &sources.records[i];
             txt.push_str(&format!("PAGE_START\n# DB ID {} / SG {}\nROW_START_ES (HN 10 0.1)\nSTAMP_ADD_IMG ({} {} \"../stamp-pagination-v1/{}\" \"\" \"\" \"\")\n",
@@ -507,7 +517,14 @@ fn regenerate_real_letter_alignment_proofs() -> Result<()> {
             }
         }
         fs::write(output.join(format!("{name}.txt")), txt)?;
-        let mut toml=format!("# Native override fragment; merge into a copy of config_template.toml.\n# Section-specific alignment shown below is fixture/API metadata, not imported commands.\n[native_pdf.rows]\nalignment = \"{}\"\n",if name.starts_with("center") || name=="mixed-sections" {"center"} else {name});
+        let mut toml = format!(
+            "# Native override fragment; merge into a copy of config_template.toml.\n# Section-specific alignment shown below is fixture/API metadata, not imported commands.\n[native_pdf.rows]\nalignment = \"{}\"\n",
+            if name.starts_with("center") || name == "mixed-sections" {
+                "center"
+            } else {
+                name
+            }
+        );
         for section in &sections {
             toml.push_str(&format!(
                 "# Section: {} consecutive items, {:?}\n",

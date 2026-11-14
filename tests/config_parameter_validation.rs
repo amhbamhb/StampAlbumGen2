@@ -2,7 +2,7 @@
 // Tests all config parameters for type validation, range checking, and error handling
 
 use stamp_album_gen2::album_globals::generate_album_output_conn;
-use stamp_album_gen2::config::{load_config, Config};
+use stamp_album_gen2::config::{Config, load_config};
 use stamp_album_gen2::db_utils;
 use stamp_album_gen2::file_utils;
 use std::env;

@@ -1,5 +1,5 @@
 use super::types::PdfStampRecord;
-use oxidize_pdf::operations::{extract_images_from_pdf, ExtractImagesOptions};
+use oxidize_pdf::operations::{ExtractImagesOptions, extract_images_from_pdf};
 use pdf_extract::{Document, MediaBox, OutputDev, OutputError, Transform};
 use std::path::Path;
 

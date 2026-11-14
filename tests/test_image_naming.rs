@@ -1,5 +1,5 @@
-use stamp_album_gen2::album_utils::sanitize_filename;
 use stamp_album_gen2::ImageStatus;
+use stamp_album_gen2::album_utils::sanitize_filename;
 use std::path::Path;
 use tempfile::tempdir;
 

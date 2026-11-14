@@ -994,7 +994,12 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
                 let _ = writeln!(
                     w,
                     "# STAMP_DIAG_PLACEHOLDER sg=\"{}\" px=\"{}x{}\" img=\"{}\" target_mm=\"{:.2}x{:.2}\" source=\"placeholder_helper\"",
-                    ph_sg, px_w, px_h, ph_img, opts.target_w_mm.unwrap_or(0.0), opts.target_h_mm.unwrap_or(0.0)
+                    ph_sg,
+                    px_w,
+                    px_h,
+                    ph_img,
+                    opts.target_w_mm.unwrap_or(0.0),
+                    opts.target_h_mm.unwrap_or(0.0)
                 );
             }
             Some((rel, px_w, px_h))

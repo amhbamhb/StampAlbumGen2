@@ -143,7 +143,11 @@ pub async fn write_globals<W: Write>(
                 album_name, cfg_include_wikipedia
             );
             if !cfg_include_wikipedia {
-                let _ = writeln!(mf, "WIKI_PAGE_PAGINATION_SUMMARY album={} sections=0 pages=0 total_height=0.0 usable_height=0.0 strategy=none reason=no_wikipedia", album_name);
+                let _ = writeln!(
+                    mf,
+                    "WIKI_PAGE_PAGINATION_SUMMARY album={} sections=0 pages=0 total_height=0.0 usable_height=0.0 strategy=none reason=no_wikipedia",
+                    album_name
+                );
             } else {
                 // Placeholder summary to be replaced/augmented later by the
                 // pagination code when real content is available.
@@ -791,7 +795,10 @@ fn add_wikipedia_section<W: Write>(
                     RowSpacingMode::FS,
                     cfg,
                 );
-                let _ = writeln!(writer, "################################################################################");
+                let _ = writeln!(
+                    writer,
+                    "################################################################################"
+                );
 
                 // Estimate height of row start (rough approximation)
                 rs_vspace as f64 + 5.0 // Base height + spacing
@@ -866,21 +873,27 @@ fn add_wikipedia_section<W: Write>(
             };
 
             // Debug logging
-            info!("Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, usable_height={:.1}, strategy={}",
-            content_sections.len(), balanced_pages.len(), total_content_height, usable_height, pagination_strategy);
+            info!(
+                "Wikipedia content pagination: {} sections, {} pages, total_height={:.1}, usable_height={:.1}, strategy={}",
+                content_sections.len(),
+                balanced_pages.len(),
+                total_content_height,
+                usable_height,
+                pagination_strategy
+            );
 
             // Emit a concise, guaranteed one-line pagination summary for automation
             // This is intentionally small and at INFO level so it appears in rotated
             // Logs without enabling full debug logging.
             info!(
-            "WIKI_PAGE_PAGINATION_SUMMARY album={} sections={} pages={} total_content_height={:.1} usable_height={:.1} strategy={}",
-            album_name,
-            content_sections.len(),
-            balanced_pages.len(),
-            total_content_height,
-            usable_height,
-            pagination_strategy
-        );
+                "WIKI_PAGE_PAGINATION_SUMMARY album={} sections={} pages={} total_content_height={:.1} usable_height={:.1} strategy={}",
+                album_name,
+                content_sections.len(),
+                balanced_pages.len(),
+                total_content_height,
+                usable_height,
+                pagination_strategy
+            );
 
             // Unconditional metrics emission (temporary): emit a single log line
             // so automated runs always have at least one easily-greppable marker
@@ -964,14 +977,25 @@ fn add_wikipedia_section<W: Write>(
                     std::env::temp_dir().join(format!("forcemetrics_{}.runlog", safe_album));
                 if let Ok(mut mf) = std::fs::File::create(&metrics_path) {
                     use std::io::Write;
-                    let _ = writeln!(mf, "WIKI_PAGE_PAGINATION_SUMMARY album={} sections={} pages={} total_content_height={:.1} usable_height={:.1} strategy={}",
-                        album_name, content_sections.len(), balanced_pages.len(), total_content_height, usable_height, pagination_strategy);
+                    let _ = writeln!(
+                        mf,
+                        "WIKI_PAGE_PAGINATION_SUMMARY album={} sections={} pages={} total_content_height={:.1} usable_height={:.1} strategy={}",
+                        album_name,
+                        content_sections.len(),
+                        balanced_pages.len(),
+                        total_content_height,
+                        usable_height,
+                        pagination_strategy
+                    );
                     if balanced_pages.is_empty() {
                         // Emit a single explicit per-page metric (page=1 with zeros)
                         // so parsers can always expect a page line and not special-case
                         // the absence of pages.
-                        let _ = writeln!(mf, "WIKI_PAGE_METRICS page=1 usable_height={:.1} content_height=0.0 percent_used=0.0 strategy={}",
-                            usable_height, pagination_strategy);
+                        let _ = writeln!(
+                            mf,
+                            "WIKI_PAGE_METRICS page=1 usable_height={:.1} content_height=0.0 percent_used=0.0 strategy={}",
+                            usable_height, pagination_strategy
+                        );
                     } else {
                         for (pi, page_secs) in balanced_pages.iter().enumerate() {
                             let content_height: f64 =
@@ -981,8 +1005,15 @@ fn add_wikipedia_section<W: Write>(
                             } else {
                                 0.0
                             };
-                            let _ = writeln!(mf, "WIKI_PAGE_METRICS page={} usable_height={:.1} content_height={:.1} percent_used={:.1} strategy={}",
-                                pi + 1, usable_height, content_height, percent, pagination_strategy);
+                            let _ = writeln!(
+                                mf,
+                                "WIKI_PAGE_METRICS page={} usable_height={:.1} content_height={:.1} percent_used={:.1} strategy={}",
+                                pi + 1,
+                                usable_height,
+                                content_height,
+                                percent,
+                                pagination_strategy
+                            );
                         }
                     }
                 }
@@ -1053,8 +1084,14 @@ fn add_wikipedia_section<W: Write>(
 
                 info!(
                     "Wikipedia page {}: content_height={:.1}, usable_height={:.1}, fill={:.1}%, vspace={:.2}",
-                    page_index, page_content_height, usable_height,
-                    if usable_height > 0.0 { (page_content_height / usable_height) * 100.0 } else { 0.0 },
+                    page_index,
+                    page_content_height,
+                    usable_height,
+                    if usable_height > 0.0 {
+                        (page_content_height / usable_height) * 100.0
+                    } else {
+                        0.0
+                    },
                     page_level_vspace
                 );
 
@@ -1143,10 +1180,18 @@ fn add_wikipedia_section<W: Write>(
                     .create(true)
                     .open(&metrics_path)
                 {
-                    let _ = writeln!(mf, "WIKI_PAGE_PAGINATION_SUMMARY album={} sections=0 pages=0 total_height=0.0 usable_height={:.1} strategy=none reason=no_cached_content", album_name, usable_height);
+                    let _ = writeln!(
+                        mf,
+                        "WIKI_PAGE_PAGINATION_SUMMARY album={} sections=0 pages=0 total_height=0.0 usable_height={:.1} strategy=none reason=no_cached_content",
+                        album_name, usable_height
+                    );
                     // Emit an explicit per-page metric (page=1 with zeros) so parsers
                     // don't need to special-case missing per-page entries.
-                    let _ = writeln!(mf, "WIKI_PAGE_METRICS page=1 usable_height={:.1} content_height=0.0 percent_used=0.0 strategy=none", usable_height);
+                    let _ = writeln!(
+                        mf,
+                        "WIKI_PAGE_METRICS page=1 usable_height={:.1} content_height=0.0 percent_used=0.0 strategy=none",
+                        usable_height
+                    );
                 }
             }
         }

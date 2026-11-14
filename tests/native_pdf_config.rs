@@ -59,14 +59,18 @@ fn side_label_wrap_settings_use_template_defaults_and_limits() -> Result<()> {
 
     let invalid = include_str!("../config_template.toml")
         .replace("wrap_width_mm = 20.0", "wrap_width_mm = 41.0");
-    assert!(NativePdfConfig::from_toml(&invalid)
-        .err()
-        .is_some_and(|error| error.contains("wrap widths")));
+    assert!(
+        NativePdfConfig::from_toml(&invalid)
+            .err()
+            .is_some_and(|error| error.contains("wrap widths"))
+    );
     let invalid =
         include_str!("../config_template.toml").replace("font_size_pt = 3.5", "font_size_pt = 0.0");
-    assert!(NativePdfConfig::from_toml(&invalid)
-        .err()
-        .is_some_and(|error| error.contains("font_size_pt")));
+    assert!(
+        NativePdfConfig::from_toml(&invalid)
+            .err()
+            .is_some_and(|error| error.contains("font_size_pt"))
+    );
     Ok(())
 }
 
@@ -89,12 +93,16 @@ fn copied_template_values_reach_every_existing_command() -> Result<()> {
     for (stroke, width) in strokes.iter().zip([0.1, 0.5, 0.1]) {
         near(stroke.width_mm, width);
     }
-    assert!(!loaded
-        .unapplied_keys
-        .contains(&"header.album_pages_title_font".into()));
-    assert!(loaded
-        .unapplied_keys
-        .contains(&"page.max_page_vspace_mm".into()));
+    assert!(
+        !loaded
+            .unapplied_keys
+            .contains(&"header.album_pages_title_font".into())
+    );
+    assert!(
+        loaded
+            .unapplied_keys
+            .contains(&"page.max_page_vspace_mm".into())
+    );
     assert!(loaded.overridden_keys.is_empty());
     let full = NativePdfConfig::from_toml(include_str!("../config_full_example.toml"))?;
     near(full.page_settings.border().occupancy_mm(), 3.6);
@@ -253,10 +261,12 @@ fn invalid_files_keys_and_geometry_return_actionable_redacted_errors() -> Result
     assert!(NativePdfConfig::from_toml(&duplicate).is_err());
     let temporary = tempfile::tempdir()?;
     let missing = temporary.path().join("missing-config.toml");
-    assert!(NativePdfConfig::load(&missing)
-        .err()
-        .ok_or("must fail")?
-        .contains("missing-config.toml"));
+    assert!(
+        NativePdfConfig::load(&missing)
+            .err()
+            .ok_or("must fail")?
+            .contains("missing-config.toml")
+    );
     let malformed = temporary.path().join("malformed.toml");
     fs::write(
         &malformed,

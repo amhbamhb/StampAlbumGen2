@@ -45,7 +45,10 @@ async fn embedded_flags_writeback_and_load() {
             }
         }
     }
-    assert!(found, "expected embedded JSON to be written to one of the candidate flags/flag_codes.json locations");
+    assert!(
+        found,
+        "expected embedded JSON to be written to one of the candidate flags/flag_codes.json locations"
+    );
 
     // Cleanup: restore cwd
     std::env::set_current_dir(orig_cwd).expect("restore cwd");

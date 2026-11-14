@@ -57,11 +57,13 @@ async fn generated_text_and_local_coat_use_the_same_configured_root() {
     let text = std::fs::read_to_string(&output).expect("generated text");
     assert!(text.contains("# Coat of arms for album"));
     assert!(text.contains("images/coat_of_arms.png"));
-    assert!(output
-        .parent()
-        .expect("album directory")
-        .join("images/coat_of_arms.png")
-        .is_file());
+    assert!(
+        output
+            .parent()
+            .expect("album directory")
+            .join("images/coat_of_arms.png")
+            .is_file()
+    );
     assert!(!dir.path().join("Albums/Atlantis").exists());
     std::fs::remove_file(images.join("coat_of_arms.png")).expect("remove optional coat fixture");
     conn.execute("UPDATE stamps SET image_path = ''", [])
@@ -140,8 +142,9 @@ fn database_cli_reports_renderer_error_and_returns_failure() {
         "{diagnostics}"
     );
     assert!(!diagnostics.contains("Album 'Atlantis' generated successfully"));
-    assert!(dir
-        .path()
-        .join("Albums/Atlantis/Atlantis-2024-2024.txt")
-        .is_file());
+    assert!(
+        dir.path()
+            .join("Albums/Atlantis/Atlantis-2024-2024.txt")
+            .is_file()
+    );
 }

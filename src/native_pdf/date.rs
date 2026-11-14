@@ -61,7 +61,9 @@ impl DateSource {
             .map_err(|_| format!("{prefix}.fixed_date must be a valid YYYY-MM-DD calendar date"))?;
         if !(1..=9999).contains(&fixed.year()) || fixed.format("%Y-%m-%d").to_string() != fixed_date
         {
-            return Err(format!("{prefix}.fixed_date must be a valid YYYY-MM-DD date within years 0001 through 9999"));
+            return Err(format!(
+                "{prefix}.fixed_date must be a valid YYYY-MM-DD date within years 0001 through 9999"
+            ));
         }
         match source {
             "generation" => Ok(Self::Generation),

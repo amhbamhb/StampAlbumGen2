@@ -75,10 +75,12 @@ fn overlapping_header_values_report_page_and_correction_keys() -> Result<()> {
         "{error}"
     );
     let even = enabled.replace("position = \"R\"", "position = \"RL\"");
-    assert!(NativePdfConfig::from_toml(&even)
-        .err()
-        .ok_or("must fail")?
-        .contains("page 2"));
+    assert!(
+        NativePdfConfig::from_toml(&even)
+            .err()
+            .ok_or("must fail")?
+            .contains("page 2")
+    );
     Ok(())
 }
 
@@ -179,22 +181,28 @@ fn defaults_missing_invalid_values_and_snapshot_are_explicit() -> Result<()> {
         assert!(error.contains("native_pdf.header_number"), "{error}");
         assert!(!error.contains("private-value"));
     }
-    assert!(NativePdfConfig::from_toml(
-        &CONFIG.replace("[native_pdf.header]", "[unsupported_header]")
-    )
-    .is_err());
+    assert!(
+        NativePdfConfig::from_toml(&CONFIG.replace("[native_pdf.header]", "[unsupported_header]"))
+            .is_err()
+    );
     let config = NativePdfConfig::from_toml(&(CONFIG.to_owned() + "\nfuture_option = 4\n"))?;
-    assert!(config
-        .unapplied_keys
-        .contains(&"native_pdf.header_number.future_option".into()));
-    assert!(!config
-        .unapplied_keys
-        .contains(&"native_pdf.header_number.font".into()));
+    assert!(
+        config
+            .unapplied_keys
+            .contains(&"native_pdf.header_number.future_option".into())
+    );
+    assert!(
+        !config
+            .unapplied_keys
+            .contains(&"native_pdf.header_number.font".into())
+    );
     for (page, total) in [(0, 2), (1, 0), (3, 2)] {
-        assert!(config
-            .page_settings
-            .resolve_with_page_count(page, total)
-            .is_err());
+        assert!(
+            config
+                .page_settings
+                .resolve_with_page_count(page, total)
+                .is_err()
+        );
     }
     let max = NativePdfConfig::from_toml(
         &CONFIG
@@ -344,9 +352,16 @@ fn late_width_collision_preflight_preserves_existing_output() -> Result<()> {
 
 #[test]
 fn wide_and_tall_titles_remain_below_both_header_elements() -> Result<()> {
-    let source=CONFIG.replace("[native_pdf.header]\nenabled = false","[native_pdf.header]\nenabled = true")
-        .replace("[header]","[header]\nalbum_pages_title_font = \"TB\"\nalbum_pages_title_size = 25")
-        .replace("[colors]","[colors]\ncolor_album_title = \"black\"")
+    let source = CONFIG
+        .replace(
+            "[native_pdf.header]\nenabled = false",
+            "[native_pdf.header]\nenabled = true",
+        )
+        .replace(
+            "[header]",
+            "[header]\nalbum_pages_title_font = \"TB\"\nalbum_pages_title_size = 25",
+        )
+        .replace("[colors]", "[colors]\ncolor_album_title = \"black\"")
         + "\n[native_pdf.title]\nenabled = true\ntext = \"Agyp TITLE\\nSecond line\"\nvspace_after_mm = 2\nminimum_height_mm = 0\n";
     for padding in [0, -6] {
         for hint in [0, 25] {
@@ -566,13 +581,25 @@ fn serialized_header_numbers_match_reference_fonts_glyphs_and_geometry() -> Resu
             .replace("padding_mm = 0",&format!("padding_mm = {padding}"))
             .replace("page_count = 2",&format!("page_count = {pages}"));
         if asymmetric {
-            source=source.replace("page_left_margin_mm = 15","page_left_margin_mm = 25").replace("page_right_margin_mm = 15","page_right_margin_mm = 12")
+            source = source
+                .replace("page_left_margin_mm = 15", "page_left_margin_mm = 25")
+                .replace("page_right_margin_mm = 15", "page_right_margin_mm = 12")
                 + "\n[page.even_margins]\nleft_mm = 12\nright_mm = 25\ntop_mm = 18\nbottom_mm = 20\n";
         }
         if coexist {
-            source=source.replace("[native_pdf.header]\nenabled = false","[native_pdf.header]\nenabled = true")
-                .replace("[header]","[header]\nalbum_pages_title_font = \"HN\"\nalbum_pages_title_size = 10")
-                .replace("[colors]","[colors]\ncolor_album_title = \"black\"\ncolor_album_footer = \"black\"")
+            source = source
+                .replace(
+                    "[native_pdf.header]\nenabled = false",
+                    "[native_pdf.header]\nenabled = true",
+                )
+                .replace(
+                    "[header]",
+                    "[header]\nalbum_pages_title_font = \"HN\"\nalbum_pages_title_size = 10",
+                )
+                .replace(
+                    "[colors]",
+                    "[colors]\ncolor_album_title = \"black\"\ncolor_album_footer = \"black\"",
+                )
                 + "\n[footer]\nalbum_pages_footer_number_enabled = true\nalbum_pages_footer_number_font = \"HN\"\nalbum_pages_footer_number_size = 8\nalbum_pages_footer_number_position = \"C\"\nalbum_pages_footer_number_start = 1\nalbum_pages_footer_number_before = \"Sheet \"\nalbum_pages_footer_number_after = \" / $PAGES$\"\n[native_pdf.footer]\nenabled = false\nfont = \"HN\"\nsize_pt = 8\nposition = \"C\"\ntext = \"Footer\"\npadding_mm = 0\nminimum_height_mm = 0\n[native_pdf.footer_number]\nenabled = true\n[native_pdf.title]\nenabled = true\ntext = \"TITLE\"\nvspace_after_mm = 2\nminimum_height_mm = 0\n";
         }
         for minimum in [0, 25] {

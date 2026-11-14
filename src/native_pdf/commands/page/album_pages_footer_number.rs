@@ -1,8 +1,8 @@
 use super::album_pages_footer::{AlbumPagesFooter, FooterLayout};
 use crate::native_pdf::{
+    Result,
     document::Bounds,
     numbering::{NumberingContext, PageNumbering},
-    Result,
 };
 
 /// ALBUM_PAGES_FOOTER_NUMBER uses an explicit style and final document count.

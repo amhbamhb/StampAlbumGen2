@@ -295,7 +295,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                                 s.replace(' ', "-").replace('!', "%21").replace('/', "%2F")
                             };
                             let encoded = encode(&variant);
-                            let alt_base = format!("https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=", encoded, start_year, end_year);
+                            let alt_base = format!(
+                                "https://www.stampworld.com/en/stamps/{}/Postage%20stamps/{}-{}?page=",
+                                encoded, start_year, end_year
+                            );
                             // avoid duplicates
                             if !slug_variants.contains(&alt_base) {
                                 slug_variants.push(alt_base);
@@ -637,7 +640,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                                         }
 
                                         if fetch_count >= max_fetch_per_range {
-                                            debug!("Reached per-range fetch limit {} for grouped-range {}-{}; inserting placeholders for remaining", max_fetch_per_range, start, end);
+                                            debug!(
+                                                "Reached per-range fetch limit {} for grouped-range {}-{}; inserting placeholders for remaining",
+                                                max_fetch_per_range, start, end
+                                            );
                                             // insert placeholders for remaining numbers
                                             for m in n..=end {
                                                 let ms = m.to_string();
@@ -908,7 +914,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                             ],
                                                         );
                                                         if emit_row_diag {
-                                                            info!("Inserted placeholder for {} {} (fallback)", series_desc, s);
+                                                            info!(
+                                                                "Inserted placeholder for {} {} (fallback)",
+                                                                series_desc, s
+                                                            );
                                                         }
                                                         seen_stamps.insert(keyp.clone());
                                                         new_stamps_this_page += 1;
@@ -925,7 +934,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                     }
                                                 }
                                                 Err(e) => {
-                                                    error!("Placeholder helper failed (fallback) for {}: {}", s, e);
+                                                    error!(
+                                                        "Placeholder helper failed (fallback) for {}: {}",
+                                                        s, e
+                                                    );
                                                 }
                                             }
                                         }
@@ -978,7 +990,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                     );
                                                     all_stamp_data.push(stamp_line);
                                                 } else if emit_row_diag {
-                                                    info!("Placeholder skipped, already exists: {} {}", series_desc, s);
+                                                    info!(
+                                                        "Placeholder skipped, already exists: {} {}",
+                                                        series_desc, s
+                                                    );
                                                 }
                                             }
                                             Err(e) => {
@@ -1391,8 +1406,15 @@ pub async fn collect_stampworld_data_with_fetcher(
                 let stamps_issued_norm = normalize_stamps_issued(&stamps_issued);
 
                 // Call DB insert following the existing callers' parameter order
-                info!("DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
-                    site_name, series_name, sg_number, stamp_year, local_image_path, remote_image_url);
+                info!(
+                    "DB insert: country='{}' series='{}' sg='{}' year={} local_image='{}' remote='{}'",
+                    site_name,
+                    series_name,
+                    sg_number,
+                    stamp_year,
+                    local_image_path,
+                    remote_image_url
+                );
                 let si = crate::db_utils::StampInsert {
                     country: site_name.to_string(),
                     series: series_name.clone(),
@@ -1444,8 +1466,32 @@ pub async fn collect_stampworld_data_with_fetcher(
                             // info!("Inserted new stamp: {} | {} | {}", site_name, series_name, sg_number);
                             new_stamps_this_page += 1;
                             seen_stamps.insert(key.clone());
-                            let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
-                                stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, "", "", "", "", "", local_image_path, remote_image_url, original_image_url, "", "", "", "", cleaned_context_details);
+                            let stamp_line = format!(
+                                "STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                                stamp_year,
+                                month,
+                                day,
+                                series_name,
+                                sg_number,
+                                type_,
+                                denomination,
+                                color,
+                                description,
+                                stamps_issued,
+                                "",
+                                "",
+                                "",
+                                "",
+                                "",
+                                local_image_path,
+                                remote_image_url,
+                                original_image_url,
+                                "",
+                                "",
+                                "",
+                                "",
+                                cleaned_context_details
+                            );
                             all_stamp_data.push(stamp_line);
                             // Persist image pixel dimensions when available (read from local file if present)
                             if !local_image_path.is_empty() {
@@ -1510,8 +1556,32 @@ pub async fn collect_stampworld_data_with_fetcher(
                                         // Treat this as an update event: emit a STAMP line so downstream tools see the refreshed image/metadata
                                         new_stamps_this_page += 1;
                                         seen_stamps.insert(key.clone());
-                                        let stamp_line = format!("STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
-                                            stamp_year, month, day, series_name, sg_number, type_, denomination, color, description, stamps_issued, mint_condition, unused, used, letter_fdc, currency, local_image_path, remote_image_url, original_image_url, watermark, design, engraving, perforation, cleaned_context_details);
+                                        let stamp_line = format!(
+                                            "STAMP;{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{};{}",
+                                            stamp_year,
+                                            month,
+                                            day,
+                                            series_name,
+                                            sg_number,
+                                            type_,
+                                            denomination,
+                                            color,
+                                            description,
+                                            stamps_issued,
+                                            mint_condition,
+                                            unused,
+                                            used,
+                                            letter_fdc,
+                                            currency,
+                                            local_image_path,
+                                            remote_image_url,
+                                            original_image_url,
+                                            watermark,
+                                            design,
+                                            engraving,
+                                            perforation,
+                                            cleaned_context_details
+                                        );
                                         all_stamp_data.push(stamp_line);
                                         // Persist image pixel dimensions when available (read from local file if present)
                                         if !local_image_path.is_empty() {
@@ -1524,11 +1594,17 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                     &local_image_path,
                                                 )
                                             {
-                                                error!("Failed to persist image dimensions for {} {} {}: {}", site_name, series_name, sg_number, e);
+                                                error!(
+                                                    "Failed to persist image dimensions for {} {} {}: {}",
+                                                    site_name, series_name, sg_number, e
+                                                );
                                             }
                                         }
                                     } else {
-                                        debug!("--overwrite-images set but no DB row matched for update: {} | {} | {}", site_name, series_name, sg_number);
+                                        debug!(
+                                            "--overwrite-images set but no DB row matched for update: {} | {} | {}",
+                                            site_name, series_name, sg_number
+                                        );
                                     }
                                 }
                                 Err(e) => {

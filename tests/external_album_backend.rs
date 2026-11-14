@@ -118,19 +118,23 @@ fn compatibility_and_missing_images_are_explicit() {
     .expect("unsupported entry");
     let inspection =
         inspect(&fixture.source, Path::new("album.txt")).expect("unsupported inspection");
-    assert!(inspection
-        .errors
-        .iter()
-        .any(|e| e.contains("Unsupported command PAGE_VSPACE") && e.contains("Line")));
-    assert!(import_album(
-        &fixture.root,
-        "Unsupported",
-        &fixture.source,
-        Path::new("album.txt"),
-        "",
-        Duration::from_secs(1)
-    )
-    .is_err());
+    assert!(
+        inspection
+            .errors
+            .iter()
+            .any(|e| e.contains("Unsupported command PAGE_VSPACE") && e.contains("Line"))
+    );
+    assert!(
+        import_album(
+            &fixture.root,
+            "Unsupported",
+            &fixture.source,
+            Path::new("album.txt"),
+            "",
+            Duration::from_secs(1)
+        )
+        .is_err()
+    );
     assert!(!fixture.root.exists());
     fs::write(fixture.source.join("album.txt"), SOURCE).expect("restore entry");
     fs::remove_file(fixture.source.join("Images/1.jpg")).expect("remove missing image fixture");
@@ -161,34 +165,40 @@ fn rejects_malformed_commands_and_unsafe_cross_platform_paths() {
 fn rejects_case_collisions_reserved_names_and_nested_destination_without_writes() {
     let fixture = Fixture::new();
     fs::write(fixture.source.join("Images/1.JPG"), b"case collision").expect("case fixture");
-    assert!(inspect(&fixture.source, Path::new("album.txt"))
-        .expect_err("case collision")
-        .contains("case collision"));
+    assert!(
+        inspect(&fixture.source, Path::new("album.txt"))
+            .expect_err("case collision")
+            .contains("case collision")
+    );
     fs::remove_file(fixture.source.join("Images/1.JPG")).expect("remove case fixture");
     fs::write(fixture.source.join("CON.txt"), b"reserved").expect("reserved fixture");
     assert!(inspect(&fixture.source, Path::new("album.txt")).is_err());
     fs::remove_file(fixture.source.join("CON.txt")).expect("remove reserved fixture");
     let nested = fixture.source.join("new-albums");
-    assert!(import_album(
-        &nested,
-        "Nested",
-        &fixture.source,
-        Path::new("album.txt"),
-        "",
-        Duration::from_secs(1)
-    )
-    .expect_err("nested destination")
-    .contains("contain one another"));
+    assert!(
+        import_album(
+            &nested,
+            "Nested",
+            &fixture.source,
+            Path::new("album.txt"),
+            "",
+            Duration::from_secs(1)
+        )
+        .expect_err("nested destination")
+        .contains("contain one another")
+    );
     assert!(!nested.exists());
-    assert!(import_album(
-        &fixture.root,
-        "CON",
-        &fixture.source,
-        Path::new("album.txt"),
-        "",
-        Duration::from_secs(1)
-    )
-    .is_err());
+    assert!(
+        import_album(
+            &fixture.root,
+            "CON",
+            &fixture.source,
+            Path::new("album.txt"),
+            "",
+            Duration::from_secs(1)
+        )
+        .is_err()
+    );
 }
 
 #[cfg(unix)]
@@ -220,16 +230,20 @@ fn import_roundtrip_full_copy_and_fidelity_approval_gate() {
     );
     assert_eq!(imported.status, "validated");
     assert_ne!(imported.reference_pdf, imported.generated_pdf);
-    assert!(fixture
-        .root
-        .join("test-album")
-        .join(&imported.reference_pdf)
-        .is_file());
-    assert!(fixture
-        .root
-        .join("test-album")
-        .join(&imported.generated_pdf)
-        .is_file());
+    assert!(
+        fixture
+            .root
+            .join("test-album")
+            .join(&imported.reference_pdf)
+            .is_file()
+    );
+    assert!(
+        fixture
+            .root
+            .join("test-album")
+            .join(&imported.generated_pdf)
+            .is_file()
+    );
     assert!(fixture.root.join("test-album/source/Empty folder").is_dir());
     assert_eq!(
         fs::read(fixture.root.join("test-album/source/Read Me.bin")).expect("full copy"),
@@ -254,9 +268,11 @@ fn import_roundtrip_full_copy_and_fidelity_approval_gate() {
         .query_row("SELECT count(*) FROM stamps", [], |r| r.get(0))
         .expect("stamp records");
     assert_eq!((placements, stamps), (3, 3));
-    assert!(export_layout(&conn)
-        .expect_err("approval gate")
-        .contains("not ready"));
+    assert!(
+        export_layout(&conn)
+            .expect_err("approval gate")
+            .contains("not ready")
+    );
     assert!(
         approve_album(&fixture.root, "test-album", imported.revision + 1)
             .expect_err("conflict")
@@ -283,16 +299,18 @@ fn import_roundtrip_full_copy_and_fidelity_approval_gate() {
     assert!(source.contains("\"A title\\nA second line\""));
     assert!(!source.contains("#"));
     assert_eq!(list_albums(&fixture.root).expect("list").len(), 1);
-    assert!(import_album(
-        &fixture.root,
-        "TEST ALBUM",
-        &fixture.source,
-        Path::new("album.txt"),
-        renderer.to_str().expect("renderer"),
-        Duration::from_secs(2)
-    )
-    .expect_err("destination collision")
-    .contains("already exists"));
+    assert!(
+        import_album(
+            &fixture.root,
+            "TEST ALBUM",
+            &fixture.source,
+            Path::new("album.txt"),
+            renderer.to_str().expect("renderer"),
+            Duration::from_secs(2)
+        )
+        .expect_err("destination collision")
+        .contains("already exists")
+    );
 }
 
 #[cfg(unix)]
@@ -379,9 +397,11 @@ fn approval_rejects_modified_pdfs_and_preserved_assets() {
         b"altered",
     )
     .expect("alter asset");
-    assert!(approve_album(&fixture.root, "test-album", retried.revision)
-        .expect_err("asset changed")
-        .contains("changed"));
+    assert!(
+        approve_album(&fixture.root, "test-album", retried.revision)
+            .expect_err("asset changed")
+            .contains("changed")
+    );
 }
 
 #[cfg(unix)]
@@ -453,41 +473,47 @@ fn invalid_edits_roll_back_and_render_failure_saves_retryable_draft() {
     let before = fs::read_dir(&album).expect("album directory").count();
     let mut commands = imported.pages[0].commands.clone();
     commands[3].args[0].value = "500".into();
-    assert!(edit_page(
-        &fixture.root,
-        "test-album",
-        1,
-        commands.clone(),
-        imported.revision,
-        renderer.to_str().expect("renderer"),
-        Duration::from_secs(2)
-    )
-    .expect_err("overflow")
-    .contains("Overflow"));
+    assert!(
+        edit_page(
+            &fixture.root,
+            "test-album",
+            1,
+            commands.clone(),
+            imported.revision,
+            renderer.to_str().expect("renderer"),
+            Duration::from_secs(2)
+        )
+        .expect_err("overflow")
+        .contains("Overflow")
+    );
     commands[3].args[0].value = "40".into();
     commands[3].args[1].value = "1000".into();
-    assert!(edit_page(
-        &fixture.root,
-        "test-album",
-        1,
-        commands,
-        imported.revision,
-        renderer.to_str().expect("renderer"),
-        Duration::from_secs(2)
-    )
-    .expect_err("vertical overflow")
-    .contains("Overflow"));
-    assert!(edit_page(
-        &fixture.root,
-        "test-album",
-        1,
-        imported.pages[0].commands.clone(),
-        imported.revision + 1,
-        renderer.to_str().expect("renderer"),
-        Duration::from_secs(2)
-    )
-    .expect_err("conflict")
-    .contains("Revision conflict"));
+    assert!(
+        edit_page(
+            &fixture.root,
+            "test-album",
+            1,
+            commands,
+            imported.revision,
+            renderer.to_str().expect("renderer"),
+            Duration::from_secs(2)
+        )
+        .expect_err("vertical overflow")
+        .contains("Overflow")
+    );
+    assert!(
+        edit_page(
+            &fixture.root,
+            "test-album",
+            1,
+            imported.pages[0].commands.clone(),
+            imported.revision + 1,
+            renderer.to_str().expect("renderer"),
+            Duration::from_secs(2)
+        )
+        .expect_err("conflict")
+        .contains("Revision conflict")
+    );
     let broken = fixture.renderer("echo 'Error: failed candidate' >&2; exit 0");
     let draft = edit_page(
         &fixture.root,
@@ -541,10 +567,12 @@ async fn generator_dispatch_uses_saved_layout_and_draft_never_falls_back() {
     )
     .await;
     assert!(blocked.output_txt_path.as_os_str().is_empty());
-    assert!(blocked
-        .pdf_failure_reason
-        .expect("draft failure")
-        .contains("not ready"));
+    assert!(
+        blocked
+            .pdf_failure_reason
+            .expect("draft failure")
+            .contains("not ready")
+    );
     approve_album(&fixture.root, "test-album", imported.revision).expect("approve");
     let output = stamp_album_gen2::album_globals::generate_album_output_conn_with_pdf_override(
         &conn,
@@ -835,17 +863,19 @@ fn failed_global_render_persists_draft_and_bad_global_geometry_rolls_back() {
         .expect("size")
         .args[0]
         .value = "5".into();
-    assert!(edit_page(
-        &fixture.root,
-        "test-album",
-        0,
-        globals,
-        imported.revision,
-        "",
-        Duration::from_secs(1)
-    )
-    .expect_err("invalid geometry")
-    .contains("Overflow"));
+    assert!(
+        edit_page(
+            &fixture.root,
+            "test-album",
+            0,
+            globals,
+            imported.revision,
+            "",
+            Duration::from_secs(1)
+        )
+        .expect_err("invalid geometry")
+        .contains("Overflow")
+    );
     assert_eq!(
         load_album(&fixture.root, "test-album")
             .expect("unchanged")
@@ -934,7 +964,9 @@ fn brazil_real_albumeasy_import_approval_and_page_edit() {
             }
         }
         assert_eq!(compared, 85, "Both real PDFs must contain exactly 85 pages");
-        eprintln!("Real reference/reconstructed raster comparison: {compared} pages identical at 72 DPI full color");
+        eprintln!(
+            "Real reference/reconstructed raster comparison: {compared} pages identical at 72 DPI full color"
+        );
     } else {
         eprintln!("Poppler pdftoppm unavailable: raster comparison not performed");
     }
@@ -1017,7 +1049,9 @@ fn brazil_real_albumeasy_import_approval_and_page_edit() {
             }
         }
         assert_eq!((changed, unchanged), (1, 84));
-        eprintln!("Edited PDF comparison: page 1 changed; all 84 other pages identical at 72 DPI full color");
+        eprintln!(
+            "Edited PDF comparison: page 1 changed; all 84 other pages identical at 72 DPI full color"
+        );
     }
     let conn = Connection::open(album.join("brazil.db")).expect("Real acceptance DB");
     let counts: (i64, i64) = conn
@@ -1042,7 +1076,9 @@ fn brazil_real_albumeasy_import_approval_and_page_edit() {
         original_hashes,
         "No original source files may change"
     );
-    eprintln!("Real import/approval-transition/edit complete; originals untouched; user fidelity approval remains required");
+    eprintln!(
+        "Real import/approval-transition/edit complete; originals untouched; user fidelity approval remains required"
+    );
 }
 
 fn rasterize_pdf(tool: &Path, pdf: &Path, prefix: &Path) {
@@ -1286,7 +1322,13 @@ fn report_brazil_db_counts(conn: &Connection, path: &Path) {
     assert_eq!(counts, (655, 655, 655, 655, 0, 0));
     eprintln!(
         "DB {}: stamps={}, placements={}, valid command/stamp links={}, distinct linked stamp IDs={}, orphan links={}, unlinked stamps={}; duplicate placements retained, skipped=0",
-        path.display(), counts.0, counts.1, counts.2, counts.3, counts.4, counts.5
+        path.display(),
+        counts.0,
+        counts.1,
+        counts.2,
+        counts.3,
+        counts.4,
+        counts.5
     );
 }
 
@@ -1376,9 +1418,11 @@ fn uploaded_images_are_rendered_exported_and_checksum_gated() {
     );
     assert!(!fixture.source.join("imported-assets").exists());
     fs::write(album.join("imported-assets/upload.jpg"), b"changed upload").expect("Mutate upload");
-    assert!(approve_album(&fixture.root, "test-album", edited.revision)
-        .expect_err("Stale upload approval")
-        .contains("changed since validation"));
+    assert!(
+        approve_album(&fixture.root, "test-album", edited.revision)
+            .expect_err("Stale upload approval")
+            .contains("changed since validation")
+    );
     let retried = retry_album(
         &fixture.root,
         "test-album",
@@ -1401,17 +1445,19 @@ fn uploaded_images_are_rendered_exported_and_checksum_gated() {
     let mut missing = retried.pages[0].commands.clone();
     missing[3].args[2].value = "imported-assets/missing.jpg".into();
     let ready = load_album(&fixture.root, "test-album").expect("Ready album");
-    assert!(edit_page(
-        &fixture.root,
-        "test-album",
-        1,
-        missing,
-        ready.revision,
-        renderer.to_str().expect("renderer"),
-        Duration::from_secs(2)
-    )
-    .expect_err("Missing upload")
-    .contains("missing image"));
+    assert!(
+        edit_page(
+            &fixture.root,
+            "test-album",
+            1,
+            missing,
+            ready.revision,
+            renderer.to_str().expect("renderer"),
+            Duration::from_secs(2)
+        )
+        .expect_err("Missing upload")
+        .contains("missing image")
+    );
     assert_eq!(
         load_album(&fixture.root, "test-album")
             .expect("Unchanged")
@@ -1425,15 +1471,19 @@ fn uploaded_images_are_rendered_exported_and_checksum_gated() {
         album.join("imported-assets/upload.jpg"),
     )
     .expect("Upload symlink fixture");
-    assert!(export_layout(&fixture.db())
-        .expect_err("Reject uploaded symlink")
-        .contains("Symlinks"));
+    assert!(
+        export_layout(&fixture.db())
+            .expect_err("Reject uploaded symlink")
+            .contains("Symlinks")
+    );
     fs::remove_file(assets.join("upload.jpg")).expect("Remove fixture link");
     fs::remove_dir(&assets).expect("Remove empty upload folder");
     symlink(fixture.source.join("Images"), &assets).expect("Upload directory symlink");
-    assert!(asset_directory(&fixture.root, "test-album")
-        .expect_err("Reject upload directory link")
-        .contains("Symlinks"));
+    assert!(
+        asset_directory(&fixture.root, "test-album")
+            .expect_err("Reject upload directory link")
+            .contains("Symlinks")
+    );
 }
 
 #[cfg(unix)]
@@ -1605,20 +1655,26 @@ fn selected_source_and_root_allow_symlinked_ancestors_but_internal_links_are_rej
     let copied = root.join("alias-album/source/Images/1.jpg");
     fs::remove_file(&copied).expect("Replace copied image with internal symlink");
     symlink(fixture.source.join("Images/1.jpg"), &copied).expect("Internal dependency symlink");
-    assert!(export_layout(&db)
-        .expect_err("Internal link rejection")
-        .contains("Symlinks"));
+    assert!(
+        export_layout(&db)
+            .expect_err("Internal link rejection")
+            .contains("Symlinks")
+    );
     let album_alias = root.join("linked-album");
     symlink(root.join("alias-album"), &album_alias).expect("Album entry symlink");
-    assert!(load_album(&root, "linked-album")
-        .expect_err("Album entry rejection")
-        .contains("Symlinks"));
+    assert!(
+        load_album(&root, "linked-album")
+            .expect_err("Album entry rejection")
+            .contains("Symlinks")
+    );
     symlink(
         fixture.source.join("Images"),
         fixture.source.join("LinkedImages"),
     )
     .expect("Source internal directory symlink");
-    assert!(inspect(&source, Path::new("album.txt"))
-        .expect_err("Source entry rejection")
-        .contains("Symlinks"));
+    assert!(
+        inspect(&source, Path::new("album.txt"))
+            .expect_err("Source entry rejection")
+            .contains("Symlinks")
+    );
 }
