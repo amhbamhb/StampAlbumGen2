@@ -295,14 +295,15 @@ fn link_colnect_data(conn: &Connection) -> Result<()> {
                 };
 
                 if let Some(new_sg) = best_match
-                    && new_sg != current_sg {
-                        info!(
-                            "Linking Colnect {} (SG {}) -> StampWorld SG {}",
-                            colnect_id, current_sg, new_sg
-                        );
-                        update_stmt.execute(params![new_sg, colnect_id])?;
-                        linked_count += 1;
-                    }
+                    && new_sg != current_sg
+                {
+                    info!(
+                        "Linking Colnect {} (SG {}) -> StampWorld SG {}",
+                        colnect_id, current_sg, new_sg
+                    );
+                    update_stmt.execute(params![new_sg, colnect_id])?;
+                    linked_count += 1;
+                }
             }
         }
     }

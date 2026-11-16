@@ -250,16 +250,17 @@ pub fn save_stamp_data<P: AsRef<std::path::Path>>(
             let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
             if let Some(parent) = path.parent()
                 && let Some(stem_os) = path.file_stem()
-                    && let Some(stem) = stem_os.to_str() {
-                        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-                        let candidate_name = if ext.is_empty() {
-                            format!("{}.created-{}", stem, ts)
-                        } else {
-                            format!("{}.created-{}.{}", stem, ts, ext)
-                        };
-                        let candidate = parent.join(&candidate_name);
-                        target_path = candidate;
-                    }
+                && let Some(stem) = stem_os.to_str()
+            {
+                let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                let candidate_name = if ext.is_empty() {
+                    format!("{}.created-{}", stem, ts)
+                } else {
+                    format!("{}.created-{}.{}", stem, ts, ext)
+                };
+                let candidate = parent.join(&candidate_name);
+                target_path = candidate;
+            }
         }
     }
 

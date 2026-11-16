@@ -219,14 +219,16 @@ pub async fn ensure_coat_of_arms_with_fetcher(
     candidates.push(PathBuf::from("flags").join("coats_of_arms"));
     // Executable parent 'flags/coats_of_arms'
     if let Ok(exe) = std::env::current_exe()
-        && let Some(parent) = exe.parent() {
-            candidates.push(parent.join("flags").join("coats_of_arms"));
-        }
+        && let Some(parent) = exe.parent()
+    {
+        candidates.push(parent.join("flags").join("coats_of_arms"));
+    }
     // Parent of cwd 'flags/coats_of_arms'
     if let Ok(cwd) = std::env::current_dir()
-        && let Some(parent) = cwd.parent() {
-            candidates.push(parent.join("flags").join("coats_of_arms"));
-        }
+        && let Some(parent) = cwd.parent()
+    {
+        candidates.push(parent.join("flags").join("coats_of_arms"));
+    }
     // Build-time manifest 'flags/coats_of_arms' (source tree)
     candidates.push(
         PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -262,14 +264,16 @@ pub async fn ensure_coat_of_arms_with_fetcher(
             target_dir = cand;
         }
     }
-    if !target_dir.exists() && fs::create_dir_all(&target_dir).is_err()
+    if !target_dir.exists()
+        && fs::create_dir_all(&target_dir).is_err()
         && let Ok(exe) = std::env::current_exe()
-            && let Some(parent) = exe.parent() {
-                let alt = parent.join("flags").join("coats_of_arms");
-                if fs::create_dir_all(&alt).is_ok() {
-                    target_dir = alt;
-                }
-            }
+        && let Some(parent) = exe.parent()
+    {
+        let alt = parent.join("flags").join("coats_of_arms");
+        if fs::create_dir_all(&alt).is_ok() {
+            target_dir = alt;
+        }
+    }
 
     let filepath = target_dir.join(&filename);
     // Honor overwrite config: only attempt network fetch if overwrite enabled
@@ -412,13 +416,15 @@ pub async fn ensure_coat_of_arms_with_fetcher(
     fn extract_from_obj(o: &serde_json::Value) -> Option<String> {
         if let Some(coa) = o.get("coatOfArms") {
             if let Some(s) = coa.get("svg").and_then(|x| x.as_str())
-                && !s.trim().is_empty() {
-                    return Some(s.to_string());
-                }
+                && !s.trim().is_empty()
+            {
+                return Some(s.to_string());
+            }
             if let Some(s) = coa.get("png").and_then(|x| x.as_str())
-                && !s.trim().is_empty() {
-                    return Some(s.to_string());
-                }
+                && !s.trim().is_empty()
+            {
+                return Some(s.to_string());
+            }
         }
         None
     }
@@ -428,32 +434,33 @@ pub async fn ensure_coat_of_arms_with_fetcher(
     // abort the whole run). Surface the message to logs for diagnosis.
     if let Some(errors) = v.get("errors")
         && let Some(first) = errors.get(0)
-            && let Some(msg) = first.get("message").and_then(|m| m.as_str()) {
-                eprintln!("restcountries API error: {}", msg);
-                // create placeholder PNG and return its path
-                let png_path = filepath.with_extension("png");
-                // Ensure parent dir
-                if let Some(parent) = png_path.parent() {
-                    let _ = fs::create_dir_all(parent);
-                }
-                // Generate a simple placeholder image (320x240) with border
-                let w = 320u32;
-                let h = 240u32;
-                let mut im = image::RgbaImage::new(w, h);
-                for px in im.pixels_mut() {
-                    *px = image::Rgba([255, 255, 255, 255]);
-                }
-                for x in 0..w {
-                    im.put_pixel(x, 0, image::Rgba([200, 200, 200, 255]));
-                    im.put_pixel(x, h - 1, image::Rgba([200, 200, 200, 255]));
-                }
-                for y in 0..h {
-                    im.put_pixel(0, y, image::Rgba([200, 200, 200, 255]));
-                    im.put_pixel(w - 1, y, image::Rgba([200, 200, 200, 255]));
-                }
-                let _ = im.save(&png_path);
-                return Ok(png_path.to_string_lossy().to_string());
-            }
+        && let Some(msg) = first.get("message").and_then(|m| m.as_str())
+    {
+        eprintln!("restcountries API error: {}", msg);
+        // create placeholder PNG and return its path
+        let png_path = filepath.with_extension("png");
+        // Ensure parent dir
+        if let Some(parent) = png_path.parent() {
+            let _ = fs::create_dir_all(parent);
+        }
+        // Generate a simple placeholder image (320x240) with border
+        let w = 320u32;
+        let h = 240u32;
+        let mut im = image::RgbaImage::new(w, h);
+        for px in im.pixels_mut() {
+            *px = image::Rgba([255, 255, 255, 255]);
+        }
+        for x in 0..w {
+            im.put_pixel(x, 0, image::Rgba([200, 200, 200, 255]));
+            im.put_pixel(x, h - 1, image::Rgba([200, 200, 200, 255]));
+        }
+        for y in 0..h {
+            im.put_pixel(0, y, image::Rgba([200, 200, 200, 255]));
+            im.put_pixel(w - 1, y, image::Rgba([200, 200, 200, 255]));
+        }
+        let _ = im.save(&png_path);
+        return Ok(png_path.to_string_lossy().to_string());
+    }
 
     // Try a few shapes: array of objects, single object, or nested data->... structures.
     let mut coa_url_opt: Option<String> = None;
@@ -477,9 +484,10 @@ pub async fn ensure_coat_of_arms_with_fetcher(
                     }
                 }
             } else if data.is_object()
-                && let Some(s) = extract_from_obj(data) {
-                    coa_url_opt = Some(s);
-                }
+                && let Some(s) = extract_from_obj(data)
+            {
+                coa_url_opt = Some(s);
+            }
         }
     }
 
@@ -494,13 +502,14 @@ pub async fn ensure_coat_of_arms_with_fetcher(
         // Decide on extension: prefer Content-Type header, fall back to URL suffix
         let mut ext = None::<&str>;
         if let Some(ct) = headers.get(reqwest::header::CONTENT_TYPE)
-            && let Ok(cts) = ct.to_str() {
-                if cts.contains("svg") {
-                    ext = Some("svg");
-                } else if cts.contains("png") {
-                    ext = Some("png");
-                }
+            && let Ok(cts) = ct.to_str()
+        {
+            if cts.contains("svg") {
+                ext = Some("svg");
+            } else if cts.contains("png") {
+                ext = Some("png");
             }
+        }
         if ext.is_none() {
             if coa_url.to_lowercase().ends_with(".png") {
                 ext = Some("png");
@@ -704,52 +713,53 @@ fn try_rasterize_svg_to_png(svg: &Path, png: &Path) -> Result<bool, Box<dyn std:
                     opt.resources_dir = Some(parent.to_path_buf());
                 }
                 usvg::Tree::from_data(&svg_bytes, &opt)
-            } {
-                let svg_w = tree.size().width() as f64;
-                let svg_h = tree.size().height() as f64;
-                if svg_w > 0.0 && svg_h > 0.0 {
-                    let target_width: u32 = std::env::var("COAT_TARGET_WIDTH")
-                        .ok()
-                        .and_then(|s| s.parse::<u32>().ok())
-                        .unwrap_or(600);
-                    let upscale: f32 = std::env::var("COAT_UPSCALE_FACTOR")
-                        .ok()
-                        .and_then(|s| s.parse::<f32>().ok())
-                        .unwrap_or(4.0);
-                    let target_w_f = target_width as f64;
-                    let target_h_f = (target_w_f * svg_h) / svg_w;
-                    let target_h = target_h_f.ceil() as u32;
-                    let render_w = (target_w_f * (upscale as f64)).ceil() as u32;
-                    let render_h = (target_h_f * (upscale as f64)).ceil() as u32;
-                    let cap_dim: u32 = 10000;
-                    let render_w = std::cmp::min(render_w, cap_dim);
-                    let render_h = std::cmp::min(render_h, cap_dim);
+            }
+        {
+            let svg_w = tree.size().width() as f64;
+            let svg_h = tree.size().height() as f64;
+            if svg_w > 0.0 && svg_h > 0.0 {
+                let target_width: u32 = std::env::var("COAT_TARGET_WIDTH")
+                    .ok()
+                    .and_then(|s| s.parse::<u32>().ok())
+                    .unwrap_or(600);
+                let upscale: f32 = std::env::var("COAT_UPSCALE_FACTOR")
+                    .ok()
+                    .and_then(|s| s.parse::<f32>().ok())
+                    .unwrap_or(4.0);
+                let target_w_f = target_width as f64;
+                let target_h_f = (target_w_f * svg_h) / svg_w;
+                let target_h = target_h_f.ceil() as u32;
+                let render_w = (target_w_f * (upscale as f64)).ceil() as u32;
+                let render_h = (target_h_f * (upscale as f64)).ceil() as u32;
+                let cap_dim: u32 = 10000;
+                let render_w = std::cmp::min(render_w, cap_dim);
+                let render_h = std::cmp::min(render_h, cap_dim);
 
-                    let tmp = tempfile::NamedTempFile::new()?;
-                    let tmp_path = tmp.path().to_path_buf();
-                    let status = Command::new("rsvg-convert")
-                        .arg("-w")
-                        .arg(render_w.to_string())
-                        .arg("-h")
-                        .arg(render_h.to_string())
-                        .arg("-o")
-                        .arg(&tmp_path)
-                        .arg(svg)
-                        .status()?;
-                    if status.success() {
-                        // downsample and save
-                        if let Ok(dynimg) = image::open(&tmp_path) {
-                            let final_img = dynimg.resize_exact(
-                                target_width,
-                                target_h,
-                                image::imageops::FilterType::Lanczos3,
-                            );
-                            final_img.save(png)?;
-                            return Ok(true);
-                        }
+                let tmp = tempfile::NamedTempFile::new()?;
+                let tmp_path = tmp.path().to_path_buf();
+                let status = Command::new("rsvg-convert")
+                    .arg("-w")
+                    .arg(render_w.to_string())
+                    .arg("-h")
+                    .arg(render_h.to_string())
+                    .arg("-o")
+                    .arg(&tmp_path)
+                    .arg(svg)
+                    .status()?;
+                if status.success() {
+                    // downsample and save
+                    if let Ok(dynimg) = image::open(&tmp_path) {
+                        let final_img = dynimg.resize_exact(
+                            target_width,
+                            target_h,
+                            image::imageops::FilterType::Lanczos3,
+                        );
+                        final_img.save(png)?;
+                        return Ok(true);
                     }
                 }
             }
+        }
         // If the above high-res -> downsample path failed, try a simple conversion
         let status = Command::new("rsvg-convert")
             .arg("-f")
@@ -894,17 +904,19 @@ fn extract_flag_from_nexperts_html(html: &str, alpha: &str) -> Option<String> {
 fn extract_country_name_from_nexperts_html(html: &str) -> Option<String> {
     // Try <title> or an <h1> entry
     if let Some(pos) = html.find("<title>")
-        && let Some(end) = html[pos..].find("</title>") {
-            let t = &html[pos + 7..pos + end];
-            return Some(t.trim().to_string());
-        }
+        && let Some(end) = html[pos..].find("</title>")
+    {
+        let t = &html[pos + 7..pos + end];
+        return Some(t.trim().to_string());
+    }
     if let Some(pos) = html.find("<h1") {
         // find closing '>' then closing </h1>
         if let Some(start) = html[pos..].find('>')
-            && let Some(end) = html[pos + start..].find("</h1>") {
-                let t = &html[pos + start + 1..pos + start + end];
-                return Some(t.trim().to_string());
-            }
+            && let Some(end) = html[pos + start..].find("</h1>")
+        {
+            let t = &html[pos + start + 1..pos + start + end];
+            return Some(t.trim().to_string());
+        }
     }
     None
 }

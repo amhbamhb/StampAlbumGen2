@@ -432,42 +432,44 @@ pub async fn collect_stampworld_data_with_fetcher(
             if let Some(table_node) = content_div
                 .select(&Selector::parse("table").unwrap())
                 .next()
-                && let Some(thead) = table_node.select(&Selector::parse("thead").unwrap()).next() {
-                    for th in thead.select(&Selector::parse("th").unwrap()) {
-                        let mut txt = th.text().collect::<String>();
-                        txt = txt.trim().to_string();
-                        if let Some(img) = th.select(&Selector::parse("img").unwrap()).next()
-                            && let Some(alt) = img.value().attr("alt") {
-                                let a = alt.trim();
-                                if !a.is_empty() {
-                                    txt = a.to_string();
-                                }
-                            }
-                        header_texts.push(txt.clone());
+                && let Some(thead) = table_node.select(&Selector::parse("thead").unwrap()).next()
+            {
+                for th in thead.select(&Selector::parse("th").unwrap()) {
+                    let mut txt = th.text().collect::<String>();
+                    txt = txt.trim().to_string();
+                    if let Some(img) = th.select(&Selector::parse("img").unwrap()).next()
+                        && let Some(alt) = img.value().attr("alt")
+                    {
+                        let a = alt.trim();
+                        if !a.is_empty() {
+                            txt = a.to_string();
+                        }
                     }
-                    // Map names to header indices (we'll align these with row cells including th)
-                    for (i, txt) in header_texts.iter().enumerate() {
-                        let low = txt.to_lowercase();
-                        if low.contains("stamps issued") || low.contains("released") {
-                            col_map.insert("stamps_issued".to_string(), i);
-                        }
-                        if low.contains("mint condition") || low.contains("mint") {
-                            col_map.insert("mint_condition".to_string(), i);
-                        }
-                        if low.contains("unused") {
-                            col_map.insert("unused".to_string(), i);
-                        }
-                        if low.contains("used") {
-                            col_map.insert("used".to_string(), i);
-                        }
-                        if low.contains("letter") || low.contains("fdc") {
-                            col_map.insert("letter_fdc".to_string(), i);
-                        }
-                        if low.contains("currency") || low.contains("usd") {
-                            col_map.insert("currency".to_string(), i);
-                        }
+                    header_texts.push(txt.clone());
+                }
+                // Map names to header indices (we'll align these with row cells including th)
+                for (i, txt) in header_texts.iter().enumerate() {
+                    let low = txt.to_lowercase();
+                    if low.contains("stamps issued") || low.contains("released") {
+                        col_map.insert("stamps_issued".to_string(), i);
+                    }
+                    if low.contains("mint condition") || low.contains("mint") {
+                        col_map.insert("mint_condition".to_string(), i);
+                    }
+                    if low.contains("unused") {
+                        col_map.insert("unused".to_string(), i);
+                    }
+                    if low.contains("used") {
+                        col_map.insert("used".to_string(), i);
+                    }
+                    if low.contains("letter") || low.contains("fdc") {
+                        col_map.insert("letter_fdc".to_string(), i);
+                    }
+                    if low.contains("currency") || low.contains("usd") {
+                        col_map.insert("currency".to_string(), i);
                     }
                 }
+            }
             if !header_texts.is_empty() {
                 // info!("Block {} headers: {:?}", block_idx, header_texts);
             }
@@ -585,10 +587,9 @@ pub async fn collect_stampworld_data_with_fetcher(
                             break;
                         }
                     }
-                    if !found_stamp_year
-                        && let Some(m) = year_re.find(&description) {
-                            stamp_year = m.as_str().parse::<i32>().unwrap_or(block_year_int);
-                        }
+                    if !found_stamp_year && let Some(m) = year_re.find(&description) {
+                        stamp_year = m.as_str().parse::<i32>().unwrap_or(block_year_int);
+                    }
 
                     // Normalize common Unicode hyphen variants to ASCII
                     let mut norm = sg_number.clone();
@@ -609,50 +610,51 @@ pub async fn collect_stampworld_data_with_fetcher(
                         if parts.len() == 2
                             && let (Ok(a), Ok(b)) =
                                 (parts[0].parse::<i32>(), parts[1].parse::<i32>())
-                            {
-                                let start = a.min(b);
-                                let end = a.max(b);
+                        {
+                            let start = a.min(b);
+                            let end = a.max(b);
 
-                                // If user requested detail_fetch, attempt to fetch group/detail pages
-                                // and extract per-stamp rows. Fall back to placeholders when
-                                // fetching/parsing fails. Limit fetches per-range to avoid heavy loads.
-                                if expand == "detail_fetch" {
-                                    // Try to find a canonical group base URL inside the block HTML
-                                    let block_html = content_div.html();
-                                    let maybe_group_base = GROUP_URL_RE
-                                        .find(&block_html)
-                                        .map(|m| m.as_str().to_string());
+                            // If user requested detail_fetch, attempt to fetch group/detail pages
+                            // and extract per-stamp rows. Fall back to placeholders when
+                            // fetching/parsing fails. Limit fetches per-range to avoid heavy loads.
+                            if expand == "detail_fetch" {
+                                // Try to find a canonical group base URL inside the block HTML
+                                let block_html = content_div.html();
+                                let maybe_group_base = GROUP_URL_RE
+                                    .find(&block_html)
+                                    .map(|m| m.as_str().to_string());
 
-                                    // Safe per-range limit
-                                    let max_fetch_per_range: i32 = 50;
-                                    let mut fetch_count: i32 = 0;
+                                // Safe per-range limit
+                                let max_fetch_per_range: i32 = 50;
+                                let mut fetch_count: i32 = 0;
 
-                                    for n in start..=end {
-                                        let s = n.to_string();
-                                        // If we've already inserted or seen this stamp in-run, skip
-                                        let keyp = format!("{}||{}||{}", site_name, series_desc, s);
-                                        if seen_stamps.contains(&keyp) {
-                                            continue;
-                                        }
+                                for n in start..=end {
+                                    let s = n.to_string();
+                                    // If we've already inserted or seen this stamp in-run, skip
+                                    let keyp = format!("{}||{}||{}", site_name, series_desc, s);
+                                    if seen_stamps.contains(&keyp) {
+                                        continue;
+                                    }
 
-                                        if fetch_count >= max_fetch_per_range {
-                                            debug!(
-                                                "Reached per-range fetch limit {} for grouped-range {}-{}; inserting placeholders for remaining",
-                                                max_fetch_per_range, start, end
-                                            );
-                                            // insert placeholders for remaining numbers
-                                            for m in n..=end {
-                                                let ms = m.to_string();
-                                                if let Ok(inserted) =
-                                                    crate::db_utils::insert_stamp_placeholder(
-                                                        &conn,
-                                                        site_name,
-                                                        &series_desc,
-                                                        stamp_year,
-                                                        &ms,
-                                                    )
-                                                    && inserted {
-                                                        let _ = conn.execute(
+                                    if fetch_count >= max_fetch_per_range {
+                                        debug!(
+                                            "Reached per-range fetch limit {} for grouped-range {}-{}; inserting placeholders for remaining",
+                                            max_fetch_per_range, start, end
+                                        );
+                                        // insert placeholders for remaining numbers
+                                        for m in n..=end {
+                                            let ms = m.to_string();
+                                            if let Ok(inserted) =
+                                                crate::db_utils::insert_stamp_placeholder(
+                                                    &conn,
+                                                    site_name,
+                                                    &series_desc,
+                                                    stamp_year,
+                                                    &ms,
+                                                )
+                                                && inserted
+                                            {
+                                                let _ = conn.execute(
                                                             "UPDATE stamps
                                                              SET catalog_code = 'sw'
                                                              WHERE country = ?1
@@ -667,177 +669,173 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                                 &ms
                                                             ],
                                                         );
-                                                        seen_stamps.insert(format!(
-                                                            "{}||{}||{}",
-                                                            site_name, series_desc, ms
-                                                        ));
-                                                        new_stamps_this_page += 1;
-                                                        all_stamp_data.push(format!(
-                                                            "STAMP;{};{};{};{};{};{};{}",
-                                                            stamp_year,
-                                                            "",
-                                                            "",
-                                                            series_desc,
-                                                            ms,
-                                                            "PLACEHOLDER",
-                                                            ""
-                                                        ));
-                                                    }
+                                                seen_stamps.insert(format!(
+                                                    "{}||{}||{}",
+                                                    site_name, series_desc, ms
+                                                ));
+                                                new_stamps_this_page += 1;
+                                                all_stamp_data.push(format!(
+                                                    "STAMP;{};{};{};{};{};{};{}",
+                                                    stamp_year,
+                                                    "",
+                                                    "",
+                                                    series_desc,
+                                                    ms,
+                                                    "PLACEHOLDER",
+                                                    ""
+                                                ));
                                             }
-                                            break;
                                         }
+                                        break;
+                                    }
 
-                                        let mut did_insert = false;
-                                        if let Some(group_base) = maybe_group_base.clone() {
-                                            // Construct detail URL (group page + fragment). The fragment doesn't change server response
-                                            // but it helps us locate the per-stamp element in the returned HTML when present.
-                                            let detail_url = format!(
-                                                "{}#{}",
-                                                group_base.trim_end_matches('/'),
-                                                s
-                                            );
-                                            debug!(
-                                                "Attempting detail fetch for {} -> {}",
-                                                s, detail_url
-                                            );
-                                            if let Ok((_status, text)) =
-                                                fetcher.fetch_text(&detail_url).await
-                                            {
-                                                let doc = Html::parse_document(&text);
-                                                // Search table rows and try to find the row containing this sg_number anchor/id
-                                                let trs: Vec<_> =
-                                                    doc.select(&table_selector).collect();
-                                                for tr_doc in trs.into_iter() {
-                                                    // Quick check: does this tr contain an anchor or id for this sg number?
-                                                    if tr_doc.html().contains(&format!("a_s_{}", s))
-                                                        || tr_doc
-                                                            .text()
-                                                            .collect::<String>()
-                                                            .contains(&s)
-                                                    {
-                                                        // Reconstruct flattened row_cells similar to main parsing
-                                                        let td_sel = Selector::parse("td").unwrap();
-                                                        let th_sel = Selector::parse("th").unwrap();
-                                                        let ths2: Vec<_> =
-                                                            tr_doc.select(&th_sel).collect();
-                                                        let tds2: Vec<_> =
-                                                            tr_doc.select(&td_sel).collect();
-                                                        // Build row_cells
-                                                        let mut row_cells2: Vec<String> =
-                                                            Vec::new();
-                                                        if let Some(th_row) = ths2.first() {
+                                    let mut did_insert = false;
+                                    if let Some(group_base) = maybe_group_base.clone() {
+                                        // Construct detail URL (group page + fragment). The fragment doesn't change server response
+                                        // but it helps us locate the per-stamp element in the returned HTML when present.
+                                        let detail_url =
+                                            format!("{}#{}", group_base.trim_end_matches('/'), s);
+                                        debug!(
+                                            "Attempting detail fetch for {} -> {}",
+                                            s, detail_url
+                                        );
+                                        if let Ok((_status, text)) =
+                                            fetcher.fetch_text(&detail_url).await
+                                        {
+                                            let doc = Html::parse_document(&text);
+                                            // Search table rows and try to find the row containing this sg_number anchor/id
+                                            let trs: Vec<_> = doc.select(&table_selector).collect();
+                                            for tr_doc in trs.into_iter() {
+                                                // Quick check: does this tr contain an anchor or id for this sg number?
+                                                if tr_doc.html().contains(&format!("a_s_{}", s))
+                                                    || tr_doc
+                                                        .text()
+                                                        .collect::<String>()
+                                                        .contains(&s)
+                                                {
+                                                    // Reconstruct flattened row_cells similar to main parsing
+                                                    let td_sel = Selector::parse("td").unwrap();
+                                                    let th_sel = Selector::parse("th").unwrap();
+                                                    let ths2: Vec<_> =
+                                                        tr_doc.select(&th_sel).collect();
+                                                    let tds2: Vec<_> =
+                                                        tr_doc.select(&td_sel).collect();
+                                                    // Build row_cells
+                                                    let mut row_cells2: Vec<String> = Vec::new();
+                                                    if let Some(th_row) = ths2.first() {
+                                                        row_cells2.push(
+                                                            th_row
+                                                                .text()
+                                                                .collect::<String>()
+                                                                .trim()
+                                                                .to_string(),
+                                                        );
+                                                        for td in &tds2 {
                                                             row_cells2.push(
-                                                                th_row
-                                                                    .text()
+                                                                td.text()
                                                                     .collect::<String>()
                                                                     .trim()
                                                                     .to_string(),
                                                             );
-                                                            for td in &tds2 {
-                                                                row_cells2.push(
-                                                                    td.text()
-                                                                        .collect::<String>()
-                                                                        .trim()
-                                                                        .to_string(),
-                                                                );
-                                                            }
-                                                        } else {
-                                                            for td in &tds2 {
-                                                                row_cells2.push(
-                                                                    td.text()
-                                                                        .collect::<String>()
-                                                                        .trim()
-                                                                        .to_string(),
-                                                                );
-                                                            }
                                                         }
-                                                        if row_cells2.is_empty() {
-                                                            continue;
+                                                    } else {
+                                                        for td in &tds2 {
+                                                            row_cells2.push(
+                                                                td.text()
+                                                                    .collect::<String>()
+                                                                    .trim()
+                                                                    .to_string(),
+                                                            );
                                                         }
-                                                        // Map fields (reuse same indices as main parsing)
-                                                        let sg_number_f = row_cells2
-                                                            .first()
-                                                            .map(|s| s.trim().to_string())
-                                                            .unwrap_or_default();
-                                                        let type_f = row_cells2
-                                                            .get(1)
+                                                    }
+                                                    if row_cells2.is_empty() {
+                                                        continue;
+                                                    }
+                                                    // Map fields (reuse same indices as main parsing)
+                                                    let sg_number_f = row_cells2
+                                                        .first()
+                                                        .map(|s| s.trim().to_string())
+                                                        .unwrap_or_default();
+                                                    let type_f = row_cells2
+                                                        .get(1)
+                                                        .cloned()
+                                                        .unwrap_or_default();
+                                                    let denomination_f = row_cells2
+                                                        .get(2)
+                                                        .cloned()
+                                                        .unwrap_or_default();
+                                                    let color_f = row_cells2
+                                                        .get(4)
+                                                        .cloned()
+                                                        .unwrap_or_default();
+                                                    let description_f = if row_cells2.len() > 6 {
+                                                        row_cells2
+                                                            .get(6)
                                                             .cloned()
-                                                            .unwrap_or_default();
-                                                        let denomination_f = row_cells2
-                                                            .get(2)
+                                                            .unwrap_or_default()
+                                                    } else {
+                                                        row_cells2
+                                                            .get(5)
                                                             .cloned()
-                                                            .unwrap_or_default();
-                                                        let color_f = row_cells2
-                                                            .get(4)
-                                                            .cloned()
-                                                            .unwrap_or_default();
-                                                        let description_f = if row_cells2.len() > 6
+                                                            .unwrap_or_default()
+                                                    };
+                                                    // Extract month/day heuristics per-line
+                                                    let mut month_f = String::new();
+                                                    let mut day_f = String::new();
+                                                    for line in row_cells2.join(" \n").lines() {
+                                                        if let Some(cap) =
+                                                            DAY_MONTH_RE.captures(line)
                                                         {
-                                                            row_cells2
-                                                                .get(6)
-                                                                .cloned()
-                                                                .unwrap_or_default()
-                                                        } else {
-                                                            row_cells2
-                                                                .get(5)
-                                                                .cloned()
-                                                                .unwrap_or_default()
-                                                        };
-                                                        // Extract month/day heuristics per-line
-                                                        let mut month_f = String::new();
-                                                        let mut day_f = String::new();
-                                                        for line in row_cells2.join(" \n").lines() {
-                                                            if let Some(cap) =
-                                                                DAY_MONTH_RE.captures(line)
-                                                            {
-                                                                day_f = cap
-                                                                    .get(1)
-                                                                    .map_or("", |m| m.as_str())
-                                                                    .to_string();
-                                                                month_f = cap
-                                                                    .get(2)
-                                                                    .map_or("", |m| m.as_str())
-                                                                    .to_string();
-                                                                break;
-                                                            }
+                                                            day_f = cap
+                                                                .get(1)
+                                                                .map_or("", |m| m.as_str())
+                                                                .to_string();
+                                                            month_f = cap
+                                                                .get(2)
+                                                                .map_or("", |m| m.as_str())
+                                                                .to_string();
+                                                            break;
                                                         }
-                                                        let month_num_f = if month_f.is_empty() {
-                                                            "0".to_string()
-                                                        } else {
-                                                            month_number(&month_f)
-                                                        };
-                                                        // Call centralized insert
-                                                        let si = crate::db_utils::StampInsert {
-                                                            country: site_name.to_string(),
-                                                            series: series_desc.clone(),
-                                                            year: stamp_year,
-                                                            month: month_f.clone(),
-                                                            month_num: month_num_f.clone(),
-                                                            day: day_f.clone(),
-                                                            sg_number: sg_number_f.clone(),
-                                                            type_: type_f.clone(),
-                                                            denomination: denomination_f.clone(),
-                                                            color: color_f.clone(),
-                                                            description: description_f.clone(),
-                                                            stamps_issued: String::new(),
-                                                            mint_condition: String::new(),
-                                                            unused: String::new(),
-                                                            used: String::new(),
-                                                            letter_fdc: String::new(),
-                                                            currency: String::new(),
-                                                            image_path: String::new(),
-                                                            remote_image_url: String::new(),
-                                                            original_image_url: String::new(),
-                                                            watermark: String::new(),
-                                                            design: String::new(),
-                                                            engraving: String::new(),
-                                                            perforation: String::new(),
-                                                            context: String::new(),
-                                                        };
-                                                        match crate::db_utils::insert_stamp_from_struct(&conn, &si) {
-                                                            Ok(inserted) => {
-                                                                if inserted {
-                                                                    let _ = conn.execute(
+                                                    }
+                                                    let month_num_f = if month_f.is_empty() {
+                                                        "0".to_string()
+                                                    } else {
+                                                        month_number(&month_f)
+                                                    };
+                                                    // Call centralized insert
+                                                    let si = crate::db_utils::StampInsert {
+                                                        country: site_name.to_string(),
+                                                        series: series_desc.clone(),
+                                                        year: stamp_year,
+                                                        month: month_f.clone(),
+                                                        month_num: month_num_f.clone(),
+                                                        day: day_f.clone(),
+                                                        sg_number: sg_number_f.clone(),
+                                                        type_: type_f.clone(),
+                                                        denomination: denomination_f.clone(),
+                                                        color: color_f.clone(),
+                                                        description: description_f.clone(),
+                                                        stamps_issued: String::new(),
+                                                        mint_condition: String::new(),
+                                                        unused: String::new(),
+                                                        used: String::new(),
+                                                        letter_fdc: String::new(),
+                                                        currency: String::new(),
+                                                        image_path: String::new(),
+                                                        remote_image_url: String::new(),
+                                                        original_image_url: String::new(),
+                                                        watermark: String::new(),
+                                                        design: String::new(),
+                                                        engraving: String::new(),
+                                                        perforation: String::new(),
+                                                        context: String::new(),
+                                                    };
+                                                    match crate::db_utils::insert_stamp_from_struct(
+                                                        &conn, &si,
+                                                    ) {
+                                                        Ok(inserted) => {
+                                                            if inserted {
+                                                                let _ = conn.execute(
                                                                         "UPDATE stamps
                                                                          SET catalog_code = 'sw'
                                                                          WHERE country = ?1
@@ -852,47 +850,61 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                                             &sg_number_f
                                                                         ],
                                                                     );
-                                                                    if emit_row_diag {
-                                                                        info!("Detail-fetch inserted stamp {} {}", series_desc, sg_number_f);
-                                                                    }
-                                                                    seen_stamps
-                                                                        .insert(keyp.clone());
-                                                                    new_stamps_this_page += 1;
-                                                                    all_stamp_data.push(format!("STAMP;{};{};{};{};{};{};{}", stamp_year, month_f, day_f, series_desc, sg_number_f, type_f, description_f));
-                                                                    did_insert = true;
+                                                                if emit_row_diag {
+                                                                    info!(
+                                                                        "Detail-fetch inserted stamp {} {}",
+                                                                        series_desc, sg_number_f
+                                                                    );
                                                                 }
-                                                            }
-                                                            Err(e) => {
-                                                                error!("Detail-fetch DB insert failed for {}: {}", sg_number_f, e);
+                                                                seen_stamps.insert(keyp.clone());
+                                                                new_stamps_this_page += 1;
+                                                                all_stamp_data.push(format!(
+                                                                    "STAMP;{};{};{};{};{};{};{}",
+                                                                    stamp_year,
+                                                                    month_f,
+                                                                    day_f,
+                                                                    series_desc,
+                                                                    sg_number_f,
+                                                                    type_f,
+                                                                    description_f
+                                                                ));
+                                                                did_insert = true;
                                                             }
                                                         }
-                                                        break;
+                                                        Err(e) => {
+                                                            error!(
+                                                                "Detail-fetch DB insert failed for {}: {}",
+                                                                sg_number_f, e
+                                                            );
+                                                        }
                                                     }
+                                                    break;
                                                 }
-                                                if did_insert {
-                                                    fetch_count += 1;
-                                                    continue;
-                                                }
-                                            } else {
-                                                debug!(
-                                                    "Detail fetch error for {}: {}",
-                                                    detail_url, "fetch failed"
-                                                );
                                             }
+                                            if did_insert {
+                                                fetch_count += 1;
+                                                continue;
+                                            }
+                                        } else {
+                                            debug!(
+                                                "Detail fetch error for {}: {}",
+                                                detail_url, "fetch failed"
+                                            );
                                         }
+                                    }
 
-                                        // If we couldn't fetch/parse/insert, fall back to inserting a placeholder row
-                                        if !did_insert {
-                                            match crate::db_utils::insert_stamp_placeholder(
-                                                &conn,
-                                                site_name,
-                                                &series_desc,
-                                                stamp_year,
-                                                &s,
-                                            ) {
-                                                Ok(inserted) => {
-                                                    if inserted {
-                                                        let _ = conn.execute(
+                                    // If we couldn't fetch/parse/insert, fall back to inserting a placeholder row
+                                    if !did_insert {
+                                        match crate::db_utils::insert_stamp_placeholder(
+                                            &conn,
+                                            site_name,
+                                            &series_desc,
+                                            stamp_year,
+                                            &s,
+                                        ) {
+                                            Ok(inserted) => {
+                                                if inserted {
+                                                    let _ = conn.execute(
                                                             "UPDATE stamps
                                                              SET catalog_code = 'sw'
                                                              WHERE country = ?1
@@ -907,50 +919,50 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                                 &s
                                                             ],
                                                         );
-                                                        if emit_row_diag {
-                                                            info!(
-                                                                "Inserted placeholder for {} {} (fallback)",
-                                                                series_desc, s
-                                                            );
-                                                        }
-                                                        seen_stamps.insert(keyp.clone());
-                                                        new_stamps_this_page += 1;
-                                                        all_stamp_data.push(format!(
-                                                            "STAMP;{};{};{};{};{};{};{}",
-                                                            stamp_year,
-                                                            "",
-                                                            "",
-                                                            series_desc,
-                                                            s,
-                                                            "PLACEHOLDER",
-                                                            ""
-                                                        ));
+                                                    if emit_row_diag {
+                                                        info!(
+                                                            "Inserted placeholder for {} {} (fallback)",
+                                                            series_desc, s
+                                                        );
                                                     }
+                                                    seen_stamps.insert(keyp.clone());
+                                                    new_stamps_this_page += 1;
+                                                    all_stamp_data.push(format!(
+                                                        "STAMP;{};{};{};{};{};{};{}",
+                                                        stamp_year,
+                                                        "",
+                                                        "",
+                                                        series_desc,
+                                                        s,
+                                                        "PLACEHOLDER",
+                                                        ""
+                                                    ));
                                                 }
-                                                Err(e) => {
-                                                    error!(
-                                                        "Placeholder helper failed (fallback) for {}: {}",
-                                                        s, e
-                                                    );
-                                                }
+                                            }
+                                            Err(e) => {
+                                                error!(
+                                                    "Placeholder helper failed (fallback) for {}: {}",
+                                                    s, e
+                                                );
                                             }
                                         }
                                     }
-                                    // After processing range (either fetched or placeholder) continue outer row loop
-                                    continue;
-                                } else if expand == "placeholders" {
-                                    for n in start..=end {
-                                        let s = n.to_string();
-                                        match crate::db_utils::insert_stamp_placeholder(
-                                            &conn,
-                                            site_name,
-                                            &series_desc,
-                                            stamp_year,
-                                            &s,
-                                        ) {
-                                            Ok(inserted) => {
-                                                if inserted {
-                                                    let _ = conn.execute(
+                                }
+                                // After processing range (either fetched or placeholder) continue outer row loop
+                                continue;
+                            } else if expand == "placeholders" {
+                                for n in start..=end {
+                                    let s = n.to_string();
+                                    match crate::db_utils::insert_stamp_placeholder(
+                                        &conn,
+                                        site_name,
+                                        &series_desc,
+                                        stamp_year,
+                                        &s,
+                                    ) {
+                                        Ok(inserted) => {
+                                            if inserted {
+                                                let _ = conn.execute(
                                                         "UPDATE stamps
                                                          SET catalog_code = 'sw'
                                                          WHERE country = ?1
@@ -960,47 +972,44 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                            AND TRIM(COALESCE(catalog_code, '')) = ''",
                                                         params![site_name, &series_desc, stamp_year, &s],
                                                     );
-                                                    if emit_row_diag {
-                                                        info!(
-                                                            "Inserted placeholder for {} {}",
-                                                            series_desc, s
-                                                        );
-                                                    }
-                                                    let keyp = format!(
-                                                        "{}||{}||{}",
-                                                        site_name, series_desc, s
-                                                    );
-                                                    seen_stamps.insert(keyp);
-                                                    new_stamps_this_page += 1;
-                                                    let stamp_line = format!(
-                                                        "STAMP;{};{};{};{};{};{};{}",
-                                                        stamp_year,
-                                                        "",
-                                                        "",
-                                                        series_desc,
-                                                        s,
-                                                        "PLACEHOLDER",
-                                                        ""
-                                                    );
-                                                    all_stamp_data.push(stamp_line);
-                                                } else if emit_row_diag {
+                                                if emit_row_diag {
                                                     info!(
-                                                        "Placeholder skipped, already exists: {} {}",
+                                                        "Inserted placeholder for {} {}",
                                                         series_desc, s
                                                     );
                                                 }
-                                            }
-                                            Err(e) => {
-                                                error!(
-                                                    "Placeholder helper failed for {}: {}",
-                                                    s, e
+                                                let keyp = format!(
+                                                    "{}||{}||{}",
+                                                    site_name, series_desc, s
+                                                );
+                                                seen_stamps.insert(keyp);
+                                                new_stamps_this_page += 1;
+                                                let stamp_line = format!(
+                                                    "STAMP;{};{};{};{};{};{};{}",
+                                                    stamp_year,
+                                                    "",
+                                                    "",
+                                                    series_desc,
+                                                    s,
+                                                    "PLACEHOLDER",
+                                                    ""
+                                                );
+                                                all_stamp_data.push(stamp_line);
+                                            } else if emit_row_diag {
+                                                info!(
+                                                    "Placeholder skipped, already exists: {} {}",
+                                                    series_desc, s
                                                 );
                                             }
                                         }
+                                        Err(e) => {
+                                            error!("Placeholder helper failed for {}: {}", s, e);
+                                        }
                                     }
-                                    continue;
                                 }
+                                continue;
                             }
+                        }
                     }
                     if emit_row_diag {
                         info!(
@@ -1073,10 +1082,9 @@ pub async fn collect_stampworld_data_with_fetcher(
                         break;
                     }
                 }
-                if !found_stamp_year
-                    && let Some(m) = year_re.find(&description) {
-                        stamp_year = m.as_str().parse::<i32>().unwrap_or(block_year_int);
-                    }
+                if !found_stamp_year && let Some(m) = year_re.find(&description) {
+                    stamp_year = m.as_str().parse::<i32>().unwrap_or(block_year_int);
+                }
 
                 // Enforce year range
                 if stamp_year < start_year {
@@ -1275,9 +1283,10 @@ pub async fn collect_stampworld_data_with_fetcher(
                     }
                     let get_col = |name: &str| -> String {
                         if let Some(&idx) = col_map.get(name)
-                            && idx < row_cells.len() {
-                                return row_cells[idx].clone();
-                            }
+                            && idx < row_cells.len()
+                        {
+                            return row_cells[idx].clone();
+                        }
                         String::new()
                     };
                     if series_desc.contains("1860 -1862 Queen Victoria - Not Watermarked")
@@ -1492,12 +1501,13 @@ pub async fn collect_stampworld_data_with_fetcher(
                                     &series_name,
                                     &sg_number,
                                     &local_image_path,
-                                ) {
-                                    error!(
-                                        "Failed to persist image dimensions for {} {} {}: {}",
-                                        site_name, series_name, sg_number, e
-                                    );
-                                }
+                                )
+                            {
+                                error!(
+                                    "Failed to persist image dimensions for {} {} {}: {}",
+                                    site_name, series_name, sg_number, e
+                                );
+                            }
                         } else if overwrite_images {
                             // The row already exists and wasn't updated by insert_stamp (no placeholder).
                             // If --overwrite-images was requested, perform a targeted UPDATE to replace image fields
@@ -1583,12 +1593,12 @@ pub async fn collect_stampworld_data_with_fetcher(
                                                     &sg_number,
                                                     &local_image_path,
                                                 )
-                                            {
-                                                error!(
-                                                    "Failed to persist image dimensions for {} {} {}: {}",
-                                                    site_name, series_name, sg_number, e
-                                                );
-                                            }
+                                        {
+                                            error!(
+                                                "Failed to persist image dimensions for {} {} {}: {}",
+                                                site_name, series_name, sg_number, e
+                                            );
+                                        }
                                     } else {
                                         debug!(
                                             "--overwrite-images set but no DB row matched for update: {} | {} | {}",

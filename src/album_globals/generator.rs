@@ -356,12 +356,14 @@ fn build_stamp_text(
         }
         // If string contains a '+' and not whitespace around it (common surcharge form),
         // split at the first '+' and keep the '+' on the second line.
-        if s.contains('+') && !s.contains(' ')
-            && let Some(pos) = s.find('+') {
-                let first = s[..pos].to_string();
-                let second = format!("+{}", s[pos + 1..].trim());
-                return format!("{}\\n{}", first, second);
-            }
+        if s.contains('+')
+            && !s.contains(' ')
+            && let Some(pos) = s.find('+')
+        {
+            let first = s[..pos].to_string();
+            let second = format!("+{}", s[pos + 1..].trim());
+            return format!("{}\\n{}", first, second);
+        }
         // Greedy word-wrap preserving words
         let mut lines: Vec<String> = Vec::new();
         let mut current = String::new();
@@ -542,166 +544,202 @@ fn build_stamp_text(
     // Only collect Colnect data if not in minimal mode
     if detail_layout != "minimal" && colnect_enabled {
         if enabled_fields.contains("name")
-            && let Some(v) = stamp.attrs.get("colnect_name") {
-                colnect_parts.push(format!("Name: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_name")
+        {
+            colnect_parts.push(format!("Name: {}", v));
+        }
         if enabled_fields.contains("catalog_codes")
-            && let Some(v) = stamp.attrs.get("colnect_catalog_codes") {
-                colnect_parts.push(format!("Catalog: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_catalog_codes")
+        {
+            colnect_parts.push(format!("Catalog: {}", v));
+        }
         if enabled_fields.contains("country")
-            && let Some(v) = stamp.attrs.get("colnect_country") {
-                colnect_parts.push(format!("Country: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_country")
+        {
+            colnect_parts.push(format!("Country: {}", v));
+        }
         if enabled_fields.contains("colnect_link")
-            && let Some(v) = stamp.attrs.get("colnect_page_url") {
-                colnect_parts.push(format!("Colnect link: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_page_url")
+        {
+            colnect_parts.push(format!("Colnect link: {}", v));
+        }
         if enabled_fields.contains("description")
-            && let Some(v) = stamp.attrs.get("colnect_description") {
-                let cleaned_colnect_desc = clean_text(&strip_bracket_tags(v));
-                if !cleaned_colnect_desc.trim().is_empty()
-                    && !is_effectively_duplicate_text(&raw_description, &cleaned_colnect_desc)
-                {
-                    colnect_parts.push(cleaned_colnect_desc);
-                }
+            && let Some(v) = stamp.attrs.get("colnect_description")
+        {
+            let cleaned_colnect_desc = clean_text(&strip_bracket_tags(v));
+            if !cleaned_colnect_desc.trim().is_empty()
+                && !is_effectively_duplicate_text(&raw_description, &cleaned_colnect_desc)
+            {
+                colnect_parts.push(cleaned_colnect_desc);
             }
+        }
         if enabled_fields.contains("themes")
-            && let Some(v) = stamp.attrs.get("colnect_themes") {
-                colnect_parts.push(format!("Themes: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_themes")
+        {
+            colnect_parts.push(format!("Themes: {}", v));
+        }
         if (enabled_fields.contains("printing") || enabled_fields.contains("printing_type"))
-            && let Some(v) = stamp.attrs.get("colnect_printing") {
-                colnect_parts.push(format!("Printing type: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_printing")
+        {
+            colnect_parts.push(format!("Printing type: {}", v));
+        }
         if enabled_fields.contains("format")
-            && let Some(v) = stamp.attrs.get("colnect_format") {
-                colnect_parts.push(format!("Format: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_format")
+        {
+            colnect_parts.push(format!("Format: {}", v));
+        }
         if enabled_fields.contains("emission")
-            && let Some(v) = stamp.attrs.get("colnect_emission") {
-                colnect_parts.push(format!("Emission: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_emission")
+        {
+            colnect_parts.push(format!("Emission: {}", v));
+        }
         if enabled_fields.contains("paper")
-            && let Some(v) = stamp.attrs.get("colnect_paper") {
-                colnect_parts.push(format!("Paper: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_paper")
+        {
+            colnect_parts.push(format!("Paper: {}", v));
+        }
         if enabled_fields.contains("gum")
-            && let Some(v) = stamp.attrs.get("colnect_gum") {
-                colnect_parts.push(format!("Gum: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_gum")
+        {
+            colnect_parts.push(format!("Gum: {}", v));
+        }
         if enabled_fields.contains("designers")
-            && let Some(v) = stamp.attrs.get("colnect_designers") {
-                colnect_parts.push(format!("Designers: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_designers")
+        {
+            colnect_parts.push(format!("Designers: {}", v));
+        }
         if enabled_fields.contains("printers")
-            && let Some(v) = stamp.attrs.get("colnect_printers") {
-                colnect_parts.push(format!("Printers: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_printers")
+        {
+            colnect_parts.push(format!("Printers: {}", v));
+        }
         if enabled_fields.contains("colors")
-            && let Some(v) = stamp.attrs.get("colnect_colors") {
-                colnect_parts.push(format!("Colors: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_colors")
+        {
+            colnect_parts.push(format!("Colors: {}", v));
+        }
         if enabled_fields.contains("watermark")
-            && let Some(v) = stamp.attrs.get("colnect_watermark") {
-                colnect_parts.push(format!("Watermark: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_watermark")
+        {
+            colnect_parts.push(format!("Watermark: {}", v));
+        }
         // Perforation is shown in STAMP_HEADING; keep it out of stamp body text to avoid duplicate clutter.
         if enabled_fields.contains("issued_on")
-            && let Some(v) = stamp.attrs.get("colnect_issued_on") {
-                colnect_parts.push(format!("Issued: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_issued_on")
+        {
+            colnect_parts.push(format!("Issued: {}", v));
+        }
         if enabled_fields.contains("expiry_date")
-            && let Some(v) = stamp.attrs.get("colnect_expiry_date") {
-                colnect_parts.push(format!("Expiry: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_expiry_date")
+        {
+            colnect_parts.push(format!("Expiry: {}", v));
+        }
         if enabled_fields.contains("size")
             && let (Some(w), Some(h)) = (
                 stamp.attrs.get("colnect_width_mm"),
                 stamp.attrs.get("colnect_height_mm"),
-            ) {
-                colnect_parts.push(format!("Size: {} x {} mm", w, h));
-            }
+            )
+        {
+            colnect_parts.push(format!("Size: {} x {} mm", w, h));
+        }
         if enabled_fields.contains("width")
-            && let Some(v) = stamp.attrs.get("colnect_width_mm") {
-                colnect_parts.push(format!("Width: {} mm", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_width_mm")
+        {
+            colnect_parts.push(format!("Width: {} mm", v));
+        }
         if enabled_fields.contains("height")
-            && let Some(v) = stamp.attrs.get("colnect_height_mm") {
-                colnect_parts.push(format!("Height: {} mm", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_height_mm")
+        {
+            colnect_parts.push(format!("Height: {} mm", v));
+        }
         if enabled_fields.contains("face_value")
-            && let Some(v) = stamp.attrs.get("colnect_face_value") {
-                if let Some(cur) = stamp.attrs.get("colnect_currency") {
-                    colnect_parts.push(format!("Face value: {} {}", v, cur));
-                } else {
-                    colnect_parts.push(format!("Face value: {}", v));
-                }
+            && let Some(v) = stamp.attrs.get("colnect_face_value")
+        {
+            if let Some(cur) = stamp.attrs.get("colnect_currency") {
+                colnect_parts.push(format!("Face value: {} {}", v, cur));
+            } else {
+                colnect_parts.push(format!("Face value: {}", v));
             }
+        }
         if enabled_fields.contains("currency")
-            && let Some(v) = stamp.attrs.get("colnect_currency") {
-                colnect_parts.push(format!("Currency: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_currency")
+        {
+            colnect_parts.push(format!("Currency: {}", v));
+        }
         if enabled_fields.contains("score")
-            && let Some(v) = stamp.attrs.get("colnect_score") {
-                if let Some(acc) = stamp.attrs.get("colnect_accuracy") {
-                    colnect_parts.push(format!("Score: {} (Accuracy: {})", v, acc));
-                } else {
-                    colnect_parts.push(format!("Score: {}", v));
-                }
+            && let Some(v) = stamp.attrs.get("colnect_score")
+        {
+            if let Some(acc) = stamp.attrs.get("colnect_accuracy") {
+                colnect_parts.push(format!("Score: {} (Accuracy: {})", v, acc));
+            } else {
+                colnect_parts.push(format!("Score: {}", v));
             }
+        }
         if enabled_fields.contains("accuracy")
-            && let Some(v) = stamp.attrs.get("colnect_accuracy") {
-                colnect_parts.push(format!("Accuracy: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_accuracy")
+        {
+            colnect_parts.push(format!("Accuracy: {}", v));
+        }
         if enabled_fields.contains("ord_mi")
-            && let Some(v) = stamp.attrs.get("colnect_ord_mi") {
-                colnect_parts.push(format!("MI order: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_ord_mi")
+        {
+            colnect_parts.push(format!("MI order: {}", v));
+        }
         if enabled_fields.contains("ord_sn")
-            && let Some(v) = stamp.attrs.get("colnect_ord_sn") {
-                colnect_parts.push(format!("SN order: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_ord_sn")
+        {
+            colnect_parts.push(format!("SN order: {}", v));
+        }
         if enabled_fields.contains("ord_yt")
-            && let Some(v) = stamp.attrs.get("colnect_ord_yt") {
-                colnect_parts.push(format!("YT order: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_ord_yt")
+        {
+            colnect_parts.push(format!("YT order: {}", v));
+        }
         if enabled_fields.contains("ord_sg")
-            && let Some(v) = stamp.attrs.get("colnect_ord_sg") {
-                colnect_parts.push(format!("SG order: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_ord_sg")
+        {
+            colnect_parts.push(format!("SG order: {}", v));
+        }
         if enabled_fields.contains("parent_item")
-            && let Some(v) = stamp.attrs.get("colnect_parent_item") {
-                colnect_parts.push(format!("Parent item: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_parent_item")
+        {
+            colnect_parts.push(format!("Parent item: {}", v));
+        }
         if enabled_fields.contains("variant")
-            && let Some(v) = stamp.attrs.get("colnect_variant") {
-                colnect_parts.push(format!("Variant: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_variant")
+        {
+            colnect_parts.push(format!("Variant: {}", v));
+        }
         if enabled_fields.contains("overprint_variant")
-            && let Some(v) = stamp.attrs.get("colnect_overprint_variant") {
-                colnect_parts.push(format!("Overprint variant: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_overprint_variant")
+        {
+            colnect_parts.push(format!("Overprint variant: {}", v));
+        }
         if enabled_fields.contains("list")
-            && let Some(v) = stamp.attrs.get("colnect_list") {
-                colnect_parts.push(format!("List: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_list")
+        {
+            colnect_parts.push(format!("List: {}", v));
+        }
         if enabled_fields.contains("quantity")
-            && let Some(v) = stamp.attrs.get("colnect_quantity") {
-                colnect_parts.push(format!("Quantity: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_quantity")
+        {
+            colnect_parts.push(format!("Quantity: {}", v));
+        }
         if enabled_fields.contains("condition")
-            && let Some(v) = stamp.attrs.get("colnect_condition") {
-                colnect_parts.push(format!("Condition: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_condition")
+        {
+            colnect_parts.push(format!("Condition: {}", v));
+        }
         if enabled_fields.contains("public_note")
-            && let Some(v) = stamp.attrs.get("colnect_public_note") {
-                colnect_parts.push(format!("Public note: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_public_note")
+        {
+            colnect_parts.push(format!("Public note: {}", v));
+        }
         if enabled_fields.contains("private_note")
-            && let Some(v) = stamp.attrs.get("colnect_private_note") {
-                colnect_parts.push(format!("Private note: {}", v));
-            }
+            && let Some(v) = stamp.attrs.get("colnect_private_note")
+        {
+            colnect_parts.push(format!("Private note: {}", v));
+        }
     }
 
     // Remove empty fields (or empty `Label:` entries) before formatting.
@@ -2642,29 +2680,30 @@ where
                     if crate::file_utils::get_overwrite_album_from_cli() && output_path.exists() {
                         // use chrono::Local;
                         if let Some(stem_os) = output_path.file_stem()
-                            && let Some(stem) = stem_os.to_str() {
-                                let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
-                                let ext = output_path
-                                    .extension()
-                                    .and_then(|e| e.to_str())
-                                    .unwrap_or("");
-                                let backup_name = if ext.is_empty() {
-                                    format!("{}.created-{}", stem, ts)
-                                } else {
-                                    format!("{}.created-{}.{}", stem, ts, ext)
-                                };
-                                let backup_path = output_path.with_file_name(backup_name);
-                                match fs::copy(&output_path, &backup_path) {
-                                    Ok(_) => info!(
-                                        "Created backup of existing file at {} (requested overwrite)",
-                                        backup_path.display()
-                                    ),
-                                    Err(e) => error!(
-                                        "Failed to create backup before overwrite (requested) : {}",
-                                        e
-                                    ),
-                                }
+                            && let Some(stem) = stem_os.to_str()
+                        {
+                            let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
+                            let ext = output_path
+                                .extension()
+                                .and_then(|e| e.to_str())
+                                .unwrap_or("");
+                            let backup_name = if ext.is_empty() {
+                                format!("{}.created-{}", stem, ts)
+                            } else {
+                                format!("{}.created-{}.{}", stem, ts, ext)
+                            };
+                            let backup_path = output_path.with_file_name(backup_name);
+                            match fs::copy(&output_path, &backup_path) {
+                                Ok(_) => info!(
+                                    "Created backup of existing file at {} (requested overwrite)",
+                                    backup_path.display()
+                                ),
+                                Err(e) => error!(
+                                    "Failed to create backup before overwrite (requested) : {}",
+                                    e
+                                ),
                             }
+                        }
                     }
                     info!(
                         "No stamp lines produced for {} ({}). Leaving existing file intact.",
@@ -2677,28 +2716,29 @@ where
                     if output_path.exists() {
                         // use chrono::Local;
                         if let Some(stem_os) = output_path.file_stem()
-                            && let Some(stem) = stem_os.to_str() {
-                                let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
-                                let ext = output_path
-                                    .extension()
-                                    .and_then(|e| e.to_str())
-                                    .unwrap_or("");
-                                let backup_name = if ext.is_empty() {
-                                    format!("{}.created-{}", stem, ts)
-                                } else {
-                                    format!("{}.created-{}.{}", stem, ts, ext)
-                                };
-                                let backup_path = output_path.with_file_name(backup_name);
-                                match fs::copy(&output_path, &backup_path) {
-                                    Ok(_) => info!(
-                                        "Created backup of existing file at {}",
-                                        backup_path.display()
-                                    ),
-                                    Err(e) => {
-                                        error!("Failed to create backup before overwrite: {}", e)
-                                    }
+                            && let Some(stem) = stem_os.to_str()
+                        {
+                            let ts = crate::time_utils::formatted_now("%Y%m%d-%H%M%S");
+                            let ext = output_path
+                                .extension()
+                                .and_then(|e| e.to_str())
+                                .unwrap_or("");
+                            let backup_name = if ext.is_empty() {
+                                format!("{}.created-{}", stem, ts)
+                            } else {
+                                format!("{}.created-{}.{}", stem, ts, ext)
+                            };
+                            let backup_path = output_path.with_file_name(backup_name);
+                            match fs::copy(&output_path, &backup_path) {
+                                Ok(_) => info!(
+                                    "Created backup of existing file at {}",
+                                    backup_path.display()
+                                ),
+                                Err(e) => {
+                                    error!("Failed to create backup before overwrite: {}", e)
                                 }
                             }
+                        }
                     }
                     // Atomically move temp into place
                     match fs::rename(&tmp_path, &output_path) {

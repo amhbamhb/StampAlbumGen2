@@ -157,9 +157,10 @@ pub fn build_page_text_template(cfg: &Config, kind: &str) -> String {
 
 pub fn build_series_page_text_centre_template(cfg: &Config) -> String {
     if cfg.series_page_text_centre_format_enabled
-        && let Some(t) = cfg.series_page_text_centre_format.clone() {
-            return t;
-        }
+        && let Some(t) = cfg.series_page_text_centre_format.clone()
+    {
+        return t;
+    }
     let has_series_override = cfg.series_page_text_centre_font.is_some()
         || cfg.series_page_text_centre_size.is_some()
         || cfg.series_page_text_centre_vspace.is_some();
@@ -196,10 +197,9 @@ fn build_scoped_page_text_centre_template(
     size_opt: Option<f32>,
     vspace_opt: Option<f32>,
 ) -> String {
-    if format_enabled
-        && let Some(t) = format_opt {
-            return t;
-        }
+    if format_enabled && let Some(t) = format_opt {
+        return t;
+    }
 
     let has_override = font_opt.is_some() || size_opt.is_some() || vspace_opt.is_some();
     if !has_override {
@@ -372,9 +372,10 @@ fn set_attr_if_missing(attrs: &mut GenericAttrs, key: &str, value: Option<String
     let missing = attrs.get(key).map(|v| v.trim().is_empty()).unwrap_or(true);
     if missing
         && let Some(v) = value
-            && !v.trim().is_empty() {
-                attrs.set(key, &v);
-            }
+        && !v.trim().is_empty()
+    {
+        attrs.set(key, &v);
+    }
 }
 
 fn leading_year_from_series(series: &str) -> Option<i32> {
@@ -451,23 +452,27 @@ fn fetch_and_filter_stamps_impl(
             stamps.retain(|st| st.year >= sy);
         }
     } else if let Some(ey) = end_year
-        && ey < 9999 {
-            stamps.retain(|st| st.year <= ey);
-        }
+        && ey < 9999
+    {
+        stamps.retain(|st| st.year <= ey);
+    }
 
     // Guard against mixed/legacy records where the series title carries an
     // explicit year (e.g. "1970 ...") that conflicts with row.year.
     // In ranged runs, trust the explicit series year for inclusion checks.
     if let (Some(sy), Some(ey)) = (start_year, end_year)
-        && sy > 0 && ey < 9999 && sy <= ey {
-            stamps.retain(|st| {
-                if let Some(series_year) = leading_year_from_series(&st.series) {
-                    series_year >= sy && series_year <= ey
-                } else {
-                    true
-                }
-            });
-        }
+        && sy > 0
+        && ey < 9999
+        && sy <= ey
+    {
+        stamps.retain(|st| {
+            if let Some(series_year) = leading_year_from_series(&st.series) {
+                series_year >= sy && series_year <= ey
+            } else {
+                true
+            }
+        });
+    }
 
     // Convert DB StampStub into the generator's Stamp type.
     let mut stamp_objs: Vec<Stamp> = Vec::new();
@@ -694,18 +699,19 @@ fn fetch_and_filter_stamps_impl(
                     .catalog_codes
                     .iter()
                     .find(|(catalog_type, _)| catalog_type == "Sn")
-                {
-                    attrs.set("scott_number", scott_code);
-                }
+            {
+                attrs.set("scott_number", scott_code);
+            }
         }
 
         if attrs
             .get("catalog_number")
             .map(|v| v.trim().is_empty())
             .unwrap_or(true)
-            && let Some(sg_number) = attrs.get("sg_number").cloned() {
-                attrs.set("catalog_number", &sg_number);
-            }
+            && let Some(sg_number) = attrs.get("sg_number").cloned()
+        {
+            attrs.set("catalog_number", &sg_number);
+        }
         if attrs
             .get("catalog_code")
             .map(|v| v.trim().is_empty())
@@ -959,7 +965,8 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
             let px_h = (opts.target_h_mm.unwrap_or(0.0)
                 / (opts.mm_per_pixel_h.unwrap_or(1.0) as f64))
                 .round() as i32;
-            if px_w > 0 && px_h > 0
+            if px_w > 0
+                && px_h > 0
                 && let Err(e) = update_image_dimensions(
                     conn,
                     opts.album_name,
@@ -967,14 +974,15 @@ pub fn ensure_placeholder_for_stamp_and_update_db(
                     opts.catalog_number,
                     Some(px_w),
                     Some(px_h),
-                ) {
-                    log::error!(
-                        "Failed to update DB image dims for {} sg {}: {}",
-                        opts.album_name,
-                        opts.catalog_number,
-                        e
-                    );
-                }
+                )
+            {
+                log::error!(
+                    "Failed to update DB image dims for {} sg {}: {}",
+                    opts.album_name,
+                    opts.catalog_number,
+                    e
+                );
+            }
             // If a writer was provided, emit the diagnostic line here so
             // callers don't need to perform this side-effect themselves.
             if let Some(ref mut w) = writer.as_mut() {

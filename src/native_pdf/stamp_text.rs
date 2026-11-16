@@ -413,96 +413,6 @@ pub(crate) fn position(
     })
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn caption(
-        alignment: FooterTextAlignment,
-        side: FooterTextSide,
-    ) -> Result<PositionedStampText> {
-        let frame = Bounds {
-            left: 10.0,
-            bottom: 10.0,
-            right: 30.0,
-            top: 30.0,
-        };
-        position_footer_caption(
-            MeasuredText::new("HN", 10.0, "Anchor\nShort")?,
-            frame,
-            9.0,
-            side,
-            alignment,
-            super::super::colour::NamedColour::parse("black")?,
-        )
-    }
-
-    #[test]
-    fn footer_alignment_modes_keep_first_line_anchors() -> Result<()> {
-        let align = caption(FooterTextAlignment::Align, FooterTextSide::Left)?;
-        let centre = caption(FooterTextAlignment::Centre, FooterTextSide::Left)?;
-        let corner = caption(FooterTextAlignment::CornerCentre, FooterTextSide::Left)?;
-        let anchor_width = align.lines[0].width_mm;
-        let short_width = align.lines[1].width_mm;
-
-        assert!((align.lines[0].left_mm - 10.0).abs() < 0.001);
-        assert!((centre.lines[0].left_mm - 10.0).abs() < 0.001);
-        assert!((corner.lines[0].left_mm - 10.0).abs() < 0.001);
-        assert!(
-            (centre.lines[1].left_mm - (10.0 + anchor_width / 2.0 - short_width / 2.0)).abs()
-                < 0.001
-        );
-        assert!((corner.lines[1].left_mm - (10.0 - short_width / 2.0)).abs() < 0.001);
-
-        let right = caption(FooterTextAlignment::Align, FooterTextSide::Right)?;
-        assert!((right.lines[0].left_mm - (30.0 - anchor_width)).abs() < 0.001);
-        assert!((right.lines[1].left_mm - (30.0 - short_width)).abs() < 0.001);
-        Ok(())
-    }
-
-    #[test]
-    fn footer_padding_shifts_the_caption_block_without_changing_leading() -> Result<()> {
-        let frame = Bounds {
-            left: 10.0,
-            bottom: 10.0,
-            right: 30.0,
-            top: 30.0,
-        };
-        let measured = MeasuredText::new("HN", 10.0, "Top\nBottom")?;
-        let position = |padding| {
-            position_footer_caption(
-                measured.clone(),
-                frame,
-                footer_caption_top(10.0, 0.5, padding)?,
-                FooterTextSide::Left,
-                FooterTextAlignment::Align,
-                super::super::colour::NamedColour::parse("black")?,
-            )
-        };
-        let baseline = position(0.0)?;
-        let positive = position(6.0)?;
-        let negative = position(-1.0)?;
-        assert!(
-            (positive.lines[0].baseline_mm - baseline.lines[0].baseline_mm + 6.0).abs() < 0.001
-        );
-        assert!(
-            (negative.lines[0].baseline_mm - baseline.lines[0].baseline_mm - 1.0).abs() < 0.001
-        );
-        let baseline_leading = baseline.lines[0].baseline_mm - baseline.lines[1].baseline_mm;
-        assert!(
-            (baseline_leading - (positive.lines[0].baseline_mm - positive.lines[1].baseline_mm))
-                .abs()
-                < 0.001
-        );
-        assert!(
-            (baseline_leading - (negative.lines[0].baseline_mm - negative.lines[1].baseline_mm))
-                .abs()
-                < 0.001
-        );
-        Ok(())
-    }
-}
-
 impl StampTextPolicy {
     pub(crate) fn padding(&self) -> (f64, f64) {
         (self.horizontal_padding_mm, self.vertical_padding_mm)
@@ -642,3 +552,94 @@ pub fn fit_text_rows_with_alignment(
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn caption(
+        alignment: FooterTextAlignment,
+        side: FooterTextSide,
+    ) -> Result<PositionedStampText> {
+        let frame = Bounds {
+            left: 10.0,
+            bottom: 10.0,
+            right: 30.0,
+            top: 30.0,
+        };
+        position_footer_caption(
+            MeasuredText::new("HN", 10.0, "Anchor\nShort")?,
+            frame,
+            9.0,
+            side,
+            alignment,
+            super::super::colour::NamedColour::parse("black")?,
+        )
+    }
+
+    #[test]
+    fn footer_alignment_modes_keep_first_line_anchors() -> Result<()> {
+        let align = caption(FooterTextAlignment::Align, FooterTextSide::Left)?;
+        let centre = caption(FooterTextAlignment::Centre, FooterTextSide::Left)?;
+        let corner = caption(FooterTextAlignment::CornerCentre, FooterTextSide::Left)?;
+        let anchor_width = align.lines[0].width_mm;
+        let short_width = align.lines[1].width_mm;
+
+        assert!((align.lines[0].left_mm - 10.0).abs() < 0.001);
+        assert!((centre.lines[0].left_mm - 10.0).abs() < 0.001);
+        assert!((corner.lines[0].left_mm - 10.0).abs() < 0.001);
+        assert!(
+            (centre.lines[1].left_mm - (10.0 + anchor_width / 2.0 - short_width / 2.0)).abs()
+                < 0.001
+        );
+        assert!((corner.lines[1].left_mm - (10.0 - short_width / 2.0)).abs() < 0.001);
+
+        let right = caption(FooterTextAlignment::Align, FooterTextSide::Right)?;
+        assert!((right.lines[0].left_mm - (30.0 - anchor_width)).abs() < 0.001);
+        assert!((right.lines[1].left_mm - (30.0 - short_width)).abs() < 0.001);
+        Ok(())
+    }
+
+    #[test]
+    fn footer_padding_shifts_the_caption_block_without_changing_leading() -> Result<()> {
+        let frame = Bounds {
+            left: 10.0,
+            bottom: 10.0,
+            right: 30.0,
+            top: 30.0,
+        };
+        let measured = MeasuredText::new("HN", 10.0, "Top\nBottom")?;
+        let position = |padding| {
+            position_footer_caption(
+                measured.clone(),
+                frame,
+                footer_caption_top(10.0, 0.5, padding)?,
+                FooterTextSide::Left,
+                FooterTextAlignment::Align,
+                super::super::colour::NamedColour::parse("black")?,
+            )
+        };
+        let baseline = position(0.0)?;
+        let positive = position(6.0)?;
+        let negative = position(-1.0)?;
+        assert!(
+            (positive.lines[0].baseline_mm - baseline.lines[0].baseline_mm + 6.0).abs() < 0.001
+        );
+        assert!(
+            (negative.lines[0].baseline_mm - baseline.lines[0].baseline_mm - 1.0).abs() < 0.001
+        );
+        let baseline_leading = baseline.lines[0].baseline_mm - baseline.lines[1].baseline_mm;
+        assert!(
+            (baseline_leading - (positive.lines[0].baseline_mm - positive.lines[1].baseline_mm))
+                .abs()
+                < 0.001
+        );
+        assert!(
+            (baseline_leading - (negative.lines[0].baseline_mm - negative.lines[1].baseline_mm))
+                .abs()
+                < 0.001
+        );
+        Ok(())
+    }
+}
+

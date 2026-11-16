@@ -92,12 +92,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         interactive_terminal,
     );
 
-    if launched_without_args && !running_from_target
-        && let Err(e) = ensure_first_run_installation() {
-            write_startup_probe("first_run.error", &e.to_string());
-            eprintln!("Failed to perform first-run installation: {}", e);
-            return Err(Box::new(e) as Box<dyn std::error::Error>);
-        }
+    if launched_without_args
+        && !running_from_target
+        && let Err(e) = ensure_first_run_installation()
+    {
+        write_startup_probe("first_run.error", &e.to_string());
+        eprintln!("Failed to perform first-run installation: {}", e);
+        return Err(Box::new(e) as Box<dyn std::error::Error>);
+    }
 
     // Allow forcing the initial first-run interactive flow for testing
     // (avoids loading an existing config.toml or auto-starting Review UI).
@@ -551,13 +553,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if cli.source.eq_ignore_ascii_case("colnectexport")
         && cli.colnect_inbox.is_none()
         && cli.colnect_csv.is_none()
-        && let Some(default_inbox) = config.effective_colnect_inbox_path() {
-            eprintln!(
-                "No --colnect-inbox provided; using config default colnect_inbox_path='{}'.",
-                default_inbox
-            );
-            cli.colnect_inbox = Some(default_inbox.to_string());
-        }
+        && let Some(default_inbox) = config.effective_colnect_inbox_path()
+    {
+        eprintln!(
+            "No --colnect-inbox provided; using config default colnect_inbox_path='{}'.",
+            default_inbox
+        );
+        cli.colnect_inbox = Some(default_inbox.to_string());
+    }
 
     // Validate user input
     if let Err(_error) = validate_user_input(&cli) {

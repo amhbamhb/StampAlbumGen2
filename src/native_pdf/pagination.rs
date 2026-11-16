@@ -426,12 +426,13 @@ fn split_fragment(
     let mut caption_part = None;
     let mut geometry = None;
     if let Some(text) = heading
-        && cursor.heading < text.lines.len() {
-            heading_part = take_lines(text, &mut cursor.heading, available);
-            if let Some(part) = &heading_part {
-                used += height(part);
-            }
+        && cursor.heading < text.lines.len()
+    {
+        heading_part = take_lines(text, &mut cursor.heading, available);
+        if let Some(part) = &heading_part {
+            used += height(part);
         }
+    }
     let heading_done = cursor.heading == heading.as_ref().map_or(0, |t| t.lines.len());
     if heading_done && cursor.frame_pending {
         let gap = if heading_part.is_some() {
@@ -458,17 +459,18 @@ fn split_fragment(
             0.0
         };
     if !cursor.frame_pending
-        && let Some(text) = caption {
-            let gap = if geometry.is_some() {
-                policy.gap()
-            } else {
-                0.0
-            };
-            caption_part = take_lines(text, &mut cursor.caption, available - used - gap);
-            if let Some(part) = &caption_part {
-                used += gap + height(part);
-            }
+        && let Some(text) = caption
+    {
+        let gap = if geometry.is_some() {
+            policy.gap()
+        } else {
+            0.0
+        };
+        caption_part = take_lines(text, &mut cursor.caption, available - used - gap);
+        if let Some(part) = &caption_part {
+            used += gap + height(part);
         }
+    }
     if used == 0.0 {
         return Err(format!(
             "native_pdf.pagination item {} cannot fit a complete text line on a fresh page",

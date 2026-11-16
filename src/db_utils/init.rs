@@ -14,15 +14,16 @@ pub fn init_db(db_path: &str) -> Result<Connection> {
     // Ensure parent directory for the database exists so SQLite can create the file
     if let Some(parent) = std::path::Path::new(db_path).parent()
         && !parent.as_os_str().is_empty()
-            && let Err(e) = std::fs::create_dir_all(parent) {
-                error!(
-                    "Failed to create parent directory for DB {}: {}",
-                    parent.display(),
-                    e
-                );
-                // Continue and attempt to open the DB - the original behaviour was to fail here;
-                // returning the error from Connection::open will surface the problem to callers.
-            }
+        && let Err(e) = std::fs::create_dir_all(parent)
+    {
+        error!(
+            "Failed to create parent directory for DB {}: {}",
+            parent.display(),
+            e
+        );
+        // Continue and attempt to open the DB - the original behaviour was to fail here;
+        // returning the error from Connection::open will surface the problem to callers.
+    }
     let conn = Connection::open(db_path)?;
     // Log the path opened and some filesystem metadata to help debug DB path mismatches
     let canonical =

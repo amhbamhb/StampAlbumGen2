@@ -243,9 +243,10 @@ pub(super) fn parse(text: &str) -> (Vec<LayoutCommand>, Vec<LayoutPage>, Vec<Str
         }
     }
     if errors.is_empty()
-        && let Err(error) = validate_document(&globals, &pages) {
-            errors.push(error);
-        }
+        && let Err(error) = validate_document(&globals, &pages)
+    {
+        errors.push(error);
+    }
     (globals, pages, errors)
 }
 

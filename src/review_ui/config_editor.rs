@@ -374,9 +374,10 @@ fn normalize_value_for_template(template_value: Option<&String>, raw_value: &str
 
     if trimmed.is_empty() {
         if let Some(template) = template_value
-            && template_literal_kind(template) == "string" {
-                return "\"\"".to_string();
-            }
+            && template_literal_kind(template) == "string"
+        {
+            return "\"\"".to_string();
+        }
         return String::new();
     }
 
