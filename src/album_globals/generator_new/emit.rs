@@ -110,12 +110,13 @@ fn build_stamp_heading_lines(
 
     if include_perforation
         && let Some(perf) = perforation
-            && !perf.trim().is_empty() {
-                lines.extend(wrap_preserving_breaks_keep_empty(
-                    &format!("Perforation: {}", perf),
-                    max_chars,
-                ));
-            }
+        && !perf.trim().is_empty()
+    {
+        lines.extend(wrap_preserving_breaks_keep_empty(
+            &format!("Perforation: {}", perf),
+            max_chars,
+        ));
+    }
 
     lines
 }
@@ -319,13 +320,14 @@ pub fn emit_stamp<W: Write>(
                 ctx.include_perforation,
                 ctx.emit_width,
                 ctx.sh_size,
-            ) {
-                writeln!(
-                    out,
-                    "STAMP_HEADING_VA({} {} \"{}\")",
-                    ctx.sh_font, ctx.sh_size, heading
-                )?;
-            }
+            )
+        {
+            writeln!(
+                out,
+                "STAMP_HEADING_VA({} {} \"{}\")",
+                ctx.sh_font, ctx.sh_size, heading
+            )?;
+        }
     } else {
         let left = escape_ae_text(ctx.left);
         let centre = escape_ae_text(ctx.centre);
@@ -345,13 +347,14 @@ pub fn emit_stamp<W: Write>(
                 ctx.include_perforation,
                 ctx.emit_width,
                 ctx.sh_size,
-            ) {
-                writeln!(
-                    out,
-                    "STAMP_HEADING_VA({} {} \"{}\")",
-                    ctx.sh_font, ctx.sh_size, heading
-                )?;
-            }
+            )
+        {
+            writeln!(
+                out,
+                "STAMP_HEADING_VA({} {} \"{}\")",
+                ctx.sh_font, ctx.sh_size, heading
+            )?;
+        }
     }
     Ok(())
 }

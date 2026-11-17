@@ -512,9 +512,10 @@ pub async fn write_globals<W: Write>(
         // on the cover (this can happen if a flag isn't available and the
         // coat file was used as a fallback). Prefer showing the coat only.
         if let (Some(coat_p), Some(flag_p)) = (coat_path_opt.as_ref(), flag_path_opt.as_ref())
-            && coat_p == flag_p {
-                flag_path_opt = None;
-            }
+            && coat_p == flag_p
+        {
+            flag_path_opt = None;
+        }
 
         // Row starts before specific cover elements (coat, flag, name)
         // are emitted inside each element's handling below so we don't
@@ -1269,9 +1270,9 @@ fn parse_content_into_sections(content: &str) -> Vec<ContentSection> {
                                     .rmatch_indices(" ")
                                     .take(1)
                                     .next()
-                                {
-                                    best_split = chunk_start + j + 1;
-                                }
+                            {
+                                best_split = chunk_start + j + 1;
+                            }
                         }
 
                         let chunk_text = paragraph_text[chunk_start..best_split].trim().to_string();

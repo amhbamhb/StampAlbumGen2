@@ -274,10 +274,12 @@ pub fn parse_stampworld_text(text: &str) -> Result<Vec<PdfStampRecord>, String> 
         {
             // Wrapped descriptions follow the first visual row, after its prices.
             if let Some(record) = records.last_mut()
-                && record.series == group.series && !record.description.is_empty() {
-                    record.description.push(' ');
-                    record.description.push_str(&normalized(line));
-                }
+                && record.series == group.series
+                && !record.description.is_empty()
+            {
+                record.description.push(' ');
+                record.description.push_str(&normalized(line));
+            }
         }
     }
     if !pending.is_empty() {

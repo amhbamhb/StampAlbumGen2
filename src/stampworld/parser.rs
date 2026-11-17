@@ -61,20 +61,23 @@ pub fn extract_block_metadata(details: &[String]) -> (String, String, String, St
                 continue;
             }
             if watermark.is_empty()
-                && let Some(cap) = RE_WM.captures(l) {
-                    watermark = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
-                    continue;
-                }
+                && let Some(cap) = RE_WM.captures(l)
+            {
+                watermark = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                continue;
+            }
             if design.is_empty()
-                && let Some(cap) = RE_DESIGN.captures(l) {
-                    design = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
-                    continue;
-                }
+                && let Some(cap) = RE_DESIGN.captures(l)
+            {
+                design = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                continue;
+            }
             if engraving.is_empty()
-                && let Some(cap) = RE_ENGR.captures(l) {
-                    engraving = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
-                    continue;
-                }
+                && let Some(cap) = RE_ENGR.captures(l)
+            {
+                engraving = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();
+                continue;
+            }
             if perforation.is_empty() {
                 if let Some(cap) = RE_PERF.captures(l) {
                     let mut val = cap.get(1).map_or("", |m| m.as_str()).trim().to_string();

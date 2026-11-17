@@ -226,24 +226,28 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
     // If caller provided override path, try it first
     if let Some(p) = font_override
         && Path::new(p).exists()
-            && let Ok(mut f) = File::open(p) {
-                let mut buf = Vec::new();
-                if f.read_to_end(&mut buf).is_ok()
-                    && let Ok(font) = FontArc::try_from_vec(buf) {
-                        return Some(font);
-                    }
-            }
+        && let Ok(mut f) = File::open(p)
+    {
+        let mut buf = Vec::new();
+        if f.read_to_end(&mut buf).is_ok()
+            && let Ok(font) = FontArc::try_from_vec(buf)
+        {
+            return Some(font);
+        }
+    }
     // Allow user to override font via environment variable if no explicit override provided
     if font_override.is_none()
         && let Ok(env_path) = std::env::var("STAMP_ALBUM_PLACEHOLDER_FONT")
-            && Path::new(&env_path).exists()
-                && let Ok(mut f) = File::open(&env_path) {
-                    let mut buf = Vec::new();
-                    if f.read_to_end(&mut buf).is_ok()
-                        && let Ok(font) = FontArc::try_from_vec(buf) {
-                            return Some(font);
-                        }
-                }
+        && Path::new(&env_path).exists()
+        && let Ok(mut f) = File::open(&env_path)
+    {
+        let mut buf = Vec::new();
+        if f.read_to_end(&mut buf).is_ok()
+            && let Ok(font) = FontArc::try_from_vec(buf)
+        {
+            return Some(font);
+        }
+    }
     // Candidate font paths (common Linux, macOS, Windows locations). The project may bundle a font later.
     let candidates = [
         "assets/fonts/DejaVuSans.ttf",
@@ -256,13 +260,15 @@ fn load_fallback_font(font_override: Option<&str>) -> Option<FontArc> {
 
     for path in candidates.iter() {
         if Path::new(path).exists()
-            && let Ok(mut f) = File::open(path) {
-                let mut buf = Vec::new();
-                if f.read_to_end(&mut buf).is_ok()
-                    && let Ok(font) = FontArc::try_from_vec(buf) {
-                        return Some(font);
-                    }
+            && let Ok(mut f) = File::open(path)
+        {
+            let mut buf = Vec::new();
+            if f.read_to_end(&mut buf).is_ok()
+                && let Ok(font) = FontArc::try_from_vec(buf)
+            {
+                return Some(font);
             }
+        }
     }
 
     None

@@ -942,7 +942,8 @@ struct Rendered {
     generated_hash: String,
     layout_hash: String,
     uploaded_hash: String,
-    workspace: PathBuf,
+    
+    // workspace: PathBuf,
 }
 
 fn render_pair(
@@ -1018,7 +1019,7 @@ fn render_pair(
         generated_hash: digest(&generated)?,
         layout_hash: layout_hash(&layout),
         uploaded_hash,
-        workspace: build_dir,
+        // workspace: build_dir,
     };
     Ok(result)
 }

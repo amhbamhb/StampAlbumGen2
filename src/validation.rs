@@ -116,32 +116,33 @@ pub fn validate_source(cli: &crate::cli::Cli) -> Result<String, ValidationError>
         // For borderline scores we'll fall back to prompting the user (if
         // running interactively) so they can confirm. Threshold is conservative.
         if cli.accept_top_suggestion
-            && let Some((best, score)) = scored.first() {
-                let threshold = 0.85_f64;
-                if *score > threshold {
-                    // High confidence: accept silently
-                    effective_source = best.to_string();
-                } else {
-                    // Lower confidence: if interactive, prompt the user; if not
-                    // interactive (likely running in a script), do not accept.
-                    use std::io::IsTerminal;
-                    if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
-                        use std::io::{self, Write};
-                        eprint!(
-                            "Top suggestion is '{}' with score={:.3}. Accept? [y/N]: ",
-                            best, score
-                        );
-                        io::stdout().flush().ok();
-                        let mut input = String::new();
-                        if io::stdin().read_line(&mut input).is_ok() {
-                            let resp = input.trim().to_lowercase();
-                            if resp == "y" || resp == "yes" {
-                                effective_source = best.to_string();
-                            }
+            && let Some((best, score)) = scored.first()
+        {
+            let threshold = 0.85_f64;
+            if *score > threshold {
+                // High confidence: accept silently
+                effective_source = best.to_string();
+            } else {
+                // Lower confidence: if interactive, prompt the user; if not
+                // interactive (likely running in a script), do not accept.
+                use std::io::IsTerminal;
+                if std::io::stdin().is_terminal() && std::io::stdout().is_terminal() {
+                    use std::io::{self, Write};
+                    eprint!(
+                        "Top suggestion is '{}' with score={:.3}. Accept? [y/N]: ",
+                        best, score
+                    );
+                    io::stdout().flush().ok();
+                    let mut input = String::new();
+                    if io::stdin().read_line(&mut input).is_ok() {
+                        let resp = input.trim().to_lowercase();
+                        if resp == "y" || resp == "yes" {
+                            effective_source = best.to_string();
                         }
                     }
                 }
             }
+        }
 
         // If we still don't recognize the source (no auto-accept or score low),
         // return error with suggestions

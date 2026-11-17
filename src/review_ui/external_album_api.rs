@@ -147,11 +147,12 @@ fn parameter(url: &str, name: &str) -> Result<String, String> {
     let query = url.split_once('?').map_or("", |(_, q)| q);
     for pair in query.split('&') {
         if let Some((key, value)) = pair.split_once('=')
-            && key == name {
-                return urlencoding::decode(value)
-                    .map(|v| v.into_owned())
-                    .map_err(|e| format!("Invalid query parameter: {e}"));
-            }
+            && key == name
+        {
+            return urlencoding::decode(value)
+                .map(|v| v.into_owned())
+                .map_err(|e| format!("Invalid query parameter: {e}"));
+        }
     }
     Err(format!("Missing query parameter: {name}"))
 }

@@ -891,17 +891,18 @@ pub(super) fn add_colnect_stamp_to_stamps(
         |row| row.get::<_, i64>(0),
     );
     if let Ok(count) = existing
-        && count > 0 {
-            return AddColnectStampResponse {
-                ok: false,
-                message: format!(
-                    "stamp with colnect_id={} already exists in stamps",
-                    candidate.colnect_id
-                ),
-                added_left: None,
-                processed_colnect_id: None,
-            };
-        }
+        && count > 0
+    {
+        return AddColnectStampResponse {
+            ok: false,
+            message: format!(
+                "stamp with colnect_id={} already exists in stamps",
+                candidate.colnect_id
+            ),
+            added_left: None,
+            processed_colnect_id: None,
+        };
+    }
 
     let mut image_path = String::new();
     if req.associate_image {

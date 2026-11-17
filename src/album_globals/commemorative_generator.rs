@@ -22,17 +22,18 @@ fn get_commemorative_range(year: i32) -> Option<(u32, u32)> {
 /// Check if a stamp is commemorative for the given year
 pub fn is_commemorative_for_year(stamp: &Stamp, year: i32) -> bool {
     if let Some((min, max)) = get_commemorative_range(year)
-        && let Some(sg_str) = stamp.attrs.get("sg_number") {
-            let trimmed = sg_str.trim();
-            if let Ok(num) = trimmed
-                .chars()
-                .take_while(|c| c.is_numeric())
-                .collect::<String>()
-                .parse::<u32>()
-            {
-                return num >= min && num <= max;
-            }
+        && let Some(sg_str) = stamp.attrs.get("sg_number")
+    {
+        let trimmed = sg_str.trim();
+        if let Ok(num) = trimmed
+            .chars()
+            .take_while(|c| c.is_numeric())
+            .collect::<String>()
+            .parse::<u32>()
+        {
+            return num >= min && num <= max;
         }
+    }
     false
 }
 
@@ -201,19 +202,22 @@ pub fn emit_commemorative_pages<W: Write>(out: &mut W, stamps: &[Stamp]) -> std:
             }
 
             if let Some(color) = stamp.attrs.get("color")
-                && !color.is_empty() {
-                    details.push_str(&format!("Color: {}\n", color));
-                }
+                && !color.is_empty()
+            {
+                details.push_str(&format!("Color: {}\n", color));
+            }
 
             if let Some(qty) = stamp.attrs.get("quantity_printed")
-                && !qty.is_empty() {
-                    details.push_str(&format!("Quantity: {}\n", qty));
-                }
+                && !qty.is_empty()
+            {
+                details.push_str(&format!("Quantity: {}\n", qty));
+            }
 
             if let Some(loc) = stamp.attrs.get("issue_location")
-                && !loc.is_empty() {
-                    details.push_str(&format!("Issued: {}", loc));
-                }
+                && !loc.is_empty()
+            {
+                details.push_str(&format!("Issued: {}", loc));
+            }
 
             if !details.is_empty() {
                 let cleaned = clean_text(&details);
@@ -302,19 +306,22 @@ pub fn emit_special_stamps_page<W: Write>(out: &mut W, stamps: &[Stamp]) -> std:
         }
 
         if let Some(color) = stamp.attrs.get("color")
-            && !color.is_empty() {
-                details.push_str(&format!("Color: {}\n", color));
-            }
+            && !color.is_empty()
+        {
+            details.push_str(&format!("Color: {}\n", color));
+        }
 
         if let Some(qty) = stamp.attrs.get("quantity_printed")
-            && !qty.is_empty() {
-                details.push_str(&format!("Quantity: {}\n", qty));
-            }
+            && !qty.is_empty()
+        {
+            details.push_str(&format!("Quantity: {}\n", qty));
+        }
 
         if let Some(loc) = stamp.attrs.get("issue_location")
-            && !loc.is_empty() {
-                details.push_str(&format!("Issued: {}", loc));
-            }
+            && !loc.is_empty()
+        {
+            details.push_str(&format!("Issued: {}", loc));
+        }
 
         if !details.is_empty() {
             let cleaned = clean_text(&details);
