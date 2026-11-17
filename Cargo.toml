@@ -110,7 +110,7 @@ temp-env = "0.3"
 [package]
 name = "stamp_album_gen2"
 
-version = "1.14.2"
+version = "1.14.3"
 edition = "2024"
 
 default-run = "stamp_album_gen2"
