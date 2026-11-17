@@ -12,6 +12,8 @@ on:
       - 'scripts/**'
       - 'Example-Stampworldwebpage.txt'
       - 'scripts/populate_example_db.data.json'
+permissions:
+  contents: read
 
 jobs:
   parity:
