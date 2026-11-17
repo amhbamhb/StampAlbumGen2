@@ -942,7 +942,6 @@ struct Rendered {
     generated_hash: String,
     layout_hash: String,
     uploaded_hash: String,
-    
     // workspace: PathBuf,
 }
 
