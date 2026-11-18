@@ -95,6 +95,8 @@ fn supported(name: &str) -> bool {
     matches!(
         name,
         "ALBUM_PAGES_SIZE"
+            | "ALBUM_AUTHOR"
+            | "ALBUM_TITLE"
             | "ALBUM_PAGES_MARGINS"
             | "ALBUM_PAGES_SPACING"
             | "ALBUM_PAGES_BORDER"
@@ -714,6 +716,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let mut footer_number = None;
     let mut margin_text = Vec::new();
     let mut margin_padding = 0.0;
+    let mut author = None;
+    let mut pdf_title = None;
     let mut border_colour = NamedColour::parse("black")?;
     let mut border_colour_name = "black".to_string();
     let mut header_colour = border_colour;
@@ -731,6 +735,14 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 "ALBUM_PAGES_SIZE" => {
                     count(c, 2, 2)?;
                     size = Some(PageSize::parse(&[n(c, 0)?, n(c, 1)?])?);
+                }
+                "ALBUM_AUTHOR" => {
+                    count(c, 1, 1)?;
+                    author = Some(text(c, 0)?.to_string());
+                }
+                "ALBUM_TITLE" => {
+                    count(c, 1, 1)?;
+                    pdf_title = Some(text(c, 0)?.to_string());
                 }
                 "ALBUM_PAGES_MARGINS" => {
                     count(c, 4, 4)?;
@@ -863,6 +875,12 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
         border.ok_or("Missing ALBUM_PAGES_BORDER")?,
         AlbumBorderColour::parse(&[&border_colour_name])?,
     );
+    if let Some(author) = author {
+        settings.set_author(author);
+    }
+    if let Some(pdf_title) = pdf_title {
+        settings.set_pdf_title(pdf_title);
+    }
     if let Some((font, size, text, gap)) = title {
         settings.set_title(AlbumPagesTitle::new(
             &font,

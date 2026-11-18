@@ -569,8 +569,16 @@ fn save_pdf(
     pages: Vec<PreparedPdfPage>,
 ) -> Result<()> {
     let mut document = Document::new();
-    document.set_author("Stamp Album Generator 2");
-    document.set_title("Stamp Album");
+    if let Some(author) = settings.author() {
+        document.set_author(author);
+    } else {
+        document.set_author("Stamp Album Generator 2");
+    }
+    if let Some(title) = settings.pdf_title() {
+        document.set_title(title);
+    } else {
+        document.set_title("Stamp Album");
+    }
     document.set_creator("Stamp Album Generator 2");
     document.set_keywords("stamps, stamp album gen 2");
     document.set_subject("Stamp Album - Country Album");

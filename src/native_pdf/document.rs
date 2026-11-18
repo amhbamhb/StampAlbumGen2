@@ -104,6 +104,8 @@ pub struct PageSettings {
     footer_date: Option<AlbumPagesFooterDate>,
     margin_text: Vec<AlbumPagesMarginText>,
     native_numbering_tokens_enabled: bool,
+    author: Option<String>,
+    pdf_title: Option<String>,
 }
 
 impl PageSettings {
@@ -135,7 +137,25 @@ impl PageSettings {
             footer_date: None,
             margin_text: Vec::new(),
             native_numbering_tokens_enabled: false,
+            author: None,
+            pdf_title: None,
         }
+    }
+
+    pub fn author(&self) -> Option<&str> {
+        self.author.as_deref()
+    }
+
+    pub fn set_author(&mut self, author: impl Into<String>) {
+        self.author = Some(author.into());
+    }
+
+    pub fn pdf_title(&self) -> Option<&str> {
+        self.pdf_title.as_deref()
+    }
+
+    pub fn set_pdf_title(&mut self, title: impl Into<String>) {
+        self.pdf_title = Some(title.into());
     }
 
     pub fn set_even_margins(&mut self, margins: EvenMargins) {
