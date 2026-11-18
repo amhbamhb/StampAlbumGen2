@@ -89,6 +89,8 @@ impl NativeAlbum {
     /// Parses the version-1 command text; relative image paths use `asset_root`.
     pub fn parse(source: &str, asset_root: &Path) -> Result<Self> {
         let mut header_seen = false;
+        let mut author = None;
+        let mut pdf_title = None;
         let mut page_size = None;
         let mut margins = None;
         let mut spacing = None;
@@ -138,6 +140,20 @@ impl NativeAlbum {
                 parse_command(line).map_err(|error| format!("Line {line_number}: {error}"))?;
             let fail = |message: String| format!("Line {line_number}: {message}");
             match name.as_str() {
+                "ALBUM_AUTHOR" => {
+                    if args.len() != 1 {
+                        return Err(fail(format!("{name} requires one quoted string")));
+                    }
+                    let val = quoted_text(&args[0], &name).map_err(&fail)?;
+                    set_once(&mut author, val, &name).map_err(&fail)?;
+                }
+                "ALBUM_TITLE" => {
+                    if args.len() != 1 {
+                        return Err(fail(format!("{name} requires one quoted string")));
+                    }
+                    let val = quoted_text(&args[0], &name).map_err(&fail)?;
+                    set_once(&mut pdf_title, val, &name).map_err(&fail)?;
+                }
                 "ALBUM_PAGES_SIZE" => {
                     set_once(
                         &mut page_size,
@@ -988,6 +1004,12 @@ impl NativeAlbum {
         let mut page_settings =
             PageSettings::new(page_size, margins, spacing, border, border_colour);
         page_settings.set_row_alignment(alignment);
+        if let Some(author) = author {
+            page_settings.set_author(author);
+        }
+        if let Some(title) = pdf_title {
+            page_settings.set_pdf_title(title);
+        }
         if let Some(title) = page_title {
             page_settings.set_title(title);
         }
