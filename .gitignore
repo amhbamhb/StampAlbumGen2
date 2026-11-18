@@ -12,6 +12,8 @@ PHASE2_MODULARIZATION_PLAN.md
 stamp_album_gen2-windows.exe.sha256
 stamp_album_gen2-linux.sha256
 SHA256SUMS.txt
+Archive/repository-cleanup-2026-11-03
+Archive/repository-cleanup-2026-11-03/**
 .venv
 backups
 tools
