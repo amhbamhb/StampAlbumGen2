@@ -16,6 +16,8 @@ The application is designed to simplify the process of generating stamp album pa
 
 Our web site: [Stamp Album Generator 2](https://stampalbumgenerator2.com/)
 
+We are updating the work, so far, for the new native pdf on the examples page on the web site.
+
 Our app will always be free to individual collectors, including source code.  Any corporate or commercial, educational use is subject to licensing fees, including any source code usage and any derivative works.  So no, you can not fork, make changes and call it your own for commercial, corporate, educational purposes.
 
 Forking, modifying, renaming, or redistributing this program does not grant
