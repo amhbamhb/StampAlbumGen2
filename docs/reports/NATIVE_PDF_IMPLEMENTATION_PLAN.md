@@ -2499,12 +2499,10 @@ compatibility certification. Add these cases to T036-T040/T044:
   obsolete-name semantics and unchanged arguments. Brazil starts at `BR 85`;
   confirm pages 1-20 end at `BR 104`. The current supported copy substitutes
   `ALBUM_PAGES_FOOTER_NUMBER`; the original spelling is still rejected.
-- [ ] **BRA-03 — Alternating margins in the compatibility interpreter:**
-  support `ALBUM_PAGES_MARGINSE` with physical-page parity. Brazil's odd margins
-  are `(20 10 10 10)` and even margins `(10 20 10 10)`. The compatibility proof
-  explicitly defers this command and uses odd margins throughout; the native
-  demonstration selects source parity separately for each input. Neither is
-  proof of automatic alternating-margin import under reflow.
+- [x] **BRA-03 — Alternating margins in the compatibility interpreter:**
+  support `ALBUM_PAGES_MARGINSE` with physical-page parity across TXT, raw
+  `.stampalbum`, and native `STAMPALBUM 1` documents; verified with 3-page
+  alternating reference and regression suite `tests/native_pdf_marginse.rs`.
 - [ ] **BRA-04 — Semicolon annotations:** verify source grammar against the
   pinned reference and handle trailing `;` and `;date` annotations outside
   quoted strings, without corrupting quoted punctuation. All 74 source page
@@ -2667,6 +2665,7 @@ task markers whenever implementation scope changes.
 
 | Date | Tasks / decision | Outcome / evidence | Next action |
 |------|------------------|--------------------|-------------|
+| 2026-11-19 | Revision 69: bounded ALBUM_PAGES_MARGINSE mapping (BRA-03) | Implemented ALBUM_PAGES_MARGINSE in albumeasy compatibility loader and native STAMPALBUM 1 parser with physical-page alternating margins. Added margins-v1 Pass 2 fixtures and regression test suite `tests/native_pdf_marginse.rs`. 5 passed. | Review next checklist command. |
 | 2026-11-19 | Revision 68: bounded ALBUM_AUTHOR & ALBUM_TITLE metadata (#119/branch) | Implemented PDF document metadata mapping (`/Author` and `/Title`) for TXT, raw-command `.stampalbum`, and native `STAMPALBUM 1` documents. Added album-author-v1 fixture with AlbumEasy 4.5.0 reference PDFs and automated regression test suite `tests/native_pdf_album_metadata.rs`. 4 passed. | Continue next command from checklist; actual-size print and website gallery integration. |
 | 2026-11-09 | Revision 67: command-keyword case audit (#105) | Fixed uppercase-only shared parser, group admission, native header and standalone dispatch; lowercase/mixed-case commands normalize without changing values or paths. Maintainer clarified future output uses uppercase keywords only. | Output-generation changes remain deferred; no production integration or expanded command coverage. See checklist case policy/tests. |
 | 2026-11-09 | Revision 66: bounded PAGE_START_VAR mapping (#104) | Accepted main reference plus isolated horizontal probe; TXT/raw local H/V, zero/reset and offset group substitution; native optional break spacing, blank pages, automatic inheritance and numbering state. 69 integration tests and 17 native units pass; three native input routes produce four-page Letter PDFs. | Review native proofs; retain native first-page override, full group-body language, absolute font/row metric differences, production integration, Windows and actual-size print acceptance as open. Roadmap counts unchanged. |

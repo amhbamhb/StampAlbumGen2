@@ -107,7 +107,7 @@ was tested against a running 4.2.1 renderer.
 |---|---|---|---|
 | [x] | `ALBUM_PAGES_SIZE` | Same native spelling; explicit dimensions. | [page-size](../../tests/fixtures/albumeasy/page-size-v1/) |
 | [x] | `ALBUM_PAGES_MARGINS` | Same native spelling. | [margins](../../tests/fixtures/albumeasy/margins-v1/) |
-| [~] L | `ALBUM_PAGES_MARGINSE` | API/TOML even margins; missing TXT/native-document mapping. BRA-03. | [page settings tests](../../tests/native_pdf_page_settings.rs) |
+| [x] | `ALBUM_PAGES_MARGINSE` | Same native spelling; TXT, raw `.stampalbum`, and native `STAMPALBUM 1` documents support alternating even-page margins across page breaks (BRA-03). | [margins](../../tests/fixtures/albumeasy/margins-v1/), [marginse tests](../../tests/native_pdf_marginse.rs) |
 | [x] | `ALBUM_PAGES_SPACING` | Same native spelling; remaining interaction parity. | [spacing](../../tests/fixtures/albumeasy/spacing-v1/) |
 | [x] | `ALBUM_PAGES_TITLE` | `NATIVE_PAGE_TITLE`; TXT following gap includes vertical spacing plus title extra (#103); native explicit gap is the total. Color/config parity remains bounded. | [title](../../tests/fixtures/albumeasy/title-v1/), [page-start proof](../../tests/fixtures/albumeasy/page-start-v1/) |
 | [x] | `ALBUM_PAGES_BORDER` | Same native spelling; 3/4 numeric arguments. | [border](../../tests/fixtures/albumeasy/border-v1/) |

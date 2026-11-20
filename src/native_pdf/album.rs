@@ -14,6 +14,7 @@ use super::{
                 AlbumPagesMarginText, MarginAlignment, MarginDirection, MarginPosition,
             },
             album_pages_margins::Margins,
+            album_pages_marginse::EvenMargins,
             album_pages_size::PageSize,
             album_pages_spacing::Spacing,
             album_pages_title::AlbumPagesTitle,
@@ -93,6 +94,7 @@ impl NativeAlbum {
         let mut pdf_title = None;
         let mut page_size = None;
         let mut margins = None;
+        let mut even_margins = None;
         let mut spacing = None;
         let mut border = None;
         let mut border_colour = None;
@@ -167,6 +169,15 @@ impl NativeAlbum {
                     set_once(
                         &mut margins,
                         Margins::parse(&numbers(&name, &args, 4).map_err(&fail)?).map_err(&fail)?,
+                        &name,
+                    )
+                    .map_err(&fail)?;
+                }
+                "ALBUM_PAGES_MARGINSE" => {
+                    set_once(
+                        &mut even_margins,
+                        EvenMargins::parse(&numbers(&name, &args, 4).map_err(&fail)?)
+                            .map_err(&fail)?,
                         &name,
                     )
                     .map_err(&fail)?;
@@ -1009,6 +1020,9 @@ impl NativeAlbum {
         }
         if let Some(title) = pdf_title {
             page_settings.set_pdf_title(title);
+        }
+        if let Some(even) = even_margins {
+            page_settings.set_even_margins(even);
         }
         if let Some(title) = page_title {
             page_settings.set_title(title);

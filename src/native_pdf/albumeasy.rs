@@ -20,6 +20,7 @@ use super::{
                 AlbumPagesMarginText, MarginAlignment, MarginDirection, MarginPosition,
             },
             album_pages_margins::Margins,
+            album_pages_marginse::EvenMargins,
             album_pages_size::PageSize,
             album_pages_spacing::Spacing,
             album_pages_title::AlbumPagesTitle,
@@ -98,6 +99,7 @@ fn supported(name: &str) -> bool {
             | "ALBUM_AUTHOR"
             | "ALBUM_TITLE"
             | "ALBUM_PAGES_MARGINS"
+            | "ALBUM_PAGES_MARGINSE"
             | "ALBUM_PAGES_SPACING"
             | "ALBUM_PAGES_BORDER"
             | "ALBUM_PAGES_TITLE"
@@ -709,6 +711,7 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     let commands = input_commands(source)?;
     let mut size = None;
     let mut margins = None;
+    let mut even_margins = None;
     let mut spacing = None;
     let mut border = None;
     let mut title = None;
@@ -747,6 +750,15 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                 "ALBUM_PAGES_MARGINS" => {
                     count(c, 4, 4)?;
                     margins = Some(Margins::parse(&[n(c, 0)?, n(c, 1)?, n(c, 2)?, n(c, 3)?])?);
+                }
+                "ALBUM_PAGES_MARGINSE" => {
+                    count(c, 4, 4)?;
+                    even_margins = Some(EvenMargins::parse(&[
+                        n(c, 0)?,
+                        n(c, 1)?,
+                        n(c, 2)?,
+                        n(c, 3)?,
+                    ])?);
                 }
                 "ALBUM_PAGES_SPACING" => {
                     count(c, 2, 2)?;
@@ -880,6 +892,9 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
     }
     if let Some(pdf_title) = pdf_title {
         settings.set_pdf_title(pdf_title);
+    }
+    if let Some(even) = even_margins {
+        settings.set_even_margins(even);
     }
     if let Some((font, size, text, gap)) = title {
         settings.set_title(AlbumPagesTitle::new(
