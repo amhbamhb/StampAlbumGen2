@@ -111,11 +111,14 @@ cargo build --features full-flag-db
 ### 4. Git / Version Control
 
 - This repository uses **GitHub**: `amhbamhb/StampAlbumGen2`.
-- Use GitHub Issues and pull requests for project tracking; prefer `gh` for GitHub operations.
-- This repository-specific policy replaces the former GitLab-only guidance.
+- **Per-Item GitHub Issue & Branch Workflow (MANDATORY)**:
+  - For each new item, fixture family, command implementation, or bug fix:
+    1. Create a dedicated GitHub issue first using `gh issue create --repo amhbamhb/StampAlbumGen2 --title "<title>" --body "<details>"`.
+    2. Create and switch to a dedicated branch for that item: `feature/issue-<num>-<short-name>` (or `fix/issue-<num>-<short-name>`).
+    3. Complete implementation, automated tests, fixture documentation, and website gallery synchronization.
+    4. Reference the issue in commits: `feat: ... (fixes #<num>)` or `fix: ... (fixes #<num>)`.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.
-- Branch naming: `feature/<short-name>`, `fix/<short-name>`, `refactor/<file-or-area>`.
 
 ### 5. Commit Messages
 
