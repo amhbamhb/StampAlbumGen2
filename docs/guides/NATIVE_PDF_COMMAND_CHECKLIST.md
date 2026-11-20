@@ -113,13 +113,13 @@ was tested against a running 4.2.1 renderer.
 | [x] | `ALBUM_PAGES_BORDER` | Same native spelling; 3/4 numeric arguments. | [border](../../tests/fixtures/albumeasy/border-v1/) |
 | [~] L | `ALBUM_PAGES_DECORATIVE_BORDER` | Definition parser/API/TOML works; neither album loader wired. CIS-01/02. | [decorative border](../../tests/fixtures/albumeasy/decorative-border-v1/) |
 | [x] | `ALBUM_PAGES_HEADER` | `NATIVE_PAGE_HEADER`; full state/default grammar still needs reconciliation. | [header](../../tests/fixtures/albumeasy/header-v1/) |
-| [~] L | `ALBUM_PAGES_HEADER_NUMBER` | API/TOML only; map TXT/native-document surface. | [header numbering](../../tests/fixtures/albumeasy/header-number-v1/) |
+| [x] | `ALBUM_PAGES_HEADER_NUMBER` | TXT, raw `.stampalbum`, and native `STAMPALBUM 1` documents support header page numbers with position, start, before/after macros (`$PAGES$`) and explicit newlines. | [header numbering](../../tests/fixtures/albumeasy/header-number-v1/), [header tests](../../tests/native_pdf_header_number.rs) |
 | [~] L | `ALBUM_PAGES_HEADER_DATE` | API/TOML only; map TXT/native-document surface. | [header date](../../tests/fixtures/albumeasy/header-date-v1/) |
 | [~] L | `ALBUM_PAGES_FOOTER` | API/TOML only; plain repeating footer lacks loader mapping. | [footer](../../tests/fixtures/albumeasy/footer-v1/) |
 | [x] | `ALBUM_PAGES_FOOTER_NUMBER` | `NATIVE_PAGE_FOOTER_NUMBER`; 3–6 TXT arguments, total count; native empty-affix issue. | [footer import](../../tests/fixtures/albumeasy/footer-numbering-import-v1/) |
 | [~] L | `ALBUM_PAGES_FOOTER_DATE` | API/TOML only; map date command into loaders. | [footer date](../../tests/fixtures/albumeasy/footer-date-v1/) |
-| [~] L | `ALBUM_PAGES_HEADER_PAD` | API/TOML padding exists; native header includes explicit gaps. TXT command missing. | [header tests](../../tests/native_pdf_page_header.rs) |
-| [~] L | `ALBUM_PAGES_FOOTER_PAD` | API/TOML padding exists; native footer includes explicit gaps. TXT command missing. CIS-04. | [footer tests](../../tests/native_pdf_page_footer.rs) |
+| [x] | `ALBUM_PAGES_HEADER_PAD` | Signed mm padding shifting header/number away from or towards top margin border; mapped in TXT and native documents. | [header tests](../../tests/native_pdf_page_header.rs), [header numbering](../../tests/fixtures/albumeasy/header-number-v1/) |
+| [x] | `ALBUM_PAGES_FOOTER_PAD` | Signed mm padding shifting footer/number away from or towards bottom margin border; mapped in TXT and native documents. | [footer tests](../../tests/native_pdf_page_footer.rs), [header numbering](../../tests/fixtures/albumeasy/header-number-v1/) |
 | [x] | `ALBUM_AUTHOR` | Bounded mapping in TXT/raw and native `STAMPALBUM 1` documents; populates PDF `/Author` metadata. Case-insensitive keyword. | [album-author-v1](../../tests/fixtures/albumeasy/album-author-v1/) |
 | [x] | `ALBUM_TITLE` | Bounded mapping in TXT/raw and native `STAMPALBUM 1` documents; populates PDF `/Title` document metadata. Case-insensitive keyword. | [album-author-v1](../../tests/fixtures/albumeasy/album-author-v1/) |
 | [ ] | `ALBUM_STAMP_NEW_IMG_SETTING` | Old mm spelling; map explicitly to preferred image policy. | [version update](ALBUMEASY_4_5_0_REFERENCE_UPDATE.md) |
@@ -137,9 +137,9 @@ was tested against a running 4.2.1 renderer.
 | [ ] | `PAGE_COLUMN_START` | Column widths/padding and flow missing. | [version update](ALBUMEASY_4_5_0_REFERENCE_UPDATE.md) |
 | [ ] | `PAGE_COLUMN_NEXT` | Column flow missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_COLUMN_STOP` | Column flow missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
-| [ ] | `PAGE_TEXT` | Free-standing left text not mapped. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
+| [x] | `PAGE_TEXT` | Left-aligned free-standing page text mapped in TXT and raw `.stampalbum` documents. | [header numbering](../../tests/fixtures/albumeasy/header-number-v1/) |
 | [~] | `PAGE_TEXT_CENTRE` | TXT explicit multiline works; automatic wrap/empty spacers fail; no equivalent native free text. BRA-05/CIS-03. | [compatibility code](../../src/native_pdf/albumeasy.rs) |
-| [ ] | `PAGE_TEXT_RIGHT` | Free-standing right text missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
+| [x] | `PAGE_TEXT_RIGHT` | Right-aligned free-standing page text mapped in TXT and raw `.stampalbum` documents. | [header numbering](../../tests/fixtures/albumeasy/header-number-v1/) |
 | [ ] | `PAGE_TEXT_PARAGRAPH_START` | Paragraph mode, alignments, independent right padding missing. | [version update](ALBUMEASY_4_5_0_REFERENCE_UPDATE.md) |
 | [ ] | `PAGE_TEXT_PARAGRAPH_END` | Paragraph mode missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `PAGE_RULE_H` | Rule geometry, color and spacing missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
