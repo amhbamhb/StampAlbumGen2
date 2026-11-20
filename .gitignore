@@ -20,6 +20,7 @@ tools
 scripts/*
 !scripts/prepare_release.sh
 !scripts/publish_release_source.sh
+!scripts/sync_fixture_to_site.ps1
 samples/views_split_plan.md
 .gitlab-ci.yml
 verify_setup.sh
