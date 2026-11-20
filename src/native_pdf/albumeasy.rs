@@ -1348,6 +1348,8 @@ pub fn render(source: &str, assets: &Path, output: &Path) -> Result<usize> {
                             | "COLOUR_ALBUM_MARGIN_TXT"
                             | "COLOUR_ALBUM_HEADER"
                             | "COLOUR_ALBUM_TITLE"
+                            | "ALBUM_AUTHOR"
+                            | "ALBUM_TITLE"
                     ) =>
                 {
                     if !pages.is_empty() {

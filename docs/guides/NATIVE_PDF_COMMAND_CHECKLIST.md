@@ -120,8 +120,8 @@ was tested against a running 4.2.1 renderer.
 | [~] L | `ALBUM_PAGES_FOOTER_DATE` | API/TOML only; map date command into loaders. | [footer date](../../tests/fixtures/albumeasy/footer-date-v1/) |
 | [~] L | `ALBUM_PAGES_HEADER_PAD` | API/TOML padding exists; native header includes explicit gaps. TXT command missing. | [header tests](../../tests/native_pdf_page_header.rs) |
 | [~] L | `ALBUM_PAGES_FOOTER_PAD` | API/TOML padding exists; native footer includes explicit gaps. TXT command missing. CIS-04. | [footer tests](../../tests/native_pdf_page_footer.rs) |
-| [~] L | `ALBUM_AUTHOR` | Albumeasy creation verified; Working on native version. Source-controlled PDF metadata mapping missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
-| [ ] | `ALBUM_TITLE` | PDF metadata, not visible title; mapping missing. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
+| [x] | `ALBUM_AUTHOR` | Bounded mapping in TXT/raw and native `STAMPALBUM 1` documents; populates PDF `/Author` metadata. Case-insensitive keyword. | [album-author-v1](../../tests/fixtures/albumeasy/album-author-v1/) |
+| [x] | `ALBUM_TITLE` | Bounded mapping in TXT/raw and native `STAMPALBUM 1` documents; populates PDF `/Title` document metadata. Case-insensitive keyword. | [album-author-v1](../../tests/fixtures/albumeasy/album-author-v1/) |
 | [ ] | `ALBUM_STAMP_NEW_IMG_SETTING` | Old mm spelling; map explicitly to preferred image policy. | [version update](ALBUMEASY_4_5_0_REFERENCE_UPDATE.md) |
 | [ ] | `ALBUM_PAGES_BORDER3` | Obsolete alias; do not infer support from ordinary border module. | [legacy inventory](ALBUMEASY_4_2_1_COMMAND_INVENTORY.md) |
 | [ ] | `ALBUM_PAGES_NUMBER` | Obsolete alias; local tests adapt name, production interpreter rejects. BRA-02. | [TODO plan](../reports/NATIVE_PDF_IMPLEMENTATION_PLAN.md) |
