@@ -106,6 +106,32 @@ STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424)
 }
 
 #[test]
+fn all_margin_variants_render_as_raw_and_native_albums() -> Result<(), String> {
+    let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
+    let cases = [
+        ("symmetric", 2),
+        ("asymmetric", 2),
+        ("fractional", 1),
+        ("even-override", 3),
+    ];
+
+    for (stem, expected_pages) in cases {
+        let raw_path = fixture().join(format!("{stem}-raw.stampalbum"));
+        let raw_pdf = temp.path().join(format!("{stem}-raw.pdf"));
+        let raw_pages = albumeasy::render_file(&raw_path, &raw_pdf)?;
+        assert_eq!(raw_pages, expected_pages, "{stem}-raw pages");
+
+        let native_path = fixture().join(format!("{stem}.stampalbum"));
+        let native_pdf = temp.path().join(format!("{stem}-native.pdf"));
+        let album = NativeAlbum::load(&native_path)?;
+        let native_pages = album.write_pdf(&native_pdf)?;
+        assert_eq!(native_pages.len(), expected_pages, "{stem} native pages");
+    }
+
+    Ok(())
+}
+
+#[test]
 fn album_pages_marginse_case_tolerance() -> Result<(), String> {
     let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
     let base =

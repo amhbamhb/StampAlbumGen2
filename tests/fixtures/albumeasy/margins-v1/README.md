@@ -6,9 +6,9 @@ This fixture demonstrates and validates the AlbumEasy commands `ALBUM_PAGES_MARG
 
 | Input | Reference PDF (AlbumEasy 4.5.0) | Pass 2 Native Album | Native Direct TXT/Raw | Description |
 |---|---|---|---|---|
-| [symmetric.txt](symmetric.txt) | [symmetric.reference.pdf](symmetric.reference.pdf) | - | - | Symmetric 15mm margins on all edges |
-| [asymmetric.txt](asymmetric.txt) | [asymmetric.reference.pdf](asymmetric.reference.pdf) | - | - | Asymmetric margins (25mm left binding clearance) |
-| [fractional.txt](fractional.txt) | [fractional.reference.pdf](fractional.reference.pdf) | - | - | Fractional millimeter margins (12.25 17.75 20.25 23.75) |
+| [symmetric.txt](symmetric.txt) | [symmetric.reference.pdf](symmetric.reference.pdf) | [symmetric.stampalbum](symmetric.stampalbum) | [symmetric-raw.stampalbum](symmetric-raw.stampalbum) | Symmetric 15mm margins on all edges |
+| [asymmetric.txt](asymmetric.txt) | [asymmetric.reference.pdf](asymmetric.reference.pdf) | [asymmetric.stampalbum](asymmetric.stampalbum) | [asymmetric-raw.stampalbum](asymmetric-raw.stampalbum) | Asymmetric margins (25mm left binding clearance) |
+| [fractional.txt](fractional.txt) | [fractional.reference.pdf](fractional.reference.pdf) | [fractional.stampalbum](fractional.stampalbum) | [fractional-raw.stampalbum](fractional-raw.stampalbum) | Fractional millimeter margins (12.25 17.75 20.25 23.75) |
 | [even-override.txt](even-override.txt) | [even-override.reference.pdf](even-override.reference.pdf) | [even-override.stampalbum](even-override.stampalbum) | [even-override-raw.stampalbum](even-override-raw.stampalbum) | 3-page document with alternating odd/even binding margins |
 
 ### Tested Commands
@@ -33,8 +33,8 @@ Negative diagnostic inputs:
 
 ## Pass 2 Compatibility Files
 
-1. **`even-override.stampalbum`**: Native `STAMPALBUM 1` multi-page document demonstrating `ALBUM_PAGES_MARGINSE` alternating across `NATIVE_PAGE_BREAK` boundaries.
-2. **`even-override-raw.stampalbum`**: Raw AlbumEasy commands file testing direct native compatibility rendering.
+1. **`*.stampalbum`**: Native `STAMPALBUM 1` documents verifying that the native vector engine parses and applies symmetric, asymmetric, fractional, and alternating even margins (`ALBUM_PAGES_MARGINSE`).
+2. **`*-raw.stampalbum`**: Raw AlbumEasy commands files testing direct native loader compatibility across all margin variants.
 
 ## Automated Verification
 

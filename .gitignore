@@ -1,3 +1,8 @@
+# User status visual showcase (ignored for personal progress checking)
+status_showcase.*
+status_showcase/
+scripts/render_native_showcase.ps1
+
 # Rust
 /target/
 **/*.rs.bk
