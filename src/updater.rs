@@ -518,6 +518,17 @@ pub fn apply_update() -> Result<String, String> {
     run_update_pipeline(false)
 }
 
+/// Strips Windows verbatim prefix (\\?\ or \\?\UNC\) so that paths are compatible with cmd.exe and start.
+pub fn strip_verbatim_path_prefix(path: &str) -> String {
+    if let Some(stripped) = path.strip_prefix(r"\\?\UNC\") {
+        format!(r"\\{}", stripped)
+    } else if let Some(stripped) = path.strip_prefix(r"\\?\") {
+        stripped.to_string()
+    } else {
+        path.to_string()
+    }
+}
+
 /// Spawns the updated executable and exits the current process cleanly with socket detachment.
 pub fn restart_application() -> Result<(), String> {
     let current_exe = std::env::current_exe()
@@ -533,7 +544,7 @@ pub fn restart_application() -> Result<(), String> {
     #[cfg(target_os = "windows")]
     {
         use std::os::windows::process::CommandExt;
-        let exe_str = current_exe.to_string_lossy();
+        let exe_str = strip_verbatim_path_prefix(&current_exe.to_string_lossy());
         let mut cmd_line = format!("ping 127.0.0.1 -n 3 >nul & start \"\" \"{}\"", exe_str);
         for arg in args {
             let arg_str = arg.to_string_lossy();
@@ -600,5 +611,25 @@ mod tests {
             assert_eq!(bin, "stamp_album_gen2");
             assert_eq!(chk, "stamp_album_gen2.sha256");
         }
+    }
+
+    #[test]
+    fn test_strip_verbatim_path_prefix() {
+        assert_eq!(
+            strip_verbatim_path_prefix(r"\\?\C:\Users\ray1\repo\app.exe"),
+            r"C:\Users\ray1\repo\app.exe"
+        );
+        assert_eq!(
+            strip_verbatim_path_prefix(r"\\?\UNC\server\share\app.exe"),
+            r"\\server\share\app.exe"
+        );
+        assert_eq!(
+            strip_verbatim_path_prefix(r"C:\Users\ray1\repo\app.exe"),
+            r"C:\Users\ray1\repo\app.exe"
+        );
+        assert_eq!(
+            strip_verbatim_path_prefix("/usr/local/bin/stamp_album_gen2"),
+            "/usr/local/bin/stamp_album_gen2"
+        );
     }
 }
