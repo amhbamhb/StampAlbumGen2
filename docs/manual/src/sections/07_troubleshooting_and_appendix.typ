@@ -41,6 +41,16 @@ You can run `stamp_album_gen2` from a terminal (PowerShell, Command Prompt, or L
   ], [
     Custom network port: Useful if port 7878 is used by another application.
   ],
+  [
+    `stamp_album_gen2 --check-update`
+  ], [
+    Checks GitHub Releases for new updates and prints status.
+  ],
+  [
+    `stamp_album_gen2 --update`
+  ], [
+    Automatically downloads, checksum-verifies, and installs the latest update from the command line.
+  ],
 )
 
 == 7.2 Customizing `config.toml` Directly

@@ -111,3 +111,16 @@ You never need to edit configuration text files by hand unless you want to. The 
   "Figure 2.7: In-Browser Settings Editor",
   "Figure 2.7: Simple, friendly settings editor with plain-English descriptions for every option."
 )
+
+== 2.8 Automatic Updates & One-Click Upgrades
+
+Keeping StampAlbumGen2 up to date is completely effortless:
+
+#ui_box(
+  "Figure 2.8: One-Click Update Notification & Upgrade Modal",
+  "Figure 2.8: When a new version is released, a friendly badge appears in the header. Click 'Update & Restart Now' to upgrade automatically."
+)
+
+- *Automatic Background Check:* When StampAlbumGen2 starts up, it quietly checks whether a newer version has been released on GitHub. It caches results for 6 hours so it never slows down your work.
+- *Header Notification Badge:* If an update is available, a pulsating badge appears in the top navigation bar: *\"✨ Update Available\"*.
+- *One-Click Upgrade:* Clicking the badge opens a preview showing what's new. Simply click *\"Update & Restart Now\"*! The application downloads the new version, verifies its SHA256 checksum to guarantee safety, replaces the executable, and restarts. Your browser reconnects automatically in just a few seconds.

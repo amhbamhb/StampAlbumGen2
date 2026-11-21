@@ -9,6 +9,7 @@ pub(super) fn render_compare_top_html(
     <div class='top'>
         <button class='neutral' onclick='returnToStartReviewPage()'>Back To Country Selection</button>
         <span class='badge'>Switch country without closing Review UI</span>
+        <button id='btnUpdateBadge' class='btn-update' style='display:none;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-weight:600;margin-left:auto;border-radius:4px;padding:4px 10px;cursor:pointer;' onclick='openUpdateDialog()'>✨ Update Available</button>
     </div>
     <div id='startGuide' class='startGuide'>
         <h2>Start Country Review Session</h2>

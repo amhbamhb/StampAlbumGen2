@@ -9,6 +9,7 @@ use std::path::{Path, PathBuf};
 use std::env;
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
+#[cfg(unix)]
 use std::process::Command;
 
 // `rfd` is optional; if the `rfd` feature is enabled we'll use a GUI
@@ -577,6 +578,8 @@ pub struct Config {
     pub stampworld: Option<StampworldConfig>,
     // Review UI visual controls.
     pub review_ui: Option<ReviewUiConfig>,
+    // Automatic update check controls.
+    pub updates: Option<UpdatesConfig>,
     // Font size for stamp details in separate_rows mode (e.g., 6, 7, 8)
     // Default: 8
     pub stamp_detail_font_size: Option<u8>,
@@ -922,7 +925,19 @@ pub struct ReviewUiConfig {
     pub catalog_family_options: Option<Vec<String>>,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone, Default)]
+pub struct UpdatesConfig {
+    pub check_on_startup: Option<bool>,
+}
+
 impl Config {
+    pub fn updates_check_on_startup(&self) -> bool {
+        self.updates
+            .as_ref()
+            .and_then(|u| u.check_on_startup)
+            .unwrap_or(true)
+    }
+
     pub fn effective_stampworld_username(&self) -> Option<String> {
         std::env::var("STAMPWORLD_USER")
             .or_else(|_| std::env::var("STAMPWORLD_USERNAME"))

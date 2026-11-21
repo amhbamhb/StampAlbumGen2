@@ -563,6 +563,12 @@ The `[header_formatting]` section can contain parameters that may override top-l
 - [ ] `album_page_width_mm` / `album_page_height_mm` - Page layout
 - [ ] `row_start_es_enabled` - Controls ROW_START_ES generation
 
+### Updates Configuration
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `[updates].check_on_startup` | `bool` | `true` | Automatically checks GitHub Releases for newer application versions on startup in the background (cached for 6 hours). Surfaces an update badge and modal in the Review UI. |
+
 ### Layout Parameters (Medium Priority)  
 
 - [ ] All margin settings (page_*_margin_mm)

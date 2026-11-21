@@ -3487,6 +3487,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "self-replace"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609c5606d9d357b26e4ee1a7a01beac396628d0fa01ebbade2a09cefb88e65af"
+dependencies = [
+ "fastrand",
+ "tempfile",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "semver"
 version = "1.0.28"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3734,7 +3745,7 @@ dependencies = [
 
 [[package]]
 name = "stamp_album_gen2"
-version = "1.14.3"
+version = "1.15.0"
 dependencies = [
  "ab_glyph",
  "assert_cmd",
@@ -3763,6 +3774,7 @@ dependencies = [
  "roxmltree 0.21.2",
  "rusqlite",
  "scraper",
+ "self-replace",
  "serde",
  "serde_json",
  "serial_test",
