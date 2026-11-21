@@ -83,6 +83,33 @@ cargo build --features full-flag-db
 
 ## Key Rules for Agents
 
+### 0. Mandatory Pre-Commit Quality Gate (RUN BEFORE ANY COMMIT)
+
+Every agent must run and pass the following quality gates BEFORE staging or committing any changes:
+
+1. **Precheck (`format-and-check.sh`)**:
+   ```bash
+   ./format-and-check.sh
+   # Or on Windows PowerShell:
+   cargo fmt --all -- --check; cargo check --all-targets --quiet
+   ```
+2. **Lint Validation (`lint`)**:
+   ```bash
+   cargo clippy --all-targets -- -D warnings
+   ```
+3. **Full Test Suite Across All Targets & Profiles**:
+   ```bash
+   cargo test --all
+   ```
+   All tests in lib, bins, and integration suites must pass cleanly without compilation errors or panics.
+4. **CLI Documentation Sync**:
+   If any CLI flag, argument, option, or help text in `src/cli.rs` changes:
+   ```bash
+   cargo run --no-default-features -- --help > docs/CLI_USAGE.md
+   ```
+5. **Commit Header Length Limit**:
+   The commit header (`<type>(<scope>): <description>`) must **not exceed 100 characters** (enforced by `commitlint`).
+
 ### 1. Rust Safety
 
 - Do **not** use unchecked `.unwrap()` in runtime code paths.
@@ -154,7 +181,7 @@ Follow Conventional Commits based on the [Conventional Commit Messages Specifica
 - Use imperative, present tense: `"add"`, `"fix"`, `"update"`, `"refactor"` (not `"added"`, `"fixed"`). Think: *"This commit will..."*.
 - Do **not** capitalize the first letter (unless a proper noun/identifier).
 - Do **not** end with a period (`.`).
-- **Header Length Limit (MANDATORY)**: The commit header line (`<type>(<scope>): <description>`) **must NOT exceed 100 characters** (strictly enforced by GitHub Actions `commitlint` via `[header-max-length]`). Keep descriptions punchy, and place detailed notes or issue links in the body/footer if the header approaches 100 characters.
+ **Header Length Limit (MANDATORY)**: The commit header line (`<type>(<scope>): <description>`) **must NOT exceed 100 characters** (strictly enforced by GitHub Actions `commitlint` via `[header-max-length]`). Keep descriptions punchy, and place detailed notes or issue links in the body/footer if the header approaches 100 characters.
 
 #### Breaking Changes
 - Indicate with an `!` before the colon: e.g. `feat(parser)!: break backwards compatibility with legacy format`.

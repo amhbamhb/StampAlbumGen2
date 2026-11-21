@@ -15,7 +15,8 @@ fn test_album_stamp_img_new_setting_parameter_usage() {
     let album_globals_rs = fs::read_to_string("src/album_globals/generator.rs")
         .expect("Failed to read album_globals/generator.rs");
     let album_utils_rs = fs::read_to_string("src/album_utils/globals.rs")
-        .expect("Failed to read album_utils/globals.rs");
+        .expect("Failed to read album_utils/globals.rs")
+        .replace("\r\n", "\n");
 
     // Verify all three parameters are defined in config.rs
     assert!(
@@ -105,7 +106,8 @@ fn test_identify_missing_width_usage() {
 #[test]
 fn test_album_stamp_img_new_setting_command_generation() {
     let album_utils_rs = fs::read_to_string("src/album_utils/globals.rs")
-        .expect("Failed to read album_utils/globals.rs");
+        .expect("Failed to read album_utils/globals.rs")
+        .replace("\r\n", "\n");
 
     // Check that the command format includes width, height, and preserve_aspect
     assert!(
