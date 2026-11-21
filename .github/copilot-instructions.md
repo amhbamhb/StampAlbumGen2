@@ -48,6 +48,7 @@ Before creating any commit, all relevant tests must pass.
 1. Run the project's relevant automated tests for the files/features changed.
 2. Do not commit if any test fails.
 3. If tests cannot be executed (environment/tooling issue), do not commit; report the blocker and required fix steps first.
+4. **CLI Docs Regeneration**: Whenever any CLI option, argument, flag, or help string in `src/cli.rs` changes, regenerate `docs/CLI_USAGE.md` before committing or pushing (`cargo run --no-default-features -- --help > docs/CLI_USAGE.md`). The `verify-cli-docs.yml` workflow enforces this.
 
 ## Rust Safety Rule
 

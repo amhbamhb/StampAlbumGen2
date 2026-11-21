@@ -170,12 +170,19 @@ Follow Conventional Commits based on the [Conventional Commit Messages Specifica
 - `docs(agents): update commit message standards from conventional commits gist`
 - `refactor(album): consolidate stamp inner border state parser`
 
-### 6. Configuration
+### 6. Configuration & CLI Parameters
 
 - Local runtime config: `config.toml` (not committed; create from template).
 - Template: `config_template.toml`
 - Full reference: `config_full_example.toml`
 - When adding new config keys: update `config.rs`, the template, the full example, and document in `docs/guides/CONFIG_PARAMETERS_INVENTORY.md`.
+- **CLI Options & Documentation Sync (MANDATORY)**: Whenever any CLI flag, argument, option, or help text in `src/cli.rs` changes:
+  - You **must** regenerate `docs/CLI_USAGE.md` before committing or pushing:
+    ```bash
+    cargo run --no-default-features -- --help > docs/CLI_USAGE.md
+    ```
+    *(Note: On Windows PowerShell, ensure the output file is saved with UTF-8 encoding without BOM, e.g. using `cargo run --no-default-features -- --help | Out-File -Encoding utf8 docs/CLI_USAGE.md` or Unix redirection).*
+  - The `.github/workflows/verify-cli-docs.yml` CI workflow strictly compares `docs/CLI_USAGE.md` with `cargo run --no-default-features -- --help` and fails if they drift.
 
 ### 7. Documentation Placement
 
