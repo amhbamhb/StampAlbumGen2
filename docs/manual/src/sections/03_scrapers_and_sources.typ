@@ -1,56 +1,54 @@
 // ==============================================================================
-// Section 3: Data Sources, Scrapers & Import Workflows
+// Section 3: Printing, Paper & Stamp Mounting Best Practices
 // ==============================================================================
 
 #pagebreak()
-= 3. Data Sources, Scrapers & Import Workflows
+= 3. Printing, Paper & Stamp Mounting Best Practices
 
-== 3.1 StampWorld Scraper
+After generating your PDF album pages, printing and mounting your stamps is the most rewarding part of the hobby. Here are practical tips to ensure your finished album looks museum-quality.
 
-StampWorld serves as a primary source for worldwide stamp chronological listings, group sets, dates of issue, perforations, and specimen artwork.
+== 3.1 The #1 Golden Rule: Always Print at 100% "Actual Size"
 
-The scraper maps HTML structures into normalized database records:
-- *Set Group Boxes:* Outer containers (`div.container-fluid.content_table` with `id="group_box_<group_id>"`).
-- *Header Summaries:* Issue dates, series title, engraver, designer, and perforation specs.
-- *Stamp Rows:* Individual stamp rows (`tr.stamp_tr`) containing face values, colors, SG catalog numbers, and specimen image URLs.
-- *Rate Limiting:* Configurable politeness delays ensure catalog web servers are not overwhelmed during mass synchronization.
+When you open your generated PDF in Adobe Acrobat, Edge, Chrome, or any PDF reader:
 
-== 3.2 Colnect Ingestion & Catalog Correlation
+#align(center)[
+  #block(
+    fill: rgb("#FFF4ED"),
+    stroke: 1.5pt + rgb("#D92D20"),
+    inset: 12pt,
+    radius: 4pt,
+    width: 95%,
+    [
+      #text(weight: "bold", size: 12pt, fill: rgb("#D92D20"))[CRITICAL PRINTING SETTING] \
+      #v(4pt)
+      In your printer dialog, always select *\"Actual Size\"* or set Page Scaling to *100%*. \
+      *NEVER choose \"Fit to Page\" or \"Shrink Oversized Pages\"!* \
+      Choosing \"Fit to Page\" will shrink your album pages by 4% to 8%, making the stamp boxes slightly too small for your stamps and mounts!
+    ]
+  )
+]
 
-Colnect provides comprehensive physical stamp dimensions (width × height in millimetres), paper types, watermark details, and cross-catalog identifiers (Michel, Stanley Gibbons, Scott, Yvert & Tellier).
+To verify your printer printed accurately, measure the outer page border with a physical millimeter ruler. If the layout specifies 15 mm margins, your ruler should read exactly 15 mm.
 
-- Colnect exports are ingested via structured CSV files placed in the application root or uploaded through the Review UI.
-- StampAlbumGen2 normalizes catalog numbers:
-  - `Sn:` Scott Catalog
-  - `Sg:` Stanley Gibbons Catalog
-  - `Mi:` Michel Catalog
-  - `Yt:` Yvert & Tellier
-  - `Col:` Colnect internal identifier
+== 3.2 Choosing the Right Album Paper
 
-== 3.3 US1847 Specialized Scraper
+Standard office copier paper (20 lb / 75 gsm) is too thin for stamp albums: it sags under the weight of stamp mounts, yellows with age, and ink from double-sided printing can bleed through.
 
-For United States classic and modern issues, the built-in US1847 scraper provides specialized philatelic data, plate numbers, grilled paper varieties, and secret mark identifiers specific to early American postage.
+*Recommended Paper Stocks:*
+- *Weight:* Look for *65 lb Cover Stock* (approximately $176 "gsm"$) or *80 lb Text/Cover* (approximately $216 "gsm"$). This weight is sturdy enough to hold heavy souvenir sheets and mounts without bending.
+- *Quality:* Always choose *Acid-Free and Lignin-Free* archival paper. This protects your stamps from chemical discoloration over decades.
+- *Color:* Soft warm white, cream, or off-white is generally gentler on the eyes than harsh blue-white fluorescent office paper, making classic stamp colors pop.
 
-== 3.4 User-Defined Manual CSV Imports (`UserImport/`)
+== 3.3 Binding Clearances & Alternating Margins
 
-For self-scanned collections, local varieties, or stamps not listed in online catalogs, collectors can create offline import spreadsheets:
+If you place your pages into 3-ring, 4-ring, or springback binders, the binder rings need room:
+- StampAlbumGen2 automatically gives you *alternating margins* when printing double-sided pages.
+- The inner binding edge has an expanded margin (e.g. 25 mm) so hole punches never touch your stamp frames or titles.
+- The outer edge has a neat, standard margin (e.g. 12 mm or 15 mm).
 
-#block(
-  fill: rgb("#F8F9FA"),
-  inset: 12pt,
-  radius: 4pt,
-  stroke: 0.5pt + rgb("#D0D5DD"),
-  [
-    *Template Location:* `UserImport/manual_import_template.csv` \
-    *Encoding:* Standard UTF-8 without Byte Order Mark (BOM). Do not save as Microsoft Excel binary workbook (`.xlsx`). \
-    *Mandatory Fields:* `Name`, `Country`, `Series`, `Catalog Codes`, `Issued on`, `Link` \
-    *Unique Identification:* Every custom stamp record requires a stable unique key in the `Catalog Codes` column prefixed with `Col:manual-` (for example, `Col:manual-us-1959-flag`).
-  ]
-)
+== 3.4 Selecting Stamp Mounts (Showgard / Hawid / Scott)
 
-== 3.5 National Flags & Cover Heraldry
-
-When `print_flag_cover = true`, StampAlbumGen2 generates a formal commemorative cover page featuring the issuing country's national flag, official name, and date of generation.
-- Uses the embedded ISO 3166 database (`ISOCountryCodes.csv`) supporting 246 countries and historical administrative territories.
-- High-resolution SVG and PNG flags are retrieved and cached locally in `flags/`.
-- Custom historical flags or coats of arms can be overridden using `flags/flag_codes.json` or placing an image at `Albums/<Country>/images/flag_placeholder.png`.
+Stamp mounts protect your stamps from dust, handling, and environmental humidity.
+- *Black Background Mounts:* Provide a crisp, dark framing border that accentuates stamp perforations and vibrant inks.
+- *Clear Background Mounts:* Allow the page surface or background information to show through naturally.
+- *Sizing:* The mount box printed on your page already includes a comfortable buffer ($+1.5 "mm"$ on all four sides) so you can insert pre-cut or strip mounts easily without trimming too close to the perforations.

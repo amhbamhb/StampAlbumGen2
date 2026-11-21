@@ -1,64 +1,60 @@
 // ==============================================================================
-// Section 1: Introduction & System Architecture
+// Section 1: Welcome & Quick Start Guide
 // ==============================================================================
 
 #pagebreak()
-= 1. Introduction & System Architecture
+= 1. Welcome & Quick Start Guide
 
-== 1.1 Project Purpose
+Welcome to *Stamp Album Generator 2*! Whether you are organizing a lifelong worldwide collection, building a specialized exhibit of classic issues, or putting together a neat one-country binder, this program is designed to make creating beautiful, professional stamp album pages easy and enjoyable.
 
-*StampAlbumGen2* is a high-precision, automated stamp album authoring system and rendering engine designed for philatelists. Collecting stamps requires rigorous dimensional precision: stamp mounts must accommodate actual paper dimensions, perforation teeth, and clear border margins without crowding or visual distortion.
+#align(center)[
+  #block(
+    fill: rgb("#F0F4F8"),
+    stroke: 1pt + rgb("#2B5B84"),
+    inset: 12pt,
+    radius: 4pt,
+    width: 95%,
+    [
+      #text(weight: "bold", size: 12pt, fill: rgb("#1B365D"))[What Makes Stamp Album Generator Special?] \
+      #v(4pt)
+      Instead of spending hours manually measuring boxes or typing complicated layout codes into a word processor, Stamp Album Generator automatically looks up stamp dimensions, issue dates, catalog numbers, and full-color specimen photos. It lays them out neatly into ready-to-print vector PDF album pages tailored specifically to the stamps you own.
+    ]
+  )
+]
 
-The application bridges three major data workflows:
-+ *Web Scrapers & Catalog Data:* Automated retrieval of stamp metadata, dimensions, color varieties, and specimen images from StampWorld, Colnect, and US1847.
-+ *Interactive Review UI:* A local browser-based reconciliation application that links online catalog entries, resolves ambiguous varieties, verifies dimensions, and manages custom user stamp imports.
-+ *Dual PDF Rendering Engine:* Production of high-resolution vector stamp album pages compatible with both legacy *AlbumEasy* scripts and the next-generation *Native Vector Engine* (`.stampalbum`).
+== 1.1 The Quick Start: 3 Steps to Your First Album Page
 
-== 1.2 System Architecture Overview
+You do not need to learn any programming or technical commands to get started. In fact, 95% of collectors do all their work directly inside the friendly visual *Review Screen* in their web browser!
 
-The system is constructed as a modular Rust workspace consisting of two primary crates:
-- `stamp_album_db`: A dedicated database crate encapsulating SQLite schema management, multi-catalog relational queries, stamp metadata normalization, and auto-migration logic.
-- `stamp_album_gen2`: The core CLI binary, Review UI HTTP daemon, scrapers, AlbumEasy parser, and native vector PDF compositor.
+#v(6pt)
 
-```
-+-------------------------------------------------------------------------+
-|                              Data Sources                               |
-|   +--------------------+  +--------------------+  +-----------------+   |
-|   | StampWorld Scraper |  | Colnect CSV Ingest |  | US1847 Scraper  |   |
-|   +---------+----------+  +---------+----------+  +--------+--------+   |
-|             |                       |                      |            |
-|             +-----------------------+----------------------+            |
-|                                     |                                   |
-|                                     v                                   |
-|                         [ SQLite Stamp Database ]                       |
-+-------------------------------------+-----------------------------------+
-                                      |
-                                      v
-+-------------------------------------+-----------------------------------+
-|                     Interactive Review Web UI (7878)                    |
-|   - Visual Stamp-to-Candidate Matching                                  |
-|   - Real-time Configuration Editor & Dimension Overrides                |
-|   - In-Browser PDF Preview Generation                                   |
-+-------------------------------------+-----------------------------------+
-                                      |
-                                      v
-+-------------------------------------+-----------------------------------+
-|                     Dual Page Generation Engine                         |
-|   +---------------------------------+ +-----------------------------+   |
-|   | Legacy AlbumEasy Engine (.txt)  | | Native Vector Engine        |   |
-|   | - AlbumEasy 4.5.0 Compatible    | |   (.stampalbum)             |   |
-|   | - Classic Script File Output    | | - Direct High-Res PDF Output|   |
-|   +----------------+----------------+ +--------------+--------------+   |
-|                    |                                 |                  |
-|                    +----------------+----------------+                  |
-|                                     |                                   |
-|                                     v                                   |
-|                      [ Vector PDF Stamp Album Pages ]                   |
-+-------------------------------------------------------------------------+
-```
+#grid(
+  columns: (30pt, 1fr),
+  gutter: 10pt,
+  circle(radius: 12pt, fill: rgb("#1B365D"))[#align(center + horizon)[#text(fill: white, weight: "bold")[1]]],
+  [
+    *Start the Program* \
+    Simply double-click the `stamp_album_gen2.exe` icon (or run `./stamp_album_gen2` on Linux). The program will start up in a few seconds and automatically prepare your workspace.
+  ],
+  circle(radius: 12pt, fill: rgb("#1B365D"))[#align(center + horizon)[#text(fill: white, weight: "bold")[2]]],
+  [
+    *Open Your Web Browser* \
+    Open your favorite web browser (such as Chrome, Edge, or Firefox) and visit: \
+    #text(size: 11pt, weight: "bold", fill: rgb("#1B365D"))[#link("http://127.0.0.1:7878")[`http://127.0.0.1:7878`]] \
+    You will see the visual collection dashboard ready to go.
+  ],
+  circle(radius: 12pt, fill: rgb("#1B365D"))[#align(center + horizon)[#text(fill: white, weight: "bold")[3]]],
+  [
+    *Review Your Stamps and Click "Generate PDF Now"* \
+    Select your country, check that the stamp mount boxes and pictures look great, and click the green *Generate PDF Now* button. Your custom album opens immediately, ready to view or print!
+  ]
+)
 
-== 1.3 Dual-Engine Rendering Philosophy
+== 1.2 Your Working Folders
 
-StampAlbumGen2 supports two distinct document representation models:
-- *AlbumEasy (.txt):* Plain text script files conforming to the syntax of Bundu Technology's AlbumEasy (versions 4.2.1 through 4.5.0).
-- *Native Album (.stampalbum):* A modern, extensible vector document syntax starting with `STAMPALBUM 1`. It allows sub-millimetre mount positioning, alternating double-sided margins, multi-layered decorative frames, and embedded vector graphics directly into PDF output without relying on external third-party software.
+When you run the program, it creates a few simple, well-organized folders next to the application:
+
+- *`Albums/`* — This is where your finished PDF album pages and page source files are saved, organized neatly by country.
+- *`UserImport/`* — A place where you can drop simple spreadsheets of custom stamps or family heirlooms not found in online catalogs.
+- *`flags/`* — High-resolution national flags and historical emblems used for your album title cover pages.
+- *`Logs/`* — Diagnostic records that keep track of what the application did, useful if you ever need technical help.

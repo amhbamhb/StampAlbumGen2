@@ -1,74 +1,113 @@
 // ==============================================================================
-// Section 2: Installation, Directory Layout & Configuration
+// Section 2: The Visual Review Workspace (Your Primary Tool)
 // ==============================================================================
 
 #pagebreak()
-= 2. Installation, Directory Layout & Configuration
+= 2. The Visual Review Workspace (Your Primary Tool)
 
-== 2.1 Installation & Startup
+The *Review Screen* is the heart of Stamp Album Generator 2. This is where you will spend 95% of your time: browsing your stamps, comparing color varieties, checking that mount dimensions give your stamps proper breathing room, and printing your album pages.
 
-StampAlbumGen2 is distributed as a standalone binary for Windows (`stamp_album_gen2.exe`) and Linux (`stamp_album_gen2`). No complex external database servers or runtime dependencies are required.
+#let ui_box(title, caption_text, height_val: 160pt) = {
+  v(8pt)
+  rect(
+    width: 100%,
+    height: height_val,
+    stroke: (paint: rgb("#2B5B84"), dash: "dashed", thickness: 1pt),
+    fill: rgb("#F0F4F8"),
+    radius: 4pt,
+    [
+      #align(center + horizon)[
+        #text(size: 13pt, fill: rgb("#2B5B84"), weight: "bold")[#title] \
+        #v(4pt)
+        #text(size: 9pt, fill: rgb("#667085"), style: "italic")[Screenshot Placeholder — Insert User Interface Image Here] \
+        #text(size: 8pt, fill: rgb("#98A2B3"))[Recommended: Capture from your browser at 1200 x 600 px]
+      ]
+    ]
+  )
+  v(2pt)
+  align(center)[#text(size: 9pt, weight: "bold", fill: rgb("#344054"))[#caption_text]]
+  v(8pt)
+}
 
-When first launched in an empty working folder, the application automatically initializes its runtime environment:
-- Copies `config_template.toml` to `config.toml` if missing.
-- Extracts `StampAlbumGenerator2HelpManual.pdf` to the local folder.
-- Creates `UserImport/manual_import_template.csv` and `UserImport/README.md`.
-- Initializes local directories for output albums, flags, and logs.
+== 2.1 The Collection Dashboard: Choosing Your Country
 
-== 2.2 Directory Structure
+When you first open `http://127.0.0.1:7878`, you arrive at the main Collection Dashboard.
 
-```
-<Working Directory>/
-├── config.toml                 # Active collector runtime configuration
-├── config_template.toml        # Baseline reference template
-├── StampAlbumGenerator2HelpManual.pdf # This manual (auto-updated from binary)
-├── Albums/                     # Output destination for generated albums
-│   └── <Country>/              # Per-country generated PDF and source files
-├── Logs/                       # Timestamped diagnostic execution logs
-├── UserImport/                 # Manual CSV imports for offline or custom stamps
-│   ├── manual_import_template.csv
-│   └── README.md
-├── flags/                      # National flags and coat of arms cache
-│   └── flag_codes.json         # Optional country-to-ISO code overrides
-└── stamp_album.db              # SQLite relational database (catalog & user data)
-```
-
-== 2.3 Configuration Parameters (`config.toml`)
-
-The application is configured through `config.toml`. All keys feature sensible defaults:
-
-#table(
-  columns: (1.5fr, 1fr, 3fr),
-  fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
-  stroke: 0.5pt + rgb("#D0D5DD"),
-  table.header([*Setting Key*], [*Default*], [*Description*]),
-  [`albums_root`], [`"Albums"`], [Root directory where generated album folders and PDFs are written.],
-  [`site_name`], [`"Switzerland"`], [Default country or catalog section to process.],
-  [`album_name`], [`"Switzerland"`], [Display title printed on album title pages and running headers.],
-  [`start_year` / `end_year`], [`1970` / `1970`], [Filter stamp issues by issue year range.],
-  [`source`], [`"stampworld"`], [Primary catalog source (`"stampworld"`, `"colnect"`, `"us1847"`).],
-  [`stampworld_fetch_delay_ms`], [`500`], [Polite delay in milliseconds between StampWorld web scraper requests.],
-  [`albumeasy_pdf_timeout_secs`], [`300`], [Timeout in seconds when waiting for AlbumEasy generation to finish.],
-  [`albumeasy_path`], [`"albumeasy"`], [Custom filesystem path to AlbumEasy executable if not in PATH.],
-  [`review_ui_bind`], [`"127.0.0.1:7878"`], [Network address and port for the local Review UI HTTP server.],
-  [`print_flag_cover`], [`true`], [Whether to generate a full-color country flag cover page.],
-  [`flag_cover_overwrite_flag`], [`false`], [Force re-download of cached flag images from CDN repositories.],
+#ui_box(
+  "Figure 2.1: The Country Selection & Collection Dashboard",
+  "Figure 2.1: The main screen listing all your stamp countries, total counts, and quick generation buttons."
 )
 
-== 2.4 Command Line Options
+*What you see here:*
+- *Country Cards:* Each country in your collection is displayed with a summary of how many stamps are cataloged, how many are matched with images, and the year range covered (for example: *Switzerland 1970–1975*).
+- *Quick Search:* A search box at the top lets you instantly find any country by name.
+- *Open Collection:* Clicking on any country takes you straight into that country's visual matching room.
 
-Run `stamp_album_gen2 --help` to inspect command-line arguments:
+== 2.2 The Two-Panel Review Screen: Matching Stamps Easily
 
-```bash
-# Launch interactive Review UI (default when run without batch arguments):
-stamp_album_gen2
+Once you click a country, you will see a convenient side-by-side workspace:
 
-# Batch generate an album from StampWorld data for Switzerland:
-stamp_album_gen2 --source stampworld --site-name Switzerland --start-year 1970 --end-year 1975
+#ui_box(
+  "Figure 2.2: Side-by-Side Stamp Review & Candidate Matching",
+  "Figure 2.2: The left panel shows your album stamps in order; the right panel shows online candidate matches."
+)
 
-# Launch with diagnostic vector logging enabled:
-stamp_album_gen2 --pdf-dx-logging
+- *The Left Panel (Your Album Page):* Shows each stamp in chronological order, with its face value, color, issue date, and current mount box size (e.g. $26 times 29 "mm"$).
+- *The Right Panel (Available Catalog Matches):* Shows stamps found in online catalogs that might match your stamp. If a match is found, you will see its photo, physical measurements, and catalog numbers.
+- *Confirming a Match:* Simply click the match you want! The program instantly updates the stamp's picture and mount box to match.
 
-# Specify custom Review UI network binding:
-stamp_album_gen2 --review-ui-bind 0.0.0.0:8080
-```
+== 2.3 Checking Details with the High-Resolution Artwork Zoom
+
+Have two stamps that look almost identical, but one is carmine and the other is scarlet? Or an issue with an overprint or secret mark?
+
+#ui_box(
+  "Figure 2.3: Zooming In on Stamp Artwork",
+  "Figure 2.3: Inspecting high-resolution artwork side-by-side to verify color shades and overprints."
+)
+
+Clicking on any stamp image opens a crystal-clear zoom inspector. You can examine fine engraving details, check perforation counts, and ensure you have linked the exact variety in your physical collection.
+
+== 2.4 Customizing Stamp Box Sizes & Mount Clearances
+
+Every stamp collector knows that stamps need comfortable mounts. If you use *Showgard*, *Hawid*, or *Scott* mounts, you usually want a box that is about 3 mm larger than the actual stamp paper so it slides in smoothly.
+
+#ui_box(
+  "Figure 2.4: Setting Stamp Dimensions & Mount Clearances",
+  "Figure 2.4: Editing stamp width, height, and mount border clearances in millimetres."
+)
+
+- You can freely type exact measurements in millimetres (like `26.5` wide by `31.0` high).
+- You can customize the caption printed underneath the stamp (such as `"Scott #1040\nMint Never Hinged\nPerf 11"`).
+
+== 2.5 Adding a Missing Stamp ("Add Colnect As Stamp")
+
+What if you have a souvenir sheet, miniature sheet, or local variety that wasn't included in the default country listing?
+
+#ui_box(
+  "Figure 2.5: The 'Add Colnect As Stamp' Dialog",
+  "Figure 2.5: Adding a souvenir sheet or unlisted variety directly into your album with one click."
+)
+
+If you find the item in the candidate list on the right, simply click the *Add Colnect As Stamp* button! It immediately creates a new frame on your album page, complete with dimensions, series title, and photo.
+
+== 2.6 Generating Your PDF Album Pages ("Generate PDF Now")
+
+At the bottom of the Review screen, you have full control over generating your album:
+
+#ui_box(
+  "Figure 2.6: Generating Your Custom PDF Album Pages",
+  "Figure 2.6: Filter options (Commemoratives, Definitives) and the one-click 'Generate PDF Now' button."
+)
+
+- *Filter by Issue Type:* Want to make an album page containing *only Commemoratives* or *only Air Mails*? Just pick from the *Emission* dropdown.
+- *Filter by Format:* Want a separate page for *Souvenir Sheets* or *Blocks of Four*? Use the *Format* filter.
+- *Click "Generate PDF Now":* Your vector PDF is built in seconds and opens automatically on your screen, ready to admire or print!
+
+== 2.7 Changing Application Settings Right in the Browser
+
+You never need to edit configuration text files by hand unless you want to. The Review UI includes a friendly settings page where you can change the album title, adjust default mount spacing, or change page colors with simple sliders and switches.
+
+#ui_box(
+  "Figure 2.7: In-Browser Settings Editor",
+  "Figure 2.7: Simple, friendly settings editor with plain-English descriptions for every option."
+)

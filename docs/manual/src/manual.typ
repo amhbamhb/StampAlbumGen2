@@ -38,7 +38,7 @@
 )
 
 #set text(
-  font: ("Segoe UI", "Arial", "Liberation Sans"),
+  font: ("Segoe UI", "Arial"),
   size: 10.5pt,
   fill: rgb("#1F2A37"),
   lang: "en"

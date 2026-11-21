@@ -1,61 +1,86 @@
 // ==============================================================================
-// Section 7: Diagnostics, Troubleshooting & Appendix
+// Section 7: Advanced Options, Command Line & Troubleshooting
 // ==============================================================================
 
 #pagebreak()
-= 7. Diagnostics, Troubleshooting & Appendix
+= 7. Advanced Options, Command Line & Troubleshooting
 
-== 7.1 Diagnostic Logging & PDF Debugging
+While 95% of collectors will do everything conveniently inside the visual Review Screen in their web browser, StampAlbumGen2 also includes powerful command-line tools and fine-grained configuration files for power users, automated overnight batch jobs, and scripting.
 
-When investigating page overflow, text wrapping issues, or scraper connection errors, enable detailed diagnostic logging:
+== 7.1 Command Line Usage (Power Users)
 
-```bash
-# Launch application with diagnostic vector logging:
-stamp_album_gen2 --pdf-dx-logging
-```
-
-Log files are automatically timestamped and written to:
-#align(center)[#text(size: 11pt, font: "Consolas", fill: rgb("#1B365D"))[`Logs/stamp_album_gen2-<timestamp>.log`]]
-
-=== Common Error Messages & Resolutions
+You can run `stamp_album_gen2` from a terminal (PowerShell, Command Prompt, or Linux bash) with optional flags to generate whole albums in headless batch mode without opening the browser.
 
 #table(
   columns: (2fr, 3fr),
   fill: (x, y) => if y == 0 { rgb("#1B365D").lighten(85%) } else if calc.even(y) { rgb("#F8F9FA") } else { none },
   stroke: 0.5pt + rgb("#D0D5DD"),
-  table.header([*Reported Error*], [*Cause & Recommended Action*]),
+  table.header([*Command Line Example*], [*What It Does*]),
   [
-    `PDF generation error: Page size not defined.`
+    `stamp_album_gen2`
   ], [
-    `ALBUM_PAGES_SIZE` is missing or placed after `PAGE_START`. Move the command before any page declarations.
+    Standard mode: Starts the local server and launches the interactive visual Review UI.
   ],
   [
-    `Stamp heading offset/text exceeds usable page bounds`
+    `stamp_album_gen2 --site-name Switzerland --start-year 1970 --end-year 1975`
   ], [
-    A stamp heading string is too wide for its local stamp frame and crosses the printable page margin. Shorten the text, reduce font size, or assign it to a wider stamp.
+    Batch generation: Automatically compiles Switzerland issues from 1970 to 1975 straight to PDF in `Albums/`.
   ],
   [
-    `ALBUM_PAGES_MARGINSE left right top bottom required`
+    `stamp_album_gen2 --source colnect --site-name "United States"`
   ], [
-    `ALBUM_PAGES_MARGINSE` requires exactly four positive numeric values in millimetres.
+    Scrape and ingest data using Colnect as the primary catalog source.
   ],
   [
-    `NATIVE_STAMP_FOOTER_TEXT cannot be combined with STAMP_IMAGE single caption`
+    `stamp_album_gen2 --pdf-dx-logging`
   ], [
-    `NATIVE_STAMP_FOOTER_TEXT` provides a dedicated 3-column sub-mount text area; do not also pass a caption argument in `STAMP_IMAGE`.
+    Enables deep diagnostic logging for layout bounds, margins, and font measurements.
+  ],
+  [
+    `stamp_album_gen2 --review-ui-bind 0.0.0.0:8080`
+  ], [
+    Custom network port: Useful if port 7878 is used by another application.
   ],
 )
 
-== 7.2 Software License
+== 7.2 Customizing `config.toml` Directly
 
-*Laser Spider Stamp Collector License (LSSCL) v1.0*
+If you prefer editing text configuration files over using the in-browser settings screen, you can open `config.toml` in Notepad or your favorite text editor:
 
-Individual stamp collectors may use StampAlbumGen2 for personal, non-commercial album generation at no fee. Non-collector, business, corporate, institutional, educational, or commercial use requires a separate written paid agreement with Laser Spider LLC.
+- `albums_root = "Albums"` — Change the output destination folder where your finished albums are saved.
+- `stampworld_fetch_delay_ms = 500` — Delay between web scraper requests (default is 500 milliseconds).
+- `albumeasy_pdf_timeout_secs = 300` — Maximum time to wait when generating very large multi-hundred page albums.
+- `print_flag_cover = true` — Turn on or off the national flag title cover page.
 
-Refer to `LICENSE` and `LASER_SPIDER_STAMP_COLLECTOR_LICENSE_v1.0.md` for full terms.
+== 7.3 Troubleshooting & Getting Help
 
-== 7.3 Project Links & Resources
+If an album page does not look as expected, here are quick solutions to common questions:
 
-- *Official Project Website & Gallery:* #link("https://stampalbumgenerator2.com")[https://stampalbumgenerator2.com]
-- *Source Code Repository:* #link("https://github.com/amhbamhb/StampAlbumGen2")[https://github.com/amhbamhb/StampAlbumGen2]
-- *AlbumEasy Official Website:* #link("https://www.thestampweb.com/albumeasy")[https://www.thestampweb.com/albumeasy] (Bundu Technology Ltd.)
+#block(
+  fill: rgb("#F8F9FA"),
+  inset: 12pt,
+  radius: 4pt,
+  stroke: 0.5pt + rgb("#D0D5DD"),
+  [
+    *Q: The stamp mount box is slightly smaller than my physical mount.* \
+    *A:* In your PDF viewer's Print dialog, make sure page scaling is set to *100% / Actual Size*. Never select *\"Fit to Page\"*.
+
+    #v(4pt)
+    *Q: A long stamp heading is overlapping or spilling past the page border.* \
+    *A:* In the Review UI, open the stamp's edit dialog and shorten the heading, reduce the font size by 1 or 2 points, or attach the heading to a wider stamp in the row.
+
+    #v(4pt)
+    *Q: Where are diagnostic logs saved?* \
+    *A:* Look inside the `Logs/` directory. Each run creates a clear, timestamped log file (`Logs/stamp_album_gen2-<timestamp>.log`) recording every operation and error message.
+  ]
+)
+
+== 7.4 License & Acknowledgments
+
+*Laser Spider Stamp Collector License (LSSCL) v1.0* \
+Individual stamp collectors may use StampAlbumGen2 for personal, non-commercial album generation completely free of charge. Non-collector, commercial, institutional, or business use requires a separate written agreement with Laser Spider LLC.
+
+*Acknowledgments:* \
+StampAlbumGen2 honors and builds upon the pioneering work of *AlbumEasy* by Bundu Technology Ltd. (#link("https://www.thestampweb.com/albumeasy")[thestampweb.com/albumeasy]).
+
+Official project website and online command gallery: #link("https://stampalbumgenerator2.com")[stampalbumgenerator2.com].

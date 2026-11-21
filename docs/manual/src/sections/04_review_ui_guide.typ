@@ -1,124 +1,49 @@
 // ==============================================================================
-// Section 4: Review UI Operator's Manual & Screen-by-Screen Guide
+// Section 4: How Stamp Information Is Gathered & Custom Imports
 // ==============================================================================
 
 #pagebreak()
-= 4. Review UI Operator's Manual
+= 4. How Stamp Information Is Gathered & Custom Imports
 
-The Review UI is a local, interactive web application accessible by default at:
-#align(center)[#text(size: 13pt, weight: "bold", fill: rgb("#1B365D"))[`http://127.0.0.1:7878/`]]
+To save you from typing hundreds of dates and measurements, StampAlbumGen2 connects with reliable public philatelic catalog databases while keeping all your collection data safely on your own computer.
 
-It gives collectors complete visual control over catalog reconciliation, candidate linking, dimension overrides, and live PDF preview generation.
+== 4.1 Built-In Catalog Sources
 
-#let ui_placeholder(title, caption_text, height_val: 180pt) = {
-  v(8pt)
-  rect(
-    width: 100%,
-    height: height_val,
-    stroke: (paint: rgb("#2B5B84"), dash: "dashed", thickness: 1pt),
-    fill: rgb("#F0F4F8"),
-    radius: 4pt,
-    [
-      #align(center + horizon)[
-        #text(size: 14pt, fill: rgb("#2B5B84"), weight: "bold")[#title] \
-        #v(4pt)
-        #text(size: 9pt, fill: rgb("#667085"), style: "italic")[Reserved Image Space — Insert Screenshot Here] \
-        #text(size: 8pt, fill: rgb("#98A2B3"))[Recommended Resolution: 1200 x 600 px (PNG format)]
-      ]
-    ]
-  )
-  v(2pt)
-  align(center)[#text(size: 9pt, weight: "bold", fill: rgb("#344054"))[#caption_text]]
-  v(10pt)
-}
+- *StampWorld:* Provides complete, chronological lists of stamp issues by country and year, including series titles, face values, perforation counts, and specimen artwork.
+- *Colnect:* Contributes physical stamp measurements (exact width and height in millimetres) along with cross-catalog numbers (Scott, Stanley Gibbons, Michel, and Yvert & Tellier).
+- *US1847:* A specialized historical catalog for United States collectors, detailing classic plate varieties, grilled papers, and secret marks.
 
-== 4.1 Country & Album Selection Dashboard
+All retrieved data is saved into your local database file (`stamp_album.db`). Once downloaded, you can generate album pages anytime, even when completely offline without an internet connection!
 
-Upon opening the Review UI, the collector is presented with the country selection dashboard. This view lists all countries currently present in the SQLite database, indicating the total number of matched stamps, unlinked candidates, and the latest generation timestamps.
+== 4.2 Adding Custom Stamps with a Simple Spreadsheet (`UserImport/`)
 
-#ui_placeholder(
-  "Figure 4.1: Country Selection & Status Dashboard",
-  "Figure 4.1: The primary dashboard displaying collection statistics, year ranges, and country selection cards."
+Have local stamps, revenue stamps, family covers, or specialized varieties not found in online catalogs? You can add them in minutes using a simple CSV spreadsheet!
+
+Inside the `UserImport/` folder, you will find:
+#align(center)[#text(size: 11pt, font: "Consolas", fill: rgb("#1B365D"))[`UserImport/manual_import_template.csv`]]
+
+You can open this template in Excel, LibreOffice Calc, or Google Sheets.
+
+#block(
+  fill: rgb("#F8F9FA"),
+  inset: 12pt,
+  radius: 4pt,
+  stroke: 0.5pt + rgb("#D0D5DD"),
+  [
+    *Simple Rules for Custom Spreadsheets:* \
+    1. *Save as UTF-8 CSV:* When saving your spreadsheet, choose \"CSV (Comma Delimited)\". Do not save as an `.xlsx` workbook. \
+    2. *Fill in the Core Columns:* Name, Country, Series, Catalog Codes, and Issue Date. \
+    3. *Give Each Stamp a Unique ID:* In the `Catalog Codes` column, create a stable ID starting with `Col:manual-` (for example: `Col:manual-us-1960-flag`). \
+    4. *Drop the File in UserImport:* Next time you open the Review UI, your custom stamps will appear in the candidate list ready to match!
+  ]
 )
 
-- *Country Selector:* Dropdown or search filter to immediately jump to a specific philatelic entity.
-- *Batch Actions:* Buttons to initiate automated web scraping or trigger generation for all completed albums.
-- *System Health Badges:* Live indicators showing database connection status and local AlbumEasy/Native renderer availability.
+== 4.3 Commemorative Title Cover Pages & National Flags
 
-== 4.2 Two-Panel Stamp Reconciliation Interface
+When creating a new country binder, a handsome title cover page sets the tone for the entire volume.
 
-Clicking a country opens the dual-pane reconciliation workspace. The left pane represents the authoritative StampWorld database record, while the right pane displays potential Colnect candidate matches.
-
-#ui_placeholder(
-  "Figure 4.2: Dual-Pane Candidate Reconciliation Workspace",
-  "Figure 4.2: Side-by-side comparison of StampWorld catalog entry (left) and potential Colnect matches (right)."
-)
-
-- *Left Panel (Album Record):* Displays current catalog number, year, issue date, denomination, color, and physical dimensions.
-- *Right Panel (Candidate Pool):* Displays candidates retrieved from Colnect CSV exports or manual import tables.
-- *Match Quality Score:* Automated heuristic scoring based on date, face value, and perforation matches.
-
-== 4.3 High-Resolution Specimen Image Inspector
-
-To prevent linking the wrong color shade, watermark, or perforation variety, the inspector allows collectors to zoom into specimen artwork side-by-side.
-
-#ui_placeholder(
-  "Figure 4.3: High-Resolution Specimen Artwork Inspector",
-  "Figure 4.3: Side-by-side zoom view verifying design details, overprints, and perforation teeth."
-)
-
-- *Zoom & Pan Controls:* Examine intricate stamp engraving, secret marks, and overprints.
-- *Aspect Ratio Check:* Validates that the uploaded image matches the recorded physical width-to-height ratio.
-
-== 4.4 Manual Metadata & Dimension Override Dialog
-
-When catalog sources disagree on stamp dimensions (e.g., measuring design size vs. outer perforated paper margins), collectors can manually override values with sub-millimetre precision.
-
-#ui_placeholder(
-  "Figure 4.4: Stamp Dimension & Metadata Override Modal",
-  "Figure 4.4: Precision entry dialog for stamp width, height, mount clearances, and custom catalog annotations."
-)
-
-- *Exact Width & Height:* Millimetre inputs with up to two decimal places of precision.
-- *Mount Clearance Override:* Set custom individual margin additions (standard mount clearance is +3 mm).
-- *Catalog Cross-Reference:* Add or modify Scott, Michel, Stanley Gibbons, and Yvert & Tellier identifiers.
-
-== 4.5 "Add Colnect As Stamp" Workflow
-
-When a Colnect candidate has no corresponding record in the StampWorld scrape (such as a miniature sheet, souvenir sheet, or unlisted color variant), collectors can instantly promote the candidate into a first-class stamp record.
-
-#ui_placeholder(
-  "Figure 4.5: Add Colnect As New Stamp Workflow",
-  "Figure 4.5: Promoting an unlisted Colnect candidate directly into the album database."
-)
-
-- *SG & Series Inputs:* Assign series title, catalog numbering, and chronological position.
-- *Image Selection:* Choose the candidate's thumbnail, upload a custom high-resolution scan, or generate a framed mount placeholder without an image.
-
-== 4.6 Dynamic PDF Generation Controls & Filters
-
-The bottom control panel on the Review screen allows live rendering of album pages without returning to the CLI.
-
-#ui_placeholder(
-  "Figure 4.6: Dynamic PDF Generation Panel & Custom Filters",
-  "Figure 4.6: Emission filters, format selectors, and the 'Generate PDF Now' action controls."
-)
-
-- *Emission Filter:* Filter by Commemorative, Definitive, Air Mail, Semi-Postal, or Postage Due issues.
-- *Format Filter:* Filter by Single Stamp, Pair, Block, Souvenir Sheet, or Booklet Pane.
-- *Generate PDF Now:* Compiles the active selection immediately and opens the resulting vector PDF in a separate browser tab.
-
-== 4.7 Soft Candidate Deletion & Session Undo
-
-If a candidate is irrelevant or duplicate, collectors can soft-delete it from the candidate pool:
-- *Delete Colnect Candidate:* Retains the row in the database but removes it from active display.
-- *Undo Delete:* Restores the most recently removed candidate during the current browser session.
-
-== 4.8 Integrated Live Configuration Editor
-
-The Review UI includes an in-browser configuration editor allowing collectors to modify `config.toml` parameters without touching a text editor.
-
-#ui_placeholder(
-  "Figure 4.7: In-Browser Configuration Editor",
-  "Figure 4.7: Live visual configuration editor with contextual documentation for every parameter."
-)
+When enabled, StampAlbumGen2 generates a formal introductory cover sheet featuring:
+- The country's official name and the years covered by the album.
+- A high-resolution full-color reproduction of the national flag or historical coat of arms.
+- Your name as collector, copyright notice, and date of compilation.
+- The application automatically handles historical territories, protectorates, and former nations (such as Austrian Levant, Saar, or Netherlands Antilles) using its built-in database of 246 postal authorities.
