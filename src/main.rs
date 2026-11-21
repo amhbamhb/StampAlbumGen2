@@ -169,7 +169,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if cli.check_update {
-        println!("StampAlbumGen2 version: {}", stamp_album_gen2::updater::CURRENT_VERSION);
+        println!("StampAlbumGen2 version: {}", stamp_album_gen2::updater::current_version());
         println!("Checking for updates from GitHub (amhbamhb/StampAlbumGen2)...");
         match stamp_album_gen2::updater::check_for_updates(true) {
             Ok(info) => {
@@ -193,7 +193,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if cli.update {
-        println!("StampAlbumGen2 version: {}", stamp_album_gen2::updater::CURRENT_VERSION);
+        println!("StampAlbumGen2 version: {}", stamp_album_gen2::updater::current_version());
         println!("Checking and downloading update from GitHub...");
         match stamp_album_gen2::updater::apply_update() {
             Ok(msg) => {

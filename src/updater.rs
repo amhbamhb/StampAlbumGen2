@@ -10,6 +10,22 @@ pub const REPO_NAME: &str = "StampAlbumGen2";
 pub const CURRENT_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const CACHE_TTL_SECS: u64 = 6 * 3600; // 6 hours
 
+/// Returns the active version of the application, allowing override via STAMP_ALBUM_CURRENT_VERSION for testing.
+pub fn current_version() -> String {
+    std::env::var("STAMP_ALBUM_CURRENT_VERSION")
+        .unwrap_or_else(|_| CURRENT_VERSION.to_string())
+}
+
+/// Returns the release API endpoint, allowing override via STAMP_ALBUM_UPDATE_URL for testing.
+pub fn release_api_url() -> String {
+    std::env::var("STAMP_ALBUM_UPDATE_URL").unwrap_or_else(|_| {
+        format!(
+            "https://api.github.com/repos/{}/{}/releases/latest",
+            REPO_OWNER, REPO_NAME
+        )
+    })
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct UpdateInfo {
     pub current_version: String,
@@ -104,14 +120,12 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
 
     // Run network I/O on a dedicated thread to ensure we never collide with Tokio runtime.
     let handle = std::thread::spawn(move || -> Result<UpdateInfo, String> {
-        let url = format!(
-            "https://api.github.com/repos/{}/{}/releases/latest",
-            REPO_OWNER, REPO_NAME
-        );
+        let url = release_api_url();
+        let cur_ver = current_version();
 
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(15))
-            .user_agent(format!("StampAlbumGen2/{} (stampalbumgenerator2.com)", CURRENT_VERSION))
+            .user_agent(format!("StampAlbumGen2/{} (stampalbumgenerator2.com)", cur_ver))
             .build()
             .map_err(|e| format!("Failed to build HTTP client: {e}"))?;
 
@@ -138,7 +152,7 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
         }
 
         let clean_tag = release.tag_name.trim_start_matches('v').to_string();
-        let update_available = is_newer_version(CURRENT_VERSION, &clean_tag);
+        let update_available = is_newer_version(&cur_ver, &clean_tag);
 
         let bin_name = target_binary_name();
         let chk_name = target_checksum_name();
@@ -164,7 +178,7 @@ pub fn check_for_updates(force: bool) -> Result<UpdateInfo, String> {
             .unwrap_or(0);
 
         let info = UpdateInfo {
-            current_version: CURRENT_VERSION.to_string(),
+            current_version: cur_ver,
             latest_version: clean_tag,
             update_available,
             release_name: release.name.unwrap_or_else(|| release.tag_name.clone()),
@@ -199,7 +213,7 @@ pub fn apply_update() -> Result<String, String> {
     if !update_info.update_available {
         return Ok(format!(
             "Already running the latest version (v{}).",
-            CURRENT_VERSION
+            current_version()
         ));
     }
 
@@ -215,13 +229,14 @@ pub fn apply_update() -> Result<String, String> {
 
     // Perform download and replacement in a worker thread.
     let target_version = update_info.latest_version.clone();
+    let cur_ver = current_version();
     let dl_url = download_url.to_string();
     let chk_url = sha256_url.to_string();
 
     let worker = std::thread::spawn(move || -> Result<String, String> {
         let client = reqwest::blocking::Client::builder()
             .timeout(Duration::from_secs(180))
-            .user_agent(format!("StampAlbumGen2/{} (updater)", CURRENT_VERSION))
+            .user_agent(format!("StampAlbumGen2/{} (updater)", cur_ver))
             .build()
             .map_err(|e| format!("Failed to create download client: {e}"))?;
 
