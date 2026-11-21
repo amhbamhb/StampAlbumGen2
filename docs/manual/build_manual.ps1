@@ -17,14 +17,18 @@ if (Test-Path $WingetTypst) {
 }
 
 Write-Host "Compiling StampAlbumGen2 Help Manual (Option A) with Typst..." -ForegroundColor Cyan
-& $TypstCmd compile $SourceTyp $ManualPdf
+& $TypstCmd compile --root $RepoRoot $SourceTyp $ManualPdf
 
 if ($LASTEXITCODE -eq 0 -and (Test-Path $ManualPdf)) {
     Write-Host "Manual compiled successfully: $ManualPdf" -ForegroundColor Green
     
     # Keep the root executable deployment artifact updated
-    Copy-Item $ManualPdf $RootPdf -Force
-    Write-Host "Synchronized embedded executable copy: $RootPdf" -ForegroundColor Green
+    try {
+        Copy-Item $ManualPdf $RootPdf -Force -ErrorAction Stop
+        Write-Host "Synchronized embedded executable copy: $RootPdf" -ForegroundColor Green
+    } catch {
+        Write-Warning "Could not overwrite $RootPdf (it is currently open in a PDF viewer such as Adobe Acrobat). Close the viewer to allow updating the root copy."
+    }
     
     $fileInfo = Get-Item $RootPdf
     Write-Host "File size: $([math]::Round($fileInfo.Length / 1KB, 1)) KB" -ForegroundColor Yellow

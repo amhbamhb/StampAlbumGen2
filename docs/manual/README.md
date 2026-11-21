@@ -29,14 +29,49 @@ To give the project maintainers full flexibility, two authoring formats are main
   - Written in clean, version-controlled plaintext.
   - Sub-second compilation into publication-quality vector PDF.
   - Automatically regenerates Table of Contents, page headers, footers, and section numbering.
-  - One-click build script automatically compiles and updates the root embedded PDF.
-- **Build Command:**
+  - Cross-platform one-click build scripts for Windows and Linux automatically compile and update the root embedded PDF.
+
+#### Tool Installation (`typst`)
+- **Windows:**
+  ```powershell
+  winget install --id Typst.Typst
+  # or via Cargo (if Rust is installed):
+  cargo install --locked typst-cli
+  ```
+- **Linux:**
+  ```bash
+  # Using Cargo (Universal for Rust developers):
+  cargo install --locked typst-cli
+
+  # Debian / Ubuntu (24.04+):
+  sudo apt install typst
+
+  # Arch Linux:
+  sudo pacman -S typst
+
+  # Snap:
+  sudo snap install typst
+  ```
+
+#### Build Commands
+- **Windows (PowerShell):**
   ```powershell
   # Compile manual and synchronize root binary copy:
   powershell -ExecutionPolicy Bypass -File docs/manual/build_manual.ps1
 
-  # Compile and immediately open in default PDF viewer:
+  # Compile and immediately open in default viewer:
   powershell -ExecutionPolicy Bypass -File docs/manual/build_manual.ps1 -Open
+  ```
+- **Linux (Bash):**
+  ```bash
+  # Ensure executable permission:
+  chmod +x docs/manual/build_manual.sh
+
+  # Compile manual and synchronize root binary copy:
+  ./docs/manual/build_manual.sh
+
+  # Compile and open with system viewer (xdg-open):
+  ./docs/manual/build_manual.sh --open
   ```
 
 ### Option B: Desktop Publishing Layout (Scribus / InDesign)

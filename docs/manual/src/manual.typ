@@ -4,7 +4,7 @@
 
 #set document(
   title: "StampAlbumGen2 Comprehensive User Manual & Command Catalog",
-  author: "Laser Spider LLC",
+  author: "Laser Spider LLC - Ray Tkatch",
   date: auto
 )
 
@@ -53,30 +53,32 @@
 #align(center + horizon)[
   #block(
     stroke: 2pt + rgb("#1B365D"),
-    inset: 24pt,
+    inset: 20pt,
     radius: 6pt,
     fill: rgb("#F8FAFC"),
     width: 95%,
     [
-      #v(10pt)
-      #text(size: 26pt, weight: "bold", fill: rgb("#1B365D"))[StampAlbumGen2] \
       #v(6pt)
-      #text(size: 14pt, weight: "medium", fill: rgb("#2B5B84"))[
+      #align(center)[#image("../../../assets/new/Stamp5WebHeader1.jpg", width: 95%)]
+      #v(14pt)
+      #text(size: 26pt, weight: "bold", fill: rgb("#1B365D"))[Stamp Album Generator 2] \
+      #v(6pt)
+      #text(size: 13pt, weight: "medium", fill: rgb("#2B5B84"))[
         Comprehensive Collector's Manual, Review UI Guide & Illustrated Command Catalog
       ]
-      #v(12pt)
+      #v(10pt)
       #line(length: 80%, stroke: 1pt + rgb("#CBD5E1"))
-      #v(12pt)
+      #v(10pt)
       #text(size: 10pt, fill: rgb("#475467"))[
         High-Resolution Vector PDF Album Generation for World Stamp Collections \
         Covering Both Legacy AlbumEasy (4.2.1 / 4.5.0) and Native Vector (`.stampalbum`) Standards
       ]
-      #v(20pt)
+      #v(16pt)
       #text(size: 9pt, fill: rgb("#64748B"))[
         Software Version 1.14+ | Document Edition: November 2026 \
         Laser Spider LLC | https://stampalbumgenerator2.com
       ]
-      #v(10pt)
+      #v(6pt)
     ]
   )
 ]
