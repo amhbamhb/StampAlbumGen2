@@ -469,7 +469,7 @@ where
 mod tests {
     use super::wait_for_generated_pdf_with_timing;
     use std::fs;
-    use std::time::Duration;
+    use std::time::{Duration, SystemTime};
 
     #[test]
     fn albumeasy_errors_are_detected_in_both_output_streams() {
@@ -567,8 +567,8 @@ mod tests {
         ));
     }
 
-    #[cfg(unix)]
-    #[test]
+    // #[cfg(unix)]
+    // #[test]
     // fn albumeasy_pdf_timeout_failure_reports_actual_wait() {
     //     use std::os::unix::fs::PermissionsExt;
     //     let dir = tempfile::tempdir().expect("launcher test directory");
@@ -598,7 +598,7 @@ mod tests {
     //     );
     // }
 
-    // #[test]
+    #[test]
     fn wait_for_generated_pdf_detects_delayed_new_write() {
         let temp_dir = tempfile::tempdir().expect("tempdir should be created");
         let pdf_path = temp_dir.path().join("album.pdf");
