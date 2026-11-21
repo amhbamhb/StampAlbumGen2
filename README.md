@@ -10,11 +10,20 @@ This application generates AlbumEasy source pages (*.txt files) from stamp data 
 
 # Please note this is a beta version and does not have the native PDF support yet.  
 
-The latest release is available on github with attestations: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
+> [!TIP]
+> ### 🚀 New in v1.15.0+: One-Click In-App Auto-Updates!
+> Updating **Stamp Album Generator 2** is now effortless with built-in automatic updates:
+> - **In the Review Web UI:** Whenever a new release is published on GitHub, an update notification badge (`✨ Update to vX.Y.Z Available`) automatically appears in the top header. Click it to read the release notes and click **"Update & Restart Now"**. The application downloads the update, verifies its SHA256 checksum, self-replaces, and restarts automatically with your session intact!
+> - **From the Command Line:** Check for updates at any time with `stamp_album_gen2 --check-update`, or install the latest release automatically with `stamp_album_gen2 --update`.
+> - **Configurable:** Automatic background checks on startup are enabled by default and can be configured in `config.toml` under `[updates]`.
+
+The latest release is available on GitHub with attestations: [Latest release](https://github.com/amhbamhb/StampAlbumGen2/releases/latest)
 
 The application is designed to simplify the process of generating stamp album pages from various data sources, ensuring that users can efficiently manage and update their collections.
 
-Our web site: [Stamp Album Generator 2](https://stampalbumgenerator2.com/)
+Our website: [Stamp Album Generator 2](https://stampalbumgenerator2.com/)
+
+We are continuously updating our progress for the upcoming native PDF engine on the [examples page on our website](https://stampalbumgenerator2.com/).
 
 Our app will always be free to individual collectors, including source code.  Any corporate or commercial, educational use is subject to licensing fees, including any source code usage and any derivative works.  So no, you can not fork, make changes and call it your own for commercial, corporate, educational purposes.
 
