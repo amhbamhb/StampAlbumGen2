@@ -168,6 +168,66 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    if cli.check_update {
+        println!(
+            "StampAlbumGen2 version: {}",
+            stamp_album_gen2::updater::current_version()
+        );
+        println!("Checking for updates from GitHub (amhbamhb/StampAlbumGen2)...");
+        match stamp_album_gen2::updater::check_for_updates(true) {
+            Ok(info) => {
+                if info.update_available {
+                    println!(
+                        "✨ Update available: v{} (current: v{})",
+                        info.latest_version, info.current_version
+                    );
+                    println!("Release: {}", info.release_name);
+                    if !info.release_notes.is_empty() {
+                        println!("\nRelease Notes:\n{}\n", info.release_notes);
+                    }
+                    println!("Run with --update to download and install this update.");
+                } else {
+                    println!(
+                        "You are running the latest version (v{}).",
+                        info.current_version
+                    );
+                }
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("Failed to check for updates: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    if cli.update {
+        println!(
+            "StampAlbumGen2 version: {}",
+            stamp_album_gen2::updater::current_version()
+        );
+        println!("Checking and downloading update from GitHub...");
+        match stamp_album_gen2::updater::apply_update() {
+            Ok(msg) => {
+                println!("✅ {}", msg);
+                println!("Update installed successfully. Please restart StampAlbumGen2.");
+                return Ok(());
+            }
+            Err(e) => {
+                eprintln!("❌ Update failed: {}", e);
+                std::process::exit(1);
+            }
+        }
+    }
+
+    // Non-blocking background check on startup to prime update cache
+    let cfg_startup = config::load_config("config.toml");
+    if cfg_startup.updates_check_on_startup() {
+        std::thread::spawn(|| {
+            let _ = stamp_album_gen2::updater::check_for_updates(false);
+        });
+    }
+
     // Ensure config/template files or prompt to move/copy on first-run *before*
     // we align the process working directory to the executable layout. This
     // allows the initial-startup dialog to operate in the directory the user

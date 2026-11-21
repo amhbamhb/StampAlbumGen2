@@ -121,7 +121,8 @@ fn native_album_parses_and_renders_author_and_title() -> Result<(), String> {
     let temp = tempfile::tempdir().map_err(|e| e.to_string())?;
     let assets = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/albumeasy/native-real-stamps-v1");
-    let original = fs::read_to_string(assets.join("album.stampalbum")).map_err(|e| e.to_string())?;
+    let original =
+        fs::read_to_string(assets.join("album.stampalbum")).map_err(|e| e.to_string())?;
 
     // Default metadata when omitted
     let output_default = temp.path().join("default.pdf");
@@ -151,7 +152,9 @@ fn native_album_parses_and_renders_author_and_title() -> Result<(), String> {
     ] {
         let variant = original.replacen(
             "ALBUM_PAGES_SIZE",
-            &format!("{author_kw} (\"Case Author\")\n{title_kw} (\"Case Title\")\nALBUM_PAGES_SIZE"),
+            &format!(
+                "{author_kw} (\"Case Author\")\n{title_kw} (\"Case Title\")\nALBUM_PAGES_SIZE"
+            ),
             1,
         );
         let output_case = temp.path().join("case.pdf");
@@ -173,8 +176,12 @@ fn album_author_and_title_validation_errors() -> Result<(), String> {
     let output = temp.path().join("error.pdf");
 
     // Missing arguments
-    for cmd in ["ALBUM_AUTHOR", "ALBUM_TITLE"] {
-        let invalid = original.replace(&format!("{cmd} ("), &format!("{cmd} () #"));
+    for (target, cmd) in [
+        ("Album_Author (\"John Doe\")", "ALBUM_AUTHOR"),
+        ("album_title (\"Liberty Issue\")", "ALBUM_TITLE"),
+    ] {
+        assert!(original.contains(target));
+        let invalid = original.replace(target, &format!("{cmd} ()"));
         assert!(
             albumeasy::render(&invalid, &assets, &output).is_err(),
             "{cmd} missing args must fail"
@@ -182,11 +189,12 @@ fn album_author_and_title_validation_errors() -> Result<(), String> {
     }
 
     // Excess arguments
-    for cmd in ["ALBUM_AUTHOR", "ALBUM_TITLE"] {
-        let invalid = original.replace(
-            &format!("{cmd} ("),
-            &format!("{cmd} (\"First\" \"Second\") #"),
-        );
+    for (target, cmd) in [
+        ("Album_Author (\"John Doe\")", "ALBUM_AUTHOR"),
+        ("album_title (\"Liberty Issue\")", "ALBUM_TITLE"),
+    ] {
+        assert!(original.contains(target));
+        let invalid = original.replace(target, &format!("{cmd} (\"First\" \"Second\")"));
         assert!(
             albumeasy::render(&invalid, &assets, &output).is_err(),
             "{cmd} excess args must fail"
@@ -194,8 +202,12 @@ fn album_author_and_title_validation_errors() -> Result<(), String> {
     }
 
     // Unquoted argument
-    for cmd in ["ALBUM_AUTHOR", "ALBUM_TITLE"] {
-        let invalid = original.replace(&format!("{cmd} ("), &format!("{cmd} (UnquotedValue) #"));
+    for (target, cmd) in [
+        ("Album_Author (\"John Doe\")", "ALBUM_AUTHOR"),
+        ("album_title (\"Liberty Issue\")", "ALBUM_TITLE"),
+    ] {
+        assert!(original.contains(target));
+        let invalid = original.replace(target, &format!("{cmd} (UnquotedValue)"));
         assert!(
             albumeasy::render(&invalid, &assets, &output).is_err(),
             "{cmd} unquoted arg must fail"
@@ -205,8 +217,8 @@ fn album_author_and_title_validation_errors() -> Result<(), String> {
     // Duplicate in native album
     let native_assets = Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("tests/fixtures/albumeasy/native-real-stamps-v1");
-    let native_source = fs::read_to_string(native_assets.join("album.stampalbum"))
-        .map_err(|e| e.to_string())?;
+    let native_source =
+        fs::read_to_string(native_assets.join("album.stampalbum")).map_err(|e| e.to_string())?;
     let dup_author = native_source.replacen(
         "ALBUM_PAGES_SIZE",
         "ALBUM_AUTHOR (\"One\")\nALBUM_AUTHOR (\"Two\")\nALBUM_PAGES_SIZE",

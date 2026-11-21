@@ -111,21 +111,64 @@ cargo build --features full-flag-db
 ### 4. Git / Version Control
 
 - This repository uses **GitHub**: `amhbamhb/StampAlbumGen2`.
-- Use GitHub Issues and pull requests for project tracking; prefer `gh` for GitHub operations.
-- This repository-specific policy replaces the former GitLab-only guidance.
+- **Per-Item GitHub Issue & Branch Workflow (MANDATORY)**:
+  - For each new item, fixture family, command implementation, or bug fix:
+    1. Create a dedicated GitHub issue first using `gh issue create --repo amhbamhb/StampAlbumGen2 --title "<title>" --body "<details>"`.
+    2. Create and switch to a dedicated branch for that item: `feature/issue-<num>-<short-name>` (or `fix/issue-<num>-<short-name>`).
+    3. Complete implementation, automated tests, fixture documentation, and website gallery synchronization.
+    4. Reference the issue in commits: `feat: ... (fixes #<num>)` or `fix: ... (fixes #<num>)`.
 - When in doubt, commit locally with a clear message and notify maintainers of the branch name.
 - Do **not** push without explicit maintainer instruction. Never expose credentials in commits or logs.
-- Branch naming: `feature/<short-name>`, `fix/<short-name>`, `refactor/<file-or-area>`.
 
 ### 5. Commit Messages
 
-Follow Conventional Commits. Types in use:
+Follow Conventional Commits based on the [Conventional Commit Messages Specification & Cheat Sheet](https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13).
 
-- `Add:` / `feat:` — new features
-- `Fix:` / `fix:` — bug fixes
-- `Update:` / `refactor:` — improvements/restructuring
-- `Docs:` / `docs:` — documentation only
-- `Test:` / `test:` — test changes
+#### Structure
+```text
+<type>(<optional scope>): <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+#### Types
+- `feat`: Commits that add, adjust, or remove a feature (API, CLI, UI, or rendering capability)
+- `fix`: Commits that fix a bug
+- `refactor`: Commits that rewrite or restructure code without altering external behavior
+- `perf`: Special refactor commits that specifically improve execution or rendering performance
+- `style`: Commits that address code style (white-space, formatting, semicolons) without logic changes
+- `test`: Commits that add missing tests or correct existing ones
+- `docs`: Commits that exclusively affect documentation or guides
+- `build`: Commits affecting build tools, cargo dependencies, project version, or packaging
+- `ops`: Commits affecting operational tooling, deployment scripts, CI/CD, or automated workflows
+- `chore`: Commits for miscellaneous maintenance tasks (e.g. updating `.gitignore`, license headers)
+
+#### Scopes
+- Optional contextual indicator in lowercase parentheses: e.g. `feat(native-pdf):`, `fix(renderer):`, `docs(agents):`, `test(marginse):`.
+- **Do not** use issue identifiers as scopes (put issue references in footer or description instead).
+
+#### Description
+- Mandatory, concise summary of the change.
+- Use imperative, present tense: `"add"`, `"fix"`, `"update"`, `"refactor"` (not `"added"`, `"fixed"`). Think: *"This commit will..."*.
+- Do **not** capitalize the first letter (unless a proper noun/identifier).
+- Do **not** end with a period (`.`).
+
+#### Breaking Changes
+- Indicate with an `!` before the colon: e.g. `feat(parser)!: break backwards compatibility with legacy format`.
+- In the commit footer, prefix the explanation with `BREAKING CHANGE: <description>`.
+
+#### Body & Footer
+- **Body** (optional): Explains the motivation behind the change, edge cases handled, and contrasts with previous behavior.
+- **Footer** (optional / mandatory for issues): Reference GitHub issues and tasks (e.g. `Fixes #122`, `Closes #84`).
+
+#### Examples
+- `feat(native-pdf): add .stampalbum fixtures for page-size-v1 (fixes #122)`
+- `fix(renderer): correct stamp heading padding calculation for multi-line local titles`
+- `test(marginse): verify alternating margins across page break boundaries`
+- `docs(agents): update commit message standards from conventional commits gist`
+- `refactor(album): consolidate stamp inner border state parser`
 
 ### 6. Configuration
 

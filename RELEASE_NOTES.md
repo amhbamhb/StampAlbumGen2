@@ -1,10 +1,18 @@
-# Stamp Album Generator v1.14.4 Release Notes
+# Stamp Album Generator v1.15.0 Release Notes
 
 ## Overview
 
 This release fixes critical page numbering issues and eliminates blank pages in album generation. The embedded reference stamp sizing system from v0.5.0 is maintained with improved reliability.
 
 ## 🚀 New Features
+
+### Auto-Update Application System (Issue #124)
+
+- **Review UI Update Notification Badge**: Background check against GitHub Releases (`amhbamhb/StampAlbumGen2`) displays a pulsing notification in the top navigation header whenever a newer version is available.
+- **One-Click In-Browser Upgrade**: Clicking the notification opens an update modal showing version comparison (`v1.15.0 -> v1.X.X`), release highlights, and a one-click **"Update & Restart Now"** button.
+- **Cryptographic Verification**: Automatically downloads the release binary, matches its SHA256 checksum against `.sha256` asset, and performs atomic self-replacement across Windows and Linux.
+- **CLI Commands**: Added `--check-update` and `--update` flags for headless/terminal management.
+- **Configurable**: Configured via `[updates].check_on_startup` (default: `true`).
 
 ### Page Numbering System Fixes
 
@@ -133,8 +141,8 @@ For issues or questions, please check the embedded documentation in the source c
 
 ---
 
-**Release Date**: 2026-11-18
-**Version**: 1.14.4
+**Release Date**: 2026-11-20
+**Version**: 1.15.0
 **Build**: Release (optimized)</content>
 
 ---
@@ -155,7 +163,7 @@ This patch fixes a header aggregation bug and improves placeholder image sizing 
 
 - A small lint/cleanup pass remains (non-functional dead_code warnings) and can be addressed in a follow-up.
 
-**Release Date**: 2026-11-18
-**Version**: 1.14.4
+**Release Date**: 2026-11-20
+**Version**: 1.15.0
 
 <parameter name="filePath">RELEASE_NOTES.md

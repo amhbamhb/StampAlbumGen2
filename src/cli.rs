@@ -135,4 +135,12 @@ pub struct Cli {
     /// Re-enable and install Linux desktop launcher and icon, then exit.
     #[arg(long, default_value_t = false)]
     pub install_desktop_launcher: bool,
+
+    /// Check for available application updates from GitHub Releases and exit.
+    #[arg(long, default_value_t = false)]
+    pub check_update: bool,
+
+    /// Automatically download and install the latest update if available, then exit.
+    #[arg(long, default_value_t = false)]
+    pub update: bool,
 }

@@ -255,6 +255,85 @@ fn handle_site_account_request(mut request: tiny_http::Request) -> Option<tiny_h
     None
 }
 
+fn handle_update_request(request: tiny_http::Request) -> Option<tiny_http::Request> {
+    let method = request.method().clone();
+    let url = request.url();
+    let (body, status) = if method == Method::Get && url == "/api/update-status" {
+        let progress = crate::updater::get_update_progress();
+        let resp = match crate::updater::check_for_updates(false) {
+            Ok(info) => serde_json::json!({
+                "ok": true,
+                "update_available": info.update_available,
+                "current_version": info.current_version,
+                "latest_version": info.latest_version,
+                "release_name": info.release_name,
+                "release_notes": info.release_notes,
+                "release_url": info.release_url,
+                "asset_size": info.asset_size,
+                "published_at": info.published_at,
+                "progress": progress,
+            }),
+            Err(e) => serde_json::json!({
+                "ok": false,
+                "update_available": false,
+                "current_version": crate::updater::current_version(),
+                "error": e,
+                "progress": progress,
+            }),
+        };
+        (resp, StatusCode(200))
+    } else if method == Method::Post && url == "/api/check-update-now" {
+        let progress = crate::updater::get_update_progress();
+        let resp = match crate::updater::check_for_updates(true) {
+            Ok(info) => serde_json::json!({
+                "ok": true,
+                "update_available": info.update_available,
+                "current_version": info.current_version,
+                "latest_version": info.latest_version,
+                "release_name": info.release_name,
+                "release_notes": info.release_notes,
+                "release_url": info.release_url,
+                "asset_size": info.asset_size,
+                "published_at": info.published_at,
+                "progress": progress,
+            }),
+            Err(e) => serde_json::json!({
+                "ok": false,
+                "update_available": false,
+                "current_version": crate::updater::current_version(),
+                "error": e,
+                "progress": progress,
+            }),
+        };
+        (resp, StatusCode(200))
+    } else if method == Method::Post && url == "/api/install-update" {
+        match crate::updater::start_background_update() {
+            Ok(()) => (
+                serde_json::json!({ "ok": true, "message": "Update process started", "restarting": false }),
+                StatusCode(200),
+            ),
+            Err(e) => (
+                serde_json::json!({ "ok": false, "message": e, "restarting": false }),
+                StatusCode(500),
+            ),
+        }
+    } else {
+        return Some(request);
+    };
+
+    let mut response = Response::from_string(body.to_string()).with_status_code(status);
+    if let Ok(header) = Header::from_bytes("Content-Type", "application/json") {
+        response = response.with_header(header);
+    }
+    if let Ok(header) = Header::from_bytes("Cache-Control", "no-store") {
+        response = response.with_header(header);
+    }
+    if let Err(error) = request.respond(response) {
+        log_runtime_event(&format!("Failed responding to update request: {error}"));
+    }
+    None
+}
+
 fn handle_country_url_request(mut request: tiny_http::Request) -> Option<tiny_http::Request> {
     let path = request.url().split('?').next().unwrap_or("");
     if path != "/api/stampworld-country-url"
@@ -324,6 +403,9 @@ pub(super) fn serve_bootstrap_requests(server: &Server, html: &str) -> Bootstrap
             continue;
         };
         let Some(request) = handle_site_account_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_update_request(request) else {
             continue;
         };
         let Some(request) = external_album_api::handle(request) else {
@@ -1367,6 +1449,9 @@ pub(super) fn serve_review_requests(
             continue;
         };
         let Some(request) = handle_site_account_request(request) else {
+            continue;
+        };
+        let Some(request) = handle_update_request(request) else {
             continue;
         };
         let Some(mut request) = handle_country_url_request(request) else {

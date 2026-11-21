@@ -1,0 +1,23 @@
+# StampAlbumGen2 native album document, version 1.
+# The paired AlbumEasy 4.5.0 input is even-override.txt; these outputs are separate renderings.
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)
+ALBUM_PAGES_MARGINSE (12.0 25.0 22.0 16.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+# Page 1 (odd)
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125)
+NATIVE_PAGE_BREAK ()
+# Page 2 (even)
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424)
+NATIVE_PAGE_BREAK ()
+# Page 3 (odd)
+STAMP_IMAGE ("../stamp-pagination-v1/us-152.png" 26 29 0.052)

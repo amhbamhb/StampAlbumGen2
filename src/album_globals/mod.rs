@@ -469,7 +469,7 @@ where
 mod tests {
     use super::wait_for_generated_pdf_with_timing;
     use std::fs;
-    use std::time::{Duration, SystemTime};
+    use std::time::Duration;
 
     #[test]
     fn albumeasy_errors_are_detected_in_both_output_streams() {

@@ -90,9 +90,10 @@ fn defaults_missing_invalid_values_and_snapshot_are_explicit() -> Result<()> {
         include_str!("../config_template.toml"),
         include_str!("../config_full_example.toml"),
     ] {
-        let config = NativePdfConfig::from_toml(source)?;
+        let normalized = source.replace("\r\n", "\n");
+        let config = NativePdfConfig::from_toml(&normalized)?;
         assert!(config.page_settings.resolve(1)?.header_number.is_none());
-        let enabled = NativePdfConfig::from_toml(&source.replace(
+        let enabled = NativePdfConfig::from_toml(&normalized.replace(
             "[native_pdf.header_number]\nenabled = false",
             "[native_pdf.header_number]\nenabled = true",
         ))?;
@@ -451,10 +452,19 @@ fn frozen_header_number_reference_identities_are_unchanged() -> Result<()> {
     assert_eq!(manifest.lines().count(), 14);
     for line in manifest.lines() {
         let (expected, name) = line.split_once("  ").ok_or("hash")?;
-        let actual: String = Sha256::digest(fs::read(root.join(name))?)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
+        let bytes = fs::read(root.join(name))?;
+        let actual: String = if name.ends_with(".txt") {
+            let s = String::from_utf8_lossy(&bytes).replace("\r\n", "\n");
+            Sha256::digest(s.as_bytes())
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect()
+        } else {
+            Sha256::digest(&bytes)
+                .iter()
+                .map(|b| format!("{b:02x}"))
+                .collect()
+        };
         assert_eq!(actual, expected, "{name}");
     }
     Ok(())
@@ -733,4 +743,125 @@ fn serialized_header_numbers_match_reference_fonts_glyphs_and_geometry() -> Resu
         }
     }
     Ok(())
+}
+
+#[test]
+fn header_number_txt_renders_all_reference_variations() -> Result<()> {
+    use stamp_album_gen2::native_pdf::albumeasy::render as render_albumeasy;
+    let fixture_dir =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/header-number-v1");
+    let temp_dir = tempfile::tempdir()?;
+
+    let variations = [
+        ("header-number-basic.txt", 2),
+        ("header-number-centre.txt", 2),
+        ("header-number-left.txt", 1),
+        ("header-number-lr.txt", 3),
+        ("header-number-omitted.txt", 1),
+        ("header-number-rl.txt", 3),
+        ("header-number-coexist.txt", 2),
+    ];
+
+    for (file_name, expected_pages) in variations {
+        let source_path = fixture_dir.join(file_name);
+        let source_text = fs::read_to_string(&source_path)?;
+        let out_pdf = temp_dir.path().join(format!("{file_name}.pdf"));
+
+        let page_count = render_albumeasy(&source_text, &fixture_dir, &out_pdf)?;
+        assert_eq!(
+            page_count, expected_pages,
+            "Page count mismatch for {file_name}"
+        );
+        assert!(out_pdf.exists(), "Output PDF not written for {file_name}");
+        let pdf_bytes = fs::read(&out_pdf)?;
+        assert!(
+            pdf_bytes.starts_with(b"%PDF-"),
+            "Invalid PDF header for {file_name}"
+        );
+    }
+
+    Ok(())
+}
+
+#[test]
+fn raw_and_native_stampalbum_renders_identically() -> Result<()> {
+    use stamp_album_gen2::native_pdf::{album::NativeAlbum, albumeasy::render as render_albumeasy};
+    let fixture_dir =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/header-number-v1");
+    let temp_dir = tempfile::tempdir()?;
+
+    // 1. Render raw .stampalbum
+    let raw_source = fs::read_to_string(fixture_dir.join("header-number-basic-raw.stampalbum"))?;
+    let raw_pdf_path = temp_dir.path().join("basic-raw.pdf");
+    let raw_pages = render_albumeasy(&raw_source, &fixture_dir, &raw_pdf_path)?;
+    assert_eq!(raw_pages, 2);
+
+    // 2. Render native .stampalbum
+    let native_source = fs::read_to_string(fixture_dir.join("header-number-basic.stampalbum"))?;
+    let native_album = NativeAlbum::parse(&native_source, &fixture_dir)?;
+    let native_pdf_path = temp_dir.path().join("basic-native.pdf");
+    let native_pages = native_album.write_pdf(&native_pdf_path)?;
+    assert_eq!(native_pages.len(), 2);
+
+    // Both files exist and are valid PDFs
+    assert!(raw_pdf_path.exists());
+    assert!(native_pdf_path.exists());
+    let raw_bytes = fs::read(&raw_pdf_path)?;
+    let native_bytes = fs::read(&native_pdf_path)?;
+    assert!(raw_bytes.starts_with(b"%PDF-"));
+    assert!(native_bytes.starts_with(b"%PDF-"));
+
+    Ok(())
+}
+
+#[test]
+fn header_number_validation_errors() {
+    use stamp_album_gen2::native_pdf::albumeasy::render as render_albumeasy;
+    let fixture_dir =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/albumeasy/header-number-v1");
+    let temp_dir = tempfile::tempdir().unwrap();
+    let temp_pdf = temp_dir.path().join("temp_error.pdf");
+
+    // Quoted font
+    let input = "ALBUM_PAGES_SIZE (210 297)\nALBUM_PAGES_MARGINS (15 15 15 15)\nALBUM_PAGES_SPACING (3 4)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nALBUM_PAGES_HEADER_NUMBER (\"HN\" 8 R)\nPAGE_START";
+    let err = render_albumeasy(input, &fixture_dir, &temp_pdf).unwrap_err();
+    assert!(
+        err.to_string()
+            .contains("Header font and position must be unquoted"),
+        "Unexpected error: {err}"
+    );
+
+    // Quoted position
+    let input = "ALBUM_PAGES_SIZE (210 297)\nALBUM_PAGES_MARGINS (15 15 15 15)\nALBUM_PAGES_SPACING (3 4)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nALBUM_PAGES_HEADER_NUMBER (HN 8 \"R\")\nPAGE_START";
+    let err = render_albumeasy(input, &fixture_dir, &temp_pdf).unwrap_err();
+    assert!(
+        err.to_string()
+            .contains("Header font and position must be unquoted"),
+        "Unexpected error: {err}"
+    );
+
+    // Too few arguments (< 3)
+    let input = "ALBUM_PAGES_SIZE (210 297)\nALBUM_PAGES_MARGINS (15 15 15 15)\nALBUM_PAGES_SPACING (3 4)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nALBUM_PAGES_HEADER_NUMBER (HN 8)\nPAGE_START";
+    let err = render_albumeasy(input, &fixture_dir, &temp_pdf).unwrap_err();
+    assert!(
+        err.to_string().contains("expects 3..6 arguments"),
+        "Unexpected error: {err}"
+    );
+
+    // Too many arguments (> 6)
+    let input = "ALBUM_PAGES_SIZE (210 297)\nALBUM_PAGES_MARGINS (15 15 15 15)\nALBUM_PAGES_SPACING (3 4)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nALBUM_PAGES_HEADER_NUMBER (HN 8 R 1 \"Page \" \" of 10\" \"extra\")\nPAGE_START";
+    let err = render_albumeasy(input, &fixture_dir, &temp_pdf).unwrap_err();
+    assert!(
+        err.to_string().contains("expects 3..6 arguments"),
+        "Unexpected error: {err}"
+    );
+
+    // Invalid position
+    let input = "ALBUM_PAGES_SIZE (210 297)\nALBUM_PAGES_MARGINS (15 15 15 15)\nALBUM_PAGES_SPACING (3 4)\nALBUM_PAGES_BORDER (0.2 0 0 0)\nALBUM_PAGES_HEADER_NUMBER (HN 8 TOP)\nPAGE_START";
+    let err = render_albumeasy(input, &fixture_dir, &temp_pdf).unwrap_err();
+    assert!(
+        err.to_string()
+            .contains("album_pages_header_position must be L, C, R, LR or RL"),
+        "Unexpected error: {err}"
+    );
 }

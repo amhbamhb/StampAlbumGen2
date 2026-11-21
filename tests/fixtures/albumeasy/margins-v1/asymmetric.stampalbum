@@ -1,0 +1,19 @@
+# StampAlbumGen2 native album document, version 1.
+# Paired AlbumEasy 4.5.0 input is asymmetric.txt (Asymmetric 25mm left binding clearance).
+STAMPALBUM 1
+
+ALBUM_PAGES_SIZE (210.0 297.0)
+ALBUM_PAGES_MARGINS (25.0 12.0 18.0 21.0)
+ALBUM_PAGES_SPACING (3.0 4.0)
+ALBUM_PAGES_BORDER (0.2 0.0 0.0 0.0)
+COLOUR_ALBUM_BORDER (black)
+NATIVE_ROW_ALIGNMENT (center)
+NATIVE_STAMP_FRAME (0.25 black)
+NATIVE_STAMP_TEXT_POLICY (wrap_to_frame percent 100 0 0 0)
+NATIVE_STAMP_IMAGE_POLICY (millimetres 0 0 false preserve colour show)
+
+# Page 1
+STAMP_IMAGE ("../stamp-pagination-v1/us-150.png" 52 29 0.05078125 "HN" 8 "MARGINS-V1 / ASYMMETRIC / PAGE 1")
+NATIVE_PAGE_BREAK ()
+# Page 2
+STAMP_IMAGE ("../stamp-pagination-v1/us-151.png" 26 29 0.0534979424 "HN" 8 "MARGINS-V1 / ASYMMETRIC / PAGE 2")
